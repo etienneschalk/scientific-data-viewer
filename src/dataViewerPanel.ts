@@ -860,6 +860,7 @@ export class DataViewerPanel {
         return `
     <div id="content" class="hidden">
         ${this._getFileInfoHtml()}
+        ${this._getDimensionsAndVariablesHtml()}
         ${this._getHtmlRepresentationHtml()}
         ${this._getTextRepresentationHtml()}
         ${this._getTroubleshootingHtml()}
@@ -922,11 +923,7 @@ export class DataViewerPanel {
         </div>`;
     }
 
-    private _getPlottingSectionsHtml(plottingCapabilities: boolean): string {
-        if (!plottingCapabilities) {
-            return '';
-        }
-        
+    private _getDimensionsAndVariablesHtml(): string {
         return `
         <div class="info-section">
             <h3>Dimensions</h3>
@@ -936,12 +933,19 @@ export class DataViewerPanel {
         <div class="info-section">
             <h3>Variables</h3>
             <div id="variables" class="variables"></div>
-        </div>
+        </div>`;
+    }
+
+    private _getPlottingSectionsHtml(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
         
+        return `
         <div class="info-section">
             <h3>Visualization</h3>
             <div id="plotContainer" class="plot-container"></div>
-        </div>        `;
+        </div>`;
     }
 
     private _getJavaScriptCode(plottingCapabilities: boolean): string {
@@ -1183,6 +1187,7 @@ export class DataViewerPanel {
             
             fileInfo.innerHTML = formatInfo;
 
+            ${this._getDimensionsAndVariablesDisplayCode()}
             ${this._getPlottingDisplayCode(plottingCapabilities)}
 
             // Request variable list for dropdown
@@ -1213,11 +1218,7 @@ export class DataViewerPanel {
         ${this._getErrorHandlingFunctions()}`;
     }
 
-    private _getPlottingDisplayCode(plottingCapabilities: boolean): string {
-        if (!plottingCapabilities) {
-            return '';
-        }
-        
+    private _getDimensionsAndVariablesDisplayCode(): string {
         return `
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
@@ -1251,6 +1252,15 @@ export class DataViewerPanel {
                     variablesContainer.innerHTML = '<p>No variables found</p>';
                 }
             }`;
+    }
+
+    private _getPlottingDisplayCode(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
+            // Plotting display code is handled by the plotting-specific functions`;
     }
 
     private _getPlottingDisplayFunctions(plottingCapabilities: boolean): string {
