@@ -187,6 +187,13 @@
           "description": "Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.",
           "experimental": true,
           "markdownDescription": "**Experimental Feature** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues."
+        },
+        "scientificDataViewer.plottingCapabilities": {
+          "type": "boolean",
+          "default": false,
+          "experimental": true,
+          "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.", 
+          "description": "Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer."
         }
       }
     }

@@ -97,10 +97,14 @@ export class DataViewerPanel {
                         await this._handleGetDataSlice(message.variable, message.sliceSpec);
                         break;
                     case 'createPlot':
-                        await this._handleCreatePlot(message.variable, message.plotType);
+                        if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
+                            await this._handleCreatePlot(message.variable, message.plotType);
+                        }
                         break;
                     case 'getVariableList':
-                        await this._handleGetVariableList();
+                        if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
+                            await this._handleGetVariableList();
+                        }
                         break;
                     case 'getHtmlRepresentation':
                         await this._handleGetHtmlRepresentation();
@@ -115,12 +119,16 @@ export class DataViewerPanel {
     public async _update(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._currentFile = fileUri;
         this.dataProcessor = dataProcessor;
-        
+
         // Update the panel title to reflect the new file
         this._panel.title = `Data Viewer: ${path.basename(fileUri.fsPath)}`;
-        
-        this._panel.webview.html = this._getHtmlForWebview();
-        
+
+        // Get configuration for plotting capabilities
+        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const plottingCapabilities = config.get('plottingCapabilities', false);
+
+        this._panel.webview.html = this._getHtmlForWebview(plottingCapabilities);
+
         // Load data info
         await this._handleGetDataInfo();
     }
@@ -143,7 +151,7 @@ export class DataViewerPanel {
             // Check file size
             const stat = await vscode.workspace.fs.stat(this._currentFile);
             const maxSize = vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100) * 1024 * 1024; // Convert MB to bytes
-            
+
             if (stat.size > maxSize) {
                 this._panel.webview.postMessage({
                     command: 'error',
@@ -154,7 +162,7 @@ export class DataViewerPanel {
             }
 
             this._dataInfo = await this.dataProcessor.getDataInfo(this._currentFile);
-            
+
             if (!this._dataInfo) {
                 this._panel.webview.postMessage({
                     command: 'error',
@@ -214,7 +222,7 @@ export class DataViewerPanel {
                     Logger.show();
                 }
             });
-            
+
             const plotData = await this.dataProcessor.createPlot(this._currentFile, variable, plotType);
             if (plotData) {
                 this._panel.webview.postMessage({
@@ -281,7 +289,7 @@ export class DataViewerPanel {
         }
     }
 
-    private _getHtmlForWebview() {
+    private _getHtmlForWebview(plottingCapabilities: boolean = false) {
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -549,6 +557,7 @@ export class DataViewerPanel {
     <div class="header">
         <div class="title">Scientific Data Viewer</div>
         <div class="controls">
+            ${plottingCapabilities ? `
             <select id="variableSelect">
                 <option value="">Select a variable...</option>
             </select>
@@ -559,6 +568,7 @@ export class DataViewerPanel {
                 <option value="histogram">Histogram</option>
             </select>
             <button id="plotButton" disabled>Create Plot</button>
+            ` : ''}
             <button id="refreshButton">Refresh</button>
         </div>
     </div>
@@ -594,10 +604,12 @@ export class DataViewerPanel {
             <div id="variables" class="variables"></div>
         </div>
         
+        ${plottingCapabilities ? `
         <div class="info-section">
             <h3>Visualization</h3>
             <div id="plotContainer" class="plot-container"></div>
         </div>
+        ` : ''}
     </div>
 
     <script>
@@ -606,6 +618,7 @@ export class DataViewerPanel {
         let selectedVariable = null;
 
         // Event listeners
+        ${plottingCapabilities ? `
         document.getElementById('variableSelect').addEventListener('change', (e) => {
             selectedVariable = e.target.value;
             document.getElementById('plotButton').disabled = !selectedVariable;
@@ -623,6 +636,7 @@ export class DataViewerPanel {
                 });
             }
         });
+        ` : ''}
 
         document.getElementById('refreshButton').addEventListener('click', () => {
             vscode.postMessage({ command: 'getDataInfo' });
@@ -661,12 +675,16 @@ export class DataViewerPanel {
                     currentData = message.data;
                     displayDataInfo(message.data, message.filePath);
                     break;
+                ${plottingCapabilities ? `
                 case 'variableList':
                     populateVariableSelect(message.data);
                     break;
+                ` : ''}
+                ${plottingCapabilities ? `
                 case 'plotData':
                     displayPlot(message.data);
                     break;
+                ` : ''}
                 case 'htmlRepresentation':
                     displayHtmlRepresentation(message.data);
                     break;
@@ -733,6 +751,7 @@ export class DataViewerPanel {
                     .join('');
                 
                 // Add click handlers for variable selection
+                ${plottingCapabilities ? `
                 variablesContainer.querySelectorAll('.variable-item').forEach(item => {
                     item.addEventListener('click', () => {
                         variablesContainer.querySelectorAll('.variable-item').forEach(i => i.classList.remove('selected'));
@@ -742,12 +761,15 @@ export class DataViewerPanel {
                         document.getElementById('plotButton').disabled = false;
                     });
                 });
+                ` : ''}
             } else {
                 variablesContainer.innerHTML = '<p>No variables found</p>';
             }
 
             // Request variable list for dropdown
+            ${plottingCapabilities ? `
             vscode.postMessage({ command: 'getVariableList' });
+            ` : ''}
             
             // Request HTML representation
             vscode.postMessage({ command: 'getHtmlRepresentation' });
@@ -757,6 +779,7 @@ export class DataViewerPanel {
             document.getElementById('content').classList.remove('hidden');
         }
 
+        ${plottingCapabilities ? `
         function populateVariableSelect(variables) {
             const select = document.getElementById('variableSelect');
             select.innerHTML = '<option value="">Select a variable...</option>';
@@ -776,6 +799,7 @@ export class DataViewerPanel {
                 container.innerHTML = '<p>Failed to generate plot</p>';
             }
         }
+        ` : ''}
 
         function displayHtmlRepresentation(htmlData) {
             const container = document.getElementById('htmlRepresentation');
