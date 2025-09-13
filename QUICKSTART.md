@@ -42,19 +42,22 @@ code .
 1. **Create sample data**:
    ```bash
    cd sample-data
-   python3 python/create_sample_data.py
+   python3 ../python/create_sample_data.py
    ```
 
 2. **Open a sample file**:
-   - Right-click on `sample_data.nc` in the file explorer
-   - Select "Open in Scientific Data Viewer"
+   - **Direct opening**: Double-click on `sample_data.nc` in the file explorer
+   - **Context menu**: Right-click on `sample_data.nc` and select "Open in Scientific Data Viewer"
+   - **Command palette**: Press `Ctrl+Shift+P`, type "Open Scientific Data Viewer", and select the file
 
 ### 3. Explore the Interface
 
 - **File Information**: View format, size, and metadata
-- **Dimensions**: Browse dataset dimensions
-- **Variables**: Explore data variables
-- **Visualization**: Create plots and charts
+- **Dimensions**: Browse dataset dimensions with sizes
+- **Variables**: Explore data variables with types, shapes, and memory usage
+- **Visualization**: Create plots and charts (experimental feature)
+- **Status Bar**: Check Python interpreter status
+- **Logs**: View detailed extension logs via Command Palette
 
 ## 🔧 Configuration
 
@@ -70,10 +73,20 @@ The extension will automatically detect Python installations. If needed:
 
 Access settings via **File → Preferences → Settings**:
 
-- **Python Path**: Set custom Python interpreter
 - **Auto Refresh**: Enable/disable automatic file updates
-- **Max File Size**: Set limit for automatic loading
+- **Max File Size**: Set limit for automatic loading (MB)
 - **Default View**: Choose initial display mode
+- **Allow Multiple Tabs For Same File**: Experimental feature for multiple tabs
+- **Plotting Capabilities**: Experimental feature for data visualization
+
+### Available Commands
+
+Access via **Command Palette** (`Ctrl+Shift+P`):
+
+- **Open Scientific Data Viewer**: Open a file in the data viewer
+- **Refresh Python Environment**: Manually refresh the Python environment
+- **Show Extension Logs**: View detailed extension logs
+- **Show Settings**: Open Scientific Data Viewer settings
 
 ## 📁 Supported File Types
 
@@ -99,10 +112,12 @@ Access settings via **File → Preferences → Settings**:
 
 ### Python Integration
 
-- **Automatic** Python detection
+- **Automatic** Python detection via Python extension API
 - **Package management** with auto-installation
-- **Environment** validation
+- **Environment** validation and status monitoring
 - **Error handling** and user feedback
+- **Real-time** interpreter change detection
+- **Status bar** integration showing current interpreter
 
 ## 🐛 Troubleshooting
 

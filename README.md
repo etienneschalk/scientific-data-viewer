@@ -5,13 +5,19 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 ## Features
 
 - **Multi-format Support**: View NetCDF (.nc, .netcdf), Zarr (.zarr), and HDF5 (.h5, .hdf5) files
+- **Custom Editors**: Direct file opening with dedicated NetCDF and HDF5 editors
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
 - **Enhanced Variable Information**: View variable dimension names, data types, shapes, and memory usage
-- **Data Visualization**: Create plots and visualizations directly in VSCode
-- **Python Integration**: Uses your existing Python environment with xarray, netCDF4, and other scientific libraries
+- **Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, disabled by default)**
+- **Advanced Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
-- **Real-time Updates**: Automatically refresh when files change
+- **Command Palette Integration**: Multiple commands for data viewer operations
+- **Real-time Configuration**: Immediate application of setting changes without restart
+- **Status Bar Integration**: Shows current Python interpreter status
+- **Comprehensive Logging**: Detailed logging system for debugging and monitoring
 - **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
+- **Error Handling**: Robust error handling with user-friendly messages
+- **Experimental Features**: Configurable experimental features with clear warnings
 
 ## Prerequisites
 
@@ -77,16 +83,20 @@ Before using this extension, you need:
 
 ### Opening Data Files
 
-1. **From File Explorer**:
+1. **Direct File Opening**:
+   - Double-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
+   - Files open directly in the Scientific Data Viewer
+
+2. **From File Explorer**:
    - Right-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
    - Select "Open in Scientific Data Viewer"
 
-2. **From Command Palette**:
+3. **From Command Palette**:
    - Press `Ctrl+Shift+P`
    - Type "Open Scientific Data Viewer"
    - Select a file from the file picker
 
-3. **Auto-detection**:
+4. **Auto-detection**:
    - Open any supported file in VSCode
    - The extension will detect it and offer to open it in the data viewer
 
@@ -129,14 +139,25 @@ The extension can be configured through VSCode settings:
 - `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
 - `scientificDataViewer.defaultView`: Default view mode (default)
 - `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
+- `scientificDataViewer.plottingCapabilities`: Enable plotting capabilities (Experimental)
+
+### Available Commands
+
+Access these commands via the Command Palette (`Ctrl+Shift+P`):
+
+- **Open Scientific Data Viewer**: Open a file in the data viewer
+- **Refresh Python Environment**: Manually refresh the Python environment
+- **Show Extension Logs**: View detailed extension logs
+- **Show Settings**: Open Scientific Data Viewer settings
 
 ### Feature Flags
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
 - **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
+- **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
 - **Settings UI**: Each setting appears as a checkbox in VSCode Settings
-- **Command**: Use "Scientific Data Viewer: Show Feature Flags" to view all available flags
+- **Real-time Updates**: Configuration changes take effect immediately
 
 For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLAGS.md).
 
@@ -146,12 +167,11 @@ For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLA
 
 ```
 src/
-├── extension.ts          # Main extension entry point
-├── dataProvider.ts       # Tree data provider for file explorer
+├── extension.ts          # Main extension entry point and command registration
 ├── dataProcessor.ts      # Python integration and data processing
 ├── dataViewerPanel.ts    # Webview panel for data visualization
-├── pythonManager.ts      # Python environment management
-└── logger.ts             # Logging utilities
+├── pythonManager.ts      # Advanced Python environment management
+└── logger.ts             # Comprehensive logging utilities
 ```
 
 ### Python Scripts
@@ -162,6 +182,10 @@ The extension uses several Python scripts for data processing:
 - **`get_data_slice.py`**: Retrieves specific data slices from variables
 - **`create_plot.py`**: Generates visualizations using matplotlib
 - **`get_html_representation.py`**: Creates HTML representation of xarray datasets
+- **`get_text_representation.py`**: Creates text representation of datasets
+- **`get_show_versions.py`**: Shows Python package versions for debugging
+- **`create_sample_data.py`**: Generates sample data files for testing
+- **`test_data_structure.py`**: Tests data structure and format detection
 
 ### Building
 
@@ -358,16 +382,21 @@ scientific-data-viewer/
 
 ## Changelog
 
-### 0.1.1
+### 0.1.0 (Current)
+- **Custom Editors**: Direct file opening with dedicated NetCDF and HDF5 editors
+- **Advanced Python Integration**: Automatic Python environment detection and management
+- **Command Palette Integration**: Multiple commands for data viewer operations
+- **Real-time Configuration**: Immediate application of setting changes without restart
+- **Status Bar Integration**: Shows current Python interpreter status
+- **Comprehensive Logging**: Detailed logging system for debugging and monitoring
+- **Error Handling**: Robust error handling with user-friendly messages
+- **Experimental Features**: Configurable experimental features with clear warnings
 - **Enhanced Variable Information**: Added dimension names and memory usage display for each variable
 - **Improved File Size Display**: Added human-readable file size formatting (B, kB, MB, GB, TB)
 - **Better Data Structure**: Updated data processing to include dimension names and byte sizes
-- **Updated Documentation**: Comprehensive project structure and feature documentation
-
-### 0.1.0
-- Initial release
-- Support for NetCDF, Zarr, and HDF5 files
-- Interactive data exploration
-- Basic visualization capabilities
-- Python environment integration
-- Comprehensive documentation and testing setup
+- **Multi-format Support**: Support for NetCDF, Zarr, and HDF5 files
+- **Interactive Data Exploration**: Browse file structure, dimensions, variables, and attributes
+- **Data Visualization**: Create plots and visualizations directly in VSCode (experimental)
+- **Python Environment Integration**: Uses existing Python environment with xarray, netCDF4, and other scientific libraries
+- **File Tree Integration**: Right-click on supported files in the explorer to open them
+- **Comprehensive Documentation**: Complete documentation and testing setup

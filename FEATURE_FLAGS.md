@@ -23,30 +23,50 @@ Controls whether the extension allows opening multiple tabs for the same file.
 - **When `false` (default)**: The extension will focus on an existing tab if the file is already open, preventing duplicate tabs for the same file.
 - **When `true`**: Each "Open in Data Viewer" action will create a new tab, even if the file is already open in another tab.
 
+### `plottingCapabilities` (Experimental)
+
+**Type**: `boolean`  
+**Default**: `false`  
+**Experimental**: ⚠️ Yes
+
+Controls whether the extension shows plotting capabilities in the data viewer.
+
+- **When `false` (default)**: Plotting features are hidden from the interface.
+- **When `true`**: Shows the 'Create Plot' button and 'Visualization' pane in the data viewer.
+
 #### Usage Examples
 
-**Default behavior (single tab per file):**
+**Default behavior (single tab per file, no plotting):**
 ```json
 {
-  "scientificDataViewer.allowMultipleTabsForSameFile": false
+  "scientificDataViewer.allowMultipleTabsForSameFile": false,
+  "scientificDataViewer.plottingCapabilities": false
 }
 ```
 
-**Allow multiple tabs:**
+**Allow multiple tabs and enable plotting:**
 ```json
 {
-  "scientificDataViewer.allowMultipleTabsForSameFile": true
+  "scientificDataViewer.allowMultipleTabsForSameFile": true,
+  "scientificDataViewer.plottingCapabilities": true
 }
 ```
 
-#### ⚠️ Experimental Feature Warning
+#### ⚠️ Experimental Feature Warnings
 
-This feature is marked as experimental because:
+These features are marked as experimental because:
 
+**`allowMultipleTabsForSameFile`:**
 - **Memory Usage**: Opening multiple tabs for the same file can increase memory consumption
 - **Performance**: Multiple panels processing the same data simultaneously may impact performance
 - **User Experience**: Having multiple tabs for the same file might be confusing
 - **Resource Management**: The extension may not handle cleanup of multiple panels optimally
+
+**`plottingCapabilities`:**
+- **Performance**: Plot generation may be slow for large datasets
+- **Memory Usage**: Plotting large datasets may consume significant memory
+- **Stability**: Plot generation may fail for certain data types or sizes
+- **Dependencies**: Requires matplotlib and additional Python packages
 
 ## Configuration
 

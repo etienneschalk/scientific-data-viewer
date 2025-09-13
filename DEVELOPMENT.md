@@ -55,27 +55,32 @@ npm run watch
 
 ```
 src/
-├── extension.ts          # Main entry point, command registration
-├── dataProvider.ts       # Tree view provider for file explorer
+├── extension.ts          # Main entry point, command registration, custom editors
 ├── dataProcessor.ts      # Python integration, data processing
 ├── dataViewerPanel.ts    # Webview panel for data visualization
-└── pythonManager.ts      # Python environment management
+├── pythonManager.ts      # Advanced Python environment management
+└── logger.ts             # Comprehensive logging utilities
 ```
 
 ### Data Flow
 
-1. **File Detection**: User opens/clicks on supported file
-2. **Python Integration**: Extension connects to Python environment
+1. **File Detection**: User opens/clicks on supported file or uses custom editors
+2. **Python Integration**: Extension connects to Python environment via Python extension API
 3. **Data Processing**: Python scripts process the file using xarray
-4. **Visualization**: Webview displays processed data and plots
+4. **Visualization**: Webview displays processed data and plots **(experimental)**
+5. **Configuration**: Real-time configuration updates and error handling
+6. **Logging**: Comprehensive logging throughout the process
 
 ### Key Technologies
 
-- **VSCode Extension API**: Core extension functionality
+- **VSCode Extension API**: Core extension functionality, custom editors, webview
 - **TypeScript**: Main development language
 - **xarray**: Scientific data processing
 - **Python subprocess**: Communication with Python environment
 - **Webview API**: Data visualization interface
+- **Python Extension API**: Integration with VSCode Python extension
+- **Configuration API**: Real-time settings management
+- **Logging API**: Comprehensive logging and debugging
 
 ## Development Workflow
 

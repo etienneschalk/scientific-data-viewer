@@ -76,6 +76,10 @@
           "when": "true"
         },
         {
+          "command": "scientificDataViewer.showLogs",
+          "when": "true"
+        },
+        {
           "command": "scientificDataViewer.showSettings",
           "when": "true"
         }
@@ -165,7 +169,7 @@
           "type": "boolean",
           "default": false,
           "experimental": true,
-          "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.", 
+          "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.",
           "description": "Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer."
         }
       }
