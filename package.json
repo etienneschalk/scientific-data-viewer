@@ -7,6 +7,9 @@
   "engines": {
     "vscode": "^1.74.0"
   },
+  "extensionDependencies": [
+    "ms-python.python"
+  ],
   "categories": [
     "Data Science",
     "Visualization",
@@ -117,7 +120,7 @@
         },
         "scientificDataViewer.maxFileSize": {
           "type": "number",
-          "default": 100,
+          "default": 500,
           "description": "Maximum file size in MB to load automatically"
         },
         "scientificDataViewer.defaultView": {

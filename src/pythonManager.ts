@@ -19,6 +19,8 @@ export class PythonManager {
         if (newPythonPath && newPythonPath !== this.pythonPath) {
             Logger.info(`Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
             this.pythonPath = newPythonPath;
+            // Reset initialization state when interpreter changes
+            this.isInitialized = false;
         }
 
         if (this.pythonPath) {
@@ -32,7 +34,7 @@ export class PythonManager {
         try {
             const pythonExtension = vscode.extensions.getExtension('ms-python.python');
             if (!pythonExtension) {
-                Logger.debug('Python extension not found');
+                Logger.error('Python extension not found');
                 return undefined;
             }
 
@@ -49,16 +51,45 @@ export class PythonManager {
             }
             else {
                 Logger.debug('✅ Python extension API is available after activation');
+                Logger.debug(`Python API structure: ${JSON.stringify(Object.keys(pythonApi))}`);
+                if (pythonApi.environments) {
+                    Logger.debug(`Environments API methods: ${JSON.stringify(Object.keys(pythonApi.environments))}`);
+                }
             }
             
             // Try the new environments API first
-            if (pythonApi.environments && typeof pythonApi.environments.getActiveInterpreter === 'function') {
+            if (pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
-                    const activeInterpreter = await pythonApi.environments.getActiveInterpreter();
-                    Logger.debug(`Python extension API active interpreter: ${JSON.stringify(activeInterpreter)}`);
-                    return activeInterpreter?.path;
+                    const activeEnvironment = await pythonApi.environments.getActiveEnvironmentPath();
+                    Logger.debug(`Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
+                    return activeEnvironment?.path;
                 } catch (envError) {
                     Logger.debug(`Environments API error: ${envError}`);
+                }
+            }
+            
+            // Try alternative environments API methods
+            if (pythonApi.environments) {
+                // Try getActiveInterpreter if available
+                if (typeof pythonApi.environments.getActiveInterpreter === 'function') {
+                    try {
+                        const activeInterpreter = await pythonApi.environments.getActiveInterpreter();
+                        Logger.debug(`Python extension API active interpreter (alt): ${JSON.stringify(activeInterpreter)}`);
+                        return activeInterpreter?.path;
+                    } catch (altError) {
+                        Logger.debug(`Alternative environments API error: ${altError}`);
+                    }
+                }
+                
+                // Try getActiveEnvironment if available
+                if (typeof pythonApi.environments.getActiveEnvironment === 'function') {
+                    try {
+                        const activeEnv = await pythonApi.environments.getActiveEnvironment();
+                        Logger.debug(`Python extension API active environment (alt): ${JSON.stringify(activeEnv)}`);
+                        return activeEnv?.path;
+                    } catch (altError) {
+                        Logger.debug(`Alternative environments API error: ${altError}`);
+                    }
                 }
             }
             
@@ -99,6 +130,8 @@ export class PythonManager {
         const extensionPath = await this.getPythonInterpreterFromExtension();
         if (extensionPath) {
             this.pythonPath = extensionPath;
+            // Validate the found interpreter
+            await this.validatePythonEnvironment();
             return;
         }
 
@@ -118,6 +151,8 @@ export class PythonManager {
                 const version = await this.getPythonVersion(pythonPath);
                 if (version) {
                     this.pythonPath = pythonPath;
+                    // Validate the found interpreter
+                    await this.validatePythonEnvironment();
                     return;
                 }
             } catch (error) {
@@ -236,8 +271,7 @@ export class PythonManager {
 
             if (missingPackages.length > 0) {
                 const action = await vscode.window.showWarningMessage(
-                    `AAA
-                    You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
+                    `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
                     'Install',
                     'Cancel'
                 );
@@ -245,6 +279,7 @@ export class PythonManager {
                 if (action === 'Install') {
                     try {
                         await this.installPackages(missingPackages);
+                        // isInitialized is set in installPackages method after successful installation
                     } catch (error) {
                         Logger.error(`Package installation failed: ${error}`);
                         // Show detailed error information
@@ -252,6 +287,11 @@ export class PythonManager {
                         vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
                         throw error; // Re-throw to be caught by the outer try-catch
                     }
+                } else {
+                    // User cancelled installation, but we still have a valid Python interpreter
+                    // Set as initialized so the extension can work with what's available
+                    this.isInitialized = true;
+                    Logger.info(`Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
                 }
             } else {
                 this.isInitialized = true;
@@ -446,6 +486,38 @@ export class PythonManager {
             return await pythonExtension.activate();
         } catch (error) {
             Logger.debug(`Failed to activate Python extension: ${error}`);
+            return undefined;
+        }
+    }
+
+    /**
+     * Set up immediate event listener for Python interpreter changes
+     * Returns a disposable that should be disposed when the extension is deactivated
+     */
+    async setupInterpreterChangeListener(onInterpreterChange: () => Promise<void>): Promise<vscode.Disposable | undefined> {
+        try {
+            const pythonApi = await this.getPythonExtensionApi();
+            if (!pythonApi || !pythonApi.environments) {
+                Logger.debug('Python extension API or environments API not available for event listener');
+                return undefined;
+            }
+
+            // Check if the onDidChangeActiveEnvironmentPath method exists
+            if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
+                Logger.info('Setting up immediate Python interpreter change listener');
+                
+                const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
+                    Logger.info(`Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
+                    await onInterpreterChange();
+                });
+
+                return disposable;
+            } else {
+                Logger.debug('onDidChangeActiveEnvironmentPath method not available in Python extension API');
+                return undefined;
+            }
+        } catch (error) {
+            Logger.warn(`Failed to set up Python interpreter change listener: ${error}`);
             return undefined;
         }
     }

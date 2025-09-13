@@ -199,21 +199,40 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    // Add a periodic check for Python interpreter changes using Python extension API
+    // Set up immediate Python interpreter change detection
+    let immediateInterpreterListener: vscode.Disposable | undefined;
+    pythonManager.setupInterpreterChangeListener(handlePythonInterpreterChange).then((listener) => {
+        immediateInterpreterListener = listener;
+        if (immediateInterpreterListener) {
+            Logger.info('Immediate Python interpreter change detection enabled');
+            // Add to subscriptions after it's created
+            context.subscriptions.push(immediateInterpreterListener);
+        } else {
+            Logger.warn('Immediate Python interpreter change detection not available, falling back to polling');
+        }
+    }).catch((error) => {
+        Logger.error(`Failed to set up immediate Python interpreter change detection: ${error}`);
+    });
+
+    // Add a periodic check for Python interpreter changes as fallback
+    // This will only be used if immediate detection is not available
     let lastPythonPath: string | undefined = pythonManager.getPythonPath();
     const pythonCheckInterval = setInterval(async () => {
-        try {
-            const currentPythonPath = await pythonManager.getCurrentInterpreterPath();
-            
-            if (currentPythonPath && currentPythonPath !== lastPythonPath) {
-                Logger.info('Periodic check detected Python interpreter change via extension API');
-                lastPythonPath = currentPythonPath;
-                await handlePythonInterpreterChange();
+        // Only use polling if immediate detection is not available
+        if (!immediateInterpreterListener) {
+            try {
+                const currentPythonPath = await pythonManager.getCurrentInterpreterPath();
+                
+                if (currentPythonPath && currentPythonPath !== lastPythonPath) {
+                    Logger.info('Periodic check detected Python interpreter change via extension API');
+                    lastPythonPath = currentPythonPath;
+                    await handlePythonInterpreterChange();
+                }
+            } catch (error) {
+                Logger.error(`Error in periodic Python interpreter check: ${error}`);
             }
-        } catch (error) {
-            Logger.error(`Error in periodic Python interpreter check: ${error}`);
         }
-    }, 30000); // Check every 30 seconds
+    }, 60000); // (milliseconds) Increased interval since we have immediate detection
 
     context.subscriptions.push(
         openViewerCommand,
