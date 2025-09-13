@@ -4,7 +4,7 @@ import { DataProcessor, DataInfo } from './dataProcessor';
 import { Logger } from './logger';
 
 export class DataViewerPanel {
-    public static currentPanel: DataViewerPanel | undefined;
+    public static activePanels: Set<DataViewerPanel> = new Set();
     public static readonly viewType = 'scientificDataViewer';
 
     private readonly _panel: vscode.WebviewPanel;
@@ -18,14 +18,7 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // If we already have a panel, show it
-        if (DataViewerPanel.currentPanel) {
-            DataViewerPanel.currentPanel._panel.reveal(column);
-            DataViewerPanel.currentPanel._update(fileUri, dataProcessor);
-            return;
-        }
-
-        // Otherwise, create a new panel
+        // Always create a new panel for each file to support multiple tabs
         const panel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
             `Data Viewer: ${path.basename(fileUri.fsPath)}`,
@@ -39,17 +32,19 @@ export class DataViewerPanel {
             }
         );
 
-        DataViewerPanel.currentPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
+        const dataViewerPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
+        DataViewerPanel.activePanels.add(dataViewerPanel);
     }
 
     public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
-        DataViewerPanel.currentPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
+        const dataViewerPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
+        DataViewerPanel.activePanels.add(dataViewerPanel);
     }
 
     public static async refreshCurrentPanel(dataProcessor: DataProcessor) {
-        if (DataViewerPanel.currentPanel) {
-            Logger.info('Refreshing current panel due to Python environment change...');
-            await DataViewerPanel.currentPanel._handleGetDataInfo();
+        Logger.info(`Refreshing ${DataViewerPanel.activePanels.size} active panels due to Python environment change...`);
+        for (const panel of DataViewerPanel.activePanels) {
+            await panel._handleGetDataInfo();
         }
     }
 
@@ -228,7 +223,8 @@ export class DataViewerPanel {
     }
 
     public dispose() {
-        DataViewerPanel.currentPanel = undefined;
+        // Remove this panel from the active panels set
+        DataViewerPanel.activePanels.delete(this);
 
         // Clean up our resources
         this._panel.dispose();
