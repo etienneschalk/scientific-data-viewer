@@ -81,6 +81,9 @@ export class DataViewerPanel {
                     case 'getVariableList':
                         await this._handleGetVariableList();
                         break;
+                    case 'getHtmlRepresentation':
+                        await this._handleGetHtmlRepresentation();
+                        break;
                 }
             },
             null,
@@ -91,6 +94,9 @@ export class DataViewerPanel {
     public async _update(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._currentFile = fileUri;
         this.dataProcessor = dataProcessor;
+        
+        // Update the panel title to reflect the new file
+        this._panel.title = `Data Viewer: ${path.basename(fileUri.fsPath)}`;
         
         this._panel.webview.html = this._getHtmlForWebview();
         
@@ -148,7 +154,8 @@ export class DataViewerPanel {
 
             this._panel.webview.postMessage({
                 command: 'dataInfo',
-                data: this._dataInfo
+                data: this._dataInfo,
+                filePath: this._currentFile.fsPath
             });
         } catch (error) {
             Logger.error(`Error in _handleGetDataInfo: ${error}`);
@@ -201,6 +208,21 @@ export class DataViewerPanel {
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to load variable list: ${error}`
+            });
+        }
+    }
+
+    private async _handleGetHtmlRepresentation() {
+        try {
+            const htmlRepresentation = await this.dataProcessor.getHtmlRepresentation(this._currentFile);
+            this._panel.webview.postMessage({
+                command: 'htmlRepresentation',
+                data: htmlRepresentation
+            });
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to load HTML representation: ${error}`
             });
         }
     }
@@ -402,6 +424,85 @@ export class DataViewerPanel {
         .hidden {
             display: none;
         }
+        
+        .html-representation {
+            max-height: 500px;
+            overflow: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 10px;
+            background-color: var(--vscode-editor-background);
+            /* font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace); */
+            font-size: 12px;
+        }
+        
+        .html-representation table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+        }
+        
+        .html-representation th, .html-representation td {
+            border: 1px solid var(--vscode-panel-border);
+            padding: 4px 8px;
+            text-align: left;
+            font-size: 11px;
+        }
+        
+        .html-representation th {
+            background-color: var(--vscode-list-hoverBackground);
+            font-weight: bold;
+        }
+        
+        .html-representation .xr-var-data {
+            /* font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace); */
+        }
+        
+        .file-path-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        
+        .file-path-code {
+            background-color: var(--vscode-textCodeBlock-background);
+            color: var(--vscode-textPreformat-foreground);
+            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+            padding: 4px 8px;
+            border-radius: 3px;
+            border: 1px solid var(--vscode-panel-border);
+            flex: 1;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        
+        .copy-button {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 60px;
+        }
+        
+        .copy-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .copy-button:active {
+            background-color: var(--vscode-button-secondaryBackground);
+        }
+        
+        .copy-button.copied {
+            background-color: var(--vscode-charts-green);
+            color: var(--vscode-foreground);
+        }
     </style>
 </head>
 <body>
@@ -427,9 +528,21 @@ export class DataViewerPanel {
     <div id="content" class="hidden">
         <div class="info-section">
             <h3>File Information</h3>
+            <div id="filePathContainer" class="file-path-container hidden">
+            <p><strong>File Path:</strong></p>
+            <code id="filePathCode" class="file-path-code"></code>
+            <button id="copyPathButton" class="copy-button">
+            📋 Copy
+            </button>
+            </div>
             <div id="fileInfo"></div>
         </div>
         
+        <div class="info-section">
+            <h3>Xarray HTML Representation</h3>
+            <div id="htmlRepresentation" class="html-representation"></div>
+        </div>
+
         <div class="info-section">
             <h3>Dimensions</h3>
             <div id="dimensions" class="dimensions"></div>
@@ -472,6 +585,30 @@ export class DataViewerPanel {
             vscode.postMessage({ command: 'getDataInfo' });
         });
 
+        document.getElementById('copyPathButton').addEventListener('click', async () => {
+            const filePathCode = document.getElementById('filePathCode');
+            const copyButton = document.getElementById('copyPathButton');
+            const filePath = filePathCode.textContent;
+            
+            if (filePath) {
+                try {
+                    await navigator.clipboard.writeText(filePath);
+                    copyButton.textContent = '✓ Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy file path:', err);
+                    copyButton.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
+        });
+
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
@@ -479,7 +616,7 @@ export class DataViewerPanel {
             switch (message.command) {
                 case 'dataInfo':
                     currentData = message.data;
-                    displayDataInfo(message.data);
+                    displayDataInfo(message.data, message.filePath);
                     break;
                 case 'variableList':
                     populateVariableSelect(message.data);
@@ -487,13 +624,16 @@ export class DataViewerPanel {
                 case 'plotData':
                     displayPlot(message.data);
                     break;
+                case 'htmlRepresentation':
+                    displayHtmlRepresentation(message.data);
+                    break;
                 case 'error':
                     showError(message.message, message.details);
                     break;
             }
         });
 
-        function displayDataInfo(data) {
+        function displayDataInfo(data, filePath) {
             if (!data) {
                 showError('No data available');
                 return;
@@ -503,13 +643,25 @@ export class DataViewerPanel {
                 showError(data.error);
                 return;
             }
-
+            
+            // Display file path in code format with copy button
+            const filePathContainer = document.getElementById('filePathContainer');
+            const filePathCode = document.getElementById('filePathCode');
+            if (filePath) {
+                filePathCode.textContent = filePath;
+                filePathContainer.classList.remove('hidden');
+            } else {
+                filePathContainer.classList.add('hidden');
+            }
+                
             // Display file information
             const fileInfo = document.getElementById('fileInfo');
             fileInfo.innerHTML = \`
                 <p><strong>Format:</strong> \${data.format || 'Unknown'}</p>
-                \${data.fileSize ? \`<p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\` : ''}
+                \${data.fileSize ? \`
+                    <p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\` : ''}
             \`;
+
 
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
@@ -549,6 +701,9 @@ export class DataViewerPanel {
 
             // Request variable list for dropdown
             vscode.postMessage({ command: 'getVariableList' });
+            
+            // Request HTML representation
+            vscode.postMessage({ command: 'getHtmlRepresentation' });
 
             // Show content
             document.getElementById('loading').classList.add('hidden');
@@ -572,6 +727,15 @@ export class DataViewerPanel {
                 container.innerHTML = \`<img src="data:image/png;base64,\${plotData}" alt="Plot">\`;
             } else {
                 container.innerHTML = '<p>Failed to generate plot</p>';
+            }
+        }
+
+        function displayHtmlRepresentation(htmlData) {
+            const container = document.getElementById('htmlRepresentation');
+            if (htmlData) {
+                container.innerHTML = htmlData;
+            } else {
+                container.innerHTML = '<p>Failed to load HTML representation</p>';
             }
         }
 

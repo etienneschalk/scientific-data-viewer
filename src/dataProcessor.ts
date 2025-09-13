@@ -114,4 +114,25 @@ export class DataProcessor {
             return null;
         }
     }
+
+    async getHtmlRepresentation(uri: vscode.Uri): Promise<string | null> {
+        if (!this.pythonManager.isReady()) {
+            throw new Error('Python environment not ready');
+        }
+
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(__dirname, '..', 'python', 'get_html_representation.py');
+        const args = [filePath];
+
+        try {
+            const result = await this.pythonManager.executePythonFile(scriptPath, args);
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            return result.html || null;
+        } catch (error) {
+            Logger.error(`Error getting HTML representation: ${error}`);
+            return null;
+        }
+    }
 }
