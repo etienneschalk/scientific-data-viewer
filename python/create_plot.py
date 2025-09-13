@@ -82,7 +82,7 @@ def detect_plotting_strategy(var):
     return "default"
 
 
-def create_plot(file_path, variable_name, plot_type="line"):
+def create_plot(file_path, variable_name, plot_type="line", plot_config=None):
     try:
         # Open dataset
         ext = os.path.splitext(file_path)[1].lower()
@@ -105,41 +105,78 @@ def create_plot(file_path, variable_name, plot_type="line"):
             logger.error(f"Variable '{variable_name}' not found in dataset")
             return None
 
-        # Detect plotting strategy
-        strategy = detect_plotting_strategy(var)
-        logger.info(f"Using plotting strategy: {strategy}")
+        # Handle advanced plotting configuration
+        if plot_type == "advanced" and plot_config:
+            logger.info("Creating advanced plot with custom configuration")
+            var = apply_advanced_plot_config(var, plot_config)
 
-        # Create plot using xarray's native plotting methods
-        if strategy == "2d_spatial":
-            # 2D spatial data - plot directly with appropriate colormap
-            logger.info("Creating 2D spatial plot")
-            var.plot(figsize=(12, 8), cmap="viridis")
+            # Create plot with custom col/row configuration
+            col_dims = plot_config.get("col", [])
+            row_dims = plot_config.get("row", [])
 
-        elif strategy == "3d_col":
-            # 3D data with spatial dimensions - use col parameter
-            logger.info("Creating 3D plot with col parameter")
-            first_dim = var.dims[0]
-            var.plot(col=first_dim, figsize=(15, 10), cmap="viridis")
+            # Filter out spatial dimensions from col/row (they're handled automatically)
+            spatial_dims = [dim for dim in var.dims if is_spatial_dimension(dim)]
+            col_dims = [dim for dim in col_dims if dim not in spatial_dims]
+            row_dims = [dim for dim in row_dims if dim not in spatial_dims]
 
-        elif strategy == "4d_col_row":
-            # 4D data with spatial dimensions - use col and row parameters
-            logger.info("Creating 4D plot with col and row parameters")
-            first_dim = var.dims[0]
-            second_dim = var.dims[1]
-            var.plot(col=second_dim, row=first_dim, figsize=(20, 15), cmap="viridis")
-
-        else:
-            # Default plotting behavior - let xarray decide the best method
-            logger.info("Creating default plot using xarray's native plotting")
-
-            if plot_type == "histogram":
-                var.plot.hist(figsize=(10, 6))
+            if col_dims and row_dims:
+                # Both col and row specified
+                logger.info(
+                    f"Creating plot with col={col_dims[0]} and row={row_dims[0]}"
+                )
+                var.plot(
+                    col=col_dims[0], row=row_dims[0], figsize=(20, 15), cmap="viridis"
+                )
+            elif col_dims:
+                # Only col specified
+                logger.info(f"Creating plot with col={col_dims[0]}")
+                var.plot(col=col_dims[0], figsize=(15, 10), cmap="viridis")
+            elif row_dims:
+                # Only row specified
+                logger.info(f"Creating plot with row={row_dims[0]}")
+                var.plot(row=row_dims[0], figsize=(15, 10), cmap="viridis")
             else:
-                # Let xarray automatically choose the best plotting method
-                var.plot(figsize=(12, 8))
+                # No col/row specified, use default plotting
+                logger.info("Creating default advanced plot")
+                var.plot(figsize=(12, 8), cmap="viridis")
+        else:
+            # Detect plotting strategy for automatic plotting
+            strategy = detect_plotting_strategy(var)
+            logger.info(f"Using plotting strategy: {strategy}")
+
+            # Create plot using xarray's native plotting methods
+            if strategy == "2d_spatial":
+                # 2D spatial data - plot directly with appropriate colormap
+                logger.info("Creating 2D spatial plot")
+                var.plot(figsize=(12, 8), cmap="viridis")
+
+            elif strategy == "3d_col":
+                # 3D data with spatial dimensions - use col parameter
+                logger.info("Creating 3D plot with col parameter")
+                first_dim = var.dims[0]
+                var.plot(col=first_dim, figsize=(15, 10), cmap="viridis")
+
+            elif strategy == "4d_col_row":
+                # 4D data with spatial dimensions - use col and row parameters
+                logger.info("Creating 4D plot with col and row parameters")
+                first_dim = var.dims[0]
+                second_dim = var.dims[1]
+                var.plot(
+                    col=second_dim, row=first_dim, figsize=(20, 15), cmap="viridis"
+                )
+
+            else:
+                # Default plotting behavior - let xarray decide the best method
+                logger.info("Creating default plot using xarray's native plotting")
+
+                if plot_type == "histogram":
+                    var.plot.hist(figsize=(10, 6))
+                else:
+                    # Let xarray automatically choose the best plotting method
+                    var.plot(figsize=(12, 8))
 
         # Apply tight layout
-        # plt.tight_layout()
+        plt.tight_layout()
 
         # Convert to base64 string
         buffer = BytesIO()
@@ -157,6 +194,30 @@ def create_plot(file_path, variable_name, plot_type="line"):
         return None
 
 
+def apply_advanced_plot_config(var, plot_config):
+    """Apply advanced plotting configuration including subsetting."""
+    subset = plot_config.get("subset", {})
+
+    if not subset:
+        logger.info("No subsetting specified, using full data")
+        return var
+
+    # Apply subsetting to each dimension
+    subset_slices = {}
+    for dim_name, dim_config in subset.items():
+        if dim_name in var.dims:
+            start = dim_config.get("start", 0)
+            end = dim_config.get("end", var.sizes[dim_name] - 1)
+            subset_slices[dim_name] = slice(start, end + 1)
+            logger.info(f"Subsetting {dim_name} from {start} to {end}")
+
+    if subset_slices:
+        var = var.isel(subset_slices)
+        logger.info(f"Applied subsetting, new shape: {var.shape}")
+
+    return var
+
+
 def main():
     if len(sys.argv) < 3:
         print(
@@ -171,6 +232,16 @@ def main():
     file_path = sys.argv[1]
     variable_name = sys.argv[2]
     plot_type = sys.argv[3] if len(sys.argv) > 3 else "line"
+    plot_config = None
+
+    # Parse plot configuration if provided
+    if len(sys.argv) > 4:
+        try:
+            plot_config = json.loads(sys.argv[4])
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON for plot configuration")
+            print(json.dumps({"error": "Invalid plot configuration JSON"}))
+            sys.exit(1)
 
     # Redirect logging to stderr so it doesn't interfere with the base64 output
 
@@ -180,7 +251,7 @@ def main():
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
-    result = create_plot(file_path, variable_name, plot_type)
+    result = create_plot(file_path, variable_name, plot_type, plot_config)
     if result:
         print(result)
     else:

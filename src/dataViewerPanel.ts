@@ -83,6 +83,9 @@ export class DataViewerPanel {
                     case 'createPlot':
                         await this._handleCreatePlot(message.variable, message.plotType);
                         break;
+                    case 'createAdvancedPlot':
+                        await this._handleCreateAdvancedPlot(message.variable, message.plotConfig);
+                        break;
                     case 'getVariableList':
                         await this._handleGetVariableList();
                         break;
@@ -216,6 +219,39 @@ export class DataViewerPanel {
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to create plot: ${error}`
+            });
+        }
+    }
+
+    private async _handleCreateAdvancedPlot(variable: string, plotConfig: any) {
+        try {
+            // Show notification that advanced plotting has started
+            vscode.window.showInformationMessage(
+                `Creating advanced plot for variable '${variable}'... Check the output panel for progress.`,
+                'Show Logs'
+            ).then(selection => {
+                if (selection === 'Show Logs') {
+                    Logger.show();
+                }
+            });
+            
+            const plotData = await this.dataProcessor.createAdvancedPlot(this._currentFile, variable, plotConfig);
+            if (plotData) {
+                this._panel.webview.postMessage({
+                    command: 'advancedPlotData',
+                    data: plotData
+                });
+            } else {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Failed to create advanced plot',
+                    details: 'Check the output panel for more details'
+                });
+            }
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to create advanced plot: ${error}`
             });
         }
     }
@@ -527,6 +563,133 @@ export class DataViewerPanel {
             background-color: var(--vscode-charts-green);
             color: var(--vscode-foreground);
         }
+        
+        .plot-config {
+            display: block;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        
+        .plot-config h4 {
+            margin-top: 0;
+            color: var(--vscode-foreground);
+        }
+        
+        .dimension-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .dimension-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .dimension-group label {
+            font-weight: bold;
+            color: var(--vscode-foreground);
+        }
+        
+        .dimension-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .dimension-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 4px;
+        }
+        
+        .dimension-item input[type="checkbox"] {
+            margin: 0;
+        }
+        
+        .dimension-item select {
+            flex: 1;
+            background-color: var(--vscode-dropdown-background);
+            color: var(--vscode-dropdown-foreground);
+            border: 1px solid var(--vscode-dropdown-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .subset-controls {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 4px;
+        }
+        
+        .subset-controls h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--vscode-foreground);
+        }
+        
+        .subset-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .subset-input input {
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 80px;
+        }
+        
+        .subset-input label {
+            min-width: 60px;
+            font-size: 12px;
+        }
+        
+        .plot-button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .plot-button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        
+        .plot-button:disabled {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            cursor: not-allowed;
+        }
+        
+        .secondary-button {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .secondary-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
     </style>
 </head>
 <body>
@@ -579,6 +742,44 @@ export class DataViewerPanel {
         </div>
         
         <div class="info-section">
+            <h3>Plot Configuration</h3>
+            <div id="plotConfig" class="plot-config">
+                <h4>Advanced Plotting Options</h4>
+                <p>Configure how to plot the selected variable by choosing which dimensions to use for columns and rows, and optionally subset the data.</p>
+                <p><strong>DEBUG:</strong> Plot configuration section is visible!</p>
+                
+                <div class="dimension-controls">
+                    <div class="dimension-group">
+                        <label>Column Dimensions (col)</label>
+                        <div id="colDimensions" class="dimension-selector">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="dimension-group">
+                        <label>Row Dimensions (row)</label>
+                        <div id="rowDimensions" class="dimension-selector">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="subsetControls" class="subset-controls" style="display: none;">
+                    <h5>Data Subsetting</h5>
+                    <p>Select specific indices or ranges for each dimension:</p>
+                    <div id="subsetInputs">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button id="advancedPlotButton" class="plot-button" disabled>Create Advanced Plot</button>
+                    <button id="resetPlotConfigButton" class="secondary-button">Reset to Auto</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
             <h3>Visualization</h3>
             <div id="plotContainer" class="plot-container"></div>
         </div>
@@ -593,6 +794,7 @@ export class DataViewerPanel {
         document.getElementById('variableSelect').addEventListener('change', (e) => {
             selectedVariable = e.target.value;
             document.getElementById('plotButton').disabled = !selectedVariable;
+            updatePlotConfiguration();
         });
 
         document.getElementById('plotButton').addEventListener('click', () => {
@@ -610,6 +812,22 @@ export class DataViewerPanel {
 
         document.getElementById('refreshButton').addEventListener('click', () => {
             vscode.postMessage({ command: 'getDataInfo' });
+        });
+
+        // Advanced plotting event listeners
+        document.getElementById('advancedPlotButton').addEventListener('click', () => {
+            if (selectedVariable) {
+                const plotConfig = getPlotConfiguration();
+                vscode.postMessage({
+                    command: 'createAdvancedPlot',
+                    variable: selectedVariable,
+                    plotConfig: plotConfig
+                });
+            }
+        });
+
+        document.getElementById('resetPlotConfigButton').addEventListener('click', () => {
+            resetPlotConfiguration();
         });
 
         document.getElementById('copyPathButton').addEventListener('click', async () => {
@@ -636,6 +854,167 @@ export class DataViewerPanel {
             }
         });
 
+        // Plot configuration functions
+        function isSpatialDimension(dimName) {
+            const spatialPatterns = ['x', 'y', 'lon', 'lat', 'longitude', 'latitude', 'east', 'west', 'north', 'south', 'easting', 'westing', 'northing', 'southing'];
+            return spatialPatterns.some(pattern => dimName.toLowerCase().includes(pattern));
+        }
+
+        function updatePlotConfiguration() {
+            console.log('updatePlotConfiguration called', {
+                selectedVariable,
+                hasCurrentData: !!currentData,
+                hasVariables: !!(currentData && currentData.variables),
+                variablesCount: currentData?.variables?.length || 0
+            });
+            
+            if (!selectedVariable || !currentData || !currentData.variables) {
+                console.log('Hiding plot config: missing data');
+                document.getElementById('plotConfig').style.display = 'none';
+                return;
+            }
+
+            const variable = currentData.variables.find(v => v.name === selectedVariable);
+            console.log('Found variable:', variable);
+            
+            if (!variable) {
+                console.log('Hiding plot config: variable not found');
+                document.getElementById('plotConfig').style.display = 'none';
+                return;
+            }
+
+            // Show plot configuration for multi-dimensional variables
+            if (variable.dimensions && variable.dimensions.length >= 2) {
+                console.log('Showing plot config for variable with dimensions:', variable.dimensions);
+                document.getElementById('plotConfig').style.display = 'block';
+                populateDimensionSelectors(variable);
+                document.getElementById('advancedPlotButton').disabled = false;
+            } else {
+                console.log('Hiding plot config: not enough dimensions', variable.dimensions);
+                document.getElementById('plotConfig').style.display = 'none';
+                document.getElementById('advancedPlotButton').disabled = true;
+            }
+        }
+
+        function populateDimensionSelectors(variable) {
+            const colContainer = document.getElementById('colDimensions');
+            const rowContainer = document.getElementById('rowDimensions');
+            
+            // Clear existing content
+            colContainer.innerHTML = '';
+            rowContainer.innerHTML = '';
+
+            // Separate spatial and non-spatial dimensions
+            const spatialDims = variable.dimensions.filter(dim => isSpatialDimension(dim));
+            const nonSpatialDims = variable.dimensions.filter(dim => !isSpatialDimension(dim));
+
+            // Add spatial dimensions (these should be plotted directly)
+            spatialDims.forEach(dim => {
+                const item = document.createElement('div');
+                item.className = 'dimension-item';
+                item.innerHTML = '<input type="checkbox" id="col-' + dim + '" value="' + dim + '" checked disabled>' +
+                                '<label for="col-' + dim + '">' + dim + ' (spatial)</label>';
+                colContainer.appendChild(item);
+            });
+
+            // Add non-spatial dimensions for col selection
+            nonSpatialDims.forEach(dim => {
+                const item = document.createElement('div');
+                item.className = 'dimension-item';
+                item.innerHTML = '<input type="checkbox" id="col-' + dim + '" value="' + dim + '">' +
+                                '<label for="col-' + dim + '">' + dim + '</label>';
+                colContainer.appendChild(item);
+            });
+
+            // Add non-spatial dimensions for row selection
+            nonSpatialDims.forEach(dim => {
+                const item = document.createElement('div');
+                item.className = 'dimension-item';
+                item.innerHTML = '<input type="checkbox" id="row-' + dim + '" value="' + dim + '">' +
+                                '<label for="row-' + dim + '">' + dim + '</label>';
+                rowContainer.appendChild(item);
+            });
+
+            // Add event listeners for subset controls
+            addDimensionChangeListeners(variable);
+        }
+
+        function addDimensionChangeListeners(variable) {
+            const checkboxes = document.querySelectorAll('#colDimensions input[type="checkbox"], #rowDimensions input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    updateSubsetControls(variable);
+                });
+            });
+        }
+
+        function updateSubsetControls(variable) {
+            const subsetControls = document.getElementById('subsetControls');
+            const subsetInputs = document.getElementById('subsetInputs');
+            
+            // Get selected dimensions
+            const selectedColDims = Array.from(document.querySelectorAll('#colDimensions input[type="checkbox"]:checked')).map(cb => cb.value);
+            const selectedRowDims = Array.from(document.querySelectorAll('#rowDimensions input[type="checkbox"]:checked')).map(cb => cb.value);
+            const allSelectedDims = [...new Set([...selectedColDims, ...selectedRowDims])];
+            
+            // Filter out spatial dimensions (they don't need subsetting)
+            const nonSpatialSelectedDims = allSelectedDims.filter(dim => !isSpatialDimension(dim));
+            
+            if (nonSpatialSelectedDims.length > 0) {
+                subsetControls.style.display = 'block';
+                subsetInputs.innerHTML = '';
+                
+                nonSpatialSelectedDims.forEach(dim => {
+                    const dimInfo = currentData.dimensions[dim];
+                    if (dimInfo) {
+                        const subsetDiv = document.createElement('div');
+                        subsetDiv.className = 'subset-input';
+                        subsetDiv.innerHTML = '<label>' + dim + ':</label>' +
+                                            '<input type="number" id="start-' + dim + '" placeholder="Start" min="0" max="' + (dimInfo - 1) + '" value="0">' +
+                                            '<span>to</span>' +
+                                            '<input type="number" id="end-' + dim + '" placeholder="End" min="0" max="' + (dimInfo - 1) + '" value="' + (dimInfo - 1) + '">' +
+                                            '<span>(' + dimInfo + ' total)</span>';
+                        subsetInputs.appendChild(subsetDiv);
+                    }
+                });
+            } else {
+                subsetControls.style.display = 'none';
+            }
+        }
+
+        function getPlotConfiguration() {
+            const colDims = Array.from(document.querySelectorAll('#colDimensions input[type="checkbox"]:checked')).map(cb => cb.value);
+            const rowDims = Array.from(document.querySelectorAll('#rowDimensions input[type="checkbox"]:checked')).map(cb => cb.value);
+            
+            const subset = {};
+            const subsetInputs = document.querySelectorAll('#subsetInputs .subset-input');
+            subsetInputs.forEach(input => {
+                const dim = input.querySelector('label').textContent.replace(':', '');
+                const start = parseInt(input.querySelector('input[placeholder="Start"]').value) || 0;
+                const end = parseInt(input.querySelector('input[placeholder="End"]').value) || currentData.dimensions[dim] - 1;
+                subset[dim] = { start, end };
+            });
+
+            return {
+                col: colDims,
+                row: rowDims,
+                subset: subset
+            };
+        }
+
+        function resetPlotConfiguration() {
+            // Reset all checkboxes
+            document.querySelectorAll('#colDimensions input[type="checkbox"]').forEach(cb => {
+                cb.checked = isSpatialDimension(cb.value);
+            });
+            document.querySelectorAll('#rowDimensions input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            
+            // Hide subset controls
+            document.getElementById('subsetControls').style.display = 'none';
+        }
+
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
@@ -649,6 +1028,9 @@ export class DataViewerPanel {
                     populateVariableSelect(message.data);
                     break;
                 case 'plotData':
+                    displayPlot(message.data);
+                    break;
+                case 'advancedPlotData':
                     displayPlot(message.data);
                     break;
                 case 'htmlRepresentation':
@@ -683,18 +1065,15 @@ export class DataViewerPanel {
                 
             // Display file information
             const fileInfo = document.getElementById('fileInfo');
-            fileInfo.innerHTML = \`
-                <p><strong>Format:</strong> \${data.format || 'Unknown'}</p>
-                \${data.fileSize ? \`
-                    <p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\` : ''}
-            \`;
+            fileInfo.innerHTML = '<p><strong>Format:</strong> ' + (data.format || 'Unknown') + '</p>' +
+                                (data.fileSize ? '<p><strong>Size:</strong> ' + formatFileSize(data.fileSize) + '</p>' : '');
 
 
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
             if (data.dimensions) {
                 dimensionsContainer.innerHTML = Object.entries(data.dimensions)
-                    .map(([name, size]) => \`<div class="dimension-item">\${name}: \${size}</div>\`)
+                    .map(([name, size]) => '<div class="dimension-item">' + name + ': ' + size + '</div>')
                     .join('');
             } else {
                 dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
@@ -704,16 +1083,15 @@ export class DataViewerPanel {
             const variablesContainer = document.getElementById('variables');
             if (data.variables && data.variables.length > 0) {
                 variablesContainer.innerHTML = data.variables
-                    .map(variable => \`
-                        <div class="variable-item" data-variable="\${variable.name}">
-                            <strong>\${variable.name}</strong><br>
-                            <small>
-                                \${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
-                                \${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
-                                \${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
-                            </small>
-                        </div>
-                    \`)
+                    .map(variable => {
+                        const shapeStr = variable.shape ? '(' + variable.shape.join(', ') + ')' : '';
+                        const dimsStr = variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : '';
+                        const sizeStr = variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : '';
+                        return '<div class="variable-item" data-variable="' + variable.name + '">' +
+                               '<strong>' + variable.name + '</strong><br>' +
+                               '<small>' + variable.dtype + ' ' + shapeStr + '<br>' +
+                               dimsStr + '<br>' + sizeStr + '</small></div>';
+                    })
                     .join('');
                 
                 // Add click handlers for variable selection
@@ -739,6 +1117,9 @@ export class DataViewerPanel {
             // Show content
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.remove('hidden');
+            
+            // Update plot configuration for the currently selected variable
+            updatePlotConfiguration();
         }
 
         function populateVariableSelect(variables) {
@@ -755,7 +1136,7 @@ export class DataViewerPanel {
         function displayPlot(plotData) {
             const container = document.getElementById('plotContainer');
             if (plotData && plotData.startsWith('iVBOR')) {
-                container.innerHTML = \`<img src="data:image/png;base64,\${plotData}" alt="Plot">\`;
+                container.innerHTML = '<img src="data:image/png;base64,' + plotData + '" alt="Plot">';
             } else {
                 container.innerHTML = '<p>Failed to generate plot</p>';
             }
@@ -777,21 +1158,19 @@ export class DataViewerPanel {
             const formattedMessage = message.replace(/\\n/g, '<br>');
             const formattedDetails = details ? details.replace(/\\n/g, '<br>') : '';
             
-            errorDiv.innerHTML = \`
-                <h3>❌ Error</h3>
-                <p><strong>Message:</strong> \${formattedMessage}</p>
-                \${formattedDetails ? \`<p><strong>Details:</strong> \${formattedDetails}</p>\` : ''}
-                <div style="margin-top: 15px;">
-                    <h4>💡 Troubleshooting Steps:</h4>
-                    <ol>
-                        <li>Make sure Python is installed and accessible</li>
-                        <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
-                        <li>Use Command Palette (Ctrl+Shift+P) → "Select Python Interpreter"</li>
-                        <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
-                        <li>Check VSCode Output panel for more details</li>
-                    </ol>
-                </div>
-            \`;
+            errorDiv.innerHTML = '<h3>❌ Error</h3>' +
+                                '<p><strong>Message:</strong> ' + formattedMessage + '</p>' +
+                                (formattedDetails ? '<p><strong>Details:</strong> ' + formattedDetails + '</p>' : '') +
+                                '<div style="margin-top: 15px;">' +
+                                '<h4>💡 Troubleshooting Steps:</h4>' +
+                                '<ol>' +
+                                '<li>Make sure Python is installed and accessible</li>' +
+                                '<li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>' +
+                                '<li>Use Command Palette (Ctrl+Shift+P) → "Select Python Interpreter"</li>' +
+                                '<li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>' +
+                                '<li>Check VSCode Output panel for more details</li>' +
+                                '</ol>' +
+                                '</div>';
             errorDiv.classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.add('hidden');
@@ -805,6 +1184,14 @@ export class DataViewerPanel {
         }
 
         // Initial load
+        console.log('Page loaded, checking plot config element...');
+        const plotConfig = document.getElementById('plotConfig');
+        console.log('Plot config element found:', !!plotConfig);
+        if (plotConfig) {
+            console.log('Plot config display style:', plotConfig.style.display);
+            console.log('Plot config computed style:', window.getComputedStyle(plotConfig).display);
+        }
+        
         vscode.postMessage({ command: 'getDataInfo' });
     </script>
 </body>
