@@ -94,8 +94,9 @@ The extension will log warnings when experimental features are enabled and when 
 ### Runtime Notifications
 
 When you change feature flag settings, the extension will:
-- Show an immediate notification about the change
-- Log the change to the Output panel
+- Show an immediate notification about the specific change (e.g., "Allow Multiple Tabs For Same File is now enabled")
+- Only show notifications for actual feature flag changes, not other configuration changes
+- Log the specific change to the Output panel
 - Apply the new behavior immediately
 
 ## Best Practices

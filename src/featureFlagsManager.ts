@@ -35,7 +35,7 @@ export class FeatureFlagsManager {
     private static instance: FeatureFlagsManager;
     private configuration: vscode.WorkspaceConfiguration;
     private _disposables: vscode.Disposable[] = [];
-    private _onConfigurationChanged: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
+    private _onConfigurationChanged: vscode.EventEmitter<string[]> = new vscode.EventEmitter<string[]>();
 
     private constructor() {
         this.configuration = vscode.workspace.getConfiguration('scientificDataViewer');
@@ -54,8 +54,9 @@ export class FeatureFlagsManager {
 
     /**
      * Event that fires when configuration changes
+     * Provides array of changed flag names
      */
-    public get onConfigurationChanged(): vscode.Event<void> {
+    public get onConfigurationChanged(): vscode.Event<string[]> {
         return this._onConfigurationChanged.event;
     }
 
@@ -67,7 +68,22 @@ export class FeatureFlagsManager {
             if (event.affectsConfiguration('scientificDataViewer')) {
                 Logger.info('Scientific Data Viewer configuration changed, refreshing feature flags...');
                 this.refresh();
-                this._onConfigurationChanged.fire();
+                
+                // Check which specific feature flags changed
+                const changedFlags: string[] = [];
+                for (const flagName of Object.keys(FEATURE_FLAGS)) {
+                    if (event.affectsConfiguration(`scientificDataViewer.${flagName}`)) {
+                        changedFlags.push(flagName);
+                    }
+                }
+                
+                // Fire event with information about what changed
+                this._onConfigurationChanged.fire(changedFlags);
+                
+                // Log specific changes
+                if (changedFlags.length > 0) {
+                    Logger.info(`Feature flags changed: ${changedFlags.join(', ')}`);
+                }
             }
         });
         

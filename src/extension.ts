@@ -51,6 +51,52 @@ export function activate(context: vscode.ExtensionContext) {
     const featureFlags = FeatureFlagsManager.getInstance();
     featureFlags.logExperimentalWarnings();
 
+    // Set up configuration change listener for feature flags
+    const featureFlagsListener = featureFlags.onConfigurationChanged((changedFlags) => {
+        Logger.info('Feature flags configuration changed, updating behavior...');
+        Logger.info(`Changed flags received: [${changedFlags.join(', ')}]`);
+        
+        // Show generic notification for any feature flag change
+        if (changedFlags.length > 0) {
+            for (const flagName of changedFlags) {
+                const isEnabled = featureFlags.isEnabled(flagName);
+                const definition = featureFlags.getFlagDefinition(flagName);
+                const displayName = definition?.description || flagName;
+                
+                Logger.info(`${flagName} is now: ${isEnabled}`);
+                
+                // Show notification with the new value
+                vscode.window.showInformationMessage(
+                    `Configuration updated: ${displayName} is now ${isEnabled ? 'enabled' : 'disabled'}`,
+                    'OK'
+                );
+            }
+        } else {
+            Logger.info('No feature flags changed, but configuration event fired');
+        }
+    });
+
+    // Set up generic configuration change listener for all Scientific Data Viewer settings
+    const genericConfigListener = vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration('scientificDataViewer')) {
+            Logger.info('Scientific Data Viewer configuration changed');
+            
+            // Get all configuration properties and show their current values
+            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const allSettings = config.inspect('*');
+            
+            // Show notification for any configuration change
+            vscode.window.showInformationMessage(
+                'Scientific Data Viewer configuration updated',
+                'Show Settings'
+            ).then(selection => {
+                if (selection === 'Show Settings') {
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
+                }
+            });
+        }
+    });
+
     // Initialize managers
     Logger.info('Initializing extension managers...');
     const pythonManager = new PythonManager(context);
@@ -321,6 +367,8 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceChangeListener,
         netcdfEditorRegistration,
         hdf5EditorRegistration,
+        featureFlagsListener,
+        genericConfigListener,
         { dispose: () => clearInterval(pythonCheckInterval) }
     );
 
