@@ -279,11 +279,48 @@ export class DataViewerPanel {
         }
         
         .error {
-            color: var(--vscode-errorForeground);
-            background-color: var(--vscode-inputValidation-errorBackground);
-            padding: 10px;
-            border-radius: 4px;
+            color: #ff6b6b;
+            background-color: #2d1b1b;
+            border: 2px solid #ff6b6b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+        }
+        
+        .error h3 {
+            color: #ff6b6b;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .error p {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        
+        .error strong {
+            color: #ff8a8a;
+        }
+        
+        .error code {
+            background-color: #1a0f0f;
+            color: #ffa8a8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+        }
+        
+        .error ol {
             margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .error li {
+            margin: 5px 0;
+            line-height: 1.4;
         }
         
         .info-section {
