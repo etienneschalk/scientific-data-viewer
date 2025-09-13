@@ -12,6 +12,7 @@ export interface DataInfo {
     }>;
     attributes?: { [key: string]: any };
     fileSize?: number;
+    error?: string;
 }
 
 export interface DataSlice {
@@ -23,6 +24,10 @@ export interface DataSlice {
 
 export class DataProcessor {
     constructor(private pythonManager: PythonManager) {}
+
+    get pythonManagerInstance(): PythonManager {
+        return this.pythonManager;
+    }
 
     async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
         if (!this.pythonManager.isReady()) {

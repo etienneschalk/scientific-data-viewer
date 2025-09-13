@@ -22,41 +22,40 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = void 0;
 const path = __importStar(require("path"));
-const Mocha = __importStar(require("mocha"));
-const glob = __importStar(require("glob"));
+const mocha_1 = __importDefault(require("mocha"));
+const glob_1 = require("glob");
 function run() {
     // Create the mocha test
-    const mocha = new Mocha({
+    const mocha = new mocha_1.default({
         ui: 'tdd',
         color: true
     });
     const testsRoot = path.resolve(__dirname, '..');
-    return new Promise((c, e) => {
-        glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
-            if (err) {
-                return e(err);
-            }
+    return new Promise(async (c, e) => {
+        try {
+            const files = await (0, glob_1.glob)('**/**.test.js', { cwd: testsRoot });
             // Add files to the test suite
-            files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
-            try {
-                // Run the mocha test
-                mocha.run(failures => {
-                    if (failures > 0) {
-                        e(new Error(`${failures} tests failed.`));
-                    }
-                    else {
-                        c();
-                    }
-                });
-            }
-            catch (err) {
-                console.error(err);
-                e(err);
-            }
-        });
+            files.forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
+            // Run the mocha test
+            mocha.run((failures) => {
+                if (failures > 0) {
+                    e(new Error(`${failures} tests failed.`));
+                }
+                else {
+                    c();
+                }
+            });
+        }
+        catch (err) {
+            console.error(err);
+            e(err);
+        }
     });
 }
 exports.run = run;

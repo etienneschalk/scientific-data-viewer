@@ -160,9 +160,12 @@ export class PythonManager {
             );
 
             if (missingPackages.length > 0) {
-                const installCommand = `${this.pythonPath} -m pip install ${missingPackages.join(' ')}`;
+                // const installCommand = `${this.pythonPath} -m pip install ${missingPackages.join(' ')}`;
                 const action = await vscode.window.showWarningMessage(
-                    `Missing required packages: ${missingPackages.join(', ')}. Install them?`,
+                    `
+                    You are using the Python interpreter at ${this.pythonPath}. 
+                    Missing required packages: ${missingPackages.join(', ')}. 
+                    Install them?`,
                     'Install',
                     'Cancel'
                 );
@@ -213,7 +216,7 @@ export class PythonManager {
 
     async executePythonScript(script: string, args: string[] = []): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized');
+            throw new Error('Python environment not properly initialized. Please run "Select Python Interpreter" command first.');
         }
 
         return new Promise((resolve, reject) => {
@@ -242,12 +245,25 @@ export class PythonManager {
                         resolve(stdout);
                     }
                 } else {
-                    reject(new Error(`Python script failed: ${stderr}`));
+                    const errorMessage = stderr || 'Unknown Python error';
+                    if (errorMessage.includes('ModuleNotFoundError')) {
+                        reject(new Error(`Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`));
+                    } else if (errorMessage.includes('PermissionError')) {
+                        reject(new Error(`Permission denied: ${errorMessage}. Please check file permissions.`));
+                    } else if (errorMessage.includes('FileNotFoundError')) {
+                        reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
+                    } else {
+                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
+                    }
                 }
             });
             
             process.on('error', (error) => {
-                reject(error);
+                if (error.message.includes('ENOENT')) {
+                    reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
+                } else {
+                    reject(new Error(`Failed to execute Python script: ${error.message}`));
+                }
             });
         });
     }

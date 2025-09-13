@@ -92,15 +92,59 @@ export class DataViewerPanel {
 
     private async _handleGetDataInfo() {
         try {
+            // Check if Python environment is ready
+            if (!this.dataProcessor.pythonManagerInstance.isReady()) {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Python environment not ready. Please configure Python interpreter first.',
+                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Select Python Interpreter" to set up Python environment.'
+                });
+                return;
+            }
+
+            // Check file size
+            const stat = await vscode.workspace.fs.stat(this._currentFile);
+            const maxSize = vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100) * 1024 * 1024; // Convert MB to bytes
+            
+            if (stat.size > maxSize) {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: `File too large (${Math.round(stat.size / 1024 / 1024)}MB). Maximum allowed: ${vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100)}MB`,
+                    details: 'Increase the maxFileSize setting in VSCode settings to load larger files.'
+                });
+                return;
+            }
+
             this._dataInfo = await this.dataProcessor.getDataInfo(this._currentFile);
+            
+            if (!this._dataInfo) {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Failed to load data file. The file might be corrupted or in an unsupported format.',
+                    details: 'Supported formats: NetCDF (.nc, .netcdf), Zarr (.zarr), HDF5 (.h5, .hdf5)'
+                });
+                return;
+            }
+
+            if (this._dataInfo.error) {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: `Data processing error: ${this._dataInfo.error}`,
+                    details: 'This might be due to missing Python packages or file format issues.'
+                });
+                return;
+            }
+
             this._panel.webview.postMessage({
                 command: 'dataInfo',
                 data: this._dataInfo
             });
         } catch (error) {
+            console.error('Error in _handleGetDataInfo:', error);
             this._panel.webview.postMessage({
                 command: 'error',
-                message: `Failed to load data info: ${error}`
+                message: `Failed to load data info: ${error}`,
+                details: 'Check the VSCode Output panel (View → Output → "Scientific Data Viewer") for more details.'
             });
         }
     }
@@ -396,7 +440,7 @@ export class DataViewerPanel {
                     displayPlot(message.data);
                     break;
                 case 'error':
-                    showError(message.message);
+                    showError(message.message, message.details);
                     break;
             }
         });
@@ -483,9 +527,23 @@ export class DataViewerPanel {
             }
         }
 
-        function showError(message) {
+        function showError(message, details = '') {
             const errorDiv = document.getElementById('error');
-            errorDiv.textContent = message;
+            errorDiv.innerHTML = \`
+                <h3>❌ Error</h3>
+                <p><strong>Message:</strong> \${message}</p>
+                \${details ? \`<p><strong>Details:</strong> \${details}</p>\` : ''}
+                <div style="margin-top: 15px;">
+                    <h4>💡 Troubleshooting Steps:</h4>
+                    <ol>
+                        <li>Make sure Python is installed and accessible</li>
+                        <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
+                        <li>Use Command Palette (Ctrl+Shift+P) → "Select Python Interpreter"</li>
+                        <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
+                        <li>Check VSCode Output panel for more details</li>
+                    </ol>
+                </div>
+            \`;
             errorDiv.classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.add('hidden');

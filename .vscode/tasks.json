@@ -2,6 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "compile",
             "type": "npm",
             "script": "compile",
             "group": "build",
@@ -39,6 +40,89 @@
                 "panel": "shared",
                 "reveal": "always"
             }
+        },
+        {
+            "label": "reload-window",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Reloading window..."
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "package-extension",
+            "type": "npm",
+            "script": "package",
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "install-extension",
+            "type": "shell",
+            "command": "code",
+            "args": [
+                "--install-extension",
+                "${workspaceFolder}/scientific-data-viewer-0.1.0.vsix"
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "problemMatcher": [],
+            "dependsOn": "package-extension"
+        },
+        {
+            "label": "start-watch-mode",
+            "type": "npm",
+            "script": "watch",
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "isBackground": true,
+            "problemMatcher": "$tsc-watch"
+        },
+        {
+            "label": "open-dev-host",
+            "type": "shell",
+            "command": "code",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "${workspaceFolder}"
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "dev-setup-complete",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Development setup complete! Use Ctrl+Shift+P -> 'Developer: Reload Window' to activate the extension."
+            ],
+            "group": "build",
+            "presentation": {
+                "panel": "shared",
+                "reveal": "always"
+            },
+            "problemMatcher": [],
+            "dependsOn": "compile"
         }
     ]
 }
