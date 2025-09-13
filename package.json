@@ -8,9 +8,7 @@
     "vscode": "^1.74.0",
     "node": ">=22.0.0"
   },
-  "extensionDependencies": [
-    "ms-python.python"
-  ],
+  "extensionDependencies": [],
   "categories": [
     "Data Science",
     "Visualization",
@@ -183,7 +181,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run compile:tests",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "node ./out/test/test/runTest.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },

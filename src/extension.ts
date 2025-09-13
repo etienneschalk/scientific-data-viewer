@@ -116,9 +116,30 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize managers
     Logger.info('Initializing extension managers...');
-    const pythonManager = new PythonManager(context);
-    const dataProcessor = new DataProcessor(pythonManager);
-    Logger.info('Extension managers initialized successfully');
+    let pythonManager: PythonManager;
+    let dataProcessor: DataProcessor;
+
+    try {
+        pythonManager = new PythonManager(context);
+        dataProcessor = new DataProcessor(pythonManager);
+        Logger.info('Extension managers initialized successfully');
+    } catch (error) {
+        Logger.error(`Failed to initialize Python manager: ${error}`);
+        // Create a mock PythonManager for testing or when Python extension is not available
+        pythonManager = {
+            isReady: () => false,
+            executePythonScript: async () => { throw new Error('Python environment not available'); },
+            executePythonFile: async () => { throw new Error('Python environment not available'); },
+            executePythonFileWithLogs: async () => { throw new Error('Python environment not available'); },
+            getPythonPath: () => undefined,
+            getCurrentPythonPath: () => undefined,
+            forceReinitialize: async () => { },
+            getCurrentInterpreterPath: async () => undefined,
+            setupInterpreterChangeListener: async () => undefined
+        } as any;
+        dataProcessor = new DataProcessor(pythonManager);
+        Logger.warn('Extension initialized with mock Python manager (Python extension not available)');
+    }
 
     // Create status bar item for Python interpreter (hidden by default)
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -236,12 +257,16 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize Python environment
     Logger.info('Initializing Python environment...');
-    pythonManager.initialize().then(async () => {
-        // After Python initialization, refresh any panels that had errors
-        await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
-    }).catch((error) => {
-        Logger.error(`Python initialization failed: ${error}`);
-    });
+    try {
+        pythonManager.initialize().then(async () => {
+            // After Python initialization, refresh any panels that had errors
+            await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
+        }).catch((error) => {
+            Logger.error(`Python initialization failed: ${error}`);
+        });
+    } catch (error) {
+        Logger.error(`Python initialization setup failed: ${error}`);
+    }
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
@@ -306,18 +331,22 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Set up immediate Python interpreter change detection
     let immediateInterpreterListener: vscode.Disposable | undefined;
-    pythonManager.setupInterpreterChangeListener(handlePythonInterpreterChange).then((listener) => {
-        immediateInterpreterListener = listener;
-        if (immediateInterpreterListener) {
-            Logger.info('Immediate Python interpreter change detection enabled');
-            // Add to subscriptions after it's created
-            context.subscriptions.push(immediateInterpreterListener);
-        } else {
-            Logger.warn('Immediate Python interpreter change detection not available');
-        }
-    }).catch((error) => {
-        Logger.error(`Failed to set up immediate Python interpreter change detection: ${error}`);
-    });
+    try {
+        pythonManager.setupInterpreterChangeListener(handlePythonInterpreterChange).then((listener) => {
+            immediateInterpreterListener = listener;
+            if (immediateInterpreterListener) {
+                Logger.info('Immediate Python interpreter change detection enabled');
+                // Add to subscriptions after it's created
+                context.subscriptions.push(immediateInterpreterListener);
+            } else {
+                Logger.warn('Immediate Python interpreter change detection not available');
+            }
+        }).catch((error) => {
+            Logger.error(`Failed to set up immediate Python interpreter change detection: ${error}`);
+        });
+    } catch (error) {
+        Logger.error(`Failed to set up Python interpreter change detection: ${error}`);
+    }
 
 
     context.subscriptions.push(
