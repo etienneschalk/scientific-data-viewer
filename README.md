@@ -2,7 +2,7 @@
 
 A powerful VSCode extension for viewing and analyzing scientific data files including NetCDF, Zarr, HDF5, and more. This extension provides an intuitive interface for exploring scientific datasets directly within VSCode, eliminating the need for external tools.
 
-## Features
+## 🚀 Features
 
 - **Multi-format Support**: View NetCDF (.nc, .netcdf), Zarr (.zarr), and HDF5 (.h5, .hdf5) files
 - **Custom Editors**: Direct file opening with dedicated NetCDF and HDF5 editors
@@ -19,7 +19,34 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
 
-## Prerequisites
+## 📦 Installation
+
+### Quick Install (Recommended)
+
+1. **Install from VSCode Marketplace**:
+   - Open VSCode
+   - Go to Extensions view (`Ctrl+Shift+X`)
+   - Search for "Scientific Data Viewer"
+   - Click Install
+
+2. **Install Python dependencies**:
+   ```bash
+   pip install xarray netCDF4 zarr h5py numpy matplotlib
+   ```
+
+### Manual Install
+
+1. **Download the extension**:
+   - Go to the [Releases page](https://github.com/etienneschalk/scientific-data-viewer/releases)
+   - Download the latest `.vsix` file
+
+2. **Install the .vsix file**:
+   - Open VSCode
+   - Go to Extensions view (`Ctrl+Shift+X`)
+   - Click the "..." menu and select "Install from VSIX..."
+   - Select the downloaded `.vsix` file
+
+## ⚙️ Prerequisites
 
 Before using this extension, you need:
 
@@ -32,7 +59,7 @@ Before using this extension, you need:
    - numpy
    - matplotlib
 
-## Usage
+## 🎯 Usage
 
 ### Opening Data Files
 
@@ -63,6 +90,7 @@ Before using this extension, you need:
    - Press `Ctrl+Shift+P`
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
+   - The extension will automatically detect it and use it
 
 3. **Settings**:
    - Open VSCode Settings (`Ctrl+,`)
@@ -71,21 +99,98 @@ Before using this extension, you need:
 
 ### Exploring Data
 
-The data viewer provides several views:
+The data viewer shows:
 
 - **File Information**: Format, size, and basic metadata
 - **Dimensions**: Dataset dimensions and their sizes
 - **Variables**: All data variables with their types, shapes, dimension names, and memory usage
-- **Visualization**: Interactive plots and charts
+- ~~**Visualization**: Interactive plots and charts~~
 
-### Creating Visualizations
+The data representation is based entirely on the native xarray's Dataset HTML representation. 
+
+### Creating Visualizations (:warning: EXPERIMENTAL)
 
 1. Select a variable from the dropdown or click on it in the variables list
 2. Choose a plot type (Line Plot, Heatmap, Histogram)
 3. Click "Create Plot" to generate the visualization
 
+## ⚙️ Configuration
 
-## Installation
+The extension can be configured through VSCode settings:
+
+- `scientificDataViewer.autoRefresh`: Automatically refresh data when files change
+- `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
+- `scientificDataViewer.defaultView`: Default view mode (default)
+- `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
+- `scientificDataViewer.plottingCapabilities`: Enable plotting capabilities (Experimental)
+
+### Available Commands
+
+Access these commands via the Command Palette (`Ctrl+Shift+P`):
+
+- **Open Scientific Data Viewer**: Open a file in the data viewer
+- **Refresh Python Environment**: Manually refresh the Python environment
+- **Show Extension Logs**: View detailed extension logs
+- **Show Settings**: Open Scientific Data Viewer settings
+
+### Feature Flags
+
+The extension includes configuration options that act as feature flags to control specific behaviors:
+
+- **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
+- **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
+- **Settings UI**: Each setting appears as a checkbox in VSCode Settings
+- **Real-time Updates**: Configuration changes take effect immediately
+
+For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLAGS.md).
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Python not found**:
+   - Ensure Python is installed and in your PATH
+   - Use the "Python: Select Interpreter" command to manually set the path
+
+2. **Missing packages**:
+   - Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
+   - Or let the extension install them automatically
+
+3. **Large files not loading**:
+   - Increase the `maxFileSize` setting
+   - Consider using data slicing for very large datasets
+
+4. **Permission errors**:
+   - Ensure the extension has permission to read your data files
+   - Check file permissions and VSCode workspace settings
+
+### Getting Help
+
+- **Check the logs**: Ctrl+Shift+P (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
+- **Report issues**: [Create an issue on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
+- **Ask questions**: Use the GitHub Discussions section
+
+---
+
+## 🛠️ Development
+
+### Quick Start for Developers
+
+1. **Clone and setup**:
+   ```bash
+   git clone https://github.com/etienneschalk/scientific-data-viewer.git
+   cd scientific-data-viewer
+   ./setup.sh
+   ```
+
+2. **Open in VSCode**:
+   ```bash
+   code .
+   ```
+
+3. **Run extension**:
+   - Press `F5` to launch Extension Development Host
+   - Test with sample data files
 
 ### Development Installation
 
@@ -132,39 +237,6 @@ The data viewer provides several views:
    - Click the "..." menu and select "Install from VSIX..."
    - Select the generated `.vsix` file
 
-
-## Configuration
-
-The extension can be configured through VSCode settings:
-
-- `scientificDataViewer.autoRefresh`: Automatically refresh data when files change
-- `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
-- `scientificDataViewer.defaultView`: Default view mode (default)
-- `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
-- `scientificDataViewer.plottingCapabilities`: Enable plotting capabilities (Experimental)
-
-### Available Commands
-
-Access these commands via the Command Palette (`Ctrl+Shift+P`):
-
-- **Open Scientific Data Viewer**: Open a file in the data viewer
-- **Refresh Python Environment**: Manually refresh the Python environment
-- **Show Extension Logs**: View detailed extension logs
-- **Show Settings**: Open Scientific Data Viewer settings
-
-### Feature Flags
-
-The extension includes configuration options that act as feature flags to control specific behaviors:
-
-- **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
-- **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
-- **Settings UI**: Each setting appears as a checkbox in VSCode Settings
-- **Real-time Updates**: Configuration changes take effect immediately
-
-For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLAGS.md).
-
-## Development
-
 ### Project Structure
 
 ```
@@ -188,6 +260,8 @@ The extension uses several Python scripts for data processing:
 - **`get_show_versions.py`**: Shows Python package versions for debugging
 - **`create_sample_data.py`**: Generates sample data files for testing
 - **`test_data_structure.py`**: Tests data structure and format detection
+
+Disclaimer: most visualization scripts are experimental and produce unusable plots!
 
 ### Building
 
@@ -223,7 +297,7 @@ npm run lint
 2. **Press F5** to launch the Extension Development Host
 3. **Use the debug console** to inspect variables and step through code
 
-## Publishing
+## 📦 Publishing
 
 ### Preparing for Publication
 
@@ -271,33 +345,7 @@ npm run lint
    vsce publish
    ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Python not found**:
-   - Ensure Python is installed and in your PATH
-   - Use the "Python: Select Interpreter" command to manually set the path
-
-2. **Missing packages**:
-   - Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
-   - Or let the extension install them automatically
-
-3. **Large files not loading**:
-   - Increase the `maxFileSize` setting
-   - Consider using data slicing for very large datasets
-
-4. **Permission errors**:
-   - Ensure the extension has permission to read your data files
-   - Check file permissions and VSCode workspace settings
-
-### Getting Help
-
-- **Check the logs**: Open the Output panel and select "Scientific Data Viewer"
-- **Report issues**: Create an issue on the GitHub repository
-- **Ask questions**: Use the GitHub Discussions section
-
-## Contributing
+## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -309,17 +357,17 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 4. Add tests if applicable
 5. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - Inspired by the [NetCDF Viewer](https://github.com/rmcd-mscb/netcdf-viewer) extension
 - Built with [xarray](https://xarray.pydata.org/) for scientific data processing
 - Uses [VSCode Extension API](https://code.visualstudio.com/api) for integration
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 scientific-data-viewer/
@@ -363,21 +411,3 @@ scientific-data-viewer/
 ├── CHANGELOG.md                # Version history
 └── setup.sh                    # Setup script
 ```
-
-## Quick Start
-
-1. **Clone and setup**:
-   ```bash
-   git clone https://github.com/etienneschalk/scientific-data-viewer.git
-   cd scientific-data-viewer
-   ./setup.sh
-   ```
-
-2. **Open in VSCode**:
-   ```bash
-   code .
-   ```
-
-3. **Run extension**:
-   - Press `F5` to launch Extension Development Host
-   - Test with sample data files
