@@ -8,7 +8,7 @@ Get up and running with the Scientific Data Viewer VSCode extension in minutes!
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/etienneschalk/scientific-data-viewer.git
 cd scientific-data-viewer
 
 # Run the setup script

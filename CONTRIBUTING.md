@@ -15,7 +15,7 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 
 1. **Fork and clone the repository**:
    ```bash
-   git clone https://github.com/your-username/scientific-data-viewer.git
+   git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
    ```
 

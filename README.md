@@ -38,7 +38,7 @@ Before using this extension, you need:
 
 1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
    ```
 
@@ -366,7 +366,7 @@ scientific-data-viewer/
 
 1. **Clone and setup**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
    ./setup.sh
    ```
@@ -379,24 +379,3 @@ scientific-data-viewer/
 3. **Run extension**:
    - Press `F5` to launch Extension Development Host
    - Test with sample data files
-
-## Changelog
-
-### 0.1.0 (Current)
-- **Custom Editors**: Direct file opening with dedicated NetCDF and HDF5 editors
-- **Advanced Python Integration**: Automatic Python environment detection and management
-- **Command Palette Integration**: Multiple commands for data viewer operations
-- **Real-time Configuration**: Immediate application of setting changes without restart
-- **Status Bar Integration**: Shows current Python interpreter status
-- **Comprehensive Logging**: Detailed logging system for debugging and monitoring
-- **Error Handling**: Robust error handling with user-friendly messages
-- **Experimental Features**: Configurable experimental features with clear warnings
-- **Enhanced Variable Information**: Added dimension names and memory usage display for each variable
-- **Improved File Size Display**: Added human-readable file size formatting (B, kB, MB, GB, TB)
-- **Better Data Structure**: Updated data processing to include dimension names and byte sizes
-- **Multi-format Support**: Support for NetCDF, Zarr, and HDF5 files
-- **Interactive Data Exploration**: Browse file structure, dimensions, variables, and attributes
-- **Data Visualization**: Create plots and visualizations directly in VSCode (experimental)
-- **Python Environment Integration**: Uses existing Python environment with xarray, netCDF4, and other scientific libraries
-- **File Tree Integration**: Right-click on supported files in the explorer to open them
-- **Comprehensive Documentation**: Complete documentation and testing setup

@@ -3,7 +3,7 @@
   "displayName": "Scientific Data Viewer",
   "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, and more",
   "version": "0.1.0",
-  "publisher": "etienne-schalk-sarl",
+  "publisher": "etienneschalk-sarl",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">=22.0.0"
@@ -199,5 +199,13 @@
   },
   "dependencies": {
     "axios": "^1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/etienneschalk/scientific-data-viewer.git"
+  },
+  "homepage": "https://github.com/etienneschalk/scientific-data-viewer#readme",
+  "bugs": {
+    "url": "https://github.com/etienneschalk/scientific-data-viewer/issues"
   }
 }

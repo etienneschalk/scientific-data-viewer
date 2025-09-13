@@ -6,7 +6,7 @@ suite('Extension Test Suite', () => {
     vscode.window.showInformationMessage('Start all tests.');
 
     test('Extension should be present', () => {
-        const extension = vscode.extensions.getExtension('etienne-schalk-sarl.scientific-data-viewer');
+        const extension = vscode.extensions.getExtension('etienneschalk-sarl.scientific-data-viewer');
         if (extension) {
             assert.ok(extension, 'Extension should be present');
         } else {
@@ -17,7 +17,7 @@ suite('Extension Test Suite', () => {
     });
 
     test('Extension should activate', async () => {
-        const extension = vscode.extensions.getExtension('etienne-schalk-sarl.scientific-data-viewer');
+        const extension = vscode.extensions.getExtension('etienneschalk-sarl.scientific-data-viewer');
         if (extension) {
             await extension.activate();
             assert.ok(extension.isActive);

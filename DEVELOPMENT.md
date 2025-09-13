@@ -23,7 +23,7 @@ pip install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/etienneschalk/scientific-data-viewer.git
 cd scientific-data-viewer
 
 # Install Node.js dependencies
