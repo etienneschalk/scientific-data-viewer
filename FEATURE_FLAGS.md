@@ -1,16 +1,16 @@
-# Feature Flags
+# Configuration Settings
 
-The Scientific Data Viewer extension includes configuration options that control extension behavior. These settings act as feature flags, allowing users to enable or disable specific features, including experimental ones that might be unstable.
+The Scientific Data Viewer extension includes configuration options that control extension behavior. These settings allow users to enable or disable specific features, including experimental ones that might be unstable.
 
 ## Overview
 
-Feature flags are stored as individual properties in the VSCode extension configuration and can be modified through:
+Configuration settings are stored as individual properties in the VSCode extension configuration and can be modified through:
 
 1. **VSCode Settings UI**: Go to Settings (Ctrl+,) and search for "Scientific Data Viewer" - each setting appears as a checkbox
 2. **settings.json**: Edit your workspace or user settings directly
 3. **Command Palette**: Use "Scientific Data Viewer: Show Feature Flags" to view current status
 
-## Available Feature Flags
+## Available Settings
 
 ### `allowMultipleTabsForSameFile` (Experimental)
 
@@ -75,13 +75,13 @@ Add the following to your `settings.json`:
 - **User Settings**: Apply to all workspaces
 - **Workspace Settings**: Apply only to the current workspace (stored in `.vscode/settings.json`)
 
-## Viewing Feature Flags
+## Viewing Settings
 
 ### Command Palette
 
 1. Open Command Palette (Ctrl+Shift+P or Cmd+Shift+P)
 2. Type "Scientific Data Viewer: Show Feature Flags"
-3. Press Enter to view a detailed report of all feature flags
+3. Press Enter to view a detailed report of all current settings
 
 ### Extension Logs
 
@@ -93,9 +93,9 @@ The extension will log warnings when experimental features are enabled and when 
 
 ### Runtime Notifications
 
-When you change feature flag settings, the extension will:
+When you change settings, the extension will:
 - Show an immediate notification about the specific change (e.g., "Allow Multiple Tabs For Same File is now enabled")
-- Only show notifications for actual feature flag changes, not other configuration changes
+- Show generic notifications for other configuration changes
 - Log the specific change to the Output panel
 - Apply the new behavior immediately
 

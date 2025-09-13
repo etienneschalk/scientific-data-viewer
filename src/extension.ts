@@ -4,7 +4,6 @@ import { DataViewerPanel } from './dataViewerPanel';
 import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
-import { FeatureFlagsManager } from './featureFlagsManager';
 
 class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
     constructor(
@@ -47,53 +46,34 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
     Logger.info('Scientific Data Viewer extension is now active!');
 
-    // Initialize feature flags manager and log experimental warnings
-    const featureFlags = FeatureFlagsManager.getInstance();
-    featureFlags.logExperimentalWarnings();
-
-    // Set up configuration change listener for feature flags
-    const featureFlagsListener = featureFlags.onConfigurationChanged((changedFlags) => {
-        Logger.info('Feature flags configuration changed, updating behavior...');
-        Logger.info(`Changed flags received: [${changedFlags.join(', ')}]`);
-        
-        // Show generic notification for any feature flag change
-        if (changedFlags.length > 0) {
-            for (const flagName of changedFlags) {
-                const isEnabled = featureFlags.isEnabled(flagName);
-                const definition = featureFlags.getFlagDefinition(flagName);
-                const displayName = definition?.description || flagName;
-                
-                Logger.info(`${flagName} is now: ${isEnabled}`);
-                
-                // Show notification with the new value
-                vscode.window.showInformationMessage(
-                    `Configuration updated: ${displayName} is now ${isEnabled ? 'enabled' : 'disabled'}`,
-                    'OK'
-                );
-            }
-        } else {
-            Logger.info('No feature flags changed, but configuration event fired');
-        }
-    });
-
-    // Set up generic configuration change listener for all Scientific Data Viewer settings
-    const genericConfigListener = vscode.workspace.onDidChangeConfiguration((event) => {
+    // Set up configuration change listener for all Scientific Data Viewer settings
+    const configListener = vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('scientificDataViewer')) {
             Logger.info('Scientific Data Viewer configuration changed');
             
-            // Get all configuration properties and show their current values
-            const config = vscode.workspace.getConfiguration('scientificDataViewer');
-            const allSettings = config.inspect('*');
-            
-            // Show notification for any configuration change
-            vscode.window.showInformationMessage(
-                'Scientific Data Viewer configuration updated',
-                'Show Settings'
-            ).then(selection => {
-                if (selection === 'Show Settings') {
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
-                }
-            });
+            // Check for specific feature flag changes
+            if (event.affectsConfiguration('scientificDataViewer.allowMultipleTabsForSameFile')) {
+                const config = vscode.workspace.getConfiguration('scientificDataViewer');
+                const allowMultipleTabs = config.get('allowMultipleTabsForSameFile', false);
+                
+                Logger.info(`allowMultipleTabsForSameFile is now: ${allowMultipleTabs}`);
+                
+                // Show specific notification for this feature flag change
+                vscode.window.showInformationMessage(
+                    `Configuration updated: Allow Multiple Tabs For Same File is now ${allowMultipleTabs ? 'enabled' : 'disabled'}`,
+                    'OK'
+                );
+            } else {
+                // Show generic notification for other configuration changes
+                vscode.window.showInformationMessage(
+                    'Scientific Data Viewer configuration updated',
+                    'Show Settings'
+                ).then(selection => {
+                    if (selection === 'Show Settings') {
+                        vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
+                    }
+                });
+            }
         }
     });
 
@@ -188,8 +168,30 @@ export function activate(context: vscode.ExtensionContext) {
     const showFeatureFlagsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.showFeatureFlags',
         () => {
-            const featureFlags = FeatureFlagsManager.getInstance();
-            const description = featureFlags.getFeatureFlagsDescription();
+            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const allowMultipleTabs = config.get('allowMultipleTabsForSameFile', false);
+            
+            const description = `# Scientific Data Viewer Configuration
+
+## Current Settings
+
+- **Allow Multiple Tabs For Same File**: ${allowMultipleTabs ? '✅ Enabled' : '❌ Disabled'}
+  - ${allowMultipleTabs ? 'Each "Open in Data Viewer" action creates a new tab' : 'Focuses on existing tab if file is already open'}
+
+## How to Change Settings
+
+1. Open VSCode Settings (Ctrl+,)
+2. Search for "Scientific Data Viewer"
+3. Toggle the desired settings
+4. Changes take effect immediately
+
+## Available Settings
+
+- \`scientificDataViewer.allowMultipleTabsForSameFile\`: Allow opening multiple tabs for the same file (Experimental)
+- \`scientificDataViewer.autoRefresh\`: Automatically refresh data when files change
+- \`scientificDataViewer.maxFileSize\`: Maximum file size (MB) to load automatically
+- \`scientificDataViewer.defaultView\`: Default view mode (table, tree, plot)
+`;
             
             // Show in a new document
             vscode.workspace.openTextDocument({
@@ -367,8 +369,7 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceChangeListener,
         netcdfEditorRegistration,
         hdf5EditorRegistration,
-        featureFlagsListener,
-        genericConfigListener,
+        configListener,
         { dispose: () => clearInterval(pythonCheckInterval) }
     );
 
@@ -377,10 +378,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
     Logger.info('Scientific Data Viewer extension is now deactivated!');
-    
-    // Dispose of feature flags manager
-    const featureFlags = FeatureFlagsManager.getInstance();
-    featureFlags.dispose();
     
     // Dispose of data viewer panel static resources
     DataViewerPanel.dispose();

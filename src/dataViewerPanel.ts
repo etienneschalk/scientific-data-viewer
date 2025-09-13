@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { DataProcessor, DataInfo } from './dataProcessor';
 import { Logger } from './logger';
-import { FeatureFlagsManager } from './featureFlagsManager';
 
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
@@ -19,11 +18,9 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Configuration listener is now handled in the main extension
-
-        // Get feature flags manager
-        const featureFlags = FeatureFlagsManager.getInstance();
-        const allowMultipleTabs = featureFlags.isEnabled('allowMultipleTabsForSameFile');
+        // Get configuration directly from VSCode
+        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const allowMultipleTabs = config.get('allowMultipleTabsForSameFile', false);
 
         // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
         if (!allowMultipleTabs) {
