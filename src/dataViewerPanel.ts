@@ -446,15 +446,8 @@ export class DataViewerPanel {
         }
     }
 
-    private _getHtmlForWebview(plottingCapabilities: boolean = false) {
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Data Viewer</title>
-    ${plottingCapabilities ? '<!-- plottingCapabilities: true -->' : ''}
-    <style>
+    private _getCssStyles(): string {
+        return `
         body {
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
@@ -638,7 +631,6 @@ export class DataViewerPanel {
             border-radius: 4px;
             padding: 10px;
             background-color: var(--vscode-editor-background);
-            /* font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace); */
             font-size: 12px;
         }
         
@@ -822,13 +814,30 @@ export class DataViewerPanel {
         details[open] summary {
             margin-bottom: 10px;
         }
-    </style>
-</head>
-<body>
+        `;
+    }
+
+    private _getHeaderHtml(plottingCapabilities: boolean): string {
+        return `
     <div class="header">
         <div class="title">Scientific Data Viewer</div>
         <div class="controls">
-            ${plottingCapabilities ? `
+            ${this._getPlottingControlsHtml(plottingCapabilities)}
+            <div id="timestamp" class="timestamp hidden">
+                <span class="timestamp-icon">🕒</span>
+                <span id="timestampText">Last loaded: --</span>
+            </div>
+            <button id="refreshButton">Refresh</button>
+        </div>
+    </div>`;
+    }
+
+    private _getPlottingControlsHtml(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
             <select id="variableSelect">
                 <option value="">Select a variable...</option>
             </select>
@@ -838,37 +847,51 @@ export class DataViewerPanel {
                 <option value="heatmap">Heatmap</option>
                 <option value="histogram">Histogram</option>
             </select>
-            <button id="plotButton" disabled>Create Plot</button>
-            ` : ''}
-            <div id="timestamp" class="timestamp hidden">
-                <span class="timestamp-icon">🕒</span>
-                <span id="timestampText">Last loaded: --</span>
-            </div>
-            <button id="refreshButton">Refresh</button>
-        </div>
-    </div>
-    
+            <button id="plotButton" disabled>Create Plot</button>`;
+    }
+
+    private _getLoadingAndErrorHtml(): string {
+        return `
     <div id="loading" class="loading">Loading data...</div>
-    <div id="error" class="error hidden"></div>
-    
+    <div id="error" class="error hidden"></div>`;
+    }
+
+    private _getContentHtml(plottingCapabilities: boolean): string {
+        return `
     <div id="content" class="hidden">
+        ${this._getFileInfoHtml()}
+        ${this._getHtmlRepresentationHtml()}
+        ${this._getTextRepresentationHtml()}
+        ${this._getTroubleshootingHtml()}
+        ${this._getPlottingSectionsHtml(plottingCapabilities)}
+    </div>`;
+    }
+
+    private _getFileInfoHtml(): string {
+        return `
         <div class="info-section">
             <h3>File Information</h3>
             <div id="filePathContainer" class="file-path-container hidden">
-            <p><strong>File Path:</strong></p>
-            <code id="filePathCode" class="file-path-code"></code>
-            <button id="copyPathButton" class="copy-button">
-            📋 Copy
-            </button>
+                <p><strong>File Path:</strong></p>
+                <code id="filePathCode" class="file-path-code"></code>
+                <button id="copyPathButton" class="copy-button">
+                    📋 Copy
+                </button>
             </div>
             <div id="fileInfo"></div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getHtmlRepresentationHtml(): string {
+        return `
         <div class="info-section">
             <h3>Xarray HTML Representation</h3>
             <div id="htmlRepresentation" class="html-representation"></div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getTextRepresentationHtml(): string {
+        return `
         <div class="info-section">
             <h3>Xarray Text Representation</h3>
             <div class="text-representation-container">
@@ -877,8 +900,11 @@ export class DataViewerPanel {
                 </button>
                 <div id="textRepresentation" class="text-representation"></div>
             </div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getTroubleshootingHtml(): string {
+        return `
         <div class="troubleshooting-section">
             <h3>Troubleshooting</h3>
             <details>
@@ -893,9 +919,15 @@ export class DataViewerPanel {
                 <summary>Show xarray version information</summary>
                 <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
             </details>
-        </div>
+        </div>`;
+    }
 
-        ${plottingCapabilities ? `
+    private _getPlottingSectionsHtml(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
         <div class="info-section">
             <h3>Dimensions</h3>
             <div id="dimensions" class="dimensions"></div>
@@ -905,24 +937,40 @@ export class DataViewerPanel {
             <h3>Variables</h3>
             <div id="variables" class="variables"></div>
         </div>
-        ` : ''}
         
-        ${plottingCapabilities ? `
         <div class="info-section">
             <h3>Visualization</h3>
             <div id="plotContainer" class="plot-container"></div>
-        </div>
-        ` : ''}
-    </div>
+        </div>        `;
+    }
 
-    <script>
+    private _getJavaScriptCode(plottingCapabilities: boolean): string {
+        return `
         const vscode = acquireVsCodeApi();
         let currentData = null;
         let selectedVariable = null;
         let lastLoadTime = null;
 
         // Event listeners
-        ${plottingCapabilities ? `
+        ${this._getEventListenersCode(plottingCapabilities)}
+        ${this._getMessageHandlerCode(plottingCapabilities)}
+        ${this._getUtilityFunctionsCode()}
+        ${this._getInitializationCode()}`;
+    }
+
+    private _getEventListenersCode(plottingCapabilities: boolean): string {
+        return `
+        ${this._getPlottingEventListenersCode(plottingCapabilities)}
+        ${this._getRefreshEventListenerCode()}
+        ${this._getCopyEventListenersCode()}`;
+    }
+
+    private _getPlottingEventListenersCode(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
         document.getElementById('variableSelect').addEventListener('change', (e) => {
             selectedVariable = e.target.value;
             document.getElementById('plotButton').disabled = !selectedVariable;
@@ -939,15 +987,20 @@ export class DataViewerPanel {
                     plotType: actualPlotType
                 });
             }
-        });
-        ` : ''}
+        });`;
+    }
 
+    private _getRefreshEventListenerCode(): string {
+        return `
         document.getElementById('refreshButton').addEventListener('click', () => {
             // Show loading state for timestamp
             updateTimestamp(null, true);
             vscode.postMessage({ command: 'getDataInfo' });
-        });
+        });`;
+    }
 
+    private _getCopyEventListenersCode(): string {
+        return `
         document.getElementById('copyPathButton').addEventListener('click', async () => {
             const filePathCode = document.getElementById('filePathCode');
             const copyButton = document.getElementById('copyPathButton');
@@ -994,8 +1047,11 @@ export class DataViewerPanel {
                     }, 2000);
                 }
             }
-        });
+        });`;
+    }
 
+    private _getMessageHandlerCode(plottingCapabilities: boolean): string {
+        return `
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
@@ -1007,16 +1063,7 @@ export class DataViewerPanel {
                     displayDataInfo(message.data, message.filePath);
                     updateTimestamp(message.lastLoadTime);
                     break;
-                ${plottingCapabilities ? `
-                case 'variableList':
-                    populateVariableSelect(message.data);
-                    break;
-                ` : ''}
-                ${plottingCapabilities ? `
-                case 'plotData':
-                    displayPlot(message.data);
-                    break;
-                ` : ''}
+                ${this._getPlottingMessageHandlers(plottingCapabilities)}
                 case 'htmlRepresentation':
                     displayHtmlRepresentation(message.data);
                     break;
@@ -1036,8 +1083,25 @@ export class DataViewerPanel {
                     showError(message.message, message.details, message.error_type, message.format_info);
                     break;
             }
-        });
+        });`;
+    }
 
+    private _getPlottingMessageHandlers(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
+                case 'variableList':
+                    populateVariableSelect(message.data);
+                    break;
+                case 'plotData':
+                    displayPlot(message.data);
+                    break;`;
+    }
+
+    private _getUtilityFunctionsCode(): string {
+        return `
         function updateTimestamp(isoString, isLoading = false) {
             const timestampElement = document.getElementById('timestamp');
             const timestampText = document.getElementById('timestampText');
@@ -1053,26 +1117,30 @@ export class DataViewerPanel {
                 const diffHours = Math.floor(diffMs / 3600000);
                 const diffDays = Math.floor(diffMs / 86400000);
                 
-                // let timeAgo;
-                // if (diffMinutes < 1) {
-                //     timeAgo = 'just now';
-                // } else if (diffMinutes < 60) {
-                //     timeAgo = \`\${diffMinutes}m ago\`;
-                // } else if (diffHours < 24) {
-                //     timeAgo = \`\${diffHours}h ago\`;
-                // } else {
-                //     timeAgo = \`\${diffDays}d ago\`;
-                // }
-                
                 const timeString = date.toLocaleTimeString();
                 timestampText.textContent = \`Last loaded: \${timeString}\`;
-                // timestampText.textContent = \`Last loaded: \${timeString} (\${timeAgo})\`;
                 timestampElement.classList.remove('hidden');
             } else {
                 timestampElement.classList.add('hidden');
             }
         }
 
+        function formatFileSize(bytes) {
+            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 B';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }`;
+    }
+
+    private _getInitializationCode(): string {
+        return `
+        // Initial load
+        vscode.postMessage({ command: 'getDataInfo' });`;
+    }
+
+    private _getDisplayFunctionsCode(plottingCapabilities: boolean): string {
+        return `
         function displayDataInfo(data, filePath) {
             if (!data) {
                 showError('No data available');
@@ -1115,8 +1183,42 @@ export class DataViewerPanel {
             
             fileInfo.innerHTML = formatInfo;
 
+            ${this._getPlottingDisplayCode(plottingCapabilities)}
 
-            ${plottingCapabilities ? `
+            // Request variable list for dropdown
+            ${plottingCapabilities ? `vscode.postMessage({ command: 'getVariableList' });` : ''}
+            
+            // Request HTML representation
+            vscode.postMessage({ command: 'getHtmlRepresentation' });
+            
+            // Request text representation
+            vscode.postMessage({ command: 'getTextRepresentation' });
+            
+            // Request show versions
+            vscode.postMessage({ command: 'getShowVersions' });
+            
+            // Request Python path
+            vscode.postMessage({ command: 'getPythonPath' });
+            
+            // Request extension configuration
+            vscode.postMessage({ command: 'getExtensionConfig' });
+
+            // Show content
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+        }
+
+        ${this._getPlottingDisplayFunctions(plottingCapabilities)}
+        ${this._getRepresentationDisplayFunctions()}
+        ${this._getErrorHandlingFunctions()}`;
+    }
+
+    private _getPlottingDisplayCode(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
             if (dimensionsContainer) {
@@ -1148,35 +1250,15 @@ export class DataViewerPanel {
                 } else {
                     variablesContainer.innerHTML = '<p>No variables found</p>';
                 }
-            }
-            ` : ''}
+            }`;
+    }
 
-            // Request variable list for dropdown
-            ${plottingCapabilities ? `
-            vscode.postMessage({ command: 'getVariableList' });
-            ` : ''}
-            
-            // Request HTML representation
-            vscode.postMessage({ command: 'getHtmlRepresentation' });
-            
-            // Request text representation
-            vscode.postMessage({ command: 'getTextRepresentation' });
-            
-            // Request show versions
-            vscode.postMessage({ command: 'getShowVersions' });
-            
-            // Request Python path
-            vscode.postMessage({ command: 'getPythonPath' });
-            
-            // Request extension configuration
-            vscode.postMessage({ command: 'getExtensionConfig' });
-
-            // Show content
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('content').classList.remove('hidden');
+    private _getPlottingDisplayFunctions(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
         }
-
-        ${plottingCapabilities ? `
+        
+        return `
         function populateVariableSelect(variables) {
             const select = document.getElementById('variableSelect');
             select.innerHTML = '<option value="">Select a variable...</option>';
@@ -1195,9 +1277,11 @@ export class DataViewerPanel {
             } else {
                 container.innerHTML = '<p>Failed to generate plot</p>';
             }
-        }
-        ` : ''}
+        }`;
+    }
 
+    private _getRepresentationDisplayFunctions(): string {
+        return `
         function displayHtmlRepresentation(htmlData) {
             const container = document.getElementById('htmlRepresentation');
             if (htmlData) {
@@ -1245,8 +1329,11 @@ export class DataViewerPanel {
             } else {
                 container.textContent = 'Failed to load extension configuration';
             }
-        }
+        }`;
+    }
 
+    private _getErrorHandlingFunctions(): string {
+        return `
         function showError(message, details = '', errorType = '', formatInfo = null) {
             const errorDiv = document.getElementById('error');
             
@@ -1304,17 +1391,36 @@ export class DataViewerPanel {
             const errorDiv = document.getElementById('error');
             errorDiv.classList.add('hidden');
             errorDiv.innerHTML = '';
-        }
+        }`;
+    }
 
-        function formatFileSize(bytes) {
-            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
-            if (bytes === 0) return '0 B';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-        }
+    private _getHtmlForWebview(plottingCapabilities: boolean = false) {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Data Viewer</title>
+    ${plottingCapabilities ? '<!-- plottingCapabilities: true -->' : ''}
+    <style>
+        ${this._getCssStyles()}
+    </style>
+</head>
+<body>
+    ${this._getHeaderHtml(plottingCapabilities)}
+    ${this._getLoadingAndErrorHtml()}
+    ${this._getContentHtml(plottingCapabilities)}
 
-        // Initial load
-        vscode.postMessage({ command: 'getDataInfo' });
+    <script>
+        ${this._getJavaScriptCode(plottingCapabilities)}
+
+        ${this._getMessageHandlerCode(plottingCapabilities)}
+
+        ${this._getUtilityFunctionsCode()}
+
+        ${this._getDisplayFunctionsCode(plottingCapabilities)}
+
+        ${this._getInitializationCode()}
     </script>
 </body>
 </html>`;
