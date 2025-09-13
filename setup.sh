@@ -47,7 +47,7 @@ npm run compile
 
 # Create sample data
 echo "📊 Creating sample data files..."
-python3 create_sample_data.py
+python3 python/create_sample_data.py
 
 # Run tests
 echo "🧪 Running tests..."

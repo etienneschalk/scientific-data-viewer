@@ -10,6 +10,8 @@ export interface DataInfo {
         name: string;
         dtype: string;
         shape: number[];
+        dimensions: string[];
+        size_bytes: number;
         attributes?: { [key: string]: any };
     }>;
     attributes?: { [key: string]: any };

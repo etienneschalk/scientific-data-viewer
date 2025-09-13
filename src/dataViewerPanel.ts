@@ -686,7 +686,11 @@ export class DataViewerPanel {
                     .map(variable => \`
                         <div class="variable-item" data-variable="\${variable.name}">
                             <strong>\${variable.name}</strong><br>
-                            <small>\${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}</small>
+                            <small>
+                                \${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
+                                \${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
+                                \${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
+                            </small>
                         </div>
                     \`)
                     .join('');
@@ -773,7 +777,7 @@ export class DataViewerPanel {
         }
 
         function formatFileSize(bytes) {
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
             if (bytes === 0) return '0 B';
             const i = Math.floor(Math.log(bytes) / Math.log(1024));
             return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];

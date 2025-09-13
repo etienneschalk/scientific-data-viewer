@@ -48,20 +48,36 @@ def get_file_info(file_path):
 
         # Process variables
         for var_name, var in ds.data_vars.items():
+            # Calculate size in bytes
+            size_bytes = var.nbytes
+
+            # Get dimension names
+            dim_names = list(var.dims) if hasattr(var, "dims") else []
+
             var_info = {
                 "name": var_name,
                 "dtype": str(var.dtype),
                 "shape": list(var.shape),
+                "dimensions": dim_names,
+                "size_bytes": size_bytes,
                 "attributes": dict(var.attrs) if hasattr(var, "attrs") else {},
             }
             info["variables"].append(var_info)
 
         # Add coordinate variables
         for coord_name, coord in ds.coords.items():
+            # Calculate size in bytes
+            size_bytes = coord.nbytes
+
+            # Get dimension names
+            dim_names = list(coord.dims) if hasattr(coord, "dims") else []
+
             coord_info = {
                 "name": coord_name,
                 "dtype": str(coord.dtype),
                 "shape": list(coord.shape),
+                "dimensions": dim_names,
+                "size_bytes": size_bytes,
                 "attributes": dict(coord.attrs) if hasattr(coord, "attrs") else {},
             }
             info["variables"].append(coord_info)

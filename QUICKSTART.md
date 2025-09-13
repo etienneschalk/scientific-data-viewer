@@ -42,7 +42,7 @@ code .
 1. **Create sample data**:
    ```bash
    cd sample-data
-   python3 create_sample_data.py
+   python3 python/create_sample_data.py
    ```
 
 2. **Open a sample file**:
@@ -159,7 +159,7 @@ npx mocha out/test/suite/extension.test.js
 ```bash
 # Create test data
 cd sample-data
-python3 create_sample_data.py
+python3 python/create_sample_data.py
 
 # Test different file types
 # - sample_data.nc (NetCDF)

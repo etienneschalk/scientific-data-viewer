@@ -109,7 +109,7 @@ npx mocha out/test/suite/extension.test.js
 1. **Create sample data**:
    ```bash
    cd sample-data
-   python create_sample_data.py
+   python python/create_sample_data.py
    ```
 
 2. **Test with sample files**:
