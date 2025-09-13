@@ -194,7 +194,7 @@ export class PythonManager {
         Logger.debug(`Python path: ${pythonPath}`);
 
         // Core packages required for basic functionality
-        const corePackages = ['xarray', 'numpy'];
+        const corePackages = ['xarray'];
         // Additional packages for extended format support
         const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
         
@@ -283,7 +283,7 @@ export class PythonManager {
 
         try {
             const packages = await this.checkRequiredPackages(this.pythonPath);
-            const corePackages = ['xarray', 'numpy'];
+            const corePackages = ['xarray'];
             const missingCorePackages = corePackages.filter(pkg => !packages.includes(pkg));
             
             // Only require core packages for basic functionality
