@@ -5,6 +5,7 @@ import { Logger } from './logger';
 
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
+    public static panelsWithErrors: Set<DataViewerPanel> = new Set();
     public static readonly viewType = 'scientificDataViewer';
 
     private readonly _panel: vscode.WebviewPanel;
@@ -66,6 +67,24 @@ export class DataViewerPanel {
         for (const panel of DataViewerPanel.activePanels) {
             await panel._handleGetDataInfo();
         }
+    }
+
+    public static async refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+        const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
+        if (errorPanelCount > 0) {
+            Logger.info(`Refreshing ${errorPanelCount} panels with errors due to Python environment initialization...`);
+            for (const panel of DataViewerPanel.panelsWithErrors) {
+                await panel._handleGetDataInfo();
+            }
+        }
+    }
+
+    private static addPanelWithError(panel: DataViewerPanel) {
+        DataViewerPanel.panelsWithErrors.add(panel);
+    }
+
+    private static removePanelWithError(panel: DataViewerPanel) {
+        DataViewerPanel.panelsWithErrors.delete(panel);
     }
 
     /**
@@ -152,6 +171,8 @@ export class DataViewerPanel {
                     message: 'Python environment not ready. Please configure Python interpreter first.',
                     details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
                 });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
@@ -165,6 +186,8 @@ export class DataViewerPanel {
                     message: `File too large (${Math.round(stat.size / 1024 / 1024)}MB). Maximum allowed: ${vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100)}MB`,
                     details: 'Increase the maxFileSize setting in VSCode settings to load larger files.'
                 });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
@@ -176,6 +199,8 @@ export class DataViewerPanel {
                     message: 'Failed to load data file. The file might be corrupted or in an unsupported format.',
                     details: 'Supported formats: NetCDF (.nc, .netcdf), Zarr (.zarr), HDF5 (.h5, .hdf5)'
                 });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
@@ -185,6 +210,8 @@ export class DataViewerPanel {
                     message: `Data processing error: ${this._dataInfo.error}`,
                     details: 'This might be due to missing Python packages or file format issues.'
                 });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
@@ -197,6 +224,9 @@ export class DataViewerPanel {
                 filePath: this._currentFile.fsPath,
                 lastLoadTime: this._lastLoadTime.toISOString()
             });
+
+            // Remove this panel from error tracking since data loaded successfully
+            DataViewerPanel.removePanelWithError(this);
         } catch (error) {
             Logger.error(`Error in _handleGetDataInfo: ${error}`);
             this._panel.webview.postMessage({
@@ -204,6 +234,8 @@ export class DataViewerPanel {
                 message: `Failed to load data info: ${error}`,
                 details: 'Check the VSCode Output panel (View → Output → "Scientific Data Viewer") for more details.'
             });
+            // Track this panel as having an error
+            DataViewerPanel.addPanelWithError(this);
         }
     }
 
@@ -318,6 +350,9 @@ export class DataViewerPanel {
     public dispose() {
         // Remove this panel from the active panels set
         DataViewerPanel.activePanels.delete(this);
+
+        // Remove this panel from the error tracking set
+        DataViewerPanel.removePanelWithError(this);
 
         // Clean up our resources
         this._panel.dispose();
