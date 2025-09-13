@@ -58,11 +58,6 @@
         "category": "Scientific Data Viewer"
       },
       {
-        "command": "scientificDataViewer.showFeatureFlags",
-        "title": "Show Feature Flags",
-        "category": "Scientific Data Viewer"
-      },
-      {
         "command": "scientificDataViewer.showSettings",
         "title": "Show Settings",
         "category": "Scientific Data Viewer"
@@ -87,10 +82,6 @@
         },
         {
           "command": "scientificDataViewer.refreshPythonEnvironment",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.showFeatureFlags",
           "when": "true"
         },
         {

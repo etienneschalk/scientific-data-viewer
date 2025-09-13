@@ -203,43 +203,6 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    const showFeatureFlagsCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.showFeatureFlags',
-        () => {
-            const config = vscode.workspace.getConfiguration('scientificDataViewer');
-            const allowMultipleTabs = config.get('allowMultipleTabsForSameFile', false);
-
-            const description = `# Scientific Data Viewer Configuration
-
-## Current Settings
-
-- **Allow Multiple Tabs For Same File**: ${allowMultipleTabs ? '✅ Enabled' : '❌ Disabled'}
-  - ${allowMultipleTabs ? 'Each "Open in Data Viewer" action creates a new tab' : 'Focuses on existing tab if file is already open'}
-
-## How to Change Settings
-
-1. Open VSCode Settings (Ctrl+,)
-2. Search for "Scientific Data Viewer"
-3. Toggle the desired settings
-4. Changes take effect immediately
-
-## Available Settings
-
-- \`scientificDataViewer.allowMultipleTabsForSameFile\`: Allow opening multiple tabs for the same file (Experimental)
-- \`scientificDataViewer.autoRefresh\`: Automatically refresh data when files change
-- \`scientificDataViewer.maxFileSize\`: Maximum file size (MB) to load automatically
-- \`scientificDataViewer.defaultView\`: Default view mode (default)
-`;
-
-            // Show in a new document
-            vscode.workspace.openTextDocument({
-                content: description,
-                language: 'markdown'
-            }).then(doc => {
-                vscode.window.showTextDocument(doc);
-            });
-        }
-    );
 
     const showSettingsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.showSettings',
@@ -408,7 +371,6 @@ export function activate(context: vscode.ExtensionContext) {
         refreshDataCommand,
         refreshPythonEnvironmentCommand,
         showLogsCommand,
-        showFeatureFlagsCommand,
         showSettingsCommand,
         fileWatcher,
         statusBarItem,

@@ -125,7 +125,6 @@ The data viewer provides several views:
 
 The extension can be configured through VSCode settings:
 
-- `scientificDataViewer.pythonPath`: Path to Python interpreter
 - `scientificDataViewer.autoRefresh`: Automatically refresh data when files change
 - `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
 - `scientificDataViewer.defaultView`: Default view mode (default)
