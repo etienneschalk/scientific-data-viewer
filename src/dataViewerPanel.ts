@@ -212,10 +212,46 @@ export class DataViewerPanel {
             }
 
             if (this._dataInfo.error) {
+                let errorMessage = `Data processing error: ${this._dataInfo.error}`;
+                let errorDetails = 'This might be due to missing Python packages or file format issues.';
+                
+                // Handle specific error types
+                if (this._dataInfo.error_type === 'ImportError') {
+                    errorMessage = `Missing dependencies: ${this._dataInfo.error}`;
+                    errorDetails = this._dataInfo.suggestion || 'Install required packages using pip install <package_name>';
+                    
+                    // Show installation prompt for missing packages
+                    if (this._dataInfo.format_info?.missing_packages) {
+                        const installAction = await vscode.window.showWarningMessage(
+                            `Missing packages for ${this._dataInfo.format_info.display_name} files: ${this._dataInfo.format_info.missing_packages.join(', ')}`,
+                            'Install Packages',
+                            'Show Details'
+                        );
+                        
+                        if (installAction === 'Install Packages') {
+                            try {
+                                await this.dataProcessor.pythonManagerInstance.installPackagesForFormat(
+                                    this._dataInfo.format_info.missing_packages
+                                );
+                                // Refresh the data after successful installation
+                                await this._handleGetDataInfo();
+                            } catch (error) {
+                                vscode.window.showErrorMessage(
+                                    `Failed to install packages: ${error}. Please install manually: pip install ${this._dataInfo.format_info.missing_packages.join(' ')}`
+                                );
+                            }
+                        }
+                    }
+                } else if (this._dataInfo.suggestion) {
+                    errorDetails = this._dataInfo.suggestion;
+                }
+
                 this._panel.webview.postMessage({
                     command: 'error',
-                    message: `Data processing error: ${this._dataInfo.error}`,
-                    details: 'This might be due to missing Python packages or file format issues.'
+                    message: errorMessage,
+                    details: errorDetails,
+                    error_type: this._dataInfo.error_type,
+                    format_info: this._dataInfo.format_info
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
@@ -996,7 +1032,7 @@ export class DataViewerPanel {
                     displayExtensionConfig(message.data);
                     break;
                 case 'error':
-                    showError(message.message, message.details);
+                    showError(message.message, message.details, message.error_type, message.format_info);
                     break;
             }
         });
@@ -1062,11 +1098,21 @@ export class DataViewerPanel {
                 
             // Display file information
             const fileInfo = document.getElementById('fileInfo');
-            fileInfo.innerHTML = \`
-                <p><strong>Format:</strong> \${data.format || 'Unknown'}</p>
-                \${data.fileSize ? \`
-                    <p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\` : ''}
-            \`;
+            let formatInfo = \`<p><strong>Format:</strong> \${data.format || 'Unknown'}</p>\`;
+            
+            if (data.format_info) {
+                formatInfo += \`
+                    <p><strong>File Extension:</strong> \${data.format_info.extension}</p>
+                    <p><strong>Available Engines:</strong> \${data.format_info.available_engines.join(', ') || 'None'}</p>
+                    \${data.used_engine ? \`<p><strong>Used Engine:</strong> \${data.used_engine}</p>\` : ''}
+                \`;
+            }
+            
+            if (data.fileSize) {
+                formatInfo += \`<p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\`;
+            }
+            
+            fileInfo.innerHTML = formatInfo;
 
 
             ${plottingCapabilities ? `
@@ -1200,30 +1246,52 @@ export class DataViewerPanel {
             }
         }
 
-        function showError(message, details = '') {
+        function showError(message, details = '', errorType = '', formatInfo = null) {
             const errorDiv = document.getElementById('error');
             
             // Format message to handle multi-line errors
             const formattedMessage = message.replace(/\\n/g, '<br>');
             const formattedDetails = details ? details.replace(/\\n/g, '<br>') : '';
             
+            let troubleshootingSteps = \`
+                <h4>💡 Troubleshooting Steps:</h4>
+                <ol>
+                    <li>Make sure Python is installed and accessible</li>
+                    <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
+                    <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
+                    <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
+                    <li>Check VSCode Output panel for more details</li>
+                </ol>
+            \`;
+            
+            // Add specific troubleshooting for missing packages
+            if (errorType === 'ImportError' && formatInfo && formatInfo.missing_packages) {
+                troubleshootingSteps = \`
+                    <h4>💡 Missing Dependencies:</h4>
+                    <p>This file format requires additional packages that are not installed:</p>
+                    <ul>
+                        <li><strong>Missing packages:</strong> \${formatInfo.missing_packages.join(', ')}</li>
+                        <li><strong>File format:</strong> \${formatInfo.display_name} (\${formatInfo.extension})</li>
+                    </ul>
+                    <p><strong>Installation command:</strong></p>
+                    <code>pip install \${formatInfo.missing_packages.join(' ')}</code>
+                    <p style="margin-top: 10px;">After installation, refresh the data viewer to try again.</p>
+                \`;
+            }
+            
             errorDiv.innerHTML = \`
                 <h3>❌ Error</h3>
                 <p><strong>Message:</strong> \${formattedMessage}</p>
                 \${formattedDetails ? \`<p><strong>Details:</strong> \${formattedDetails}</p>\` : ''}
+                \${errorType ? \`<p><strong>Error Type:</strong> \${errorType}</p>\` : ''}
                 <div style="margin-top: 15px;">
-                    <h4>💡 Troubleshooting Steps:</h4>
-                    <ol>
-                        <li>Make sure Python is installed and accessible</li>
-                        <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
-                        <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
-                        <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
-                        <li>Check VSCode Output panel for more details</li>
-                    </ol>
-
-                    Note: If you see this message even after you have configured the Python interpreter, 
-                    you might need to wait a few moments for the Python environment to be initialized.
-                    This can happen if you opened the data viewer panel right after VSCode was opened.
+                    \${troubleshootingSteps}
+                    
+                    <p style="margin-top: 15px; font-style: italic;">
+                        Note: If you see this message even after you have configured the Python interpreter, 
+                        you might need to wait a few moments for the Python environment to be initialized.
+                        This can happen if you opened the data viewer panel right after VSCode was opened.
+                    </p>
                 </div>
             \`;
             errorDiv.classList.remove('hidden');

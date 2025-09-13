@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to get data file information including format, dimensions, variables, and attributes.
+Supports all xarray-compatible formats with automatic engine detection and dependency management.
 Usage: python get_data_info.py <file_path>
 """
 
@@ -8,38 +9,164 @@ import json
 import os
 import sys
 import xarray as xr
-import numpy as np
+
+
+# Format to engine mapping based on xarray documentation
+FORMAT_ENGINE_MAP = {
+    # Built-in formats
+    ".nc": ["netcdf4", "h5netcdf", "scipy"],
+    ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
+    ".zarr": ["zarr"],
+    ".h5": ["h5netcdf", "h5py", "netcdf4"],
+    ".hdf5": ["h5netcdf", "h5py", "netcdf4"],
+    # Additional formats that might be supported
+    ".grib": ["cfgrib"],
+    ".grib2": ["cfgrib"],
+    ".tif": ["rasterio"],
+    ".tiff": ["rasterio"],
+    ".geotiff": ["rasterio"],
+    ".jp2": ["rasterio"],
+    ".jpeg2000": ["rasterio"],
+    ".safe": ["sentinel"],
+    ".nc4": ["netcdf4", "h5netcdf"],
+    ".cdf": ["netcdf4", "h5netcdf", "scipy"],
+}
+
+# Format display names
+FORMAT_DISPLAY_NAMES = {
+    ".nc": "NetCDF",
+    ".netcdf": "NetCDF",
+    ".zarr": "Zarr",
+    ".h5": "HDF5",
+    ".hdf5": "HDF5",
+    ".grib": "GRIB",
+    ".grib2": "GRIB2",
+    ".tif": "GeoTIFF",
+    ".tiff": "GeoTIFF",
+    ".geotiff": "GeoTIFF",
+    ".jp2": "JPEG-2000",
+    ".jpeg2000": "JPEG-2000",
+    ".safe": "Sentinel-1 SAFE",
+    ".nc4": "NetCDF4",
+    ".cdf": "CDF/NetCDF",
+}
+
+# Required packages for each engine
+ENGINE_PACKAGES = {
+    "netcdf4": "netCDF4",
+    "h5netcdf": "h5netcdf",
+    "scipy": "scipy",
+    "zarr": "zarr",
+    "h5py": "h5py",
+    "cfgrib": "cfgrib",
+    "rasterio": "rioxarray",
+    "sentinel": "xarray-sentinel",
+}
+
+
+def check_package_availability(package_name):
+    """Check if a Python package is available."""
+    try:
+        __import__(package_name)
+        return True
+    except ImportError:
+        return False
+
+
+def get_available_engines(file_extension):
+    """Get available engines for a file extension."""
+    if file_extension not in FORMAT_ENGINE_MAP:
+        return []
+
+    available_engines = []
+    for engine in FORMAT_ENGINE_MAP[file_extension]:
+        package_name = ENGINE_PACKAGES.get(engine, engine)
+        if check_package_availability(package_name):
+            available_engines.append(engine)
+
+    return available_engines
+
+
+def get_missing_packages(file_extension):
+    """Get missing packages required for a file extension."""
+    if file_extension not in FORMAT_ENGINE_MAP:
+        return []
+
+    missing_packages = []
+    for engine in FORMAT_ENGINE_MAP[file_extension]:
+        package_name = ENGINE_PACKAGES.get(engine, engine)
+        if not check_package_availability(package_name):
+            missing_packages.append(package_name)
+
+    return missing_packages
+
+
+def detect_file_format(file_path):
+    """Detect file format and return extension, display name, and available engines."""
+    ext = os.path.splitext(file_path)[1].lower()
+    display_name = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
+    available_engines = get_available_engines(ext)
+    missing_packages = get_missing_packages(ext)
+
+    return {
+        "extension": ext,
+        "display_name": display_name,
+        "available_engines": available_engines,
+        "missing_packages": missing_packages,
+        "is_supported": len(available_engines) > 0,
+    }
+
+
+def open_dataset_with_fallback(file_path, file_format_info):
+    """Open dataset with fallback to different engines."""
+    ext = file_format_info["extension"]
+    available_engines = file_format_info["available_engines"]
+
+    if not available_engines:
+        raise ImportError(
+            f"No engines available for {ext} files. Missing packages: {', '.join(file_format_info['missing_packages'])}"
+        )
+
+    # Try each available engine
+    last_error = None
+    for engine in available_engines:
+        try:
+            if ext == ".zarr":
+                ds = xr.open_zarr(file_path)
+            else:
+                ds = xr.open_dataset(file_path, engine=engine)
+            return ds, engine
+        except Exception as e:
+            last_error = e
+            continue
+
+    # If all engines failed, raise the last error
+    raise last_error
 
 
 def get_file_info(file_path):
     try:
-        # Determine file format
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext in [".nc", ".netcdf"]:
-            format_name = "NetCDF"
-        elif ext == ".zarr":
-            format_name = "Zarr"
-        elif ext in [".h5", ".hdf5"]:
-            format_name = "HDF5"
-        else:
-            format_name = "Unknown"
+        # Detect file format and available engines
+        file_format_info = detect_file_format(file_path)
 
-        # Open dataset
-        if ext in [".nc", ".netcdf"]:
-            ds = xr.open_dataset(file_path)
-        elif ext == ".zarr":
-            ds = xr.open_zarr(file_path)
-        elif ext in [".h5", ".hdf5"]:
-            ds = xr.open_dataset(file_path, engine="h5netcdf")
-        else:
-            return None
+        if not file_format_info["is_supported"]:
+            return {
+                "error": f"Unsupported file format: {file_format_info['extension']}",
+                "format_info": file_format_info,
+                "suggestion": f"Install required packages: {', '.join(file_format_info['missing_packages'])}",
+            }
+
+        # Open dataset with fallback
+        ds, used_engine = open_dataset_with_fallback(file_path, file_format_info)
 
         # Get file size
         file_size = os.path.getsize(file_path)
 
         # Extract information
         info = {
-            "format": format_name,
+            "format": file_format_info["display_name"],
+            "format_info": file_format_info,
+            "used_engine": used_engine,
             "fileSize": file_size,
             "dimensions": dict(ds.dims),
             "variables": [],
@@ -85,8 +212,20 @@ def get_file_info(file_path):
         ds.close()
         return info
 
+    except ImportError as e:
+        # Handle missing dependencies
+        return {
+            "error": f"Missing dependencies: {str(e)}",
+            "error_type": "ImportError",
+            "suggestion": "Install required packages using pip install <package_name>",
+        }
     except Exception as e:
-        return {"error": str(e)}
+        # Handle other errors (file corruption, format issues, etc.)
+        return {
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "suggestion": "Check if the file is corrupted or in an unsupported format",
+        }
 
 
 def main():

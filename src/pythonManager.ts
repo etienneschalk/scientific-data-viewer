@@ -193,10 +193,15 @@ export class PythonManager {
         Logger.debug(`Checking required packages`);
         Logger.debug(`Python path: ${pythonPath}`);
 
-        const requiredPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'];
+        // Core packages required for basic functionality
+        const corePackages = ['xarray', 'numpy'];
+        // Additional packages for extended format support
+        const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
+        
+        const allPackages = [...corePackages, ...extendedPackages];
         const availablePackages: string[] = [];
 
-        for (const packageName of requiredPackages) {
+        for (const packageName of allPackages) {
             try {
                 const isAvailable = await this.checkPackageAvailability(pythonPath, packageName);
                 if (isAvailable) {
@@ -278,9 +283,11 @@ export class PythonManager {
 
         try {
             const packages = await this.checkRequiredPackages(this.pythonPath);
-            const missingPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'].filter(
-                pkg => !packages.includes(pkg)
-            );
+            const corePackages = ['xarray', 'numpy'];
+            const missingCorePackages = corePackages.filter(pkg => !packages.includes(pkg));
+            
+            // Only require core packages for basic functionality
+            const missingPackages = missingCorePackages;
 
             if (missingPackages.length > 0) {
                 const action = await vscode.window.showWarningMessage(
@@ -654,6 +661,27 @@ export class PythonManager {
         } catch (error) {
             Logger.debug(`Failed to activate Python extension: ${error}`);
             return undefined;
+        }
+    }
+
+    /**
+     * Install packages for a specific file format
+     */
+    async installPackagesForFormat(missingPackages: string[]): Promise<void> {
+        if (!this.pythonPath || !this.isInitialized) {
+            throw new Error('Python environment not properly initialized');
+        }
+
+        if (missingPackages.length === 0) {
+            return;
+        }
+
+        try {
+            await this.installPackages(missingPackages);
+            vscode.window.showInformationMessage(`Successfully installed packages: ${missingPackages.join(', ')}`);
+        } catch (error) {
+            Logger.error(`Failed to install packages for format: ${error}`);
+            throw error;
         }
     }
 

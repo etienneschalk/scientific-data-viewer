@@ -5,6 +5,14 @@ import { Logger } from './logger';
 
 export interface DataInfo {
     format: string;
+    format_info?: {
+        extension: string;
+        display_name: string;
+        available_engines: string[];
+        missing_packages: string[];
+        is_supported: boolean;
+    };
+    used_engine?: string;
     dimensions?: { [key: string]: number };
     variables?: Array<{
         name: string;
@@ -17,6 +25,8 @@ export interface DataInfo {
     attributes?: { [key: string]: any };
     fileSize?: number;
     error?: string;
+    error_type?: string;
+    suggestion?: string;
 }
 
 export interface DataSlice {

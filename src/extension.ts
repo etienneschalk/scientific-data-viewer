@@ -152,6 +152,9 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('Registering custom editor providers...');
     const netcdfEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
     const hdf5EditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const zarrEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const gribEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const geotiffEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
 
     const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
         'netcdfEditor',
@@ -161,6 +164,21 @@ export function activate(context: vscode.ExtensionContext) {
     const hdf5EditorRegistration = vscode.window.registerCustomEditorProvider(
         'hdf5Editor',
         hdf5EditorProvider
+    );
+
+    const zarrEditorRegistration = vscode.window.registerCustomEditorProvider(
+        'zarrEditor',
+        zarrEditorProvider
+    );
+
+    const gribEditorRegistration = vscode.window.registerCustomEditorProvider(
+        'gribEditor',
+        gribEditorProvider
+    );
+
+    const geotiffEditorRegistration = vscode.window.registerCustomEditorProvider(
+        'geotiffEditor',
+        geotiffEditorProvider
     );
 
     Logger.info('Custom editor providers registered successfully');
@@ -178,7 +196,7 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: true,
                     canSelectFolders: false,
                     filters: {
-                        'Scientific Data Files': ['nc', 'netcdf', 'zarr', 'h5', 'hdf5']
+                        'Scientific Data Files': ['nc', 'netcdf', 'zarr', 'h5', 'hdf5', 'grib', 'grib2', 'tif', 'tiff', 'geotiff', 'jp2', 'jpeg2000', 'safe', 'nc4', 'cdf']
                     }
                 });
                 if (fileUri && fileUri[0]) {
@@ -236,7 +254,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 
     // Register context menu for supported files
-    const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5'];
+    const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
     vscode.workspace.onDidOpenTextDocument(async (document) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
@@ -359,6 +377,9 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceChangeListener,
         netcdfEditorRegistration,
         hdf5EditorRegistration,
+        zarrEditorRegistration,
+        gribEditorRegistration,
+        geotiffEditorRegistration,
         configListener
     );
 
