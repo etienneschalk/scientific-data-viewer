@@ -23,6 +23,12 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
 
+## 📸 Screenshot
+
+<div align="center">
+  <img src="media/Screenshot from 2025-09-13 17-09-58.png" alt="Scientific Data Viewer Screenshot" width="800">
+</div>
+
 ## 📦 Installation
 
 ### Quick Install (Recommended)
@@ -145,8 +151,6 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
 - **Settings UI**: Each setting appears as a checkbox in VSCode Settings
 - **Real-time Updates**: Configuration changes take effect immediately
-
-For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLAGS.md).
 
 ## 🔧 Troubleshooting
 
