@@ -110,6 +110,12 @@ export class DataViewerPanel {
                     case 'getHtmlRepresentation':
                         await this._handleGetHtmlRepresentation();
                         break;
+                    case 'getTextRepresentation':
+                        await this._handleGetTextRepresentation();
+                        break;
+                    case 'getShowVersions':
+                        await this._handleGetShowVersions();
+                        break;
                 }
             },
             null,
@@ -275,6 +281,36 @@ export class DataViewerPanel {
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to load HTML representation: ${error}`
+            });
+        }
+    }
+
+    private async _handleGetTextRepresentation() {
+        try {
+            const textRepresentation = await this.dataProcessor.getTextRepresentation(this._currentFile);
+            this._panel.webview.postMessage({
+                command: 'textRepresentation',
+                data: textRepresentation
+            });
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to load text representation: ${error}`
+            });
+        }
+    }
+
+    private async _handleGetShowVersions() {
+        try {
+            const showVersions = await this.dataProcessor.getShowVersions();
+            this._panel.webview.postMessage({
+                command: 'showVersions',
+                data: showVersions
+            });
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to load show versions: ${error}`
             });
         }
     }
@@ -569,6 +605,91 @@ export class DataViewerPanel {
         .timestamp-icon {
             font-size: 0.8em;
         }
+        
+        .text-representation {
+            max-height: 400px;
+            overflow: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            padding: 10px;
+            background-color: var(--vscode-editor-background);
+            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .text-representation-container {
+            position: relative;
+        }
+        
+        .text-copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 10;
+        }
+        
+        .text-copy-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .text-copy-button.copied {
+            background-color: var(--vscode-charts-green);
+            color: var(--vscode-foreground);
+        }
+        
+        .troubleshooting-section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        
+        .troubleshooting-section h3 {
+            margin-top: 0;
+            color: var(--vscode-foreground);
+        }
+        
+        .troubleshooting-content {
+            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: var(--vscode-textCodeBlock-background);
+            color: var(--vscode-textPreformat-foreground);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--vscode-panel-border);
+            max-height: 300px;
+            overflow: auto;
+        }
+        
+        details summary {
+            cursor: pointer;
+            padding: 8px 0;
+            font-weight: 500;
+            color: var(--vscode-foreground);
+        }
+        
+        details summary:hover {
+            color: var(--vscode-button-hoverBackground);
+        }
+        
+        details[open] summary {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -614,6 +735,24 @@ export class DataViewerPanel {
         <div class="info-section">
             <h3>Xarray HTML Representation</h3>
             <div id="htmlRepresentation" class="html-representation"></div>
+        </div>
+        
+        <div class="info-section">
+            <h3>Xarray Text Representation</h3>
+            <div class="text-representation-container">
+                <button id="textCopyButton" class="text-copy-button hidden">
+                    📋 Copy
+                </button>
+                <div id="textRepresentation" class="text-representation"></div>
+            </div>
+        </div>
+        
+        <div class="troubleshooting-section">
+            <h3>Troubleshooting</h3>
+            <details>
+                <summary>Show xarray version information</summary>
+                <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
+            </details>
         </div>
 
         <div class="info-section">
@@ -691,6 +830,30 @@ export class DataViewerPanel {
             }
         });
 
+        document.getElementById('textCopyButton').addEventListener('click', async () => {
+            const textRepresentation = document.getElementById('textRepresentation');
+            const copyButton = document.getElementById('textCopyButton');
+            const text = textRepresentation.textContent;
+            
+            if (text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    copyButton.textContent = '✓ Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text representation:', err);
+                    copyButton.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
+        });
+
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
@@ -714,6 +877,12 @@ export class DataViewerPanel {
                 ` : ''}
                 case 'htmlRepresentation':
                     displayHtmlRepresentation(message.data);
+                    break;
+                case 'textRepresentation':
+                    displayTextRepresentation(message.data);
+                    break;
+                case 'showVersions':
+                    displayShowVersions(message.data);
                     break;
                 case 'error':
                     showError(message.message, message.details);
@@ -835,6 +1004,12 @@ export class DataViewerPanel {
             
             // Request HTML representation
             vscode.postMessage({ command: 'getHtmlRepresentation' });
+            
+            // Request text representation
+            vscode.postMessage({ command: 'getTextRepresentation' });
+            
+            // Request show versions
+            vscode.postMessage({ command: 'getShowVersions' });
 
             // Show content
             document.getElementById('loading').classList.add('hidden');
@@ -869,6 +1044,28 @@ export class DataViewerPanel {
                 container.innerHTML = htmlData;
             } else {
                 container.innerHTML = '<p>Failed to load HTML representation</p>';
+            }
+        }
+
+        function displayTextRepresentation(textData) {
+            const container = document.getElementById('textRepresentation');
+            const copyButton = document.getElementById('textCopyButton');
+            
+            if (textData) {
+                container.textContent = textData;
+                copyButton.classList.remove('hidden');
+            } else {
+                container.textContent = 'Failed to load text representation';
+                copyButton.classList.add('hidden');
+            }
+        }
+
+        function displayShowVersions(versionsData) {
+            const container = document.getElementById('showVersions');
+            if (versionsData) {
+                container.textContent = versionsData;
+            } else {
+                container.textContent = 'Failed to load version information';
             }
         }
 

@@ -27,7 +27,7 @@ export interface DataSlice {
 }
 
 export class DataProcessor {
-    constructor(private pythonManager: PythonManager) {}
+    constructor(private pythonManager: PythonManager) { }
 
     get pythonManagerInstance(): PythonManager {
         return this.pythonManager;
@@ -61,7 +61,7 @@ export class DataProcessor {
         const filePath = uri.fsPath;
         const scriptPath = path.join(__dirname, '..', 'python', 'get_data_slice.py');
         const args = [filePath, variable];
-        
+
         if (sliceSpec) {
             args.push(JSON.stringify(sliceSpec));
         }
@@ -105,10 +105,10 @@ export class DataProcessor {
 
         try {
             Logger.info(`Creating plot for variable '${variable}' with type '${plotType}'`);
-            
+
             // Execute Python script and capture both stdout and stderr
             const result = await this.pythonManager.executePythonFileWithLogs(scriptPath, args);
-            
+
             if (typeof result === 'string' && result.startsWith('iVBOR')) {
                 Logger.info(`Plot created successfully for variable '${variable}'`);
                 return result; // Base64 image data
@@ -139,6 +139,47 @@ export class DataProcessor {
             return result.html || null;
         } catch (error) {
             Logger.error(`Error getting HTML representation: ${error}`);
+            return null;
+        }
+    }
+
+    async getTextRepresentation(uri: vscode.Uri): Promise<string | null> {
+        if (!this.pythonManager.isReady()) {
+            throw new Error('Python environment not ready');
+        }
+
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(__dirname, '..', 'python', 'get_text_representation.py');
+        const args = [filePath];
+
+        try {
+            const result = await this.pythonManager.executePythonFile(scriptPath, args);
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            return result.text || null;
+        } catch (error) {
+            Logger.error(`Error getting text representation: ${error}`);
+            return null;
+        }
+    }
+
+    async getShowVersions(): Promise<string | null> {
+        if (!this.pythonManager.isReady()) {
+            throw new Error('Python environment not ready');
+        }
+
+        const scriptPath = path.join(__dirname, '..', 'python', 'get_show_versions.py');
+        const args: string[] = [];
+
+        try {
+            const result = await this.pythonManager.executePythonFile(scriptPath, args);
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            return result.versions || null;
+        } catch (error) {
+            Logger.error(`Error getting show versions: ${error}`);
             return null;
         }
     }
