@@ -47,7 +47,7 @@ export class PythonManager {
 
             if (!pythonApi) {
                 Logger.warn('❌ Python extension API is not available after activation');
-                return undefined;
+                // Continue to VSCode configuration fallback
             }
             else {
                 Logger.debug('✅ Python extension API is available after activation');
@@ -58,7 +58,7 @@ export class PythonManager {
             }
 
             // Try the new environments API first
-            if (pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
+            if (pythonApi && pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
                     const activeEnvironment = await pythonApi.environments.getActiveEnvironmentPath();
                     Logger.debug(`Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
@@ -69,7 +69,7 @@ export class PythonManager {
             }
 
             // Try alternative environments API methods
-            if (pythonApi.environments) {
+            if (pythonApi && pythonApi.environments) {
                 // Try getActiveInterpreter if available
                 if (typeof pythonApi.environments.getActiveInterpreter === 'function') {
                     try {
@@ -94,7 +94,7 @@ export class PythonManager {
             }
 
             // Fallback to old settings API if available
-            if (pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
+            if (pythonApi && pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
                 try {
                     const interpreterDetails = await pythonApi.settings.getInterpreterDetails();
                     Logger.debug(`Python extension API interpreter details (legacy): ${JSON.stringify(interpreterDetails)}`);

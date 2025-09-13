@@ -57,9 +57,10 @@ export class DataViewerPanel {
         DataViewerPanel.activePanels.add(dataViewerPanel);
     }
 
-    public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+    public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor): DataViewerPanel {
         const dataViewerPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
         DataViewerPanel.activePanels.add(dataViewerPanel);
+        return dataViewerPanel;
     }
 
     public static async refreshCurrentPanel(dataProcessor: DataProcessor) {
@@ -415,6 +416,7 @@ export class DataViewerPanel {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scientific Data Viewer</title>
+    ${plottingCapabilities ? '<!-- plottingCapabilities: true -->' : ''}
     <style>
         body {
             font-family: var(--vscode-font-family);

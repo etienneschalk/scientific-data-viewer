@@ -47,9 +47,8 @@ export class DataProcessor {
 
         try {
             const result = await this.pythonManager.executePythonFile(scriptPath, [filePath]);
-            if (result.error) {
-                throw new Error(result.error);
-            }
+            // Return the result even if it contains an error field
+            // The caller can check for result.error to handle errors
             return result;
         } catch (error) {
             Logger.error(`Error processing data file: ${error}`);
