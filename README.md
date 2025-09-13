@@ -98,7 +98,7 @@ Before using this extension, you need:
 
 2. **Manual Configuration**:
    - Press `Ctrl+Shift+P`
-   - Type "Select Python Interpreter"
+   - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
 
 3. **Settings**:
@@ -251,7 +251,7 @@ npm run lint
 
 1. **Python not found**:
    - Ensure Python is installed and in your PATH
-   - Use the "Select Python Interpreter" command to manually set the path
+   - Use the "Python: Select Interpreter" command to manually set the path
 
 2. **Missing packages**:
    - Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`

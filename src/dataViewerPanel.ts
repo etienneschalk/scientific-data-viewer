@@ -12,6 +12,7 @@ export class DataViewerPanel {
     private _disposables: vscode.Disposable[] = [];
     private _dataInfo: DataInfo | null = null;
     private _currentFile: vscode.Uri;
+    private _lastLoadTime: Date | null = null;
 
     public static createOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
@@ -143,7 +144,7 @@ export class DataViewerPanel {
                 this._panel.webview.postMessage({
                     command: 'error',
                     message: 'Python environment not ready. Please configure Python interpreter first.',
-                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Select Python Interpreter" to set up Python environment.'
+                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
                 });
                 return;
             }
@@ -181,10 +182,14 @@ export class DataViewerPanel {
                 return;
             }
 
+            // Update last load time
+            this._lastLoadTime = new Date();
+
             this._panel.webview.postMessage({
                 command: 'dataInfo',
                 data: this._dataInfo,
-                filePath: this._currentFile.fsPath
+                filePath: this._currentFile.fsPath,
+                lastLoadTime: this._lastLoadTime.toISOString()
             });
         } catch (error) {
             Logger.error(`Error in _handleGetDataInfo: ${error}`);
@@ -551,6 +556,19 @@ export class DataViewerPanel {
             background-color: var(--vscode-charts-green);
             color: var(--vscode-foreground);
         }
+        
+        .timestamp {
+            color: var(--vscode-descriptionForeground);
+            font-size: 0.9em;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .timestamp-icon {
+            font-size: 0.8em;
+        }
     </style>
 </head>
 <body>
@@ -569,6 +587,10 @@ export class DataViewerPanel {
             </select>
             <button id="plotButton" disabled>Create Plot</button>
             ` : ''}
+            <div id="timestamp" class="timestamp hidden">
+                <span class="timestamp-icon">🕒</span>
+                <span id="timestampText">Last loaded: --</span>
+            </div>
             <button id="refreshButton">Refresh</button>
         </div>
     </div>
@@ -616,6 +638,7 @@ export class DataViewerPanel {
         const vscode = acquireVsCodeApi();
         let currentData = null;
         let selectedVariable = null;
+        let lastLoadTime = null;
 
         // Event listeners
         ${plottingCapabilities ? `
@@ -639,6 +662,8 @@ export class DataViewerPanel {
         ` : ''}
 
         document.getElementById('refreshButton').addEventListener('click', () => {
+            // Show loading state for timestamp
+            updateTimestamp(null, true);
             vscode.postMessage({ command: 'getDataInfo' });
         });
 
@@ -673,7 +698,9 @@ export class DataViewerPanel {
             switch (message.command) {
                 case 'dataInfo':
                     currentData = message.data;
+                    lastLoadTime = message.lastLoadTime;
                     displayDataInfo(message.data, message.filePath);
+                    updateTimestamp(message.lastLoadTime);
                     break;
                 ${plottingCapabilities ? `
                 case 'variableList':
@@ -693,6 +720,41 @@ export class DataViewerPanel {
                     break;
             }
         });
+
+        function updateTimestamp(isoString, isLoading = false) {
+            const timestampElement = document.getElementById('timestamp');
+            const timestampText = document.getElementById('timestampText');
+            
+            if (isLoading) {
+                timestampText.textContent = 'Loading...';
+                timestampElement.classList.remove('hidden');
+            } else if (isoString) {
+                const date = new Date(isoString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMinutes = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                // let timeAgo;
+                // if (diffMinutes < 1) {
+                //     timeAgo = 'just now';
+                // } else if (diffMinutes < 60) {
+                //     timeAgo = \`\${diffMinutes}m ago\`;
+                // } else if (diffHours < 24) {
+                //     timeAgo = \`\${diffHours}h ago\`;
+                // } else {
+                //     timeAgo = \`\${diffDays}d ago\`;
+                // }
+                
+                const timeString = date.toLocaleTimeString();
+                timestampText.textContent = \`Last loaded: \${timeString}\`;
+                // timestampText.textContent = \`Last loaded: \${timeString} (\${timeAgo})\`;
+                timestampElement.classList.remove('hidden');
+            } else {
+                timestampElement.classList.add('hidden');
+            }
+        }
 
         function displayDataInfo(data, filePath) {
             if (!data) {
@@ -826,7 +888,7 @@ export class DataViewerPanel {
                     <ol>
                         <li>Make sure Python is installed and accessible</li>
                         <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
-                        <li>Use Command Palette (Ctrl+Shift+P) → "Select Python Interpreter"</li>
+                        <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
                         <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
                         <li>Check VSCode Output panel for more details</li>
                     </ol>

@@ -32,7 +32,7 @@
 ### Issue: "Python environment not ready"
 **Solution:**
 1. Press `Ctrl+Shift+P`
-2. Type "Select Python Interpreter"
+2. Type "Python: Select Interpreter"
 3. Choose your Python installation
 4. Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
 

@@ -15,7 +15,7 @@ export class PythonManager {
     async initialize(): Promise<void> {
         // Get Python interpreter from Python extension API (recommended method)
         const newPythonPath = await this.getPythonInterpreterFromExtension();
-        
+
         if (newPythonPath && newPythonPath !== this.pythonPath) {
             Logger.info(`Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
             this.pythonPath = newPythonPath;
@@ -44,7 +44,7 @@ export class PythonManager {
 
             // Ensure the extension is activated
             const pythonApi = await pythonExtension.activate();
-            
+
             if (!pythonApi) {
                 Logger.warn('❌ Python extension API is not available after activation');
                 return undefined;
@@ -56,7 +56,7 @@ export class PythonManager {
                     Logger.debug(`Environments API methods: ${JSON.stringify(Object.keys(pythonApi.environments))}`);
                 }
             }
-            
+
             // Try the new environments API first
             if (pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
@@ -67,7 +67,7 @@ export class PythonManager {
                     Logger.debug(`Environments API error: ${envError}`);
                 }
             }
-            
+
             // Try alternative environments API methods
             if (pythonApi.environments) {
                 // Try getActiveInterpreter if available
@@ -80,7 +80,7 @@ export class PythonManager {
                         Logger.debug(`Alternative environments API error: ${altError}`);
                     }
                 }
-                
+
                 // Try getActiveEnvironment if available
                 if (typeof pythonApi.environments.getActiveEnvironment === 'function') {
                     try {
@@ -92,7 +92,7 @@ export class PythonManager {
                     }
                 }
             }
-            
+
             // Fallback to old settings API if available
             if (pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
                 try {
@@ -103,12 +103,12 @@ export class PythonManager {
                     Logger.debug(`Legacy API error: ${legacyError}`);
                 }
             }
-            
+
             Logger.warn('No compatible Python extension API found');
         } catch (error) {
             Logger.warn(`Could not access Python extension API: ${error}`);
         }
-        
+
         // Fallback: try to get from VSCode configuration
         try {
             const vscodePythonPath = vscode.workspace.getConfiguration('python').get('defaultInterpreterPath') as string | undefined;
@@ -119,7 +119,7 @@ export class PythonManager {
         } catch (error) {
             Logger.warn(`Could not access Python configuration: ${error}`);
         }
-        
+
         return undefined;
     }
 
@@ -161,7 +161,7 @@ export class PythonManager {
         }
 
         vscode.window.showWarningMessage(
-            'No suitable Python interpreter found. Please install Python and use VSCode\'s "Select Python Interpreter" command.'
+            'No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.'
         );
     }
 
@@ -169,11 +169,11 @@ export class PythonManager {
         return new Promise((resolve) => {
             const process = spawn(pythonPath, ['--version'], { shell: true });
             let output = '';
-            
+
             process.stdout.on('data', (data) => {
                 output += data.toString();
             });
-            
+
             process.on('close', (code) => {
                 if (code === 0) {
                     resolve(output.trim());
@@ -181,7 +181,7 @@ export class PythonManager {
                     resolve(null);
                 }
             });
-            
+
             process.on('error', () => {
                 resolve(null);
             });
@@ -219,11 +219,11 @@ export class PythonManager {
         return new Promise((resolve) => {
             const args = ['-c', `'import ${packageName}'`];
             const process = spawn(pythonPath, args, { shell: true });
-            
+
             process.on('close', (code) => {
                 resolve(code === 0);
             });
-            
+
             process.on('error', (error) => {
                 resolve(false);
             });
@@ -236,22 +236,22 @@ export class PythonManager {
         }
 
         return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, ['-m', 'pip', '--version'], { 
+            const process = spawn(this.pythonPath!, ['-m', 'pip', '--version'], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
-            
+
             let stdout = '';
             let stderr = '';
-            
+
             process.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
-            
+
             process.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
-            
+
             process.on('close', (code) => {
                 if (code === 0) {
                     Logger.debug(`pip version: ${stdout.trim()}`);
@@ -260,7 +260,7 @@ export class PythonManager {
                     reject(new Error(`pip check failed (exit code ${code}): ${stderr || stdout}`));
                 }
             });
-            
+
             process.on('error', (error) => {
                 reject(new Error(`Failed to check pip availability: ${error.message}`));
             });
@@ -333,32 +333,32 @@ export class PythonManager {
             Logger.info(`Installing packages: ${packages.join(', ')} using Python: ${this.pythonPath}`);
             Logger.debug(`Working directory: ${process.cwd()}`);
             Logger.debug(`Environment PATH: ${process.env.PATH}`);
-            
-            const pipProcess = spawn(this.pythonPath!, ['-m', 'pip', 'install', ...packages], { 
+
+            const pipProcess = spawn(this.pythonPath!, ['-m', 'pip', 'install', ...packages], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
-            
+
             let stdout = '';
             let stderr = '';
-            
+
             pipProcess.stdout.on('data', (data) => {
                 const output = data.toString();
                 stdout += output;
                 Logger.debug(`pip stdout: ${output}`);
             });
-            
+
             pipProcess.stderr.on('data', (data) => {
                 const output = data.toString();
                 stderr += output;
                 Logger.warn(`pip stderr: ${output}`);
             });
-            
+
             pipProcess.on('close', (code) => {
                 Logger.debug(`pip process exited with code: ${code}`);
                 Logger.debug(`pip stdout: ${stdout}`);
                 Logger.debug(`pip stderr: ${stderr}`);
-                
+
                 if (code === 0) {
                     this.isInitialized = true;
                     vscode.window.showInformationMessage('Packages installed successfully!');
@@ -366,15 +366,15 @@ export class PythonManager {
                 } else {
                     // Create detailed error message with pip output
                     let errorMessage = `Failed to install packages. Exit code: ${code}`;
-                    
+
                     if (stderr) {
                         errorMessage += `\n\nPip Error Output:\n${stderr}`;
                     }
-                    
+
                     if (stdout) {
                         errorMessage += `\n\nPip Standard Output:\n${stdout}`;
                     }
-                    
+
                     // Add common troubleshooting tips based on error content
                     if (stderr.includes('Permission denied') || stderr.includes('Access is denied')) {
                         errorMessage += `\n\n💡 Troubleshooting: Permission denied. Try running:\n${this.pythonPath} -m pip install --user ${packages.join(' ')}`;
@@ -387,20 +387,20 @@ export class PythonManager {
                     } else if (stderr.includes('Microsoft Visual C++')) {
                         errorMessage += `\n\n💡 Troubleshooting: Missing Visual C++ compiler. Install Microsoft Visual C++ Build Tools or use pre-compiled packages.`;
                     }
-                    
+
                     reject(new Error(errorMessage));
                 }
             });
-            
+
             pipProcess.on('error', (error) => {
                 Logger.error(`pip process error: ${error.message}`);
                 let errorMessage = `Failed to execute pip: ${error.message}`;
-                
+
                 if (error.message.includes('ENOENT')) {
                     errorMessage += `\n\n💡 Troubleshooting: Python interpreter not found at: ${this.pythonPath}`;
                     errorMessage += `\nPlease check your Python installation and try selecting a different interpreter.`;
                 }
-                
+
                 reject(new Error(errorMessage));
             });
         });
@@ -409,7 +409,7 @@ export class PythonManager {
 
     async executePythonScript(script: string, args: string[] = []): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized. Please run "Select Python Interpreter" command first.');
+            throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
         Logger.log(`executePythonScript: Executing Python script with args: ${args}`);
@@ -417,22 +417,22 @@ export class PythonManager {
         Logger.log(`executePythonScript: Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, ['-c', script, ...args], { 
+            const process = spawn(this.pythonPath!, ['-c', script, ...args], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
-            
+
             let stdout = '';
             let stderr = '';
-            
+
             process.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
-            
+
             process.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
-            
+
             process.on('close', (code) => {
                 if (code === 0) {
                     try {
@@ -454,7 +454,7 @@ export class PythonManager {
                     }
                 }
             });
-            
+
             process.on('error', (error) => {
                 if (error.message.includes('ENOENT')) {
                     reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
@@ -467,7 +467,7 @@ export class PythonManager {
 
     async executePythonFile(scriptPath: string, args: string[] = []): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized. Please run "Select Python Interpreter" command first.');
+            throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
         Logger.log(`executePythonFile: Executing Python file ${scriptPath} with args: ${args}`);
@@ -475,22 +475,22 @@ export class PythonManager {
         Logger.log(`executePythonFile: Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, [scriptPath, ...args], { 
+            const process = spawn(this.pythonPath!, [scriptPath, ...args], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
-            
+
             let stdout = '';
             let stderr = '';
-            
+
             process.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
-            
+
             process.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
-            
+
             process.on('close', (code) => {
                 if (code === 0) {
                     try {
@@ -512,7 +512,7 @@ export class PythonManager {
                     }
                 }
             });
-            
+
             process.on('error', (error) => {
                 if (error.message.includes('ENOENT')) {
                     reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
@@ -525,29 +525,29 @@ export class PythonManager {
 
     async executePythonFileWithLogs(scriptPath: string, args: string[] = []): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized. Please run "Select Python Interpreter" command first.');
+            throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
         Logger.log(`executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args}`);
         Logger.log(`executePythonFileWithLogs: Python path: ${this.pythonPath}`);
 
         return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, [scriptPath, ...args], { 
+            const process = spawn(this.pythonPath!, [scriptPath, ...args], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
-            
+
             let stdout = '';
             let stderr = '';
-            
+
             process.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
-            
+
             process.stderr.on('data', (data) => {
                 const logData = data.toString();
                 stderr += logData;
-                
+
                 // Forward Python logs to VSCode Logger
                 // Parse log lines and forward them
                 const lines = logData.split('\n').filter((line: string) => line.trim());
@@ -578,7 +578,7 @@ export class PythonManager {
                     }
                 });
             });
-            
+
             process.on('close', (code) => {
                 if (code === 0) {
                     try {
@@ -600,7 +600,7 @@ export class PythonManager {
                     }
                 }
             });
-            
+
             process.on('error', (error) => {
                 if (error.message.includes('ENOENT')) {
                     reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
@@ -668,7 +668,7 @@ export class PythonManager {
             // Check if the onDidChangeActiveEnvironmentPath method exists
             if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
                 Logger.info('Setting up immediate Python interpreter change listener');
-                
+
                 const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
                     Logger.info(`Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
                     await onInterpreterChange();

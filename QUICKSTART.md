@@ -63,7 +63,7 @@ code .
 The extension will automatically detect Python installations. If needed:
 
 1. **Press Ctrl+Shift+P**
-2. **Type "Select Python Interpreter"**
+2. **Type "Python: Select Interpreter"**
 3. **Choose your Python environment**
 
 ### Settings
