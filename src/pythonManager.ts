@@ -619,6 +619,10 @@ export class PythonManager {
         return this.isInitialized && this.pythonPath !== undefined;
     }
 
+    getCurrentPythonPath(): string | undefined {
+        return this.pythonPath;
+    }
+
     async forceReinitialize(): Promise<void> {
         Logger.info('Force reinitializing Python environment...');
         this.isInitialized = false;

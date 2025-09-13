@@ -135,6 +135,12 @@ export class DataViewerPanel {
                     case 'getShowVersions':
                         await this._handleGetShowVersions();
                         break;
+                    case 'getPythonPath':
+                        await this._handleGetPythonPath();
+                        break;
+                    case 'getExtensionConfig':
+                        await this._handleGetExtensionConfig();
+                        break;
                 }
             },
             null,
@@ -343,6 +349,43 @@ export class DataViewerPanel {
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to load show versions: ${error}`
+            });
+        }
+    }
+
+    private async _handleGetPythonPath() {
+        try {
+            const pythonPath = this.dataProcessor.pythonManagerInstance.getCurrentPythonPath();
+            this._panel.webview.postMessage({
+                command: 'pythonPath',
+                data: pythonPath || 'No Python interpreter configured'
+            });
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to get Python path: ${error}`
+            });
+        }
+    }
+
+    private async _handleGetExtensionConfig() {
+        try {
+            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const configData = {
+                'scientificDataViewer.allowMultipleTabsForSameFile': config.get('allowMultipleTabsForSameFile'),
+                'scientificDataViewer.plottingCapabilities': config.get('plottingCapabilities'),
+                'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
+                'scientificDataViewer.autoRefresh': config.get('autoRefresh')
+            };
+
+            this._panel.webview.postMessage({
+                command: 'extensionConfig',
+                data: JSON.stringify(configData, null, 2)
+            });
+        } catch (error) {
+            this._panel.webview.postMessage({
+                command: 'error',
+                message: `Failed to get extension configuration: ${error}`
             });
         }
     }
@@ -711,6 +754,21 @@ export class DataViewerPanel {
             overflow: auto;
         }
         
+        .troubleshooting-section details {
+            margin-bottom: 10px;
+        }
+        
+        .troubleshooting-section summary {
+            cursor: pointer;
+            font-weight: bold;
+            padding: 5px 0;
+            color: var(--vscode-foreground);
+        }
+        
+        .troubleshooting-section summary:hover {
+            color: var(--vscode-textLink-foreground);
+        }
+        
         details summary {
             cursor: pointer;
             padding: 8px 0;
@@ -784,6 +842,14 @@ export class DataViewerPanel {
         
         <div class="troubleshooting-section">
             <h3>Troubleshooting</h3>
+            <details>
+                <summary>Python Interpreter Path</summary>
+                <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
+            </details>
+            <details>
+                <summary>Extension Configuration</summary>
+                <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
+            </details>
             <details>
                 <summary>Show xarray version information</summary>
                 <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
@@ -921,6 +987,12 @@ export class DataViewerPanel {
                 case 'showVersions':
                     displayShowVersions(message.data);
                     break;
+                case 'pythonPath':
+                    displayPythonPath(message.data);
+                    break;
+                case 'extensionConfig':
+                    displayExtensionConfig(message.data);
+                    break;
                 case 'error':
                     showError(message.message, message.details);
                     break;
@@ -1043,6 +1115,12 @@ export class DataViewerPanel {
             
             // Request show versions
             vscode.postMessage({ command: 'getShowVersions' });
+            
+            // Request Python path
+            vscode.postMessage({ command: 'getPythonPath' });
+            
+            // Request extension configuration
+            vscode.postMessage({ command: 'getExtensionConfig' });
 
             // Show content
             document.getElementById('loading').classList.add('hidden');
@@ -1099,6 +1177,24 @@ export class DataViewerPanel {
                 container.textContent = versionsData;
             } else {
                 container.textContent = 'Failed to load version information';
+            }
+        }
+
+        function displayPythonPath(pythonPath) {
+            const container = document.getElementById('pythonPath');
+            if (pythonPath) {
+                container.textContent = pythonPath;
+            } else {
+                container.textContent = 'No Python interpreter configured';
+            }
+        }
+
+        function displayExtensionConfig(configData) {
+            const container = document.getElementById('extensionConfig');
+            if (configData) {
+                container.textContent = configData;
+            } else {
+                container.textContent = 'Failed to load extension configuration';
             }
         }
 
