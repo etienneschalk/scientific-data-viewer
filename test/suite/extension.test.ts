@@ -19,27 +19,13 @@ suite('Extension Test Suite', () => {
     test('Extension should activate', async () => {
         const extension = vscode.extensions.getExtension('etienne-schalk-sarl.scientific-data-viewer');
         if (extension) {
-            try {
-                await extension.activate();
-                assert.ok(extension.isActive);
-            } catch (error) {
-                // In test environment, the extension might fail to activate due to missing dependencies
-                // This is expected behavior in the test environment
-                console.log('Extension activation failed in test environment (expected):', error);
-                // For now, we'll skip this test in the test environment
-                // In a real environment, the Python extension would be available
-                assert.ok(true, 'Extension activation test skipped in test environment');
-            }
+            await extension.activate();
+            assert.ok(extension.isActive);
         }
     });
 
     test('Commands should be registered', async () => {
         const commands = await vscode.commands.getCommands(true);
-        // Check if the extension is active first
-        const extension = vscode.extensions.getExtension('etienne-schalk-sarl.scientific-data-viewer');
-
-        // Always check for commands regardless of extension activation status
-        // Commands should be registered even if extension has issues
         const expectedCommands = [
             'scientificDataViewer.openViewer',
             'scientificDataViewer.refreshPythonEnvironment',
@@ -54,16 +40,6 @@ suite('Extension Test Suite', () => {
                 console.log(`❌ Command not found: ${command}`);
                 console.log(`Available commands: ${commands.filter(c => c.includes('scientificDataViewer')).join(', ')}`);
             }
-        }
-
-        // In test environment, commands might not be registered if extension is not loaded
-        const foundCommands = expectedCommands.filter(cmd => commands.includes(cmd));
-        if (foundCommands.length > 0) {
-            assert.ok(true, `Found Scientific Data Viewer commands: ${foundCommands.join(', ')}`);
-        } else {
-            console.log('No Scientific Data Viewer commands found in test environment (extension may not be loaded)');
-            // In test environment, it's acceptable if commands are not registered
-            assert.ok(true, 'Command registration test skipped in test environment (extension not loaded)');
         }
     });
 

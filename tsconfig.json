@@ -14,11 +14,11 @@
     "resolveJsonModule": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "test/**/*"
   ],
   "exclude": [
     "node_modules",
     ".vscode-test",
-    "test/**/*"
   ]
 }
