@@ -129,6 +129,17 @@ The extension can be configured through VSCode settings:
 - `scientificDataViewer.autoRefresh`: Automatically refresh data when files change
 - `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
 - `scientificDataViewer.defaultView`: Default view mode (table, tree, plot)
+- `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
+
+### Feature Flags
+
+The extension includes configuration options that act as feature flags to control specific behaviors:
+
+- **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
+- **Settings UI**: Each setting appears as a checkbox in VSCode Settings
+- **Command**: Use "Scientific Data Viewer: Show Feature Flags" to view all available flags
+
+For detailed information about feature flags, see [FEATURE_FLAGS.md](FEATURE_FLAGS.md).
 
 ## Development
 

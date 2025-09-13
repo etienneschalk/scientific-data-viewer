@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { DataProcessor, DataInfo } from './dataProcessor';
 import { Logger } from './logger';
+import { FeatureFlagsManager } from './featureFlagsManager';
 
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
@@ -18,16 +19,25 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Check if this file is already open in an existing panel
-        for (const panel of DataViewerPanel.activePanels) {
-            if (panel._currentFile.fsPath === fileUri.fsPath) {
-                // File is already open, focus on the existing panel without refreshing
-                panel._panel.reveal(column);
-                return;
+        // Get feature flags manager
+        const featureFlags = FeatureFlagsManager.getInstance();
+        const allowMultipleTabs = featureFlags.isEnabled('allowMultipleTabsForSameFile');
+
+        // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
+        if (!allowMultipleTabs) {
+            for (const panel of DataViewerPanel.activePanels) {
+                if (panel._currentFile.fsPath === fileUri.fsPath) {
+                    // File is already open, focus on the existing panel without refreshing
+                    Logger.info(`File ${fileUri.fsPath} is already open, focusing existing panel (allowMultipleTabsForSameFile: false)`);
+                    panel._panel.reveal(column);
+                    return;
+                }
             }
+        } else {
+            Logger.info(`Creating new panel for ${fileUri.fsPath} (allowMultipleTabsForSameFile: true)`);
         }
 
-        // File is not open, create a new panel
+        // File is not open or multiple tabs are allowed, create a new panel
         const panel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
             `Data Viewer: ${path.basename(fileUri.fsPath)}`,

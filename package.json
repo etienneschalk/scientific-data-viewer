@@ -40,22 +40,27 @@
       {
         "command": "scientificDataViewer.openViewer",
         "title": "Open Scientific Data Viewer",
-        "category": "Scientific Data"
+        "category": "Scientific Data Viewer"
       },
       {
         "command": "scientificDataViewer.refreshData",
         "title": "Refresh Data",
-        "category": "Scientific Data"
+        "category": "Scientific Data Viewer"
       },
       {
         "command": "scientificDataViewer.refreshPythonEnvironment",
         "title": "Refresh Python Environment",
-        "category": "Scientific Data"
+        "category": "Scientific Data Viewer"
       },
       {
         "command": "scientificDataViewer.showLogs",
         "title": "Show Extension Logs",
-        "category": "Scientific Data"
+        "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.showFeatureFlags",
+        "title": "Show Feature Flags",
+        "category": "Scientific Data Viewer"
       }
     ],
     "menus": {
@@ -78,6 +83,10 @@
         {
           "command": "scientificDataViewer.refreshPythonEnvironment",
           "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.showFeatureFlags",
+          "when": "true"
         }
       ]
     },
@@ -94,7 +103,7 @@
       "activitybar": [
         {
           "id": "scientific-data-activity",
-          "title": "Scientific Data",
+          "title": "Scientific Data Viewer",
           "icon": "$(database)"
         }
       ]
@@ -173,6 +182,13 @@
           ],
           "default": "tree",
           "description": "Default view mode for data display"
+        },
+        "scientificDataViewer.allowMultipleTabsForSameFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.",
+          "experimental": true,
+          "markdownDescription": "**Experimental Feature** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues."
         }
       }
     }

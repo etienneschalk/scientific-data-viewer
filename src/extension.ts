@@ -4,6 +4,7 @@ import { DataViewerPanel } from './dataViewerPanel';
 import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
+import { FeatureFlagsManager } from './featureFlagsManager';
 
 class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
     constructor(
@@ -45,6 +46,10 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
     Logger.info('Scientific Data Viewer extension is now active!');
+
+    // Initialize feature flags manager and log experimental warnings
+    const featureFlags = FeatureFlagsManager.getInstance();
+    featureFlags.logExperimentalWarnings();
 
     // Initialize managers
     Logger.info('Initializing extension managers...');
@@ -131,6 +136,22 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.showLogs',
         () => {
             Logger.show();
+        }
+    );
+
+    const showFeatureFlagsCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.showFeatureFlags',
+        () => {
+            const featureFlags = FeatureFlagsManager.getInstance();
+            const description = featureFlags.getFeatureFlagsDescription();
+            
+            // Show in a new document
+            vscode.workspace.openTextDocument({
+                content: description,
+                language: 'markdown'
+            }).then(doc => {
+                vscode.window.showTextDocument(doc);
+            });
         }
     );
 
@@ -293,6 +314,7 @@ export function activate(context: vscode.ExtensionContext) {
         refreshDataCommand,
         refreshPythonEnvironmentCommand,
         showLogsCommand,
+        showFeatureFlagsCommand,
         fileWatcher,
         statusBarItem,
         pythonInterpreterChangeListener,
