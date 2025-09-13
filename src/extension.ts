@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('Scientific Data Viewer extension is now active!');
 
     // Get configuration schema from extension manifest
-    const extension = vscode.extensions.getExtension('etienneschalk-sarl.scientific-data-viewer') || vscode.extensions.getExtension(context.extension.id);
+    const extension = vscode.extensions.getExtension('eschalk0.scientific-data-viewer') || vscode.extensions.getExtension(context.extension.id);
     const packageJson = extension?.packageJSON;
     const configSchema = packageJson?.contributes?.configuration?.properties || {};
 

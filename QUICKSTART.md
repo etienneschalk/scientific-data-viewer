@@ -223,6 +223,11 @@ npm run package
 code --install-extension scientific-data-viewer-0.1.0.vsix
 ```
 
+Note: for Cursor users, the command seems to do nothing.
+Try installing using the command palette: Ctrl+Shift+P,
+then Extensions: Install from VSIX... and select the vsix file.
+The extension should now be installed locally in Cursor.
+
 ## 🎉 Next Steps
 
 ### For Users

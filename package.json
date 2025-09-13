@@ -3,7 +3,8 @@
   "displayName": "Scientific Data Viewer",
   "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, and more",
   "version": "0.1.0",
-  "publisher": "etienneschalk-sarl",
+  "publisher": "eschalk0",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.74.0",
     "node": ">=22.0.0"
