@@ -22,11 +22,11 @@ def create_sample_netcdf():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"NetCDF file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample NetCDF file...")
+    print("🌡️ Creating sample NetCDF file...")
 
     # Create time dimension
     time = np.arange(0, 365, 1)
@@ -108,7 +108,7 @@ def create_sample_netcdf():
 
     # Save to file
     ds.to_netcdf(output_file)
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
@@ -118,16 +118,16 @@ def create_sample_zarr():
 
     # Check if directory already exists
     if os.path.exists(output_file):
-        print(f"Zarr file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing directory first.")
+        print(f"📦 Zarr file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing directory first.")
         return output_file
 
-    print("Creating sample Zarr file...")
+    print("🌊 Creating sample Zarr file...")
 
     try:
         import zarr
     except ImportError:
-        print("  zarr not available, skipping Zarr file creation.")
+        print("  ❌ zarr not available, skipping Zarr file creation.")
         return None
 
     # Create dimensions
@@ -200,7 +200,7 @@ def create_sample_zarr():
 
     # Save to Zarr
     ds.to_zarr(output_file)
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
@@ -210,11 +210,11 @@ def create_sample_hdf5():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"HDF5 file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"🛰️ HDF5 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample HDF5 file...")
+    print("🛰️ Creating sample HDF5 file...")
 
     # Create dimensions
     time = np.arange(0, 30, 1)  # 30 days
@@ -278,7 +278,7 @@ def create_sample_hdf5():
 
     # Save to HDF5
     ds.to_netcdf(output_file, engine="h5netcdf")
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
@@ -288,17 +288,18 @@ def create_sample_grib():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"GRIB file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"🌦️ GRIB file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample GRIB file...")
+    print("🌦️ Creating sample GRIB file...")
 
     try:
         import eccodes
-        print("  eccodes available, creating GRIB file")
+
+        print("  ✅ eccodes available, creating GRIB file")
     except ImportError:
-        print("  eccodes not available, skipping GRIB file creation.")
+        print("  ❌ eccodes not available, skipping GRIB file creation.")
         return None
 
     # Create time dimension
@@ -307,7 +308,7 @@ def create_sample_grib():
 
     # Create lat/lon grid to match GRIB sample (496 values = 31x16 grid)
     lat = np.linspace(60, 30, 16)  # Match the sample's latitude range
-    lon = np.linspace(0, 30, 31)   # Match the sample's longitude range
+    lon = np.linspace(0, 30, 31)  # Match the sample's longitude range
 
     # Create sample weather data
     np.random.seed(789)
@@ -375,13 +376,17 @@ def create_sample_grib():
             for i, time_val in enumerate(dates):
                 # Create a new GRIB message from sample
                 grib_id = eccodes.codes_grib_new_from_samples("regular_ll_sfc_grib2")
-                
+
                 try:
                     # Set only the most basic parameters
                     eccodes.codes_set_string(grib_id, "shortName", "t")
-                    eccodes.codes_set_long(grib_id, "dataDate", int(time_val.strftime("%Y%m%d")))
-                    eccodes.codes_set_long(grib_id, "dataTime", int(time_val.strftime("%H%M")))
-                    
+                    eccodes.codes_set_long(
+                        grib_id, "dataDate", int(time_val.strftime("%Y%m%d"))
+                    )
+                    eccodes.codes_set_long(
+                        grib_id, "dataTime", int(time_val.strftime("%H%M"))
+                    )
+
                     # Set data values
                     data_2d = ds["t"].isel(time=i).values
                     # Resize data to match the GRIB grid if needed
@@ -392,34 +397,34 @@ def create_sample_grib():
                         if data_2d.size < expected_size:
                             # Pad with zeros
                             padded_data = np.zeros(expected_size)
-                            padded_data[:data_2d.size] = data_2d.flatten()
+                            padded_data[: data_2d.size] = data_2d.flatten()
                             data_2d = padded_data
                         else:
                             # Truncate
                             data_2d = data_2d.flatten()[:expected_size]
                     else:
                         data_2d = data_2d.flatten()
-                    
+
                     eccodes.codes_set_values(grib_id, data_2d)
-                    
+
                     # Write the message
                     eccodes.codes_write(grib_id, f)
-                    
+
                 finally:
                     eccodes.codes_release(grib_id)
-        
-        print(f"Created {output_file} (GRIB format)")
-        
+
+        print(f"✅ Created {output_file} (GRIB format)")
+
     except Exception as e:
-        print(f"  Error writing GRIB file with eccodes: {e}")
-        print("  Falling back to NetCDF format with .grib extension")
+        print(f"  ⚠️ Error writing GRIB file with eccodes: {e}")
+        print("  🔄 Falling back to NetCDF format with .grib extension")
         # Fallback to NetCDF format
         temp_file = output_file.replace(".grib", "_temp.nc")
         ds.to_netcdf(temp_file, engine="netcdf4")
         import shutil
 
         shutil.move(temp_file, output_file)
-        print(f"Created {output_file} (NetCDF format with .grib extension)")
+        print(f"✅ Created {output_file} (NetCDF format with .grib extension)")
 
     return output_file
 
@@ -430,18 +435,18 @@ def create_sample_geotiff():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"GeoTIFF file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"🛰️ GeoTIFF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample GeoTIFF file...")
+    print("🛰️ Creating sample GeoTIFF file...")
 
     try:
         import rioxarray
 
-        print("  rioxarray available, creating GeoTIFF file")
+        print("  ✅ rioxarray available, creating GeoTIFF file")
     except ImportError:
-        print("  rioxarray not available, skipping GeoTIFF file creation.")
+        print("  ❌ rioxarray not available, skipping GeoTIFF file creation.")
         return None
 
     # Create spatial dimensions
@@ -545,11 +550,11 @@ def create_sample_geotiff():
     # Save to GeoTIFF with compression
     try:
         ds.rio.to_raster(output_file, compress="lzw")
-        print(f"Created {output_file} (compressed GeoTIFF)")
+        print(f"✅ Created {output_file} (compressed GeoTIFF)")
     except Exception as e:
         # Fallback to uncompressed if compression fails
         ds.rio.to_raster(output_file)
-        print(f"Created {output_file} (uncompressed GeoTIFF)")
+        print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
 
     return output_file
 
@@ -560,16 +565,16 @@ def create_sample_jp2():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"JPEG-2000 file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"📸 JPEG-2000 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample JPEG-2000 file...")
+    print("📸 Creating sample JPEG-2000 file...")
 
     try:
         import rioxarray
     except ImportError:
-        print("  rioxarray not available, skipping JPEG-2000 file creation.")
+        print("  ❌ rioxarray not available, skipping JPEG-2000 file creation.")
         return None
 
     # Create spatial dimensions
@@ -621,7 +626,7 @@ def create_sample_jp2():
 
     # Save to JPEG-2000
     ds.rio.to_raster(output_file)
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
@@ -631,17 +636,17 @@ def create_sample_sentinel():
 
     # Check if directory already exists
     if os.path.exists(output_file):
-        print(f"Sentinel-1 SAFE file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing directory first.")
+        print(f"🛰️ Sentinel-1 SAFE file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing directory first.")
         return output_file
 
-    print("Creating sample Sentinel-1 SAFE file...")
+    print("🛰️ Creating sample Sentinel-1 SAFE file...")
 
     try:
         import xarray_sentinel
     except ImportError:
         print(
-            "  xarray-sentinel not available, skipping Sentinel-1 SAFE file creation."
+            "  ❌ xarray-sentinel not available, skipping Sentinel-1 SAFE file creation."
         )
         return None
 
@@ -715,7 +720,7 @@ def create_sample_sentinel():
     ) as f:
         f.write(annotation_content)
 
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
@@ -725,11 +730,11 @@ def create_sample_netcdf4():
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"NetCDF4 file {output_file} already exists. Skipping creation.")
-        print("  To regenerate, please delete the existing file first.")
+        print(f"🌡️ NetCDF4 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("Creating sample NetCDF4 file...")
+    print("🌡️ Creating sample NetCDF4 file...")
 
     # Create time dimension
     time = np.arange(0, 12, 1)  # Monthly data
@@ -783,13 +788,13 @@ def create_sample_netcdf4():
 
     # Save to NetCDF4
     ds.to_netcdf(output_file, engine="netcdf4")
-    print(f"Created {output_file}")
+    print(f"✅ Created {output_file}")
     return output_file
 
 
 def main():
     """Create all sample data files."""
-    print("Creating sample scientific data files for VSCode extension testing...")
+    print("🔬 Creating sample scientific data files for VSCode extension testing...")
     print("=" * 80)
 
     # Create output directory
