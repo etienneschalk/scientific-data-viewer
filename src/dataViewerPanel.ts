@@ -21,7 +21,7 @@ export class DataViewerPanel {
         // Check if this file is already open in an existing panel
         for (const panel of DataViewerPanel.activePanels) {
             if (panel._currentFile.fsPath === fileUri.fsPath) {
-                // File is already open, focus on the existing panel
+                // File is already open, focus on the existing panel without refreshing
                 panel._panel.reveal(column);
                 return;
             }
@@ -34,6 +34,7 @@ export class DataViewerPanel {
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
+                retainContextWhenHidden: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
                     vscode.Uri.joinPath(extensionUri, 'out')
