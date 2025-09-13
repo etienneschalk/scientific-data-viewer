@@ -41,7 +41,7 @@ export class DataViewerPanel {
         // File is not open or multiple tabs are allowed, create a new panel
         const panel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
-            `Data Viewer: ${path.basename(fileUri.fsPath)}`,
+            `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`,
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -153,7 +153,7 @@ export class DataViewerPanel {
         this.dataProcessor = dataProcessor;
 
         // Update the panel title to reflect the new file
-        this._panel.title = `Data Viewer: ${path.basename(fileUri.fsPath)}`;
+        this._panel.title = `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`;
 
         // Get configuration for plotting capabilities
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
