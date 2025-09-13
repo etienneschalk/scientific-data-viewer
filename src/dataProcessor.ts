@@ -122,34 +122,6 @@ export class DataProcessor {
         }
     }
 
-    async createAdvancedPlot(uri: vscode.Uri, variable: string, plotConfig: any): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
-            throw new Error('Python environment not ready');
-        }
-
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'create_plot.py');
-        const args = [filePath, variable, 'advanced', JSON.stringify(plotConfig)];
-
-        try {
-            Logger.info(`Creating advanced plot for variable '${variable}' with config: ${JSON.stringify(plotConfig)}`);
-            
-            // Execute Python script and capture both stdout and stderr
-            const result = await this.pythonManager.executePythonFileWithLogs(scriptPath, args);
-            
-            if (typeof result === 'string' && result.startsWith('iVBOR')) {
-                Logger.info(`Advanced plot created successfully for variable '${variable}'`);
-                return result; // Base64 image data
-            } else if (result.error) {
-                throw new Error(result.error);
-            }
-            return null;
-        } catch (error) {
-            Logger.error(`Error creating advanced plot: ${error}`);
-            return null;
-        }
-    }
-
     async getHtmlRepresentation(uri: vscode.Uri): Promise<string | null> {
         if (!this.pythonManager.isReady()) {
             throw new Error('Python environment not ready');
