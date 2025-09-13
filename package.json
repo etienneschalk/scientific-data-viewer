@@ -61,6 +61,11 @@
         "command": "scientificDataViewer.showFeatureFlags",
         "title": "Show Feature Flags",
         "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.showSettings",
+        "title": "Show Settings",
+        "category": "Scientific Data Viewer"
       }
     ],
     "menus": {
@@ -86,6 +91,10 @@
         },
         {
           "command": "scientificDataViewer.showFeatureFlags",
+          "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.showSettings",
           "when": "true"
         }
       ]

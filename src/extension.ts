@@ -241,6 +241,14 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const showSettingsCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.showSettings',
+        () => {
+            Logger.info('Opening Scientific Data Viewer settings...');
+            vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
+        }
+    );
+
     // Function to update status bar with current Python interpreter
     const updateStatusBar = () => {
         const pythonPath = pythonManager.getPythonPath();
@@ -401,6 +409,7 @@ export function activate(context: vscode.ExtensionContext) {
         refreshPythonEnvironmentCommand,
         showLogsCommand,
         showFeatureFlagsCommand,
+        showSettingsCommand,
         fileWatcher,
         statusBarItem,
         pythonInterpreterChangeListener,
