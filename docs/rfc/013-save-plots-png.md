@@ -1,4 +1,4 @@
-# Issue #013: Save plots to PNG
+# RFC #013: Save plots to PNG
 
 ## Description
 

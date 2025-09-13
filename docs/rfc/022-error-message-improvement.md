@@ -1,4 +1,4 @@
-# Issue #022: Improve error messages for extension readiness
+# RFC #022: Improve error messages for extension readiness
 
 ## Description
 

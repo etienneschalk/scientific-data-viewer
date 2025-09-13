@@ -1,4 +1,4 @@
-# Issue #009: Optional dependencies for plotting
+# RFC #009: Optional dependencies for plotting
 
 ## Description
 

@@ -1,4 +1,4 @@
-# Issue #003: Add DataTree usage and support
+# RFC #003: Add DataTree usage and support
 
 ## Description
 

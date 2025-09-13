@@ -1,4 +1,4 @@
-# Issue #005: Export to notebook functionality
+# RFC #005: Export to notebook functionality
 
 ## Description
 

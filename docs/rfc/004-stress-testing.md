@@ -1,4 +1,4 @@
-# Issue #004: Stress testing with many small variables
+# RFC #004: Stress testing with many small variables
 
 ## Description
 

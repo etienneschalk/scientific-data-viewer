@@ -1,4 +1,4 @@
-# Issue #018: Add refresh timestamp to webview
+# RFC #018: Add refresh timestamp to webview
 
 ## Description
 

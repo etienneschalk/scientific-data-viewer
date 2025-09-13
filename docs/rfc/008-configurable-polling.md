@@ -1,4 +1,4 @@
-# Issue #008: Configurable interpreter polling period
+# RFC #008: Configurable interpreter polling period
 
 ## Description
 

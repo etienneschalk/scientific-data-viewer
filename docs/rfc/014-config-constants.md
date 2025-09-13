@@ -1,4 +1,4 @@
-# Issue #014: Extract constants to configuration
+# RFC #014: Extract constants to configuration
 
 ## Description
 

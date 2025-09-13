@@ -1,4 +1,4 @@
-# Issue #010: Custom scripts for visualization and rendering
+# RFC #010: Custom scripts for visualization and rendering
 
 ## Description
 

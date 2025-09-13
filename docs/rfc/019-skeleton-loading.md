@@ -1,4 +1,4 @@
-# Issue #019: Webview skeleton loading
+# RFC #019: Webview skeleton loading
 
 ## Description
 

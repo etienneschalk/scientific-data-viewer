@@ -1,4 +1,4 @@
-# Issue #012: Text representation with copy functionality
+# RFC #012: Text representation with copy functionality
 
 ## Description
 

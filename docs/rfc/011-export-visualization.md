@@ -1,4 +1,4 @@
-# Issue #011: Export visualization functionality
+# RFC #011: Export visualization functionality
 
 ## Description
 

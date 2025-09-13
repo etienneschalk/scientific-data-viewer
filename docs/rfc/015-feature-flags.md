@@ -1,4 +1,4 @@
-# Issue #015: Comprehensive feature flag system
+# RFC #015: Comprehensive feature flag system
 
 ## Description
 

@@ -1,4 +1,4 @@
-# Issue #020: Better structured UI in template files
+# RFC #020: Better structured UI in template files
 
 ## Description
 

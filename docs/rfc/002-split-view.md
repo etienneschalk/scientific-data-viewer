@@ -1,4 +1,4 @@
-# Issue #002: Allow Editor split view
+# RFC #002: Allow Editor split view
 
 ## Description
 

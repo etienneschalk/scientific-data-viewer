@@ -1,4 +1,4 @@
-# Issue #021: Fix tree view data provider
+# RFC #021: Fix tree view data provider
 
 ## Description
 

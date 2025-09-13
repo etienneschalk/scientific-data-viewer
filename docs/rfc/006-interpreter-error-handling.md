@@ -1,4 +1,4 @@
-# Issue #006: Fix interpreter error message handling
+# RFC #006: Fix interpreter error message handling
 
 ## Description
 

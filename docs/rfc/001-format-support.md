@@ -1,4 +1,4 @@
-# Issue #001: Add support for all possible formats
+# RFC #001: Add support for all possible formats
 
 ## Description
 

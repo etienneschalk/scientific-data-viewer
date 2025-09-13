@@ -1,4 +1,4 @@
-# Issue #017: Better installed package detection
+# RFC #017: Better installed package detection
 
 ## Description
 

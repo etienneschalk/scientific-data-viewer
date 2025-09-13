@@ -1,4 +1,4 @@
-# Issue #016: Distinct Data Vars / Coords sections in HTML
+# RFC #016: Distinct Data Vars / Coords sections in HTML
 
 ## Description
 

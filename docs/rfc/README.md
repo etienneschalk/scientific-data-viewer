@@ -1,4 +1,4 @@
-# Issues Backlog
+# RFCs Backlog
 
 This directory contains organized issue descriptions for the Scientific Data Viewer extension development.
 
@@ -35,7 +35,7 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#019: Webview skeleton loading](./019-skeleton-loading.md) - User experience
 - [#020: Better structured UI in template files](./020-ui-structure-improvement.md) - Code quality
 
-## Completed Issues
+## Completed RFCs
 
 - [x] Open multiple files in their single tab
 - [x] Use xarray native representation of Datasets
@@ -82,7 +82,7 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 
 ## Notes
 
-- Issues are numbered sequentially for easy reference
+- RFCs are numbered sequentially for easy reference
 - Priority levels are based on impact and complexity
-- Each issue includes detailed requirements and acceptance criteria
+- Each RFC includes detailed requirements and acceptance criteria
 - Labels are provided for categorization and filtering

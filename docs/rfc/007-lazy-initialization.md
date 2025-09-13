@@ -1,4 +1,4 @@
-# Issue #007: Lazy initialization with feature flags
+# RFC #007: Lazy initialization with feature flags
 
 ## Description
 
