@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import warnings
 
 # Suppress warnings for cleaner output
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 
 def create_sample_netcdf():
@@ -123,7 +123,7 @@ def create_sample_zarr():
         return output_file
 
     print("Creating sample Zarr file...")
-    
+
     try:
         import zarr
     except ImportError:
@@ -285,7 +285,7 @@ def create_sample_hdf5():
 def create_sample_grib():
     """Create a sample GRIB file with weather data."""
     output_file = "sample_data.grib"
-    
+
     # Check if file already exists
     if os.path.exists(output_file):
         print(f"GRIB file {output_file} already exists. Skipping creation.")
@@ -293,7 +293,7 @@ def create_sample_grib():
         return output_file
 
     print("Creating sample GRIB file...")
-    
+
     try:
         import cfgrib
     except ImportError:
@@ -312,9 +312,7 @@ def create_sample_grib():
     np.random.seed(789)
     time_3d = time[:, np.newaxis, np.newaxis]
     temperature = (
-        15
-        + 10 * np.sin(2 * np.pi * time_3d / 24)
-        + np.random.normal(0, 2, (4, 30, 60))
+        15 + 10 * np.sin(2 * np.pi * time_3d / 24) + np.random.normal(0, 2, (4, 30, 60))
     )
     pressure = (
         1013.25
@@ -346,8 +344,16 @@ def create_sample_grib():
         },
         coords={
             "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
-            "latitude": (["latitude"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
-            "longitude": (["longitude"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+            "latitude": (
+                ["latitude"],
+                lat,
+                {"long_name": "Latitude", "units": "degrees_north"},
+            ),
+            "longitude": (
+                ["longitude"],
+                lon,
+                {"long_name": "Longitude", "units": "degrees_east"},
+            ),
         },
     )
 
@@ -370,7 +376,7 @@ def create_sample_grib():
 def create_sample_geotiff():
     """Create a sample GeoTIFF file with satellite imagery data."""
     output_file = "sample_data.tif"
-    
+
     # Check if file already exists
     if os.path.exists(output_file):
         print(f"GeoTIFF file {output_file} already exists. Skipping creation.")
@@ -378,7 +384,7 @@ def create_sample_geotiff():
         return output_file
 
     print("Creating sample GeoTIFF file...")
-    
+
     try:
         import rioxarray
     except ImportError:
@@ -388,20 +394,26 @@ def create_sample_geotiff():
     # Create spatial dimensions
     height = 100
     width = 100
-    
+
     # Create sample satellite imagery data
     np.random.seed(101)
-    
+
     # Create RGB bands
     red = np.random.randint(0, 255, (height, width), dtype=np.uint8)
     green = np.random.randint(0, 255, (height, width), dtype=np.uint8)
     blue = np.random.randint(0, 255, (height, width), dtype=np.uint8)
-    
+
     # Add some spatial patterns
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
-    red = np.clip(red + 50 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y), 0, 255).astype(np.uint8)
-    green = np.clip(green + 30 * np.cos(6 * np.pi * x) * np.sin(6 * np.pi * y), 0, 255).astype(np.uint8)
-    blue = np.clip(blue + 40 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y), 0, 255).astype(np.uint8)
+    red = np.clip(
+        red + 50 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y), 0, 255
+    ).astype(np.uint8)
+    green = np.clip(
+        green + 30 * np.cos(6 * np.pi * x) * np.sin(6 * np.pi * y), 0, 255
+    ).astype(np.uint8)
+    blue = np.clip(
+        blue + 40 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y), 0, 255
+    ).astype(np.uint8)
 
     # Create dataset
     ds = xr.Dataset(
@@ -411,14 +423,22 @@ def create_sample_geotiff():
             "blue": (["y", "x"], blue, {"long_name": "Blue band", "units": "DN"}),
         },
         coords={
-            "x": (["x"], np.linspace(-180, 180, width), {"long_name": "Longitude", "units": "degrees_east"}),
-            "y": (["y"], np.linspace(90, -90, height), {"long_name": "Latitude", "units": "degrees_north"}),
+            "x": (
+                ["x"],
+                np.linspace(-180, 180, width),
+                {"long_name": "Longitude", "units": "degrees_east"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(90, -90, height),
+                {"long_name": "Latitude", "units": "degrees_north"},
+            ),
         },
     )
 
     # Add CRS information
     ds = ds.rio.write_crs("EPSG:4326")
-    
+
     # Add global attributes
     ds.attrs = {
         "title": "Sample Satellite Imagery",
@@ -437,7 +457,7 @@ def create_sample_geotiff():
 def create_sample_jp2():
     """Create a sample JPEG-2000 file with satellite data."""
     output_file = "sample_data.jp2"
-    
+
     # Check if file already exists
     if os.path.exists(output_file):
         print(f"JPEG-2000 file {output_file} already exists. Skipping creation.")
@@ -445,7 +465,7 @@ def create_sample_jp2():
         return output_file
 
     print("Creating sample JPEG-2000 file...")
-    
+
     try:
         import rioxarray
     except ImportError:
@@ -455,16 +475,18 @@ def create_sample_jp2():
     # Create spatial dimensions
     height = 50
     width = 50
-    
+
     # Create sample satellite data
     np.random.seed(202)
-    
+
     # Create single band data
     data = np.random.randint(0, 255, (height, width), dtype=np.uint8)
-    
+
     # Add spatial patterns
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
-    data = np.clip(data + 100 * np.sin(10 * np.pi * x) * np.cos(10 * np.pi * y), 0, 255).astype(np.uint8)
+    data = np.clip(
+        data + 100 * np.sin(10 * np.pi * x) * np.cos(10 * np.pi * y), 0, 255
+    ).astype(np.uint8)
 
     # Create dataset
     ds = xr.Dataset(
@@ -472,14 +494,22 @@ def create_sample_jp2():
             "band1": (["y", "x"], data, {"long_name": "Satellite band", "units": "DN"}),
         },
         coords={
-            "x": (["x"], np.linspace(-10, 10, width), {"long_name": "X coordinate", "units": "m"}),
-            "y": (["y"], np.linspace(10, -10, height), {"long_name": "Y coordinate", "units": "m"}),
+            "x": (
+                ["x"],
+                np.linspace(-10, 10, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(10, -10, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
         },
     )
 
     # Add CRS information
     ds = ds.rio.write_crs("EPSG:3857")  # Web Mercator
-    
+
     # Add global attributes
     ds.attrs = {
         "title": "Sample JPEG-2000 Data",
@@ -498,7 +528,7 @@ def create_sample_jp2():
 def create_sample_sentinel():
     """Create a sample Sentinel-1 SAFE directory structure."""
     output_file = "sample_data.safe"
-    
+
     # Check if directory already exists
     if os.path.exists(output_file):
         print(f"Sentinel-1 SAFE file {output_file} already exists. Skipping creation.")
@@ -506,16 +536,18 @@ def create_sample_sentinel():
         return output_file
 
     print("Creating sample Sentinel-1 SAFE file...")
-    
+
     try:
         import xarray_sentinel
     except ImportError:
-        print("  xarray-sentinel not available, skipping Sentinel-1 SAFE file creation.")
+        print(
+            "  xarray-sentinel not available, skipping Sentinel-1 SAFE file creation."
+        )
         return None
 
     # Create SAFE directory structure
     os.makedirs(output_file, exist_ok=True)
-    
+
     # Create manifest.safe file
     manifest_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <xfdu:XFDU xmlns:xfdu="urn:ccsds:schema:xfdu:1" xmlns:gml="http://www.opengis.net/gml" xmlns:s1="http://www.esa.int/safe/sentinel-1.0" xmlns:s1sar="http://www.esa.int/safe/sentinel-1.0/sar" xmlns:s1sarl1="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:s1sarl2="http://www.esa.int/safe/sentinel-1.0/sar/level-2" xmlns:gx="http://www.google.com/kml/ext/2.2" version="esa/safe/sentinel-1.0/sentinel-1/sar/level-1">
@@ -546,13 +578,13 @@ def create_sample_sentinel():
     </metadataObject>
   </metadataSection>
 </xfdu:XFDU>"""
-    
+
     with open(os.path.join(output_file, "manifest.safe"), "w") as f:
         f.write(manifest_content)
-    
+
     # Create annotation directory and files
     os.makedirs(os.path.join(output_file, "annotation"), exist_ok=True)
-    
+
     # Create a simple annotation file
     annotation_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <product xmlns="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -577,10 +609,12 @@ def create_sample_sentinel():
     <antennaPointing>right</antennaPointing>
   </productInfo>
 </product>"""
-    
-    with open(os.path.join(output_file, "annotation", "s1Level1ProductSchema.xsd"), "w") as f:
+
+    with open(
+        os.path.join(output_file, "annotation", "s1Level1ProductSchema.xsd"), "w"
+    ) as f:
         f.write(annotation_content)
-    
+
     print(f"Created {output_file}")
     return output_file
 
@@ -588,7 +622,7 @@ def create_sample_sentinel():
 def create_sample_netcdf4():
     """Create a sample NetCDF4 file with advanced features."""
     output_file = "sample_data.nc4"
-    
+
     # Check if file already exists
     if os.path.exists(output_file):
         print(f"NetCDF4 file {output_file} already exists. Skipping creation.")
@@ -599,7 +633,7 @@ def create_sample_netcdf4():
 
     # Create time dimension
     time = np.arange(0, 12, 1)  # Monthly data
-    dates = [datetime(2020, 1, 1) + timedelta(days=int(t*30)) for t in time]
+    dates = [datetime(2020, 1, 1) + timedelta(days=int(t * 30)) for t in time]
 
     # Create lat/lon grid
     lat = np.linspace(-90, 90, 90)
@@ -671,7 +705,7 @@ def main():
         netcdf_file = create_sample_netcdf()
         if netcdf_file:
             created_files.append((netcdf_file, "NetCDF"))
-        
+
         netcdf4_file = create_sample_netcdf4()
         if netcdf4_file:
             created_files.append((netcdf4_file, "NetCDF4"))
@@ -721,18 +755,19 @@ def main():
         print(f"\n📊 Created {len(created_files)} files:")
         for filename, format_name in created_files:
             print(f"  • {filename} ({format_name} format)")
-        
+
         if skipped_files:
             print(f"\n⚠️  Skipped {len(skipped_files)} formats (missing dependencies):")
             for format_name in skipped_files:
                 print(f"  • {format_name}")
-        
+
         print(f"\n🎯 You can now test the VSCode extension with these files!")
         print("   Right-click on any file in VS Code and select 'Open in Data Viewer'")
 
     except Exception as e:
         print(f"\n❌ Error creating sample data: {e}")
         import traceback
+
         print(traceback.format_exc())
         return 1
 
