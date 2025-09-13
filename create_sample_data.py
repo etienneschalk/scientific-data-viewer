@@ -12,6 +12,14 @@ from datetime import datetime, timedelta
 
 def create_sample_netcdf():
     """Create a sample NetCDF file with climate data."""
+    output_file = "sample_data.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"NetCDF file {output_file} already exists. Skipping creation.")
+        print("  To regenerate, please delete the existing file first.")
+        return output_file
+
     print("Creating sample NetCDF file...")
 
     # Create time dimension
@@ -24,14 +32,16 @@ def create_sample_netcdf():
 
     # Create sample data
     np.random.seed(42)  # For reproducible data
+    # Reshape time for broadcasting
+    time_3d = time[:, np.newaxis, np.newaxis]
     temperature = (
         15
-        + 10 * np.sin(2 * np.pi * time / 365)
+        + 10 * np.sin(2 * np.pi * time_3d / 365)
         + np.random.normal(0, 2, (365, 180, 360))
     )
     pressure = (
         1013.25
-        + 20 * np.sin(2 * np.pi * time / 365)
+        + 20 * np.sin(2 * np.pi * time_3d / 365)
         + np.random.normal(0, 5, (365, 180, 360))
     )
 
@@ -91,7 +101,6 @@ def create_sample_netcdf():
     }
 
     # Save to file
-    output_file = "sample_data.nc"
     ds.to_netcdf(output_file)
     print(f"Created {output_file}")
     return output_file
@@ -99,6 +108,14 @@ def create_sample_netcdf():
 
 def create_sample_zarr():
     """Create a sample Zarr file with ocean data."""
+    output_file = "sample_data.zarr"
+
+    # Check if directory already exists
+    if os.path.exists(output_file):
+        print(f"Zarr file {output_file} already exists. Skipping creation.")
+        print("  To regenerate, please delete the existing directory first.")
+        return output_file
+
     print("Creating sample Zarr file...")
 
     # Create dimensions
@@ -109,14 +126,16 @@ def create_sample_zarr():
 
     # Create sample ocean data
     np.random.seed(123)
+    # Reshape time for broadcasting
+    time_4d = time[:, np.newaxis, np.newaxis, np.newaxis]
     salinity = (
         35
-        + 2 * np.sin(2 * np.pi * time / 100)
+        + 2 * np.sin(2 * np.pi * time_4d / 100)
         + np.random.normal(0, 0.5, (100, 8, 160, 320))
     )
     temperature = (
         20
-        - 10 * np.sin(2 * np.pi * time / 100)
+        - 10 * np.sin(2 * np.pi * time_4d / 100)
         + np.random.normal(0, 1, (100, 8, 160, 320))
     )
 
@@ -168,7 +187,6 @@ def create_sample_zarr():
     }
 
     # Save to Zarr
-    output_file = "sample_data.zarr"
     ds.to_zarr(output_file)
     print(f"Created {output_file}")
     return output_file
@@ -176,6 +194,14 @@ def create_sample_zarr():
 
 def create_sample_hdf5():
     """Create a sample HDF5 file with satellite data."""
+    output_file = "sample_data.h5"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"HDF5 file {output_file} already exists. Skipping creation.")
+        print("  To regenerate, please delete the existing file first.")
+        return output_file
+
     print("Creating sample HDF5 file...")
 
     # Create dimensions
@@ -185,9 +211,11 @@ def create_sample_hdf5():
 
     # Create sample satellite data
     np.random.seed(456)
+    # Reshape time for broadcasting
+    time_3d = time[:, np.newaxis, np.newaxis]
     reflectance = (
         0.1
-        + 0.2 * np.sin(2 * np.pi * time / 30)
+        + 0.2 * np.sin(2 * np.pi * time_3d / 30)
         + np.random.normal(0, 0.05, (30, 120, 240))
     )
     cloud_mask = np.random.randint(0, 2, (30, 120, 240))
@@ -237,7 +265,6 @@ def create_sample_hdf5():
     }
 
     # Save to HDF5
-    output_file = "sample_data.h5"
     ds.to_netcdf(output_file, engine="h5netcdf")
     print(f"Created {output_file}")
     return output_file
@@ -267,6 +294,10 @@ def main():
 
     except Exception as e:
         print(f"Error creating sample data: {e}")
+
+        import traceback
+
+        print(traceback.format_exc())
         return 1
 
     return 0

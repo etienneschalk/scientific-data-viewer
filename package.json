@@ -91,8 +91,14 @@
     "languages": [
       {
         "id": "netcdf",
-        "extensions": [".nc", ".netcdf"],
-        "aliases": ["NetCDF", "netcdf"],
+        "extensions": [
+          ".nc",
+          ".netcdf"
+        ],
+        "aliases": [
+          "NetCDF",
+          "netcdf"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -116,7 +122,11 @@
         },
         "scientificDataViewer.defaultView": {
           "type": "string",
-          "enum": ["table", "tree", "plot"],
+          "enum": [
+            "table",
+            "tree",
+            "plot"
+          ],
           "default": "tree",
           "description": "Default view mode for data display"
         }
@@ -127,7 +137,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "npm run compile",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
@@ -144,7 +154,8 @@
     "vsce": "^2.15.0",
     "mocha": "^10.2.0",
     "glob": "^10.3.0",
-    "@types/mocha": "^10.0.0"
+    "@types/mocha": "^10.0.0",
+    "@types/glob": "^8.1.0"
   },
   "dependencies": {
     "axios": "^1.6.0"

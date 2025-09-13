@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { DataProcessor } from './dataProcessor';
 
 export class ScientificDataItem extends vscode.TreeItem {
+    public children?: ScientificDataItem[];
+
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
