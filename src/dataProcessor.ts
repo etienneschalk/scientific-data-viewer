@@ -39,7 +39,7 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'get_data_info.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'get_data_info.py');
 
         try {
             const result = await this.pythonManager.executePythonFile(scriptPath, [filePath]);
@@ -59,7 +59,7 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'get_data_slice.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'get_data_slice.py');
         const args = [filePath, variable];
 
         if (sliceSpec) {
@@ -100,7 +100,7 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'create_plot.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'create_plot.py');
         const args = [filePath, variable, plotType];
 
         try {
@@ -128,7 +128,7 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'get_html_representation.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'get_html_representation.py');
         const args = [filePath];
 
         try {
@@ -149,7 +149,7 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(__dirname, '..', 'python', 'get_text_representation.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'get_text_representation.py');
         const args = [filePath];
 
         try {
@@ -169,7 +169,7 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const scriptPath = path.join(__dirname, '..', 'python', 'get_show_versions.py');
+        const scriptPath = path.join(__dirname, '../..', 'python', 'get_show_versions.py');
         const args: string[] = [];
 
         try {
