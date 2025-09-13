@@ -6,8 +6,8 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 
 ### Prerequisites
 
-- Node.js 16+ and npm
-- Python 3.7+ with scientific packages
+- Node.js 22+ and npm
+- Python 3.13+ with scientific packages
 - VSCode
 - Git
 

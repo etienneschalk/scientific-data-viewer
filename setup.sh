@@ -16,14 +16,14 @@ fi
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3.7+ and try again."
+    echo "❌ Python 3 is not installed. Please install Python 3.13+ and try again."
     exit 1
 fi
 
 # Check Node.js version
 NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 16 ]; then
-    echo "❌ Node.js version 16+ is required. Current version: $(node -v)"
+if [ "$NODE_VERSION" -lt 22 ]; then
+    echo "❌ Node.js version 22+ is required. Current version: $(node -v)"
     exit 1
 fi
 
@@ -31,6 +31,14 @@ echo "✅ Node.js $(node -v) detected"
 
 # Check Python version
 PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)")
+PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
+
+if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 13 ]); then
+    echo "❌ Python 3.13+ is required. Current version: $PYTHON_VERSION"
+    exit 1
+fi
+
 echo "✅ Python $PYTHON_VERSION detected"
 
 # Install Node.js dependencies

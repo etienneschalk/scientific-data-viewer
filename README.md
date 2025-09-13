@@ -50,7 +50,7 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 
 Before using this extension, you need:
 
-1. **Python 3.7+** installed on your system
+1. **Python 3.13+** installed on your system
 2. **Required Python packages**:
    - xarray
    - netCDF4

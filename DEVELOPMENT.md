@@ -6,8 +6,8 @@ This guide provides detailed instructions for developing, testing, and maintaini
 
 ### Required Software
 
-- **Node.js 16+** and npm
-- **Python 3.7+** with pip
+- **Node.js 22+** and npm
+- **Python 3.13+** with pip
 - **VSCode** (latest stable version)
 - **Git** for version control
 
