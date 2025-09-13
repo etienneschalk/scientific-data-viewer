@@ -937,6 +937,9 @@ export class DataViewerPanel {
                 showError(data.error);
                 return;
             }
+
+            // Hide any previous errors since data loaded successfully
+            hideError();
             
             // Display file path in code format with copy button
             const filePathContainer = document.getElementById('filePathContainer');
@@ -1089,6 +1092,12 @@ export class DataViewerPanel {
             errorDiv.classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.add('hidden');
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('error');
+            errorDiv.classList.add('hidden');
+            errorDiv.innerHTML = '';
         }
 
         function formatFileSize(bytes) {
