@@ -1,5 +1,9 @@
 # Scientific Data Viewer - VSCode Extension
 
+<div align="center">
+  <img src="media/icon.png" alt="Scientific Data Viewer Icon" width="128" height="128">
+</div>
+
 A powerful VSCode extension for viewing and analyzing scientific data files including NetCDF, Zarr, HDF5, and more. This extension provides an intuitive interface for exploring scientific datasets directly within VSCode, eliminating the need for external tools.
 
 ## 🚀 Features
