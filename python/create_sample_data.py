@@ -296,10 +296,10 @@ def create_sample_grib():
 
     try:
         import cfgrib
-        # cfgrib is available, but it's read-only, so we'll create a NetCDF file instead
-        print("  Note: cfgrib is read-only, creating NetCDF file with .grib extension for testing")
+        print("  cfgrib available, creating GRIB file")
     except ImportError:
-        print("  cfgrib not available, creating NetCDF file with .grib extension for testing")
+        print("  cfgrib not available, skipping GRIB file creation.")
+        return None
 
     # Create time dimension
     time = np.arange(0, 24, 6)  # 6-hourly data for 24 hours
@@ -368,16 +368,20 @@ def create_sample_grib():
         "Conventions": "CF-1.6",
     }
 
-    # Save to GRIB - cfgrib is read-only, so we'll save as NetCDF instead
-    # and rename it to .grib for testing purposes
-    temp_file = output_file.replace('.grib', '_temp.nc')
-    ds.to_netcdf(temp_file, engine="netcdf4")
+    # Save to GRIB using cfgrib engine
+    try:
+        ds.to_netcdf(output_file, engine="cfgrib")
+        print(f"Created {output_file}")
+    except Exception as e:
+        print(f"  Error writing GRIB file: {e}")
+        print("  Falling back to NetCDF format with .grib extension")
+        # Fallback to NetCDF format
+        temp_file = output_file.replace('.grib', '_temp.nc')
+        ds.to_netcdf(temp_file, engine="netcdf4")
+        import shutil
+        shutil.move(temp_file, output_file)
+        print(f"Created {output_file} (NetCDF format with .grib extension)")
     
-    # Rename to .grib for testing (this creates a NetCDF file with .grib extension)
-    import shutil
-    shutil.move(temp_file, output_file)
-    
-    print(f"Created {output_file} (NetCDF format with .grib extension for testing)")
     return output_file
 
 
@@ -395,40 +399,58 @@ def create_sample_geotiff():
 
     try:
         import rioxarray
+        print("  rioxarray available, creating GeoTIFF file")
     except ImportError:
         print("  rioxarray not available, skipping GeoTIFF file creation.")
         return None
 
     # Create spatial dimensions
-    height = 100
-    width = 100
+    height = 200
+    width = 200
 
     # Create sample satellite imagery data
     np.random.seed(101)
 
-    # Create RGB bands
-    red = np.random.randint(0, 255, (height, width), dtype=np.uint8)
-    green = np.random.randint(0, 255, (height, width), dtype=np.uint8)
-    blue = np.random.randint(0, 255, (height, width), dtype=np.uint8)
-
-    # Add some spatial patterns
+    # Create RGB bands with more realistic satellite-like patterns
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+    
+    # Create more complex patterns that look like satellite imagery
     red = np.clip(
-        red + 50 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y), 0, 255
+        100 + 80 * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * y) + 
+        30 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y) +
+        np.random.normal(0, 20, (height, width)), 0, 255
     ).astype(np.uint8)
+    
     green = np.clip(
-        green + 30 * np.cos(6 * np.pi * x) * np.sin(6 * np.pi * y), 0, 255
+        120 + 60 * np.cos(3 * np.pi * x) * np.sin(3 * np.pi * y) + 
+        25 * np.sin(6 * np.pi * x) * np.cos(6 * np.pi * y) +
+        np.random.normal(0, 15, (height, width)), 0, 255
     ).astype(np.uint8)
+    
     blue = np.clip(
-        blue + 40 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y), 0, 255
+        80 + 70 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y) + 
+        35 * np.sin(10 * np.pi * x) * np.cos(10 * np.pi * y) +
+        np.random.normal(0, 18, (height, width)), 0, 255
     ).astype(np.uint8)
 
-    # Create dataset
+    # Create dataset with proper geospatial information
     ds = xr.Dataset(
         {
-            "red": (["y", "x"], red, {"long_name": "Red band", "units": "DN"}),
-            "green": (["y", "x"], green, {"long_name": "Green band", "units": "DN"}),
-            "blue": (["y", "x"], blue, {"long_name": "Blue band", "units": "DN"}),
+            "red": (["y", "x"], red, {
+                "long_name": "Red band", 
+                "units": "DN",
+                "description": "Red channel of satellite imagery"
+            }),
+            "green": (["y", "x"], green, {
+                "long_name": "Green band", 
+                "units": "DN",
+                "description": "Green channel of satellite imagery"
+            }),
+            "blue": (["y", "x"], blue, {
+                "long_name": "Blue band", 
+                "units": "DN",
+                "description": "Blue channel of satellite imagery"
+            }),
         },
         coords={
             "x": (
@@ -454,11 +476,20 @@ def create_sample_geotiff():
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
         "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "spatial_resolution": "1 degree",
+        "temporal_coverage": "2020-01-01",
     }
 
-    # Save to GeoTIFF
-    ds.rio.to_raster(output_file)
-    print(f"Created {output_file}")
+    # Save to GeoTIFF with compression
+    try:
+        ds.rio.to_raster(output_file, compress='lzw')
+        print(f"Created {output_file} (compressed GeoTIFF)")
+    except Exception as e:
+        # Fallback to uncompressed if compression fails
+        ds.rio.to_raster(output_file)
+        print(f"Created {output_file} (uncompressed GeoTIFF)")
+    
     return output_file
 
 
