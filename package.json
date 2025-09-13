@@ -43,11 +43,6 @@
         "category": "Scientific Data Viewer"
       },
       {
-        "command": "scientificDataViewer.refreshData",
-        "title": "Refresh Data",
-        "category": "Scientific Data Viewer"
-      },
-      {
         "command": "scientificDataViewer.refreshPythonEnvironment",
         "title": "Refresh Python Environment",
         "category": "Scientific Data Viewer"
@@ -77,34 +72,12 @@
           "when": "true"
         },
         {
-          "command": "scientificDataViewer.refreshData",
-          "when": "true"
-        },
-        {
           "command": "scientificDataViewer.refreshPythonEnvironment",
           "when": "true"
         },
         {
           "command": "scientificDataViewer.showSettings",
           "when": "true"
-        }
-      ]
-    },
-    "views": {
-      "explorer": [
-        {
-          "id": "scientificDataViewer",
-          "name": "Scientific Data Viewer",
-          "when": "true"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "scientific-data-activity",
-          "title": "Scientific Data Viewer",
-          "icon": "$(database)"
         }
       ]
     },

@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { ScientificDataProvider } from './dataProvider';
 import { DataViewerPanel } from './dataViewerPanel';
 import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
@@ -119,7 +118,6 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('Initializing extension managers...');
     const pythonManager = new PythonManager(context);
     const dataProcessor = new DataProcessor(pythonManager);
-    const dataProvider = new ScientificDataProvider(dataProcessor);
     Logger.info('Extension managers initialized successfully');
 
     // Create status bar item for Python interpreter (hidden by default)
@@ -128,12 +126,6 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem.text = '$(python) Python: Not Set';
     // Don't show by default - only show when interpreter is selected
 
-    // Register tree data provider
-    Logger.info('Registering tree data provider...');
-    vscode.window.createTreeView('scientificDataViewer', {
-        treeDataProvider: dataProvider
-    });
-    Logger.info('Tree data provider registered successfully');
 
     // Register custom editor providers
     Logger.info('Registering custom editor providers...');
@@ -177,13 +169,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
 
-    const refreshDataCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.refreshData',
-        () => {
-            Logger.info('Refreshing data provider...');
-            dataProvider.refresh();
-        }
-    );
 
     const refreshPythonEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.refreshPythonEnvironment',
@@ -212,6 +197,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+
     // Function to update status bar with current Python interpreter
     const updateStatusBar = () => {
         const pythonPath = pythonManager.getPythonPath();
@@ -227,27 +213,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
     };
 
-    // Register file watcher for supported extensions
-    const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5'];
-    const fileWatcher = vscode.workspace.createFileSystemWatcher(
-        `**/*.{${supportedExtensions.join(',')}}`
-    );
-
-    fileWatcher.onDidChange(async (uri) => {
-        if (vscode.workspace.getConfiguration('scientificDataViewer').get('autoRefresh')) {
-            dataProvider.refresh();
-        }
-    });
-
-    fileWatcher.onDidCreate(async (uri) => {
-        dataProvider.refresh();
-    });
-
-    fileWatcher.onDidDelete(async (uri) => {
-        dataProvider.refresh();
-    });
 
     // Register context menu for supported files
+    const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5'];
     vscode.workspace.onDidOpenTextDocument(async (document) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
@@ -263,9 +231,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        openViewerCommand,
-        refreshDataCommand,
-        fileWatcher
+        openViewerCommand
     );
 
     // Initialize Python environment
@@ -356,11 +322,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         openViewerCommand,
-        refreshDataCommand,
         refreshPythonEnvironmentCommand,
         showLogsCommand,
         showSettingsCommand,
-        fileWatcher,
         statusBarItem,
         pythonInterpreterChangeListener,
         workspaceChangeListener,
