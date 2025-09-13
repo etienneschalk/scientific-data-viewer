@@ -176,11 +176,9 @@
         "scientificDataViewer.defaultView": {
           "type": "string",
           "enum": [
-            "table",
-            "tree",
-            "plot"
+            "default"
           ],
-          "default": "tree",
+          "default": "default",
           "description": "Default view mode for data display"
         },
         "scientificDataViewer.allowMultipleTabsForSameFile": {

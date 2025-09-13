@@ -228,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
 - \`scientificDataViewer.allowMultipleTabsForSameFile\`: Allow opening multiple tabs for the same file (Experimental)
 - \`scientificDataViewer.autoRefresh\`: Automatically refresh data when files change
 - \`scientificDataViewer.maxFileSize\`: Maximum file size (MB) to load automatically
-- \`scientificDataViewer.defaultView\`: Default view mode (table, tree, plot)
+- \`scientificDataViewer.defaultView\`: Default view mode (default)
 `;
 
             // Show in a new document

@@ -128,7 +128,7 @@ The extension can be configured through VSCode settings:
 - `scientificDataViewer.pythonPath`: Path to Python interpreter
 - `scientificDataViewer.autoRefresh`: Automatically refresh data when files change
 - `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
-- `scientificDataViewer.defaultView`: Default view mode (table, tree, plot)
+- `scientificDataViewer.defaultView`: Default view mode (default)
 - `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
 
 ### Feature Flags
