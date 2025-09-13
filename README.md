@@ -6,10 +6,12 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 
 - **Multi-format Support**: View NetCDF (.nc, .netcdf), Zarr (.zarr), and HDF5 (.h5, .hdf5) files
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
+- **Enhanced Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Data Visualization**: Create plots and visualizations directly in VSCode
 - **Python Integration**: Uses your existing Python environment with xarray, netCDF4, and other scientific libraries
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
 - **Real-time Updates**: Automatically refresh when files change
+- **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
 
 ## Prerequisites
 
@@ -110,7 +112,7 @@ The data viewer provides several views:
 
 - **File Information**: Format, size, and basic metadata
 - **Dimensions**: Dataset dimensions and their sizes
-- **Variables**: All data variables with their types and shapes
+- **Variables**: All data variables with their types, shapes, dimension names, and memory usage
 - **Visualization**: Interactive plots and charts
 
 ### Creating Visualizations
@@ -138,8 +140,18 @@ src/
 ├── dataProvider.ts       # Tree data provider for file explorer
 ├── dataProcessor.ts      # Python integration and data processing
 ├── dataViewerPanel.ts    # Webview panel for data visualization
-└── pythonManager.ts      # Python environment management
+├── pythonManager.ts      # Python environment management
+└── logger.ts             # Logging utilities
 ```
+
+### Python Scripts
+
+The extension uses several Python scripts for data processing:
+
+- **`get_data_info.py`**: Extracts file metadata, dimensions, variables, and their properties
+- **`get_data_slice.py`**: Retrieves specific data slices from variables
+- **`create_plot.py`**: Generates visualizations using matplotlib
+- **`get_html_representation.py`**: Creates HTML representation of xarray datasets
 
 ### Building
 
@@ -280,19 +292,33 @@ scientific-data-viewer/
 │   ├── dataProvider.ts           # Tree view provider for file explorer
 │   ├── dataProcessor.ts          # Python integration and data processing
 │   ├── dataViewerPanel.ts        # Webview panel for data visualization
-│   └── pythonManager.ts          # Python environment management
+│   ├── pythonManager.ts          # Python environment management
+│   └── logger.ts                 # Logging utilities
+├── python/                       # Python scripts for data processing
+│   ├── get_data_info.py          # Extract file metadata and variable info
+│   ├── get_data_slice.py         # Extract data slices from variables
+│   ├── create_plot.py            # Generate visualizations
+│   └── get_html_representation.py # Generate HTML representation
 ├── test/                         # Test files
 │   ├── runTest.ts               # Test runner
 │   └── suite/                   # Test suites
 ├── sample-data/                  # Sample data files for testing
+│   ├── sample_data.nc           # NetCDF sample file
+│   ├── sample_data.h5           # HDF5 sample file
+│   ├── sample_data.zarr/        # Zarr sample dataset
 │   └── create_sample_data.py    # Script to generate test data
+├── out/                          # Compiled JavaScript output
+├── node_modules/                 # Node.js dependencies
 ├── .vscode/                      # VSCode configuration
 │   ├── launch.json              # Debug configuration
 │   ├── tasks.json               # Build tasks
 │   └── settings.json            # Workspace settings
 ├── package.json                  # Extension manifest and dependencies
+├── package-lock.json            # Dependency lock file
 ├── tsconfig.json                # TypeScript configuration
+├── tsconfig.test.json           # Test TypeScript configuration
 ├── .eslintrc.json               # ESLint configuration
+├── language-configuration.json  # Language configuration
 ├── README.md                    # Main documentation
 ├── QUICKSTART.md               # Quick start guide
 ├── DEVELOPMENT.md              # Development guide
@@ -321,6 +347,12 @@ scientific-data-viewer/
    - Test with sample data files
 
 ## Changelog
+
+### 0.1.1
+- **Enhanced Variable Information**: Added dimension names and memory usage display for each variable
+- **Improved File Size Display**: Added human-readable file size formatting (B, kB, MB, GB, TB)
+- **Better Data Structure**: Updated data processing to include dimension names and byte sizes
+- **Updated Documentation**: Comprehensive project structure and feature documentation
 
 ### 0.1.0
 - Initial release
