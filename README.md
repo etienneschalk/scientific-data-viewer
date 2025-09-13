@@ -32,53 +32,6 @@ Before using this extension, you need:
    - numpy
    - matplotlib
 
-## Installation
-
-### Development Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/etienneschalk/scientific-data-viewer.git
-   cd scientific-data-viewer
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Compile the extension**:
-   ```bash
-   npm run compile
-   ```
-
-4. **Install Python dependencies** (if not already installed):
-   ```bash
-   pip install xarray netCDF4 zarr h5py numpy matplotlib
-   ```
-
-5. **Open in VSCode**:
-   ```bash
-   code .
-   ```
-
-6. **Run the extension**:
-   - Press `F5` to open a new Extension Development Host window
-   - Or use `Ctrl+Shift+P` and run "Developer: Reload Window"
-
-### Production Installation
-
-1. **Package the extension**:
-   ```bash
-   npm run package
-   ```
-
-2. **Install the .vsix file**:
-   - Open VSCode
-   - Go to Extensions view (`Ctrl+Shift+X`)
-   - Click the "..." menu and select "Install from VSIX..."
-   - Select the generated `.vsix` file
-
 ## Usage
 
 ### Opening Data Files
@@ -130,6 +83,55 @@ The data viewer provides several views:
 1. Select a variable from the dropdown or click on it in the variables list
 2. Choose a plot type (Line Plot, Heatmap, Histogram)
 3. Click "Create Plot" to generate the visualization
+
+
+## Installation
+
+### Development Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/etienneschalk/scientific-data-viewer.git
+   cd scientific-data-viewer
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Compile the extension**:
+   ```bash
+   npm run compile
+   ```
+
+4. **Install Python dependencies** (if not already installed):
+   ```bash
+   pip install xarray netCDF4 zarr h5py numpy matplotlib
+   ```
+
+5. **Open in VSCode**:
+   ```bash
+   code .
+   ```
+
+6. **Run the extension**:
+   - Press `F5` to open a new Extension Development Host window
+   - Or use `Ctrl+Shift+P` and run "Developer: Reload Window"
+
+### Production Installation
+
+1. **Package the extension**:
+   ```bash
+   npm run package
+   ```
+
+2. **Install the .vsix file**:
+   - Open VSCode
+   - Go to Extensions view (`Ctrl+Shift+X`)
+   - Click the "..." menu and select "Install from VSIX..."
+   - Select the generated `.vsix` file
+
 
 ## Configuration
 
