@@ -347,31 +347,12 @@ export function activate(context: vscode.ExtensionContext) {
             // Add to subscriptions after it's created
             context.subscriptions.push(immediateInterpreterListener);
         } else {
-            Logger.warn('Immediate Python interpreter change detection not available, falling back to polling');
+            Logger.warn('Immediate Python interpreter change detection not available');
         }
     }).catch((error) => {
         Logger.error(`Failed to set up immediate Python interpreter change detection: ${error}`);
     });
 
-    // Add a periodic check for Python interpreter changes as fallback
-    // This will only be used if immediate detection is not available
-    let lastPythonPath: string | undefined = pythonManager.getPythonPath();
-    const pythonCheckInterval = setInterval(async () => {
-        // Only use polling if immediate detection is not available
-        if (!immediateInterpreterListener) {
-            try {
-                const currentPythonPath = await pythonManager.getCurrentInterpreterPath();
-
-                if (currentPythonPath && currentPythonPath !== lastPythonPath) {
-                    Logger.info('Periodic check detected Python interpreter change via extension API');
-                    lastPythonPath = currentPythonPath;
-                    await handlePythonInterpreterChange();
-                }
-            } catch (error) {
-                Logger.error(`Error in periodic Python interpreter check: ${error}`);
-            }
-        }
-    }, 60000); // (milliseconds) Increased interval since we have immediate detection
 
     context.subscriptions.push(
         openViewerCommand,
@@ -385,8 +366,7 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceChangeListener,
         netcdfEditorRegistration,
         hdf5EditorRegistration,
-        configListener,
-        { dispose: () => clearInterval(pythonCheckInterval) }
+        configListener
     );
 
     // Status bar will only be shown when an interpreter is actually selected
