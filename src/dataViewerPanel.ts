@@ -18,7 +18,16 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Always create a new panel for each file to support multiple tabs
+        // Check if this file is already open in an existing panel
+        for (const panel of DataViewerPanel.activePanels) {
+            if (panel._currentFile.fsPath === fileUri.fsPath) {
+                // File is already open, focus on the existing panel
+                panel._panel.reveal(column);
+                return;
+            }
+        }
+
+        // File is not open, create a new panel
         const panel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
             `Data Viewer: ${path.basename(fileUri.fsPath)}`,
