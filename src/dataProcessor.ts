@@ -104,8 +104,13 @@ export class DataProcessor {
         const args = [filePath, variable, plotType];
 
         try {
-            const result = await this.pythonManager.executePythonFile(scriptPath, args);
+            Logger.info(`Creating plot for variable '${variable}' with type '${plotType}'`);
+            
+            // Execute Python script and capture both stdout and stderr
+            const result = await this.pythonManager.executePythonFileWithLogs(scriptPath, args);
+            
             if (typeof result === 'string' && result.startsWith('iVBOR')) {
+                Logger.info(`Plot created successfully for variable '${variable}'`);
                 return result; // Base64 image data
             } else if (result.error) {
                 throw new Error(result.error);

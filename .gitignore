@@ -6,3 +6,5 @@ node_modules
 .DS_Store
 *.log
 sample-data/
+**/__pycache__/
+**/*.pyc

@@ -189,11 +189,29 @@ export class DataViewerPanel {
 
     private async _handleCreatePlot(variable: string, plotType: string) {
         try {
-            const plotData = await this.dataProcessor.createPlot(this._currentFile, variable, plotType);
-            this._panel.webview.postMessage({
-                command: 'plotData',
-                data: plotData
+            // Show notification that plotting has started
+            vscode.window.showInformationMessage(
+                `Creating plot for variable '${variable}'... Check the output panel for progress.`,
+                'Show Logs'
+            ).then(selection => {
+                if (selection === 'Show Logs') {
+                    Logger.show();
+                }
             });
+            
+            const plotData = await this.dataProcessor.createPlot(this._currentFile, variable, plotType);
+            if (plotData) {
+                this._panel.webview.postMessage({
+                    command: 'plotData',
+                    data: plotData
+                });
+            } else {
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Failed to create plot',
+                    details: 'Check the output panel for more details'
+                });
+            }
         } catch (error) {
             this._panel.webview.postMessage({
                 command: 'error',
@@ -519,6 +537,7 @@ export class DataViewerPanel {
                 <option value="">Select a variable...</option>
             </select>
             <select id="plotTypeSelect">
+                <option value="auto" selected>Auto (Recommended)</option>
                 <option value="line">Line Plot</option>
                 <option value="heatmap">Heatmap</option>
                 <option value="histogram">Histogram</option>
@@ -579,10 +598,12 @@ export class DataViewerPanel {
         document.getElementById('plotButton').addEventListener('click', () => {
             if (selectedVariable) {
                 const plotType = document.getElementById('plotTypeSelect').value;
+                // Use 'line' as default for auto mode, the Python script will handle the strategy detection
+                const actualPlotType = plotType === 'auto' ? 'line' : plotType;
                 vscode.postMessage({
                     command: 'createPlot',
                     variable: selectedVariable,
-                    plotType: plotType
+                    plotType: actualPlotType
                 });
             }
         });
