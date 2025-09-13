@@ -151,9 +151,10 @@ def get_file_info(file_path):
 
         if not file_format_info["is_supported"]:
             return {
-                "error": f"Unsupported file format: {file_format_info['extension']}",
+                "error": f"Missing dependencies for {file_format_info['display_name']} files: {', '.join(file_format_info['missing_packages'])}",
+                "error_type": "ImportError",
                 "format_info": file_format_info,
-                "suggestion": f"Install required packages: {', '.join(file_format_info['missing_packages'])}",
+                "suggestion": f"Install required packages: pip install {' '.join(file_format_info['missing_packages'])}",
             }
 
         # Open dataset with fallback

@@ -215,33 +215,34 @@ export class DataViewerPanel {
                 let errorMessage = `Data processing error: ${this._dataInfo.error}`;
                 let errorDetails = 'This might be due to missing Python packages or file format issues.';
                 
-                // Handle specific error types
-                if (this._dataInfo.error_type === 'ImportError') {
-                    errorMessage = `Missing dependencies: ${this._dataInfo.error}`;
-                    errorDetails = this._dataInfo.suggestion || 'Install required packages using pip install <package_name>';
+                // Check for missing packages regardless of error type
+                if (this._dataInfo.format_info?.missing_packages && this._dataInfo.format_info.missing_packages.length > 0) {
+                    errorMessage = `Missing dependencies for ${this._dataInfo.format_info.display_name} files: ${this._dataInfo.format_info.missing_packages.join(', ')}`;
+                    errorDetails = this._dataInfo.suggestion || `Install required packages: pip install ${this._dataInfo.format_info.missing_packages.join(' ')}`;
                     
                     // Show installation prompt for missing packages
-                    if (this._dataInfo.format_info?.missing_packages) {
-                        const installAction = await vscode.window.showWarningMessage(
-                            `Missing packages for ${this._dataInfo.format_info.display_name} files: ${this._dataInfo.format_info.missing_packages.join(', ')}`,
-                            'Install Packages',
-                            'Show Details'
-                        );
-                        
-                        if (installAction === 'Install Packages') {
-                            try {
-                                await this.dataProcessor.pythonManagerInstance.installPackagesForFormat(
-                                    this._dataInfo.format_info.missing_packages
-                                );
-                                // Refresh the data after successful installation
-                                await this._handleGetDataInfo();
-                            } catch (error) {
-                                vscode.window.showErrorMessage(
-                                    `Failed to install packages: ${error}. Please install manually: pip install ${this._dataInfo.format_info.missing_packages.join(' ')}`
-                                );
-                            }
+                    const installAction = await vscode.window.showWarningMessage(
+                        `Missing packages for ${this._dataInfo.format_info.display_name} files: ${this._dataInfo.format_info.missing_packages.join(', ')}`,
+                        'Install Packages',
+                        'Show Details'
+                    );
+                    
+                    if (installAction === 'Install Packages') {
+                        try {
+                            await this.dataProcessor.pythonManagerInstance.installPackagesForFormat(
+                                this._dataInfo.format_info.missing_packages
+                            );
+                            // Refresh the data after successful installation
+                            await this._handleGetDataInfo();
+                        } catch (error) {
+                            vscode.window.showErrorMessage(
+                                `Failed to install packages: ${error}. Please install manually: pip install ${this._dataInfo.format_info.missing_packages.join(' ')}`
+                            );
                         }
                     }
+                } else if (this._dataInfo.error_type === 'ImportError') {
+                    errorMessage = `Missing dependencies: ${this._dataInfo.error}`;
+                    errorDetails = this._dataInfo.suggestion || 'Install required packages using pip install <package_name>';
                 } else if (this._dataInfo.suggestion) {
                     errorDetails = this._dataInfo.suggestion;
                 }
