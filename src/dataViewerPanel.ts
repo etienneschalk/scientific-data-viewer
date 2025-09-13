@@ -102,6 +102,9 @@ export class DataViewerPanel {
         try {
             // Check if Python environment is ready
             if (!this.dataProcessor.pythonManagerInstance.isReady()) {
+                Logger.error('Python environment not ready. Please configure Python interpreter first.');
+                Logger.error(`${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
+                Logger.error(`${this.dataProcessor.pythonManagerInstance.isReady()}`);
                 this._panel.webview.postMessage({
                     command: 'error',
                     message: 'Python environment not ready. Please configure Python interpreter first.',

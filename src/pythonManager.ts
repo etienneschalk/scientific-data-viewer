@@ -24,8 +24,10 @@ export class PythonManager {
         }
 
         if (this.pythonPath) {
+            Logger.info(`Revalidating Python environment`);
             await this.validatePythonEnvironment();
         } else {
+            Logger.info(`Finding Python interpreter`);
             await this.findPythonInterpreter();
         }
     }
@@ -190,6 +192,9 @@ export class PythonManager {
 
 
     private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
+        Logger.debug(`Checking required packages`);
+        Logger.debug(`Python path: ${pythonPath}`);
+
         const requiredPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'];
         const availablePackages: string[] = [];
 
@@ -198,24 +203,30 @@ export class PythonManager {
                 const isAvailable = await this.checkPackageAvailability(pythonPath, packageName);
                 if (isAvailable) {
                     availablePackages.push(packageName);
+                    Logger.debug(`Package available: ${packageName}`);
+                }
+                else {
+                    Logger.debug(`Package not available: ${packageName}`);
                 }
             } catch (error) {
-                // Package not available
+                Logger.debug(`Package not available: ${packageName}: error: ${error}`);
             }
         }
 
+        Logger.debug(`Available packages: ${availablePackages}`);
         return availablePackages;
     }
 
     private async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
         return new Promise((resolve) => {
-            const process = spawn(pythonPath, ['-c', `import ${packageName}`], { shell: true });
+            const args = ['-c', `'import ${packageName}'`];
+            const process = spawn(pythonPath, args, { shell: true });
             
             process.on('close', (code) => {
                 resolve(code === 0);
             });
             
-            process.on('error', () => {
+            process.on('error', (error) => {
                 resolve(false);
             });
         });
@@ -259,6 +270,10 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(): Promise<void> {
+        Logger.info(`Validating Python environment`);
+        Logger.info(`Python path: ${this.pythonPath}`);
+        Logger.info(`Is initialized: ${this.isInitialized}`);
+
         if (!this.pythonPath) {
             throw new Error('No Python interpreter configured');
         }
@@ -398,6 +413,10 @@ export class PythonManager {
         if (!this.pythonPath || !this.isInitialized) {
             throw new Error('Python environment not properly initialized. Please run "Select Python Interpreter" command first.');
         }
+
+        Logger.log(`executePythonScript: Executing Python script with args: ${args}`);
+        Logger.log(`executePythonScript: Python path: ${this.pythonPath}`);
+        Logger.log(`executePythonScript: Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, ['-c', script, ...args], { 
