@@ -1218,6 +1218,10 @@ export class DataViewerPanel {
                         <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
                         <li>Check VSCode Output panel for more details</li>
                     </ol>
+
+                    Note: If you see this message even after you have configured the Python interpreter, 
+                    you might need to wait a few moments for the Python environment to be initialized.
+                    This can happen if you opened the data viewer panel right after VSCode was opened.
                 </div>
             \`;
             errorDiv.classList.remove('hidden');
