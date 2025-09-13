@@ -34,9 +34,12 @@ export const FEATURE_FLAGS: Record<string, FeatureFlagDefinition> = {
 export class FeatureFlagsManager {
     private static instance: FeatureFlagsManager;
     private configuration: vscode.WorkspaceConfiguration;
+    private _disposables: vscode.Disposable[] = [];
+    private _onConfigurationChanged: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
 
     private constructor() {
         this.configuration = vscode.workspace.getConfiguration('scientificDataViewer');
+        this._setupConfigurationListener();
     }
 
     /**
@@ -47,6 +50,28 @@ export class FeatureFlagsManager {
             FeatureFlagsManager.instance = new FeatureFlagsManager();
         }
         return FeatureFlagsManager.instance;
+    }
+
+    /**
+     * Event that fires when configuration changes
+     */
+    public get onConfigurationChanged(): vscode.Event<void> {
+        return this._onConfigurationChanged.event;
+    }
+
+    /**
+     * Set up configuration change listener
+     */
+    private _setupConfigurationListener(): void {
+        const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration('scientificDataViewer')) {
+                Logger.info('Scientific Data Viewer configuration changed, refreshing feature flags...');
+                this.refresh();
+                this._onConfigurationChanged.fire();
+            }
+        });
+        
+        this._disposables.push(configChangeListener);
     }
 
     /**
@@ -144,6 +169,15 @@ export class FeatureFlagsManager {
      */
     public refresh(): void {
         this.configuration = vscode.workspace.getConfiguration('scientificDataViewer');
+    }
+
+    /**
+     * Dispose of the feature flags manager and clean up listeners
+     */
+    public dispose(): void {
+        this._onConfigurationChanged.dispose();
+        this._disposables.forEach(disposable => disposable.dispose());
+        this._disposables = [];
     }
 
     /**

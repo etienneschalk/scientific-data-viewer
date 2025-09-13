@@ -7,6 +7,7 @@ import { FeatureFlagsManager } from './featureFlagsManager';
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
     public static readonly viewType = 'scientificDataViewer';
+    private static _featureFlagsListener: vscode.Disposable | undefined;
 
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
@@ -18,6 +19,9 @@ export class DataViewerPanel {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
+
+        // Set up configuration listener if not already done
+        DataViewerPanel._setupConfigurationListener();
 
         // Get feature flags manager
         const featureFlags = FeatureFlagsManager.getInstance();
@@ -65,6 +69,40 @@ export class DataViewerPanel {
         Logger.info(`Refreshing ${DataViewerPanel.activePanels.size} active panels due to Python environment change...`);
         for (const panel of DataViewerPanel.activePanels) {
             await panel._handleGetDataInfo();
+        }
+    }
+
+    /**
+     * Set up configuration change listener for feature flags
+     */
+    private static _setupConfigurationListener(): void {
+        if (DataViewerPanel._featureFlagsListener) {
+            return; // Already set up
+        }
+
+        const featureFlags = FeatureFlagsManager.getInstance();
+        DataViewerPanel._featureFlagsListener = featureFlags.onConfigurationChanged(() => {
+            Logger.info('Feature flags configuration changed, updating behavior...');
+            
+            // Log current state of the feature flag
+            const allowMultipleTabs = featureFlags.isEnabled('allowMultipleTabsForSameFile');
+            Logger.info(`allowMultipleTabsForSameFile is now: ${allowMultipleTabs}`);
+            
+            // Show notification to user about the change
+            vscode.window.showInformationMessage(
+                `Feature flag updated: Allow Multiple Tabs For Same File is now ${allowMultipleTabs ? 'enabled' : 'disabled'}`,
+                'OK'
+            );
+        });
+    }
+
+    /**
+     * Dispose of static resources
+     */
+    public static dispose(): void {
+        if (DataViewerPanel._featureFlagsListener) {
+            DataViewerPanel._featureFlagsListener.dispose();
+            DataViewerPanel._featureFlagsListener = undefined;
         }
     }
 

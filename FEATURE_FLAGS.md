@@ -56,6 +56,7 @@ This feature is marked as experimental because:
 2. Search for "Scientific Data Viewer"
 3. Find the "Allow Multiple Tabs For Same File" setting
 4. Toggle the checkbox
+5. **Changes take effect immediately** - no restart required
 
 ### Via settings.json
 
@@ -66,6 +67,8 @@ Add the following to your `settings.json`:
   "scientificDataViewer.allowMultipleTabsForSameFile": false
 }
 ```
+
+**Note**: Changes to `settings.json` are also applied immediately when the file is saved.
 
 ### Workspace vs User Settings
 
@@ -82,11 +85,18 @@ Add the following to your `settings.json`:
 
 ### Extension Logs
 
-The extension will log warnings when experimental features are enabled. Check the Output panel:
+The extension will log warnings when experimental features are enabled and when configuration changes. Check the Output panel:
 
 1. Go to View → Output
 2. Select "Scientific Data Viewer" from the dropdown
-3. Look for experimental feature warnings
+3. Look for experimental feature warnings and configuration change notifications
+
+### Runtime Notifications
+
+When you change feature flag settings, the extension will:
+- Show an immediate notification about the change
+- Log the change to the Output panel
+- Apply the new behavior immediately
 
 ## Best Practices
 

@@ -329,5 +329,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
     Logger.info('Scientific Data Viewer extension is now deactivated!');
+    
+    // Dispose of feature flags manager
+    const featureFlags = FeatureFlagsManager.getInstance();
+    featureFlags.dispose();
+    
+    // Dispose of data viewer panel static resources
+    DataViewerPanel.dispose();
+    
     Logger.dispose();
 }
