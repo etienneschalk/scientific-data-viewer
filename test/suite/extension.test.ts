@@ -20,14 +20,13 @@ suite('Extension Test Suite', () => {
     test('Commands should be registered', async () => {
         const commands = await vscode.commands.getCommands(true);
         assert.ok(commands.includes('scientificDataViewer.openViewer'));
-        assert.ok(commands.includes('scientificDataViewer.selectPythonInterpreter'));
         assert.ok(commands.includes('scientificDataViewer.refreshData'));
+        assert.ok(commands.includes('scientificDataViewer.refreshPythonEnvironment'));
     });
 
     test('Configuration should be available', () => {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         assert.ok(config);
-        assert.ok(config.has('pythonPath'));
         assert.ok(config.has('autoRefresh'));
         assert.ok(config.has('maxFileSize'));
         assert.ok(config.has('defaultView'));

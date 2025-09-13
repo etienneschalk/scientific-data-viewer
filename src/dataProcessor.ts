@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { PythonManager } from './pythonManager';
+import { Logger } from './logger';
 
 export interface DataInfo {
     format: string;
@@ -114,7 +115,7 @@ print(json.dumps(result))
             }
             return result;
         } catch (error) {
-            console.error('Error processing data file:', error);
+            Logger.error(`Error processing data file: ${error}`);
             return null;
         }
     }
@@ -194,7 +195,7 @@ print(json.dumps(result))
             }
             return result;
         } catch (error) {
-            console.error('Error getting data slice:', error);
+            Logger.error(`Error getting data slice: ${error}`);
             return null;
         }
     }
@@ -296,7 +297,7 @@ else:
             }
             return null;
         } catch (error) {
-            console.error('Error creating plot:', error);
+            Logger.error(`Error creating plot: ${error}`);
             return null;
         }
     }

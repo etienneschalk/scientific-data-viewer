@@ -1,16 +1,26 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { Logger } from './logger';
 
 export class PythonManager {
     private pythonPath: string | undefined;
     private isInitialized: boolean = false;
 
     constructor(private context: vscode.ExtensionContext) {
-        this.pythonPath = vscode.workspace.getConfiguration('scientificDataViewer').get('pythonPath');
+        // Initialize without old pythonPath setting - will get from Python extension API
+        this.pythonPath = undefined;
     }
 
     async initialize(): Promise<void> {
+        // Get Python interpreter from Python extension API (recommended method)
+        const newPythonPath = await this.getPythonInterpreterFromExtension();
+        
+        if (newPythonPath && newPythonPath !== this.pythonPath) {
+            Logger.info(`Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
+            this.pythonPath = newPythonPath;
+        }
+
         if (this.pythonPath) {
             await this.validatePythonEnvironment();
         } else {
@@ -18,37 +28,44 @@ export class PythonManager {
         }
     }
 
-    async selectInterpreter(): Promise<void> {
-        const pythonInterpreters = await this.findPythonInterpreters();
+    private async getPythonInterpreterFromExtension(): Promise<string | undefined> {
+        try {
+            const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+            if (pythonExtension && pythonExtension.isActive) {
+                const pythonApi = pythonExtension.exports;
+                if (pythonApi && pythonApi.settings) {
+                    // Use the Python extension API to get interpreter details
+                    const interpreterDetails = await pythonApi.settings.getInterpreterDetails();
+                    Logger.debug(`Python extension API interpreter details: ${JSON.stringify(interpreterDetails)}`);
+                    return interpreterDetails?.path;
+                }
+            }
+        } catch (error) {
+            Logger.warn(`Could not access Python extension API: ${error}`);
+        }
         
-        if (pythonInterpreters.length === 0) {
-            vscode.window.showErrorMessage('No Python interpreters found. Please install Python and required packages.');
+        // Fallback: try to get from VSCode configuration
+        try {
+            const vscodePythonPath = vscode.workspace.getConfiguration('python').get('defaultInterpreterPath') as string | undefined;
+            return vscodePythonPath;
+        } catch (error) {
+            Logger.warn(`Could not access Python configuration: ${error}`);
+        }
+        
+        return undefined;
+    }
+
+
+
+    private async findPythonInterpreter(): Promise<void> {
+        // Try to get interpreter from Python extension API first
+        const extensionPath = await this.getPythonInterpreterFromExtension();
+        if (extensionPath) {
+            this.pythonPath = extensionPath;
             return;
         }
 
-        const items = pythonInterpreters.map(interpreter => ({
-            label: interpreter.path,
-            description: interpreter.version,
-            detail: interpreter.packages ? `Packages: ${interpreter.packages.join(', ')}` : 'No required packages found'
-        }));
-
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Select Python interpreter for scientific data processing',
-            matchOnDescription: true,
-            matchOnDetail: true
-        });
-
-        if (selected) {
-            this.pythonPath = selected.label;
-            await this.updateConfiguration();
-            await this.validatePythonEnvironment();
-        }
-    }
-
-    private async findPythonInterpreters(): Promise<Array<{path: string, version: string, packages?: string[]}>> {
-        const interpreters: Array<{path: string, version: string, packages?: string[]}> = [];
-        
-        // Common Python paths to check
+        // Fallback: Common Python paths to check
         const commonPaths = [
             'python3',
             'python',
@@ -63,34 +80,17 @@ export class PythonManager {
             try {
                 const version = await this.getPythonVersion(pythonPath);
                 if (version) {
-                    const packages = await this.checkRequiredPackages(pythonPath);
-                    interpreters.push({
-                        path: pythonPath,
-                        version: version,
-                        packages: packages
-                    });
+                    this.pythonPath = pythonPath;
+                    return;
                 }
             } catch (error) {
                 // Ignore errors for individual paths
             }
         }
 
-        return interpreters;
-    }
-
-    private async findPythonInterpreter(): Promise<void> {
-        const interpreters = await this.findPythonInterpreters();
-        
-        if (interpreters.length > 0) {
-            // Use the first interpreter with required packages, or the first one available
-            const interpreterWithPackages = interpreters.find(i => i.packages && i.packages.length > 0);
-            this.pythonPath = interpreterWithPackages ? interpreterWithPackages.path : interpreters[0].path;
-            await this.updateConfiguration();
-        } else {
-            vscode.window.showWarningMessage(
-                'No suitable Python interpreter found. Please install Python with required packages (xarray, netCDF4, zarr).'
-            );
-        }
+        vscode.window.showWarningMessage(
+            'No suitable Python interpreter found. Please install Python and use VSCode\'s "Select Python Interpreter" command.'
+        );
     }
 
     private async getPythonVersion(pythonPath: string): Promise<string | null> {
@@ -115,6 +115,7 @@ export class PythonManager {
             });
         });
     }
+
 
     private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
         const requiredPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'];
@@ -148,6 +149,43 @@ export class PythonManager {
         });
     }
 
+    private async checkPipAvailability(): Promise<void> {
+        if (!this.pythonPath) {
+            throw new Error('No Python interpreter configured');
+        }
+
+        return new Promise((resolve, reject) => {
+            const process = spawn(this.pythonPath!, ['-m', 'pip', '--version'], { 
+                shell: true,
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+            
+            let stdout = '';
+            let stderr = '';
+            
+            process.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+            
+            process.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+            
+            process.on('close', (code) => {
+                if (code === 0) {
+                    Logger.debug(`pip version: ${stdout.trim()}`);
+                    resolve();
+                } else {
+                    reject(new Error(`pip check failed (exit code ${code}): ${stderr || stdout}`));
+                }
+            });
+            
+            process.on('error', (error) => {
+                reject(new Error(`Failed to check pip availability: ${error.message}`));
+            });
+        });
+    }
+
     private async validatePythonEnvironment(): Promise<void> {
         if (!this.pythonPath) {
             throw new Error('No Python interpreter configured');
@@ -160,24 +198,31 @@ export class PythonManager {
             );
 
             if (missingPackages.length > 0) {
-                // const installCommand = `${this.pythonPath} -m pip install ${missingPackages.join(' ')}`;
                 const action = await vscode.window.showWarningMessage(
-                    `
-                    You are using the Python interpreter at ${this.pythonPath}. 
-                    Missing required packages: ${missingPackages.join(', ')}. 
-                    Install them?`,
+                    `AAA
+                    You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
                     'Install',
                     'Cancel'
                 );
 
                 if (action === 'Install') {
-                    await this.installPackages(missingPackages);
+                    try {
+                        await this.installPackages(missingPackages);
+                    } catch (error) {
+                        Logger.error(`Package installation failed: ${error}`);
+                        // Show detailed error information
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
+                        throw error; // Re-throw to be caught by the outer try-catch
+                    }
                 }
             } else {
                 this.isInitialized = true;
-                vscode.window.showInformationMessage('Python environment validated successfully!');
+                // Don't show notification during initialization - only when interpreter changes
+                Logger.info(`Python environment ready! Using interpreter: ${this.pythonPath}`);
             }
         } catch (error) {
+            Logger.error(`Python environment validation failed: ${error}`);
             vscode.window.showErrorMessage(`Failed to validate Python environment: ${error}`);
         }
     }
@@ -187,32 +232,90 @@ export class PythonManager {
             throw new Error('No Python interpreter configured');
         }
 
+        // First, check if pip is available
+        try {
+            await this.checkPipAvailability();
+        } catch (error) {
+            throw new Error(`pip is not available: ${error}. Please install pip or use a different Python interpreter.`);
+        }
+
         return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, ['-m', 'pip', 'install', ...packages], { 
+            Logger.info(`Installing packages: ${packages.join(', ')} using Python: ${this.pythonPath}`);
+            Logger.debug(`Working directory: ${process.cwd()}`);
+            Logger.debug(`Environment PATH: ${process.env.PATH}`);
+            
+            const pipProcess = spawn(this.pythonPath!, ['-m', 'pip', 'install', ...packages], { 
                 shell: true,
-                stdio: 'inherit'
+                stdio: ['pipe', 'pipe', 'pipe']
             });
             
-            process.on('close', (code) => {
+            let stdout = '';
+            let stderr = '';
+            
+            pipProcess.stdout.on('data', (data) => {
+                const output = data.toString();
+                stdout += output;
+                Logger.debug(`pip stdout: ${output}`);
+            });
+            
+            pipProcess.stderr.on('data', (data) => {
+                const output = data.toString();
+                stderr += output;
+                Logger.warn(`pip stderr: ${output}`);
+            });
+            
+            pipProcess.on('close', (code) => {
+                Logger.debug(`pip process exited with code: ${code}`);
+                Logger.debug(`pip stdout: ${stdout}`);
+                Logger.debug(`pip stderr: ${stderr}`);
+                
                 if (code === 0) {
                     this.isInitialized = true;
                     vscode.window.showInformationMessage('Packages installed successfully!');
                     resolve();
                 } else {
-                    reject(new Error(`Failed to install packages. Exit code: ${code}`));
+                    // Create detailed error message with pip output
+                    let errorMessage = `Failed to install packages. Exit code: ${code}`;
+                    
+                    if (stderr) {
+                        errorMessage += `\n\nPip Error Output:\n${stderr}`;
+                    }
+                    
+                    if (stdout) {
+                        errorMessage += `\n\nPip Standard Output:\n${stdout}`;
+                    }
+                    
+                    // Add common troubleshooting tips based on error content
+                    if (stderr.includes('Permission denied') || stderr.includes('Access is denied')) {
+                        errorMessage += `\n\n💡 Troubleshooting: Permission denied. Try running:\n${this.pythonPath} -m pip install --user ${packages.join(' ')}`;
+                    } else if (stderr.includes('No module named pip')) {
+                        errorMessage += `\n\n💡 Troubleshooting: pip is not installed. Try installing pip first or use a different Python interpreter.`;
+                    } else if (stderr.includes('Could not find a version')) {
+                        errorMessage += `\n\n💡 Troubleshooting: Package version not found. Try updating pip:\n${this.pythonPath} -m pip install --upgrade pip`;
+                    } else if (stderr.includes('SSL') || stderr.includes('certificate')) {
+                        errorMessage += `\n\n💡 Troubleshooting: SSL/Certificate issue. Try:\n${this.pythonPath} -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org ${packages.join(' ')}`;
+                    } else if (stderr.includes('Microsoft Visual C++')) {
+                        errorMessage += `\n\n💡 Troubleshooting: Missing Visual C++ compiler. Install Microsoft Visual C++ Build Tools or use pre-compiled packages.`;
+                    }
+                    
+                    reject(new Error(errorMessage));
                 }
             });
             
-            process.on('error', (error) => {
-                reject(error);
+            pipProcess.on('error', (error) => {
+                Logger.error(`pip process error: ${error.message}`);
+                let errorMessage = `Failed to execute pip: ${error.message}`;
+                
+                if (error.message.includes('ENOENT')) {
+                    errorMessage += `\n\n💡 Troubleshooting: Python interpreter not found at: ${this.pythonPath}`;
+                    errorMessage += `\nPlease check your Python installation and try selecting a different interpreter.`;
+                }
+                
+                reject(new Error(errorMessage));
             });
         });
     }
 
-    private async updateConfiguration(): Promise<void> {
-        const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        await config.update('pythonPath', this.pythonPath, vscode.ConfigurationTarget.Global);
-    }
 
     async executePythonScript(script: string, args: string[] = []): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
@@ -275,4 +378,15 @@ export class PythonManager {
     isReady(): boolean {
         return this.isInitialized && this.pythonPath !== undefined;
     }
+
+    async forceReinitialize(): Promise<void> {
+        Logger.info('Force reinitializing Python environment...');
+        this.isInitialized = false;
+        await this.initialize();
+    }
+
+    async getCurrentInterpreterPath(): Promise<string | undefined> {
+        return await this.getPythonInterpreterFromExtension();
+    }
+
 }

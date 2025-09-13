@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { DataProcessor, DataInfo } from './dataProcessor';
+import { Logger } from './logger';
 
 export class DataViewerPanel {
     public static currentPanel: DataViewerPanel | undefined;
@@ -43,6 +44,13 @@ export class DataViewerPanel {
 
     public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         DataViewerPanel.currentPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
+    }
+
+    public static async refreshCurrentPanel(dataProcessor: DataProcessor) {
+        if (DataViewerPanel.currentPanel) {
+            Logger.info('Refreshing current panel due to Python environment change...');
+            await DataViewerPanel.currentPanel._handleGetDataInfo();
+        }
     }
 
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, private dataProcessor: DataProcessor) {
@@ -140,7 +148,7 @@ export class DataViewerPanel {
                 data: this._dataInfo
             });
         } catch (error) {
-            console.error('Error in _handleGetDataInfo:', error);
+            Logger.error(`Error in _handleGetDataInfo: ${error}`);
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to load data info: ${error}`,
@@ -566,10 +574,15 @@ export class DataViewerPanel {
 
         function showError(message, details = '') {
             const errorDiv = document.getElementById('error');
+            
+            // Format message to handle multi-line errors
+            const formattedMessage = message.replace(/\\n/g, '<br>');
+            const formattedDetails = details ? details.replace(/\\n/g, '<br>') : '';
+            
             errorDiv.innerHTML = \`
                 <h3>❌ Error</h3>
-                <p><strong>Message:</strong> \${message}</p>
-                \${details ? \`<p><strong>Details:</strong> \${details}</p>\` : ''}
+                <p><strong>Message:</strong> \${formattedMessage}</p>
+                \${formattedDetails ? \`<p><strong>Details:</strong> \${formattedDetails}</p>\` : ''}
                 <div style="margin-top: 15px;">
                     <h4>💡 Troubleshooting Steps:</h4>
                     <ol>

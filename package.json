@@ -37,13 +37,18 @@
         "category": "Scientific Data"
       },
       {
-        "command": "scientificDataViewer.selectPythonInterpreter",
-        "title": "Select Python Interpreter",
+        "command": "scientificDataViewer.refreshData",
+        "title": "Refresh Data",
         "category": "Scientific Data"
       },
       {
-        "command": "scientificDataViewer.refreshData",
-        "title": "Refresh Data",
+        "command": "scientificDataViewer.refreshPythonEnvironment",
+        "title": "Refresh Python Environment",
+        "category": "Scientific Data"
+      },
+      {
+        "command": "scientificDataViewer.showLogs",
+        "title": "Show Extension Logs",
         "category": "Scientific Data"
       }
     ],
@@ -61,11 +66,11 @@
           "when": "true"
         },
         {
-          "command": "scientificDataViewer.selectPythonInterpreter",
+          "command": "scientificDataViewer.refreshData",
           "when": "true"
         },
         {
-          "command": "scientificDataViewer.refreshData",
+          "command": "scientificDataViewer.refreshPythonEnvironment",
           "when": "true"
         }
       ]
@@ -105,11 +110,6 @@
     "configuration": {
       "title": "Scientific Data Viewer",
       "properties": {
-        "scientificDataViewer.pythonPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to Python interpreter for data processing"
-        },
         "scientificDataViewer.autoRefresh": {
           "type": "boolean",
           "default": true,

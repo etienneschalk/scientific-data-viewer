@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { DataProcessor } from './dataProcessor';
+import { Logger } from './logger';
 
 export class ScientificDataItem extends vscode.TreeItem {
     public children?: ScientificDataItem[];
@@ -68,7 +69,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
                 ));
             }
         } catch (error) {
-            console.error('Error finding scientific data files:', error);
+            Logger.error(`Error finding scientific data files: ${error}`);
         }
 
         return files.sort((a, b) => a.label.localeCompare(b.label));
@@ -132,7 +133,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
             }
 
         } catch (error) {
-            console.error('Error getting file details:', error);
+            Logger.error(`Error getting file details: ${error}`);
             details.push(new ScientificDataItem(
                 'Error loading file details',
                 vscode.TreeItemCollapsibleState.None
