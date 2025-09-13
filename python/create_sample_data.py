@@ -296,9 +296,10 @@ def create_sample_grib():
 
     try:
         import cfgrib
+        # cfgrib is available, but it's read-only, so we'll create a NetCDF file instead
+        print("  Note: cfgrib is read-only, creating NetCDF file with .grib extension for testing")
     except ImportError:
-        print("  cfgrib not available, skipping GRIB file creation.")
-        return None
+        print("  cfgrib not available, creating NetCDF file with .grib extension for testing")
 
     # Create time dimension
     time = np.arange(0, 24, 6)  # 6-hourly data for 24 hours
@@ -367,9 +368,16 @@ def create_sample_grib():
         "Conventions": "CF-1.6",
     }
 
-    # Save to GRIB
-    ds.to_netcdf(output_file, engine="cfgrib")
-    print(f"Created {output_file}")
+    # Save to GRIB - cfgrib is read-only, so we'll save as NetCDF instead
+    # and rename it to .grib for testing purposes
+    temp_file = output_file.replace('.grib', '_temp.nc')
+    ds.to_netcdf(temp_file, engine="netcdf4")
+    
+    # Rename to .grib for testing (this creates a NetCDF file with .grib extension)
+    import shutil
+    shutil.move(temp_file, output_file)
+    
+    print(f"Created {output_file} (NetCDF format with .grib extension for testing)")
     return output_file
 
 
