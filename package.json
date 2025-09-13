@@ -27,9 +27,12 @@
   ],
   "activationEvents": [
     "onLanguage:netcdf",
+    "onLanguage:hdf5",
     "onCommand:scientificDataViewer.openViewer",
     "onFileSystem:netcdf",
-    "onFileSystem:zarr"
+    "onFileSystem:zarr",
+    "onCustomEditor:netcdfEditor",
+    "onCustomEditor:hdf5Editor"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -108,6 +111,44 @@
           "netcdf"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "hdf5",
+        "extensions": [
+          ".h5",
+          ".hdf5"
+        ],
+        "aliases": [
+          "HDF5",
+          "hdf5"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "netcdfEditor",
+        "displayName": "NetCDF Data Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.nc"
+          },
+          {
+            "filenamePattern": "*.netcdf"
+          }
+        ]
+      },
+      {
+        "viewType": "hdf5Editor",
+        "displayName": "HDF5 Data Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.h5"
+          },
+          {
+            "filenamePattern": "*.hdf5"
+          }
+        ]
       }
     ],
     "configuration": {

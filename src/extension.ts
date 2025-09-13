@@ -5,6 +5,43 @@ import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 
+class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
+    constructor(
+        private readonly context: vscode.ExtensionContext,
+        private readonly dataProcessor: DataProcessor
+    ) {}
+
+    public async openCustomDocument(
+        uri: vscode.Uri,
+        openContext: vscode.CustomDocumentOpenContext,
+        _token: vscode.CancellationToken
+    ): Promise<vscode.CustomDocument> {
+        Logger.info(`Opening custom document for: ${uri.fsPath}`);
+        
+        // Create a custom document that represents the file
+        return {
+            uri: uri,
+            dispose: () => {
+                Logger.info(`Disposing custom document for: ${uri.fsPath}`);
+            }
+        };
+    }
+
+    public async resolveCustomEditor(
+        document: vscode.CustomDocument,
+        webviewPanel: vscode.WebviewPanel,
+        _token: vscode.CancellationToken
+    ): Promise<void> {
+        Logger.info(`Resolving custom editor for: ${document.uri.fsPath}`);
+        
+        // Instead of showing a text editor, open our data viewer
+        await DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
+        
+        // Close the webview panel since we're using our own panel
+        webviewPanel.dispose();
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
     Logger.info('Scientific Data Viewer extension is now active!');
@@ -28,6 +65,23 @@ export function activate(context: vscode.ExtensionContext) {
         treeDataProvider: dataProvider
     });
     Logger.info('Tree data provider registered successfully');
+
+    // Register custom editor providers
+    Logger.info('Registering custom editor providers...');
+    const netcdfEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const hdf5EditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    
+    const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
+        'netcdfEditor',
+        netcdfEditorProvider
+    );
+    
+    const hdf5EditorRegistration = vscode.window.registerCustomEditorProvider(
+        'hdf5Editor',
+        hdf5EditorProvider
+    );
+    
+    Logger.info('Custom editor providers registered successfully');
 
     // Register commands
     const openViewerCommand = vscode.commands.registerCommand(
@@ -243,6 +297,8 @@ export function activate(context: vscode.ExtensionContext) {
         statusBarItem,
         pythonInterpreterChangeListener,
         workspaceChangeListener,
+        netcdfEditorRegistration,
+        hdf5EditorRegistration,
         { dispose: () => clearInterval(pythonCheckInterval) }
     );
 
