@@ -24,7 +24,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
     private _onDidChangeTreeData: vscode.EventEmitter<ScientificDataItem | undefined | null | void> = new vscode.EventEmitter<ScientificDataItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<ScientificDataItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    constructor(private dataProcessor: DataProcessor) {}
+    constructor(private dataProcessor: DataProcessor) { }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
@@ -59,7 +59,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
                 const size = this.formatFileSize(stat.size);
                 const ext = file.path.split('.').pop()?.toLowerCase();
                 const type = this.getFileType(ext || '');
-                
+
                 files.push(new ScientificDataItem(
                     file.path.split('/').pop() || file.path,
                     vscode.TreeItemCollapsibleState.Collapsed,
@@ -77,7 +77,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
 
     private async getFileDetails(uri: vscode.Uri): Promise<ScientificDataItem[]> {
         const details: ScientificDataItem[] = [];
-        
+
         try {
             // Get basic file info
             const stat = await vscode.workspace.fs.stat(uri);
@@ -105,7 +105,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
                             'Dimensions',
                             vscode.TreeItemCollapsibleState.Collapsed
                         );
-                        dimsItem.children = Object.entries(dataInfo.dimensions).map(([name, size]) => 
+                        dimsItem.children = Object.entries(dataInfo.dimensions).map(([name, size]) =>
                             new ScientificDataItem(`${name}: ${size}`, vscode.TreeItemCollapsibleState.None)
                         );
                         details.push(dimsItem);
@@ -116,7 +116,7 @@ export class ScientificDataProvider implements vscode.TreeDataProvider<Scientifi
                             `Variables (${dataInfo.variables.length})`,
                             vscode.TreeItemCollapsibleState.Collapsed
                         );
-                        varsItem.children = dataInfo.variables.map(variable => 
+                        varsItem.children = dataInfo.variables.map(variable =>
                             new ScientificDataItem(
                                 `${variable.name} (${variable.dtype})`,
                                 vscode.TreeItemCollapsibleState.None

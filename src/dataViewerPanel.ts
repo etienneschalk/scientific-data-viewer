@@ -755,6 +755,7 @@ export class DataViewerPanel {
             </details>
         </div>
 
+        ${plottingCapabilities ? `
         <div class="info-section">
             <h3>Dimensions</h3>
             <div id="dimensions" class="dimensions"></div>
@@ -764,6 +765,7 @@ export class DataViewerPanel {
             <h3>Variables</h3>
             <div id="variables" class="variables"></div>
         </div>
+        ` : ''}
         
         ${plottingCapabilities ? `
         <div class="info-section">
@@ -955,47 +957,40 @@ export class DataViewerPanel {
             \`;
 
 
+            ${plottingCapabilities ? `
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
-            if (data.dimensions) {
-                dimensionsContainer.innerHTML = Object.entries(data.dimensions)
-                    .map(([name, size]) => \`<div class="dimension-item">\${name}: \${size}</div>\`)
-                    .join('');
-            } else {
-                dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
+            if (dimensionsContainer) {
+                if (data.dimensions) {
+                    dimensionsContainer.innerHTML = Object.entries(data.dimensions)
+                        .map(([name, size]) => \`<div class="dimension-item">\${name}: \${size}</div>\`)
+                        .join('');
+                } else {
+                    dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
+                }
             }
 
             // Display variables
             const variablesContainer = document.getElementById('variables');
-            if (data.variables && data.variables.length > 0) {
-                variablesContainer.innerHTML = data.variables
-                    .map(variable => \`
-                        <div class="variable-item" data-variable="\${variable.name}">
-                            <strong>\${variable.name}</strong><br>
-                            <small>
-                                \${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
-                                \${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
-                                \${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
-                            </small>
-                        </div>
-                    \`)
-                    .join('');
-                
-                // Add click handlers for variable selection
-                ${plottingCapabilities ? `
-                variablesContainer.querySelectorAll('.variable-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        variablesContainer.querySelectorAll('.variable-item').forEach(i => i.classList.remove('selected'));
-                        item.classList.add('selected');
-                        selectedVariable = item.dataset.variable;
-                        document.getElementById('variableSelect').value = selectedVariable;
-                        document.getElementById('plotButton').disabled = false;
-                    });
-                });
-                ` : ''}
-            } else {
-                variablesContainer.innerHTML = '<p>No variables found</p>';
+            if (variablesContainer) {
+                if (data.variables && data.variables.length > 0) {
+                    variablesContainer.innerHTML = data.variables
+                        .map(variable => \`
+                            <div class="variable-item" data-variable="\${variable.name}">
+                                <strong>\${variable.name}</strong><br>
+                                <small>
+                                    \${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
+                                    \${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
+                                    \${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
+                                </small>
+                            </div>
+                        \`)
+                        .join('');
+                } else {
+                    variablesContainer.innerHTML = '<p>No variables found</p>';
+                }
             }
+            ` : ''}
 
             // Request variable list for dropdown
             ${plottingCapabilities ? `
