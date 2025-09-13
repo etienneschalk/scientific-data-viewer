@@ -213,7 +213,7 @@ export function activate(context: vscode.ExtensionContext) {
         } catch (error) {
             Logger.error(`Error in periodic Python interpreter check: ${error}`);
         }
-    }, 2000); // Check every 2 seconds
+    }, 30000); // Check every 30 seconds
 
     context.subscriptions.push(
         openViewerCommand,

@@ -31,15 +31,49 @@ export class PythonManager {
     private async getPythonInterpreterFromExtension(): Promise<string | undefined> {
         try {
             const pythonExtension = vscode.extensions.getExtension('ms-python.python');
-            if (pythonExtension && pythonExtension.isActive) {
-                const pythonApi = pythonExtension.exports;
-                if (pythonApi && pythonApi.settings) {
-                    // Use the Python extension API to get interpreter details
-                    const interpreterDetails = await pythonApi.settings.getInterpreterDetails();
-                    Logger.debug(`Python extension API interpreter details: ${JSON.stringify(interpreterDetails)}`);
-                    return interpreterDetails?.path;
+            if (!pythonExtension) {
+                Logger.debug('Python extension not found');
+                return undefined;
+            }
+
+            if (!pythonExtension.isActive) {
+                Logger.debug('Python extension is not active, attempting to activate...');
+            }
+
+            // Ensure the extension is activated
+            const pythonApi = await pythonExtension.activate();
+            
+            if (!pythonApi) {
+                Logger.warn('❌ Python extension API is not available after activation');
+                return undefined;
+            }
+            else {
+                Logger.debug('✅ Python extension API is available after activation');
+            }
+            
+            // Try the new environments API first
+            if (pythonApi.environments && typeof pythonApi.environments.getActiveInterpreter === 'function') {
+                try {
+                    const activeInterpreter = await pythonApi.environments.getActiveInterpreter();
+                    Logger.debug(`Python extension API active interpreter: ${JSON.stringify(activeInterpreter)}`);
+                    return activeInterpreter?.path;
+                } catch (envError) {
+                    Logger.debug(`Environments API error: ${envError}`);
                 }
             }
+            
+            // Fallback to old settings API if available
+            if (pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
+                try {
+                    const interpreterDetails = await pythonApi.settings.getInterpreterDetails();
+                    Logger.debug(`Python extension API interpreter details (legacy): ${JSON.stringify(interpreterDetails)}`);
+                    return interpreterDetails?.path;
+                } catch (legacyError) {
+                    Logger.debug(`Legacy API error: ${legacyError}`);
+                }
+            }
+            
+            Logger.warn('No compatible Python extension API found');
         } catch (error) {
             Logger.warn(`Could not access Python extension API: ${error}`);
         }
@@ -47,6 +81,9 @@ export class PythonManager {
         // Fallback: try to get from VSCode configuration
         try {
             const vscodePythonPath = vscode.workspace.getConfiguration('python').get('defaultInterpreterPath') as string | undefined;
+            if (vscodePythonPath) {
+                Logger.debug(`Using Python path from VSCode configuration: ${vscodePythonPath}`);
+            }
             return vscodePythonPath;
         } catch (error) {
             Logger.warn(`Could not access Python configuration: ${error}`);
@@ -387,6 +424,30 @@ export class PythonManager {
 
     async getCurrentInterpreterPath(): Promise<string | undefined> {
         return await this.getPythonInterpreterFromExtension();
+    }
+
+    /**
+     * Check if the Python extension is available and active
+     */
+    private isPythonExtensionAvailable(): boolean {
+        const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+        return pythonExtension !== undefined;
+    }
+
+    /**
+     * Get Python extension API if available
+     */
+    private async getPythonExtensionApi(): Promise<any | undefined> {
+        try {
+            const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+            if (!pythonExtension) {
+                return undefined;
+            }
+            return await pythonExtension.activate();
+        } catch (error) {
+            Logger.debug(`Failed to activate Python extension: ${error}`);
+            return undefined;
+        }
     }
 
 }
