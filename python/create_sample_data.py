@@ -295,30 +295,30 @@ def create_sample_grib():
     print("Creating sample GRIB file...")
 
     try:
-        import cfgrib
-        print("  cfgrib available, creating GRIB file")
+        import eccodes
+        print("  eccodes available, creating GRIB file")
     except ImportError:
-        print("  cfgrib not available, skipping GRIB file creation.")
+        print("  eccodes not available, skipping GRIB file creation.")
         return None
 
     # Create time dimension
     time = np.arange(0, 24, 6)  # 6-hourly data for 24 hours
     dates = [datetime(2020, 1, 1) + timedelta(hours=int(t)) for t in time]
 
-    # Create lat/lon grid
-    lat = np.linspace(30, 60, 30)  # Smaller grid for GRIB
-    lon = np.linspace(-30, 30, 60)
+    # Create lat/lon grid to match GRIB sample (496 values = 31x16 grid)
+    lat = np.linspace(60, 30, 16)  # Match the sample's latitude range
+    lon = np.linspace(0, 30, 31)   # Match the sample's longitude range
 
     # Create sample weather data
     np.random.seed(789)
     time_3d = time[:, np.newaxis, np.newaxis]
     temperature = (
-        15 + 10 * np.sin(2 * np.pi * time_3d / 24) + np.random.normal(0, 2, (4, 30, 60))
+        15 + 10 * np.sin(2 * np.pi * time_3d / 24) + np.random.normal(0, 2, (4, 16, 31))
     )
     pressure = (
         1013.25
         + 20 * np.sin(2 * np.pi * time_3d / 24)
-        + np.random.normal(0, 5, (4, 30, 60))
+        + np.random.normal(0, 5, (4, 16, 31))
     )
 
     # Create dataset
@@ -368,20 +368,59 @@ def create_sample_grib():
         "Conventions": "CF-1.6",
     }
 
-    # Save to GRIB using cfgrib engine
+    # Save to GRIB using eccodes directly
     try:
-        ds.to_netcdf(output_file, engine="cfgrib")
-        print(f"Created {output_file}")
+        # Create GRIB file using eccodes - try the simplest approach first
+        with open(output_file, "wb") as f:
+            for i, time_val in enumerate(dates):
+                # Create a new GRIB message from sample
+                grib_id = eccodes.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+                
+                try:
+                    # Set only the most basic parameters
+                    eccodes.codes_set_string(grib_id, "shortName", "t")
+                    eccodes.codes_set_long(grib_id, "dataDate", int(time_val.strftime("%Y%m%d")))
+                    eccodes.codes_set_long(grib_id, "dataTime", int(time_val.strftime("%H%M")))
+                    
+                    # Set data values
+                    data_2d = ds["t"].isel(time=i).values
+                    # Resize data to match the GRIB grid if needed
+                    if data_2d.size != eccodes.codes_get_size(grib_id, "values"):
+                        # Get the expected size from the GRIB message
+                        expected_size = eccodes.codes_get_size(grib_id, "values")
+                        # Resize or pad the data
+                        if data_2d.size < expected_size:
+                            # Pad with zeros
+                            padded_data = np.zeros(expected_size)
+                            padded_data[:data_2d.size] = data_2d.flatten()
+                            data_2d = padded_data
+                        else:
+                            # Truncate
+                            data_2d = data_2d.flatten()[:expected_size]
+                    else:
+                        data_2d = data_2d.flatten()
+                    
+                    eccodes.codes_set_values(grib_id, data_2d)
+                    
+                    # Write the message
+                    eccodes.codes_write(grib_id, f)
+                    
+                finally:
+                    eccodes.codes_release(grib_id)
+        
+        print(f"Created {output_file} (GRIB format)")
+        
     except Exception as e:
-        print(f"  Error writing GRIB file: {e}")
+        print(f"  Error writing GRIB file with eccodes: {e}")
         print("  Falling back to NetCDF format with .grib extension")
         # Fallback to NetCDF format
-        temp_file = output_file.replace('.grib', '_temp.nc')
+        temp_file = output_file.replace(".grib", "_temp.nc")
         ds.to_netcdf(temp_file, engine="netcdf4")
         import shutil
+
         shutil.move(temp_file, output_file)
         print(f"Created {output_file} (NetCDF format with .grib extension)")
-    
+
     return output_file
 
 
@@ -399,6 +438,7 @@ def create_sample_geotiff():
 
     try:
         import rioxarray
+
         print("  rioxarray available, creating GeoTIFF file")
     except ImportError:
         print("  rioxarray not available, skipping GeoTIFF file creation.")
@@ -413,44 +453,65 @@ def create_sample_geotiff():
 
     # Create RGB bands with more realistic satellite-like patterns
     x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
-    
+
     # Create more complex patterns that look like satellite imagery
     red = np.clip(
-        100 + 80 * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * y) + 
-        30 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y) +
-        np.random.normal(0, 20, (height, width)), 0, 255
+        100
+        + 80 * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * y)
+        + 30 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y)
+        + np.random.normal(0, 20, (height, width)),
+        0,
+        255,
     ).astype(np.uint8)
-    
+
     green = np.clip(
-        120 + 60 * np.cos(3 * np.pi * x) * np.sin(3 * np.pi * y) + 
-        25 * np.sin(6 * np.pi * x) * np.cos(6 * np.pi * y) +
-        np.random.normal(0, 15, (height, width)), 0, 255
+        120
+        + 60 * np.cos(3 * np.pi * x) * np.sin(3 * np.pi * y)
+        + 25 * np.sin(6 * np.pi * x) * np.cos(6 * np.pi * y)
+        + np.random.normal(0, 15, (height, width)),
+        0,
+        255,
     ).astype(np.uint8)
-    
+
     blue = np.clip(
-        80 + 70 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y) + 
-        35 * np.sin(10 * np.pi * x) * np.cos(10 * np.pi * y) +
-        np.random.normal(0, 18, (height, width)), 0, 255
+        80
+        + 70 * np.sin(4 * np.pi * x) * np.cos(4 * np.pi * y)
+        + 35 * np.sin(10 * np.pi * x) * np.cos(10 * np.pi * y)
+        + np.random.normal(0, 18, (height, width)),
+        0,
+        255,
     ).astype(np.uint8)
 
     # Create dataset with proper geospatial information
     ds = xr.Dataset(
         {
-            "red": (["y", "x"], red, {
-                "long_name": "Red band", 
-                "units": "DN",
-                "description": "Red channel of satellite imagery"
-            }),
-            "green": (["y", "x"], green, {
-                "long_name": "Green band", 
-                "units": "DN",
-                "description": "Green channel of satellite imagery"
-            }),
-            "blue": (["y", "x"], blue, {
-                "long_name": "Blue band", 
-                "units": "DN",
-                "description": "Blue channel of satellite imagery"
-            }),
+            "red": (
+                ["y", "x"],
+                red,
+                {
+                    "long_name": "Red band",
+                    "units": "DN",
+                    "description": "Red channel of satellite imagery",
+                },
+            ),
+            "green": (
+                ["y", "x"],
+                green,
+                {
+                    "long_name": "Green band",
+                    "units": "DN",
+                    "description": "Green channel of satellite imagery",
+                },
+            ),
+            "blue": (
+                ["y", "x"],
+                blue,
+                {
+                    "long_name": "Blue band",
+                    "units": "DN",
+                    "description": "Blue channel of satellite imagery",
+                },
+            ),
         },
         coords={
             "x": (
@@ -483,13 +544,13 @@ def create_sample_geotiff():
 
     # Save to GeoTIFF with compression
     try:
-        ds.rio.to_raster(output_file, compress='lzw')
+        ds.rio.to_raster(output_file, compress="lzw")
         print(f"Created {output_file} (compressed GeoTIFF)")
     except Exception as e:
         # Fallback to uncompressed if compression fails
         ds.rio.to_raster(output_file)
         print(f"Created {output_file} (uncompressed GeoTIFF)")
-    
+
     return output_file
 
 
