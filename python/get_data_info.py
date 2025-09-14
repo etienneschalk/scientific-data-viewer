@@ -199,13 +199,14 @@ def get_file_info(file_path):
         file_format_info = detect_file_format(file_path)
 
         if not file_format_info["is_supported"]:
-            return {
+            error = {
                 "error": f"Missing dependencies for {file_format_info['display_name']} files: {', '.join(file_format_info['missing_packages'])}",
                 "error_type": "ImportError",
                 "format_info": file_format_info,
                 "suggestion": f"Install required packages: pip install {' '.join(file_format_info['missing_packages'])}",
                 "xarray_show_versions": versions_text,
             }
+            return {"error": error}
 
         # Open dataset with fallback
         xds, used_engine = open_datatree_with_fallback(file_path, file_format_info)

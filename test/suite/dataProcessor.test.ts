@@ -146,32 +146,6 @@ suite('DataProcessor Test Suite', () => {
         assert.strictEqual(plotData, null);
     });
 
-    test('should get show versions', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return { versions: 'xarray: 0.20.0\nnumpy: 1.21.0' };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const versions = await processor.getShowVersions();
-        assert.strictEqual(versions, 'xarray: 0.20.0\nnumpy: 1.21.0');
-    });
-
-    test('should handle show versions error', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                throw new Error('Version check failed');
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const versions = await processor.getShowVersions();
-        assert.strictEqual(versions, null);
-    });
-
     test('should handle Python environment not ready', async () => {
         const mockPythonManager = {
             isReady: () => false

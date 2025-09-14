@@ -40,6 +40,7 @@ code .
 ### 2. Test with Sample Data
 
 1. **Create sample data**:
+
    ```bash
    cd sample-data
    python3 ../python/create_sample_data.py

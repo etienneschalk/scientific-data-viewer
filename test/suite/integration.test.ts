@@ -314,7 +314,6 @@ suite('Integration Test Suite', () => {
             'getVariableList',
             'getHtmlRepresentation',
             'getTextRepresentation',
-            'getShowVersions',
             'getPythonPath',
             'getExtensionConfig'
         ];

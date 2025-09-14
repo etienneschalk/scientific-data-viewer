@@ -71,9 +71,9 @@ export class DataProcessor {
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
 
         try {
-            Logger.debug(`XXX Getting data info for file: ${filePath}`);
+            // Logger.debug(`XXX Getting data info for file: ${filePath}`);
             const result = await this.pythonManager.executePythonFile(scriptPath, [filePath]);
-            Logger.debug(`XXX Data info: ${JSON.stringify(result, null, 2)}`);
+            // Logger.debug(`XXX Data info: ${JSON.stringify(result, null, 2)}`);
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return result;
@@ -111,23 +111,5 @@ export class DataProcessor {
         }
     }
 
-    async getShowVersions(): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
-            throw new Error('Python environment not ready');
-        }
 
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_show_versions.py');
-        const args: string[] = [];
-
-        try {
-            const result = await this.pythonManager.executePythonFile(scriptPath, args);
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            return result.versions || null;
-        } catch (error) {
-            Logger.error(`Error getting show versions: ${error}`);
-            return null;
-        }
-    }
 }

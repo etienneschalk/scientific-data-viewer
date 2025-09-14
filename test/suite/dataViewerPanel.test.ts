@@ -81,7 +81,6 @@ suite('DataViewerPanel Test Suite', () => {
             createPlot: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             getHtmlRepresentation: async () => '<div>Test HTML</div>',
             getTextRepresentation: async () => 'Test text representation',
-            getShowVersions: async () => 'xarray: 0.20.0\nnumpy: 1.21.0'
         } as any;
 
         // Mock WebviewPanel
@@ -228,7 +227,7 @@ suite('DataViewerPanel Test Suite', () => {
         } as any;
         DataViewerPanel.activePanels.add(mockPanel);
 
-        await DataViewerPanel.refreshCurrentPanel(mockDataProcessor);
+        await DataViewerPanel._refreshCurrentPanels(mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);
@@ -241,7 +240,7 @@ suite('DataViewerPanel Test Suite', () => {
         } as any;
         DataViewerPanel.panelsWithErrors.add(mockPanel);
 
-        await DataViewerPanel.refreshPanelsWithErrors(mockDataProcessor);
+        await DataViewerPanel._refreshPanelsWithErrors(mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);
@@ -251,7 +250,7 @@ suite('DataViewerPanel Test Suite', () => {
         // Ensure no error panels
         DataViewerPanel.panelsWithErrors.clear();
 
-        await DataViewerPanel.refreshPanelsWithErrors(mockDataProcessor);
+        await DataViewerPanel._refreshPanelsWithErrors(mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);

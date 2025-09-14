@@ -67,7 +67,7 @@ suite('PythonManager Test Suite', () => {
         vscode.extensions.getExtension = () => undefined;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Should not throw an error even without Python extension
             assert.ok(true);
         } finally {
@@ -84,7 +84,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -101,7 +101,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -122,7 +122,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -143,7 +143,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Note: We can't easily test the actual path setting without mocking the validation process
             assert.ok(true);
         } finally {
@@ -160,7 +160,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager.initialize();
+            await pythonManager._initialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -184,18 +184,18 @@ suite('PythonManager Test Suite', () => {
 
     test('should handle force reinitialize', async () => {
         // Mock the initialize method to avoid actual Python validation
-        const originalInitialize = pythonManager.initialize;
-        pythonManager.initialize = async () => {
+        const originalInitialize = pythonManager._initialize;
+        pythonManager._initialize = async () => {
             // Mock successful initialization
             (pythonManager as any).isInitialized = true;
             (pythonManager as any).pythonPath = '/usr/bin/python3';
         };
 
         try {
-            await pythonManager.forceReinitialize();
+            await pythonManager.forceInitialize();
             assert.ok(true);
         } finally {
-            pythonManager.initialize = originalInitialize;
+            pythonManager._initialize = originalInitialize;
         }
     });
 
@@ -444,9 +444,9 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            await pythonManager.initialize();
-            await pythonManager.initialize();
-            await pythonManager.initialize();
+            await pythonManager._initialize();
+            await pythonManager._initialize();
+            await pythonManager._initialize();
             
             // Should have been called multiple times
             assert.ok(callCount > 0);
@@ -468,7 +468,7 @@ suite('PythonManager Test Suite', () => {
             // Create multiple concurrent initialization calls
             const promises = [];
             for (let i = 0; i < 5; i++) {
-                promises.push(pythonManager.initialize());
+                promises.push(pythonManager._initialize());
             }
             
             await Promise.all(promises);

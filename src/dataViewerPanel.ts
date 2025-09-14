@@ -3,6 +3,27 @@ import * as path from 'path';
 import { DataProcessor, DataInfo, DataInfoResult } from './dataProcessor';
 import { Logger } from './logger';
 
+
+// Taken from python/get_data_info.py
+// TODO eschalk: Ideally, a nice formatting display should be placed in the errors,
+// relying solely on the already present info in package.json
+const SUPPORTED_EXTENSIONS = [
+    ".nc",
+    ".netcdf",
+    ".zarr",
+    ".h5",
+    ".hdf5",
+    ".grib",
+    ".grib2",
+    ".tif",
+    ".tiff",
+    ".geotiff",
+    ".jp2",
+    ".jpeg2000",
+    ".safe",
+    ".nc4",
+    ".cdf",
+]
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
     public static panelsWithErrors: Set<DataViewerPanel> = new Set();
@@ -63,14 +84,18 @@ export class DataViewerPanel {
         return dataViewerPanel;
     }
 
-    public static async refreshCurrentPanel(dataProcessor: DataProcessor) {
-        Logger.info(`Refreshing ${DataViewerPanel.activePanels.size} active panels due to Python environment change...`);
+    public static async refreshPanels(dataProcessor: DataProcessor) {
+        DataViewerPanel._refreshCurrentPanels(dataProcessor);
+        DataViewerPanel._refreshPanelsWithErrors(dataProcessor);
+    }
+
+    public static async _refreshCurrentPanels(dataProcessor: DataProcessor) {
         for (const panel of DataViewerPanel.activePanels) {
             await panel._handleGetDataInfo();
         }
     }
 
-    public static async refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+    public static async _refreshPanelsWithErrors(dataProcessor: DataProcessor) {
         const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
         if (errorPanelCount > 0) {
             Logger.info(`Refreshing ${errorPanelCount} panels with errors due to Python environment initialization...`);
@@ -187,7 +212,7 @@ export class DataViewerPanel {
                 this._panel.webview.postMessage({
                     command: 'error',
                     message: 'Failed to load data file. The file might be corrupted or in an unsupported format.',
-                    details: 'Supported formats: NetCDF (.nc, .netcdf), Zarr (.zarr), HDF5 (.h5, .hdf5)'
+                    details: `Supported formats: ${SUPPORTED_EXTENSIONS.join(', ')}`
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
@@ -1107,15 +1132,6 @@ export class DataViewerPanel {
             // Request variable list for dropdown
             ${plottingCapabilities ? `vscode.postMessage({ command: 'getVariableList' });` : ''}
             
-            // Request HTML representation
-            vscode.postMessage({ command: 'getHtmlRepresentation' });
-            
-            // Request text representation
-            vscode.postMessage({ command: 'getTextRepresentation' });
-            
-            // Request show versions
-            vscode.postMessage({ command: 'getShowVersions' });
-            
             // Request Python path
             vscode.postMessage({ command: 'getPythonPath' });
             
@@ -1163,7 +1179,7 @@ export class DataViewerPanel {
                         \`)
                         .join('');
                 } else {
-                    coordinatesContainer.innerHTML = '<p>No coordinates found</p>';
+                    coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
                 }
             }
 
@@ -1184,7 +1200,7 @@ export class DataViewerPanel {
                         \`)
                         .join('');
                 } else {
-                    variablesContainer.innerHTML = '<p>No variables found</p>';
+                    variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
                 }
             }`;
     }

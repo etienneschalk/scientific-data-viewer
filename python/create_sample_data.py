@@ -112,9 +112,9 @@ def create_sample_netcdf():
     return output_file
 
 
-def create_sample_zarr():
+def create_sample_zarr_single_group_from_dataset():
     """Create a sample Zarr file with ocean data."""
-    output_file = "sample_data.zarr"
+    output_file = "sample_zarr_single_group_from_dataset.zarr"
 
     # Check if directory already exists
     if os.path.exists(output_file):
@@ -201,6 +201,462 @@ def create_sample_zarr():
     # Save to Zarr
     ds.to_zarr(output_file)
     print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_zarr_with_nested_groups_from_datatree():
+    """Create a sample Zarr file with nested groups using xr.DataTree and to_zarr method."""
+    output_file = "sample_zarr_nested_groups_from_datatree.zarr"
+
+    # Check if directory already exists
+    if os.path.exists(output_file):
+        print(
+            f"📦 xr.DataTree Zarr file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print("🌊 Creating sample Zarr file with xr.DataTree and nested groups...")
+
+    try:
+        import zarr
+        import xarray as xr
+    except ImportError:
+        print(
+            "  ❌ zarr or datatree not available, skipping xr.DataTree Zarr file creation."
+        )
+        return None
+
+    # Create dimensions
+    time = np.arange(0, 30, 1)
+    depth = np.array([0, 10, 20, 50, 100, 200])
+    lat = np.linspace(-60, 60, 60)
+    lon = np.linspace(-180, 180, 120)
+
+    # Create sample data
+    np.random.seed(789)
+    time_4d = time[:, np.newaxis, np.newaxis, np.newaxis]
+
+    # Create temperature data
+    temperature = (
+        20
+        - 10 * np.sin(2 * np.pi * time_4d / 30)
+        + np.random.normal(0, 1, (30, 6, 60, 120))
+    )
+
+    # Create salinity data
+    salinity = (
+        35
+        + 2 * np.sin(2 * np.pi * time_4d / 30)
+        + np.random.normal(0, 0.5, (30, 6, 60, 120))
+    )
+
+    # Create datasets for different groups
+    # Root level dataset
+    root_ds = xr.Dataset(
+        {
+            "metadata": (
+                ["time"],
+                np.arange(30),
+                {"long_name": "Metadata index", "units": "1"},
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+        },
+    )
+    root_ds.attrs = {
+        "title": "Sample xr.DataTree Ocean Data",
+        "description": "Sample xr.DataTree Zarr file for testing VSCode extension",
+        "institution": "Ocean Test Institute",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Ocean data group
+    ocean_ds = xr.Dataset(
+        {
+            "temperature": (
+                ["time", "depth", "lat", "lon"],
+                temperature,
+                {
+                    "long_name": "Sea Water Temperature",
+                    "units": "Celsius",
+                    "standard_name": "sea_water_temperature",
+                    "valid_range": [-2, 35],
+                },
+            ),
+            "salinity": (
+                ["time", "depth", "lat", "lon"],
+                salinity,
+                {
+                    "long_name": "Sea Water Salinity",
+                    "units": "psu",
+                    "standard_name": "sea_water_salinity",
+                    "valid_range": [0, 40],
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "depth": (
+                ["depth"],
+                depth,
+                {"long_name": "Depth", "units": "m", "positive": "down"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+    ocean_ds.attrs = {
+        "description": "Oceanographic measurements",
+        "data_type": "oceanographic",
+        "collection_date": "2020-01-01",
+    }
+
+    # Physical properties subgroup
+    physical_ds = xr.Dataset(
+        {
+            "temperature_anomaly": (
+                ["time", "depth", "lat", "lon"],
+                temperature - 20,  # Anomaly from mean
+                {
+                    "long_name": "Temperature Anomaly",
+                    "units": "Celsius",
+                    "description": "Temperature deviation from climatological mean",
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "depth": (
+                ["depth"],
+                depth,
+                {"long_name": "Depth", "units": "m", "positive": "down"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+    physical_ds.attrs = {
+        "description": "Physical oceanographic properties",
+        "measurement_type": "in_situ",
+    }
+
+    # Chemical properties subgroup
+    chemical_ds = xr.Dataset(
+        {
+            "nitrate": (
+                ["time", "depth", "lat", "lon"],
+                np.random.exponential(2, (30, 6, 60, 120)).astype("f4"),
+                {
+                    "long_name": "Nitrate Concentration",
+                    "units": "μmol/L",
+                    "standard_name": "mole_concentration_of_nitrate_in_sea_water",
+                },
+            ),
+            "phosphate": (
+                ["time", "depth", "lat", "lon"],
+                np.random.exponential(0.5, (30, 6, 60, 120)).astype("f4"),
+                {
+                    "long_name": "Phosphate Concentration",
+                    "units": "μmol/L",
+                    "standard_name": "mole_concentration_of_phosphate_in_sea_water",
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "depth": (
+                ["depth"],
+                depth,
+                {"long_name": "Depth", "units": "m", "positive": "down"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+    chemical_ds.attrs = {
+        "description": "Chemical oceanographic properties",
+        "measurement_type": "laboratory",
+    }
+
+    # Quality control subgroup
+    qc_ds = xr.Dataset(
+        {
+            "temperature_qc": (
+                ["time", "depth", "lat", "lon"],
+                np.random.randint(0, 4, (30, 6, 60, 120), dtype="i1"),
+                {
+                    "long_name": "Temperature Quality Control",
+                    "units": "1",
+                    "flag_values": [0, 1, 2, 3],
+                    "flag_meanings": "good questionable bad missing",
+                },
+            ),
+            "salinity_qc": (
+                ["time", "depth", "lat", "lon"],
+                np.random.randint(0, 4, (30, 6, 60, 120), dtype="i1"),
+                {
+                    "long_name": "Salinity Quality Control",
+                    "units": "1",
+                    "flag_values": [0, 1, 2, 3],
+                    "flag_meanings": "good questionable bad missing",
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "depth": (
+                ["depth"],
+                depth,
+                {"long_name": "Depth", "units": "m", "positive": "down"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+    qc_ds.attrs = {
+        "description": "Quality control flags and information",
+        "qc_version": "1.2",
+    }
+
+    # Create xr.DataTree structure
+    dt = xr.DataTree(name="root")
+    dt["root"] = root_ds
+    dt["root/ocean_data"] = ocean_ds
+    dt["root/ocean_data/physical_properties"] = physical_ds
+    dt["root/ocean_data/chemical_properties"] = chemical_ds
+    dt["root/ocean_data/quality_control"] = qc_ds
+
+    # Save to Zarr using xr.DataTree's to_zarr method
+    dt.to_zarr(output_file, mode="w")
+    print(f"✅ Created {output_file} with xr.DataTree structure")
+    return output_file
+
+
+def create_sample_zarr_with_nested_groups_from_zarr():
+    """Create a sample Zarr file with nested groups (3+ levels deep)."""
+    output_file = "sample_zarr_nested_groups_from_zarr.zarr"
+
+    # Check if directory already exists
+    if os.path.exists(output_file):
+        print(f"📦 Nested Zarr file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print("🌊 Creating sample Zarr file with nested groups...")
+
+    try:
+        import zarr
+    except ImportError:
+        print("  ❌ zarr not available, skipping nested Zarr file creation.")
+        return None
+
+    # Create the root group
+    root = zarr.open(output_file, mode="w")
+
+    # Add global attributes to root
+    root.attrs.update(
+        {
+            "title": "Sample Nested Zarr Data",
+            "description": "Sample Zarr file with nested groups for testing VSCode extension",
+            "institution": "Ocean Test Institute",
+            "source": "Generated for testing",
+            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Conventions": "CF-1.6",
+        }
+    )
+
+    # Create dimensions
+    time = np.arange(0, 50, 1)
+    depth = np.array([0, 10, 20, 50, 100, 200])
+    lat = np.linspace(-60, 60, 80)
+    lon = np.linspace(-180, 180, 160)
+
+    # Level 1: Ocean data group
+    ocean_group = root.create_group("ocean_data")
+    ocean_group.attrs.update(
+        {
+            "description": "Oceanographic measurements",
+            "data_type": "oceanographic",
+            "collection_date": "2020-01-01",
+        }
+    )
+
+    # Level 2: Physical properties group
+    physical_group = ocean_group.create_group("physical_properties")
+    physical_group.attrs.update(
+        {
+            "description": "Physical oceanographic properties",
+            "measurement_type": "in_situ",
+        }
+    )
+
+    # Level 3: Temperature data group
+    temp_group = physical_group.create_group("temperature")
+    temp_group.attrs.update(
+        {
+            "description": "Sea water temperature measurements",
+            "units": "Celsius",
+            "standard_name": "sea_water_temperature",
+        }
+    )
+
+    # Create temperature data
+    np.random.seed(456)
+    time_4d = time[:, np.newaxis, np.newaxis, np.newaxis]
+    temperature = (
+        20
+        - 10 * np.sin(2 * np.pi * time_4d / 50)
+        + np.random.normal(0, 1, (50, 6, 80, 160))
+    )
+
+    # Add temperature array to the deepest group
+    temp_array = temp_group.create_array(
+        "values",
+        data=temperature,
+        chunks=(10, 2, 20, 40),
+    )
+    temp_array.attrs.update(
+        {
+            "long_name": "Sea Water Temperature",
+            "units": "Celsius",
+            "standard_name": "sea_water_temperature",
+            "valid_range": [-2, 35],
+        }
+    )
+
+    # Add coordinates to the temperature group
+    temp_group.create_array("time", data=time)
+    temp_group.create_array("depth", data=depth)
+    temp_group.create_array("latitude", data=lat)
+    temp_group.create_array("longitude", data=lon)
+
+    # Level 3: Salinity data group (same level as temperature)
+    salinity_group = physical_group.create_group("salinity")
+    salinity_group.attrs.update(
+        {
+            "description": "Sea water salinity measurements",
+            "units": "psu",
+            "standard_name": "sea_water_salinity",
+        }
+    )
+
+    # Create salinity data
+    salinity = (
+        35
+        + 2 * np.sin(2 * np.pi * time_4d / 50)
+        + np.random.normal(0, 0.5, (50, 6, 80, 160))
+    )
+
+    salinity_array = salinity_group.create_array(
+        "values",
+        data=salinity,
+        chunks=(10, 2, 20, 40),
+    )
+    salinity_array.attrs.update(
+        {
+            "long_name": "Sea Water Salinity",
+            "units": "psu",
+            "standard_name": "sea_water_salinity",
+            "valid_range": [0, 40],
+        }
+    )
+
+    # Add coordinates to the salinity group
+    salinity_group.create_array("time", data=time)
+    salinity_group.create_array("depth", data=depth)
+    salinity_group.create_array("latitude", data=lat)
+    salinity_group.create_array("longitude", data=lon)
+
+    # Level 2: Chemical properties group
+    chemical_group = ocean_group.create_group("chemical_properties")
+    chemical_group.attrs.update(
+        {
+            "description": "Chemical oceanographic properties",
+            "measurement_type": "laboratory",
+        }
+    )
+
+    # Level 3: Nutrients group
+    nutrients_group = chemical_group.create_group("nutrients")
+    nutrients_group.attrs.update(
+        {"description": "Nutrient concentrations", "analysis_method": "colorimetric"}
+    )
+
+    # Create nutrient data (nitrate, phosphate, silicate)
+    nitrate = np.random.exponential(2, (50, 6, 80, 160)).astype("f4")
+    phosphate = np.random.exponential(0.5, (50, 6, 80, 160)).astype("f4")
+    silicate = np.random.exponential(10, (50, 6, 80, 160)).astype("f4")
+
+    nutrients_group.create_array("nitrate", data=nitrate, chunks=(10, 2, 20, 40))
+    nutrients_group.create_array("phosphate", data=phosphate, chunks=(10, 2, 20, 40))
+    nutrients_group.create_array("silicate", data=silicate, chunks=(10, 2, 20, 40))
+
+    # Add coordinates to nutrients group
+    nutrients_group.create_array("time", data=time)
+    nutrients_group.create_array("depth", data=depth)
+    nutrients_group.create_array("latitude", data=lat)
+    nutrients_group.create_array("longitude", data=lon)
+
+    # Level 1: Metadata group
+    metadata_group = root.create_group("metadata")
+    metadata_group.attrs.update(
+        {"description": "Metadata and quality control information", "version": "1.0"}
+    )
+
+    # Level 2: Quality control group
+    qc_group = metadata_group.create_group("quality_control")
+    qc_group.attrs.update(
+        {"description": "Quality control flags and information", "qc_version": "1.2"}
+    )
+
+    # Level 3: Flags group
+    flags_group = qc_group.create_group("flags")
+    flags_group.attrs.update(
+        {
+            "description": "Data quality flags",
+            "flag_meanings": "good questionable bad missing",
+        }
+    )
+
+    # Create quality flags
+    quality_flags = np.random.randint(0, 4, (50, 6, 80, 160), dtype="i1")
+    flags_group.create_array(
+        "temperature_qc", data=quality_flags, chunks=(10, 2, 20, 40)
+    )
+    flags_group.create_array("salinity_qc", data=quality_flags, chunks=(10, 2, 20, 40))
+
+    # Add some scalar metadata at different levels
+    root.attrs["total_groups"] = 7
+    ocean_group.attrs["data_points"] = 3840000  # 50*6*80*160
+    physical_group.attrs["variables"] = 2
+    temp_group.attrs["min_temp"] = float(np.min(temperature))
+    temp_group.attrs["max_temp"] = float(np.max(temperature))
+
+    print(f"✅ Created {output_file} with nested groups (3+ levels deep)")
     return output_file
 
 
@@ -636,7 +1092,9 @@ def create_sample_sentinel():
 
     # Check if directory already exists
     if os.path.exists(output_file):
-        print(f"🛰️ Sentinel-1 SAFE file {output_file} already exists. Skipping creation.")
+        print(
+            f"🛰️ Sentinel-1 SAFE file {output_file} already exists. Skipping creation."
+        )
         print("  🔄 To regenerate, please delete the existing directory first.")
         return output_file
 
@@ -820,13 +1278,6 @@ def main():
         if hdf5_file:
             created_files.append((hdf5_file, "HDF5"))
 
-        print("\n📁 Creating Zarr files...")
-        zarr_file = create_sample_zarr()
-        if zarr_file:
-            created_files.append((zarr_file, "Zarr"))
-        else:
-            skipped_files.append("Zarr (zarr not available)")
-
         print("\n📁 Creating GRIB files...")
         grib_file = create_sample_grib()
         if grib_file:
@@ -847,6 +1298,25 @@ def main():
             created_files.append((jp2_file, "JPEG-2000"))
         else:
             skipped_files.append("JPEG-2000 (rioxarray not available)")
+
+        print("\n📁 Creating Zarr files...")
+        zarr_file = create_sample_zarr_single_group_from_dataset()
+        if zarr_file:
+            created_files.append((zarr_file, "Zarr"))
+        else:
+            skipped_files.append("Zarr (zarr not available)")
+
+        nested_zarr_file = create_sample_zarr_with_nested_groups_from_zarr()
+        if nested_zarr_file:
+            created_files.append((nested_zarr_file, "Nested Zarr"))
+        else:
+            skipped_files.append("Nested Zarr (zarr not available)")
+
+        datatree_zarr_file = create_sample_zarr_with_nested_groups_from_datatree()
+        if datatree_zarr_file:
+            created_files.append((datatree_zarr_file, "xr.DataTree Zarr"))
+        else:
+            skipped_files.append("xr.DataTree Zarr (zarr or datatree not available)")
 
         print("\n📁 Creating Sentinel-1 SAFE files...")
         sentinel_file = create_sample_sentinel()

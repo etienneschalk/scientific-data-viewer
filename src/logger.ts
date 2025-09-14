@@ -13,7 +13,7 @@ class Logger {
         this.initialize();
         
         const timestamp = new Date().toISOString();
-        const levelPrefix = `[${level.toUpperCase()}]`;
+        const levelPrefix = `[${level.toUpperCase().padStart(8, " ")}]`;
         const logMessage = `${timestamp} ${levelPrefix} ${message}`;
         
         // Log to VS Code output channel (if available and not disposed)
