@@ -9,6 +9,36 @@ body:
       value: |
         Thank you for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
 
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: What category does this feature fall under?
+      options:
+        - Data Visualization
+        - File Format Support
+        - User Interface
+        - Performance
+        - Integration
+        - Configuration
+        - Accessibility
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my workflow
+        - Critical - Blocking my current work
+    validations:
+      required: true
+
   - type: textarea
     id: feature-description
     attributes:
@@ -50,23 +80,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: feature-category
-    attributes:
-      label: Feature Category
-      description: What category does this feature fall under?
-      options:
-        - Data Visualization
-        - File Format Support
-        - User Interface
-        - Performance
-        - Integration
-        - Configuration
-        - Accessibility
-        - Other
-    validations:
-      required: true
-
   - type: textarea
     id: alternatives
     attributes:
@@ -84,19 +97,6 @@ body:
         - Mockups or wireframes
         - Links to examples in other software
         - Code examples if relevant
-
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      description: How important is this feature to you?
-      options:
-        - Low - Nice to have
-        - Medium - Would be helpful
-        - High - Important for my workflow
-        - Critical - Blocking my current work
-    validations:
-      required: true
 
   - type: textarea
     id: technical-considerations
