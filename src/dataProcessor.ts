@@ -63,6 +63,7 @@ export class DataProcessor {
     }
 
     async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
+        Logger.debug(`[getDataInfo] Getting data info for file: ${uri.fsPath}`);
         if (!this.pythonManager.isReady()) {
             throw new Error('Python environment not ready');
         }
@@ -78,7 +79,7 @@ export class DataProcessor {
             // The caller can check for result.error to handle errors
             return result;
         } catch (error) {
-            Logger.error(`Error processing data file: ${error}`);
+            Logger.error(`🐍 ❌ Error processing data file: ${error}`);
             return null;
         }
     }

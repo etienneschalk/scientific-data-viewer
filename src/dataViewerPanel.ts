@@ -90,12 +90,14 @@ export class DataViewerPanel {
     }
 
     public static async _refreshCurrentPanels(dataProcessor: DataProcessor) {
+        Logger.debug(`[_refreshCurrentPanels] Refreshing ${DataViewerPanel.activePanels.size} panels`);
         for (const panel of DataViewerPanel.activePanels) {
             await panel._handleGetDataInfo();
         }
     }
 
     public static async _refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+        Logger.debug(`[_refreshPanelsWithErrors] Refreshing ${DataViewerPanel.panelsWithErrors.size} panels with errors`);
         const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
         if (errorPanelCount > 0) {
             Logger.info(`Refreshing ${errorPanelCount} panels with errors due to Python environment initialization...`);
@@ -135,6 +137,7 @@ export class DataViewerPanel {
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
             async (message) => {
+                Logger.debug(`[DataViewerPanel] Received message: ${message.command}`);
                 switch (message.command) {
                     case 'getDataInfo':
                         await this._handleGetDataInfo();
@@ -158,6 +161,7 @@ export class DataViewerPanel {
     }
 
     public async _update(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+        Logger.info(`🚚 📖 Updating data viewer panel for: ${fileUri.fsPath}`);
         this._currentFile = fileUri;
         this.dataProcessor = dataProcessor;
 
@@ -171,16 +175,17 @@ export class DataViewerPanel {
         this._panel.webview.html = this._getHtmlForWebview(plottingCapabilities);
 
         // Load data info
-        await this._handleGetDataInfo();
+        // await this._handleGetDataInfo();
     }
 
     private async _handleGetDataInfo() {
+        Logger.debug(`[_handleGetDataInfo] Handling get data info for: ${this._currentFile.fsPath}`);
         try {
             // Check if Python environment is ready
             if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                Logger.error('Python environment not ready. Please configure Python interpreter first.');
-                Logger.error(`${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
-                Logger.error(`${this.dataProcessor.pythonManagerInstance.isReady()}`);
+                Logger.error('🐍 ❌ Python environment not ready. Please configure Python interpreter first.');
+                Logger.error(`🐍 ❌ Python path: ${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
+                Logger.error(`🐍 ❌ Python ready: ${this.dataProcessor.pythonManagerInstance.isReady()}`);
                 this._panel.webview.postMessage({
                     command: 'error',
                     message: 'Python environment not ready. Please configure Python interpreter first.',
@@ -911,7 +916,9 @@ export class DataViewerPanel {
         ${this._getEventListenersCode(plottingCapabilities)}
         ${this._getMessageHandlerCode()}
         ${this._getUtilityFunctionsCode()}
-        ${this._getInitializationCode()}`;
+        ${this._getInitializationCode()}
+        ${this._getDisplayFunctionsCode(plottingCapabilities)}
+        `;
     }
 
     private _getEventListenersCode(plottingCapabilities: boolean): string {
@@ -1374,10 +1381,6 @@ export class DataViewerPanel {
 
     <script>
         ${this._getJavaScriptCode(plottingCapabilities)}
-
-        // ${this._getDisplayFunctionsCode(plottingCapabilities)}
-
-        ${this._getInitializationCode()}
     </script>
 </body>
 </html>`;

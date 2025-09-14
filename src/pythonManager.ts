@@ -197,7 +197,6 @@ export class PythonManager {
         const corePackages = ['xarray'];
         // Additional packages for extended format support
         const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
-        
         const allPackages = [...corePackages, ...extendedPackages];
         const availablePackages: string[] = [];
 
@@ -206,7 +205,7 @@ export class PythonManager {
                 const isAvailable = await this.checkPackageAvailability(pythonPath, packageName);
                 if (isAvailable) {
                     availablePackages.push(packageName);
-                    Logger.debug(`🐍 📦 🔍 Package available: ${packageName}`);
+                    Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
                 }
                 else {
                     Logger.debug(`🐍 📦 ⚠️ Package not available: ${packageName}`);
@@ -216,7 +215,7 @@ export class PythonManager {
             }
         }
 
-        Logger.debug(`🐍 📦 🔍 Available packages: ${availablePackages}`);
+        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages}`);
         return availablePackages;
     }
 
@@ -624,7 +623,7 @@ export class PythonManager {
     }
 
     async forceInitialize(): Promise<void> {
-        Logger.info('🐍 🔧 💪 Force initializing Python environment...');
+        Logger.info('🐍 🔄 Force initializing Python environment...');
         this.isInitialized = false;
         await this._initialize();
     }
@@ -692,7 +691,7 @@ export class PythonManager {
 
             // Check if the onDidChangeActiveEnvironmentPath method exists
             if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
-                Logger.info('🐍 🔧 Setting up immediate Python interpreter change listener');
+                Logger.info('🐍 🔧 Setting up immediate Python interpreter change listener...');
 
                 const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
                     Logger.info(`🐍 🔔 Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);

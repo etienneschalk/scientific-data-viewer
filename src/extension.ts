@@ -15,13 +15,13 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
         openContext: vscode.CustomDocumentOpenContext,
         _token: vscode.CancellationToken
     ): Promise<vscode.CustomDocument> {
-        Logger.info(`Opening custom document for: ${uri.fsPath}`);
+        Logger.info(`🚚 📖 Opening custom document for: ${uri.fsPath}`);
 
         // Create a custom document that represents the file
         return {
             uri: uri,
             dispose: () => {
-                Logger.info(`Disposing custom document for: ${uri.fsPath}`);
+                Logger.info(`🚚 📕 Disposing custom document for: ${uri.fsPath}`);
             }
         };
     }
@@ -31,10 +31,10 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        Logger.info(`Resolving custom editor for: ${document.uri.fsPath}`);
+        Logger.info(`🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`);
 
         // Instead of showing a text editor, open our data viewer
-        await DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
+        DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
         
         // Close the webview panel since we're using our own panel
         webviewPanel.dispose();
@@ -194,11 +194,12 @@ export function activate(context: vscode.ExtensionContext) {
     const openViewerCommand = vscode.commands.registerCommand(
         'scientificDataViewer.openViewer',
         async (uri?: vscode.Uri) => {
+            Logger.info('🎮 👁️ Command: Open data viewer...');
             if (uri) {
-                Logger.info(`🔧 Opening data viewer for file: ${uri.fsPath}`);
+                Logger.info(`🎮 🔧 Opening data viewer for file: ${uri.fsPath}`);
                 DataViewerPanel.createOrShow(context.extensionUri, uri, dataProcessor);
             } else {
-                Logger.info('🔧 Opening file selection dialog for data viewer');
+                Logger.info('🎮 🔧 Opening file selection dialog for data viewer');
                 const fileUri = await vscode.window.showOpenDialog({
                     canSelectFiles: true,
                     canSelectFolders: false,
@@ -207,7 +208,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                 });
                 if (fileUri && fileUri[0]) {
-                    Logger.info(`🔧 File selected for data viewer: ${fileUri[0].fsPath}`);
+                    Logger.info(`🎮 🔧 File selected for data viewer: ${fileUri[0].fsPath}`);
                     DataViewerPanel.createOrShow(context.extensionUri, fileUri[0], dataProcessor);
                 }
             }
@@ -219,7 +220,7 @@ export function activate(context: vscode.ExtensionContext) {
     const refreshPythonEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.refreshPythonEnvironment',
         async () => {
-            Logger.info('🔧 Manually refreshing Python environment...');
+            Logger.info('🎮 🔄 Command: Manually refreshing Python environment...');
             await refreshUi(pythonManager, dataProcessor, statusBarItem);
             vscode.window.showInformationMessage('Python environment refreshed!');
         }
@@ -228,7 +229,7 @@ export function activate(context: vscode.ExtensionContext) {
     const showLogsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.showLogs',
         () => {
-            Logger.info('🔧 Showing logs...');
+            Logger.info('🎮 🗒️ Command: Showing logs...');
             Logger.show();
         }
     );
@@ -237,7 +238,7 @@ export function activate(context: vscode.ExtensionContext) {
     const showSettingsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.showSettings',
         () => {
-            Logger.info('🔧 Opening Scientific Data Viewer settings...');
+            Logger.info('🎮 ⚙️ Command: Opening Scientific Data Viewer settings...');
             vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
         }
     );
@@ -278,7 +279,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
-        Logger.info('🔧 Python interpreter configuration changed, re-validating environment...');
+        Logger.info('🐍 🔧 Python interpreter configuration changed, re-validating environment...');
 
         // Get the current interpreter path for logging
         const currentInterpreterPath = await pythonManager.getCurrentInterpreterPath();
@@ -316,27 +317,27 @@ export function activate(context: vscode.ExtensionContext) {
                 await handlePythonInterpreterChange();
             }
         } catch (error) {
-            Logger.error(`Error checking Python interpreter on workspace change: ${error}`);
+            Logger.error(`🔧 ❌ Error checking Python interpreter on workspace change: ${error}`);
         }
     });
 
-    // Set up immediate Python interpreter change detection
+    Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
         pythonManager.setupInterpreterChangeListener(handlePythonInterpreterChange).then((listener) => {
             immediateInterpreterListener = listener;
             if (immediateInterpreterListener) {
-                Logger.info('Immediate Python interpreter change detection enabled');
+                Logger.info('🚀 Immediate Python interpreter change detection enabled');
                 // Add to subscriptions after it's created
                 context.subscriptions.push(immediateInterpreterListener);
             } else {
-                Logger.warn('Immediate Python interpreter change detection not available');
+                Logger.warn('⚠️ Immediate Python interpreter change detection not available');
             }
         }).catch((error) => {
-            Logger.error(`Failed to set up immediate Python interpreter change detection: ${error}`);
+            Logger.error(`❌ Failed to set up immediate Python interpreter change detection: ${error}`);
         });
     } catch (error) {
-        Logger.error(`Failed to set up Python interpreter change detection: ${error}`);
+        Logger.error(`🔧 ❌ Failed to set up Python interpreter change detection: ${error}`);
     }
 
 
