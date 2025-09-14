@@ -6,7 +6,7 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 
 ### High Priority
 
-- [#001: Add support for all possible formats](./001-format-support.md) - Core functionality
+- [#001: Add support for all possible formats](./001-format-support.md) - **FULLY IMPLEMENTED** ✅ - Core functionality
 - [#006: Fix interpreter error message handling](./006-interpreter-error-handling.md) - Bug fix
 
 ### Medium Priority
@@ -37,6 +37,7 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 
 ## Completed RFCs
 
+- [x] [#001: Add support for all possible formats](./001-format-support.md) - **FULLY IMPLEMENTED** ✅
 - [x] Open multiple files in their single tab
 - [x] Use xarray native representation of Datasets
 - [x] Tab Name not updated (bug fix)
