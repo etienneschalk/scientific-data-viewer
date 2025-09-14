@@ -220,8 +220,8 @@ npm run package
 ### Install Package
 
 ```bash
-# Install locally
-code --install-extension scientific-data-viewer-0.1.0.vsix
+# Install the package locally for testing
+code --install-extension scientific-data-viewer-0.2.0.vsix
 ```
 
 Note: for Cursor users, the command seems to do nothing.

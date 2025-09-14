@@ -167,14 +167,14 @@ npm run compile
 # Create .vsix package
 vsce package
 
-# This creates: scientific-data-viewer-0.1.0.vsix
+# This creates: scientific-data-viewer-0.2.0.vsix
 ```
 
 ### 3. Test the Package
 
 ```bash
 # Install the package locally for testing
-code --install-extension scientific-data-viewer-0.1.0.vsix
+code --install-extension scientific-data-viewer-0.2.0.vsix
 
 # Test the installed extension
 # Verify all functionality works correctly
