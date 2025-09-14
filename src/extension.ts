@@ -35,9 +35,16 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
 
         // Instead of showing a text editor, open our data viewer
         await DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
-
+        
         // Close the webview panel since we're using our own panel
         webviewPanel.dispose();
+        // Note: instead of disposing the webview panel, we could use reuse it.
+        // However, I cannot find a way in the API to set the retainContextWhenHidden property
+        // to true. This is blocking me from using it, as I actuallly want to keep the webview panel,
+        // and not recreate it from scratch when the user opens the file again, which is costly.
+        // Unless there is a way to make the received webview panel to retain its context when hidden,
+        // the flickering is unavoidable.
+        // The flickering occurs as a new tab appears in the UI and then disappears in a fraction of a second.
     }
 }
 
