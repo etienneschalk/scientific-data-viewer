@@ -117,8 +117,8 @@ def detect_file_format(file_path):
     }
 
 
-def open_dataset_with_fallback(file_path, file_format_info):
-    """Open dataset with fallback to different engines."""
+def open_datatree_with_fallback(file_path, file_format_info):
+    """Open datatree with fallback to different engines."""
     ext = file_format_info["extension"]
     available_engines = file_format_info["available_engines"]
 
@@ -131,11 +131,12 @@ def open_dataset_with_fallback(file_path, file_format_info):
     last_error = None
     for engine in available_engines:
         try:
-            if ext == ".zarr":
-                ds = xr.open_zarr(file_path)
-            else:
-                ds = xr.open_dataset(file_path, engine=engine)
-            return ds, engine
+            xds = xr.open_datatree(file_path, engine=engine)
+            return xds, engine
+        except Exception as e:
+            # Fallback on dataset
+            xds = xr.open_dataset(file_path, engine=engine)
+            return xds, engine
         except Exception as e:
             last_error = e
             continue
@@ -158,24 +159,44 @@ def get_file_info(file_path):
             }
 
         # Open dataset with fallback
-        ds, used_engine = open_dataset_with_fallback(file_path, file_format_info)
-
-        # Get file size
-        file_size = os.path.getsize(file_path)
+        xds, used_engine = open_datatree_with_fallback(file_path, file_format_info)
 
         # Extract information
         info = {
             "format": file_format_info["display_name"],
             "format_info": file_format_info,
             "used_engine": used_engine,
-            "fileSize": file_size,
-            "dimensions": dict(ds.dims),
+            "fileSize": os.path.getsize(file_path),
+            "dimensions": dict(xds.dims),
             "variables": [],
-            "attributes": dict(ds.attrs) if hasattr(ds, "attrs") else {},
+            "coordinates": [],
+            "attributes": dict(xds.attrs) if hasattr(xds, "attrs") else {},
+            # Get HTML representation using xarray's built-in HTML representation
+            "xarray_html_repr": xds._repr_html_(),
+            # Get text representation using xarray's built-in text representation
+            "xarray_text_repr": str(xds),
         }
 
-        # Process variables
-        for var_name, var in ds.data_vars.items():
+        # Add coordinate variables
+        for coord_name, coord in xds.coords.items():
+            # Calculate size in bytes
+            size_bytes = coord.nbytes
+
+            # Get dimension names
+            dim_names = list(coord.dims) if hasattr(coord, "dims") else []
+
+            coord_info = {
+                "name": coord_name,
+                "dtype": str(coord.dtype),
+                "shape": list(coord.shape),
+                "dimensions": dim_names,
+                "size_bytes": size_bytes,
+                "attributes": dict(coord.attrs) if hasattr(coord, "attrs") else {},
+            }
+            info["coordinates"].append(coord_info)
+
+        # Add data variables
+        for var_name, var in xds.data_vars.items():
             # Calculate size in bytes
             size_bytes = var.nbytes
 
@@ -192,26 +213,7 @@ def get_file_info(file_path):
             }
             info["variables"].append(var_info)
 
-        # Add coordinate variables
-        for coord_name, coord in ds.coords.items():
-            # Calculate size in bytes
-            size_bytes = coord.nbytes
-
-            # Get dimension names
-            dim_names = list(coord.dims) if hasattr(coord, "dims") else []
-
-            coord_info = {
-                "name": coord_name,
-                "dtype": str(coord.dtype),
-                "shape": list(coord.shape),
-                "dimensions": dim_names,
-                "size_bytes": size_bytes,
-                "attributes": dict(coord.attrs) if hasattr(coord, "attrs") else {},
-            }
-            info["variables"].append(coord_info)
-
-        ds.close()
-        return info
+        xds.close()
 
     except ImportError as e:
         # Handle missing dependencies

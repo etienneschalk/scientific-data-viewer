@@ -66,30 +66,6 @@ export class DataProcessor {
         }
     }
 
-    async getDataSlice(uri: vscode.Uri, variable: string, sliceSpec?: any): Promise<DataSlice | null> {
-        if (!this.pythonManager.isReady()) {
-            throw new Error('Python environment not ready');
-        }
-
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_slice.py');
-        const args = [filePath, variable];
-
-        if (sliceSpec) {
-            args.push(JSON.stringify(sliceSpec));
-        }
-
-        try {
-            const result = await this.pythonManager.executePythonFile(scriptPath, args);
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            return result;
-        } catch (error) {
-            Logger.error(`Error getting data slice: ${error}`);
-            return null;
-        }
-    }
 
     async getVariableList(uri: vscode.Uri): Promise<string[]> {
         const dataInfo = await this.getDataInfo(uri);

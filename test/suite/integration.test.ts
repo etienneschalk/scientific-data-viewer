@@ -130,14 +130,6 @@ suite('Integration Test Suite', () => {
         }
 
         try {
-            await processor.getDataSlice(mockUri, 'temperature');
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
-        }
-
-        try {
             await processor.createPlot(mockUri, 'temperature');
             assert.fail('Should have thrown an error');
         } catch (error) {
@@ -328,7 +320,6 @@ suite('Integration Test Suite', () => {
         // Test that panel can handle different message types
         const messageTypes = [
             'getDataInfo',
-            'getDataSlice',
             'createPlot',
             'getVariableList',
             'getHtmlRepresentation',

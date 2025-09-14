@@ -83,66 +83,6 @@ suite('DataProcessor Test Suite', () => {
         assert.strictEqual(dataInfo, null);
     });
 
-    test('should get data slice', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return {
-                    variable: 'temperature',
-                    data: [1, 2, 3, 4, 5],
-                    shape: [5],
-                    dtype: 'float32'
-                };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const dataSlice = await processor.getDataSlice(mockUri, 'temperature');
-        assert.ok(dataSlice);
-        assert.strictEqual(dataSlice?.variable, 'temperature');
-        assert.ok(Array.isArray(dataSlice?.data));
-        assert.strictEqual(dataSlice?.dtype, 'float32');
-    });
-
-    test('should get data slice with slice specification', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return {
-                    variable: 'temperature',
-                    data: [1, 2, 3],
-                    shape: [3],
-                    dtype: 'float32'
-                };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const sliceSpec = { start: 0, end: 3 };
-
-        const dataSlice = await processor.getDataSlice(mockUri, 'temperature', sliceSpec);
-        assert.ok(dataSlice);
-        assert.strictEqual(dataSlice?.variable, 'temperature');
-    });
-
-    test('should get data slice with error handling', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                throw new Error('Python script failed');
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const dataSlice = await processor.getDataSlice(mockUri, 'temperature');
-        assert.strictEqual(dataSlice, null);
-    });
-
     test('should get variable list', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const variables = await dataProcessor.getVariableList(mockUri);
@@ -396,23 +336,6 @@ suite('DataProcessor Test Suite', () => {
 
         try {
             await processor.getDataInfo(mockUri);
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
-        }
-    });
-
-    test('should handle Python environment not ready for data slice', async () => {
-        const mockPythonManager = {
-            isReady: () => false
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        try {
-            await processor.getDataSlice(mockUri, 'temperature');
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);

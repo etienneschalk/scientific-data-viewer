@@ -76,12 +76,6 @@ suite('DataViewerPanel Test Suite', () => {
                     { name: 'time', dtype: 'datetime64', shape: [100] }
                 ]
             }),
-            getDataSlice: async () => ({
-                variable: 'temperature',
-                data: [1, 2, 3, 4, 5],
-                shape: [5],
-                dtype: 'float32'
-            }),
             getVariableList: async () => ['temperature', 'time'],
             getDimensionList: async () => ['time', 'lat', 'lon'],
             createPlot: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -324,50 +318,6 @@ suite('DataViewerPanel Test Suite', () => {
         // This test is skipped because we cannot mock fs.stat due to read-only property restrictions
         // The functionality is tested in integration tests with real file system operations
         assert.ok(true, 'Test skipped - fs.stat cannot be mocked due to read-only property restrictions');
-    });
-
-    test('should handle get data slice', async () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
-        
-        // Mock the _handleGetDataSlice method to test it directly
-        let messagePosted = false;
-        const originalPostMessage = mockWebviewPanel.webview.postMessage;
-        mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-            if (message.command === 'dataSlice') {
-                messagePosted = true;
-            }
-            return true;
-        };
-
-        await (panel as any)._handleGetDataSlice('temperature', { start: 0, end: 10 });
-        
-        assert.ok(messagePosted);
-    });
-
-    test('should handle get data slice error', async () => {
-        // Mock DataProcessor to throw error
-        const errorDataProcessor = {
-            pythonManagerInstance: mockPythonManager,
-            getDataSlice: async () => {
-                throw new Error('Data slice failed');
-            }
-        } as any;
-
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), errorDataProcessor);
-        
-        // Mock the _handleGetDataSlice method to test it directly
-        let messagePosted = false;
-        const originalPostMessage = mockWebviewPanel.webview.postMessage;
-        mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-            if (message.command === 'error') {
-                messagePosted = true;
-            }
-            return true;
-        };
-
-        await (panel as any)._handleGetDataSlice('temperature');
-        
-        assert.ok(messagePosted);
     });
 
     test('should handle create plot', async () => {

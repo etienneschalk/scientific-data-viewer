@@ -114,9 +114,6 @@ export class DataViewerPanel {
                     case 'getDataInfo':
                         await this._handleGetDataInfo();
                         break;
-                    case 'getDataSlice':
-                        await this._handleGetDataSlice(message.variable, message.sliceSpec);
-                        break;
                     case 'createPlot':
                         if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
                             await this._handleCreatePlot(message.variable, message.plotType);
@@ -280,21 +277,6 @@ export class DataViewerPanel {
             });
             // Track this panel as having an error
             DataViewerPanel.addPanelWithError(this);
-        }
-    }
-
-    private async _handleGetDataSlice(variable: string, sliceSpec?: any) {
-        try {
-            const dataSlice = await this.dataProcessor.getDataSlice(this._currentFile, variable, sliceSpec);
-            this._panel.webview.postMessage({
-                command: 'dataSlice',
-                data: dataSlice
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load data slice: ${error}`
-            });
         }
     }
 
