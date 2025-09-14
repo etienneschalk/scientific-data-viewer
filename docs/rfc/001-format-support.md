@@ -28,11 +28,11 @@ enhancement, format-support, dependencies
 
 ## Status
 
-**FULLY IMPLEMENTED** ✅
+**MOSTLY IMPLEMENTED** ✅ (with known limitations)
 
 ### Implementation Progress
 
-- ✅ **Format Support**: All major scientific data formats are supported
+- ✅ **Format Support**: All major xarray-supported formats are supported
 - ✅ **Dependency Management**: Automatic package detection and installation
 - ✅ **Error Handling**: Enhanced user experience with detailed error messages
 - ✅ **Sample Data**: Comprehensive test data generation
@@ -52,12 +52,36 @@ enhancement, format-support, dependencies
 
 ### Acceptance Criteria Status
 
-- ✅ **All xarray-supported formats can be opened**
+- ✅ **All xarray-supported formats can be opened** (within xarray limitations)
 - ✅ **Missing dependencies are detected and installation is proposed**
 - ✅ **Format-to-dependency mapping is dynamically retrieved from xarray**
 - ✅ **Error handling for unsupported or corrupted files**
 
-**Implementation Complete**: All requirements have been successfully implemented and tested.
+### Known Limitations & Open Points
+
+#### **Zarr Format Limitations**
+
+- ⚠️ **Some Zarr files are not supported** due to xarray itself not supporting them
+- ⚠️ **Complex nested Zarr structures** may not be fully compatible
+- ✅ **Standard Zarr files** work correctly when supported by xarray
+- 📝 **Note**: We don't attempt to read files that xarray cannot handle
+
+#### **Sentinel-1 SAFE Format**
+
+- ⚠️ **Not yet tested** with real Sentinel-1 SAFE files
+- ✅ **Sample data generation** includes Sentinel-1 SAFE structure
+- ✅ **Dependency handling** for xarray-sentinel package
+- 📝 **Next step**: Test with actual Sentinel-1 SAFE data files
+
+#### **Other Formats**
+
+- ✅ **NetCDF (.nc, .nc4, .cdf)**: Fully supported and tested
+- ✅ **HDF5 (.h5, .hdf5)**: Fully supported and tested
+- ✅ **GRIB (.grib, .grib2)**: Fully supported and tested
+- ✅ **GeoTIFF (.tif, .tiff, .geotiff)**: Fully supported and tested
+- ✅ **JPEG-2000 (.jp2, .jpeg2000)**: Fully supported and tested
+
+**Implementation Status**: Core functionality is complete and working. Known limitations are documented and tracked for future improvements.
 
 ## Implementation
 
