@@ -272,6 +272,8 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(): Promise<void> {
+        this.isInitialized = false;
+
         Logger.info(`🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this.isInitialized} | Python path: ${this.pythonPath}`);
 
         if (!this.pythonPath) {
@@ -290,7 +292,7 @@ export class PythonManager {
                 const action = await vscode.window.showWarningMessage(
                     `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
                     'Install',
-                    'Cancel'
+                    'Show Details'
                 );
 
                 if (action === 'Install') {
@@ -307,7 +309,6 @@ export class PythonManager {
                 } else {
                     // User cancelled installation, but we still have a valid Python interpreter
                     // Set as initialized so the extension can work with what's available
-                    this.isInitialized = true;
                     Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
                 }
             } else {
@@ -614,8 +615,12 @@ export class PythonManager {
         return this.pythonPath;
     }
 
+    hasPythonPath(): boolean {
+        return this.pythonPath !== undefined;
+    }
+
     isReady(): boolean {
-        return this.isInitialized && this.pythonPath !== undefined;
+        return this.isInitialized && this.hasPythonPath();
     }
 
     getCurrentPythonPath(): string | undefined {

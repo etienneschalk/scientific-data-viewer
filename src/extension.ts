@@ -266,16 +266,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
     refreshUi(pythonManager, dataProcessor, statusBarItem);
-    // try {
-    //     pythonManager.forceInitialize().then(async () => {
-    //         // After Python initialization, refresh any panels that had errors
-    //         await DataViewerPanel._refreshPanelsWithErrors(dataProcessor);
-    //     }).catch((error) => {
-    //         Logger.error(`Python initialization failed: ${error}`);
-    //     });
-    // } catch (error) {
-    //     Logger.error(`Python initialization setup failed: ${error}`);
-    // }
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
@@ -363,7 +353,7 @@ export function activate(context: vscode.ExtensionContext) {
 async function refreshUi(pythonManager: PythonManager, dataProcessor: DataProcessor, statusBarItem: vscode.StatusBarItem) {
     try {
         await pythonManager.forceInitialize();
-        await DataViewerPanel.refreshPanels(dataProcessor);
+        await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
 
         // Show success notification with interpreter name and path
         const pythonPath = pythonManager.getPythonPath();

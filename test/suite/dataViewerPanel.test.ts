@@ -220,19 +220,6 @@ suite('DataViewerPanel Test Suite', () => {
         assert.ok(true);
     });
 
-    test('should refresh current panel', async () => {
-        // Add a panel to active panels
-        const mockPanel = {
-            _handleGetDataInfo: async () => {}
-        } as any;
-        DataViewerPanel.activePanels.add(mockPanel);
-
-        await DataViewerPanel._refreshCurrentPanels(mockDataProcessor);
-        
-        // Should not throw an error
-        assert.ok(true);
-    });
-
     test('should refresh panels with errors', async () => {
         // Add a panel to panels with errors
         const mockPanel = {
@@ -240,7 +227,7 @@ suite('DataViewerPanel Test Suite', () => {
         } as any;
         DataViewerPanel.panelsWithErrors.add(mockPanel);
 
-        await DataViewerPanel._refreshPanelsWithErrors(mockDataProcessor);
+        await DataViewerPanel.refreshPanelsWithErrors(mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);
@@ -250,7 +237,7 @@ suite('DataViewerPanel Test Suite', () => {
         // Ensure no error panels
         DataViewerPanel.panelsWithErrors.clear();
 
-        await DataViewerPanel._refreshPanelsWithErrors(mockDataProcessor);
+        await DataViewerPanel.refreshPanelsWithErrors(mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);

@@ -84,19 +84,7 @@ export class DataViewerPanel {
         return dataViewerPanel;
     }
 
-    public static async refreshPanels(dataProcessor: DataProcessor) {
-        DataViewerPanel._refreshCurrentPanels(dataProcessor);
-        DataViewerPanel._refreshPanelsWithErrors(dataProcessor);
-    }
-
-    public static async _refreshCurrentPanels(dataProcessor: DataProcessor) {
-        Logger.debug(`[_refreshCurrentPanels] Refreshing ${DataViewerPanel.activePanels.size} panels`);
-        for (const panel of DataViewerPanel.activePanels) {
-            await panel._handleGetDataInfo();
-        }
-    }
-
-    public static async _refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+    public static async refreshPanelsWithErrors(dataProcessor: DataProcessor) {
         Logger.debug(`[_refreshPanelsWithErrors] Refreshing ${DataViewerPanel.panelsWithErrors.size} panels with errors`);
         const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
         if (errorPanelCount > 0) {
@@ -181,15 +169,28 @@ export class DataViewerPanel {
     private async _handleGetDataInfo() {
         Logger.debug(`[_handleGetDataInfo] Handling get data info for: ${this._currentFile.fsPath}`);
         try {
+            // Check if a Python interpreter is configured
+            if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
+                Logger.error('🐍 ❌ Python path not found. Please configure Python interpreter first.');
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Python path not found. Please configure Python interpreter first.',
+                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
+                });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
+                return;
+            }
+
             // Check if Python environment is ready
             if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                Logger.error('🐍 ❌ Python environment not ready. Please configure Python interpreter first.');
+                Logger.error('🐍 ❌ Python environment not ready. Please install core dependencies first.');
                 Logger.error(`🐍 ❌ Python path: ${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
                 Logger.error(`🐍 ❌ Python ready: ${this.dataProcessor.pythonManagerInstance.isReady()}`);
                 this._panel.webview.postMessage({
                     command: 'error',
-                    message: 'Python environment not ready. Please configure Python interpreter first.',
-                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
+                    message: 'Python environment not ready. Please install core dependencies first.',
+                    details: 'Install core dependencies: `pip install xarray`'
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
@@ -226,6 +227,7 @@ export class DataViewerPanel {
 
             // Logger.info(`Data info: ${JSON.stringify(this._dataInfo, null, 2)}`);
 
+            let proposeToInstallMissingPackages = false;
             if (this._dataInfo.error) {
                 let errorInfo = this._dataInfo.error;
                 let errorMessage = `Data processing error: ${errorInfo.error}`;
@@ -234,9 +236,28 @@ export class DataViewerPanel {
                 if (errorInfo.format_info?.missing_packages && errorInfo.format_info.missing_packages.length > 0) {
                     errorMessage = `Missing dependencies for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`;
                     errorDetails = errorInfo.suggestion || `Install required packages: pip install ${errorInfo.format_info.missing_packages.join(' ')}`;
-                    
+                    proposeToInstallMissingPackages = true;
+                } else if (errorInfo.error_type === 'ImportError') {
+                    errorMessage = `Missing dependencies: ${errorInfo.error}`;
+                    errorDetails = errorInfo.suggestion || 'Install required packages using pip install <package_name>';
+                } else if (errorInfo.suggestion) {
+                    errorDetails = errorInfo.suggestion;
+                }
+
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: errorMessage,
+                    details: errorDetails,
+                    error_type: errorInfo.error_type,
+                    format_info: errorInfo.format_info
+                });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
+
+
+                if (proposeToInstallMissingPackages) {
                     // Show installation prompt for missing packages
-                    const installAction = await vscode.window.showWarningMessage(
+                      const installAction = await vscode.window.showWarningMessage(
                         `Missing packages for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`,
                         'Install Packages',
                         'Show Details'
@@ -255,22 +276,7 @@ export class DataViewerPanel {
                             );
                         }
                     }
-                } else if (errorInfo.error_type === 'ImportError') {
-                    errorMessage = `Missing dependencies: ${errorInfo.error}`;
-                    errorDetails = errorInfo.suggestion || 'Install required packages using pip install <package_name>';
-                } else if (errorInfo.suggestion) {
-                    errorDetails = errorInfo.suggestion;
                 }
-
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: errorMessage,
-                    details: errorDetails,
-                    error_type: errorInfo.error_type,
-                    format_info: errorInfo.format_info
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
@@ -1313,7 +1319,7 @@ export class DataViewerPanel {
                 <h4>💡 Troubleshooting Steps:</h4>
                 <ol>
                     <li>Make sure Python is installed and accessible</li>
-                    <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
+                    <li>Install required packages: <code>pip install xarray</code></li>
                     <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
                     <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
                     <li>Check VSCode Output panel for more details</li>
