@@ -370,12 +370,12 @@ async function refreshUi(pythonManager: PythonManager, dataProcessor: DataProces
 }
 
 // Function to update status bar with current Python interpreter
-const updateStatusBar = (pythonManager: PythonManager, statusBarItem: vscode.StatusBarItem) => {
+function updateStatusBar (pythonManager: PythonManager, statusBarItem: vscode.StatusBarItem) {
     const pythonPath = pythonManager.getPythonPath();
     if (pythonPath && pythonManager.isReady()) {
         // Only show status bar when interpreter is selected and ready
         const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
-        statusBarItem.text = `$(check) SDV: Python: Ready (${interpreterName})`;
+        statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
     } else {
