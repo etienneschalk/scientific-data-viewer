@@ -298,7 +298,6 @@ export class PythonManager {
                 if (action === 'Install') {
                     try {
                         await this.installPackages(missingPackages);
-                        // isInitialized is set in installPackages method after successful installation
                     } catch (error) {
                         Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
                         // Show detailed error information
@@ -366,7 +365,7 @@ export class PythonManager {
 
                 if (code === 0) {
                     this.isInitialized = true;
-                    vscode.window.showInformationMessage('Packages installed successfully!');
+                    vscode.window.showInformationMessage(`Successfully installed packages: ${packages.join(', ')}`);
                     resolve();
                 } else {
                     // Create detailed error message with pip output
@@ -675,7 +674,6 @@ export class PythonManager {
 
         try {
             await this.installPackages(missingPackages);
-            vscode.window.showInformationMessage(`Successfully installed packages: ${missingPackages.join(', ')}`);
         } catch (error) {
             Logger.error(`🐍 📦 ❌ Failed to install packages for format: ${error}`);
             throw error;

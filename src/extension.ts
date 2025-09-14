@@ -353,15 +353,16 @@ export function activate(context: vscode.ExtensionContext) {
 async function refreshUi(pythonManager: PythonManager, dataProcessor: DataProcessor, statusBarItem: vscode.StatusBarItem) {
     try {
         await pythonManager.forceInitialize();
-        await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
 
         // Show success notification with interpreter name and path
         const pythonPath = pythonManager.getPythonPath();
         if (pythonPath) {
-            const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
-            vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
+            // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
+            // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
             updateStatusBar(pythonManager, statusBarItem);
         }
+
+        await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
         vscode.window.showErrorMessage(`❌ Failed to validate Python environment: ${error}`);
