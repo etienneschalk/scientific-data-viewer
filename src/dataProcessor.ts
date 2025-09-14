@@ -4,17 +4,24 @@ import { PythonManager } from './pythonManager';
 import { Logger } from './logger';
 
 export interface DataInfo {
+    result?: DataInfoResult;
+    error?: DataInfoError;
+}
+
+export interface DataInfoFormatInfo {
+    extension: string;
+    display_name: string;
+    available_engines: string[];
+    missing_packages: string[];
+    is_supported: boolean;
+}
+
+export interface DataInfoResult {
     format: string;
-    format_info?: {
-        extension: string;
-        display_name: string;
-        available_engines: string[];
-        missing_packages: string[];
-        is_supported: boolean;
-    };
-    used_engine?: string;
-    dimensions?: { [key: string]: number };
-    variables?: Array<{
+    format_info: DataInfoFormatInfo;
+    used_engine: string;
+    dimensions: { [key: string]: number };
+    variables: Array<{
         name: string;
         dtype: string;
         shape: number[];
@@ -22,18 +29,26 @@ export interface DataInfo {
         size_bytes: number;
         attributes?: { [key: string]: any };
     }>;
-    attributes?: { [key: string]: any };
-    fileSize?: number;
-    error?: string;
-    error_type?: string;
-    suggestion?: string;
+    coordinates: Array<{
+        name: string;
+        dtype: string;
+        shape: number[];
+        dimensions: string[];
+        size_bytes: number;
+        attributes?: { [key: string]: any };
+    }>;
+    xarray_html_repr: string;
+    xarray_text_repr: string;
+    xarray_show_versions: string;
+    attributes: { [key: string]: any };
+    fileSize: number;
 }
-
-export interface DataSlice {
-    variable: string;
-    data: any;
-    shape: number[];
-    dtype: string;
+export interface DataInfoError {
+    error: string;
+    error_type: string;
+    suggestion: string;
+    format_info: DataInfoFormatInfo;
+    xarray_show_versions: string;
 }
 
 export class DataProcessor {
@@ -56,7 +71,9 @@ export class DataProcessor {
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
 
         try {
+            Logger.debug(`XXX Getting data info for file: ${filePath}`);
             const result = await this.pythonManager.executePythonFile(scriptPath, [filePath]);
+            Logger.debug(`XXX Data info: ${JSON.stringify(result, null, 2)}`);
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return result;
@@ -64,23 +81,6 @@ export class DataProcessor {
             Logger.error(`Error processing data file: ${error}`);
             return null;
         }
-    }
-
-
-    async getVariableList(uri: vscode.Uri): Promise<string[]> {
-        const dataInfo = await this.getDataInfo(uri);
-        if (!dataInfo || !dataInfo.variables) {
-            return [];
-        }
-        return dataInfo.variables.map(v => v.name);
-    }
-
-    async getDimensionList(uri: vscode.Uri): Promise<string[]> {
-        const dataInfo = await this.getDataInfo(uri);
-        if (!dataInfo || !dataInfo.dimensions) {
-            return [];
-        }
-        return Object.keys(dataInfo.dimensions);
     }
 
     async createPlot(uri: vscode.Uri, variable: string, plotType: string = 'line'): Promise<string | null> {
@@ -107,48 +107,6 @@ export class DataProcessor {
             return null;
         } catch (error) {
             Logger.error(`Error creating plot: ${error}`);
-            return null;
-        }
-    }
-
-    async getHtmlRepresentation(uri: vscode.Uri): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
-            throw new Error('Python environment not ready');
-        }
-
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_html_representation.py');
-        const args = [filePath];
-
-        try {
-            const result = await this.pythonManager.executePythonFile(scriptPath, args);
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            return result.html || null;
-        } catch (error) {
-            Logger.error(`Error getting HTML representation: ${error}`);
-            return null;
-        }
-    }
-
-    async getTextRepresentation(uri: vscode.Uri): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
-            throw new Error('Python environment not ready');
-        }
-
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_text_representation.py');
-        const args = [filePath];
-
-        try {
-            const result = await this.pythonManager.executePythonFile(scriptPath, args);
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            return result.text || null;
-        } catch (error) {
-            Logger.error(`Error getting text representation: ${error}`);
             return null;
         }
     }

@@ -5,11 +5,22 @@ Supports all xarray-compatible formats with automatic engine detection and depen
 Usage: python get_data_info.py <file_path>
 """
 
+import io
 import json
+import logging
 import os
 import sys
 import xarray as xr
 
+
+# Set up logging
+# Redirect logging to stderr so it doesn't interfere with the base64 output
+logging.basicConfig(
+    stream=sys.stderr,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP = {
@@ -63,10 +74,21 @@ ENGINE_PACKAGES = {
     "sentinel": "xarray-sentinel",
 }
 
+# Default backend kwargs for each engine
+DEFAULT_ENGINE_BACKEND_KWARGS = {engine: None for engine in ENGINE_PACKAGES}
+# Avoid intempestive .idx file creation
+DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
+
+# We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET = {engine: False for engine in ENGINE_PACKAGES}
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
+
 
 def check_package_availability(package_name):
     """Check if a Python package is available."""
     try:
+        logger.info(f"Checking package availability: {package_name}")
         __import__(package_name)
         return True
     except ImportError:
@@ -131,11 +153,31 @@ def open_datatree_with_fallback(file_path, file_format_info):
     last_error = None
     for engine in available_engines:
         try:
-            xds = xr.open_datatree(file_path, engine=engine)
+            if DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]:
+                xds = xr.open_dataset(
+                    file_path,
+                    engine=engine,
+                    backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+                )
+                return xds, engine
+
+            xds = xr.open_datatree(
+                file_path,
+                engine=engine,
+                backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+            )
             return xds, engine
-        except Exception as e:
+        except NotImplementedError as e:
             # Fallback on dataset
-            xds = xr.open_dataset(file_path, engine=engine)
+            logger.warning(
+                f"Opening file as DataTree is not implemented with engine {engine}: {e!r}"
+            )
+            logger.warning("Fallback to opening file as Dataset")
+            xds = xr.open_dataset(
+                file_path,
+                engine=engine,
+                backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+            )
             return xds, engine
         except Exception as e:
             last_error = e
@@ -147,6 +189,12 @@ def open_datatree_with_fallback(file_path, file_format_info):
 
 def get_file_info(file_path):
     try:
+        # Diagnostic: xr.show_versions()
+        # Capture the output of xr.show_versions() by passing a StringIO object
+        output = io.StringIO()
+        xr.show_versions(file=output)
+        versions_text = output.getvalue()
+
         # Detect file format and available engines
         file_format_info = detect_file_format(file_path)
 
@@ -156,6 +204,7 @@ def get_file_info(file_path):
                 "error_type": "ImportError",
                 "format_info": file_format_info,
                 "suggestion": f"Install required packages: pip install {' '.join(file_format_info['missing_packages'])}",
+                "xarray_show_versions": versions_text,
             }
 
         # Open dataset with fallback
@@ -175,6 +224,7 @@ def get_file_info(file_path):
             "xarray_html_repr": xds._repr_html_(),
             # Get text representation using xarray's built-in text representation
             "xarray_text_repr": str(xds),
+            "xarray_show_versions": versions_text,
         }
 
         # Add coordinate variables
@@ -214,21 +264,28 @@ def get_file_info(file_path):
             info["variables"].append(var_info)
 
         xds.close()
-
+        result = info
+        return {"result": result}
     except ImportError as e:
         # Handle missing dependencies
-        return {
+        error = {
             "error": f"Missing dependencies: {str(e)}",
             "error_type": "ImportError",
             "suggestion": "Install required packages using pip install <package_name>",
+            "format_info": file_format_info,
+            "xarray_show_versions": versions_text,
         }
+        return {"error": error}
     except Exception as e:
         # Handle other errors (file corruption, format issues, etc.)
-        return {
+        error = {
             "error": str(e),
             "error_type": type(e).__name__,
             "suggestion": "Check if the file is corrupted or in an unsupported format",
+            "format_info": file_format_info,
+            "xarray_show_versions": versions_text,
         }
+        return {"error": error}
 
 
 def main():
@@ -238,6 +295,7 @@ def main():
 
     file_path = sys.argv[1]
     result = get_file_info(file_path)
+    logger.info(f"Result: {result}")
     print(json.dumps(result, default=str))
 
 

@@ -94,17 +94,7 @@ suite('Integration Test Suite', () => {
         // Test data processing
         const dataInfo = await processor.getDataInfo(mockUri);
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.format, 'NetCDF');
-
-        // Test variable list
-        const variables = await processor.getVariableList(mockUri);
-        assert.ok(Array.isArray(variables));
-        assert.ok(variables.length > 0);
-
-        // Test dimension list
-        const dimensions = await processor.getDimensionList(mockUri);
-        assert.ok(Array.isArray(dimensions));
-        assert.ok(dimensions.length > 0);
+        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
 
         // Test plot creation
         const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
@@ -223,19 +213,19 @@ suite('Integration Test Suite', () => {
         const netcdfUri = vscode.Uri.file('/path/to/test.nc');
         const netcdfInfo = await processor.getDataInfo(netcdfUri);
         assert.ok(netcdfInfo);
-        assert.strictEqual(netcdfInfo?.format, 'NetCDF');
+        assert.strictEqual(netcdfInfo?.result?.format, 'NetCDF');
 
         // Test HDF5 file
         const hdf5Uri = vscode.Uri.file('/path/to/test.h5');
         const hdf5Info = await processor.getDataInfo(hdf5Uri);
         assert.ok(hdf5Info);
-        assert.strictEqual(hdf5Info?.format, 'HDF5');
+        assert.strictEqual(hdf5Info?.result?.format, 'HDF5');
 
         // Test Zarr file
         const zarrUri = vscode.Uri.file('/path/to/test.zarr');
         const zarrInfo = await processor.getDataInfo(zarrUri);
         assert.ok(zarrInfo);
-        assert.strictEqual(zarrInfo?.format, 'Zarr');
+        assert.strictEqual(zarrInfo?.result?.format, 'Zarr');
     });
 
     test('DataProcessor should handle error responses from Python', async () => {
@@ -494,12 +484,7 @@ suite('Integration Test Suite', () => {
             // Test data processing (without triggering the panel's _handleGetDataInfo)
             const dataInfo = await processor.getDataInfo(vscode.Uri.file('/path/to/test.nc'));
             assert.ok(dataInfo);
-            assert.strictEqual(dataInfo?.format, 'NetCDF');
-
-            // Test variable list
-            const variables = await processor.getVariableList(vscode.Uri.file('/path/to/test.nc'));
-            assert.ok(Array.isArray(variables));
-            assert.ok(variables.length > 0);
+            assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
 
             // Test plot creation
             const plotData = await processor.createPlot(vscode.Uri.file('/path/to/test.nc'), 'temperature', 'line');
@@ -538,8 +523,6 @@ suite('Integration Test Suite', () => {
         const operations = [];
         for (let i = 0; i < 5; i++) {
             operations.push(processor.getDataInfo(vscode.Uri.file(`/path/to/test${i}.nc`)));
-            operations.push(processor.getVariableList(vscode.Uri.file(`/path/to/test${i}.nc`)));
-            operations.push(processor.getDimensionList(vscode.Uri.file(`/path/to/test${i}.nc`)));
         }
 
         const results = await Promise.all(operations);
@@ -586,6 +569,6 @@ suite('Integration Test Suite', () => {
         // Second attempt should succeed
         const dataInfo = await processor.getDataInfo(vscode.Uri.file('/path/to/test.nc'));
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.format, 'NetCDF');
+        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
     });
 });

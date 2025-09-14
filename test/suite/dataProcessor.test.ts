@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DataProcessor, DataInfo, DataSlice } from '../../src/dataProcessor';
+import { DataProcessor, DataInfo } from '../../src/dataProcessor';
 import { PythonManager } from '../../src/pythonManager';
 
 suite('DataProcessor Test Suite', () => {
@@ -62,10 +62,10 @@ suite('DataProcessor Test Suite', () => {
         const dataInfo = await dataProcessor.getDataInfo(mockUri);
 
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.format, 'NetCDF');
-        assert.ok(dataInfo?.dimensions);
-        assert.ok(dataInfo?.variables);
-        assert.strictEqual(dataInfo?.fileSize, 1024);
+        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
+        assert.ok(dataInfo?.result?.dimensions);
+        assert.ok(dataInfo?.result?.variables);
+        assert.strictEqual(dataInfo?.result?.fileSize, 1024);
     });
 
     test('should get data info with error handling', async () => {
@@ -83,100 +83,6 @@ suite('DataProcessor Test Suite', () => {
         assert.strictEqual(dataInfo, null);
     });
 
-    test('should get variable list', async () => {
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const variables = await dataProcessor.getVariableList(mockUri);
-
-        assert.ok(Array.isArray(variables));
-        assert.ok(variables.length > 0);
-        assert.strictEqual(variables[0], 'temperature');
-        assert.strictEqual(variables[1], 'time');
-    });
-
-    test('should get variable list for empty data', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return {
-                    format: 'NetCDF',
-                    fileSize: 0,
-                    dimensions: {},
-                    variables: []
-                };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/empty.nc');
-
-        const variables = await processor.getVariableList(mockUri);
-        assert.ok(Array.isArray(variables));
-        assert.strictEqual(variables.length, 0);
-    });
-
-    test('should get variable list for null data info', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return null;
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const variables = await processor.getVariableList(mockUri);
-        assert.ok(Array.isArray(variables));
-        assert.strictEqual(variables.length, 0);
-    });
-
-    test('should get dimension list', async () => {
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const dimensions = await dataProcessor.getDimensionList(mockUri);
-
-        assert.ok(Array.isArray(dimensions));
-        assert.ok(dimensions.length > 0);
-        assert.ok(dimensions.includes('time'));
-        assert.ok(dimensions.includes('lat'));
-        assert.ok(dimensions.includes('lon'));
-    });
-
-    test('should get dimension list for empty data', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return {
-                    format: 'NetCDF',
-                    fileSize: 0,
-                    dimensions: {},
-                    variables: []
-                };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/empty.nc');
-
-        const dimensions = await processor.getDimensionList(mockUri);
-        assert.ok(Array.isArray(dimensions));
-        assert.strictEqual(dimensions.length, 0);
-    });
-
-    test('should get dimension list for null data info', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return null;
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const dimensions = await processor.getDimensionList(mockUri);
-        assert.ok(Array.isArray(dimensions));
-        assert.strictEqual(dimensions.length, 0);
-    });
 
     test('should create plot', async () => {
         const mockPythonManager = {
@@ -238,66 +144,6 @@ suite('DataProcessor Test Suite', () => {
 
         const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
         assert.strictEqual(plotData, null);
-    });
-
-    test('should get HTML representation', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return { html: '<div>Test HTML</div>' };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const htmlRep = await processor.getHtmlRepresentation(mockUri);
-        assert.strictEqual(htmlRep, '<div>Test HTML</div>');
-    });
-
-    test('should handle HTML representation error', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                throw new Error('HTML generation failed');
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const htmlRep = await processor.getHtmlRepresentation(mockUri);
-        assert.strictEqual(htmlRep, null);
-    });
-
-    test('should get text representation', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                return { text: 'Test text representation' };
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const textRep = await processor.getTextRepresentation(mockUri);
-        assert.strictEqual(textRep, 'Test text representation');
-    });
-
-    test('should handle text representation error', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                throw new Error('Text generation failed');
-            }
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-        const mockUri = vscode.Uri.file('/path/to/test.nc');
-
-        const textRep = await processor.getTextRepresentation(mockUri);
-        assert.strictEqual(textRep, null);
     });
 
     test('should get show versions', async () => {
@@ -388,11 +234,11 @@ suite('DataProcessor Test Suite', () => {
 
         const dataInfo = await processor.getDataInfo(mockUri);
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.format, 'NetCDF');
-        assert.strictEqual(dataInfo?.fileSize, 0);
-        assert.ok(dataInfo?.dimensions);
-        assert.ok(dataInfo?.variables);
-        assert.strictEqual(dataInfo?.variables?.length, 0);
+        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
+        assert.strictEqual(dataInfo?.result?.fileSize, 0);
+        assert.ok(dataInfo?.result?.dimensions);
+        assert.ok(dataInfo?.result?.variables);
+        assert.strictEqual(dataInfo?.result?.variables?.length, 0);
     });
 
     test('should handle data info with error field', async () => {
