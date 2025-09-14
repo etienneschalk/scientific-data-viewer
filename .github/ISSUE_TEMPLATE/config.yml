@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  # - name: GitHub Discussions
+  #   url: https://github.com/etienneschalk/scientific-data-viewer/discussions
+  #   about: Please ask questions and discuss ideas here before creating an issue.
+  - name: VSCode Marketplace
+    url: https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer
+    about: Check the extension page for documentation and user reviews.
+  - name: Open VSX Registry
+    url: https://open-vsx.org/extension/eschalk0/scientific-data-viewer
+    about: Alternative marketplace for VSCode-compatible editors like Cursor.
