@@ -40,6 +40,7 @@ code .
 ### 2. Test with Sample Data
 
 1. **Create sample data**:
+
    ```bash
    cd sample-data
    python3 ../python/create_sample_data.py
@@ -219,8 +220,8 @@ npm run package
 ### Install Package
 
 ```bash
-# Install locally
-code --install-extension scientific-data-viewer-0.1.0.vsix
+# Install the package locally for testing
+code --install-extension scientific-data-viewer-0.2.0.vsix
 ```
 
 Note: for Cursor users, the command seems to do nothing.

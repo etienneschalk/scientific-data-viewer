@@ -70,6 +70,78 @@ npm install -g vsce
 - [ ] **Performance** is acceptable
 - [ ] **User experience** is smooth
 
+## Publishing to Open VSX (for Cursor and other editors)
+
+Open VSX is an open-source alternative to the VSCode Marketplace that's used by editors like Cursor, VSCodium, and others. Publishing to Open VSX ensures your extension is available to a broader audience.
+
+### Prerequisites for Open VSX
+
+#### 1. Eclipse Account
+
+1. **Create account**: Go to [Eclipse.org](https://accounts.eclipse.org/user/register)
+2. **Fill in GitHub Username**: Use exactly the same GitHub account as when you log in to open-vsx.org
+3. **Verify email**: Complete the email verification process
+
+#### 2. Publisher Agreement
+
+1. **Log in to open-vsx.org**: Click on the account icon → authorize with GitHub
+2. **Navigate to Profile**: Click on your avatar → Settings
+3. **Sign Publisher Agreement**: Click "Log in with Eclipse" → authorize → "Show Publisher Agreement" → "Agree"
+
+#### 3. Create Access Token
+
+1. **Go to Access Tokens**: Profile → Settings → Access Tokens
+2. **Generate New Token**: Enter description (e.g., "Local Machine", "CI Build")
+3. **Copy token value**: Save securely - it won't be shown again
+4. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
+
+### Open VSX Publishing Process
+
+#### 1. Create Namespace (First Time Only)
+
+```bash
+# Create namespace for your publisher
+npx ovsx create-namespace <publisher-name> -p $OPENVSX_TOKEN
+```
+
+#### 2. Publish Extension
+
+```bash
+# Set your access token
+export OPENVSX_TOKEN=your_token_here
+
+# Publish using npm script
+npm run openvsx-publish
+
+# Or publish directly
+npx ovsx publish -p $OPENVSX_TOKEN
+```
+
+#### 3. Verify Publication
+
+1. **Check open-vsx.org**: Visit [open-vsx.org](https://open-vsx.org)
+2. **Search for your extension**: Look for "Scientific Data Viewer"
+3. **Verify details**: Check all information is correct
+4. **Test in Cursor**: Install from Open VSX and test functionality
+
+### Open VSX vs VSCode Marketplace
+
+| Feature              | VSCode Marketplace     | Open VSX                        |
+| -------------------- | ---------------------- | ------------------------------- |
+| **Primary Users**    | VSCode users           | Cursor, VSCodium, other editors |
+| **Account Required** | Azure DevOps           | Eclipse.org                     |
+| **Publishing Tool**  | `vsce`                 | `ovsx`                          |
+| **Token Type**       | Personal Access Token  | Open VSX Access Token           |
+| **Verification**     | Publisher verification | Namespace ownership             |
+
+### Benefits of Open VSX Publishing
+
+- **Broader Reach**: Available to Cursor, VSCodium, and other VSCode-compatible editors
+- **Open Source**: Community-driven alternative to Microsoft's marketplace
+- **No Vendor Lock-in**: Independent of Microsoft's ecosystem
+- **Free Publishing**: No fees or restrictions
+- **Easy Migration**: Same package format as VSCode Marketplace
+
 ## Publishing Process
 
 ### 1. Prepare for Publication
@@ -95,14 +167,14 @@ npm run compile
 # Create .vsix package
 vsce package
 
-# This creates: scientific-data-viewer-0.1.0.vsix
+# This creates: scientific-data-viewer-0.2.0.vsix
 ```
 
 ### 3. Test the Package
 
 ```bash
 # Install the package locally for testing
-code --install-extension scientific-data-viewer-0.1.0.vsix
+code --install-extension scientific-data-viewer-0.2.0.vsix
 
 # Test the installed extension
 # Verify all functionality works correctly

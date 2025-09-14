@@ -34,6 +34,7 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 ### Quick Install (Recommended)
 
 1. **Install from VSCode Marketplace**:
+
    - Open VSCode
    - Go to Extensions view (`Ctrl+Shift+X`)
    - Search for "Scientific Data Viewer"
@@ -47,6 +48,7 @@ A powerful VSCode extension for viewing and analyzing scientific data files incl
 ### Manual Install
 
 1. **Download the extension**:
+
    - Go to the [Releases page](https://github.com/etienneschalk/scientific-data-viewer/releases)
    - Download the latest `.vsix` file
 
@@ -74,14 +76,17 @@ Before using this extension, you need:
 ### Opening Data Files
 
 1. **Direct File Opening**:
+
    - Double-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
    - Files open directly in the Scientific Data Viewer
 
 2. **From File Explorer**:
+
    - Right-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
    - Select "Open in Scientific Data Viewer"
 
 3. **From Command Palette**:
+
    - Press `Ctrl+Shift+P`
    - Type "Open Scientific Data Viewer"
    - Select a file from the file picker
@@ -93,10 +98,12 @@ Before using this extension, you need:
 ### Configuring Python Environment
 
 1. **Automatic Detection**:
+
    - The extension will automatically detect Python installations
    - It will check for required packages and prompt to install missing ones
 
 2. **Manual Configuration**:
+
    - Press `Ctrl+Shift+P`
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
@@ -116,7 +123,7 @@ The data viewer shows:
 - **Variables**: All data variables with their types, shapes, dimension names, and memory usage
 - ~~**Visualization**: Interactive plots and charts~~
 
-The data representation is based entirely on the native xarray's Dataset HTML representation. 
+The data representation is based entirely on the native xarray's Dataset HTML representation.
 
 ### Creating Visualizations (:warning: EXPERIMENTAL)
 
@@ -157,14 +164,17 @@ The extension includes configuration options that act as feature flags to contro
 ### Common Issues
 
 1. **Python not found**:
+
    - Ensure Python is installed and in your PATH
    - Use the "Python: Select Interpreter" command to manually set the path
 
 2. **Missing packages**:
+
    - Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
    - Or let the extension install them automatically
 
 3. **Large files not loading**:
+
    - Increase the `maxFileSize` setting
    - Consider using data slicing for very large datasets
 
@@ -185,6 +195,7 @@ The extension includes configuration options that act as feature flags to contro
 ### Quick Start for Developers
 
 1. **Clone and setup**:
+
    ```bash
    git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
@@ -192,6 +203,7 @@ The extension includes configuration options that act as feature flags to contro
    ```
 
 2. **Open in VSCode**:
+
    ```bash
    code .
    ```
@@ -203,27 +215,32 @@ The extension includes configuration options that act as feature flags to contro
 ### Development Installation
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
    ```
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Compile the extension**:
+
    ```bash
    npm run compile
    ```
 
 4. **Install Python dependencies** (if not already installed):
+
    ```bash
    pip install xarray netCDF4 zarr h5py numpy matplotlib
    ```
 
 5. **Open in VSCode**:
+
    ```bash
    code .
    ```
@@ -235,6 +252,7 @@ The extension includes configuration options that act as feature flags to contro
 ### Production Installation
 
 1. **Package the extension**:
+
    ```bash
    npm run package
    ```
@@ -290,6 +308,7 @@ npm run lint
 ### Testing
 
 1. **Unit Tests**:
+
    ```bash
    npm test
    ```
@@ -305,6 +324,20 @@ npm run lint
 2. **Press F5** to launch the Extension Development Host
 3. **Use the debug console** to inspect variables and step through code
 
+Note: It is recommended to run the task `start-watch-mode` for hot reload with
+Ctrl+Shift+P Tasks: Run Task then `start-watch-mode`.
+
+#### About debugging the error handling
+
+To get a clean state in the development VSCode instance, uninstall dependencies
+to test the full error handling scenarios
+
+```
+python -m pip uninstall xarray netCDF4 zarr h5py numpy matplotlib rioxarray cfgrib zarr
+```
+
+Then reload the development VSCode instance window: Ctrl+Shift+P Developer: Reload Window
+
 ## 📦 Publishing
 
 ### Preparing for Publication
@@ -317,16 +350,19 @@ npm run lint
 ### Publishing to VSCode Marketplace
 
 1. **Install vsce** (if not already installed):
+
    ```bash
    npm install -g vsce
    ```
 
 2. **Login to Azure DevOps**:
+
    ```bash
    vsce login <publisher-name>
    ```
 
 3. **Package the extension**:
+
    ```bash
    vsce package
    ```
@@ -336,13 +372,26 @@ npm run lint
    vsce publish
    ```
 
+### Publishing to Open VSX (for Cursor and other editors)
+
+To make the extension available in Cursor, VSCodium, and other VSCode-compatible editors:
+
+1. **Create Eclipse account** and sign Publisher Agreement at [open-vsx.org](https://open-vsx.org)
+2. **Generate access token** from your Open VSX profile
+3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
+4. **Publish**: `npm run openvsx-publish`
+
+See [PUBLISHING.md](PUBLISHING.md) for detailed Open VSX publishing instructions.
+
 ### Manual Publishing
 
 1. **Create a Personal Access Token**:
+
    - Go to Azure DevOps
    - Create a new Personal Access Token with Marketplace permissions
 
 2. **Login**:
+
    ```bash
    vsce login <publisher-name>
    # Enter your Personal Access Token when prompted

@@ -12,12 +12,12 @@ export class PythonManager {
         this.pythonPath = undefined;
     }
 
-    async initialize(): Promise<void> {
+    async _initialize(): Promise<void> {
         // Get Python interpreter from Python extension API (recommended method)
         const newPythonPath = await this.getPythonInterpreterFromExtension();
 
         if (newPythonPath && newPythonPath !== this.pythonPath) {
-            Logger.info(`Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
+            Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
             this.pythonPath = newPythonPath;
             // Reset initialization state when interpreter changes
             this.isInitialized = false;
@@ -34,50 +34,51 @@ export class PythonManager {
         try {
             const pythonExtension = vscode.extensions.getExtension('ms-python.python');
             if (!pythonExtension) {
-                Logger.error('Python extension not found');
+                Logger.error('🐍 ❌ Python extension not found');
                 return undefined;
             }
 
             if (!pythonExtension.isActive) {
-                Logger.debug('Python extension is not active, attempting to activate...');
+                Logger.debug('🐍 💤 Python extension is not active, attempting to activate...');
             }
 
             // Ensure the extension is activated
             const pythonApi = await pythonExtension.activate();
 
             if (!pythonApi) {
-                Logger.warn('❌ Python extension API is not available after activation');
-                return undefined;
+                Logger.warn('🐍 ⚠️ Python extension API is not available after activation');
+                // Continue to VSCode configuration fallback
             }
             else {
-                Logger.debug('✅ Python extension API is available after activation');
-                Logger.debug(`Python API structure: ${JSON.stringify(Object.keys(pythonApi))}`);
+                Logger.debug('🐍 ✅ Python extension API is available after activation');
+                Logger.debug(`🐍 🔍 Python API structure: ${JSON.stringify(Object.keys(pythonApi))}`);
                 if (pythonApi.environments) {
-                    Logger.debug(`Environments API methods: ${JSON.stringify(Object.keys(pythonApi.environments))}`);
+                    Logger.debug(`🐍 🔍 Environments API methods: ${JSON.stringify(Object.keys(pythonApi.environments))}`);
                 }
             }
 
             // Try the new environments API first
-            if (pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
+            if (pythonApi && pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
                     const activeEnvironment = await pythonApi.environments.getActiveEnvironmentPath();
-                    Logger.debug(`Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
+                    Logger.debug(`🐍 🔍 Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
                     return activeEnvironment?.path;
                 } catch (envError) {
-                    Logger.debug(`Environments API error: ${envError}`);
+                    Logger.debug(`🐍 ⚠️ Environments API error: ${envError}`);
+                    // Continue to VSCode configuration fallback
                 }
             }
 
             // Try alternative environments API methods
-            if (pythonApi.environments) {
+            if (pythonApi && pythonApi.environments) {
                 // Try getActiveInterpreter if available
                 if (typeof pythonApi.environments.getActiveInterpreter === 'function') {
                     try {
                         const activeInterpreter = await pythonApi.environments.getActiveInterpreter();
-                        Logger.debug(`Python extension API active interpreter (alt): ${JSON.stringify(activeInterpreter)}`);
+                        Logger.debug(`🐍 🔍 Python extension API active interpreter (alt): ${JSON.stringify(activeInterpreter)}`);
                         return activeInterpreter?.path;
                     } catch (altError) {
-                        Logger.debug(`Alternative environments API error: ${altError}`);
+                        Logger.debug(`🐍 ⚠️ Alternative environments API error: ${altError}`);
                     }
                 }
 
@@ -85,39 +86,39 @@ export class PythonManager {
                 if (typeof pythonApi.environments.getActiveEnvironment === 'function') {
                     try {
                         const activeEnv = await pythonApi.environments.getActiveEnvironment();
-                        Logger.debug(`Python extension API active environment (alt): ${JSON.stringify(activeEnv)}`);
+                        Logger.debug(`🐍 🔍 Python extension API active environment (alt): ${JSON.stringify(activeEnv)}`);
                         return activeEnv?.path;
                     } catch (altError) {
-                        Logger.debug(`Alternative environments API error: ${altError}`);
+                        Logger.debug(`🐍 ⚠️ Alternative environments API error: ${altError}`);
                     }
                 }
             }
 
             // Fallback to old settings API if available
-            if (pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
+            if (pythonApi && pythonApi.settings && typeof pythonApi.settings.getInterpreterDetails === 'function') {
                 try {
                     const interpreterDetails = await pythonApi.settings.getInterpreterDetails();
-                    Logger.debug(`Python extension API interpreter details (legacy): ${JSON.stringify(interpreterDetails)}`);
+                    Logger.debug(`🐍 🔍 Python extension API interpreter details (legacy): ${JSON.stringify(interpreterDetails)}`);
                     return interpreterDetails?.path;
                 } catch (legacyError) {
-                    Logger.debug(`Legacy API error: ${legacyError}`);
+                    Logger.debug(`🐍 ⚠️ Legacy API error: ${legacyError}`);
                 }
             }
 
-            Logger.warn('No compatible Python extension API found');
+            Logger.warn('🐍 ⚠️ No compatible Python extension API found');
         } catch (error) {
-            Logger.warn(`Could not access Python extension API: ${error}`);
+            Logger.warn(`🐍 ⚠️ Could not access Python extension API: ${error}`);
         }
 
         // Fallback: try to get from VSCode configuration
         try {
             const vscodePythonPath = vscode.workspace.getConfiguration('python').get('defaultInterpreterPath') as string | undefined;
             if (vscodePythonPath) {
-                Logger.debug(`Using Python path from VSCode configuration: ${vscodePythonPath}`);
+                Logger.debug(`🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`);
             }
             return vscodePythonPath;
         } catch (error) {
-            Logger.warn(`Could not access Python configuration: ${error}`);
+            Logger.warn(`🐍 ⚠️ Could not access Python configuration: ${error}`);
         }
 
         return undefined;
@@ -190,28 +191,31 @@ export class PythonManager {
 
 
     private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
-        Logger.debug(`Checking required packages`);
-        Logger.debug(`Python path: ${pythonPath}`);
+        Logger.debug(`🐍 🔍 Checking required packages`);
 
-        const requiredPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'];
+        // Core packages required for basic functionality
+        const corePackages = ['xarray'];
+        // Additional packages for extended format support
+        const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
+        const allPackages = [...corePackages, ...extendedPackages];
         const availablePackages: string[] = [];
 
-        for (const packageName of requiredPackages) {
+        for (const packageName of allPackages) {
             try {
                 const isAvailable = await this.checkPackageAvailability(pythonPath, packageName);
                 if (isAvailable) {
                     availablePackages.push(packageName);
-                    Logger.debug(`Package available: ${packageName}`);
+                    Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
                 }
                 else {
-                    Logger.debug(`Package not available: ${packageName}`);
+                    Logger.debug(`🐍 📦 ⚠️ Package not available: ${packageName}`);
                 }
             } catch (error) {
-                Logger.debug(`Package not available: ${packageName}: error: ${error}`);
+                Logger.debug(`🐍 📦 ⚠️ Package not available: ${packageName}: error: ${error}`);
             }
         }
 
-        Logger.debug(`Available packages: ${availablePackages}`);
+        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages}`);
         return availablePackages;
     }
 
@@ -254,7 +258,7 @@ export class PythonManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.debug(`pip version: ${stdout.trim()}`);
+                    Logger.debug(`🐍 📦 🔍 pip version: ${stdout.trim()}`);
                     resolve();
                 } else {
                     reject(new Error(`pip check failed (exit code ${code}): ${stderr || stdout}`));
@@ -268,9 +272,9 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(): Promise<void> {
-        Logger.info(`Validating Python environment`);
-        Logger.info(`Python path: ${this.pythonPath}`);
-        Logger.info(`Is initialized: ${this.isInitialized}`);
+        this.isInitialized = false;
+
+        Logger.info(`🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this.isInitialized} | Python path: ${this.pythonPath}`);
 
         if (!this.pythonPath) {
             throw new Error('No Python interpreter configured');
@@ -278,23 +282,24 @@ export class PythonManager {
 
         try {
             const packages = await this.checkRequiredPackages(this.pythonPath);
-            const missingPackages = ['xarray', 'netCDF4', 'zarr', 'h5py', 'numpy'].filter(
-                pkg => !packages.includes(pkg)
-            );
+            const corePackages = ['xarray'];
+            const missingCorePackages = corePackages.filter(pkg => !packages.includes(pkg));
+            
+            // Only require core packages for basic functionality
+            const missingPackages = missingCorePackages;
 
             if (missingPackages.length > 0) {
                 const action = await vscode.window.showWarningMessage(
                     `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
                     'Install',
-                    'Cancel'
+                    'Show Details'
                 );
 
                 if (action === 'Install') {
                     try {
                         await this.installPackages(missingPackages);
-                        // isInitialized is set in installPackages method after successful installation
                     } catch (error) {
-                        Logger.error(`Package installation failed: ${error}`);
+                        Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
                         // Show detailed error information
                         const errorMessage = error instanceof Error ? error.message : String(error);
                         vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
@@ -303,16 +308,15 @@ export class PythonManager {
                 } else {
                     // User cancelled installation, but we still have a valid Python interpreter
                     // Set as initialized so the extension can work with what's available
-                    this.isInitialized = true;
-                    Logger.info(`Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
+                    Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
                 }
             } else {
                 this.isInitialized = true;
                 // Don't show notification during initialization - only when interpreter changes
-                Logger.info(`Python environment ready! Using interpreter: ${this.pythonPath}`);
+                Logger.info(`🐍 📦 ✅ Python environment ready! Using interpreter: ${this.pythonPath}`);
             }
         } catch (error) {
-            Logger.error(`Python environment validation failed: ${error}`);
+            Logger.error(`🐍 📦 ❌ Python environment validation failed: ${error}`);
             vscode.window.showErrorMessage(`Failed to validate Python environment: ${error}`);
         }
     }
@@ -330,9 +334,9 @@ export class PythonManager {
         }
 
         return new Promise((resolve, reject) => {
-            Logger.info(`Installing packages: ${packages.join(', ')} using Python: ${this.pythonPath}`);
-            Logger.debug(`Working directory: ${process.cwd()}`);
-            Logger.debug(`Environment PATH: ${process.env.PATH}`);
+            Logger.info(`🐍 📦 🔍 Installing packages: ${packages.join(', ')} using Python: ${this.pythonPath}`);
+            Logger.debug(`🐍 📦 🔍 Working directory: ${process.cwd()}`);
+            Logger.debug(`🐍 📦 🔍 Environment PATH: ${process.env.PATH}`);
 
             const pipProcess = spawn(this.pythonPath!, ['-m', 'pip', 'install', ...packages], {
                 shell: true,
@@ -345,23 +349,23 @@ export class PythonManager {
             pipProcess.stdout.on('data', (data) => {
                 const output = data.toString();
                 stdout += output;
-                Logger.debug(`pip stdout: ${output}`);
+                Logger.debug(`🐍 📦 pip stdout: ${output}`);
             });
 
             pipProcess.stderr.on('data', (data) => {
                 const output = data.toString();
                 stderr += output;
-                Logger.warn(`pip stderr: ${output}`);
+                Logger.warn(`🐍 📦 pip stderr: ${output}`);
             });
 
             pipProcess.on('close', (code) => {
-                Logger.debug(`pip process exited with code: ${code}`);
-                Logger.debug(`pip stdout: ${stdout}`);
-                Logger.debug(`pip stderr: ${stderr}`);
+                Logger.debug(`🐍 📦 pip process exited with code: ${code}`);
+                Logger.debug(`🐍 📦 pip stdout: ${stdout}`);
+                Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
 
                 if (code === 0) {
                     this.isInitialized = true;
-                    vscode.window.showInformationMessage('Packages installed successfully!');
+                    vscode.window.showInformationMessage(`Successfully installed packages: ${packages.join(', ')}`);
                     resolve();
                 } else {
                     // Create detailed error message with pip output
@@ -393,7 +397,7 @@ export class PythonManager {
             });
 
             pipProcess.on('error', (error) => {
-                Logger.error(`pip process error: ${error.message}`);
+                Logger.error(`🐍 📦 ❌ pip process error: ${error.message}`);
                 let errorMessage = `Failed to execute pip: ${error.message}`;
 
                 if (error.message.includes('ENOENT')) {
@@ -412,9 +416,7 @@ export class PythonManager {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`executePythonScript: Executing Python script with args: ${args}`);
-        Logger.log(`executePythonScript: Python path: ${this.pythonPath}`);
-        Logger.log(`executePythonScript: Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📦 📜 executePythonScript: Executing Python script with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, ['-c', script, ...args], {
@@ -470,9 +472,7 @@ export class PythonManager {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`executePythonFile: Executing Python file ${scriptPath} with args: ${args}`);
-        Logger.log(`executePythonFile: Python path: ${this.pythonPath}`);
-        Logger.log(`executePythonFile: Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📦 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -528,8 +528,7 @@ export class PythonManager {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args}`);
-        Logger.log(`executePythonFileWithLogs: Python path: ${this.pythonPath}`);
+        Logger.log(`🐍 📜 executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -555,26 +554,26 @@ export class PythonManager {
                     if (line.includes(' - INFO - ')) {
                         const message = line.split(' - INFO - ')[1];
                         if (message) {
-                            Logger.info(`[Python] ${message}`);
+                            Logger.info(`🐍 📜 [Python] ${message}`);
                         }
                     } else if (line.includes(' - ERROR - ')) {
                         const message = line.split(' - ERROR - ')[1];
                         if (message) {
-                            Logger.error(`[Python] ${message}`);
+                            Logger.error(`🐍 📜 [Python] ${message}`);
                         }
                     } else if (line.includes(' - WARNING - ')) {
                         const message = line.split(' - WARNING - ')[1];
                         if (message) {
-                            Logger.warn(`[Python] ${message}`);
+                            Logger.warn(`🐍 📜 [Python] ${message}`);
                         }
                     } else if (line.includes(' - DEBUG - ')) {
                         const message = line.split(' - DEBUG - ')[1];
                         if (message) {
-                            Logger.debug(`[Python] ${message}`);
+                            Logger.debug(`🐍 📜 [Python] ${message}`);
                         }
                     } else if (line.trim()) {
                         // Any other stderr output that doesn't match the log format
-                        Logger.info(`[Python] ${line.trim()}`);
+                        Logger.info(`🐍 📜 [Python] ${line.trim()}`);
                     }
                 });
             });
@@ -615,18 +614,22 @@ export class PythonManager {
         return this.pythonPath;
     }
 
+    hasPythonPath(): boolean {
+        return this.pythonPath !== undefined;
+    }
+
     isReady(): boolean {
-        return this.isInitialized && this.pythonPath !== undefined;
+        return this.isInitialized && this.hasPythonPath();
     }
 
     getCurrentPythonPath(): string | undefined {
         return this.pythonPath;
     }
 
-    async forceReinitialize(): Promise<void> {
-        Logger.info('Force reinitializing Python environment...');
+    async forceInitialize(): Promise<void> {
+        Logger.info('🐍 🔄 Force initializing Python environment...');
         this.isInitialized = false;
-        await this.initialize();
+        await this._initialize();
     }
 
     async getCurrentInterpreterPath(): Promise<string | undefined> {
@@ -652,8 +655,28 @@ export class PythonManager {
             }
             return await pythonExtension.activate();
         } catch (error) {
-            Logger.debug(`Failed to activate Python extension: ${error}`);
+            Logger.debug(`🐍 ❌ Failed to activate Python extension: ${error}`);
             return undefined;
+        }
+    }
+
+    /**
+     * Install packages for a specific file format
+     */
+    async installPackagesForFormat(missingPackages: string[]): Promise<void> {
+        if (!this.pythonPath || !this.isInitialized) {
+            throw new Error('Python environment not properly initialized');
+        }
+
+        if (missingPackages.length === 0) {
+            return;
+        }
+
+        try {
+            await this.installPackages(missingPackages);
+        } catch (error) {
+            Logger.error(`🐍 📦 ❌ Failed to install packages for format: ${error}`);
+            throw error;
         }
     }
 
@@ -665,26 +688,26 @@ export class PythonManager {
         try {
             const pythonApi = await this.getPythonExtensionApi();
             if (!pythonApi || !pythonApi.environments) {
-                Logger.debug('Python extension API or environments API not available for event listener');
+                Logger.debug('🐍 ⚠️ Python extension API or environments API not available for event listener');
                 return undefined;
             }
 
             // Check if the onDidChangeActiveEnvironmentPath method exists
             if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
-                Logger.info('Setting up immediate Python interpreter change listener');
+                Logger.info('🐍 🔧 Setting up immediate Python interpreter change listener...');
 
                 const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
-                    Logger.info(`Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
+                    Logger.info(`🐍 🔔 Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
                     await onInterpreterChange();
                 });
 
                 return disposable;
             } else {
-                Logger.debug('onDidChangeActiveEnvironmentPath method not available in Python extension API');
+                Logger.debug('🐍 ⚠️ onDidChangeActiveEnvironmentPath method not available in Python extension API');
                 return undefined;
             }
         } catch (error) {
-            Logger.warn(`Failed to set up Python interpreter change listener: ${error}`);
+            Logger.warn(`🐍 ❌ Failed to set up Python interpreter change listener: ${error}`);
             return undefined;
         }
     }

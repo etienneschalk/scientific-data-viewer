@@ -72,7 +72,7 @@
             "command": "code",
             "args": [
                 "--install-extension",
-                "${workspaceFolder}/scientific-data-viewer-0.1.0.vsix"
+                "${workspaceFolder}/scientific-data-viewer-0.2.0.vsix"
             ],
             "group": "build",
             "presentation": {

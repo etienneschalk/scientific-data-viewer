@@ -13,25 +13,34 @@ class Logger {
         this.initialize();
         
         const timestamp = new Date().toISOString();
-        const levelPrefix = `[${level.toUpperCase()}]`;
+        const levelPrefix = `[${level.toUpperCase().padStart(8, " ")}]`;
         const logMessage = `${timestamp} ${levelPrefix} ${message}`;
         
-        // Log to VS Code output channel
-        this.outputChannel?.appendLine(logMessage);
+        // Log to VS Code output channel (if available and not disposed)
+        try {
+            this.outputChannel?.appendLine(logMessage);
+        } catch (error) {
+            // Ignore errors if the channel has been disposed
+            if (error instanceof Error && !error.message.includes('Channel has been closed')) {
+                console.warn('Logger output channel error:', error);
+            }
+        }
         
-        // Also log to console for development
-        switch (level) {
-            case 'error':
-                console.error(logMessage);
-                break;
-            case 'warn':
-                console.warn(logMessage);
-                break;
-            case 'debug':
-                console.debug(logMessage);
-                break;
-            default:
-                console.log(logMessage);
+        // Also log to console for development (if available)
+        if (typeof console !== 'undefined' && console && typeof console.log === 'function') {
+            switch (level) {
+                case 'error':
+                    if (typeof console.error === 'function') console.error(logMessage);
+                    break;
+                case 'warn':
+                    if (typeof console.warn === 'function') console.warn(logMessage);
+                    break;
+                case 'debug':
+                    if (typeof console.debug === 'function') console.debug(logMessage);
+                    break;
+                default:
+                    if (typeof console.log === 'function') console.log(logMessage);
+            }
         }
     }
 

@@ -1,8 +1,29 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { DataProcessor, DataInfo } from './dataProcessor';
+import { DataProcessor, DataInfo, DataInfoResult } from './dataProcessor';
 import { Logger } from './logger';
 
+
+// Taken from python/get_data_info.py
+// TODO eschalk: Ideally, a nice formatting display should be placed in the errors,
+// relying solely on the already present info in package.json
+const SUPPORTED_EXTENSIONS = [
+    ".nc",
+    ".netcdf",
+    ".zarr",
+    ".h5",
+    ".hdf5",
+    ".grib",
+    ".grib2",
+    ".tif",
+    ".tiff",
+    ".geotiff",
+    ".jp2",
+    ".jpeg2000",
+    ".safe",
+    ".nc4",
+    ".cdf",
+]
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
     public static panelsWithErrors: Set<DataViewerPanel> = new Set();
@@ -57,19 +78,14 @@ export class DataViewerPanel {
         DataViewerPanel.activePanels.add(dataViewerPanel);
     }
 
-    public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+    public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor): DataViewerPanel {
         const dataViewerPanel = new DataViewerPanel(panel, extensionUri, fileUri, dataProcessor);
         DataViewerPanel.activePanels.add(dataViewerPanel);
-    }
-
-    public static async refreshCurrentPanel(dataProcessor: DataProcessor) {
-        Logger.info(`Refreshing ${DataViewerPanel.activePanels.size} active panels due to Python environment change...`);
-        for (const panel of DataViewerPanel.activePanels) {
-            await panel._handleGetDataInfo();
-        }
+        return dataViewerPanel;
     }
 
     public static async refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+        Logger.debug(`[_refreshPanelsWithErrors] Refreshing ${DataViewerPanel.panelsWithErrors.size} panels with errors`);
         const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
         if (errorPanelCount > 0) {
             Logger.info(`Refreshing ${errorPanelCount} panels with errors due to Python environment initialization...`);
@@ -109,31 +125,15 @@ export class DataViewerPanel {
         // Handle messages from the webview
         this._panel.webview.onDidReceiveMessage(
             async (message) => {
+                Logger.debug(`[DataViewerPanel] Received message: ${message.command}`);
                 switch (message.command) {
                     case 'getDataInfo':
                         await this._handleGetDataInfo();
-                        break;
-                    case 'getDataSlice':
-                        await this._handleGetDataSlice(message.variable, message.sliceSpec);
                         break;
                     case 'createPlot':
                         if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
                             await this._handleCreatePlot(message.variable, message.plotType);
                         }
-                        break;
-                    case 'getVariableList':
-                        if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
-                            await this._handleGetVariableList();
-                        }
-                        break;
-                    case 'getHtmlRepresentation':
-                        await this._handleGetHtmlRepresentation();
-                        break;
-                    case 'getTextRepresentation':
-                        await this._handleGetTextRepresentation();
-                        break;
-                    case 'getShowVersions':
-                        await this._handleGetShowVersions();
                         break;
                     case 'getPythonPath':
                         await this._handleGetPythonPath();
@@ -149,6 +149,7 @@ export class DataViewerPanel {
     }
 
     public async _update(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+        Logger.info(`🚚 📖 Updating data viewer panel for: ${fileUri.fsPath}`);
         this._currentFile = fileUri;
         this.dataProcessor = dataProcessor;
 
@@ -162,20 +163,34 @@ export class DataViewerPanel {
         this._panel.webview.html = this._getHtmlForWebview(plottingCapabilities);
 
         // Load data info
-        await this._handleGetDataInfo();
+        // await this._handleGetDataInfo();
     }
 
     private async _handleGetDataInfo() {
+        Logger.debug(`[_handleGetDataInfo] Handling get data info for: ${this._currentFile.fsPath}`);
         try {
-            // Check if Python environment is ready
-            if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                Logger.error('Python environment not ready. Please configure Python interpreter first.');
-                Logger.error(`${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
-                Logger.error(`${this.dataProcessor.pythonManagerInstance.isReady()}`);
+            // Check if a Python interpreter is configured
+            if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
+                Logger.error('🐍 ❌ Python path not found. Please configure Python interpreter first.');
                 this._panel.webview.postMessage({
                     command: 'error',
-                    message: 'Python environment not ready. Please configure Python interpreter first.',
+                    message: 'Python path not found. Please configure Python interpreter first.',
                     details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
+                });
+                // Track this panel as having an error
+                DataViewerPanel.addPanelWithError(this);
+                return;
+            }
+
+            // Check if Python environment is ready
+            if (!this.dataProcessor.pythonManagerInstance.isReady()) {
+                Logger.error('🐍 ❌ Python environment not ready. Please install core dependencies first.');
+                Logger.error(`🐍 ❌ Python path: ${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
+                Logger.error(`🐍 ❌ Python ready: ${this.dataProcessor.pythonManagerInstance.isReady()}`);
+                this._panel.webview.postMessage({
+                    command: 'error',
+                    message: 'Python environment not ready. Please install core dependencies first.',
+                    details: 'Install core dependencies: `pip install xarray`'
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
@@ -197,27 +212,71 @@ export class DataViewerPanel {
                 return;
             }
 
-            this._dataInfo = await this.dataProcessor.getDataInfo(this._currentFile);
+            this._dataInfo = (await this.dataProcessor.getDataInfo(this._currentFile))
 
             if (!this._dataInfo) {
                 this._panel.webview.postMessage({
                     command: 'error',
                     message: 'Failed to load data file. The file might be corrupted or in an unsupported format.',
-                    details: 'Supported formats: NetCDF (.nc, .netcdf), Zarr (.zarr), HDF5 (.h5, .hdf5)'
+                    details: `Supported formats: ${SUPPORTED_EXTENSIONS.join(', ')}`
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
                 return;
             }
 
+            // Logger.info(`Data info: ${JSON.stringify(this._dataInfo, null, 2)}`);
+
+            let proposeToInstallMissingPackages = false;
             if (this._dataInfo.error) {
+                let errorInfo = this._dataInfo.error;
+                let errorMessage = `Data processing error: ${errorInfo.error}`;
+                let errorDetails = 'This might be due to missing Python packages or file format issues.';
+                // Check for missing packages regardless of error type
+                if (errorInfo.format_info?.missing_packages && errorInfo.format_info.missing_packages.length > 0) {
+                    errorMessage = `Missing dependencies for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`;
+                    errorDetails = errorInfo.suggestion || `Install required packages: pip install ${errorInfo.format_info.missing_packages.join(' ')}`;
+                    proposeToInstallMissingPackages = true;
+                } else if (errorInfo.error_type === 'ImportError') {
+                    errorMessage = `Missing dependencies: ${errorInfo.error}`;
+                    errorDetails = errorInfo.suggestion || 'Install required packages using pip install <package_name>';
+                } else if (errorInfo.suggestion) {
+                    errorDetails = errorInfo.suggestion;
+                }
+
                 this._panel.webview.postMessage({
                     command: 'error',
-                    message: `Data processing error: ${this._dataInfo.error}`,
-                    details: 'This might be due to missing Python packages or file format issues.'
+                    message: errorMessage,
+                    details: errorDetails,
+                    error_type: errorInfo.error_type,
+                    format_info: errorInfo.format_info
                 });
                 // Track this panel as having an error
                 DataViewerPanel.addPanelWithError(this);
+
+
+                if (proposeToInstallMissingPackages) {
+                    // Show installation prompt for missing packages
+                      const installAction = await vscode.window.showWarningMessage(
+                        `Missing packages for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`,
+                        'Install Packages',
+                        'Show Details'
+                    );
+                    
+                    if (installAction === 'Install Packages') {
+                        try {
+                            await this.dataProcessor.pythonManagerInstance.installPackagesForFormat(
+                                errorInfo.format_info.missing_packages
+                            );
+                            // Refresh the data after successful installation
+                            await this._handleGetDataInfo();
+                        } catch (error) {
+                            vscode.window.showErrorMessage(
+                                `Failed to install packages: ${error}. Please install manually: pip install ${errorInfo.format_info.missing_packages.join(' ')}`
+                            );
+                        }
+                    }
+                }
                 return;
             }
 
@@ -226,9 +285,21 @@ export class DataViewerPanel {
 
             this._panel.webview.postMessage({
                 command: 'dataInfo',
-                data: this._dataInfo,
+                data: this._dataInfo?.result,
                 filePath: this._currentFile.fsPath,
                 lastLoadTime: this._lastLoadTime.toISOString()
+            });
+            this._panel.webview.postMessage({
+                command: 'htmlRepresentation',
+                data: this._dataInfo.result?.xarray_html_repr
+            });
+            this._panel.webview.postMessage({
+                command: 'textRepresentation',
+                data: this._dataInfo.result?.xarray_text_repr
+            });
+            this._panel.webview.postMessage({
+                command: 'showVersions',
+                data: this._dataInfo.result?.xarray_show_versions
             });
 
             // Remove this panel from error tracking since data loaded successfully
@@ -242,21 +313,6 @@ export class DataViewerPanel {
             });
             // Track this panel as having an error
             DataViewerPanel.addPanelWithError(this);
-        }
-    }
-
-    private async _handleGetDataSlice(variable: string, sliceSpec?: any) {
-        try {
-            const dataSlice = await this.dataProcessor.getDataSlice(this._currentFile, variable, sliceSpec);
-            this._panel.webview.postMessage({
-                command: 'dataSlice',
-                data: dataSlice
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load data slice: ${error}`
-            });
         }
     }
 
@@ -289,66 +345,6 @@ export class DataViewerPanel {
             this._panel.webview.postMessage({
                 command: 'error',
                 message: `Failed to create plot: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetVariableList() {
-        try {
-            const variables = await this.dataProcessor.getVariableList(this._currentFile);
-            this._panel.webview.postMessage({
-                command: 'variableList',
-                data: variables
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load variable list: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetHtmlRepresentation() {
-        try {
-            const htmlRepresentation = await this.dataProcessor.getHtmlRepresentation(this._currentFile);
-            this._panel.webview.postMessage({
-                command: 'htmlRepresentation',
-                data: htmlRepresentation
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load HTML representation: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetTextRepresentation() {
-        try {
-            const textRepresentation = await this.dataProcessor.getTextRepresentation(this._currentFile);
-            this._panel.webview.postMessage({
-                command: 'textRepresentation',
-                data: textRepresentation
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load text representation: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetShowVersions() {
-        try {
-            const showVersions = await this.dataProcessor.getShowVersions();
-            this._panel.webview.postMessage({
-                command: 'showVersions',
-                data: showVersions
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load show versions: ${error}`
             });
         }
     }
@@ -408,14 +404,8 @@ export class DataViewerPanel {
         }
     }
 
-    private _getHtmlForWebview(plottingCapabilities: boolean = false) {
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Data Viewer</title>
-    <style>
+    private _getCssStyles(): string {
+        return `
         body {
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
@@ -536,7 +526,7 @@ export class DataViewerPanel {
             color: var(--vscode-foreground);
         }
         
-        .dimensions, .variables {
+        .dimensions, .variables, .coordinates {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
@@ -599,7 +589,6 @@ export class DataViewerPanel {
             border-radius: 4px;
             padding: 10px;
             background-color: var(--vscode-editor-background);
-            /* font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace); */
             font-size: 12px;
         }
         
@@ -783,13 +772,30 @@ export class DataViewerPanel {
         details[open] summary {
             margin-bottom: 10px;
         }
-    </style>
-</head>
-<body>
+        `;
+    }
+
+    private _getHeaderHtml(plottingCapabilities: boolean): string {
+        return `
     <div class="header">
         <div class="title">Scientific Data Viewer</div>
         <div class="controls">
-            ${plottingCapabilities ? `
+            ${this._getPlottingControlsHtml(plottingCapabilities)}
+            <div id="timestamp" class="timestamp hidden">
+                <span class="timestamp-icon">🕒</span>
+                <span id="timestampText">Last loaded: --</span>
+            </div>
+            <button id="refreshButton">Refresh</button>
+        </div>
+    </div>`;
+    }
+
+    private _getPlottingControlsHtml(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
             <select id="variableSelect">
                 <option value="">Select a variable...</option>
             </select>
@@ -799,37 +805,52 @@ export class DataViewerPanel {
                 <option value="heatmap">Heatmap</option>
                 <option value="histogram">Histogram</option>
             </select>
-            <button id="plotButton" disabled>Create Plot</button>
-            ` : ''}
-            <div id="timestamp" class="timestamp hidden">
-                <span class="timestamp-icon">🕒</span>
-                <span id="timestampText">Last loaded: --</span>
-            </div>
-            <button id="refreshButton">Refresh</button>
-        </div>
-    </div>
-    
+            <button id="plotButton" disabled>Create Plot</button>`;
+    }
+
+    private _getLoadingAndErrorHtml(): string {
+        return `
     <div id="loading" class="loading">Loading data...</div>
-    <div id="error" class="error hidden"></div>
-    
+    <div id="error" class="error hidden"></div>`;
+    }
+
+    private _getContentHtml(plottingCapabilities: boolean): string {
+        return `
     <div id="content" class="hidden">
+        ${this._getFileInfoHtml()}
+        ${this._getDimensionsAndVariablesHtml()}
+        ${this._getHtmlRepresentationHtml()}
+        ${this._getTextRepresentationHtml()}
+        ${this._getTroubleshootingHtml()}
+        ${this._getPlottingSectionsHtml(plottingCapabilities)}
+    </div>`;
+    }
+
+    private _getFileInfoHtml(): string {
+        return `
         <div class="info-section">
             <h3>File Information</h3>
             <div id="filePathContainer" class="file-path-container hidden">
-            <p><strong>File Path:</strong></p>
-            <code id="filePathCode" class="file-path-code"></code>
-            <button id="copyPathButton" class="copy-button">
-            📋 Copy
-            </button>
+                <p><strong>File Path:</strong></p>
+                <code id="filePathCode" class="file-path-code"></code>
+                <button id="copyPathButton" class="copy-button">
+                    📋 Copy
+                </button>
             </div>
             <div id="fileInfo"></div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getHtmlRepresentationHtml(): string {
+        return `
         <div class="info-section">
             <h3>Xarray HTML Representation</h3>
             <div id="htmlRepresentation" class="html-representation"></div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getTextRepresentationHtml(): string {
+        return `
         <div class="info-section">
             <h3>Xarray Text Representation</h3>
             <div class="text-representation-container">
@@ -838,8 +859,11 @@ export class DataViewerPanel {
                 </button>
                 <div id="textRepresentation" class="text-representation"></div>
             </div>
-        </div>
-        
+        </div>`;
+    }
+
+    private _getTroubleshootingHtml(): string {
+        return `
         <div class="troubleshooting-section">
             <h3>Troubleshooting</h3>
             <details>
@@ -854,36 +878,68 @@ export class DataViewerPanel {
                 <summary>Show xarray version information</summary>
                 <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
             </details>
-        </div>
+        </div>`;
+    }
 
-        ${plottingCapabilities ? `
+    private _getDimensionsAndVariablesHtml(): string {
+        return `
         <div class="info-section">
             <h3>Dimensions</h3>
             <div id="dimensions" class="dimensions"></div>
+        </div>
+
+        <div class="info-section">
+            <h3>Coordinates</h3>
+            <div id="coordinates" class="coordinates"></div>
         </div>
         
         <div class="info-section">
             <h3>Variables</h3>
             <div id="variables" class="variables"></div>
-        </div>
-        ` : ''}
+        </div>`;
+    }
+
+    private _getPlottingSectionsHtml(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
         
-        ${plottingCapabilities ? `
+        return `
         <div class="info-section">
             <h3>Visualization</h3>
             <div id="plotContainer" class="plot-container"></div>
-        </div>
-        ` : ''}
-    </div>
+        </div>`;
+    }
 
-    <script>
+    private _getJavaScriptCode(plottingCapabilities: boolean): string {
+        return `
         const vscode = acquireVsCodeApi();
         let currentData = null;
         let selectedVariable = null;
         let lastLoadTime = null;
 
         // Event listeners
-        ${plottingCapabilities ? `
+        ${this._getEventListenersCode(plottingCapabilities)}
+        ${this._getMessageHandlerCode()}
+        ${this._getUtilityFunctionsCode()}
+        ${this._getInitializationCode()}
+        ${this._getDisplayFunctionsCode(plottingCapabilities)}
+        `;
+    }
+
+    private _getEventListenersCode(plottingCapabilities: boolean): string {
+        return `
+        ${this._getPlottingEventListenersCode(plottingCapabilities)}
+        ${this._getRefreshEventListenerCode()}
+        ${this._getCopyEventListenersCode()}`;
+    }
+
+    private _getPlottingEventListenersCode(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
         document.getElementById('variableSelect').addEventListener('change', (e) => {
             selectedVariable = e.target.value;
             document.getElementById('plotButton').disabled = !selectedVariable;
@@ -900,15 +956,20 @@ export class DataViewerPanel {
                     plotType: actualPlotType
                 });
             }
-        });
-        ` : ''}
+        });`;
+    }
 
+    private _getRefreshEventListenerCode(): string {
+        return `
         document.getElementById('refreshButton').addEventListener('click', () => {
             // Show loading state for timestamp
             updateTimestamp(null, true);
             vscode.postMessage({ command: 'getDataInfo' });
-        });
+        });`;
+    }
 
+    private _getCopyEventListenersCode(): string {
+        return `
         document.getElementById('copyPathButton').addEventListener('click', async () => {
             const filePathCode = document.getElementById('filePathCode');
             const copyButton = document.getElementById('copyPathButton');
@@ -955,8 +1016,11 @@ export class DataViewerPanel {
                     }, 2000);
                 }
             }
-        });
+        });`;
+    }
 
+    private _getMessageHandlerCode(): string {
+        return `
         // Handle messages from the extension
         window.addEventListener('message', event => {
             const message = event.data;
@@ -968,16 +1032,7 @@ export class DataViewerPanel {
                     displayDataInfo(message.data, message.filePath);
                     updateTimestamp(message.lastLoadTime);
                     break;
-                ${plottingCapabilities ? `
-                case 'variableList':
                     populateVariableSelect(message.data);
-                    break;
-                ` : ''}
-                ${plottingCapabilities ? `
-                case 'plotData':
-                    displayPlot(message.data);
-                    break;
-                ` : ''}
                 case 'htmlRepresentation':
                     displayHtmlRepresentation(message.data);
                     break;
@@ -994,11 +1049,15 @@ export class DataViewerPanel {
                     displayExtensionConfig(message.data);
                     break;
                 case 'error':
-                    showError(message.message, message.details);
+                    showError(message.message, message.details, message.error_type, message.format_info);
                     break;
             }
-        });
+        });`;
+    }
 
+
+    private _getUtilityFunctionsCode(): string {
+        return `
         function updateTimestamp(isoString, isLoading = false) {
             const timestampElement = document.getElementById('timestamp');
             const timestampText = document.getElementById('timestampText');
@@ -1014,26 +1073,30 @@ export class DataViewerPanel {
                 const diffHours = Math.floor(diffMs / 3600000);
                 const diffDays = Math.floor(diffMs / 86400000);
                 
-                // let timeAgo;
-                // if (diffMinutes < 1) {
-                //     timeAgo = 'just now';
-                // } else if (diffMinutes < 60) {
-                //     timeAgo = \`\${diffMinutes}m ago\`;
-                // } else if (diffHours < 24) {
-                //     timeAgo = \`\${diffHours}h ago\`;
-                // } else {
-                //     timeAgo = \`\${diffDays}d ago\`;
-                // }
-                
                 const timeString = date.toLocaleTimeString();
                 timestampText.textContent = \`Last loaded: \${timeString}\`;
-                // timestampText.textContent = \`Last loaded: \${timeString} (\${timeAgo})\`;
                 timestampElement.classList.remove('hidden');
             } else {
                 timestampElement.classList.add('hidden');
             }
         }
 
+        function formatFileSize(bytes) {
+            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 B';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }`;
+    }
+
+    private _getInitializationCode(): string {
+        return `
+        // Initial load
+        vscode.postMessage({ command: 'getDataInfo' });`;
+    }
+
+    private _getDisplayFunctionsCode(plottingCapabilities: boolean): string {
+        return `
         function displayDataInfo(data, filePath) {
             if (!data) {
                 showError('No data available');
@@ -1060,14 +1123,46 @@ export class DataViewerPanel {
                 
             // Display file information
             const fileInfo = document.getElementById('fileInfo');
-            fileInfo.innerHTML = \`
-                <p><strong>Format:</strong> \${data.format || 'Unknown'}</p>
-                \${data.fileSize ? \`
-                    <p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\` : ''}
-            \`;
+            let formatInfo = \`<p><strong>Format:</strong> \${data.format || 'Unknown'}</p>\`;
+            
+            if (data.format_info) {
+                formatInfo += \`
+                    <p><strong>File Extension:</strong> \${data.format_info.extension}</p>
+                    <p><strong>Available Engines:</strong> \${data.format_info.available_engines.join(', ') || 'None'}</p>
+                    \${data.used_engine ? \`<p><strong>Used Engine:</strong> \${data.used_engine}</p>\` : ''}
+                \`;
+            }
+            
+            if (data.fileSize) {
+                formatInfo += \`<p><strong>Size:</strong> \${formatFileSize(data.fileSize)}</p>\`;
+            }
+            
+            fileInfo.innerHTML = formatInfo;
 
+            ${this._getDimensionsAndVariablesDisplayCode()}
+            ${this._getPlottingDisplayCode(plottingCapabilities)}
 
-            ${plottingCapabilities ? `
+            // Request variable list for dropdown
+            ${plottingCapabilities ? `vscode.postMessage({ command: 'getVariableList' });` : ''}
+            
+            // Request Python path
+            vscode.postMessage({ command: 'getPythonPath' });
+            
+            // Request extension configuration
+            vscode.postMessage({ command: 'getExtensionConfig' });
+
+            // Show content
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+        }
+
+        ${this._getPlottingDisplayFunctions(plottingCapabilities)}
+        ${this._getRepresentationDisplayFunctions()}
+        ${this._getErrorHandlingFunctions()}`;
+    }
+
+    private _getDimensionsAndVariablesDisplayCode(): string {
+        return `
             // Display dimensions
             const dimensionsContainer = document.getElementById('dimensions');
             if (dimensionsContainer) {
@@ -1077,6 +1172,27 @@ export class DataViewerPanel {
                         .join('');
                 } else {
                     dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
+                }
+            }
+                
+            // Display coordinates
+            const coordinatesContainer = document.getElementById('coordinates');
+            if (coordinatesContainer) {
+                if (data.coordinates && data.coordinates.length > 0) {
+                    coordinatesContainer.innerHTML = data.coordinates
+                        .map(variable => \`
+                            <div class="variable-item" data-variable="\${variable.name}">
+                                <strong>\${variable.name}</strong><br>
+                                <small>
+                                    \${variable.dtype} \${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
+                                    \${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
+                                    \${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
+                                </small>
+                            </div>
+                        \`)
+                        .join('');
+                } else {
+                    coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
                 }
             }
 
@@ -1097,37 +1213,26 @@ export class DataViewerPanel {
                         \`)
                         .join('');
                 } else {
-                    variablesContainer.innerHTML = '<p>No variables found</p>';
+                    variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
                 }
-            }
-            ` : ''}
+            }`;
+    }
 
-            // Request variable list for dropdown
-            ${plottingCapabilities ? `
-            vscode.postMessage({ command: 'getVariableList' });
-            ` : ''}
-            
-            // Request HTML representation
-            vscode.postMessage({ command: 'getHtmlRepresentation' });
-            
-            // Request text representation
-            vscode.postMessage({ command: 'getTextRepresentation' });
-            
-            // Request show versions
-            vscode.postMessage({ command: 'getShowVersions' });
-            
-            // Request Python path
-            vscode.postMessage({ command: 'getPythonPath' });
-            
-            // Request extension configuration
-            vscode.postMessage({ command: 'getExtensionConfig' });
-
-            // Show content
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('content').classList.remove('hidden');
+    private _getPlottingDisplayCode(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
         }
+        
+        return `
+            // Plotting display code is handled by the plotting-specific functions`;
+    }
 
-        ${plottingCapabilities ? `
+    private _getPlottingDisplayFunctions(plottingCapabilities: boolean): string {
+        if (!plottingCapabilities) {
+            return '';
+        }
+        
+        return `
         function populateVariableSelect(variables) {
             const select = document.getElementById('variableSelect');
             select.innerHTML = '<option value="">Select a variable...</option>';
@@ -1146,9 +1251,11 @@ export class DataViewerPanel {
             } else {
                 container.innerHTML = '<p>Failed to generate plot</p>';
             }
-        }
-        ` : ''}
+        }`;
+    }
 
+    private _getRepresentationDisplayFunctions(): string {
+        return `
         function displayHtmlRepresentation(htmlData) {
             const container = document.getElementById('htmlRepresentation');
             if (htmlData) {
@@ -1196,32 +1303,57 @@ export class DataViewerPanel {
             } else {
                 container.textContent = 'Failed to load extension configuration';
             }
-        }
+        }`;
+    }
 
-        function showError(message, details = '') {
+    private _getErrorHandlingFunctions(): string {
+        return `
+        function showError(message, details = '', errorType = '', formatInfo = null) {
             const errorDiv = document.getElementById('error');
             
             // Format message to handle multi-line errors
             const formattedMessage = message.replace(/\\n/g, '<br>');
             const formattedDetails = details ? details.replace(/\\n/g, '<br>') : '';
             
+            let troubleshootingSteps = \`
+                <h4>💡 Troubleshooting Steps:</h4>
+                <ol>
+                    <li>Make sure Python is installed and accessible</li>
+                    <li>Install required packages: <code>pip install xarray</code></li>
+                    <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
+                    <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
+                    <li>Check VSCode Output panel for more details</li>
+                </ol>
+            \`;
+            
+            // Add specific troubleshooting for missing packages
+            if (errorType === 'ImportError' && formatInfo && formatInfo.missing_packages) {
+                troubleshootingSteps = \`
+                    <h4>💡 Missing Dependencies:</h4>
+                    <p>This file format requires additional packages that are not installed:</p>
+                    <ul>
+                        <li><strong>Missing packages:</strong> \${formatInfo.missing_packages.join(', ')}</li>
+                        <li><strong>File format:</strong> \${formatInfo.display_name} (\${formatInfo.extension})</li>
+                    </ul>
+                    <p><strong>Installation command:</strong></p>
+                    <code>pip install \${formatInfo.missing_packages.join(' ')}</code>
+                    <p style="margin-top: 10px;">After installation, refresh the data viewer to try again.</p>
+                \`;
+            }
+            
             errorDiv.innerHTML = \`
                 <h3>❌ Error</h3>
                 <p><strong>Message:</strong> \${formattedMessage}</p>
                 \${formattedDetails ? \`<p><strong>Details:</strong> \${formattedDetails}</p>\` : ''}
+                \${errorType ? \`<p><strong>Error Type:</strong> \${errorType}</p>\` : ''}
                 <div style="margin-top: 15px;">
-                    <h4>💡 Troubleshooting Steps:</h4>
-                    <ol>
-                        <li>Make sure Python is installed and accessible</li>
-                        <li>Install required packages: <code>pip install xarray netCDF4 zarr h5py numpy matplotlib</code></li>
-                        <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
-                        <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5)</li>
-                        <li>Check VSCode Output panel for more details</li>
-                    </ol>
-
-                    Note: If you see this message even after you have configured the Python interpreter, 
-                    you might need to wait a few moments for the Python environment to be initialized.
-                    This can happen if you opened the data viewer panel right after VSCode was opened.
+                    \${troubleshootingSteps}
+                    
+                    <p style="margin-top: 15px; font-style: italic;">
+                        Note: If you see this message even after you have configured the Python interpreter, 
+                        you might need to wait a few moments for the Python environment to be initialized.
+                        This can happen if you opened the data viewer panel right after VSCode was opened.
+                    </p>
                 </div>
             \`;
             errorDiv.classList.remove('hidden');
@@ -1233,17 +1365,28 @@ export class DataViewerPanel {
             const errorDiv = document.getElementById('error');
             errorDiv.classList.add('hidden');
             errorDiv.innerHTML = '';
-        }
+        }`;
+    }
 
-        function formatFileSize(bytes) {
-            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
-            if (bytes === 0) return '0 B';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-        }
+    private _getHtmlForWebview(plottingCapabilities: boolean = false) {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Data Viewer</title>
+    ${plottingCapabilities ? '<!-- plottingCapabilities: true -->' : ''}
+    <style>
+        ${this._getCssStyles()}
+    </style>
+</head>
+<body>
+    ${this._getHeaderHtml(plottingCapabilities)}
+    ${this._getLoadingAndErrorHtml()}
+    ${this._getContentHtml(plottingCapabilities)}
 
-        // Initial load
-        vscode.postMessage({ command: 'getDataInfo' });
+    <script>
+        ${this._getJavaScriptCode(plottingCapabilities)}
     </script>
 </body>
 </html>`;

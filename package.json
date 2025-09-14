@@ -1,8 +1,8 @@
 {
   "name": "scientific-data-viewer",
   "displayName": "Scientific Data Viewer",
-  "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, and more",
-  "version": "0.1.0",
+  "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
+  "version": "0.2.0",
   "publisher": "eschalk0",
   "icon": "media/icon.png",
   "engines": {
@@ -19,20 +19,32 @@
     "netcdf",
     "zarr",
     "hdf5",
+    "grib",
+    "geotiff",
+    "rasterio",
     "scientific-data",
     "xarray",
     "data-visualization",
     "climate-data",
-    "geospatial"
+    "geospatial",
+    "cfgrib",
+    "sentinel"
   ],
   "activationEvents": [
     "onLanguage:netcdf",
     "onLanguage:hdf5",
+    "onLanguage:grib",
+    "onLanguage:geotiff",
     "onCommand:scientificDataViewer.openViewer",
     "onFileSystem:netcdf",
     "onFileSystem:zarr",
+    "onFileSystem:grib",
+    "onFileSystem:geotiff",
     "onCustomEditor:netcdfEditor",
-    "onCustomEditor:hdf5Editor"
+    "onCustomEditor:hdf5Editor",
+    "onCustomEditor:zarrEditor",
+    "onCustomEditor:gribEditor",
+    "onCustomEditor:geotiffEditor"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -61,7 +73,7 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5",
+          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
           "command": "scientificDataViewer.openViewer",
           "group": "navigation"
         }
@@ -90,7 +102,9 @@
         "id": "netcdf",
         "extensions": [
           ".nc",
-          ".netcdf"
+          ".netcdf",
+          ".nc4",
+          ".cdf"
         ],
         "aliases": [
           "NetCDF",
@@ -109,6 +123,44 @@
           "hdf5"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "zarr",
+        "extensions": [
+          ".zarr"
+        ],
+        "aliases": [
+          "Zarr",
+          "zarr"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "grib",
+        "extensions": [
+          ".grib",
+          ".grib2"
+        ],
+        "aliases": [
+          "GRIB",
+          "grib"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "geotiff",
+        "extensions": [
+          ".tif",
+          ".tiff",
+          ".geotiff",
+          ".jp2",
+          ".jpeg2000"
+        ],
+        "aliases": [
+          "GeoTIFF",
+          "geotiff"
+        ],
+        "configuration": "./language-configuration.json"
       }
     ],
     "customEditors": [
@@ -121,6 +173,12 @@
           },
           {
             "filenamePattern": "*.netcdf"
+          },
+          {
+            "filenamePattern": "*.nc4"
+          },
+          {
+            "filenamePattern": "*.cdf"
           }
         ]
       },
@@ -133,6 +191,48 @@
           },
           {
             "filenamePattern": "*.hdf5"
+          }
+        ]
+      },
+      {
+        "viewType": "zarrEditor",
+        "displayName": "Zarr Data Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.zarr"
+          }
+        ]
+      },
+      {
+        "viewType": "gribEditor",
+        "displayName": "GRIB Data Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.grib"
+          },
+          {
+            "filenamePattern": "*.grib2"
+          }
+        ]
+      },
+      {
+        "viewType": "geotiffEditor",
+        "displayName": "GeoTIFF Data Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.tif"
+          },
+          {
+            "filenamePattern": "*.tiff"
+          },
+          {
+            "filenamePattern": "*.geotiff"
+          },
+          {
+            "filenamePattern": "*.jp2"
+          },
+          {
+            "filenamePattern": "*.jpeg2000"
           }
         ]
       }
@@ -182,7 +282,8 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.0",

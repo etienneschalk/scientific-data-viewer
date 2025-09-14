@@ -16,7 +16,8 @@
                 "format": [
                     "camelCase",
                     "PascalCase"
-                ]
+                ],
+                "leadingUnderscore": "allow"
             }
         ],
         "@typescript-eslint/semi": "warn",
