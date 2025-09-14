@@ -282,7 +282,8 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.0",

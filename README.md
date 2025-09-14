@@ -372,6 +372,17 @@ Then reload the development VSCode instance window: Ctrl+Shift+P Developer: Relo
    vsce publish
    ```
 
+### Publishing to Open VSX (for Cursor and other editors)
+
+To make the extension available in Cursor, VSCodium, and other VSCode-compatible editors:
+
+1. **Create Eclipse account** and sign Publisher Agreement at [open-vsx.org](https://open-vsx.org)
+2. **Generate access token** from your Open VSX profile
+3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
+4. **Publish**: `npm run openvsx-publish`
+
+See [PUBLISHING.md](PUBLISHING.md) for detailed Open VSX publishing instructions.
+
 ### Manual Publishing
 
 1. **Create a Personal Access Token**:
