@@ -8,6 +8,8 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 
 - [#001: Add support for all possible formats](./001-format-support.md) - **MOSTLY IMPLEMENTED** ✅ (with known limitations) - Core functionality
 - [#006: Fix interpreter error message handling](./006-interpreter-error-handling.md) - Bug fix
+- [#023: Support Tiling Grid S2 (Sentinel-2 SAFE)](./023-sentinel2-tiling-grid.md) - Core functionality enhancement
+- [#026: Optimize Python Script Calls](./026-python-script-optimization.md) - Performance optimization
 
 ### Medium Priority
 
@@ -23,6 +25,10 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#017: Better installed package detection](./017-package-detection.md) - Reliability
 - [#021: Fix tree view data provider](./021-tree-view-fix.md) - Bug fix
 - [#022: Improve error messages for extension readiness](./022-error-message-improvement.md) - User experience
+- [#024: Support Trishna Product with Custom Scripts](./024-trishna-product-support.md) - Specialized satellite data support
+- [#025: Generate Static Webview via Notebook](./025-static-webview-generation.md) - Export and visualization enhancement
+- [#027: Allow User-Configurable kwargs for xarray Products](./027-custom-xarray-kwargs.md) - Advanced user feature
+- [#028: Add Healthcheck System](./028-healthcheck-system.md) - Reliability and monitoring
 
 ### Low Priority
 
@@ -74,6 +80,15 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - Error handling
 - Configuration options
 - Custom scripts
+- Static webview generation
+- Health monitoring
+
+### Satellite Data Support
+
+- Sentinel-2 SAFE format
+- Trishna product support
+- Tiling grid systems
+- Custom satellite data processing
 
 ### Code Quality
 
