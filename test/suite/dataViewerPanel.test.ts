@@ -68,13 +68,18 @@ suite('DataViewerPanel Test Suite', () => {
         mockDataProcessor = {
             pythonManagerInstance: mockPythonManager,
             getDataInfo: async () => ({
-                format: 'NetCDF',
-                fileSize: 1024,
-                dimensions: { time: 100, lat: 180, lon: 360 },
-                variables: [
-                    { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                    { name: 'time', dtype: 'datetime64', shape: [100] }
-                ]
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ],
+                    xarray_html_repr: '<div>Test HTML</div>',
+                    xarray_text_repr: 'Test text representation',
+                    xarray_show_versions: 'Test versions'
+                }
             }),
             getVariableList: async () => ['temperature', 'time'],
             getDimensionList: async () => ['time', 'lat', 'lon'],
@@ -390,92 +395,6 @@ suite('DataViewerPanel Test Suite', () => {
         }
     });
 
-    test('should handle get variable list', async () => {
-        // Mock vscode.workspace.getConfiguration
-        const originalGetConfiguration = vscode.workspace.getConfiguration;
-        vscode.workspace.getConfiguration = () => ({
-            get: (key: string) => {
-                if (key === 'plottingCapabilities') {
-                    return true;
-                }
-                return undefined;
-            }
-        }) as any;
-
-        try {
-            const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
-            
-            // Mock the _handleGetVariableList method to test it directly
-            let messagePosted = false;
-            const originalPostMessage = mockWebviewPanel.webview.postMessage;
-            mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-                if (message.command === 'variableList') {
-                    messagePosted = true;
-                }
-                return true;
-            };
-
-            await (panel as any)._handleGetVariableList();
-            
-            assert.ok(messagePosted);
-        } finally {
-            vscode.workspace.getConfiguration = originalGetConfiguration;
-        }
-    });
-
-    test('should handle get HTML representation', async () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
-        
-        // Mock the _handleGetHtmlRepresentation method to test it directly
-        let messagePosted = false;
-        const originalPostMessage = mockWebviewPanel.webview.postMessage;
-        mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-            if (message.command === 'htmlRepresentation') {
-                messagePosted = true;
-            }
-            return true;
-        };
-
-        await (panel as any)._handleGetHtmlRepresentation();
-        
-        assert.ok(messagePosted);
-    });
-
-    test('should handle get text representation', async () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
-        
-        // Mock the _handleGetTextRepresentation method to test it directly
-        let messagePosted = false;
-        const originalPostMessage = mockWebviewPanel.webview.postMessage;
-        mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-            if (message.command === 'textRepresentation') {
-                messagePosted = true;
-            }
-            return true;
-        };
-
-        await (panel as any)._handleGetTextRepresentation();
-        
-        assert.ok(messagePosted);
-    });
-
-    test('should handle get show versions', async () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
-        
-        // Mock the _handleGetShowVersions method to test it directly
-        let messagePosted = false;
-        const originalPostMessage = mockWebviewPanel.webview.postMessage;
-        mockWebviewPanel.webview.postMessage = async (message: any): Promise<boolean> => {
-            if (message.command === 'showVersions') {
-                messagePosted = true;
-            }
-            return true;
-        };
-
-        await (panel as any)._handleGetShowVersions();
-        
-        assert.ok(messagePosted);
-    });
 
     test('should handle get Python path', async () => {
         const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);

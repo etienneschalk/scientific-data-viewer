@@ -14,37 +14,43 @@ suite('DataProcessor Test Suite', () => {
             executePythonScript: async (script: string) => {
                 // Mock response for testing
                 return {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ]
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        dimensions: { time: 100, lat: 180, lon: 360 },
+                        variables: [
+                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                            { name: 'time', dtype: 'datetime64', shape: [100] }
+                        ]
+                    }
                 };
             },
             executePythonFile: async (scriptPath: string, args: string[]) => {
                 // Mock response for testing
                 return {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ]
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        dimensions: { time: 100, lat: 180, lon: 360 },
+                        variables: [
+                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                            { name: 'time', dtype: 'datetime64', shape: [100] }
+                        ]
+                    }
                 };
             },
             executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
                 // Mock response for testing
                 return {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ]
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        dimensions: { time: 100, lat: 180, lon: 360 },
+                        variables: [
+                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                            { name: 'time', dtype: 'datetime64', shape: [100] }
+                        ]
+                    }
                 };
             }
         } as any;
@@ -186,19 +192,23 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (scriptPath: string, args: string[]) => {
                 // Mock response for empty file
                 return {
-                    format: 'NetCDF',
-                    fileSize: 0,
-                    dimensions: {},
-                    variables: []
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 0,
+                        dimensions: {},
+                        variables: []
+                    }
                 };
             },
             executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
                 // Mock response for empty file
                 return {
-                    format: 'NetCDF',
-                    fileSize: 0,
-                    dimensions: {},
-                    variables: []
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 0,
+                        dimensions: {},
+                        variables: []
+                    }
                 };
             }
         } as any;

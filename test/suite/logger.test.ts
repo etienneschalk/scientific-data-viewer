@@ -54,7 +54,7 @@ suite('Logger Test Suite', () => {
 
         Logger.info('Test info message');
         assert.ok(capturedMessage.includes('Test info message'));
-        assert.ok(capturedMessage.includes('[INFO]'));
+        assert.ok(capturedMessage.includes('[    INFO]'));
     });
 
     test('should log warn message', () => {
@@ -71,7 +71,7 @@ suite('Logger Test Suite', () => {
 
         Logger.warn('Test warn message');
         assert.ok(capturedMessage.includes('Test warn message'));
-        assert.ok(capturedMessage.includes('[WARN]'));
+        assert.ok(capturedMessage.includes('[    WARN]'));
     });
 
     test('should log error message', () => {
@@ -88,7 +88,7 @@ suite('Logger Test Suite', () => {
 
         Logger.error('Test error message');
         assert.ok(capturedMessage.includes('Test error message'));
-        assert.ok(capturedMessage.includes('[ERROR]'));
+        assert.ok(capturedMessage.includes('[   ERROR]'));
     });
 
     test('should log debug message', () => {
@@ -105,7 +105,7 @@ suite('Logger Test Suite', () => {
 
         Logger.debug('Test debug message');
         assert.ok(capturedMessage.includes('Test debug message'));
-        assert.ok(capturedMessage.includes('[DEBUG]'));
+        assert.ok(capturedMessage.includes('[   DEBUG]'));
     });
 
     test('should log with custom level', () => {
@@ -122,7 +122,7 @@ suite('Logger Test Suite', () => {
 
         Logger.log('Test custom message', 'info');
         assert.ok(capturedMessage.includes('Test custom message'));
-        assert.ok(capturedMessage.includes('[INFO]'));
+        assert.ok(capturedMessage.includes('[    INFO]'));
     });
 
     test('should include timestamp in log messages', () => {
@@ -178,7 +178,7 @@ suite('Logger Test Suite', () => {
         (Logger as any).outputChannel = mockOutputChannel;
 
         Logger.info('');
-        assert.ok(capturedMessage.includes('[INFO]'));
+        assert.ok(capturedMessage.includes('[    INFO]'));
     });
 
     test('should handle special characters in message', () => {
@@ -316,7 +316,7 @@ suite('Logger Test Suite', () => {
 
             method(`Test ${level} message`);
             assert.ok(capturedMessage.includes(`Test ${level} message`));
-            assert.ok(capturedMessage.includes(`[${level.toUpperCase()}]`));
+            assert.ok(capturedMessage.includes(`[${level.toUpperCase().padStart(8, " ")}]`));
         });
     });
 

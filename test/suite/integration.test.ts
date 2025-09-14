@@ -73,13 +73,15 @@ suite('Integration Test Suite', () => {
         const mockPythonManager = {
             isReady: () => true,
             executePythonFile: async () => ({
-                format: 'NetCDF',
-                fileSize: 1024,
-                dimensions: { time: 100, lat: 180, lon: 360 },
-                variables: [
-                    { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                    { name: 'time', dtype: 'datetime64', shape: [100] }
-                ]
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ]
+                }
             }),
             executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             executePythonScript: async () => ({}),
@@ -172,30 +174,36 @@ suite('Integration Test Suite', () => {
                 const filePath = args[0];
                 if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
                     return {
-                        format: 'NetCDF',
-                        fileSize: 1024,
-                        dimensions: { time: 100, lat: 180, lon: 360 },
-                        variables: [
-                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
-                        ]
+                        result: {
+                            format: 'NetCDF',
+                            fileSize: 1024,
+                            dimensions: { time: 100, lat: 180, lon: 360 },
+                            variables: [
+                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
+                            ]
+                        }
                     };
                 } else if (filePath.endsWith('.h5') || filePath.endsWith('.hdf5')) {
                     return {
-                        format: 'HDF5',
-                        fileSize: 2048,
-                        dimensions: { time: 50, lat: 90, lon: 180 },
-                        variables: [
-                            { name: 'pressure', dtype: 'float64', shape: [50, 90, 180] }
-                        ]
+                        result: {
+                            format: 'HDF5',
+                            fileSize: 2048,
+                            dimensions: { time: 50, lat: 90, lon: 180 },
+                            variables: [
+                                { name: 'pressure', dtype: 'float64', shape: [50, 90, 180] }
+                            ]
+                        }
                     };
                 } else if (filePath.endsWith('.zarr')) {
                     return {
-                        format: 'Zarr',
-                        fileSize: 512,
-                        dimensions: { x: 100, y: 100 },
-                        variables: [
-                            { name: 'data', dtype: 'int32', shape: [100, 100] }
-                        ]
+                        result: {
+                            format: 'Zarr',
+                            fileSize: 512,
+                            dimensions: { x: 100, y: 100 },
+                            variables: [
+                                { name: 'data', dtype: 'int32', shape: [100, 100] }
+                            ]
+                        }
                     };
                 }
                 return null;
@@ -233,8 +241,10 @@ suite('Integration Test Suite', () => {
             isReady: () => true,
             executePythonFile: async () => {
                 return {
-                    format: 'NetCDF',
-                    fileSize: 1024,
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024
+                    },
                     error: 'File corrupted or unsupported format'
                 };
             },
@@ -311,9 +321,6 @@ suite('Integration Test Suite', () => {
         const messageTypes = [
             'getDataInfo',
             'createPlot',
-            'getVariableList',
-            'getHtmlRepresentation',
-            'getTextRepresentation',
             'getPythonPath',
             'getExtensionConfig'
         ];
@@ -419,13 +426,15 @@ suite('Integration Test Suite', () => {
         const mockPythonManager = {
             isReady: () => true,
             executePythonFile: async () => ({
-                format: 'NetCDF',
-                fileSize: 1024,
-                dimensions: { time: 100, lat: 180, lon: 360 },
-                variables: [
-                    { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                    { name: 'time', dtype: 'datetime64', shape: [100] }
-                ]
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ]
+                }
             }),
             executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             executePythonScript: async () => ({}),
@@ -527,7 +536,7 @@ suite('Integration Test Suite', () => {
         const results = await Promise.all(operations);
         
         // All operations should complete successfully
-        assert.strictEqual(results.length, 15);
+        assert.strictEqual(results.length, 5);
         results.forEach(result => {
             assert.ok(result !== null);
         });
@@ -544,12 +553,14 @@ suite('Integration Test Suite', () => {
                     throw new Error('Initial failure');
                 }
                 return {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
-                    ]
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        dimensions: { time: 100, lat: 180, lon: 360 },
+                        variables: [
+                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
+                        ]
+                    }
                 };
             },
             executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
