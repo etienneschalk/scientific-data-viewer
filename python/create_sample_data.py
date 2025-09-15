@@ -1250,6 +1250,359 @@ def create_sample_netcdf4():
     return output_file
 
 
+def create_sample_netcdf_many_vars():
+    """Create a sample NetCDF file with many variables and attributes for stress testing."""
+    output_file = "sample_data_many_vars.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"📊 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("📊 Creating sample NetCDF file with many variables and attributes...")
+
+    # Create small dimensions to keep file size manageable
+    time = np.arange(0, 5, 1)  # 5 time steps
+    lat = np.linspace(-10, 10, 10)  # 10 latitude points
+    lon = np.linspace(-10, 10, 10)  # 10 longitude points
+    depth = np.array([0, 5, 10])  # 3 depth levels
+
+    # Set random seed for reproducible data
+    np.random.seed(42)
+
+    # Create data variables dictionary
+    data_vars = {}
+
+    # Generate 100+ variables with small data arrays
+    variable_categories = [
+        ("temperature", "Celsius", "air_temperature"),
+        ("pressure", "hPa", "surface_air_pressure"),
+        ("humidity", "%", "relative_humidity"),
+        ("wind_speed", "m/s", "wind_speed"),
+        ("wind_direction", "degrees", "wind_from_direction"),
+        ("precipitation", "mm", "precipitation_amount"),
+        ("cloud_cover", "%", "cloud_area_fraction"),
+        ("visibility", "km", "visibility_in_air"),
+        ("solar_radiation", "W/m²", "surface_downwelling_shortwave_flux_in_air"),
+        ("albedo", "1", "surface_albedo"),
+    ]
+
+    # Create 10 variables for each category (10 * 10 = 100 variables)
+    for i in range(10):
+        for base_name, units, standard_name in variable_categories:
+            var_name = f"{base_name}_{i:02d}"
+
+            # Create small random data with different patterns
+            if "temperature" in base_name:
+                data = (
+                    20
+                    + 10 * np.sin(2 * np.pi * i / 10)
+                    + np.random.normal(0, 2, (5, 3, 10, 10))
+                )
+            elif "pressure" in base_name:
+                data = (
+                    1013.25
+                    + 20 * np.cos(2 * np.pi * i / 10)
+                    + np.random.normal(0, 5, (5, 3, 10, 10))
+                )
+            elif "humidity" in base_name:
+                data = (
+                    50
+                    + 30 * np.sin(2 * np.pi * i / 10)
+                    + np.random.normal(0, 10, (5, 3, 10, 10))
+                )
+            elif "wind" in base_name:
+                data = (
+                    5
+                    + 10 * np.sin(2 * np.pi * i / 10)
+                    + np.random.normal(0, 2, (5, 3, 10, 10))
+                )
+            else:
+                data = np.random.normal(0, 1, (5, 3, 10, 10))
+
+            # Ensure data is within reasonable bounds
+            if "humidity" in base_name or "cloud_cover" in base_name:
+                data = np.clip(data, 0, 100)
+            elif "albedo" in base_name:
+                data = np.clip(data, 0, 1)
+            elif "visibility" in base_name:
+                data = np.clip(data, 0, 50)
+
+            data_vars[var_name] = (
+                ["time", "depth", "lat", "lon"],
+                data.astype(np.float32),
+                {
+                    "long_name": f"{base_name.replace('_', ' ').title()} {i:02d}",
+                    "units": units,
+                    "standard_name": standard_name,
+                    "valid_range": [float(np.min(data)), float(np.max(data))],
+                    "missing_value": -9999.0,
+                    "description": f"Sample {base_name} data variable number {i:02d}",
+                    "source": "Generated for testing",
+                    "comment": f"This is variable {i + 1} of 100 in the stress test dataset",
+                },
+            )
+
+    # Create coordinates
+    coords = {
+        "time": (
+            ["time"],
+            time,
+            {
+                "long_name": "Time",
+                "units": "days since 2020-01-01",
+                "standard_name": "time",
+                "calendar": "gregorian",
+                "axis": "T",
+            },
+        ),
+        "depth": (
+            ["depth"],
+            depth,
+            {
+                "long_name": "Depth",
+                "units": "m",
+                "positive": "down",
+                "axis": "Z",
+                "standard_name": "depth",
+            },
+        ),
+        "lat": (
+            ["lat"],
+            lat,
+            {
+                "long_name": "Latitude",
+                "units": "degrees_north",
+                "standard_name": "latitude",
+                "axis": "Y",
+            },
+        ),
+        "lon": (
+            ["lon"],
+            lon,
+            {
+                "long_name": "Longitude",
+                "units": "degrees_east",
+                "standard_name": "longitude",
+                "axis": "X",
+            },
+        ),
+    }
+
+    # Create dataset
+    ds = xr.Dataset(data_vars, coords=coords)
+
+    # Add 100+ global attributes
+    global_attrs = {
+        # Basic metadata
+        "title": "Sample NetCDF with Many Variables and Attributes",
+        "description": "Test dataset with 100+ variables and 100+ attributes for stress testing the VSCode extension",
+        "institution": "Scientific Data Viewer Test Center",
+        "source": "Generated for testing purposes",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.8",
+        "featureType": "grid",
+        "data_type": "scientific_test_data",
+        # Contact information
+        "contact": "test@example.com",
+        "contact_person": "Test User",
+        "contact_organization": "Test Organization",
+        "contact_phone": "+1-555-0123",
+        "contact_address": "123 Test Street, Test City, TC 12345",
+        # Data characteristics
+        "total_variables": 100,
+        "total_attributes": 120,
+        "data_size": "small",
+        "purpose": "stress_testing",
+        "test_type": "many_variables_attributes",
+        "file_format": "NetCDF-4",
+        "compression": "zlib",
+        "chunk_sizes": "optimized",
+        # Geographic information
+        "geospatial_lat_min": float(np.min(lat)),
+        "geospatial_lat_max": float(np.max(lat)),
+        "geospatial_lon_min": float(np.min(lon)),
+        "geospatial_lon_max": float(np.max(lon)),
+        "geospatial_vertical_min": float(np.min(depth)),
+        "geospatial_vertical_max": float(np.max(depth)),
+        "geospatial_vertical_positive": "down",
+        "geospatial_vertical_units": "m",
+        "geospatial_lat_units": "degrees_north",
+        "geospatial_lon_units": "degrees_east",
+        # Temporal information
+        "time_coverage_start": "2020-01-01T00:00:00Z",
+        "time_coverage_end": "2020-01-05T00:00:00Z",
+        "time_coverage_duration": "P4D",
+        "time_coverage_resolution": "P1D",
+        # Processing information
+        "processing_level": "L1",
+        "processing_software": "Python xarray",
+        "processing_version": "0.20.0",
+        "processing_date": datetime.now().strftime("%Y-%m-%d"),
+        "processing_center": "Test Processing Center",
+        "processing_algorithm": "random_generation",
+        # Quality information
+        "quality_control": "automated",
+        "quality_flag": "good",
+        "quality_assessment": "test_data",
+        "data_quality": "synthetic",
+        "uncertainty": "not_applicable",
+        # References and citations
+        "references": "Test reference 1, Test reference 2",
+        "citation": "Test Dataset (2024) - Generated for VSCode Extension Testing",
+        "doi": "10.1234/test.2024.001",
+        "publication_date": "2024-01-01",
+        "version": "1.0",
+        # Technical specifications
+        "netcdf_version": "4.0",
+        "hdf5_version": "1.10.0",
+        "zlib_version": "1.2.11",
+        "creation_tool": "xarray",
+        "creation_tool_version": "0.20.0",
+        "python_version": "3.9.0",
+        "numpy_version": "1.21.0",
+        # Data lineage
+        "parent_experiment": "test_experiment",
+        "parent_experiment_id": "test_exp_001",
+        "experiment_id": "test_exp_001_v1",
+        "sub_experiment": "none",
+        "sub_experiment_id": "none",
+        "variant_label": "test_variant",
+        # Additional metadata
+        "keywords": "test, scientific, data, variables, attributes, stress, testing",
+        "keywords_vocabulary": "GCMD",
+        "platform": "test_platform",
+        "platform_name": "Test Platform",
+        "platform_type": "virtual",
+        "sensor": "test_sensor",
+        "sensor_name": "Test Sensor",
+        "sensor_type": "synthetic",
+        # Data access
+        "license": "CC BY 4.0",
+        "access_rights": "public",
+        "use_constraints": "none",
+        "distribution_statement": "Test data for development purposes only",
+        "data_license": "Creative Commons Attribution 4.0 International",
+        # Additional test attributes (to reach 100+)
+        "test_attr_001": "value_001",
+        "test_attr_002": "value_002",
+        "test_attr_003": "value_003",
+        "test_attr_004": "value_004",
+        "test_attr_005": "value_005",
+        "test_attr_006": "value_006",
+        "test_attr_007": "value_007",
+        "test_attr_008": "value_008",
+        "test_attr_009": "value_009",
+        "test_attr_010": "value_010",
+        "test_attr_011": "value_011",
+        "test_attr_012": "value_012",
+        "test_attr_013": "value_013",
+        "test_attr_014": "value_014",
+        "test_attr_015": "value_015",
+        "test_attr_016": "value_016",
+        "test_attr_017": "value_017",
+        "test_attr_018": "value_018",
+        "test_attr_019": "value_019",
+        "test_attr_020": "value_020",
+        "test_attr_021": "value_021",
+        "test_attr_022": "value_022",
+        "test_attr_023": "value_023",
+        "test_attr_024": "value_024",
+        "test_attr_025": "value_025",
+        "test_attr_026": "value_026",
+        "test_attr_027": "value_027",
+        "test_attr_028": "value_028",
+        "test_attr_029": "value_029",
+        "test_attr_030": "value_030",
+        "test_attr_031": "value_031",
+        "test_attr_032": "value_032",
+        "test_attr_033": "value_033",
+        "test_attr_034": "value_034",
+        "test_attr_035": "value_035",
+        "test_attr_036": "value_036",
+        "test_attr_037": "value_037",
+        "test_attr_038": "value_038",
+        "test_attr_039": "value_039",
+        "test_attr_040": "value_040",
+        "test_attr_041": "value_041",
+        "test_attr_042": "value_042",
+        "test_attr_043": "value_043",
+        "test_attr_044": "value_044",
+        "test_attr_045": "value_045",
+        "test_attr_046": "value_046",
+        "test_attr_047": "value_047",
+        "test_attr_048": "value_048",
+        "test_attr_049": "value_049",
+        "test_attr_050": "value_050",
+        "test_attr_051": "value_051",
+        "test_attr_052": "value_052",
+        "test_attr_053": "value_053",
+        "test_attr_054": "value_054",
+        "test_attr_055": "value_055",
+        "test_attr_056": "value_056",
+        "test_attr_057": "value_057",
+        "test_attr_058": "value_058",
+        "test_attr_059": "value_059",
+        "test_attr_060": "value_060",
+        "test_attr_061": "value_061",
+        "test_attr_062": "value_062",
+        "test_attr_063": "value_063",
+        "test_attr_064": "value_064",
+        "test_attr_065": "value_065",
+        "test_attr_066": "value_066",
+        "test_attr_067": "value_067",
+        "test_attr_068": "value_068",
+        "test_attr_069": "value_069",
+        "test_attr_070": "value_070",
+        "test_attr_071": "value_071",
+        "test_attr_072": "value_072",
+        "test_attr_073": "value_073",
+        "test_attr_074": "value_074",
+        "test_attr_075": "value_075",
+        "test_attr_076": "value_076",
+        "test_attr_077": "value_077",
+        "test_attr_078": "value_078",
+        "test_attr_079": "value_079",
+        "test_attr_080": "value_080",
+        "test_attr_081": "value_081",
+        "test_attr_082": "value_082",
+        "test_attr_083": "value_083",
+        "test_attr_084": "value_084",
+        "test_attr_085": "value_085",
+        "test_attr_086": "value_086",
+        "test_attr_087": "value_087",
+        "test_attr_088": "value_088",
+        "test_attr_089": "value_089",
+        "test_attr_090": "value_090",
+        "test_attr_091": "value_091",
+        "test_attr_092": "value_092",
+        "test_attr_093": "value_093",
+        "test_attr_094": "value_094",
+        "test_attr_095": "value_095",
+        "test_attr_096": "value_096",
+        "test_attr_097": "value_097",
+        "test_attr_098": "value_098",
+        "test_attr_099": "value_099",
+        "test_attr_100": "value_100",
+    }
+
+    # Add global attributes to dataset
+    ds.attrs = global_attrs
+
+    # Save to NetCDF with compression
+    ds.to_netcdf(
+        output_file,
+        engine="netcdf4",
+        encoding={var: {"zlib": True, "complevel": 6} for var in ds.data_vars},
+    )
+
+    print(
+        f"✅ Created {output_file} with {len(ds.data_vars)} variables and {len(ds.attrs)} attributes"
+    )
+    return output_file
+
+
 def main():
     """Create all sample data files."""
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
@@ -1272,6 +1625,10 @@ def main():
         netcdf4_file = create_sample_netcdf4()
         if netcdf4_file:
             created_files.append((netcdf4_file, "NetCDF4"))
+
+        many_vars_netcdf_file = create_sample_netcdf_many_vars()
+        if many_vars_netcdf_file:
+            created_files.append((many_vars_netcdf_file, "NetCDF (Many Variables)"))
 
         print("\n📁 Creating HDF5 files...")
         hdf5_file = create_sample_hdf5()

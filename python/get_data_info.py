@@ -22,6 +22,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+XARRAY_MAX_ROWS_FOR_TEXT_REPRESENTATION = 1000
+
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP = {
     # Built-in formats
@@ -212,6 +214,9 @@ def get_file_info(file_path):
         xds, used_engine = open_datatree_with_fallback(file_path, file_format_info)
 
         # Extract information
+        with xr.set_options(display_max_rows=XARRAY_MAX_ROWS_FOR_TEXT_REPRESENTATION):
+            repr_text = str(xds)
+
         info = {
             "format": file_format_info["display_name"],
             "format_info": file_format_info,
@@ -224,7 +229,7 @@ def get_file_info(file_path):
             # Get HTML representation using xarray's built-in HTML representation
             "xarray_html_repr": xds._repr_html_(),
             # Get text representation using xarray's built-in text representation
-            "xarray_text_repr": str(xds),
+            "xarray_text_repr": repr_text,
             "xarray_show_versions": versions_text,
         }
 
