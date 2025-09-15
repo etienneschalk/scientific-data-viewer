@@ -772,6 +772,36 @@ export class DataViewerPanel {
         details[open] summary {
             margin-bottom: 10px;
         }
+        
+        .troubleshooting-content-container {
+            position: relative;
+        }
+        
+        .troubleshooting-copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 10;
+        }
+        
+        .troubleshooting-copy-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .troubleshooting-copy-button.copied {
+            background-color: var(--vscode-charts-green);
+            color: var(--vscode-foreground);
+        }
         `;
     }
 
@@ -868,15 +898,30 @@ export class DataViewerPanel {
             <h3>Troubleshooting</h3>
             <details>
                 <summary>Python Interpreter Path</summary>
-                <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
+                <div class="troubleshooting-content-container">
+                    <button id="pythonPathCopyButton" class="troubleshooting-copy-button hidden">
+                        📋 Copy
+                    </button>
+                    <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
+                </div>
             </details>
             <details>
                 <summary>Extension Configuration</summary>
-                <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
+                <div class="troubleshooting-content-container">
+                    <button id="extensionConfigCopyButton" class="troubleshooting-copy-button hidden">
+                        📋 Copy
+                    </button>
+                    <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
+                </div>
             </details>
             <details>
                 <summary>Show xarray version information</summary>
-                <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
+                <div class="troubleshooting-content-container">
+                    <button id="showVersionsCopyButton" class="troubleshooting-copy-button hidden">
+                        📋 Copy
+                    </button>
+                    <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
+                </div>
             </details>
         </div>`;
     }
@@ -1010,6 +1055,79 @@ export class DataViewerPanel {
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy text representation:', err);
+                    copyButton.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
+        });
+
+        // Troubleshooting copy button event listeners
+        document.getElementById('pythonPathCopyButton').addEventListener('click', async () => {
+            const pythonPath = document.getElementById('pythonPath');
+            const copyButton = document.getElementById('pythonPathCopyButton');
+            const text = pythonPath.textContent;
+            
+            if (text && text !== 'Loading Python path...' && text !== 'No Python interpreter configured') {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    copyButton.textContent = '✓ Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy Python path:', err);
+                    copyButton.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
+        });
+
+        document.getElementById('extensionConfigCopyButton').addEventListener('click', async () => {
+            const extensionConfig = document.getElementById('extensionConfig');
+            const copyButton = document.getElementById('extensionConfigCopyButton');
+            const text = extensionConfig.textContent;
+            
+            if (text && text !== 'Loading configuration...' && text !== 'Failed to load extension configuration') {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    copyButton.textContent = '✓ Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy extension config:', err);
+                    copyButton.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
+        });
+
+        document.getElementById('showVersionsCopyButton').addEventListener('click', async () => {
+            const showVersions = document.getElementById('showVersions');
+            const copyButton = document.getElementById('showVersionsCopyButton');
+            const text = showVersions.textContent;
+            
+            if (text && text !== 'Loading version information...' && text !== 'Failed to load version information') {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    copyButton.textContent = '✓ Copied!';
+                    copyButton.classList.add('copied');
+                    setTimeout(() => {
+                        copyButton.textContent = '📋 Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy version information:', err);
                     copyButton.textContent = '❌ Failed';
                     setTimeout(() => {
                         copyButton.textContent = '📋 Copy';
@@ -1280,28 +1398,37 @@ export class DataViewerPanel {
 
         function displayShowVersions(versionsData) {
             const container = document.getElementById('showVersions');
+            const copyButton = document.getElementById('showVersionsCopyButton');
             if (versionsData) {
                 container.textContent = versionsData;
+                copyButton.classList.remove('hidden');
             } else {
                 container.textContent = 'Failed to load version information';
+                copyButton.classList.add('hidden');
             }
         }
 
         function displayPythonPath(pythonPath) {
             const container = document.getElementById('pythonPath');
+            const copyButton = document.getElementById('pythonPathCopyButton');
             if (pythonPath) {
                 container.textContent = pythonPath;
+                copyButton.classList.remove('hidden');
             } else {
                 container.textContent = 'No Python interpreter configured';
+                copyButton.classList.add('hidden');
             }
         }
 
         function displayExtensionConfig(configData) {
             const container = document.getElementById('extensionConfig');
+            const copyButton = document.getElementById('extensionConfigCopyButton');
             if (configData) {
                 container.textContent = configData;
+                copyButton.classList.remove('hidden');
             } else {
                 container.textContent = 'Failed to load extension configuration';
+                copyButton.classList.add('hidden');
             }
         }`;
     }
