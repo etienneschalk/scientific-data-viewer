@@ -5,13 +5,14 @@ export class JavaScriptGenerator {
     static getCode(plottingCapabilities: boolean): string {
         return `
         const vscode = acquireVsCodeApi();
+        const messageBus = new WebviewMessageBus(vscode);
         let currentData = null;
         let selectedVariable = null;
         let lastLoadTime = null;
 
         // Event listeners
         ${this.getEventListenersCode(plottingCapabilities)}
-        ${this.getMessageHandlerCode()}
+        ${this.getNewMessageHandlerCode()}
         ${this.getUtilityFunctionsCode()}
         ${this.getInitializationCode()}
         ${this.getDisplayFunctionsCode(plottingCapabilities)}
@@ -36,24 +37,35 @@ export class JavaScriptGenerator {
             document.getElementById('plotButton').disabled = !selectedVariable;
         });
 
-        document.getElementById('plotButton').addEventListener('click', () => {
+        document.getElementById('plotButton').addEventListener('click', async () => {
             if (selectedVariable) {
                 const plotType = document.getElementById('plotTypeSelect').value;
                 const actualPlotType = plotType === 'auto' ? 'line' : plotType;
-                vscode.postMessage({
-                    command: 'createPlot',
-                    variable: selectedVariable,
-                    plotType: actualPlotType
-                });
+                try {
+                    const plotData = await messageBus.createPlot(selectedVariable, actualPlotType);
+                    displayPlot(plotData);
+                } catch (error) {
+                    console.error('Failed to create plot:', error);
+                    showError('Failed to create plot: ' + error.message);
+                }
             }
         });`;
     }
 
     private static getRefreshEventListenerCode(): string {
         return `
-        document.getElementById('refreshButton').addEventListener('click', () => {
+        document.getElementById('refreshButton').addEventListener('click', async () => {
             updateTimestamp(null, true);
-            vscode.postMessage({ command: 'getDataInfo' });
+            try {
+                const data = await messageBus.refresh();
+                if (data) {
+                    displayDataInfo(data.data, data.filePath);
+                    updateTimestamp(data.lastLoadTime);
+                }
+            } catch (error) {
+                console.error('Failed to refresh data:', error);
+                showError('Failed to refresh data: ' + error.message);
+            }
         });`;
     }
 
@@ -181,38 +193,27 @@ export class JavaScriptGenerator {
         });`;
     }
 
-    private static getMessageHandlerCode(): string {
+    private static getNewMessageHandlerCode(): string {
         return `
-        // Handle messages from the extension
-        window.addEventListener('message', event => {
-            const message = event.data;
-            
-            switch (message.command) {
-                case 'dataInfo':
-                    currentData = message.data;
-                    lastLoadTime = message.lastLoadTime;
-                    displayDataInfo(message.data, message.filePath);
-                    updateTimestamp(message.lastLoadTime);
-                    break;
-                case 'htmlRepresentation':
-                    displayHtmlRepresentation(message.data);
-                    break;
-                case 'textRepresentation':
-                    displayTextRepresentation(message.data);
-                    break;
-                case 'showVersions':
-                    displayShowVersions(message.data);
-                    break;
-                case 'pythonPath':
-                    displayPythonPath(message.data);
-                    break;
-                case 'extensionConfig':
-                    displayExtensionConfig(message.data);
-                    break;
-                case 'error':
-                    showError(message.message, message.details, message.error_type, message.format_info);
-                    break;
-            }
+        // Set up event listeners for new message system
+        messageBus.onDataLoaded((data) => {
+            currentData = data.data;
+            lastLoadTime = data.lastLoadTime;
+            displayDataInfo(data.data, data.filePath);
+            updateTimestamp(data.lastLoadTime);
+        });
+
+        messageBus.onError((error) => {
+            showError(error.message, error.details, error.errorType, error.formatInfo);
+        });
+
+        messageBus.onPythonEnvironmentChanged((data) => {
+            displayPythonPath(data.pythonPath);
+        });
+
+        messageBus.onUIStateChanged((state) => {
+            // Handle UI state changes if needed
+            console.log('UI state changed:', state);
         });`;
     }
 
@@ -251,8 +252,19 @@ export class JavaScriptGenerator {
 
     private static getInitializationCode(): string {
         return `
-        // Initial load
-        vscode.postMessage({ command: 'getDataInfo' });`;
+        // Initial load using new message format
+        (async () => {
+            try {
+                const data = await messageBus.getDataInfo(window.location.pathname);
+                if (data) {
+                    displayDataInfo(data.data, data.filePath);
+                    updateTimestamp(data.lastLoadTime);
+                }
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+                showError('Failed to load data: ' + error.message);
+            }
+        })();`;
     }
 
     private static getDisplayFunctionsCode(plottingCapabilities: boolean): string {

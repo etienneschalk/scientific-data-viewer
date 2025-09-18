@@ -48,9 +48,6 @@ export class UIController {
     }
 
     private setupMessageHandlers(): void {
-        // Temporarily disabled to avoid conflicts with legacy message handling
-        // TODO: Migrate to new message system once legacy system is removed
-        /*
         // Register request handlers
         this.messageBus.registerRequestHandler('getDataInfo', async (payload) => {
             return this.handleGetDataInfo(payload.filePath);
@@ -71,17 +68,12 @@ export class UIController {
         this.messageBus.registerRequestHandler('refresh', async () => {
             return this.handleRefresh();
         });
-        */
     }
 
     private setupStateSubscription(): void {
-        // Temporarily disabled to avoid conflicts with legacy UI updates
-        // TODO: Enable once legacy system is fully migrated
-        /*
         this.unsubscribeState = this.stateManager.subscribe((state) => {
             this.updateUI(state);
         });
-        */
     }
 
     private async handleGetDataInfo(filePath: string): Promise<any> {

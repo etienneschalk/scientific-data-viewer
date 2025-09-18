@@ -97,7 +97,10 @@ export class DataViewerPanel {
         if (errorPanelCount > 0) {
             Logger.info(`Refreshing ${errorPanelCount} panels with errors due to Python environment initialization...`);
             for (const panel of DataViewerPanel.panelsWithErrors) {
-                await panel._handleGetDataInfo();
+                // Use UI controller to refresh data
+                if (panel._uiController && panel._currentFile) {
+                    await panel._uiController.loadFile(panel._currentFile.fsPath);
+                }
             }
         }
     }
@@ -134,30 +137,7 @@ export class DataViewerPanel {
         // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-        // Handle messages from the webview (legacy support)
-        this._panel.webview.onDidReceiveMessage(
-            async (message) => {
-                Logger.debug(`[DataViewerPanel] Received message: ${message.command}`);
-                switch (message.command) {
-                    case 'getDataInfo':
-                        await this._handleGetDataInfo();
-                        break;
-                    case 'createPlot':
-                        if (vscode.workspace.getConfiguration('scientificDataViewer').get('plottingCapabilities', false)) {
-                            await this._handleCreatePlot(message.variable, message.plotType);
-                        }
-                        break;
-                    case 'getPythonPath':
-                        await this._handleGetPythonPath();
-                        break;
-                    case 'getExtensionConfig':
-                        await this._handleGetExtensionConfig();
-                        break;
-                }
-            },
-            null,
-            this._disposables
-        );
+        // Legacy message handling removed - now using new MessageBus system
 
         // Register error handler for this panel
         this._errorBoundary.registerHandler(`panel-${panel.viewColumn}`, (error, context) => {
@@ -189,225 +169,9 @@ export class DataViewerPanel {
         // The webview will request data via the message handler
     }
 
-    private async _handleGetDataInfo() {
-        Logger.debug(`[_handleGetDataInfo] Handling get data info for: ${this._currentFile.fsPath}`);
-        try {
-            // Check if a Python interpreter is configured
-            if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
-                Logger.error('🐍 ❌ Python path not found. Please configure Python interpreter first.');
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: 'Python path not found. Please configure Python interpreter first.',
-                    details: 'Use Command Palette (Ctrl+Shift+P) and run "Python: Select Interpreter" to set up Python environment.'
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
-                return;
-            }
+    // Legacy _handleGetDataInfo method removed - now handled by UIController
 
-            // Check if Python environment is ready
-            if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                Logger.error('🐍 ❌ Python environment not ready. Please install core dependencies first.');
-                Logger.error(`🐍 ❌ Python path: ${this.dataProcessor.pythonManagerInstance.getPythonPath()}`);
-                Logger.error(`🐍 ❌ Python ready: ${this.dataProcessor.pythonManagerInstance.isReady()}`);
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: 'Python environment not ready. Please install core dependencies first.',
-                    details: 'Install core dependencies: `pip install xarray`'
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
-                return;
-            }
-
-            // Check file size
-            const stat = await vscode.workspace.fs.stat(this._currentFile);
-            const maxSize = vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100) * 1024 * 1024; // Convert MB to bytes
-
-            if (stat.size > maxSize) {
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: `File too large (${Math.round(stat.size / 1024 / 1024)}MB). Maximum allowed: ${vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100)}MB`,
-                    details: 'Increase the maxFileSize setting in VSCode settings to load larger files.'
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
-                return;
-            }
-
-            this._dataInfo = (await this.dataProcessor.getDataInfo(this._currentFile))
-
-            if (!this._dataInfo) {
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: 'Failed to load data file. The file might be corrupted or in an unsupported format.',
-                    details: `Supported formats: ${SUPPORTED_EXTENSIONS.join(', ')}`
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
-                return;
-            }
-
-            // Logger.info(`Data info: ${JSON.stringify(this._dataInfo, null, 2)}`);
-
-            let proposeToInstallMissingPackages = false;
-            if (this._dataInfo.error) {
-                let errorInfo = this._dataInfo.error;
-                let errorMessage = `Data processing error: ${errorInfo.error}`;
-                let errorDetails = 'This might be due to missing Python packages or file format issues.';
-                // Check for missing packages regardless of error type
-                if (errorInfo.format_info?.missing_packages && errorInfo.format_info.missing_packages.length > 0) {
-                    errorMessage = `Missing dependencies for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`;
-                    errorDetails = errorInfo.suggestion || `Install required packages: pip install ${errorInfo.format_info.missing_packages.join(' ')}`;
-                    proposeToInstallMissingPackages = true;
-                } else if (errorInfo.error_type === 'ImportError') {
-                    errorMessage = `Missing dependencies: ${errorInfo.error}`;
-                    errorDetails = errorInfo.suggestion || 'Install required packages using pip install <package_name>';
-                } else if (errorInfo.suggestion) {
-                    errorDetails = errorInfo.suggestion;
-                }
-
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: errorMessage,
-                    details: errorDetails,
-                    error_type: errorInfo.error_type,
-                    format_info: errorInfo.format_info
-                });
-                // Track this panel as having an error
-                DataViewerPanel.addPanelWithError(this);
-
-
-                if (proposeToInstallMissingPackages) {
-                    // Show installation prompt for missing packages
-                      const installAction = await vscode.window.showWarningMessage(
-                        `Missing packages for ${errorInfo.format_info.display_name} files: ${errorInfo.format_info.missing_packages.join(', ')}`,
-                        'Install Packages',
-                        'Show Details'
-                    );
-                    
-                    if (installAction === 'Install Packages') {
-                        try {
-                            await this.dataProcessor.pythonManagerInstance.installPackagesForFormat(
-                                errorInfo.format_info.missing_packages
-                            );
-                            // Refresh the data after successful installation
-                            await this._handleGetDataInfo();
-                        } catch (error) {
-                            vscode.window.showErrorMessage(
-                                `Failed to install packages: ${error}. Please install manually: pip install ${errorInfo.format_info.missing_packages.join(' ')}`
-                            );
-                        }
-                    }
-                }
-                return;
-            }
-
-            // Update last load time
-            this._lastLoadTime = new Date();
-
-            this._panel.webview.postMessage({
-                command: 'dataInfo',
-                data: this._dataInfo?.result,
-                filePath: this._currentFile.fsPath,
-                lastLoadTime: this._lastLoadTime.toISOString()
-            });
-            this._panel.webview.postMessage({
-                command: 'htmlRepresentation',
-                data: this._dataInfo.result?.xarray_html_repr
-            });
-            this._panel.webview.postMessage({
-                command: 'textRepresentation',
-                data: this._dataInfo.result?.xarray_text_repr
-            });
-            this._panel.webview.postMessage({
-                command: 'showVersions',
-                data: this._dataInfo.result?.xarray_show_versions
-            });
-
-            // Remove this panel from error tracking since data loaded successfully
-            DataViewerPanel.removePanelWithError(this);
-        } catch (error) {
-            Logger.error(`Error in _handleGetDataInfo: ${error}`);
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to load data info: ${error}`,
-                details: 'Check the VSCode Output panel (View → Output → "Scientific Data Viewer") for more details.'
-            });
-            // Track this panel as having an error
-            DataViewerPanel.addPanelWithError(this);
-        }
-    }
-
-    private async _handleCreatePlot(variable: string, plotType: string) {
-        try {
-            // Show notification that plotting has started
-            vscode.window.showInformationMessage(
-                `Creating plot for variable '${variable}'... Check the output panel for progress.`,
-                'Show Logs'
-            ).then(selection => {
-                if (selection === 'Show Logs') {
-                    Logger.show();
-                }
-            });
-
-            const plotData = await this.dataProcessor.createPlot(this._currentFile, variable, plotType);
-            if (plotData) {
-                this._panel.webview.postMessage({
-                    command: 'plotData',
-                    data: plotData
-                });
-            } else {
-                this._panel.webview.postMessage({
-                    command: 'error',
-                    message: 'Failed to create plot',
-                    details: 'Check the output panel for more details'
-                });
-            }
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to create plot: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetPythonPath() {
-        try {
-            const pythonPath = this.dataProcessor.pythonManagerInstance.getCurrentPythonPath();
-            this._panel.webview.postMessage({
-                command: 'pythonPath',
-                data: pythonPath || 'No Python interpreter configured'
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to get Python path: ${error}`
-            });
-        }
-    }
-
-    private async _handleGetExtensionConfig() {
-        try {
-            const config = vscode.workspace.getConfiguration('scientificDataViewer');
-            const configData = {
-                'scientificDataViewer.allowMultipleTabsForSameFile': config.get('allowMultipleTabsForSameFile'),
-                'scientificDataViewer.plottingCapabilities': config.get('plottingCapabilities'),
-                'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
-                'scientificDataViewer.autoRefresh': config.get('autoRefresh')
-            };
-
-            this._panel.webview.postMessage({
-                command: 'extensionConfig',
-                data: JSON.stringify(configData, null, 2)
-            });
-        } catch (error) {
-            this._panel.webview.postMessage({
-                command: 'error',
-                message: `Failed to get extension configuration: ${error}`
-            });
-        }
-    }
+    // Legacy message handling methods removed - now handled by UIController
 
     private _handleError(error: Error): void {
         Logger.error(`Panel error: ${error.message}`);
