@@ -3,6 +3,9 @@ import * as path from 'path';
 import { DataProcessor, DataInfo, DataInfoResult } from './dataProcessor';
 import { Logger } from './logger';
 import { HTMLGenerator } from './ui/HTMLGenerator';
+import { UIController } from './ui/UIController';
+import { StateManager } from './state/AppState';
+import { ErrorBoundary } from './error/ErrorBoundary';
 
 
 // Taken from python/get_data_info.py
@@ -36,6 +39,9 @@ export class DataViewerPanel {
     private _dataInfo: DataInfo | null = null;
     private _currentFile: vscode.Uri;
     private _lastLoadTime: Date | null = null;
+    private _uiController: UIController | null = null;
+    private _stateManager: StateManager | null = null;
+    private _errorBoundary: ErrorBoundary;
 
     public static createOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
@@ -115,6 +121,11 @@ export class DataViewerPanel {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._currentFile = fileUri;
+        this._errorBoundary = ErrorBoundary.getInstance();
+
+        // Initialize state management and UI controller
+        this._stateManager = new StateManager();
+        this._uiController = new UIController(panel.webview, extensionUri, dataProcessor);
 
         // Set the webview's initial html content
         this._update(fileUri, dataProcessor);
@@ -123,7 +134,7 @@ export class DataViewerPanel {
         // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-        // Handle messages from the webview
+        // Handle messages from the webview (legacy support)
         this._panel.webview.onDidReceiveMessage(
             async (message) => {
                 Logger.debug(`[DataViewerPanel] Received message: ${message.command}`);
@@ -147,6 +158,12 @@ export class DataViewerPanel {
             null,
             this._disposables
         );
+
+        // Register error handler for this panel
+        this._errorBoundary.registerHandler(`panel-${panel.viewColumn}`, (error, context) => {
+            Logger.error(`Panel error: ${error.message}`);
+            this._handleError(error);
+        });
     }
 
     public async _update(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
@@ -161,10 +178,15 @@ export class DataViewerPanel {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         const plottingCapabilities = config.get('plottingCapabilities', false);
 
+        // Set initial HTML first
         this._panel.webview.html = this._getHtmlForWebview(plottingCapabilities);
 
-        // Load data info
-        // await this._handleGetDataInfo();
+        // Update UI controller with new configuration
+        if (this._uiController) {
+            this._uiController.setPlottingCapabilities(plottingCapabilities);
+        }
+
+        // The webview will request data via the message handler
     }
 
     private async _handleGetDataInfo() {
@@ -387,12 +409,32 @@ export class DataViewerPanel {
         }
     }
 
+    private _handleError(error: Error): void {
+        Logger.error(`Panel error: ${error.message}`);
+        this._panel.webview.postMessage({
+            command: 'error',
+            message: error.message,
+            details: 'An error occurred in the data viewer panel. Please check the output panel for more details.'
+        });
+    }
+
     public dispose() {
         // Remove this panel from the active panels set
         DataViewerPanel.activePanels.delete(this);
 
         // Remove this panel from the error tracking set
         DataViewerPanel.removePanelWithError(this);
+
+        // Clean up UI controller
+        if (this._uiController) {
+            this._uiController.dispose();
+            this._uiController = null;
+        }
+
+        // Clean up state manager
+        if (this._stateManager) {
+            this._stateManager = null;
+        }
 
         // Clean up our resources
         this._panel.dispose();

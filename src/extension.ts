@@ -3,6 +3,7 @@ import { DataViewerPanel } from './dataViewerPanel';
 import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
+import { ErrorBoundary } from './error/ErrorBoundary';
 
 class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
     constructor(
@@ -51,6 +52,13 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
     Logger.info('⚛️ Scientific Data Viewer extension is now active!');
+
+    // Initialize error boundary
+    const errorBoundary = ErrorBoundary.getInstance();
+    errorBoundary.registerGlobalHandler((error, context) => {
+        Logger.error(`Global error: ${error.message}`);
+        vscode.window.showErrorMessage(`Scientific Data Viewer Error: ${error.message}`);
+    });
 
     // Get configuration schema from extension manifest
     const extension = vscode.extensions.getExtension('eschalk0.scientific-data-viewer') || vscode.extensions.getExtension(context.extension.id);
