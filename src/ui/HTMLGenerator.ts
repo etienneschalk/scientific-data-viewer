@@ -19,7 +19,6 @@ export class HTMLGenerator {
 <body>
     ${content}
     <script>
-        ${this.getWebviewMessageBusCode()}
         ${this.getJavaScriptCode(plottingCapabilities)}
     </script>
 </body>
@@ -195,18 +194,6 @@ export class HTMLGenerator {
         return CSSGenerator.getStyles();
     }
 
-    private static getWebviewMessageBusCode(): string {
-        // Read the WebviewMessageBus JavaScript code and include it
-        const fs = require('fs');
-        const path = require('path');
-        const messageBusPath = path.join(__dirname, 'webview', 'WebviewMessageBus.js');
-        try {
-            return fs.readFileSync(messageBusPath, 'utf8');
-        } catch (error) {
-            console.error('Failed to read WebviewMessageBus:', error);
-            return '// WebviewMessageBus not available';
-        }
-    }
 
     private static getJavaScriptCode(plottingCapabilities: boolean): string {
         return JavaScriptGenerator.getCode(plottingCapabilities);

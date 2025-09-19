@@ -5,6 +5,7 @@ export class JavaScriptGenerator {
     static getCode(plottingCapabilities: boolean): string {
         return `
         const vscode = acquireVsCodeApi();
+        ${this.getWebviewMessageBusCode()}
         const messageBus = new WebviewMessageBus(vscode);
         let currentData = null;
         let selectedVariable = null;
@@ -17,6 +18,161 @@ export class JavaScriptGenerator {
         ${this.getInitializationCode()}
         ${this.getDisplayFunctionsCode(plottingCapabilities)}
         `;
+    }
+
+    private static getWebviewMessageBusCode(): string {
+        return `
+        class WebviewMessageBus {
+            constructor(vscode) {
+                this.vscode = vscode;
+                this.pendingRequests = new Map();
+                this.eventListeners = new Map();
+                this.setupMessageListener();
+            }
+
+            setupMessageListener() {
+                window.addEventListener('message', (event) => {
+                    const message = event.data;
+                    
+                    if (message.type === 'response') {
+                        this.handleResponse(message);
+                    } else if (message.type === 'event') {
+                        this.handleEvent(message);
+                    }
+                });
+            }
+
+            // Send a request and wait for response
+            async sendRequest(command, payload, timeout = 10000) {
+                const request = this.createRequest(command, payload);
+                
+                return new Promise((resolve, reject) => {
+                    // Set up timeout
+                    const timeoutId = setTimeout(() => {
+                        this.pendingRequests.delete(request.id);
+                        reject(new Error(\`Request timeout: \${command}\`));
+                    }, timeout);
+
+                    // Store the request
+                    this.pendingRequests.set(request.id, {
+                        resolve: (value) => {
+                            clearTimeout(timeoutId);
+                            resolve(value);
+                        },
+                        reject: (error) => {
+                            clearTimeout(timeoutId);
+                            reject(error);
+                        }
+                    });
+
+                    // Send the request
+                    this.vscode.postMessage(request);
+                });
+            }
+
+            // Register an event listener
+            onEvent(event, listener) {
+                if (!this.eventListeners.has(event)) {
+                    this.eventListeners.set(event, []);
+                }
+                
+                this.eventListeners.get(event).push(listener);
+                
+                // Return unsubscribe function
+                return () => {
+                    const listeners = this.eventListeners.get(event);
+                    if (listeners) {
+                        const index = listeners.indexOf(listener);
+                        if (index > -1) {
+                            listeners.splice(index, 1);
+                        }
+                    }
+                };
+            }
+
+            createRequest(command, payload) {
+                return {
+                    id: this.generateId(),
+                    timestamp: Date.now(),
+                    type: 'request',
+                    command,
+                    payload
+                };
+            }
+
+            generateId() {
+                return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+            }
+
+            handleResponse(message) {
+                const pendingRequest = this.pendingRequests.get(message.requestId);
+                
+                if (!pendingRequest) {
+                    console.warn(\`Received response for unknown request: \${message.requestId}\`);
+                    return;
+                }
+
+                this.pendingRequests.delete(message.requestId);
+
+                if (message.success) {
+                    pendingRequest.resolve(message.payload);
+                } else {
+                    pendingRequest.reject(new Error(message.error || 'Unknown error'));
+                }
+            }
+
+            handleEvent(message) {
+                const listeners = this.eventListeners.get(message.event);
+                
+                if (listeners) {
+                    listeners.forEach(listener => {
+                        try {
+                            listener(message.payload);
+                        } catch (error) {
+                            console.error(\`Error in event listener for \${message.event}:\`, error);
+                        }
+                    });
+                }
+            }
+
+            // Convenience methods for common operations
+            async getDataInfo(filePath) {
+                return this.sendRequest('getDataInfo', { filePath });
+            }
+
+            async createPlot(variable, plotType) {
+                return this.sendRequest('createPlot', { variable, plotType });
+            }
+
+            async getPythonPath() {
+                return this.sendRequest('getPythonPath', {});
+            }
+
+            async getExtensionConfig() {
+                return this.sendRequest('getExtensionConfig', {});
+            }
+
+            async refresh() {
+                return this.sendRequest('refresh', {});
+            }
+
+            // Event emission methods
+            onDataLoaded(callback) {
+                return this.onEvent('dataLoaded', callback);
+            }
+
+            onError(callback) {
+                return this.onEvent('error', callback);
+            }
+
+            onPythonEnvironmentChanged(callback) {
+                return this.onEvent('pythonEnvironmentChanged', callback);
+            }
+
+            onUIStateChanged(callback) {
+                return this.onEvent('uiStateChanged', callback);
+            }
+        }`;
     }
 
     private static getEventListenersCode(plottingCapabilities: boolean): string {
@@ -275,55 +431,8 @@ export class JavaScriptGenerator {
         console.log('📍 Search:', window.location.search);
         console.log('📍 Hash:', window.location.hash);
         
-        // Check if we have a file path in the URL or need to get it from VS Code
-        let filePath = null;
-        
-        // Try to extract file path from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        filePath = urlParams.get('filePath');
-        
-        console.log('📁 Extracted file path from URL:', filePath);
-        
-        // If no file path in URL, try to get it from VS Code context
-        if (!filePath) {
-            console.log('⚠️ No file path in URL, requesting from VS Code...');
-            try {
-                // Request the current file path from VS Code
-                const response = await messageBus.sendRequest('getCurrentFilePath', {});
-                filePath = response.filePath;
-                console.log('📁 File path from VS Code:', filePath);
-            } catch (error) {
-                console.error('❌ Failed to get file path from VS Code:', error);
-            }
-        }
-        
-        // Initial load using new message format
-        (async () => {
-            try {
-                console.log('🚀 Starting data load process...');
-                console.log('📁 Using file path:', filePath);
-                
-                if (!filePath) {
-                    throw new Error('No file path available for data loading');
-                }
-                
-                const data = await messageBus.getDataInfo(filePath);
-                console.log('✅ Data loaded successfully:', data);
-                
-                if (data) {
-                    displayDataInfo(data.data, data.filePath);
-                    updateTimestamp(data.lastLoadTime);
-                }
-            } catch (error) {
-                console.error('❌ Failed to load initial data:', error);
-                console.error('❌ Error details:', {
-                    message: error.message,
-                    stack: error.stack,
-                    name: error.name
-                });
-                showError('Failed to load data: ' + error.message);
-            }
-        })();`;
+        // Initial load - wait for data to be provided via message system
+        console.log('🚀 WebView initialized - waiting for data to be loaded via message system...');`;
     }
 
     private static getDisplayFunctionsCode(plottingCapabilities: boolean): string {

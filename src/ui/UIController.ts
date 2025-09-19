@@ -127,6 +127,9 @@ export class UIController {
                 this.stateManager.setLastLoadTime(new Date());
                 this.stateManager.setLoading(false);
 
+                // Emit data loaded event to webview
+                this.messageBus.emitDataLoaded(dataInfo.result, filePath, new Date().toISOString());
+
                 return {
                     data: dataInfo.result,
                     filePath: filePath,
