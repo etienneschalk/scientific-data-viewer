@@ -18,15 +18,18 @@ export class UIController {
     private webview: vscode.Webview;
     private extensionUri: vscode.Uri;
     private unsubscribeState?: () => void;
+    private onErrorCallback?: (error: Error) => void;
 
     constructor(
         webview: vscode.Webview,
         extensionUri: vscode.Uri,
-        dataProcessor: DataProcessor
+        dataProcessor: DataProcessor,
+        onErrorCallback?: (error: Error) => void
     ) {
         this.webview = webview;
         this.extensionUri = extensionUri;
         this.dataProcessor = dataProcessor;
+        this.onErrorCallback = onErrorCallback;
         this.stateManager = new StateManager();
         this.messageBus = new MessageBus(webview);
         this.errorBoundary = ErrorBoundary.getInstance();
@@ -139,6 +142,12 @@ export class UIController {
             } catch (error) {
                 this.stateManager.setLoading(false);
                 this.stateManager.setError(error instanceof Error ? error.message : String(error));
+                
+                // Notify the panel about the error so it can be added to error state
+                if (this.onErrorCallback && error instanceof Error) {
+                    this.onErrorCallback(error);
+                }
+                
                 throw error;
             }
         }, context);
@@ -231,20 +240,32 @@ export class UIController {
     }
 
     private updateUI(state: AppState): void {
-        // Update webview HTML based on state
+        // Only regenerate HTML if plotting capabilities changed or this is the first load
+        // For other state changes, just emit the state change event to update the webview content
         const plottingCapabilities = state.ui.plottingCapabilities;
         const lastLoadTime = state.data.lastLoadTime?.toISOString() || null;
         
-        const header = HTMLGenerator.generateHeader(plottingCapabilities, lastLoadTime);
-        const loadingAndError = HTMLGenerator.generateLoadingAndError();
-        const content = HTMLGenerator.generateContent(plottingCapabilities);
+        // Check if we need to regenerate the HTML structure
+        const needsHTMLRegeneration = this.shouldRegenerateHTML(state);
         
-        const html = HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content);
-        
-        this.webview.html = html;
+        if (needsHTMLRegeneration) {
+            const header = HTMLGenerator.generateHeader(plottingCapabilities, lastLoadTime);
+            const loadingAndError = HTMLGenerator.generateLoadingAndError();
+            const content = HTMLGenerator.generateContent(plottingCapabilities);
+            
+            const html = HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content);
+            this.webview.html = html;
+        }
 
-        // Emit state change event
+        // Always emit state change event for content updates
         this.messageBus.emitUIStateChanged(state);
+    }
+
+    private shouldRegenerateHTML(state: AppState): boolean {
+        // Only regenerate HTML when plotting capabilities change
+        // Other state changes (data loading, errors, etc.) should only update content via events
+        // This prevents unnecessary webview reinitialization that causes duplicate console logs
+        return false;
     }
 
     // Public methods for external control
