@@ -94,7 +94,7 @@ Before using this extension, you need:
 
 3. **From Command Palette**:
 
-   - Press `Ctrl+Shift+P`
+   - Press `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`
    - Type "Open Scientific Data Viewer"
    - Select a file from the file picker
 
@@ -111,7 +111,7 @@ Before using this extension, you need:
 
 2. **Manual Configuration**:
 
-   - Press `Ctrl+Shift+P`
+   - Press `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
    - The extension will automatically detect it and use it
@@ -150,7 +150,7 @@ The extension can be configured through VSCode settings:
 
 ### Available Commands
 
-Access these commands via the Command Palette (`Ctrl+Shift+P`):
+Access these commands via the Command Palette (`<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`):
 
 - **Open Scientific Data Viewer**: Open a file in the data viewer
 - **Refresh Python Environment**: Manually refresh the Python environment
@@ -191,7 +191,7 @@ The extension includes configuration options that act as feature flags to contro
 
 ### Getting Help
 
-- **Check the logs**: Ctrl+Shift+P (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
+- **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
 - **Report issues**: [Create an issue on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
 - **Ask questions**: Use the GitHub Discussions section
 
@@ -254,7 +254,7 @@ The extension includes configuration options that act as feature flags to contro
 
 6. **Run the extension**:
    - Press `F5` to open a new Extension Development Host window
-   - Or use `Ctrl+Shift+P` and run "Developer: Reload Window"
+   - Or use `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>` and run "Developer: Reload Window"
 
 ### Production Installation
 
@@ -332,7 +332,7 @@ npm run lint
 3. **Use the debug console** to inspect variables and step through code
 
 Note: It is recommended to run the task `start-watch-mode` for hot reload with
-Ctrl+Shift+P Tasks: Run Task then `start-watch-mode`.
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
 
 #### About debugging the error handling
 
@@ -343,7 +343,11 @@ to test the full error handling scenarios
 python -m pip uninstall xarray netCDF4 zarr h5py numpy matplotlib rioxarray cfgrib zarr
 ```
 
-Then reload the development VSCode instance window: Ctrl+Shift+P Developer: Reload Window
+Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Developer: Reload Window
+
+#### See the Webview console logs
+
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>: Open Webview Developer Tools
 
 ## 📦 Publishing
 

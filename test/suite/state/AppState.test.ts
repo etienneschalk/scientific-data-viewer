@@ -54,7 +54,7 @@ suite('StateManager Tests', () => {
         validation = stateManager.validateState();
         assert.strictEqual(validation.isValid, false);
         assert.strictEqual(validation.errors.length, 1);
-        assert(validation.errors[0].includes('Data is loading but dataInfo is already set'));
+        assert.ok(validation.errors[0].includes('Data is loading but dataInfo is already set'));
     });
 
     test('should support undo functionality', () => {
