@@ -68,6 +68,10 @@ export class UIController {
         this.messageBus.registerRequestHandler('refresh', async () => {
             return this.handleRefresh();
         });
+
+        this.messageBus.registerRequestHandler('getCurrentFilePath', async () => {
+            return this.handleGetCurrentFilePath();
+        });
     }
 
     private setupStateSubscription(): void {
@@ -203,6 +207,23 @@ export class UIController {
                 await this.handleGetDataInfo(state.data.currentFile);
             }
         }, context) || undefined;
+    }
+
+    private async handleGetCurrentFilePath(): Promise<{ filePath: string }> {
+        const context: ErrorContext = {
+            component: 'ui',
+            operation: 'getCurrentFilePath'
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            const state = this.stateManager.getState();
+            if (!state.data.currentFile) {
+                throw new Error('No current file available');
+            }
+            return { filePath: state.data.currentFile };
+        }, context);
+        
+        return result || { filePath: '' };
     }
 
     private updateUI(state: AppState): void {

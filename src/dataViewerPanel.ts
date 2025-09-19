@@ -74,6 +74,7 @@ export class DataViewerPanel {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
+                enableFindWidget: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'media'),
                     vscode.Uri.joinPath(extensionUri, 'out')
@@ -132,6 +133,11 @@ export class DataViewerPanel {
 
         // Set the webview's initial html content
         this._update(fileUri, dataProcessor);
+        
+        // Initialize the UI controller with the current file
+        if (this._uiController) {
+            this._uiController.loadFile(fileUri.fsPath);
+        }
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically

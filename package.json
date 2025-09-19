@@ -68,6 +68,11 @@
         "command": "scientificDataViewer.showSettings",
         "title": "Show Settings",
         "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.openDeveloperTools",
+        "title": "Open Developer Tools",
+        "category": "Scientific Data Viewer"
       }
     ],
     "menus": {
@@ -93,6 +98,10 @@
         },
         {
           "command": "scientificDataViewer.showSettings",
+          "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.openDeveloperTools",
           "when": "true"
         }
       ]

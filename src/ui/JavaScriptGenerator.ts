@@ -197,6 +197,7 @@ export class JavaScriptGenerator {
         return `
         // Set up event listeners for new message system
         messageBus.onDataLoaded((data) => {
+            console.log('📊 Data loaded event received:', data);
             currentData = data.data;
             lastLoadTime = data.lastLoadTime;
             displayDataInfo(data.data, data.filePath);
@@ -204,17 +205,32 @@ export class JavaScriptGenerator {
         });
 
         messageBus.onError((error) => {
+            console.error('❌ Error event received:', error);
             showError(error.message, error.details, error.errorType, error.formatInfo);
         });
 
         messageBus.onPythonEnvironmentChanged((data) => {
+            console.log('🐍 Python environment changed:', data);
             displayPythonPath(data.pythonPath);
         });
 
         messageBus.onUIStateChanged((state) => {
-            // Handle UI state changes if needed
-            console.log('UI state changed:', state);
-        });`;
+            console.log('🔄 UI state changed:', state);
+        });
+        
+        // Add debugging for all message bus communications
+        const originalSendRequest = messageBus.sendRequest.bind(messageBus);
+        messageBus.sendRequest = async function(command, payload, timeout) {
+            console.log('📤 Sending request:', { command, payload, timeout });
+            try {
+                const result = await originalSendRequest(command, payload, timeout);
+                console.log('📥 Request successful:', { command, result });
+                return result;
+            } catch (error) {
+                console.error('📥 Request failed:', { command, error });
+                throw error;
+            }
+        };`;
     }
 
     private static getUtilityFunctionsCode(): string {
@@ -252,16 +268,59 @@ export class JavaScriptGenerator {
 
     private static getInitializationCode(): string {
         return `
+        // Enhanced debugging and initialization
+        console.log('🔧 WebView initialized - starting debug session');
+        console.log('📍 Current location:', window.location);
+        console.log('📍 Pathname:', window.location.pathname);
+        console.log('📍 Search:', window.location.search);
+        console.log('📍 Hash:', window.location.hash);
+        
+        // Check if we have a file path in the URL or need to get it from VS Code
+        let filePath = null;
+        
+        // Try to extract file path from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        filePath = urlParams.get('filePath');
+        
+        console.log('📁 Extracted file path from URL:', filePath);
+        
+        // If no file path in URL, try to get it from VS Code context
+        if (!filePath) {
+            console.log('⚠️ No file path in URL, requesting from VS Code...');
+            try {
+                // Request the current file path from VS Code
+                const response = await messageBus.sendRequest('getCurrentFilePath', {});
+                filePath = response.filePath;
+                console.log('📁 File path from VS Code:', filePath);
+            } catch (error) {
+                console.error('❌ Failed to get file path from VS Code:', error);
+            }
+        }
+        
         // Initial load using new message format
         (async () => {
             try {
-                const data = await messageBus.getDataInfo(window.location.pathname);
+                console.log('🚀 Starting data load process...');
+                console.log('📁 Using file path:', filePath);
+                
+                if (!filePath) {
+                    throw new Error('No file path available for data loading');
+                }
+                
+                const data = await messageBus.getDataInfo(filePath);
+                console.log('✅ Data loaded successfully:', data);
+                
                 if (data) {
                     displayDataInfo(data.data, data.filePath);
                     updateTimestamp(data.lastLoadTime);
                 }
             } catch (error) {
-                console.error('Failed to load initial data:', error);
+                console.error('❌ Failed to load initial data:', error);
+                console.error('❌ Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
                 showError('Failed to load data: ' + error.message);
             }
         })();`;

@@ -251,6 +251,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const openDeveloperToolsCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.openDeveloperTools',
+        () => {
+            Logger.info('🎮 🔧 Command: Opening developer tools for WebView...');
+            // This will open the developer tools for the currently active WebView
+            vscode.commands.executeCommand('workbench.action.webview.openDeveloperTools');
+        }
+    );
+
     // Register context menu for supported files
     const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
     vscode.workspace.onDidOpenTextDocument(async (document) => {
@@ -344,6 +353,7 @@ export function activate(context: vscode.ExtensionContext) {
         refreshPythonEnvironmentCommand,
         showLogsCommand,
         showSettingsCommand,
+        openDeveloperToolsCommand,
         statusBarItem,
         pythonInterpreterChangeListener,
         workspaceChangeListener,
