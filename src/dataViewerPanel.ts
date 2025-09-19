@@ -129,15 +129,12 @@ export class DataViewerPanel {
 
         // Initialize state management and UI controller
         this._stateManager = new StateManager();
-        this._uiController = new UIController(panel.webview, extensionUri, dataProcessor);
+        this._uiController = new UIController(panel.webview, extensionUri, dataProcessor, (error) => {
+            this._handleError(error);
+        });
 
         // Set the webview's initial html content
         this._update(fileUri, dataProcessor);
-        
-        // Initialize the UI controller with the current file
-        if (this._uiController) {
-            this._uiController.loadFile(fileUri.fsPath);
-        }
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();
@@ -173,9 +170,16 @@ export class DataViewerPanel {
         // Update UI controller with new configuration
         if (this._uiController) {
             this._uiController.setPlottingCapabilities(plottingCapabilities);
+            
+            // Load the file and handle success/error
+            this._uiController.loadFile(fileUri.fsPath).then(() => {
+                // Remove from error state on successful load
+                DataViewerPanel.removePanelWithError(this);
+            }).catch((error) => {
+                // Error handling is already done in UIController
+                Logger.debug(`Error loading file in update: ${error.message}`);
+            });
         }
-
-        // The webview will request data via the message handler
     }
 
     // Legacy _handleGetDataInfo method removed - now handled by UIController
@@ -184,6 +188,10 @@ export class DataViewerPanel {
 
     private _handleError(error: Error): void {
         Logger.error(`Panel error: ${error.message}`);
+        
+        // Add this panel to the error state so it can be refreshed later
+        DataViewerPanel.addPanelWithError(this);
+        
         this._panel.webview.postMessage({
             command: 'error',
             message: error.message,
