@@ -37,30 +37,6 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
         // Instead of showing a text editor, open our data viewer
         DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
         
-        // Check if devMode is enabled and run commands automatically
-        const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        const devMode = config.get('devMode', false);
-        
-        if (devMode) {
-            Logger.info('🔧 DevMode enabled - automatically running development commands...');
-            
-            // Run "Show Extension Logs" command
-            try {
-                await vscode.commands.executeCommand('scientificDataViewer.showLogs');
-                Logger.info('🔧 DevMode: Show Extension Logs command executed');
-            } catch (error) {
-                Logger.error(`🔧 DevMode: Failed to execute showLogs command: ${error}`);
-            }
-            
-            // Run "Open Developer Tools" command
-            try {
-                await vscode.commands.executeCommand('scientificDataViewer.openDeveloperTools');
-                Logger.info('🔧 DevMode: Open Developer Tools command executed');
-            } catch (error) {
-                Logger.error(`🔧 DevMode: Failed to execute openDeveloperTools command: ${error}`);
-            }
-        }
-        
         // Close the webview panel since we're using our own panel
         webviewPanel.dispose();
         // Note: instead of disposing the webview panel, we could use reuse it.
@@ -296,7 +272,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (devMode) {
                 Logger.info('🔧 DevMode enabled - automatically running development commands for opened file...');
                 
-                // Run "Show Extension Logs" command
+                // Run "Show Extension Logs" command immediately
                 try {
                     await vscode.commands.executeCommand('scientificDataViewer.showLogs');
                     Logger.info('🔧 DevMode: Show Extension Logs command executed');
@@ -304,7 +280,7 @@ export function activate(context: vscode.ExtensionContext) {
                     Logger.error(`🔧 DevMode: Failed to execute showLogs command: ${error}`);
                 }
                 
-                // Run "Open Developer Tools" command
+                // Run "Open Developer Tools" command immediately
                 try {
                     await vscode.commands.executeCommand('scientificDataViewer.openDeveloperTools');
                     Logger.info('🔧 DevMode: Open Developer Tools command executed');

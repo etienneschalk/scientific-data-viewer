@@ -139,6 +139,9 @@ export class DataViewerPanel {
             this._uiController.loadFile(fileUri.fsPath);
         }
 
+        // Check if devMode is enabled and run commands automatically after webview is ready
+        this._handleDevMode();
+
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -217,8 +220,32 @@ export class DataViewerPanel {
         }
     }
 
-
-
+    private async _handleDevMode(): Promise<void> {
+        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const devMode = config.get('devMode', false);
+        
+        if (devMode) {
+            Logger.info('🔧 DevMode enabled - automatically running development commands...');
+            
+            // Run "Show Extension Logs" command immediately
+            try {
+                await vscode.commands.executeCommand('scientificDataViewer.showLogs');
+                Logger.info('🔧 DevMode: Show Extension Logs command executed');
+            } catch (error) {
+                Logger.error(`🔧 DevMode: Failed to execute showLogs command: ${error}`);
+            }
+            
+            // Wait 1 second for webview to be fully ready before opening developer tools
+            setTimeout(async () => {
+                try {
+                    await vscode.commands.executeCommand('scientificDataViewer.openDeveloperTools');
+                    Logger.info('🔧 DevMode: Open Developer Tools command executed');
+                } catch (error) {
+                    Logger.error(`🔧 DevMode: Failed to execute openDeveloperTools command: ${error}`);
+                }
+            }, 1000);
+        }
+    }
 
     private _getHtmlForWebview(plottingCapabilities: boolean = false) {
         const header = HTMLGenerator.generateHeader(plottingCapabilities, this._lastLoadTime?.toISOString() || null);
