@@ -291,7 +291,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && npm run copy-assets",
+    "copy-assets": "mkdir -p out/src/ui/webview && cp src/ui/webview/*.js out/src/ui/webview/",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
