@@ -588,6 +588,102 @@ export class CSSGenerator {
         
         .plot-error.hidden {
             display: none;
+        }
+        
+        /* Per-variable plot controls */
+        .variable-plot-controls {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 4px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+        
+        .plot-controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .plot-type-select {
+            background-color: var(--vscode-dropdown-background);
+            color: var(--vscode-dropdown-foreground);
+            border: 1px solid var(--vscode-dropdown-border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .create-plot-button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .create-plot-button:hover:not(:disabled) {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        
+        .create-plot-button:disabled {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            cursor: not-allowed;
+        }
+        
+        .plot-image-container {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .plot-image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        
+        .plot-actions {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .plot-action-button {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .plot-action-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .plot-action-button:disabled {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .global-plot-controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            justify-content: center;
+            flex-wrap: wrap;
         }`;
     }
 }

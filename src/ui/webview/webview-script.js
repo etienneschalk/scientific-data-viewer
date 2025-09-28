@@ -143,6 +143,10 @@ class WebviewMessageBus {
         return this.sendRequest('refresh', {});
     }
 
+    async showNotification(message, type) {
+        return this.sendRequest('showNotification', { message, type });
+    }
+
     // Event emission methods
     onDataLoaded(callback) {
         return this.onEvent('dataLoaded', callback);
@@ -301,6 +305,12 @@ function displayDataInfo(data, filePath) {
         } else {
             variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
         }
+    }
+    
+    // Add plot controls for each variable if plotting capabilities are enabled
+    const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
+    if (hasPlottingCapabilities && data.variables && data.variables.length > 0) {
+        addVariablePlotControls(data.variables);
     }
     
     // Show content
@@ -501,6 +511,192 @@ function resetPlot() {
     hidePlotError();
 }
 
+// Per-variable plot functions
+function displayVariablePlot(variable, plotData) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const imageContainer = container.querySelector('.plot-image-container');
+    const plotError = container.querySelector('.plot-error');
+    
+    // Hide any previous errors
+    hideVariablePlotError(variable);
+    
+    if (plotData && plotData.startsWith('iVBOR')) {
+        imageContainer.innerHTML = `<img src="data:image/png;base64,${plotData}" alt="Plot for ${variable}">`;
+        container.style.display = 'block';
+    } else {
+        imageContainer.innerHTML = '<p>Failed to generate plot</p>';
+        container.style.display = 'block';
+    }
+}
+
+function resetVariablePlot(variable) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const imageContainer = container.querySelector('.plot-image-container');
+    
+    imageContainer.innerHTML = '';
+    container.style.display = 'none';
+    hideVariablePlotError(variable);
+}
+
+function resetAllPlots() {
+    const containers = document.querySelectorAll('.plot-container');
+    containers.forEach(container => {
+        const imageContainer = container.querySelector('.plot-image-container');
+        imageContainer.innerHTML = '';
+        container.style.display = 'none';
+        const variable = container.getAttribute('data-variable');
+        hideVariablePlotError(variable);
+    });
+}
+
+function showVariablePlotError(variable, message) {
+    const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
+    if (plotError) {
+        plotError.textContent = message;
+        plotError.classList.remove('hidden');
+        plotError.classList.remove('success');
+        plotError.classList.add('error');
+    }
+}
+
+function showVariablePlotSuccess(variable, message) {
+    const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
+    if (plotError) {
+        plotError.textContent = message;
+        plotError.classList.remove('hidden');
+        plotError.classList.remove('error');
+        plotError.classList.add('success');
+    }
+}
+
+function hideVariablePlotError(variable) {
+    const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
+    if (plotError) {
+        plotError.classList.add('hidden');
+        plotError.textContent = '';
+        plotError.classList.remove('error', 'success');
+    }
+}
+
+async function saveVariablePlot(variable) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showVariablePlotError(variable, 'No plot to save');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    const filePath = window.currentFilePath || 'unknown_file';
+    const fileName = generateDefaultFileName(variable, filePath);
+    
+    try {
+        const result = await messageBus.savePlot(plotData, variable, fileName);
+        if (result.success) {
+            showVariablePlotSuccess(variable, `Plot saved successfully: ${fileName}`);
+            console.log('Plot saved successfully:', result.filePath);
+        } else {
+            showVariablePlotError(variable, `Failed to save plot: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error saving plot:', error);
+        showVariablePlotError(variable, 'Failed to save plot: ' + error.message);
+    }
+}
+
+async function saveVariablePlotAs(variable) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showVariablePlotError(variable, 'No plot to save');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    
+    try {
+        const result = await messageBus.savePlotAs(plotData, variable);
+        if (result.success) {
+            showVariablePlotSuccess(variable, `Plot saved as: ${result.filePath?.split('/').pop() || 'plot.png'}`);
+            console.log('Plot saved as:', result.filePath);
+        } else {
+            if (result.error !== 'Save cancelled by user') {
+                showVariablePlotError(variable, `Failed to save plot: ${result.error}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving plot as:', error);
+        showVariablePlotError(variable, 'Failed to save plot: ' + error.message);
+    }
+}
+
+async function openVariablePlot(variable) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showVariablePlotError(variable, 'No plot to open');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    const filePath = window.currentFilePath || 'unknown_file';
+    const fileName = generateDefaultFileName(variable, filePath);
+    
+    try {
+        await messageBus.openPlot(plotData, variable, fileName);
+        showVariablePlotSuccess(variable, `Plot opened: ${fileName}`);
+    } catch (error) {
+        console.error('Error opening plot:', error);
+        showVariablePlotError(variable, 'Failed to open plot: ' + error.message);
+    }
+}
+
+async function saveAllPlots() {
+    const containers = document.querySelectorAll('.plot-container');
+    const plotsToSave = [];
+    
+    containers.forEach(container => {
+        const img = container.querySelector('img');
+        if (img) {
+            const variable = container.getAttribute('data-variable');
+            const plotData = img.src.split(',')[1];
+            plotsToSave.push({ variable, plotData });
+        }
+    });
+    
+    if (plotsToSave.length === 0) {
+        try {
+            await messageBus.showNotification('No plots to save', 'warning');
+        } catch (error) {
+            console.error('Failed to show notification:', error);
+        }
+        return;
+    }
+    
+    try {
+        for (const { variable, plotData } of plotsToSave) {
+            const filePath = window.currentFilePath || 'unknown_file';
+            const fileName = generateDefaultFileName(variable, filePath);
+            const result = await messageBus.savePlot(plotData, variable, fileName);
+            if (result.success) {
+                showVariablePlotSuccess(variable, `Plot saved: ${fileName}`);
+            } else {
+                showVariablePlotError(variable, `Failed to save: ${result.error}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving all plots:', error);
+        try {
+            await messageBus.showNotification('Failed to save all plots: ' + error.message, 'error');
+        } catch (notificationError) {
+            console.error('Failed to show notification:', notificationError);
+        }
+    }
+}
+
 function generateDefaultFileName(variable, filePath) {
     const fileName = filePath.split('/').pop().split('.')[0];
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
@@ -593,55 +789,57 @@ async function openPlotInNewTab() {
 function setupEventListeners(plottingCapabilities = false) {
     // Plotting event listeners (if plotting capabilities are enabled)
     if (plottingCapabilities) {
-        const variableSelect = document.getElementById('variableSelect');
-        const plotButton = document.getElementById('plotButton');
-        
-        if (variableSelect) {
-            variableSelect.addEventListener('change', (e) => {
-                selectedVariable = e.target.value;
-                if (plotButton) {
-                    plotButton.disabled = !selectedVariable;
+        // Global plot controls
+        const resetAllPlotsButton = document.getElementById('resetAllPlotsButton');
+        if (resetAllPlotsButton) {
+            resetAllPlotsButton.addEventListener('click', resetAllPlots);
+        }
+
+        const saveAllPlotsButton = document.getElementById('saveAllPlotsButton');
+        if (saveAllPlotsButton) {
+            saveAllPlotsButton.addEventListener('click', saveAllPlots);
+        }
+
+        // Per-variable plot controls - use event delegation
+        document.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('create-plot-button')) {
+                const variable = e.target.getAttribute('data-variable');
+                const plotTypeSelect = document.querySelector(`.plot-type-select[data-variable="${variable}"]`);
+                const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
+                const actualPlotType = plotType === 'auto' ? 'line' : plotType;
+                
+                try {
+                    const plotData = await messageBus.createPlot(variable, actualPlotType);
+                    displayVariablePlot(variable, plotData);
+                } catch (error) {
+                    console.error('Failed to create plot:', error);
+                    showVariablePlotError(variable, 'Failed to create plot: ' + error.message);
                 }
-            });
-        }
+            } else if (e.target.classList.contains('reset-plot')) {
+                const variable = e.target.getAttribute('data-variable');
+                resetVariablePlot(variable);
+            } else if (e.target.classList.contains('save-plot')) {
+                const variable = e.target.getAttribute('data-variable');
+                await saveVariablePlot(variable);
+            } else if (e.target.classList.contains('save-plot-as')) {
+                const variable = e.target.getAttribute('data-variable');
+                await saveVariablePlotAs(variable);
+            } else if (e.target.classList.contains('open-plot')) {
+                const variable = e.target.getAttribute('data-variable');
+                await openVariablePlot(variable);
+            }
+        });
 
-        if (plotButton) {
-            plotButton.addEventListener('click', async () => {
-                if (selectedVariable) {
-                    const plotTypeSelect = document.getElementById('plotTypeSelect');
-                    const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
-                    const actualPlotType = plotType === 'auto' ? 'line' : plotType;
-                    try {
-                        const plotData = await messageBus.createPlot(selectedVariable, actualPlotType);
-                        displayPlot(plotData);
-                    } catch (error) {
-                        console.error('Failed to create plot:', error);
-                        showPlotError('Failed to create plot: ' + error.message);
-                    }
+        // Enable create plot buttons when plot type is selected
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('plot-type-select')) {
+                const variable = e.target.getAttribute('data-variable');
+                const createButton = document.querySelector(`.create-plot-button[data-variable="${variable}"]`);
+                if (createButton) {
+                    createButton.disabled = false;
                 }
-            });
-        }
-
-        // Plot control buttons
-        const resetPlotButton = document.getElementById('resetPlotButton');
-        if (resetPlotButton) {
-            resetPlotButton.addEventListener('click', resetPlot);
-        }
-
-        const savePlotButton = document.getElementById('savePlotButton');
-        if (savePlotButton) {
-            savePlotButton.addEventListener('click', savePlot);
-        }
-
-        const savePlotAsButton = document.getElementById('savePlotAsButton');
-        if (savePlotAsButton) {
-            savePlotAsButton.addEventListener('click', savePlotAs);
-        }
-
-        const openPlotButton = document.getElementById('openPlotButton');
-        if (openPlotButton) {
-            openPlotButton.addEventListener('click', openPlotInNewTab);
-        }
+            }
+        });
     }
 
     // Refresh event listener
@@ -865,14 +1063,62 @@ function initialize(plottingCapabilities = false) {
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Check if plotting capabilities are enabled by looking for plot-related elements
-        const hasPlottingElements = document.getElementById('variableSelect') && document.getElementById('plotButton');
+        // Check if plotting capabilities are enabled by looking for global plot controls
+        const hasPlottingElements = document.getElementById('resetAllPlotsButton') !== null;
         initialize(hasPlottingElements);
     });
 } else {
     // DOM is already loaded
-    const hasPlottingElements = document.getElementById('variableSelect') && document.getElementById('plotButton');
+    const hasPlottingElements = document.getElementById('resetAllPlotsButton') !== null;
     initialize(hasPlottingElements);
+}
+
+// Add plot controls for each variable
+function addVariablePlotControls(variables) {
+    variables.forEach(variable => {
+        const variableItem = document.querySelector(`.variable-item[data-variable="${variable.name}"]`);
+        
+        if (variableItem) {
+            const plotControls = generateVariablePlotControls(variable.name, true);
+            variableItem.insertAdjacentHTML('afterend', plotControls);
+            
+            // Enable the create plot button since it has a default selection
+            const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
+            if (createButton) {
+                createButton.disabled = false;
+            }
+        }
+    });
+}
+
+// Generate variable plot controls HTML
+function generateVariablePlotControls(variableName, plottingCapabilities) {
+    if (!plottingCapabilities) {
+        return '';
+    }
+    
+    return `
+        <div class="variable-plot-controls" data-variable="${variableName}">
+            <div class="plot-controls-row">
+                <select class="plot-type-select" data-variable="${variableName}">
+                    <option value="auto" selected>Auto (Recommended)</option>
+                    <!-- <option value="line">Line Plot</option> -->
+                    <!-- <option value="heatmap">Heatmap</option> -->
+                    <!-- <option value="histogram">Histogram</option> -->
+                </select>
+                <button class="create-plot-button" data-variable="${variableName}">Create Plot</button>
+            </div>
+            <div class="plot-container" data-variable="${variableName}" style="display: none;">
+                <div class="plot-image-container"></div>
+                <div class="plot-actions">
+                    <button class="plot-action-button reset-plot" data-variable="${variableName}">Reset</button>
+                    <button class="plot-action-button save-plot" data-variable="${variableName}">Save</button>
+                    <button class="plot-action-button save-plot-as" data-variable="${variableName}">Save As...</button>
+                    <button class="plot-action-button open-plot" data-variable="${variableName}">Open</button>
+                </div>
+                <div class="plot-error hidden" data-variable="${variableName}"></div>
+            </div>
+        </div>`;
 }
 
 // Export functions for external use if needed
@@ -883,5 +1129,6 @@ window.ScientificDataViewer = {
     showError,
     hideError,
     updateTimestamp,
-    formatFileSize
+    formatFileSize,
+    generateVariablePlotControls
 };

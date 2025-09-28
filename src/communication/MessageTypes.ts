@@ -80,6 +80,11 @@ export interface ExtensionConfigResponse {
     config: Record<string, any>;
 }
 
+export interface ShowNotificationRequest {
+    message: string;
+    type: 'info' | 'warning' | 'error';
+}
+
 export interface ErrorResponse {
     message: string;
     details?: string;
@@ -163,7 +168,8 @@ export const COMMANDS = {
     SAVE_PLOT: 'savePlot',
     SAVE_PLOT_AS: 'savePlotAs',
     OPEN_PLOT: 'openPlot',
-    REFRESH: 'refresh'
+    REFRESH: 'refresh',
+    SHOW_NOTIFICATION: 'showNotification'
 } as const;
 
 export const EVENTS = {

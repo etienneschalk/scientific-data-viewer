@@ -84,6 +84,10 @@ export class UIController {
         this.messageBus.registerRequestHandler('getCurrentFilePath', async () => {
             return this.handleGetCurrentFilePath();
         });
+
+        this.messageBus.registerRequestHandler('showNotification', async (payload) => {
+            return this.handleShowNotification(payload.message, payload.type);
+        });
     }
 
     private setupStateSubscription(): void {
@@ -417,6 +421,27 @@ export class UIController {
         }, context);
         
         return result || { filePath: '' };
+    }
+
+    private async handleShowNotification(message: string, type: 'info' | 'warning' | 'error'): Promise<void> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'showNotification'
+        };
+
+        await this.errorBoundary.wrapAsync(async () => {
+            switch (type) {
+                case 'info':
+                    vscode.window.showInformationMessage(message);
+                    break;
+                case 'warning':
+                    vscode.window.showWarningMessage(message);
+                    break;
+                case 'error':
+                    vscode.window.showErrorMessage(message);
+                    break;
+            }
+        }, context);
     }
 
     private updateUI(state: AppState): void {

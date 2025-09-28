@@ -54,6 +54,7 @@ export class HTMLGenerator {
             <button id="plotButton" disabled>Create Plot</button>`;
     }
 
+
     static generateTimestamp(lastLoadTime: string | null): string {
         if (!lastLoadTime) {
             return '<div id="timestamp" class="timestamp hidden"><span class="timestamp-icon">🕒</span><span id="timestampText">Last loaded: --</span></div>';
@@ -78,7 +79,7 @@ export class HTMLGenerator {
         ${this.generateFileInfo()}
         ${this.generateHtmlRepresentation()}
         ${this.generateTextRepresentation()}
-        ${this.generateDimensionsAndVariables()}
+        ${this.generateDimensionsAndVariables(plottingCapabilities)}
         ${this.generatePlottingSections(plottingCapabilities)}
         ${this.generateTroubleshooting()}
     </div>`;
@@ -99,7 +100,7 @@ export class HTMLGenerator {
         </div>`;
     }
 
-    static generateDimensionsAndVariables(): string {
+    static generateDimensionsAndVariables(plottingCapabilities: boolean): string {
         return `
         <div class="info-section">
             <h3>Dimensions</h3>
@@ -179,16 +180,11 @@ export class HTMLGenerator {
         
         return `
         <div class="info-section">
-            <h3>Visualization</h3>
-            ${this.generatePlottingControls(plottingCapabilities)}
-            <div id="plotContainer" class="plot-container"></div>
-            <div id="plotControls" class="plot-controls hidden">
-                <button id="resetPlotButton" class="plot-control-button">Reset Plot</button>
-                <button id="savePlotButton" class="plot-control-button">Save Plot</button>
-                <button id="savePlotAsButton" class="plot-control-button">Save Plot As...</button>
-                <button id="openPlotButton" class="plot-control-button">Open in New Tab</button>
+            <h3>Global Plot Controls</h3>
+            <div class="global-plot-controls">
+                <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
+                <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
             </div>
-            <div id="plotError" class="plot-error hidden"></div>
         </div>`;
     }
 
