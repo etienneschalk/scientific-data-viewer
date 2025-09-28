@@ -98,7 +98,7 @@ export class DataProcessor {
             Logger.info(`Creating plot for variable '${variable}' with type '${plotType}'`);
 
             // Execute Python script and capture both stdout and stderr
-            const result = await this.pythonManager.executePythonFileWithLogs(scriptPath, args);
+            const result = await this.pythonManager.executePythonFile(scriptPath, args, true);
 
             if (typeof result === 'string' && result.startsWith('iVBOR')) {
                 Logger.info(`Plot created successfully for variable '${variable}'`);

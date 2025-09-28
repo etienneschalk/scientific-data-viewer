@@ -448,68 +448,13 @@ export class PythonManager {
         });
     }
 
-    async executePythonFile(scriptPath: string, args: string[] = []): Promise<any> {
+    async executePythonFile(scriptPath: string, args: string[] = [], enableLogs: boolean = false): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
-
-        return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, [scriptPath, ...args], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
-
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            process.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    try {
-                        const result = JSON.parse(stdout);
-                        resolve(result);
-                    } catch (error) {
-                        resolve(stdout);
-                    }
-                } else {
-                    const errorMessage = stderr || 'Unknown Python error';
-                    if (errorMessage.includes('ModuleNotFoundError')) {
-                        reject(new Error(`Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`));
-                    } else if (errorMessage.includes('PermissionError')) {
-                        reject(new Error(`Permission denied: ${errorMessage}. Please check file permissions.`));
-                    } else if (errorMessage.includes('FileNotFoundError')) {
-                        reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
-                    } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
-                    }
-                }
-            });
-
-            process.on('error', (error) => {
-                if (error.message.includes('ENOENT')) {
-                    reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
-                } else {
-                    reject(new Error(`Failed to execute Python script: ${error.message}`));
-                }
-            });
-        });
-    }
-
-    async executePythonFileWithLogs(scriptPath: string, args: string[] = []): Promise<any> {
-        if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
-        }
-
-        Logger.log(`🐍 📜 executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        const methodName = enableLogs ? 'executePythonFileWithLogs' : 'executePythonFile';
+        Logger.log(`🐍 📜 ${methodName}: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -528,35 +473,37 @@ export class PythonManager {
                 const logData = data.toString();
                 stderr += logData;
 
-                // Forward Python logs to VSCode Logger
-                // Parse log lines and forward them
-                const lines = logData.split('\n').filter((line: string) => line.trim());
-                lines.forEach((line: string) => {
-                    if (line.includes(' - INFO - ')) {
-                        const message = line.split(' - INFO - ')[1];
-                        if (message) {
-                            Logger.info(`🐍 📜 [Python] ${message}`);
+                if (enableLogs) {
+                    // Forward Python logs to VSCode Logger
+                    // Parse log lines and forward them
+                    const lines = logData.split('\n').filter((line: string) => line.trim());
+                    lines.forEach((line: string) => {
+                        if (line.includes(' - INFO - ')) {
+                            const message = line.split(' - INFO - ')[1];
+                            if (message) {
+                                Logger.info(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - ERROR - ')) {
+                            const message = line.split(' - ERROR - ')[1];
+                            if (message) {
+                                Logger.error(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - WARNING - ')) {
+                            const message = line.split(' - WARNING - ')[1];
+                            if (message) {
+                                Logger.warn(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - DEBUG - ')) {
+                            const message = line.split(' - DEBUG - ')[1];
+                            if (message) {
+                                Logger.debug(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.trim()) {
+                            // Any other stderr output that doesn't match the log format
+                            Logger.info(`🐍 📜 [Python] ${line.trim()}`);
                         }
-                    } else if (line.includes(' - ERROR - ')) {
-                        const message = line.split(' - ERROR - ')[1];
-                        if (message) {
-                            Logger.error(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.includes(' - WARNING - ')) {
-                        const message = line.split(' - WARNING - ')[1];
-                        if (message) {
-                            Logger.warn(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.includes(' - DEBUG - ')) {
-                        const message = line.split(' - DEBUG - ')[1];
-                        if (message) {
-                            Logger.debug(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.trim()) {
-                        // Any other stderr output that doesn't match the log format
-                        Logger.info(`🐍 📜 [Python] ${line.trim()}`);
-                    }
-                });
+                    });
+                }
             });
 
             process.on('close', (code) => {
@@ -590,6 +537,7 @@ export class PythonManager {
             });
         });
     }
+
 
     getPythonPath(): string | undefined {
         return this.pythonPath;

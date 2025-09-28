@@ -47,9 +47,9 @@ export class HTMLGenerator {
             </select>
             <select id="plotTypeSelect">
                 <option value="auto" selected>Auto (Recommended)</option>
-                <option value="line">Line Plot</option>
-                <option value="heatmap">Heatmap</option>
-                <option value="histogram">Histogram</option>
+                <!-- <option value="line">Line Plot</option> -->
+                <!-- <option value="heatmap">Heatmap</option> -->
+                <!-- <option value="histogram">Histogram</option> -->
             </select>
             <button id="plotButton" disabled>Create Plot</button>`;
     }

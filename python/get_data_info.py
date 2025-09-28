@@ -18,9 +18,11 @@ import logging
 import os
 from pathlib import Path
 import sys
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 from xarray.core.dataset import Dataset
 import xarray as xr
+import matplotlib as mpl
+import numpy as np
 
 # Try to import DataTree, fallback if not available
 try:
@@ -40,10 +42,16 @@ logging.basicConfig(
 )
 logger: Logger = logging.getLogger(__name__)
 
-XR_OPTIONS: Dict[str, Any] = {"display_max_rows": 1000}
+# Set globally for all plots: use scientific notation for large/small numbers
+mpl.rcParams["axes.formatter.limits"] = (-3, 3)
+mpl.rcParams["axes.formatter.use_mathtext"] = True
+xr.set_options(display_expand_attrs=False, display_expand_data=False)
+np.set_printoptions(threshold=20, edgeitems=2)
+
+XR_TEXT_OPTIONS: dict[str, Any] = {"display_max_rows": 1000}
 
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
+FORMAT_ENGINE_MAP: dict[str, list[str]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
@@ -63,7 +71,7 @@ FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES: Dict[str, str] = {
+FORMAT_DISPLAY_NAMES: dict[str, str] = {
     ".nc": "NetCDF",
     ".netcdf": "NetCDF",
     ".zarr": "Zarr",
@@ -82,7 +90,7 @@ FORMAT_DISPLAY_NAMES: Dict[str, str] = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES: Dict[str, str] = {
+ENGINE_PACKAGES: dict[str, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -94,14 +102,14 @@ ENGINE_PACKAGES: Dict[str, str] = {
 }
 
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS: Dict[str, Union[Any, None]] = {
+DEFAULT_ENGINE_BACKEND_KWARGS: dict[str, Any | None] = {
     engine: None for engine in ENGINE_PACKAGES
 }
 # Avoid intempestive .idx file creation
 DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = {
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = {
     engine: False for engine in ENGINE_PACKAGES
 }
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
@@ -112,8 +120,8 @@ DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 class FileFormatInfo:
     extension: str
     display_name: str
-    available_engines: List[str]
-    missing_packages: List[str]
+    available_engines: list[str]
+    missing_packages: list[str]
 
     @property
     def is_supported(self) -> bool:
@@ -124,20 +132,20 @@ class FileFormatInfo:
 class VariableInfo:
     name: str
     dtype: str
-    shape: List[int]
-    dimensions: List[str]
+    shape: list[int]
+    dimensions: list[str]
     size_bytes: int
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
 
 
 @dataclass(frozen=True)
 class CoordinateInfo:
     name: str
     dtype: str
-    shape: List[int]
-    dimensions: List[str]
+    shape: list[int]
+    dimensions: list[str]
     size_bytes: int
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -146,10 +154,10 @@ class FileInfoResult:
     format_info: FileFormatInfo
     used_engine: str
     fileSize: int
-    dimensions: Dict[str, int]
-    variables: List[VariableInfo]
-    coordinates: List[CoordinateInfo]
-    attributes: Dict[str, Any]
+    dimensions: dict[str, int]
+    variables: list[VariableInfo]
+    coordinates: list[CoordinateInfo]
+    attributes: dict[str, Any]
     xarray_html_repr: str
     xarray_text_repr: str
     xarray_show_versions: str
@@ -170,12 +178,12 @@ def check_package_availability(package_name: str) -> bool:
     return find_spec(package_name) is not None
 
 
-def get_available_engines(file_extension: str) -> List[str]:
+def get_available_engines(file_extension: str) -> list[str]:
     """Get available engines for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    available_engines: List[str] = []
+    available_engines: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_availability(package_name):
@@ -184,12 +192,12 @@ def get_available_engines(file_extension: str) -> List[str]:
     return available_engines
 
 
-def get_missing_packages(file_extension: str) -> List[str]:
+def get_missing_packages(file_extension: str) -> list[str]:
     """Get missing packages required for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    missing_packages: List[str] = []
+    missing_packages: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if not check_package_availability(package_name):
@@ -215,7 +223,7 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 
 def open_datatree_with_fallback(
     file_path: Path, file_format_info: FileFormatInfo
-) -> Tuple[Union[Dataset, Any], str]:
+) -> tuple[Dataset | Any, str]:
     """Open datatree or dataset with fallback to different engines."""
     if not file_format_info.is_supported:
         raise ImportError(
@@ -224,7 +232,7 @@ def open_datatree_with_fallback(
         )
 
     # Try each available engine
-    exceptions: List[Exception] = []
+    exceptions: list[Exception] = []
 
     for engine in file_format_info.available_engines:
         try:
@@ -367,30 +375,34 @@ def create_plot(file_path: Path, variable_name: str, plot_type: str = "line"):
         if strategy == "2d_spatial":
             # 2D spatial data - plot directly with appropriate colormap
             logger.info("Creating 2D spatial plot")
-            var.plot(figsize=(12, 8), cmap="viridis")
+            ax = var.plot.imshow(cmap="viridis", aspect=1)
 
         elif strategy == "3d_col":
             # 3D data with spatial dimensions - use col parameter
             logger.info("Creating 3D plot with col parameter")
             first_dim = var.dims[0]
-            var.plot(col=first_dim, figsize=(15, 10), cmap="viridis")
-
+            ax = var.plot.imshow(col=first_dim, cmap="viridis", aspect=1)
         elif strategy == "4d_col_row":
             # 4D data with spatial dimensions - use col and row parameters
             logger.info("Creating 4D plot with col and row parameters")
             first_dim = var.dims[0]
             second_dim = var.dims[1]
-            var.plot(col=second_dim, row=first_dim, figsize=(20, 15), cmap="viridis")
-
+            ax = var.plot.imshow(
+                col=second_dim,
+                row=first_dim,
+                cmap="viridis",
+                aspect=1,
+            )
         else:
             # Default plotting behavior - let xarray decide the best method
             logger.info("Creating default plot using xarray's native plotting")
+            var.plot()
 
-            if plot_type == "histogram":
-                var.plot.hist(figsize=(10, 6))
-            else:
-                # Let xarray automatically choose the best plotting method
-                var.plot(figsize=(12, 8))
+            # if plot_type == "histogram":
+            #     var.plot.hist(figsize=(10, 6))
+            # else:
+            #     # Let xarray automatically choose the best plotting method
+            #     var.plot(figsize=(12, 8))
 
         # Convert to base64 string
         buffer = BytesIO()
@@ -436,11 +448,11 @@ def get_file_info(file_path: Path):
 
     try:
         # Extract information
-        with xr.set_options(**XR_OPTIONS):
+        with xr.set_options(**XR_TEXT_OPTIONS):
             # Get HTML representation using xarray's built-in HTML representation
             repr_text: str = str(xds_or_xdt)
-            # Get text representation using xarray's built-in text representation
-            repr_html: str = xds_or_xdt._repr_html_()
+        # Get text representation using xarray's built-in text representation
+        repr_html: str = xds_or_xdt._repr_html_()
 
         info = FileInfoResult(
             format=file_format_info.display_name,

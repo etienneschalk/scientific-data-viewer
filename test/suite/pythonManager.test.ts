@@ -232,9 +232,9 @@ suite('PythonManager Test Suite', () => {
         }
     });
 
-    test('should handle executePythonFileWithLogs when not ready', async () => {
+    test('should handle executePythonFile with logs when not ready', async () => {
         try {
-            await pythonManager.executePythonFileWithLogs('/path/to/script.py');
+            await pythonManager.executePythonFile('/path/to/script.py', [], true);
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);

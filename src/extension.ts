@@ -145,7 +145,6 @@ export function activate(context: vscode.ExtensionContext) {
             isReady: () => false,
             executePythonScript: async () => { throw new Error('Python environment not available'); },
             executePythonFile: async () => { throw new Error('Python environment not available'); },
-            executePythonFileWithLogs: async () => { throw new Error('Python environment not available'); },
             getPythonPath: () => undefined,
             getCurrentPythonPath: () => undefined,
             forceReinitialize: async () => { },
