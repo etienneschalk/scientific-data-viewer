@@ -258,16 +258,20 @@ function displayDataInfo(data, filePath) {
     if (coordinatesContainer) {
         if (data.coordinates && data.coordinates.length > 0) {
             coordinatesContainer.innerHTML = data.coordinates
-                .map(variable => `
-                    <div class="variable-item" data-variable="${variable.name}">
-                        <strong>${variable.name}</strong><br>
-                        <small>
-                            ${variable.dtype} ${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
-                            ${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
-                            ${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
-                        </small>
-                    </div>
-                `)
+                .map(variable => {
+                    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                    const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                    const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                    
+                    return `
+                        <div class="variable-item" data-variable="${variable.name}">
+                            <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                            <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                            <span class="dims">${dimsStr}</span>
+                            ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                        </div>
+                    `;
+                })
                 .join('');
         } else {
             coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
@@ -279,16 +283,20 @@ function displayDataInfo(data, filePath) {
     if (variablesContainer) {
         if (data.variables && data.variables.length > 0) {
             variablesContainer.innerHTML = data.variables
-                .map(variable => `
-                    <div class="variable-item" data-variable="${variable.name}">
-                        <strong>${variable.name}</strong><br>
-                        <small>
-                            ${variable.dtype} ${variable.shape ? '(' + variable.shape.join(', ') + ')' : ''}<br>
-                            ${variable.dimensions && variable.dimensions.length > 0 ? 'Dims: ' + variable.dimensions.join(', ') : ''}<br>
-                            ${variable.size_bytes ? 'Size: ' + formatFileSize(variable.size_bytes) : ''}
-                        </small>
-                    </div>
-                `)
+                .map(variable => {
+                    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                    const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                    const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                    
+                    return `
+                        <div class="variable-item" data-variable="${variable.name}">
+                            <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                            <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                            <span class="dims">${dimsStr}</span>
+                            ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                        </div>
+                    `;
+                })
                 .join('');
         } else {
             variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';

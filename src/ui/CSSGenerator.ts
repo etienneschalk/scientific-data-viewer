@@ -206,17 +206,21 @@ export class CSSGenerator {
         
         .dimensions, .variables, .coordinates {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
+            grid-template-columns: 1fr;
+            gap: 8px;
             margin-top: 10px;
         }
         
         .dimension-item, .variable-item {
-            padding: 8px;
+            padding: 6px 8px;
             background-color: var(--vscode-list-hoverBackground);
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
         }
         
         .dimension-item:hover, .variable-item:hover {
@@ -226,6 +230,107 @@ export class CSSGenerator {
         .variable-item.selected {
             background-color: var(--vscode-list-activeSelectionBackground);
             color: var(--vscode-list-activeSelectionForeground);
+        }
+        
+        .variable-item {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+        }
+        
+        .variable-item .variable-name {
+            font-weight: bold;
+            flex: 1;
+            min-width: 120px;
+            padding-right: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .variable-item .dtype-shape {
+            flex: 1;
+            min-width: 100px;
+            padding: 0 12px;
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .variable-item .dims {
+            flex: 1;
+            min-width: 100px;
+            padding: 0 12px;
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .variable-item .size {
+            flex: 1;
+            min-width: 80px;
+            padding-left: 12px;
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            white-space: nowrap;
+            text-align: right;
+        }
+        
+        /* Responsive design for small screens */
+        @media (max-width: 768px) {
+            .variable-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1px;
+                padding: 4px 8px;
+            }
+            
+            .variable-item .variable-name,
+            .variable-item .dtype-shape,
+            .variable-item .dims,
+            .variable-item .size {
+                flex: none;
+                min-width: auto;
+                width: 100%;
+                padding: 1px 0;
+                text-align: left;
+                line-height: 1.2;
+            }
+            
+            .variable-item .size {
+                text-align: right;
+            }
+        }
+        
+        /* For very small screens, make it even more compact */
+        @media (max-width: 480px) {
+            .variable-item {
+                padding: 3px 6px;
+                gap: 0;
+            }
+            
+            .variable-item .variable-name,
+            .variable-item .dtype-shape,
+            .variable-item .dims,
+            .variable-item .size {
+                padding: 0.5px 0;
+                line-height: 1.1;
+            }
+            
+            .variable-item .variable-name {
+                font-size: 0.95em;
+            }
+            
+            .variable-item .dtype-shape,
+            .variable-item .dims,
+            .variable-item .size {
+                font-size: 0.85em;
+            }
         }`;
     }
 

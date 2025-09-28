@@ -132,14 +132,16 @@ export class DataDisplayComponent extends BaseComponent {
         const className = `variable-item ${clickable ? 'clickable' : ''}`;
         const dataAttributes = clickable ? `data-variable="${item.name}"` : '';
         
+        const shapeStr = item.shape ? `(${item.shape.join(', ')})` : '';
+        const dimsStr = item.dimensions ? `Dims: (${item.dimensions.join(', ')})` : '';
+        const sizeStr = item.size_bytes ? `Size: ${this.formatFileSize(item.size_bytes)}` : '';
+        
         return `
             <div class="${className}" ${dataAttributes}>
-                <strong>${item.name}</strong><br>
-                <small>
-                    ${item.dtype} ${item.shape ? '(' + item.shape.join(', ') + ')' : ''}<br>
-                    ${item.dimensions && item.dimensions.length > 0 ? 'Dims: ' + item.dimensions.join(', ') : ''}<br>
-                    ${item.size_bytes ? 'Size: ' + this.formatFileSize(item.size_bytes) : ''}
-                </small>
+                <span class="variable-name" title="${item.name}">${item.name}</span>
+                <span class="dtype-shape">${item.dtype} ${shapeStr}</span>
+                <span class="dims">${dimsStr}</span>
+                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </div>
         `;
     }
