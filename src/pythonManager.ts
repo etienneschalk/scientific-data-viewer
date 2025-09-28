@@ -215,7 +215,7 @@ export class PythonManager {
             }
         }
 
-        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages}`);
+        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`);
         return availablePackages;
     }
 

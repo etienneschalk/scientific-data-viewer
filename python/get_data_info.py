@@ -5,13 +5,21 @@ Supports all xarray-compatible formats with automatic engine detection and depen
 Usage: python get_data_info.py <file_path>
 """
 
+from logging import Logger
+
+
+from dataclasses import asdict, dataclass
 import io
 import json
 import logging
 import os
+from pathlib import Path
 import sys
+from typing import Any
+from xarray.core.dataset import Dataset
+from xarray.core.datatree import DataTree
 import xarray as xr
-
+from importlib.util import find_spec
 
 # Set up logging
 # Redirect logging to stderr so it doesn't interfere with the base64 output
@@ -20,19 +28,18 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)
 
-XARRAY_MAX_ROWS_FOR_TEXT_REPRESENTATION = 1000
+XR_OPTIONS: dict[str, Any] = {"display_max_rows": 1000}
 
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP = {
+FORMAT_ENGINE_MAP: dict[str, list[str]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
     ".zarr": ["zarr"],
     ".h5": ["h5netcdf", "h5py", "netcdf4"],
     ".hdf5": ["h5netcdf", "h5py", "netcdf4"],
-    # Additional formats that might be supported
     ".grib": ["cfgrib"],
     ".grib2": ["cfgrib"],
     ".tif": ["rasterio"],
@@ -46,7 +53,7 @@ FORMAT_ENGINE_MAP = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES = {
+FORMAT_DISPLAY_NAMES: dict[str, str] = {
     ".nc": "NetCDF",
     ".netcdf": "NetCDF",
     ".zarr": "Zarr",
@@ -65,7 +72,7 @@ FORMAT_DISPLAY_NAMES = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES = {
+ENGINE_PACKAGES: dict[str, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -77,102 +84,164 @@ ENGINE_PACKAGES = {
 }
 
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS = {engine: None for engine in ENGINE_PACKAGES}
+DEFAULT_ENGINE_BACKEND_KWARGS: dict[str, Any | None] = {
+    engine: None for engine in ENGINE_PACKAGES
+}
 # Avoid intempestive .idx file creation
 DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET = {engine: False for engine in ENGINE_PACKAGES}
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = {
+    engine: False for engine in ENGINE_PACKAGES
+}
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 
 
-def check_package_availability(package_name):
+@dataclass(frozen=True, kw_only=True)
+class FileFormatInfo:
+    extension: str
+    display_name: str
+    available_engines: list[str]
+    missing_packages: list[str]
+
+    @property
+    def is_supported(self) -> bool:
+        return len(self.available_engines) > 0
+
+
+@dataclass(frozen=True, kw_only=True)
+class VariableInfo:
+    name: str
+    dtype: str
+    shape: list[int]
+    dimensions: list[str]
+    size_bytes: int
+    attributes: dict[str, Any]
+
+
+@dataclass(frozen=True, kw_only=True)
+class CoordinateInfo:
+    name: str
+    dtype: str
+    shape: list[int]
+    dimensions: list[str]
+    size_bytes: int
+    attributes: dict[str, Any]
+
+
+@dataclass(frozen=True, kw_only=True)
+class FileInfoResult:
+    format: str
+    format_info: FileFormatInfo
+    used_engine: str
+    fileSize: int
+    dimensions: dict[str, int]
+    variables: list[VariableInfo]
+    coordinates: list[CoordinateInfo]
+    attributes: dict[str, Any]
+    xarray_html_repr: str
+    xarray_text_repr: str
+    xarray_show_versions: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class FileInfoError:
+    error: str
+    error_type: str
+    suggestion: str
+    format_info: FileFormatInfo
+    xarray_show_versions: str
+
+
+def check_package_availability(package_name: str) -> bool:
     """Check if a Python package is available."""
-    try:
-        logger.info(f"Checking package availability: {package_name}")
-        __import__(package_name)
-        return True
-    except ImportError:
-        return False
+    logger.info(f"Checking package availability: {package_name}")
+    return find_spec(package_name) is not None
 
 
-def get_available_engines(file_extension):
+def get_available_engines(file_extension: str) -> list[str]:
     """Get available engines for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    available_engines = []
+    available_engines: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
-        package_name = ENGINE_PACKAGES.get(engine, engine)
+        package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_availability(package_name):
             available_engines.append(engine)
 
     return available_engines
 
 
-def get_missing_packages(file_extension):
+def get_missing_packages(file_extension: str) -> list[str]:
     """Get missing packages required for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    missing_packages = []
+    missing_packages: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
-        package_name = ENGINE_PACKAGES.get(engine, engine)
+        package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if not check_package_availability(package_name):
             missing_packages.append(package_name)
 
     return missing_packages
 
 
-def detect_file_format(file_path):
+def detect_file_format(file_path: Path) -> FileFormatInfo:
     """Detect file format and return extension, display name, and available engines."""
-    ext = os.path.splitext(file_path)[1].lower()
-    display_name = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
-    available_engines = get_available_engines(ext)
-    missing_packages = get_missing_packages(ext)
+    ext: str = file_path.suffix.lower()
+    display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
+    available_engines: list[str] = get_available_engines(ext)
+    missing_packages: list[str] = get_missing_packages(ext)
 
-    return {
-        "extension": ext,
-        "display_name": display_name,
-        "available_engines": available_engines,
-        "missing_packages": missing_packages,
-        "is_supported": len(available_engines) > 0,
-    }
+    return FileFormatInfo(
+        extension=ext,
+        display_name=display_name,
+        available_engines=available_engines,
+        missing_packages=missing_packages,
+    )
 
 
-def open_datatree_with_fallback(file_path, file_format_info):
-    """Open datatree with fallback to different engines."""
-    ext = file_format_info["extension"]
-    available_engines = file_format_info["available_engines"]
-
-    if not available_engines:
+def open_datatree_with_fallback(
+    file_path: Path, file_format_info: FileFormatInfo
+) -> tuple[Dataset | DataTree, str]:
+    """Open datatree or dataset with fallback to different engines."""
+    if not file_format_info.is_supported:
         raise ImportError(
-            f"No engines available for {ext} files. Missing packages: {', '.join(file_format_info['missing_packages'])}"
+            f"No engines available for {file_format_info.extension} files. "
+            f"Missing packages: {', '.join(file_format_info.missing_packages)}"
         )
 
     # Try each available engine
-    last_error = None
-    for engine in available_engines:
+    exceptions: list[Exception] = []
+
+    for engine in file_format_info.available_engines:
         try:
-            if DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]:
-                xds = xr.open_dataset(
+            use_datatree: bool = (
+                hasattr(xr, "open_datatree")
+                and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
+            )
+            if use_datatree:
+                xdt_or_xds = xr.open_datatree(
                     file_path,
                     engine=engine,
                     backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                 )
-                return xds, engine
-
-            xds = xr.open_datatree(
-                file_path,
-                engine=engine,
-                backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
-            )
-            return xds, engine
-        except NotImplementedError as e:
+                if xdt_or_xds.groups == ("/",):
+                    # DataTree with single group can be narrowed down to a dataset
+                    xdt_or_xds = xdt_or_xds.to_dataset()
+            else:
+                xdt_or_xds = xr.open_dataset(
+                    file_path,
+                    engine=engine,
+                    backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+                )
+            return xdt_or_xds, engine
+        except NotImplementedError as exc:
             # Fallback on dataset
             logger.warning(
-                f"Opening file as DataTree is not implemented with engine {engine}: {e!r}"
+                f"Opening file as DataTree is not implemented with engine {engine}: {exc!r}"
             )
             logger.warning("Fallback to opening file as Dataset")
             xds = xr.open_dataset(
@@ -181,128 +250,112 @@ def open_datatree_with_fallback(file_path, file_format_info):
                 backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
             )
             return xds, engine
-        except Exception as e:
-            last_error = e
+        except Exception as exc:
+            exceptions.append(exc)
             continue
 
     # If all engines failed, raise the last error
-    raise last_error
+    raise exceptions[-1]
 
 
-def get_file_info(file_path):
+def get_file_info(file_path: Path):
+    # Diagnostic: xr.show_versions()
+    # Capture the output of xr.show_versions() by passing a StringIO object
+    output = io.StringIO()
+    xr.show_versions(file=output)
+    versions_text = output.getvalue()
+
+    # Detect file format and available engines
+    file_format_info = detect_file_format(file_path)
+
     try:
-        # Diagnostic: xr.show_versions()
-        # Capture the output of xr.show_versions() by passing a StringIO object
-        output = io.StringIO()
-        xr.show_versions(file=output)
-        versions_text = output.getvalue()
-
-        # Detect file format and available engines
-        file_format_info = detect_file_format(file_path)
-
-        if not file_format_info["is_supported"]:
-            error = {
-                "error": f"Missing dependencies for {file_format_info['display_name']} files: {', '.join(file_format_info['missing_packages'])}",
-                "error_type": "ImportError",
-                "format_info": file_format_info,
-                "suggestion": f"Install required packages: pip install {' '.join(file_format_info['missing_packages'])}",
-                "xarray_show_versions": versions_text,
-            }
-            return {"error": error}
-
         # Open dataset with fallback
-        xds, used_engine = open_datatree_with_fallback(file_path, file_format_info)
+        xds_or_xdt, used_engine = open_datatree_with_fallback(
+            file_path, file_format_info
+        )
+    except ImportError:
+        # Handle missing dependencies
+        error = FileInfoError(
+            error=f"Missing dependencies for {file_format_info.display_name} files: {', '.join(file_format_info.missing_packages)}",
+            error_type="ImportError",
+            format_info=file_format_info,
+            suggestion=f"Install required packages: pip install {' '.join(file_format_info.missing_packages)}",
+            xarray_show_versions=versions_text,
+        )
+        return error
 
+    try:
         # Extract information
-        with xr.set_options(display_max_rows=XARRAY_MAX_ROWS_FOR_TEXT_REPRESENTATION):
-            repr_text = str(xds)
-
-        info = {
-            "format": file_format_info["display_name"],
-            "format_info": file_format_info,
-            "used_engine": used_engine,
-            "fileSize": os.path.getsize(file_path),
-            "dimensions": dict(xds.dims),
-            "variables": [],
-            "coordinates": [],
-            "attributes": dict(xds.attrs) if hasattr(xds, "attrs") else {},
+        with xr.set_options(**XR_OPTIONS):
             # Get HTML representation using xarray's built-in HTML representation
-            "xarray_html_repr": xds._repr_html_(),
+            repr_text: str = str(xds_or_xdt)
             # Get text representation using xarray's built-in text representation
-            "xarray_text_repr": repr_text,
-            "xarray_show_versions": versions_text,
-        }
+            repr_html: str = xds_or_xdt._repr_html_()
+
+        info = FileInfoResult(
+            format=file_format_info.display_name,
+            format_info=file_format_info,
+            used_engine=used_engine,
+            fileSize=os.path.getsize(file_path),
+            dimensions={str(k): v for k, v in xds_or_xdt.dims.items()},
+            variables=[],
+            coordinates=[],
+            attributes={str(k): v for k, v in xds_or_xdt.attrs.items()},
+            xarray_html_repr=repr_html,
+            xarray_text_repr=repr_text,
+            xarray_show_versions=versions_text,
+        )
 
         # Add coordinate variables
-        for coord_name, coord in xds.coords.items():
-            # Calculate size in bytes
-            size_bytes = coord.nbytes
-
-            # Get dimension names
-            dim_names = list(coord.dims) if hasattr(coord, "dims") else []
-
-            coord_info = {
-                "name": coord_name,
-                "dtype": str(coord.dtype),
-                "shape": list(coord.shape),
-                "dimensions": dim_names,
-                "size_bytes": size_bytes,
-                "attributes": dict(coord.attrs) if hasattr(coord, "attrs") else {},
-            }
-            info["coordinates"].append(coord_info)
+        for coord_name, coord in xds_or_xdt.coords.items():
+            coord_info = CoordinateInfo(
+                name=str(coord_name),
+                dtype=str(coord.dtype),
+                shape=list(coord.shape),
+                dimensions=[str(d) for d in coord.dims],
+                size_bytes=coord.nbytes,
+                attributes={str(k): v for k, v in coord.attrs.items()},
+            )
+            info.coordinates.append(coord_info)
 
         # Add data variables
-        for var_name, var in xds.data_vars.items():
-            # Calculate size in bytes
-            size_bytes = var.nbytes
+        for var_name, var in xds_or_xdt.data_vars.items():
+            var_info = VariableInfo(
+                name=str(var_name),
+                dtype=str(var.dtype),
+                shape=list(var.shape),
+                dimensions=[str(d) for d in var.dims],
+                size_bytes=var.nbytes,
+                attributes={str(k): v for k, v in var.attrs.items()},
+            )
+            info.variables.append(var_info)
 
-            # Get dimension names
-            dim_names = list(var.dims) if hasattr(var, "dims") else []
-
-            var_info = {
-                "name": var_name,
-                "dtype": str(var.dtype),
-                "shape": list(var.shape),
-                "dimensions": dim_names,
-                "size_bytes": size_bytes,
-                "attributes": dict(var.attrs) if hasattr(var, "attrs") else {},
-            }
-            info["variables"].append(var_info)
-
-        xds.close()
-        result = info
-        return {"result": result}
-    except ImportError as e:
-        # Handle missing dependencies
-        error = {
-            "error": f"Missing dependencies: {str(e)}",
-            "error_type": "ImportError",
-            "suggestion": "Install required packages using pip install <package_name>",
-            "format_info": file_format_info,
-            "xarray_show_versions": versions_text,
-        }
-        return {"error": error}
-    except Exception as e:
+        xds_or_xdt.close()
+        return info
+    except Exception as exc:
         # Handle other errors (file corruption, format issues, etc.)
-        error = {
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "suggestion": "Check if the file is corrupted or in an unsupported format",
-            "format_info": file_format_info,
-            "xarray_show_versions": versions_text,
-        }
-        return {"error": error}
+        error = FileInfoError(
+            error=str(exc),
+            error_type=type(exc).__name__,
+            suggestion="Check if the file is corrupted or in an unsupported format",
+            format_info=file_format_info,
+            xarray_show_versions=versions_text,
+        )
+        return error
 
 
-def main():
+def main() -> None:
     if len(sys.argv) != 2:
         print(json.dumps({"error": "Usage: python get_data_info.py <file_path>"}))
         sys.exit(1)
 
-    file_path = sys.argv[1]
-    result = get_file_info(file_path)
+    file_path: Path = Path(sys.argv[1])
+    result: FileInfoError | FileInfoResult = get_file_info(file_path)
     logger.info(f"Result: {result}")
-    print(json.dumps(result, default=str))
+    if isinstance(result, FileInfoError):
+        print(json.dumps({"error": asdict(result)}, default=str))
+    else:
+        print(json.dumps({"result": asdict(result)}, default=str))
 
 
 if __name__ == "__main__":

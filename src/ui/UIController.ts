@@ -16,20 +16,22 @@ export class UIController {
     private errorBoundary: ErrorBoundary;
     private dataProcessor: DataProcessor;
     private webview: vscode.Webview;
-    private extensionUri: vscode.Uri;
     private unsubscribeState?: () => void;
-    private onErrorCallback?: (error: Error) => void;
+    private lastLoadTime: Date | null = null;
+    private onErrorPanelCallback: (error: Error) => void;
+    private onSuccessPanelCallback: (success: string) => void;
 
     constructor(
         webview: vscode.Webview,
-        extensionUri: vscode.Uri,
         dataProcessor: DataProcessor,
-        onErrorCallback?: (error: Error) => void
+        onErrorCallback: (error: Error) => void,
+        onSuccessCallback: (success: string) => void
     ) {
         this.webview = webview;
-        this.extensionUri = extensionUri;
         this.dataProcessor = dataProcessor;
-        this.onErrorCallback = onErrorCallback;
+        this.onErrorPanelCallback = onErrorCallback;
+        this.onSuccessPanelCallback = onSuccessCallback;
+
         this.stateManager = new StateManager();
         this.messageBus = new MessageBus(webview);
         this.errorBoundary = ErrorBoundary.getInstance();
@@ -41,7 +43,6 @@ export class UIController {
 
     private setupErrorHandling(): void {
         this.errorBoundary.registerHandler('ui', (error, context) => {
-            Logger.error(`UI Error: ${error.message}`);
             this.messageBus.emitError(
                 error.message,
                 'An error occurred in the UI. Please check the output panel for details.',
@@ -79,6 +80,7 @@ export class UIController {
 
     private setupStateSubscription(): void {
         this.unsubscribeState = this.stateManager.subscribe((state) => {
+            Logger.debug(`[setupStateSubscription] State changed`);
             this.updateUI(state);
         });
     }
@@ -110,7 +112,7 @@ export class UIController {
                 const maxSize = vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100) * 1024 * 1024;
 
                 if (stat.size > maxSize) {
-                    throw new Error(`File too large (${Math.round(stat.size / 1024 / 1024)}MB). Maximum allowed: ${vscode.workspace.getConfiguration('scientificDataViewer').get('maxFileSize', 100)}MB`);
+                    throw new Error(`File too large (${Math.round(stat.size / 1024 / 1024)}MB). Maximum allowed: ${maxSize}MB`);
                 }
 
                 // Get data info
@@ -133,6 +135,9 @@ export class UIController {
                 // Emit data loaded event to webview
                 this.messageBus.emitDataLoaded(dataInfo.result, filePath, new Date().toISOString());
 
+                // Notify the panel about the success
+                this.onSuccessPanelCallback('Data loaded successfully');
+
                 return {
                     data: dataInfo.result,
                     filePath: filePath,
@@ -140,15 +145,22 @@ export class UIController {
                 };
 
             } catch (error) {
-                this.stateManager.setLoading(false);
-                this.stateManager.setError(error instanceof Error ? error.message : String(error));
-                
-                // Notify the panel about the error so it can be added to error state
-                if (this.onErrorCallback && error instanceof Error) {
-                    this.onErrorCallback(error);
+                if (error instanceof Error) {
+                    this.stateManager.setLoading(false);
+                    this.stateManager.setError(error instanceof Error ? error.message : String(error));
+                    
+                    // Notify the panel about the error so it can be added to error state
+                    this.onErrorPanelCallback(error);
+
+                    this.webview.postMessage({
+                        command: 'error',
+                        message: error.message,
+                        details: 'An error occurred in the data viewer panel. Please check the output panel for more details.'
+                    });
+                    
+                    throw error;
                 }
-                
-                throw error;
+  
             }
         }, context);
     }
@@ -249,12 +261,7 @@ export class UIController {
         const needsHTMLRegeneration = this.shouldRegenerateHTML(state);
         
         if (needsHTMLRegeneration) {
-            const header = HTMLGenerator.generateHeader(plottingCapabilities, lastLoadTime);
-            const loadingAndError = HTMLGenerator.generateLoadingAndError();
-            const content = HTMLGenerator.generateContent(plottingCapabilities);
-            
-            const html = HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content);
-            this.webview.html = html;
+            this.setHtml(plottingCapabilities);
         }
 
         // Always emit state change event for content updates
@@ -289,20 +296,23 @@ export class UIController {
         this.stateManager.dispatch({ type: 'SET_PLOTTING_CAPABILITIES', payload: enabled });
     }
 
-    public setPythonState(isReady: boolean, pythonPath: string | null): void {
-        this.stateManager.setPythonReady(isReady);
-        this.stateManager.setPythonPath(pythonPath);
-    }
-
-    public updatePythonPackages(packages: string[]): void {
-        this.stateManager.dispatch({ type: 'SET_AVAILABLE_PACKAGES', payload: packages });
-    }
-
     // Cleanup
     public dispose(): void {
         if (this.unsubscribeState) {
             this.unsubscribeState();
         }
         this.messageBus.dispose();
+    }
+
+    public setHtml(plottingCapabilities: boolean): void {
+        this.webview.html = this.getHtmlForWebview(plottingCapabilities);
+    }
+
+    private getHtmlForWebview(plottingCapabilities: boolean = false) {
+        const header = HTMLGenerator.generateHeader(plottingCapabilities, this.lastLoadTime?.toISOString() || null);
+        const loadingAndError = HTMLGenerator.generateLoadingAndError();
+        const content = HTMLGenerator.generateContent(plottingCapabilities);
+        
+        return HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content);
     }
 }

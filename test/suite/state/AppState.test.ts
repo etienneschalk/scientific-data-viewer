@@ -13,18 +13,15 @@ suite('StateManager Tests', () => {
         assert.strictEqual(state.data.currentFile, null);
         assert.strictEqual(state.data.isLoading, false);
         assert.strictEqual(state.ui.plottingCapabilities, false);
-        assert.strictEqual(state.python.isReady, false);
     });
 
     test('should update state through actions', () => {
         stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: '/test/file.nc' });
         stateManager.dispatch({ type: 'SET_LOADING', payload: true });
-        stateManager.dispatch({ type: 'SET_PYTHON_READY', payload: true });
 
         const state = stateManager.getState();
         assert.strictEqual(state.data.currentFile, '/test/file.nc');
         assert.strictEqual(state.data.isLoading, true);
-        assert.strictEqual(state.python.isReady, true);
     });
 
     test('should notify subscribers on state changes', () => {
@@ -75,11 +72,8 @@ suite('StateManager Tests', () => {
     test('should handle utility methods', () => {
         stateManager.setCurrentFile('/test/file.nc');
         stateManager.setLoading(true);
-        stateManager.setPythonReady(true);
-
         const state = stateManager.getState();
         assert.strictEqual(state.data.currentFile, '/test/file.nc');
         assert.strictEqual(state.data.isLoading, true);
-        assert.strictEqual(state.python.isReady, true);
     });
 });

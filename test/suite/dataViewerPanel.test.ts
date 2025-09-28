@@ -219,7 +219,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should revive panel', () => {
-        DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);
@@ -267,7 +267,7 @@ suite('DataViewerPanel Test Suite', () => {
         } as any;
 
         try {
-            const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), notReadyDataProcessor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), notReadyDataProcessor);
             
             // Mock the _handleGetDataInfo method to test it directly
             let messagePosted = false;
@@ -328,7 +328,7 @@ suite('DataViewerPanel Test Suite', () => {
         vscode.window.showInformationMessage = async () => undefined;
 
         try {
-            const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
             
             // Mock the _handleCreatePlot method to test it directly
             let messagePosted = false;
@@ -374,7 +374,7 @@ suite('DataViewerPanel Test Suite', () => {
         vscode.window.showInformationMessage = async () => undefined;
 
         try {
-            const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), errorDataProcessor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), errorDataProcessor);
             
             // Mock the _handleCreatePlot method to test it directly
             let messagePosted = false;
@@ -397,7 +397,7 @@ suite('DataViewerPanel Test Suite', () => {
 
 
     test('should handle get Python path', async () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Mock the _handleGetPythonPath method to test it directly
         let messagePosted = false;
@@ -435,7 +435,7 @@ suite('DataViewerPanel Test Suite', () => {
         }) as any;
 
         try {
-            const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
             
             // Mock the _handleGetExtensionConfig method to test it directly
             let messagePosted = false;
@@ -456,7 +456,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should dispose panel', () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Add to active panels
         DataViewerPanel.activePanels.add(panel);
@@ -468,7 +468,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should generate HTML for webview', () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Mock the _getHtmlForWebview method to test it directly
         const html = (panel as any)._getHtmlForWebview(true);
@@ -478,7 +478,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should generate HTML for webview without plotting capabilities', () => {
-        const panel = DataViewerPanel.revive(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Mock the _getHtmlForWebview method to test it directly
         const html = (panel as any)._getHtmlForWebview(false);

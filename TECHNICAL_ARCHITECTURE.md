@@ -32,7 +32,6 @@ This document describes the comprehensive architectural improvements implemented
 interface AppState {
   data: DataState; // File data, loading states, errors
   ui: UIState; // UI preferences, selections, display options
-  python: PythonState; // Python environment status and configuration
 }
 ```
 
