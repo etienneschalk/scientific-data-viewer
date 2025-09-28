@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { DataProcessor, DataInfo, DataInfoResult } from './dataProcessor';
+import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
-import { HTMLGenerator } from './ui/HTMLGenerator';
 import { UIController } from './ui/UIController';
 
 
@@ -30,6 +29,7 @@ const SUPPORTED_EXTENSIONS = [
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
     public static panelsWithErrors: Set<DataViewerPanel> = new Set();
+    public static createdCount = 0;
     public static readonly viewType = 'scientificDataViewer';
 
     private readonly _webviewPanel: vscode.WebviewPanel;
@@ -78,12 +78,13 @@ export class DataViewerPanel {
     }
 
     public static create(panel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor): DataViewerPanel {
+        DataViewerPanel.createdCount++;
         const dataViewerPanel = new DataViewerPanel(panel, fileUri, dataProcessor);
         DataViewerPanel.activePanels.add(dataViewerPanel);
         return dataViewerPanel;
     }
 
-    public static async refreshPanelsWithErrors(dataProcessor: DataProcessor) {
+    public static async refreshPanelsWithErrors() {
         Logger.debug(`[refreshPanelsWithErrors] Refreshing ${DataViewerPanel.panelsWithErrors.size} panels with errors`);
         const errorPanelCount = DataViewerPanel.panelsWithErrors.size;
         if (errorPanelCount > 0) {
@@ -116,12 +117,16 @@ export class DataViewerPanel {
         // Static resources are now managed by the main extension
     }
 
-    private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, private dataProcessor: DataProcessor) {
+    private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._webviewPanel = webviewPanel;
+        this._webviewPanel.title = `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`;
         this._currentFile = fileUri;
 
+        // Set the webview's initial html content
+        Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);
+
         // Initialize state management and UI controller
-        this._uiController = new UIController(webviewPanel.webview, dataProcessor, (error) => {
+        this._uiController = new UIController(DataViewerPanel.createdCount, webviewPanel.webview, dataProcessor, (error) => {
             Logger.error(`[UIController] Error: ${error.message}`);
             DataViewerPanel.addPanelWithError(this);
         }, (success) => {
@@ -129,24 +134,7 @@ export class DataViewerPanel {
             DataViewerPanel.removePanelWithError(this);
         });
 
-        // Set the webview's initial html content
-        this._initialize(fileUri, dataProcessor);
-
-        // Check if devMode is enabled and run commands automatically after webview is ready
-        this._handleDevMode();
-
-        // Listen for when the panel is disposed
-        // This happens when the user closes the panel or when the panel is closed programmatically
-        this._webviewPanel.onDidDispose(() => this.dispose(), null, this._disposables);
-    }
-
-    public async _initialize(fileUri: vscode.Uri, dataProcessor: DataProcessor) {
-        Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);
-        this._currentFile = fileUri;
-        this.dataProcessor = dataProcessor;
-
         // Update the panel title to reflect the new file
-        this._webviewPanel.title = `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`;
 
         // Get configuration for plotting capabilities
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
@@ -159,7 +147,14 @@ export class DataViewerPanel {
         this._uiController.setPlottingCapabilities(plottingCapabilities);
         
         // Load the file and handle success/error
-        await this._uiController.loadFile(fileUri.fsPath)
+        this._uiController.loadFile(fileUri.fsPath)
+
+        // Check if devMode is enabled and run commands automatically after webview is ready
+        this._handleDevMode();
+
+        // Listen for when the panel is disposed
+        // This happens when the user closes the panel or when the panel is closed programmatically
+        this._webviewPanel.onDidDispose(() => this.dispose(), null, this._disposables);
     }
 
     public dispose() {

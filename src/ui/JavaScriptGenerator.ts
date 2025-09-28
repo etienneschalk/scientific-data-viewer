@@ -7,9 +7,7 @@ export class JavaScriptGenerator {
         const vscode = acquireVsCodeApi();
         ${this.getWebviewMessageBusCode()}
         const messageBus = new WebviewMessageBus(vscode);
-        let currentData = null;
         let selectedVariable = null;
-        let lastLoadTime = null;
 
         // Event listeners
         ${this.getEventListenersCode(plottingCapabilities)}
@@ -142,14 +140,6 @@ export class JavaScriptGenerator {
 
             async createPlot(variable, plotType) {
                 return this.sendRequest('createPlot', { variable, plotType });
-            }
-
-            async getPythonPath() {
-                return this.sendRequest('getPythonPath', {});
-            }
-
-            async getExtensionConfig() {
-                return this.sendRequest('getExtensionConfig', {});
             }
 
             async refresh() {
@@ -352,12 +342,15 @@ export class JavaScriptGenerator {
     private static getNewMessageHandlerCode(): string {
         return `
         // Set up event listeners for new message system
-        messageBus.onDataLoaded((data) => {
-            console.log('📊 Data loaded event received:', data);
-            currentData = data.data;
-            lastLoadTime = data.lastLoadTime;
-            displayDataInfo(data.data, data.filePath);
-            updateTimestamp(data.lastLoadTime);
+        messageBus.onDataLoaded((state) => {
+            console.log('📊 Data loaded event received:', state);
+            updateTimestamp(state.data.lastLoadTime);
+            displayDataInfo(state.data.dataInfo, state.data.currentFile);
+            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr);
+            displayTextRepresentation(state.data.dataInfo.xarray_text_repr);
+            displayShowVersions(state.data.dataInfo.xarray_show_versions);
+            displayExtensionConfig(state.extension.extensionConfig);
+            displayPythonPath(state.python.pythonPath);
         });
 
         messageBus.onError((error) => {
@@ -535,12 +528,6 @@ export class JavaScriptGenerator {
 
             ${plottingCapabilities ? this.getPlottingDisplayCode() : ''}
             
-            // Request Python path
-            vscode.postMessage({ command: 'getPythonPath' });
-            
-            // Request extension configuration
-            vscode.postMessage({ command: 'getExtensionConfig' });
-
             // Show content
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.remove('hidden');
@@ -635,7 +622,7 @@ export class JavaScriptGenerator {
             const container = document.getElementById('extensionConfig');
             const copyButton = document.getElementById('extensionConfigCopyButton');
             if (configData) {
-                container.textContent = configData;
+                container.textContent = JSON.stringify(configData, null, 2);
                 copyButton.classList.remove('hidden');
             } else {
                 container.textContent = 'Failed to load extension configuration';

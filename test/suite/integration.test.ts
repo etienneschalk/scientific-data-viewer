@@ -150,7 +150,7 @@ suite('Integration Test Suite', () => {
         } as any;
 
         // Create DataViewerPanel with DataProcessor
-        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
         
         assert.ok(panel);
         assert.ok(DataViewerPanel.activePanels.has(panel));
@@ -315,7 +315,7 @@ suite('Integration Test Suite', () => {
             onDidChangeWebviewVisibility: () => ({ dispose: () => {} })
         } as any;
 
-        const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
+        const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
         
         // Test that panel can handle different message types
         const messageTypes = [
@@ -362,7 +362,7 @@ suite('Integration Test Suite', () => {
                 onDidChangeWebviewVisibility: () => ({ dispose: () => {} })
             } as any;
 
-            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
             
             // Test HTML generation with plotting capabilities
             const html = (panel as any)._getHtmlForWebview(true);
@@ -405,8 +405,8 @@ suite('Integration Test Suite', () => {
             } as any;
 
             // Test that multiple tabs are allowed
-            const panel1 = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
-            const panel2 = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
+            const panel1 = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
+            const panel2 = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
             
             assert.ok(DataViewerPanel.activePanels.has(panel1));
             assert.ok(DataViewerPanel.activePanels.has(panel2));
@@ -483,7 +483,7 @@ suite('Integration Test Suite', () => {
         try {
             // Create DataViewerPanel (this will trigger _handleGetDataInfo which uses fs.stat)
             // We'll test the components separately to avoid the fs.stat issue
-            const panel = DataViewerPanel.create(mockWebviewPanel, mockContext.extensionUri, vscode.Uri.file('/path/to/test.nc'), processor);
+            const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), processor);
             
             // Test that panel is created successfully
             assert.ok(panel);

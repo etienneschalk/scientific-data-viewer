@@ -15,13 +15,25 @@ export interface UIState {
     selectedVariable: string | null;
     plotType: string;
     showTimestamp: boolean;
+    activePanel: string | null;
 }
 
+export interface PythonState {
+    isReady: boolean;
+    pythonPath: string | null;
+    availablePackages: string[];
+    error: string | null;
+}
 
+export interface ExtensionConfigState {
+    extensionConfig: Record<string, any> | null;
+}
 
 export interface AppState {
     data: DataState;
     ui: UIState;
+    python: PythonState;
+    extension: ExtensionConfigState;
 }
 
 export type Action = 
@@ -34,6 +46,12 @@ export type Action =
     | { type: 'SET_SELECTED_VARIABLE'; payload: string | null }
     | { type: 'SET_PLOT_TYPE'; payload: string }
     | { type: 'SET_SHOW_TIMESTAMP'; payload: boolean }
+    | { type: 'SET_ACTIVE_PANEL'; payload: string | null }
+    | { type: 'SET_PYTHON_READY'; payload: boolean }
+    | { type: 'SET_PYTHON_PATH'; payload: string | null }
+    | { type: 'SET_AVAILABLE_PACKAGES'; payload: string[] }
+    | { type: 'SET_PYTHON_ERROR'; payload: string | null }
+    | { type: 'SET_EXTENSION'; payload: Record<string, any> | null }
     | { type: 'RESET_STATE' };
 
 export class StateManager {
@@ -56,6 +74,16 @@ export class StateManager {
                 selectedVariable: null,
                 plotType: 'auto',
                 showTimestamp: true,
+                activePanel: null
+            },
+            python: {
+                isReady: false,
+                pythonPath: null,
+                availablePackages: [],
+                error: null,
+            },
+            extension: {
+                extensionConfig: null
             },
             ...initialState
         };
@@ -160,6 +188,42 @@ export class StateManager {
                     ui: { ...state.ui, showTimestamp: action.payload }
                 };
             
+            case 'SET_ACTIVE_PANEL':
+                return {
+                    ...state,
+                    ui: { ...state.ui, activePanel: action.payload }
+                };
+            
+            case 'SET_PYTHON_READY':
+                return {
+                    ...state,
+                    python: { ...state.python, isReady: action.payload }
+                };
+            
+            case 'SET_PYTHON_PATH':
+                return {
+                    ...state,
+                    python: { ...state.python, pythonPath: action.payload }
+                };
+            
+            case 'SET_AVAILABLE_PACKAGES':
+                return {
+                    ...state,
+                    python: { ...state.python, availablePackages: action.payload }
+                };
+            
+            case 'SET_PYTHON_ERROR':
+                return {
+                    ...state,
+                    python: { ...state.python, error: action.payload }
+                };
+            
+            case 'SET_EXTENSION':
+                return {
+                    ...state,
+                    extension: { ...state.extension, extensionConfig: action.payload }
+                };
+            
             case 'RESET_STATE':
                 return {
                     data: {
@@ -174,7 +238,17 @@ export class StateManager {
                         selectedVariable: null,
                         plotType: 'auto',
                         showTimestamp: true,
+                        activePanel: null
                     },
+                    python: {
+                        isReady: false,
+                        pythonPath: null,
+                        availablePackages: [],
+                        error: null,
+                    },
+                    extension: {
+                        extensionConfig: null
+                    }
                 };
             
             default:
@@ -199,9 +273,22 @@ export class StateManager {
         this.dispatch({ type: 'SET_ERROR', payload: error });
     }
 
+    setPythonReady(isReady: boolean): void {
+        this.dispatch({ type: 'SET_PYTHON_READY', payload: isReady });
+    }
+
+    setPythonPath(pythonPath: string | null): void {
+        this.dispatch({ type: 'SET_PYTHON_PATH', payload: pythonPath });
+    }
+
     setLastLoadTime(lastLoadTime: Date | null): void {
         this.dispatch({ type: 'SET_LAST_LOAD_TIME', payload: lastLoadTime });
     }
+
+    setExtension(extensionConfig: Record<string, any> | null): void {
+        this.dispatch({ type: 'SET_EXTENSION', payload: extensionConfig });
+    }
+
 
     // History management
     canUndo(): boolean {
@@ -222,6 +309,10 @@ export class StateManager {
         
         if (this.state.data.isLoading && this.state.data.dataInfo) {
             errors.push('Data is loading but dataInfo is already set');
+        }
+        
+        if (this.state.python.isReady && !this.state.python.pythonPath) {
+            errors.push('Python is ready but no path is set');
         }
         
         if (this.state.ui.selectedVariable && !this.state.data.dataInfo) {

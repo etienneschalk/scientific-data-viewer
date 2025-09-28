@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './pythonManager';
 import { Logger } from './logger';
+import { DataViewerPanel } from './dataViewerPanel';
 
 export interface DataInfo {
     result?: DataInfoResult;
@@ -77,6 +78,13 @@ export class DataProcessor {
             // Logger.debug(`XXX Data info: ${JSON.stringify(result, null, 2)}`);
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
+            
+            if (result.error && result.error.format_info.missing_packages) {
+                this.pythonManager.promptToInstallPackagesForFormat(
+                    result.error.format_info.display_name, 
+                    result.error.format_info.missing_packages,
+                );
+            }
             return result;
         } catch (error) {
             Logger.error(`🐍 ❌ Error processing data file: ${error}`);

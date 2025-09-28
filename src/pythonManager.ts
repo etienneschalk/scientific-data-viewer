@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
+import { DataViewerPanel } from './dataViewerPanel';
 
 export class PythonManager {
     private pythonPath: string | undefined;
@@ -289,27 +290,7 @@ export class PythonManager {
             const missingPackages = missingCorePackages;
 
             if (missingPackages.length > 0) {
-                const action = await vscode.window.showWarningMessage(
-                    `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
-                    'Install',
-                    'Show Details'
-                );
-
-                if (action === 'Install') {
-                    try {
-                        await this.installPackages(missingPackages);
-                    } catch (error) {
-                        Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                        // Show detailed error information
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
-                        throw error; // Re-throw to be caught by the outer try-catch
-                    }
-                } else {
-                    // User cancelled installation, but we still have a valid Python interpreter
-                    // Set as initialized so the extension can work with what's available
-                    Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
-                }
+                await this.promptToInstallRequiredPackages(missingPackages);
             } else {
                 this.isInitialized = true;
                 // Don't show notification during initialization - only when interpreter changes
@@ -472,7 +453,7 @@ export class PythonManager {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📦 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -660,23 +641,54 @@ export class PythonManager {
         }
     }
 
-    /**
-     * Install packages for a specific file format
-     */
-    async installPackagesForFormat(missingPackages: string[]): Promise<void> {
-        if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized');
-        }
+    async promptToInstallRequiredPackages(missingPackages: string[]): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
+            'Install',
+            'Cancel'
+        );
 
-        if (missingPackages.length === 0) {
-            return;
+        if (action === 'Install') {
+            try {
+                await this.installPackages(missingPackages);
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
         }
+    }
 
-        try {
-            await this.installPackages(missingPackages);
-        } catch (error) {
-            Logger.error(`🐍 📦 ❌ Failed to install packages for format: ${error}`);
-            throw error;
+    async promptToInstallPackagesForFormat(format: string, missingPackages: string[]): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${this.pythonPath}. Missing packages for format ${format}: ${missingPackages.join(', ')}. Install them?`,
+            'Install',
+            'Cancel'
+        );
+
+        if (action === 'Install') {
+            try {
+                await this.installPackages(missingPackages);
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX 
+                await DataViewerPanel.refreshPanelsWithErrors();
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(`🐍 📦 ⚠️ Installation cancelled for format ${format}: ${missingPackages.join(', ')}.`);
         }
     }
 

@@ -165,17 +165,9 @@ export class MessageBus {
         return this.sendRequest(COMMANDS.CREATE_PLOT, { variable, plotType });
     }
 
-    async getPythonPath(): Promise<string> {
-        return this.sendRequest(COMMANDS.GET_PYTHON_PATH, {});
-    }
-
-    async getExtensionConfig(): Promise<Record<string, any>> {
-        return this.sendRequest(COMMANDS.GET_EXTENSION_CONFIG, {});
-    }
-
     // Event emission methods
-    emitDataLoaded(data: any, filePath: string, lastLoadTime: string): void {
-        this.sendEvent(EVENTS.DATA_LOADED, { data, filePath, lastLoadTime });
+    emitDataLoaded(state: any): void {
+        this.sendEvent(EVENTS.DATA_LOADED, state);
     }
 
     emitError(message: string, details?: string, errorType?: string, formatInfo?: any): void {

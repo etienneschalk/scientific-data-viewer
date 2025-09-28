@@ -66,9 +66,7 @@ export interface ErrorResponse {
 
 // Event types
 export interface DataLoadedEvent {
-    data: any;
-    filePath: string;
-    lastLoadTime: string;
+    state: any;
 }
 
 export interface ErrorEvent {
@@ -139,8 +137,6 @@ export function isEventMessage(message: Message): message is EventMessage {
 export const COMMANDS = {
     GET_DATA_INFO: 'getDataInfo',
     CREATE_PLOT: 'createPlot',
-    GET_PYTHON_PATH: 'getPythonPath',
-    GET_EXTENSION_CONFIG: 'getExtensionConfig',
     REFRESH: 'refresh'
 } as const;
 

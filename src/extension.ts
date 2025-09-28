@@ -229,7 +229,7 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.refreshPythonEnvironment',
         async () => {
             Logger.info('🎮 🔄 Command: Manually refreshing Python environment...');
-            await refreshUi(pythonManager, dataProcessor, statusBarItem);
+            await refreshPython(pythonManager, statusBarItem);
             vscode.window.showInformationMessage('Python environment refreshed!');
         }
     );
@@ -306,7 +306,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
-    refreshUi(pythonManager, dataProcessor, statusBarItem);
+    refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
@@ -323,7 +323,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage('New interpreter is now considered by the extension');
         }
 
-        await refreshUi(pythonManager, dataProcessor, statusBarItem);
+        await refreshPython(pythonManager, statusBarItem);
     };
 
     // Listen for Python interpreter changes - only listen to Python extension events
@@ -392,7 +392,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Status bar will only be shown when an interpreter is actually selected
 }
 
-async function refreshUi(pythonManager: PythonManager, dataProcessor: DataProcessor, statusBarItem: vscode.StatusBarItem) {
+async function refreshPython(pythonManager: PythonManager, statusBarItem: vscode.StatusBarItem) {
     try {
         await pythonManager.forceInitialize();
 
@@ -404,7 +404,7 @@ async function refreshUi(pythonManager: PythonManager, dataProcessor: DataProces
             updateStatusBar(pythonManager, statusBarItem);
         }
 
-        await DataViewerPanel.refreshPanelsWithErrors(dataProcessor);
+        await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
         vscode.window.showErrorMessage(`❌ Failed to validate Python environment: ${error}`);

@@ -10,7 +10,7 @@ export interface ErrorHandler {
 }
 
 export interface ErrorContext {
-    component: string;
+    component: any;
     operation: string;
     data?: any;
     userAction?: string;
@@ -18,7 +18,7 @@ export interface ErrorContext {
 
 export class ErrorBoundary {
     private static instance: ErrorBoundary;
-    private errorHandlers: Map<string, ErrorHandler> = new Map();
+    private errorHandlers: Map<any, ErrorHandler> = new Map();
     private globalErrorHandler?: ErrorHandler;
     private errorHistory: Array<{ error: Error; context: ErrorContext; timestamp: Date }> = [];
     private maxHistorySize = 100;
@@ -38,7 +38,7 @@ export class ErrorBoundary {
         // Handle uncaught errors
         process.on('uncaughtException', (error) => {
             this.handleError(error, {
-                component: 'global',
+                component:  this,
                 operation: 'uncaughtException'
             });
         });
@@ -46,13 +46,13 @@ export class ErrorBoundary {
         process.on('unhandledRejection', (reason) => {
             const error = reason instanceof Error ? reason : new Error(String(reason));
             this.handleError(error, {
-                component: 'global',
+                component: this,
                 operation: 'unhandledRejection'
             });
         });
     }
 
-    registerHandler(component: string, handler: ErrorHandler): void {
+    registerHandler(component: any, handler: ErrorHandler): void {
         this.errorHandlers.set(component, handler);
         Logger.debug(`🩹 Error handler registered for component: ${component}`);
     }
@@ -195,7 +195,7 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
         this.errorHistory = [];
     }
 
-    getErrorCount(component?: string): number {
+    getErrorCount(component?: any): number {
         if (component) {
             return this.errorHistory.filter(entry => entry.context.component === component).length;
         }

@@ -77,9 +77,9 @@ export class HTMLGenerator {
         return `
     <div id="content" class="hidden">
         ${this.generateFileInfo()}
-        ${this.generateDimensionsAndVariables()}
         ${this.generateHtmlRepresentation()}
         ${this.generateTextRepresentation()}
+        ${this.generateDimensionsAndVariables()}
         ${this.generateTroubleshooting()}
         ${this.generatePlottingSections(plottingCapabilities)}
     </div>`;

@@ -11,6 +11,7 @@ import { Logger } from '../logger';
 import { HTMLGenerator } from './HTMLGenerator';
 
 export class UIController {
+    private id: number;
     private stateManager: StateManager;
     private messageBus: MessageBus;
     private errorBoundary: ErrorBoundary;
@@ -22,11 +23,13 @@ export class UIController {
     private onSuccessPanelCallback: (success: string) => void;
 
     constructor(
+        id: number,
         webview: vscode.Webview,
         dataProcessor: DataProcessor,
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void
     ) {
+        this.id = id;
         this.webview = webview;
         this.dataProcessor = dataProcessor;
         this.onErrorPanelCallback = onErrorCallback;
@@ -42,7 +45,7 @@ export class UIController {
     }
 
     private setupErrorHandling(): void {
-        this.errorBoundary.registerHandler('ui', (error, context) => {
+        this.errorBoundary.registerHandler(`ui-${this.id}`, (error, context) => {
             this.messageBus.emitError(
                 error.message,
                 'An error occurred in the UI. Please check the output panel for details.',
@@ -61,13 +64,6 @@ export class UIController {
             return this.handleCreatePlot(payload.variable, payload.plotType);
         });
 
-        this.messageBus.registerRequestHandler('getPythonPath', async () => {
-            return this.handleGetPythonPath();
-        });
-
-        this.messageBus.registerRequestHandler('getExtensionConfig', async () => {
-            return this.handleGetExtensionConfig();
-        });
 
         this.messageBus.registerRequestHandler('refresh', async () => {
             return this.handleRefresh();
@@ -87,7 +83,7 @@ export class UIController {
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'getDataInfo',
             data: { filePath }
         };
@@ -118,6 +114,7 @@ export class UIController {
                 // Get data info
                 const dataInfo = await this.dataProcessor.getDataInfo(fileUri);
                 
+                
                 if (!dataInfo) {
                     throw new Error('Failed to load data file. The file might be corrupted or in an unsupported format.');
                 }
@@ -128,20 +125,22 @@ export class UIController {
 
                 // Update state
                 this.stateManager.setCurrentFile(filePath);
-                this.stateManager.setDataInfo(dataInfo.result);
                 this.stateManager.setLastLoadTime(new Date());
                 this.stateManager.setLoading(false);
+                this.stateManager.setError(null);
+                this.stateManager.setPythonPath(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath() || null);
+                this.stateManager.setPythonReady(this.dataProcessor.pythonManagerInstance.isReady());
+                this.stateManager.setExtension(await this.handleGetExtensionConfig());
+                this.stateManager.setDataInfo(dataInfo.result);
 
                 // Emit data loaded event to webview
-                this.messageBus.emitDataLoaded(dataInfo.result, filePath, new Date().toISOString());
+                this.messageBus.emitDataLoaded(this.stateManager.getState());
 
                 // Notify the panel about the success
                 this.onSuccessPanelCallback('Data loaded successfully');
 
                 return {
                     data: dataInfo.result,
-                    filePath: filePath,
-                    lastLoadTime: new Date().toISOString()
                 };
 
             } catch (error) {
@@ -167,7 +166,7 @@ export class UIController {
 
     private async handleCreatePlot(variable: string, plotType: string): Promise<string | null> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'createPlot',
             data: { variable, plotType }
         };
@@ -190,21 +189,10 @@ export class UIController {
         }, context);
     }
 
-    private async handleGetPythonPath(): Promise<string | null> {
-        const context: ErrorContext = {
-            component: 'ui',
-            operation: 'getPythonPath'
-        };
-
-        return this.errorBoundary.wrapAsync(async () => {
-            const pythonPath = this.dataProcessor.pythonManagerInstance.getCurrentPythonPath();
-            return pythonPath || 'No Python interpreter configured';
-        }, context) || 'No Python interpreter configured';
-    }
 
     private async handleGetExtensionConfig(): Promise<Record<string, any> | null> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'getExtensionConfig'
         };
 
@@ -222,7 +210,7 @@ export class UIController {
 
     private async handleRefresh(): Promise<void | null> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'refresh'
         };
 
@@ -236,7 +224,7 @@ export class UIController {
 
     private async handleGetCurrentFilePath(): Promise<{ filePath: string }> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'getCurrentFilePath'
         };
 
@@ -278,7 +266,7 @@ export class UIController {
     // Public methods for external control
     public async loadFile(filePath: string): Promise<void> {
         const context: ErrorContext = {
-            component: 'ui',
+            component: `ui-${this.id}`,
             operation: 'loadFile',
             data: { filePath }
         };
