@@ -191,7 +191,7 @@ export class PythonManager {
     }
 
 
-    private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
+    public async checkRequiredPackages(pythonPath: string): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
         // Core packages required for basic functionality
@@ -220,7 +220,7 @@ export class PythonManager {
         return availablePackages;
     }
 
-    private async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
+    public async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
         return new Promise((resolve) => {
             const args = ['-c', `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`];
             const process = spawn(pythonPath, args, { shell: true });

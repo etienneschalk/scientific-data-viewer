@@ -286,13 +286,17 @@ function displayDataInfo(data, filePath) {
 }
 
 // Plotting functions (if plotting capabilities are enabled)
-function populateVariableSelect(variables) {
+function populateVariableSelect(variables, plottingCapabilities) {
+    if (!plottingCapabilities) {
+        return;
+    }
+
     const select = document.getElementById('variableSelect');
     select.innerHTML = '<option value="">Select a variable...</option>';
     variables.forEach(variable => {
         const option = document.createElement('option');
-        option.value = variable;
-        option.textContent = variable;
+        option.value = variable.name;
+        option.textContent = variable.name;
         select.appendChild(option);
     });
 }
@@ -630,6 +634,7 @@ function setupMessageHandlers() {
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);
         displayPythonPath(state.python.pythonPath);
+        populateVariableSelect(state.data.dataInfo.variables, state.extension.extensionConfig['scientificDataViewer.plottingCapabilities']);
     });
 
     messageBus.onError((error) => {

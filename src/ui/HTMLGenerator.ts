@@ -30,7 +30,6 @@ export class HTMLGenerator {
     <div class="header">
         <div class="title">Scientific Data Viewer</div>
         <div class="controls">
-            ${this.generatePlottingControls(plottingCapabilities)}
             ${this.generateTimestamp(lastLoadTime)}
             <button id="refreshButton">Refresh</button>
         </div>
@@ -80,8 +79,8 @@ export class HTMLGenerator {
         ${this.generateHtmlRepresentation()}
         ${this.generateTextRepresentation()}
         ${this.generateDimensionsAndVariables()}
-        ${this.generateTroubleshooting()}
         ${this.generatePlottingSections(plottingCapabilities)}
+        ${this.generateTroubleshooting()}
     </div>`;
     }
 
@@ -181,6 +180,7 @@ export class HTMLGenerator {
         return `
         <div class="info-section">
             <h3>Visualization</h3>
+            ${this.generatePlottingControls(plottingCapabilities)}
             <div id="plotContainer" class="plot-container"></div>
         </div>`;
     }

@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Script to get data file information including format, dimensions, variables, and attributes.
+Script to get data file information and create plots from data file variables.
 Supports all xarray-compatible formats with automatic engine detection and dependency management.
-Usage: python get_data_info.py <file_path>
+Usage:
+  python get_data_info.py info <file_path>
+  python get_data_info.py plot <file_path> <variable_name> [plot_type]
 """
 
 from logging import Logger
 
-
+import argparse
+import base64
 from dataclasses import asdict, dataclass
 import io
 import json
@@ -15,11 +18,18 @@ import logging
 import os
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Dict, List, Tuple, Union
 from xarray.core.dataset import Dataset
-from xarray.core.datatree import DataTree
 import xarray as xr
+
+# Try to import DataTree, fallback if not available
+try:
+    from xarray.core.datatree import DataTree
+except ImportError:
+    DataTree = None
 from importlib.util import find_spec
+import matplotlib.pyplot as plt
+from io import BytesIO
 
 # Set up logging
 # Redirect logging to stderr so it doesn't interfere with the base64 output
@@ -30,10 +40,10 @@ logging.basicConfig(
 )
 logger: Logger = logging.getLogger(__name__)
 
-XR_OPTIONS: dict[str, Any] = {"display_max_rows": 1000}
+XR_OPTIONS: Dict[str, Any] = {"display_max_rows": 1000}
 
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP: dict[str, list[str]] = {
+FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
@@ -53,7 +63,7 @@ FORMAT_ENGINE_MAP: dict[str, list[str]] = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES: dict[str, str] = {
+FORMAT_DISPLAY_NAMES: Dict[str, str] = {
     ".nc": "NetCDF",
     ".netcdf": "NetCDF",
     ".zarr": "Zarr",
@@ -72,7 +82,7 @@ FORMAT_DISPLAY_NAMES: dict[str, str] = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES: dict[str, str] = {
+ENGINE_PACKAGES: Dict[str, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -84,68 +94,68 @@ ENGINE_PACKAGES: dict[str, str] = {
 }
 
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS: dict[str, Any | None] = {
+DEFAULT_ENGINE_BACKEND_KWARGS: Dict[str, Union[Any, None]] = {
     engine: None for engine in ENGINE_PACKAGES
 }
 # Avoid intempestive .idx file creation
 DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = {
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = {
     engine: False for engine in ENGINE_PACKAGES
 }
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class FileFormatInfo:
     extension: str
     display_name: str
-    available_engines: list[str]
-    missing_packages: list[str]
+    available_engines: List[str]
+    missing_packages: List[str]
 
     @property
     def is_supported(self) -> bool:
         return len(self.available_engines) > 0
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class VariableInfo:
     name: str
     dtype: str
-    shape: list[int]
-    dimensions: list[str]
+    shape: List[int]
+    dimensions: List[str]
     size_bytes: int
-    attributes: dict[str, Any]
+    attributes: Dict[str, Any]
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class CoordinateInfo:
     name: str
     dtype: str
-    shape: list[int]
-    dimensions: list[str]
+    shape: List[int]
+    dimensions: List[str]
     size_bytes: int
-    attributes: dict[str, Any]
+    attributes: Dict[str, Any]
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class FileInfoResult:
     format: str
     format_info: FileFormatInfo
     used_engine: str
     fileSize: int
-    dimensions: dict[str, int]
-    variables: list[VariableInfo]
-    coordinates: list[CoordinateInfo]
-    attributes: dict[str, Any]
+    dimensions: Dict[str, int]
+    variables: List[VariableInfo]
+    coordinates: List[CoordinateInfo]
+    attributes: Dict[str, Any]
     xarray_html_repr: str
     xarray_text_repr: str
     xarray_show_versions: str
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class FileInfoError:
     error: str
     error_type: str
@@ -160,12 +170,12 @@ def check_package_availability(package_name: str) -> bool:
     return find_spec(package_name) is not None
 
 
-def get_available_engines(file_extension: str) -> list[str]:
+def get_available_engines(file_extension: str) -> List[str]:
     """Get available engines for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    available_engines: list[str] = []
+    available_engines: List[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_availability(package_name):
@@ -174,12 +184,12 @@ def get_available_engines(file_extension: str) -> list[str]:
     return available_engines
 
 
-def get_missing_packages(file_extension: str) -> list[str]:
+def get_missing_packages(file_extension: str) -> List[str]:
     """Get missing packages required for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    missing_packages: list[str] = []
+    missing_packages: List[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if not check_package_availability(package_name):
@@ -205,7 +215,7 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 
 def open_datatree_with_fallback(
     file_path: Path, file_format_info: FileFormatInfo
-) -> tuple[Dataset | DataTree, str]:
+) -> Tuple[Union[Dataset, Any], str]:
     """Open datatree or dataset with fallback to different engines."""
     if not file_format_info.is_supported:
         raise ImportError(
@@ -214,12 +224,13 @@ def open_datatree_with_fallback(
         )
 
     # Try each available engine
-    exceptions: list[Exception] = []
+    exceptions: List[Exception] = []
 
     for engine in file_format_info.available_engines:
         try:
             use_datatree: bool = (
-                hasattr(xr, "open_datatree")
+                DataTree is not None
+                and hasattr(xr, "open_datatree")
                 and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
             )
             if use_datatree:
@@ -228,7 +239,7 @@ def open_datatree_with_fallback(
                     engine=engine,
                     backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                 )
-                if xdt_or_xds.groups == ("/",):
+                if hasattr(xdt_or_xds, "groups") and xdt_or_xds.groups == ("/",):
                     # DataTree with single group can be narrowed down to a dataset
                     xdt_or_xds = xdt_or_xds.to_dataset()
             else:
@@ -256,6 +267,145 @@ def open_datatree_with_fallback(
 
     # If all engines failed, raise the last error
     raise exceptions[-1]
+
+
+def is_spatial_dimension(dim_name):
+    """Check if a dimension name represents spatial coordinates."""
+    spatial_patterns = [
+        "x",
+        "y",
+        "lon",
+        "lat",
+        "longitude",
+        "latitude",
+        "east",
+        "west",
+        "north",
+        "south",
+        "easting",
+        "westing",
+        "northing",
+        "southing",
+    ]
+    return any(pattern in dim_name.lower() for pattern in spatial_patterns)
+
+
+def detect_plotting_strategy(var):
+    """Detect the best plotting strategy based on variable dimensions."""
+    dims = list(var.dims)
+    ndim = var.ndim
+
+    logger.info(f"Variable '{var.name}' has {ndim} dimensions: {dims}")
+
+    if ndim == 2:
+        # Check if last two dimensions are spatial
+        if (
+            len(dims) >= 2
+            and is_spatial_dimension(dims[-2])
+            and is_spatial_dimension(dims[-1])
+        ):
+            logger.info("Using 2D spatial plotting strategy")
+            return "2d_spatial"
+
+    elif ndim == 3:
+        # Check if last two dimensions are spatial
+        if (
+            len(dims) >= 2
+            and is_spatial_dimension(dims[-2])
+            and is_spatial_dimension(dims[-1])
+        ):
+            logger.info("Using 3D plotting strategy with col parameter")
+            return "3d_col"
+
+    elif ndim == 4:
+        # Check if last two dimensions are spatial
+        if (
+            len(dims) >= 2
+            and is_spatial_dimension(dims[-2])
+            and is_spatial_dimension(dims[-1])
+        ):
+            logger.info("Using 4D plotting strategy with col and row parameters")
+            return "4d_col_row"
+
+    logger.info("Using default plotting strategy")
+    return "default"
+
+
+def create_plot(file_path: Path, variable_name: str, plot_type: str = "line"):
+    """Create a plot from a data file variable."""
+    try:
+        # Detect file format and available engines
+        file_format_info = detect_file_format(file_path)
+
+        if not file_format_info.is_supported:
+            logger.error(
+                f"No engines available for {file_format_info.extension} files. "
+                f"Missing packages: {', '.join(file_format_info.missing_packages)}"
+            )
+            return None
+
+        # Open dataset with fallback
+        xds_or_xdt, used_engine = open_datatree_with_fallback(
+            file_path, file_format_info
+        )
+
+        # Get variable
+        if variable_name in xds_or_xdt.data_vars:
+            var = xds_or_xdt[variable_name]
+        elif variable_name in xds_or_xdt.coords:
+            var = xds_or_xdt[variable_name]
+        else:
+            logger.error(f"Variable '{variable_name}' not found in dataset")
+            xds_or_xdt.close()
+            return None
+
+        # Detect plotting strategy
+        strategy = detect_plotting_strategy(var)
+        logger.info(f"Using plotting strategy: {strategy}")
+
+        # Create plot using xarray's native plotting methods
+        if strategy == "2d_spatial":
+            # 2D spatial data - plot directly with appropriate colormap
+            logger.info("Creating 2D spatial plot")
+            var.plot(figsize=(12, 8), cmap="viridis")
+
+        elif strategy == "3d_col":
+            # 3D data with spatial dimensions - use col parameter
+            logger.info("Creating 3D plot with col parameter")
+            first_dim = var.dims[0]
+            var.plot(col=first_dim, figsize=(15, 10), cmap="viridis")
+
+        elif strategy == "4d_col_row":
+            # 4D data with spatial dimensions - use col and row parameters
+            logger.info("Creating 4D plot with col and row parameters")
+            first_dim = var.dims[0]
+            second_dim = var.dims[1]
+            var.plot(col=second_dim, row=first_dim, figsize=(20, 15), cmap="viridis")
+
+        else:
+            # Default plotting behavior - let xarray decide the best method
+            logger.info("Creating default plot using xarray's native plotting")
+
+            if plot_type == "histogram":
+                var.plot.hist(figsize=(10, 6))
+            else:
+                # Let xarray automatically choose the best plotting method
+                var.plot(figsize=(12, 8))
+
+        # Convert to base64 string
+        buffer = BytesIO()
+        plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
+        buffer.seek(0)
+        image_base64 = base64.b64encode(buffer.getvalue()).decode()
+        plt.close()
+
+        xds_or_xdt.close()
+        logger.info("Plot created successfully")
+        return image_base64
+
+    except Exception as e:
+        logger.error(f"Error creating plot: {str(e)}")
+        return None
 
 
 def get_file_info(file_path: Path):
@@ -345,17 +495,61 @@ def get_file_info(file_path: Path):
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        print(json.dumps({"error": "Usage: python get_data_info.py <file_path>"}))
+    parser = argparse.ArgumentParser(
+        description="Get data file information and create plots from data file variables",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python get_data_info.py info sample_data.nc
+  python get_data_info.py plot sample_data.nc temperature
+  python get_data_info.py plot sample_data.nc temperature histogram
+        """,
+    )
+
+    parser.add_argument(
+        "mode",
+        choices=["info", "plot"],
+        help="Mode: 'info' to get file information, 'plot' to create plots",
+    )
+
+    parser.add_argument("file_path", type=Path, help="Path to the data file")
+
+    parser.add_argument(
+        "variable_name",
+        nargs="?",
+        help="Variable name to plot (required for plot mode)",
+    )
+
+    parser.add_argument(
+        "plot_type",
+        nargs="?",
+        default="line",
+        help="Plot type: 'line' or 'histogram' (optional, default: 'line')",
+    )
+
+    args = parser.parse_args()
+
+    # Validate arguments based on mode
+    if args.mode == "plot" and not args.variable_name:
+        print(json.dumps({"error": "Variable name is required for plot mode"}))
         sys.exit(1)
 
-    file_path: Path = Path(sys.argv[1])
-    result: FileInfoError | FileInfoResult = get_file_info(file_path)
-    logger.info(f"Result: {result}")
-    if isinstance(result, FileInfoError):
-        print(json.dumps({"error": asdict(result)}, default=str))
-    else:
-        print(json.dumps({"result": asdict(result)}, default=str))
+    if args.mode == "info":
+        # Get file information
+        result: FileInfoError | FileInfoResult = get_file_info(args.file_path)
+        logger.info(f"Result: {result}")
+        if isinstance(result, FileInfoError):
+            print(json.dumps({"error": asdict(result)}, default=str))
+        else:
+            print(json.dumps({"result": asdict(result)}, default=str))
+
+    elif args.mode == "plot":
+        # Create plot
+        result = create_plot(args.file_path, args.variable_name, args.plot_type)
+        if result:
+            print(result)
+        else:
+            print(json.dumps({"error": "Failed to create plot"}))
 
 
 if __name__ == "__main__":

@@ -186,6 +186,13 @@ export class UIController {
             }
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
+
+            const canPlot = await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!, 'matplotlib')
+            if (!canPlot) {
+                this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['matplotlib']);
+                throw new Error('Missing dependencies for plotting');
+            }
+
             const plotData = await this.dataProcessor.createPlot(fileUri, variable, plotType);
             
             if (!plotData) {

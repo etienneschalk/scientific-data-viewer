@@ -73,9 +73,8 @@ export class DataProcessor {
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
 
         try {
-            // Logger.debug(`XXX Getting data info for file: ${filePath}`);
-            const result = await this.pythonManager.executePythonFile(scriptPath, [filePath]);
-            // Logger.debug(`XXX Data info: ${JSON.stringify(result, null, 2)}`);
+            // Use the new merged CLI with 'info' mode
+            const result = await this.pythonManager.executePythonFile(scriptPath, ['info', filePath]);
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return result;
@@ -91,8 +90,9 @@ export class DataProcessor {
         }
 
         const filePath = uri.fsPath;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'create_plot.py');
-        const args = [filePath, variable, plotType];
+        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
+        // Use the new merged CLI with 'plot' mode
+        const args = ['plot', filePath, variable, plotType];
 
         try {
             Logger.info(`Creating plot for variable '${variable}' with type '${plotType}'`);
