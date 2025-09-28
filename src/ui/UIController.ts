@@ -3,6 +3,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as os from 'os';
 import { StateManager, AppState } from '../state/AppState';
 import { MessageBus } from '../communication/MessageBus';
 import { ErrorBoundary, ErrorContext } from '../error/ErrorBoundary';
@@ -64,6 +65,13 @@ export class UIController {
             return this.handleCreatePlot(payload.variable, payload.plotType);
         });
 
+        this.messageBus.registerRequestHandler('savePlot', async (payload) => {
+            return this.handleSavePlot(payload.plotData, payload.variable, payload.fileName);
+        });
+
+        this.messageBus.registerRequestHandler('openPlot', async (payload) => {
+            return this.handleOpenPlot(payload.plotData, payload.variable, payload.fileName);
+        });
 
         this.messageBus.registerRequestHandler('refresh', async () => {
             return this.handleRefresh();
@@ -203,6 +211,96 @@ export class UIController {
         }, context);
     }
 
+    private async handleSavePlot(plotData: string, variable: string, fileName: string): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'savePlot',
+            data: { variable, fileName }
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            try {
+                // Convert base64 to buffer
+                const buffer = Buffer.from(plotData, 'base64');
+                
+                // Get the current file path to determine save location
+                const state = this.stateManager.getState();
+                if (!state.data.currentFile) {
+                    throw new Error('No current file available');
+                }
+
+                const currentFileDir = vscode.Uri.file(state.data.currentFile).fsPath.split('/').slice(0, -1).join('/');
+                const savePath = vscode.Uri.file(`${currentFileDir}/${fileName}`);
+
+                // Write the file
+                await vscode.workspace.fs.writeFile(savePath, buffer);
+                
+                // Show success notification
+                const action = vscode.window.showInformationMessage(
+                    `Plot saved successfully: ${fileName}`,
+                    'Open File',
+                    'Reveal in Explorer'
+                ).then(async (action) => {
+                               // Handle user action
+                            if (action === 'Open File') {
+                                // Open the file in VSCode (this will work for images in newer VSCode versions)
+                                try {
+                                    await vscode.commands.executeCommand('vscode.open', savePath);
+                                } catch (error) {
+                                    // If opening in VSCode fails, open with external application
+                                    await vscode.env.openExternal(savePath);
+                                }
+                            } else if (action === 'Reveal in Explorer') {
+                                // Reveal the file in file explorer
+                                await vscode.commands.executeCommand('revealFileInOS', savePath);
+                            }
+                });
+                
+                Logger.info(`Plot saved successfully: ${savePath.fsPath}`);
+                return { success: true, filePath: savePath.fsPath };
+            } catch (error) {
+                Logger.error(`Error saving plot: ${error}`);
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
+        }, context);
+        
+        return result ?? { success: false, error: 'Unknown error' };
+    }
+
+    private async handleOpenPlot(plotData: string, variable: string, fileName: string): Promise<void> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'openPlot',
+            data: { variable, fileName }
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            // Convert base64 to buffer
+            const buffer = Buffer.from(plotData, 'base64');
+            
+            // Create a temporary file
+            const tempDir = vscode.Uri.file(os.tmpdir());
+            const tempFile = vscode.Uri.joinPath(tempDir, fileName);
+            
+            // Write the temporary file
+            await vscode.workspace.fs.writeFile(tempFile, buffer);
+            
+            // Immediately try to open in VSCode first, fallback to external app
+            try {
+                await vscode.commands.executeCommand('vscode.open', tempFile);
+                Logger.info(`Plot opened in VSCode: ${tempFile.fsPath}`);
+            } catch (vscodeError) {
+                // If opening in VSCode fails, open with external application
+                try {
+                    await vscode.env.openExternal(tempFile);
+                    Logger.info(`Plot opened with external app: ${tempFile.fsPath}`);
+                } catch (externalError) {
+                    Logger.error(`Failed to open plot with both VSCode and external app: ${externalError}`);
+                    throw new Error(`Failed to open plot: ${externalError instanceof Error ? externalError.message : String(externalError)}`);
+                }
+            }
+        }, context);
+    }
 
     private async handleGetExtensionConfig(): Promise<Record<string, any> | null> {
         const context: ErrorContext = {

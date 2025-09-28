@@ -127,6 +127,14 @@ class WebviewMessageBus {
         return this.sendRequest('createPlot', { variable, plotType });
     }
 
+    async savePlot(plotData, variable, fileName) {
+        return this.sendRequest('savePlot', { plotData, variable, fileName });
+    }
+
+    async openPlot(plotData, variable, fileName) {
+        return this.sendRequest('openPlot', { plotData, variable, fileName });
+    }
+
     async refresh() {
         return this.sendRequest('refresh', {});
     }
@@ -194,6 +202,9 @@ function displayDataInfo(data, filePath) {
         showError(data.error);
         return;
     }
+
+    // Store current file path for plot operations
+    window.currentFilePath = filePath;
 
     // Hide any previous errors since data loaded successfully
     hideError();
@@ -303,10 +314,18 @@ function populateVariableSelect(variables, plottingCapabilities) {
 
 function displayPlot(plotData) {
     const container = document.getElementById('plotContainer');
+    const plotControls = document.getElementById('plotControls');
+    const plotError = document.getElementById('plotError');
+    
+    // Hide any previous errors
+    hidePlotError();
+    
     if (plotData && plotData.startsWith('iVBOR')) {
         container.innerHTML = `<img src="data:image/png;base64,${plotData}" alt="Plot">`;
+        plotControls.classList.remove('hidden');
     } else {
         container.innerHTML = '<p>Failed to generate plot</p>';
+        plotControls.classList.add('hidden');
     }
 }
 
@@ -429,6 +448,106 @@ function hideError() {
     errorDiv.innerHTML = '';
 }
 
+// Plot-specific error handling
+function showPlotError(message) {
+    const plotError = document.getElementById('plotError');
+    if (plotError) {
+        plotError.textContent = message;
+        plotError.classList.remove('hidden');
+        plotError.classList.remove('success');
+        plotError.classList.add('error');
+    }
+}
+
+function showPlotSuccess(message) {
+    const plotError = document.getElementById('plotError');
+    if (plotError) {
+        plotError.textContent = message;
+        plotError.classList.remove('hidden');
+        plotError.classList.remove('error');
+        plotError.classList.add('success');
+    }
+}
+
+function hidePlotError() {
+    const plotError = document.getElementById('plotError');
+    if (plotError) {
+        plotError.classList.add('hidden');
+        plotError.textContent = '';
+        plotError.classList.remove('error', 'success');
+    }
+}
+
+// Plot control functions
+function resetPlot() {
+    const container = document.getElementById('plotContainer');
+    const plotControls = document.getElementById('plotControls');
+    const plotError = document.getElementById('plotError');
+    
+    container.innerHTML = '';
+    plotControls.classList.add('hidden');
+    hidePlotError();
+}
+
+function generateDefaultFileName(variable, filePath) {
+    const fileName = filePath.split('/').pop().split('.')[0];
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    return `${fileName}_${variable}_${timestamp}.png`;
+}
+
+async function savePlot() {
+    const container = document.getElementById('plotContainer');
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showPlotError('No plot to save');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    const variable = document.getElementById('variableSelect').value;
+    const filePath = window.currentFilePath || 'unknown_file';
+    const fileName = generateDefaultFileName(variable, filePath);
+    
+    try {
+        const result = await messageBus.savePlot(plotData, variable, fileName);
+        if (result.success) {
+            // Show success message in the plot area
+            showPlotSuccess(`Plot saved successfully: ${fileName}`);
+            console.log('Plot saved successfully:', result.filePath);
+        } else {
+            showPlotError(`Failed to save plot: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error saving plot:', error);
+        showPlotError('Failed to save plot: ' + error.message);
+    }
+}
+
+async function openPlotInNewTab() {
+    const container = document.getElementById('plotContainer');
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showPlotError('No plot to open');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    const variable = document.getElementById('variableSelect').value;
+    const filePath = window.currentFilePath || 'unknown_file';
+    const fileName = generateDefaultFileName(variable, filePath);
+    
+    try {
+        await messageBus.openPlot(plotData, variable, fileName);
+        // Show success message
+        showPlotSuccess(`Plot opened: ${fileName}`);
+    } catch (error) {
+        console.error('Error opening plot:', error);
+        showPlotError('Failed to open plot: ' + error.message);
+    }
+}
+
 // Event listeners setup
 function setupEventListeners(plottingCapabilities = false) {
     // Plotting event listeners (if plotting capabilities are enabled)
@@ -456,10 +575,26 @@ function setupEventListeners(plottingCapabilities = false) {
                         displayPlot(plotData);
                     } catch (error) {
                         console.error('Failed to create plot:', error);
-                        showError('Failed to create plot: ' + error.message);
+                        showPlotError('Failed to create plot: ' + error.message);
                     }
                 }
             });
+        }
+
+        // Plot control buttons
+        const resetPlotButton = document.getElementById('resetPlotButton');
+        if (resetPlotButton) {
+            resetPlotButton.addEventListener('click', resetPlot);
+        }
+
+        const savePlotButton = document.getElementById('savePlotButton');
+        if (savePlotButton) {
+            savePlotButton.addEventListener('click', savePlot);
+        }
+
+        const openPlotButton = document.getElementById('openPlotButton');
+        if (openPlotButton) {
+            openPlotButton.addEventListener('click', openPlotInNewTab);
         }
     }
 

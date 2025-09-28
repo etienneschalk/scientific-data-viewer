@@ -182,6 +182,12 @@ export class HTMLGenerator {
             <h3>Visualization</h3>
             ${this.generatePlottingControls(plottingCapabilities)}
             <div id="plotContainer" class="plot-container"></div>
+            <div id="plotControls" class="plot-controls hidden">
+                <button id="resetPlotButton" class="plot-control-button">Reset Plot</button>
+                <button id="savePlotButton" class="plot-control-button">Save Plot</button>
+                <button id="openPlotButton" class="plot-control-button">Open in New Tab</button>
+            </div>
+            <div id="plotError" class="plot-error hidden"></div>
         </div>`;
     }
 

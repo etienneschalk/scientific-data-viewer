@@ -165,6 +165,14 @@ export class MessageBus {
         return this.sendRequest(COMMANDS.CREATE_PLOT, { variable, plotType });
     }
 
+    async savePlot(plotData: string, variable: string, fileName: string): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        return this.sendRequest(COMMANDS.SAVE_PLOT, { plotData, variable, fileName });
+    }
+
+    async openPlot(plotData: string, variable: string, fileName: string): Promise<void> {
+        return this.sendRequest(COMMANDS.OPEN_PLOT, { plotData, variable, fileName });
+    }
+
     // Event emission methods
     emitDataLoaded(state: any): void {
         this.sendEvent(EVENTS.DATA_LOADED, state);

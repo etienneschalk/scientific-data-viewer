@@ -49,6 +49,24 @@ export interface CreatePlotResponse {
     plotData: string; // Base64 encoded image
 }
 
+export interface SavePlotRequest {
+    plotData: string; // Base64 encoded image
+    variable: string;
+    fileName: string;
+}
+
+export interface SavePlotResponse {
+    success: boolean;
+    filePath?: string;
+    error?: string;
+}
+
+export interface OpenPlotRequest {
+    plotData: string; // Base64 encoded image
+    variable: string;
+    fileName: string;
+}
+
 export interface PythonPathResponse {
     pythonPath: string;
 }
@@ -137,6 +155,8 @@ export function isEventMessage(message: Message): message is EventMessage {
 export const COMMANDS = {
     GET_DATA_INFO: 'getDataInfo',
     CREATE_PLOT: 'createPlot',
+    SAVE_PLOT: 'savePlot',
+    OPEN_PLOT: 'openPlot',
     REFRESH: 'refresh'
 } as const;
 

@@ -429,6 +429,60 @@ export class CSSGenerator {
             height: auto;
             border: 1px solid var(--vscode-panel-border);
             border-radius: 4px;
+        }
+        
+        .plot-controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .plot-control-button {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .plot-control-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        
+        .plot-control-button:disabled {
+            background-color: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .plot-error {
+            color: #ff6b6b;
+            background-color: #2d1b1b;
+            border: 1px solid #ff6b6b;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .plot-error.success {
+            color: #4caf50;
+            background-color: #1b2d1b;
+            border: 1px solid #4caf50;
+        }
+        
+        .plot-error.hidden {
+            display: none;
         }`;
     }
 }
