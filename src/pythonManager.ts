@@ -222,7 +222,7 @@ export class PythonManager {
 
     private async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
         return new Promise((resolve) => {
-            const args = ['-c', `'import ${packageName}'`];
+            const args = ['-c', `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`];
             const process = spawn(pythonPath, args, { shell: true });
 
             process.on('close', (code) => {
