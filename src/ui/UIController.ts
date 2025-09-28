@@ -188,13 +188,7 @@ export class UIController {
     }
 
     private async handleCreatePlot(variable: string, plotType: string): Promise<string | null> {
-        const context: ErrorContext = {
-            component: `ui-${this.id}`,
-            operation: 'createPlot',
-            data: { variable, plotType }
-        };
-
-        return this.errorBoundary.wrapAsync(async () => {
+        try {
             const state = this.stateManager.getState();
             
             if (!state.data.currentFile) {
@@ -216,7 +210,12 @@ export class UIController {
             }
 
             return plotData;
-        }, context);
+        } catch (error) {
+            // For plot creation errors, we want to let the webview handle them locally
+            // instead of sending a global error. We'll re-throw the error so the MessageBus
+            // can send it as a failed response that the webview can catch.
+            throw error;
+        }
     }
 
     private async handleSavePlot(plotData: string, variable: string, fileName: string): Promise<{ success: boolean; filePath?: string; error?: string }> {

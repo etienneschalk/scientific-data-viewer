@@ -433,7 +433,7 @@ export class PythonManager {
                     } else if (errorMessage.includes('FileNotFoundError')) {
                         reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
                     } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
+                        reject(new Error(`Python script failed (exit code ${code}): \n${errorMessage}`));
                     }
                 }
             });
@@ -523,7 +523,7 @@ export class PythonManager {
                     } else if (errorMessage.includes('FileNotFoundError')) {
                         reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
                     } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
+                        reject(new Error(`Python script failed (exit code ${code}): \n${errorMessage}`));
                     }
                 }
             });

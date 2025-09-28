@@ -359,7 +359,9 @@ function displayPlot(plotData) {
         container.innerHTML = `<img src="data:image/png;base64,${plotData}" alt="Plot">`;
         plotControls.classList.remove('hidden');
     } else {
-        container.innerHTML = '<p>Failed to generate plot</p>';
+        // Clear the container and show error in the dedicated error element
+        container.innerHTML = '';
+        showPlotError('Error creating plot: Python script failed');
         plotControls.classList.add('hidden');
     }
 }
@@ -487,7 +489,9 @@ function hideError() {
 function showPlotError(message) {
     const plotError = document.getElementById('plotError');
     if (plotError) {
-        plotError.textContent = message;
+        // Format message to handle multi-line errors
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        plotError.innerHTML = formattedMessage;
         plotError.classList.remove('hidden');
         plotError.classList.remove('success');
         plotError.classList.add('error');
@@ -497,7 +501,9 @@ function showPlotError(message) {
 function showPlotSuccess(message) {
     const plotError = document.getElementById('plotError');
     if (plotError) {
-        plotError.textContent = message;
+        // Format message to handle multi-line messages
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        plotError.innerHTML = formattedMessage;
         plotError.classList.remove('hidden');
         plotError.classList.remove('error');
         plotError.classList.add('success');
@@ -549,7 +555,9 @@ function displayVariablePlot(variable, plotData) {
         imageContainer.innerHTML = `<img src="data:image/png;base64,${plotData}" alt="Plot for ${variable}">`;
         container.style.display = 'block';
     } else {
-        imageContainer.innerHTML = '<p>Failed to generate plot</p>';
+        // Clear the image container and show error in the dedicated error element
+        imageContainer.innerHTML = '';
+        showVariablePlotError(variable, 'Error creating plot: Python script failed');
         container.style.display = 'block';
     }
 }
@@ -577,7 +585,16 @@ function resetAllPlots() {
 function showVariablePlotError(variable, message) {
     const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
     if (plotError) {
-        plotError.textContent = message;
+        // Format message to handle multi-line errors
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        plotError.innerHTML = `
+            <div class="error-content">
+                <div class="error-message">${formattedMessage}</div>
+                <button class="error-copy-button" data-variable="${variable}" title="Copy error message">
+                    📋 Copy
+                </button>
+            </div>
+        `;
         plotError.classList.remove('hidden');
         plotError.classList.remove('success');
         plotError.classList.add('error');
@@ -587,7 +604,9 @@ function showVariablePlotError(variable, message) {
 function showVariablePlotSuccess(variable, message) {
     const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
     if (plotError) {
-        plotError.textContent = message;
+        // Format message to handle multi-line messages
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        plotError.innerHTML = formattedMessage;
         plotError.classList.remove('hidden');
         plotError.classList.remove('error');
         plotError.classList.add('success');
@@ -676,6 +695,52 @@ async function openVariablePlot(variable) {
     } catch (error) {
         console.error('Error opening plot:', error);
         showVariablePlotError(variable, 'Failed to open plot: ' + error.message);
+    }
+}
+
+async function copyPlotError(variable) {
+    try {
+        const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
+        if (!plotError) {
+            return;
+        }
+        
+        const errorMessage = plotError.querySelector('.error-message');
+        if (!errorMessage) {
+            return;
+        }
+        
+        // Get the HTML content and convert <br> tags to newlines
+        const htmlContent = errorMessage.innerHTML || '';
+        const textContent = htmlContent.replace(/<br\s*\/?>/gi, '\n');
+        
+        await navigator.clipboard.writeText(textContent);
+        
+        // Show feedback
+        const copyButton = plotError.querySelector('.error-copy-button');
+        if (copyButton) {
+            const originalText = copyButton.textContent;
+            copyButton.textContent = '✓ Copied!';
+            copyButton.style.color = '#4caf50';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+                copyButton.style.color = '';
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Failed to copy error message:', error);
+        // Fallback: show the error message in an alert
+        const plotError = document.querySelector(`.plot-error[data-variable="${variable}"]`);
+        if (plotError) {
+            const errorMessage = plotError.querySelector('.error-message');
+            if (errorMessage) {
+                const htmlContent = errorMessage.innerHTML || '';
+                const textContent = htmlContent.replace(/<br\s*\/?>/gi, '\n');
+                alert('Error message:\n\n' + textContent);
+            }
+        }
     }
 }
 
@@ -841,7 +906,11 @@ function setupEventListeners(plottingCapabilities = false) {
                     displayVariablePlot(variable, plotData);
                 } catch (error) {
                     console.error('Failed to create plot:', error);
-                    showVariablePlotError(variable, 'Failed to create plot: ' + error.message);
+                    // Clear loading state and show error
+                    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+                    const imageContainer = container.querySelector('.plot-image-container');
+                    imageContainer.innerHTML = '';
+                    showVariablePlotError(variable, 'Error creating plot: ' + error.message);
                 }
             } else if (e.target.classList.contains('reset-plot')) {
                 const variable = e.target.getAttribute('data-variable');
@@ -855,6 +924,9 @@ function setupEventListeners(plottingCapabilities = false) {
             } else if (e.target.classList.contains('open-plot')) {
                 const variable = e.target.getAttribute('data-variable');
                 await openVariablePlot(variable);
+            } else if (e.target.classList.contains('error-copy-button')) {
+                const variable = e.target.getAttribute('data-variable');
+                await copyPlotError(variable);
             }
         });
 

@@ -603,6 +603,34 @@ export class CSSGenerator {
             display: none;
         }
         
+        .error-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .error-message {
+            flex: 1;
+            text-align: left;
+        }
+        
+        .error-copy-button {
+            background-color: transparent;
+            color: inherit;
+            border: 1px solid currentColor;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .error-copy-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
         /* Per-variable plot controls */
         .variable-plot-controls {
             padding: 6px 8px;
