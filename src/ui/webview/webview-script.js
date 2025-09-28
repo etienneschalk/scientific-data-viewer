@@ -440,7 +440,7 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
             <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
             <li>Install required packages: <code>pip install xarray</code></li>
             <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
-            <li>Check VSCode Output panel for more details (choose "Scientific Data Viewer" from the dropdown)</li>
+            <li><a href="#" onclick="executeShowLogsCommand()" style="color: #007acc; text-decoration: underline; cursor: pointer;">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
         </ol>
         <p>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">Scientific Data Viewer GitHub repository</a>.</p>
     `;
@@ -1204,6 +1204,21 @@ function generateVariablePlotControls(variableName, plottingCapabilities) {
         </div>`;
 }
 
+// Function to execute the show logs command
+async function executeShowLogsCommand() {
+    try {
+        console.log('🔧 Executing show logs command...');
+        await messageBus.sendRequest('executeCommand', {
+            command: 'scientificDataViewer.showLogs'
+        });
+        console.log('🔧 Show logs command executed successfully');
+    } catch (error) {
+        console.error('❌ Failed to execute show logs command:', error);
+        // Fallback: show a notification to the user
+        showError('Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"');
+    }
+}
+
 // Export functions for external use if needed
 window.ScientificDataViewer = {
     messageBus,
@@ -1213,5 +1228,6 @@ window.ScientificDataViewer = {
     hideError,
     updateTimestamp,
     formatFileSize,
-    generateVariablePlotControls
+    generateVariablePlotControls,
+    executeShowLogsCommand
 };

@@ -88,6 +88,10 @@ export class UIController {
         this.messageBus.registerRequestHandler('showNotification', async (payload) => {
             return this.handleShowNotification(payload.message, payload.type);
         });
+
+        this.messageBus.registerRequestHandler('executeCommand', async (payload) => {
+            return this.handleExecuteCommand(payload.command, payload.args);
+        });
     }
 
     private setupStateSubscription(): void {
@@ -486,6 +490,21 @@ export class UIController {
 
     public setPlottingCapabilities(enabled: boolean): void {
         this.stateManager.dispatch({ type: 'SET_PLOTTING_CAPABILITIES', payload: enabled });
+    }
+
+    private async handleExecuteCommand(command: string, args?: any[]): Promise<any> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'executeCommand',
+            data: { command, args }
+        };
+
+        return this.errorBoundary.wrapAsync(async () => {
+            Logger.info(`🔧 Executing command: ${command}`);
+            const result = await vscode.commands.executeCommand(command, ...(args || []));
+            Logger.info(`🔧 Command executed successfully: ${command}`);
+            return result;
+        }, context);
     }
 
     // Cleanup
