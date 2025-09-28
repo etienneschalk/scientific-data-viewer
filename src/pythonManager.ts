@@ -6,7 +6,7 @@ import { DataViewerPanel } from './dataViewerPanel';
 
 export class PythonManager {
     private pythonPath: string | undefined;
-    private isInitialized: boolean = false;
+    private initialized: boolean = false;
 
     constructor(private context: vscode.ExtensionContext) {
         // Initialize without old pythonPath setting - will get from Python extension API
@@ -21,7 +21,7 @@ export class PythonManager {
             Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
             this.pythonPath = newPythonPath;
             // Reset initialization state when interpreter changes
-            this.isInitialized = false;
+            this.initialized = false;
         }
 
         if (this.pythonPath) {
@@ -273,9 +273,9 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(): Promise<void> {
-        this.isInitialized = false;
+        this.initialized = false;
 
-        Logger.info(`🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this.isInitialized} | Python path: ${this.pythonPath}`);
+        Logger.info(`🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this.initialized} | Python path: ${this.pythonPath}`);
 
         if (!this.pythonPath) {
             throw new Error('No Python interpreter configured');
@@ -292,7 +292,7 @@ export class PythonManager {
             if (missingPackages.length > 0) {
                 await this.promptToInstallRequiredPackages(missingPackages);
             } else {
-                this.isInitialized = true;
+                this.initialized = true;
                 // Don't show notification during initialization - only when interpreter changes
                 Logger.info(`🐍 📦 ✅ Python environment ready! Using interpreter: ${this.pythonPath}`);
             }
@@ -345,7 +345,7 @@ export class PythonManager {
                 Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
 
                 if (code === 0) {
-                    this.isInitialized = true;
+                    this.initialized = true;
                     vscode.window.showInformationMessage(`Successfully installed packages: ${packages.join(', ')}`);
                     resolve();
                 } else {
@@ -393,11 +393,11 @@ export class PythonManager {
 
 
     async executePythonScript(script: string, args: string[] = []): Promise<any> {
-        if (!this.pythonPath || !this.isInitialized) {
+        if (!this.pythonPath || !this.initialized) {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📦 📜 executePythonScript: Executing Python script with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📦 📜 executePythonScript: Executing Python script with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.initialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, ['-c', script, ...args], {
@@ -449,11 +449,11 @@ export class PythonManager {
     }
 
     async executePythonFile(scriptPath: string, args: string[] = []): Promise<any> {
-        if (!this.pythonPath || !this.isInitialized) {
+        if (!this.pythonPath || !this.initialized) {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.initialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -505,11 +505,11 @@ export class PythonManager {
     }
 
     async executePythonFileWithLogs(scriptPath: string, args: string[] = []): Promise<any> {
-        if (!this.pythonPath || !this.isInitialized) {
+        if (!this.pythonPath || !this.initialized) {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📜 executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        Logger.log(`🐍 📜 executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.initialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -600,7 +600,11 @@ export class PythonManager {
     }
 
     isReady(): boolean {
-        return this.isInitialized && this.hasPythonPath();
+        return this.initialized && this.hasPythonPath();
+    }
+
+    isInitialized(): boolean {
+        return this.initialized;
     }
 
     getCurrentPythonPath(): string | undefined {
@@ -609,7 +613,7 @@ export class PythonManager {
 
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
-        this.isInitialized = false;
+        this.initialized = false;
         await this._initialize();
     }
 

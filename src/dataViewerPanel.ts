@@ -37,6 +37,8 @@ export class DataViewerPanel {
     private _currentFile: vscode.Uri;
     private _uiController: UIController;
 
+
+
     public static createOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
@@ -134,20 +136,27 @@ export class DataViewerPanel {
             DataViewerPanel.removePanelWithError(this);
         });
 
-        // Update the panel title to reflect the new file
-
         // Get configuration for plotting capabilities
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         const plottingCapabilities = config.get('plottingCapabilities', false);
-
+        
         // Set initial HTML first
+        this._uiController.setHtml(plottingCapabilities);
 
         // Update UI controller with new configuration
-        this._uiController.setHtml(plottingCapabilities);
         this._uiController.setPlottingCapabilities(plottingCapabilities);
         
         // Load the file and handle success/error
-        this._uiController.loadFile(fileUri.fsPath)
+        // This is to handle the case where a first file is loaded and the Python environment is not ready yet
+        // We want to continue showing the panel with a loading state until the Python environment is ready
+        // We do not attempt to load the file until the Python environment is ready
+        // If the Python environment is not ready, we add the panel to the error tracking set
+        // This will cause the panel to be refreshed with an error message until the Python environment is ready
+        if (this._uiController.isPythonReady()) {
+            this._uiController.loadFile(fileUri.fsPath)
+        } else {
+            DataViewerPanel.addPanelWithError(this);
+        }
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();

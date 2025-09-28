@@ -118,10 +118,6 @@ class WebviewMessageBus {
         }
     }
 
-    // Convenience methods for common operations
-    async getDataInfo(filePath) {
-        return this.sendRequest('getDataInfo', { filePath });
-    }
 
     async createPlot(variable, plotType) {
         return this.sendRequest('createPlot', { variable, plotType });
@@ -138,10 +134,6 @@ class WebviewMessageBus {
 
     onError(callback) {
         return this.onEvent('error', callback);
-    }
-
-    onPythonEnvironmentChanged(callback) {
-        return this.onEvent('pythonEnvironmentChanged', callback);
     }
 
     onUIStateChanged(callback) {
@@ -635,11 +627,6 @@ function setupMessageHandlers() {
     messageBus.onError((error) => {
         console.error('❌ Error event received:', error);
         showError(error.message, error.details, error.errorType, error.formatInfo);
-    });
-
-    messageBus.onPythonEnvironmentChanged((data) => {
-        console.log('🐍 Python environment changed:', data);
-        displayPythonPath(data.pythonPath);
     });
 
     messageBus.onUIStateChanged((state) => {

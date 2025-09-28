@@ -93,6 +93,10 @@ export class UIController {
             this.stateManager.setError(null);
 
             try {
+                if (!this.dataProcessor.pythonManagerInstance.isInitialized()) {
+                    return false
+                }
+
                 // Check Python environment
                 if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
                     throw new Error('Python path not found. Please configure Python interpreter first.');
@@ -282,6 +286,10 @@ export class UIController {
 
     public setPlottingCapabilities(enabled: boolean): void {
         this.stateManager.dispatch({ type: 'SET_PLOTTING_CAPABILITIES', payload: enabled });
+    }
+
+    public isPythonReady(): boolean {
+        return this.dataProcessor.pythonManagerInstance.isInitialized();
     }
 
     // Cleanup
