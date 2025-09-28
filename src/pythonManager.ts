@@ -290,7 +290,7 @@ export class PythonManager {
             const missingPackages = missingCorePackages;
 
             if (missingPackages.length > 0) {
-                await this.promptToInstallRequiredPackages(missingPackages);
+                this.promptToInstallRequiredPackages(missingPackages);
             } else {
                 this.isInitialized = true;
                 // Don't show notification during initialization - only when interpreter changes
@@ -651,6 +651,9 @@ export class PythonManager {
         if (action === 'Install') {
             try {
                 await this.installPackages(missingPackages);
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX 
+                await DataViewerPanel.refreshPanelsWithErrors();
             } catch (error) {
                 Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
                 // Show detailed error information
