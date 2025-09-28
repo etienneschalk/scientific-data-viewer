@@ -223,6 +223,13 @@ export class CSSGenerator {
             flex-wrap: wrap;
         }
         
+        .variable-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-bottom: 8px;
+        }
+        
         .dimension-item:hover, .variable-item:hover {
             background-color: var(--vscode-list-activeSelectionBackground);
         }
@@ -237,7 +244,9 @@ export class CSSGenerator {
             align-items: center;
             gap: 0;
             flex-wrap: wrap;
+            flex: 1;
         }
+        
         
         .variable-item .variable-name {
             font-weight: bold;
@@ -330,6 +339,10 @@ export class CSSGenerator {
             .variable-item .dims,
             .variable-item .size {
                 font-size: 0.85em;
+            }
+            
+            .variable-plot-controls {
+                padding: 6px;
             }
         }`;
     }
@@ -592,11 +605,11 @@ export class CSSGenerator {
         
         /* Per-variable plot controls */
         .variable-plot-controls {
-            margin-top: 10px;
-            padding: 10px;
+            padding: 6px 8px;
             background-color: var(--vscode-list-hoverBackground);
             border-radius: 4px;
             border: 1px solid var(--vscode-panel-border);
+            margin-top: 2px;
         }
         
         .plot-controls-row {
@@ -687,3 +700,4 @@ export class CSSGenerator {
         }`;
     }
 }
+

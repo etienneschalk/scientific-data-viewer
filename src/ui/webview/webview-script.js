@@ -282,6 +282,9 @@ function displayDataInfo(data, filePath) {
         }
     }
 
+    // Check if plotting capabilities are enabled
+    const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
+    
     // Display variables
     const variablesContainer = document.getElementById('variables');
     if (variablesContainer) {
@@ -292,12 +295,18 @@ function displayDataInfo(data, filePath) {
                     const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
                     const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
                     
+                    const plotControls = hasPlottingCapabilities ? 
+                        generateVariablePlotControls(variable.name, true) : '';
+                    
                     return `
-                        <div class="variable-item" data-variable="${variable.name}">
-                            <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                            <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
-                            <span class="dims">${dimsStr}</span>
-                            ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                        <div class="variable-row" data-variable="${variable.name}">
+                            <div class="variable-item">
+                                <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                <span class="dims">${dimsStr}</span>
+                                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                            </div>
+                            ${plotControls}
                         </div>
                     `;
                 })
@@ -307,10 +316,14 @@ function displayDataInfo(data, filePath) {
         }
     }
     
-    // Add plot controls for each variable if plotting capabilities are enabled
-    const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
+    // Enable create plot buttons for all variables
     if (hasPlottingCapabilities && data.variables && data.variables.length > 0) {
-        addVariablePlotControls(data.variables);
+        data.variables.forEach(variable => {
+            const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
+            if (createButton) {
+                createButton.disabled = false;
+            }
+        });
     }
     
     // Show content
@@ -512,6 +525,18 @@ function resetPlot() {
 }
 
 // Per-variable plot functions
+function showVariablePlotLoading(variable) {
+    const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+    const imageContainer = container.querySelector('.plot-image-container');
+    
+    // Hide any previous errors
+    hideVariablePlotError(variable);
+    
+    // Show loading indicator
+    imageContainer.innerHTML = '<p style="text-align: center; color: var(--vscode-descriptionForeground); font-style: italic;">Loading...</p>';
+    container.style.display = 'block';
+}
+
 function displayVariablePlot(variable, plotData) {
     const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
     const imageContainer = container.querySelector('.plot-image-container');
@@ -808,6 +833,9 @@ function setupEventListeners(plottingCapabilities = false) {
                 const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
                 const actualPlotType = plotType === 'auto' ? 'line' : plotType;
                 
+                // Show loading indicator
+                showVariablePlotLoading(variable);
+                
                 try {
                     const plotData = await messageBus.createPlot(variable, actualPlotType);
                     displayVariablePlot(variable, plotData);
@@ -1013,7 +1041,6 @@ function setupMessageHandlers() {
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);
         displayPythonPath(state.python.pythonPath);
-        populateVariableSelect(state.data.dataInfo.variables, state.extension.extensionConfig['scientificDataViewer.plottingCapabilities']);
     });
 
     messageBus.onError((error) => {
@@ -1073,23 +1100,6 @@ if (document.readyState === 'loading') {
     initialize(hasPlottingElements);
 }
 
-// Add plot controls for each variable
-function addVariablePlotControls(variables) {
-    variables.forEach(variable => {
-        const variableItem = document.querySelector(`.variable-item[data-variable="${variable.name}"]`);
-        
-        if (variableItem) {
-            const plotControls = generateVariablePlotControls(variable.name, true);
-            variableItem.insertAdjacentHTML('afterend', plotControls);
-            
-            // Enable the create plot button since it has a default selection
-            const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
-            if (createButton) {
-                createButton.disabled = false;
-            }
-        }
-    });
-}
 
 // Generate variable plot controls HTML
 function generateVariablePlotControls(variableName, plottingCapabilities) {
