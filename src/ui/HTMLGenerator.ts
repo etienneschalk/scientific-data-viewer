@@ -185,6 +185,7 @@ export class HTMLGenerator {
             <div id="plotControls" class="plot-controls hidden">
                 <button id="resetPlotButton" class="plot-control-button">Reset Plot</button>
                 <button id="savePlotButton" class="plot-control-button">Save Plot</button>
+                <button id="savePlotAsButton" class="plot-control-button">Save Plot As...</button>
                 <button id="openPlotButton" class="plot-control-button">Open in New Tab</button>
             </div>
             <div id="plotError" class="plot-error hidden"></div>

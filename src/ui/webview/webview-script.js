@@ -131,6 +131,10 @@ class WebviewMessageBus {
         return this.sendRequest('savePlot', { plotData, variable, fileName });
     }
 
+    async savePlotAs(plotData, variable) {
+        return this.sendRequest('savePlotAs', { plotData, variable });
+    }
+
     async openPlot(plotData, variable, fileName) {
         return this.sendRequest('openPlot', { plotData, variable, fileName });
     }
@@ -524,6 +528,35 @@ async function savePlot() {
     }
 }
 
+async function savePlotAs() {
+    const container = document.getElementById('plotContainer');
+    const img = container.querySelector('img');
+    
+    if (!img) {
+        showPlotError('No plot to save');
+        return;
+    }
+    
+    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
+    const variable = document.getElementById('variableSelect').value;
+    
+    try {
+        const result = await messageBus.savePlotAs(plotData, variable);
+        if (result.success) {
+            // Show success message in the plot area
+            showPlotSuccess(`Plot saved as: ${result.filePath?.split('/').pop() || 'plot.png'}`);
+            console.log('Plot saved as:', result.filePath);
+        } else {
+            if (result.error !== 'Save cancelled by user') {
+                showPlotError(`Failed to save plot: ${result.error}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error saving plot as:', error);
+        showPlotError('Failed to save plot: ' + error.message);
+    }
+}
+
 async function openPlotInNewTab() {
     const container = document.getElementById('plotContainer');
     const img = container.querySelector('img');
@@ -590,6 +623,11 @@ function setupEventListeners(plottingCapabilities = false) {
         const savePlotButton = document.getElementById('savePlotButton');
         if (savePlotButton) {
             savePlotButton.addEventListener('click', savePlot);
+        }
+
+        const savePlotAsButton = document.getElementById('savePlotAsButton');
+        if (savePlotAsButton) {
+            savePlotAsButton.addEventListener('click', savePlotAs);
         }
 
         const openPlotButton = document.getElementById('openPlotButton');

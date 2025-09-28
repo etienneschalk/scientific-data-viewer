@@ -69,6 +69,10 @@ export class UIController {
             return this.handleSavePlot(payload.plotData, payload.variable, payload.fileName);
         });
 
+        this.messageBus.registerRequestHandler('savePlotAs', async (payload) => {
+            return this.handleSavePlotAs(payload.plotData, payload.variable);
+        });
+
         this.messageBus.registerRequestHandler('openPlot', async (payload) => {
             return this.handleOpenPlot(payload.plotData, payload.variable, payload.fileName);
         });
@@ -260,6 +264,70 @@ export class UIController {
                 return { success: true, filePath: savePath.fsPath };
             } catch (error) {
                 Logger.error(`Error saving plot: ${error}`);
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
+        }, context);
+        
+        return result ?? { success: false, error: 'Unknown error' };
+    }
+
+    private async handleSavePlotAs(plotData: string, variable: string): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'savePlotAs',
+            data: { variable }
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            try {
+                // Convert base64 to buffer
+                const buffer = Buffer.from(plotData, 'base64');
+                
+                // Generate default filename
+                const state = this.stateManager.getState();
+                const currentFile = state.data.currentFile || 'unknown_file';
+                const fileName = currentFile.split('/').pop()?.split('.')[0] || 'plot';
+                const defaultFileName = `${fileName}_${variable}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                
+                // Show save dialog
+                const saveUri = await vscode.window.showSaveDialog({
+                    defaultUri: vscode.Uri.file(defaultFileName),
+                    filters: {
+                        'PNG Images': ['png'],
+                        'All Files': ['*']
+                    },
+                    title: 'Save Plot As'
+                });
+                
+                if (!saveUri) {
+                    return { success: false, error: 'Save cancelled by user' };
+                }
+                
+                // Write the file
+                await vscode.workspace.fs.writeFile(saveUri, buffer);
+                
+                // Show success notification
+                const action = await vscode.window.showInformationMessage(
+                    `Plot saved successfully: ${saveUri.fsPath.split('/').pop()}`,
+                    'Open File',
+                    'Reveal in Explorer'
+                );
+                
+                // Handle user action
+                if (action === 'Open File') {
+                    try {
+                        await vscode.commands.executeCommand('vscode.open', saveUri);
+                    } catch (error) {
+                        await vscode.env.openExternal(saveUri);
+                    }
+                } else if (action === 'Reveal in Explorer') {
+                    await vscode.commands.executeCommand('revealFileInOS', saveUri);
+                }
+                
+                Logger.info(`Plot saved as: ${saveUri.fsPath}`);
+                return { success: true, filePath: saveUri.fsPath };
+            } catch (error) {
+                Logger.error(`Error saving plot as: ${error}`);
                 return { success: false, error: error instanceof Error ? error.message : String(error) };
             }
         }, context);

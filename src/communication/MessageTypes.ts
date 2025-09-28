@@ -67,6 +67,11 @@ export interface OpenPlotRequest {
     fileName: string;
 }
 
+export interface SavePlotAsRequest {
+    plotData: string; // Base64 encoded image
+    variable: string;
+}
+
 export interface PythonPathResponse {
     pythonPath: string;
 }
@@ -156,6 +161,7 @@ export const COMMANDS = {
     GET_DATA_INFO: 'getDataInfo',
     CREATE_PLOT: 'createPlot',
     SAVE_PLOT: 'savePlot',
+    SAVE_PLOT_AS: 'savePlotAs',
     OPEN_PLOT: 'openPlot',
     REFRESH: 'refresh'
 } as const;
