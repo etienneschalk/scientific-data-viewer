@@ -19,16 +19,10 @@ import os
 from pathlib import Path
 import sys
 from typing import Any
-from xarray.core.dataset import Dataset
 import xarray as xr
 import matplotlib as mpl
 import numpy as np
 
-# Try to import DataTree, fallback if not available
-try:
-    from xarray.core.datatree import DataTree
-except ImportError:
-    DataTree = None
 from importlib.util import find_spec
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -161,6 +155,12 @@ class FileInfoResult:
     xarray_html_repr: str
     xarray_text_repr: str
     xarray_show_versions: str
+    # For flattented datatrees
+    variables_flattened: dict[str, list[VariableInfo]]
+    coordinates_flattened: dict[str, list[CoordinateInfo]]
+    attributes_flattened: dict[str, dict[str, Any]]
+    xarray_html_repr_flattened: dict[str, str]
+    xarray_text_repr_flattened: dict[str, str]
 
 
 @dataclass(frozen=True)
@@ -223,7 +223,7 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 
 def open_datatree_with_fallback(
     file_path: Path, file_format_info: FileFormatInfo
-) -> tuple[Dataset | Any, str]:
+) -> tuple[xr.Dataset | Any, str]:
     """Open datatree or dataset with fallback to different engines."""
     if not file_format_info.is_supported:
         raise ImportError(
@@ -236,12 +236,7 @@ def open_datatree_with_fallback(
 
     for engine in file_format_info.available_engines:
         try:
-            use_datatree: bool = (
-                DataTree is not None
-                and hasattr(xr, "open_datatree")
-                and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
-            )
-            if use_datatree:
+            if can_use_datatree(engine):
                 xdt_or_xds = xr.open_datatree(
                     file_path,
                     engine=engine,
@@ -275,6 +270,13 @@ def open_datatree_with_fallback(
 
     # If all engines failed, raise the last error
     raise exceptions[-1]
+
+
+def can_use_datatree(engine: str) -> bool:
+    return (
+        hasattr(xr, "open_datatree")
+        and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
+    )
 
 
 def is_spatial_dimension(dim_name):
@@ -466,31 +468,51 @@ def get_file_info(file_path: Path):
             xarray_html_repr=repr_html,
             xarray_text_repr=repr_text,
             xarray_show_versions=versions_text,
+            coordinates_flattened={},
+            variables_flattened={},
+            attributes_flattened={},
+            xarray_html_repr_flattened={},
+            xarray_text_repr_flattened={},
         )
 
         # Add coordinate variables
         for coord_name, coord in xds_or_xdt.coords.items():
-            coord_info = CoordinateInfo(
-                name=str(coord_name),
-                dtype=str(coord.dtype),
-                shape=list(coord.shape),
-                dimensions=[str(d) for d in coord.dims],
-                size_bytes=coord.nbytes,
-                attributes={str(k): v for k, v in coord.attrs.items()},
-            )
+            coord_info = create_coord_info(str(coord_name), coord)
             info.coordinates.append(coord_info)
 
         # Add data variables
         for var_name, var in xds_or_xdt.data_vars.items():
-            var_info = VariableInfo(
-                name=str(var_name),
-                dtype=str(var.dtype),
-                shape=list(var.shape),
-                dimensions=[str(d) for d in var.dims],
-                size_bytes=var.nbytes,
-                attributes={str(k): v for k, v in var.attrs.items()},
-            )
+            var_info = create_variable_info(str(var_name), var)
             info.variables.append(var_info)
+
+        if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
+            xdt = xds_or_xdt
+            for group in xdt.to_dict().keys():
+                xds = xdt[group].to_dataset()
+
+                # Add attributes for group
+                info.attributes_flattened[group] = {
+                    str(k): v for k, v in xds.attrs.items()
+                }
+                # Add coordinate variables for group
+                for coord_name, coord in xds.coords.items():
+                    coord_info = create_coord_info(str(coord_name), coord)
+                    info.coordinates_flattened[group].append(coord_info)
+
+                # Add data variables for group
+                for var_name, var in xds.data_vars.items():
+                    var_info = create_variable_info(str(var_name), var)
+                    info.variables_flattened[group].append(var_info)
+
+                # Extract information
+                with xr.set_options(**XR_TEXT_OPTIONS):
+                    # Get HTML representation using xarray's built-in HTML representation
+                    repr_text: str = str(xds)
+                # Get text representation using xarray's built-in text representation
+                repr_html: str = xds._repr_html_()
+
+                info.xarray_html_repr_flattened[group] = repr_html
+                info.xarray_text_repr_flattened[group] = repr_text
 
         xds_or_xdt.close()
         return info
@@ -504,6 +526,28 @@ def get_file_info(file_path: Path):
             xarray_show_versions=versions_text,
         )
         return error
+
+
+def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
+    return VariableInfo(
+        name=str(var_name),
+        dtype=str(var.dtype),
+        shape=list(var.shape),
+        dimensions=[str(d) for d in var.dims],
+        size_bytes=var.nbytes,
+        attributes={str(k): v for k, v in var.attrs.items()},
+    )
+
+
+def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
+    return CoordinateInfo(
+        name=str(coord_name),
+        dtype=str(coord.dtype),
+        shape=list(coord.shape),
+        dimensions=[str(d) for d in coord.dims],
+        size_bytes=coord.nbytes,
+        attributes={str(k): v for k, v in coord.attrs.items()},
+    )
 
 
 def main() -> None:
