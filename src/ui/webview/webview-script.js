@@ -489,7 +489,7 @@ function displayPlot(plotData) {
 // Representation display functions
 function displayHtmlRepresentation(htmlData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('htmlRepresentationForGroups') : document.getElementById('htmlRepresentation');
-    container.classList.remove('hidden');
+    container.parentElement.classList.remove('hidden');
     
     if (htmlData) {
         if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
@@ -517,7 +517,7 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
 
 function displayTextRepresentation(textData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('textRepresentationForGroups') : document.getElementById('textRepresentation');
-    container.classList.remove('hidden');
+    container.parentElement.classList.remove('hidden');
     if (textData) {
         if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations

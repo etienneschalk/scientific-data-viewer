@@ -134,7 +134,7 @@ export class HTMLGenerator {
 
     static generateHtmlRepresentationForGroups(): string {
         return `
-        <div class="info-section">
+        <div class="info-section hidden">
             <h3>Xarray HTML Representation (for each group)</h3>
             <div id="htmlRepresentationForGroups" class="html-representation-for-groups"></div>
         </div>`;
@@ -155,7 +155,7 @@ export class HTMLGenerator {
 
     static generateTextRepresentationForGroups(): string {
         return `
-        <div class="info-section">
+        <div class="info-section hidden">
             <h3>Xarray Text Representation (for each group)</h3>
             <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
         </div>`;
