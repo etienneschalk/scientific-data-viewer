@@ -109,6 +109,11 @@ export class DataDisplayComponent extends BaseComponent {
         const groups = Object.keys(data.coordinates_flattened || {});
         let sections = '';
 
+        // Render dimensions for each group
+        groups.forEach(groupName => {
+            sections += this.renderGroupDimensions(groupName, data.dimensions_flattened[groupName]);
+        });
+
         // Render coordinates for each group
         groups.forEach(groupName => {
             sections += this.renderGroupCoordinates(groupName, data.coordinates_flattened[groupName]);
@@ -130,6 +135,26 @@ export class DataDisplayComponent extends BaseComponent {
         }
 
         return sections;
+    }
+
+    private renderGroupDimensions(groupName: string, dimensions: { [key: string]: number }): string {
+        return `
+            <div class="info-section">
+                <h3>Dimensions for ${groupName}</h3>
+                <div class="dimensions">
+                    ${dimensions && Object.keys(dimensions).length > 0 ?
+                        Object.entries(dimensions)
+                            .map(([dimName, dimSize]) => `
+                                <div class="dimension-item">
+                                    <span class="dimension-name">${dimName}</span>
+                                    <span class="dimension-size">${dimSize}</span>
+                                </div>
+                            `).join('') :
+                        '<p>No dimensions found in this group.</p>'
+                    }
+                </div>
+            </div>
+        `;
     }
 
     private renderGroupCoordinates(groupName: string, coordinates: any[]): string {

@@ -44,6 +44,7 @@ export interface DataInfoResult {
     attributes: { [key: string]: any };
     fileSize: number;
     // New datatree fields
+    dimensions_flattened: { [groupName: string]: { [key: string]: number } };
     coordinates_flattened: { [groupName: string]: Array<{
         name: string;
         dtype: string;

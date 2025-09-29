@@ -83,6 +83,7 @@ suite('DataViewerPanel Test Suite', () => {
                     attributes: {},
                     format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
                     used_engine: 'netcdf4',
+                    dimensions_flattened: {},
                     coordinates_flattened: {},
                     variables_flattened: {},
                     attributes_flattened: {},

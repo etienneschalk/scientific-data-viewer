@@ -156,6 +156,7 @@ class FileInfoResult:
     xarray_text_repr: str
     xarray_show_versions: str
     # For flattented datatrees
+    dimensions_flattened: dict[str, dict[str, int]]
     variables_flattened: dict[str, list[VariableInfo]]
     coordinates_flattened: dict[str, list[CoordinateInfo]]
     attributes_flattened: dict[str, dict[str, Any]]
@@ -482,6 +483,7 @@ def get_file_info(file_path: Path):
             xarray_html_repr=repr_html,
             xarray_text_repr=repr_text,
             xarray_show_versions=versions_text,
+            dimensions_flattened={},
             coordinates_flattened={},
             variables_flattened={},
             attributes_flattened={},
@@ -512,6 +514,9 @@ def get_file_info(file_path: Path):
                 # Add attributes for group
                 info.attributes_flattened[group] = {
                     str(k): v for k, v in xds.attrs.items()
+                }
+                info.dimensions_flattened[group] = {
+                    str(k): v for k, v in xds.dims.items()
                 }
                 # Add coordinate variables for group
                 for coord_name, coord in xds.coords.items():

@@ -248,9 +248,29 @@ function displayDataInfo(data, filePath) {
     // Display dimensions
     const dimensionsContainer = document.getElementById('dimensions');
     if (dimensionsContainer) {
-        if (data.dimensions) {
+        if (data.datatree_flag && data.dimensions_flattened) {
+            // Display dimensions for each group
+            const groups = Object.keys(data.dimensions_flattened);
+            dimensionsContainer.innerHTML = groups.map(groupName => {
+                const dimensions = data.dimensions_flattened[groupName];
+                const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0 ?
+                    Object.entries(dimensions)
+                        .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
+                        .join('') :
+                    '<p>No dimensions found in this group.</p>';
+                
+                return `
+                    <div class="info-section">
+                        <h3>Dimensions for ${groupName}</h3>
+                        <div class="dimensions">
+                            ${dimensionsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else if (data.dimensions) {
             dimensionsContainer.innerHTML = Object.entries(data.dimensions)
-                .map(([name, size]) => `<div class="dimension-item">${name}: ${size}</div>`)
+                .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
                 .join('');
         } else {
             dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
