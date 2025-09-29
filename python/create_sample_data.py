@@ -253,7 +253,7 @@ def create_sample_zarr_with_nested_groups_from_datatree():
 
     # Create datasets for different groups
     # Root level dataset
-    root_ds = xr.Dataset(
+    topgroup_ds = xr.Dataset(
         {
             "metadata": (
                 ["time"],
@@ -269,7 +269,7 @@ def create_sample_zarr_with_nested_groups_from_datatree():
             ),
         },
     )
-    root_ds.attrs = {
+    topgroup_ds.attrs = {
         "title": "Sample xr.DataTree Ocean Data",
         "description": "Sample xr.DataTree Zarr file for testing VSCode extension",
         "institution": "Ocean Test Institute",
@@ -444,11 +444,11 @@ def create_sample_zarr_with_nested_groups_from_datatree():
 
     # Create xr.DataTree structure
     dt = xr.DataTree(name="root")
-    dt["root"] = root_ds
-    dt["root/ocean_data"] = ocean_ds
-    dt["root/ocean_data/physical_properties"] = physical_ds
-    dt["root/ocean_data/chemical_properties"] = chemical_ds
-    dt["root/ocean_data/quality_control"] = qc_ds
+    dt["topgroup"] = topgroup_ds
+    dt["topgroup/ocean_data"] = ocean_ds
+    dt["topgroup/ocean_data/physical_properties"] = physical_ds
+    dt["topgroup/ocean_data/chemical_properties"] = chemical_ds
+    dt["topgroup/ocean_data/quality_control"] = qc_ds
 
     # Save to Zarr using xr.DataTree's to_zarr method
     dt.to_zarr(output_file, mode="w")
