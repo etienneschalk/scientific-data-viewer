@@ -260,9 +260,9 @@ function displayDataInfo(data, filePath) {
         const dimensionsContainer = document.getElementById('dimensions');
         const coordinatesContainer = document.getElementById('coordinates');
         const variablesContainer = document.getElementById('variables');
-        dimensionsContainer.classList.add('hidden');
-        coordinatesContainer.classList.add('hidden');
-        variablesContainer.classList.add('hidden');
+        dimensionsContainer.parentElement.classList.add('hidden');
+        coordinatesContainer.parentElement.classList.add('hidden');
+        variablesContainer.parentElement.classList.add('hidden');
         const groupInfoContainer = document.getElementById('group-info-container');
         groupInfoContainer.classList.remove('hidden');
 
@@ -909,11 +909,39 @@ async function copyPlotError(variable) {
     }
 }
 
+// Global state for plot all operation
+let plotAllOperation = {
+    isRunning: false,
+    completedCount: 0,
+    totalCount: 0
+};
+
 async function plotAllVariables() {
     console.log('🔍 Plot All Variables - Debug Info:');
 
-    for (const button of document.querySelectorAll('.create-plot-button')) {
-        console.log('🔍 Plotting button:', button, button.getAttribute('data-variable'));
+    // Check if operation is already running
+    if (plotAllOperation.isRunning) {
+        console.log('Plot all operation already running');
+        return;
+    }
+
+    // Get all variables to plot
+    const buttons = document.querySelectorAll('.create-plot-button');
+    if (buttons.length === 0) {
+        console.log('No variables to plot');
+        return;
+    }
+
+    // Initialize operation state
+    plotAllOperation.isRunning = true;
+    plotAllOperation.completedCount = 0;
+    plotAllOperation.totalCount = buttons.length;
+
+    // Update UI to show operation in progress
+    updatePlotAllUI(true);
+
+    // Prepare all plot operations
+    const plotPromises = Array.from(buttons).map(async (button) => {
         const variable = button.getAttribute('data-variable');
         const plotTypeSelect = document.querySelector(`.plot-type-select[data-variable="${variable}"]`);
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
@@ -925,14 +953,92 @@ async function plotAllVariables() {
         try {
             const plotData = await messageBus.createPlot(variable, actualPlotType);
             displayVariablePlot(variable, plotData);
+            plotAllOperation.completedCount++;
+            updatePlotAllProgress();
+            
+            return { variable, success: true };
         } catch (error) {
             console.error('Failed to create plot:', error);
+            
             // Clear loading state and show error
             const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
             const imageContainer = container.querySelector('.plot-image-container');
             imageContainer.innerHTML = '';
             showVariablePlotError(variable, 'Error creating plot: ' + error.message);
+            
+            plotAllOperation.completedCount++;
+            updatePlotAllProgress();
+            
+            return { variable, success: false, error: error.message };
         }
+    });
+
+    try {
+        // Wait for all plots to complete (or fail)
+        const results = await Promise.allSettled(plotPromises);
+        
+        // Log results
+        const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+        const failed = results.length - successful;
+        
+        console.log(`Plot all completed: ${successful} successful, ${failed} failed`);
+        
+        // Show completion message
+        try {
+            await messageBus.showNotification(
+                `Plot all completed: ${successful} successful, ${failed} failed`, 
+                failed > 0 ? 'warning' : 'info'
+            );
+        } catch (notificationError) {
+            console.error('Failed to show notification:', notificationError);
+        }
+        
+    } catch (error) {
+        console.error('Error in plot all operation:', error);
+    } finally {
+        // Reset operation state
+        plotAllOperation.isRunning = false;
+        plotAllOperation.completedCount = 0;
+        plotAllOperation.totalCount = 0;
+        
+        // Update UI to show operation completed
+        updatePlotAllUI(false);
+    }
+}
+
+
+function updatePlotAllUI(isRunning) {
+    const plotAllButton = document.getElementById('plotAllButton');
+    const plotAllProgress = document.getElementById('plotAllProgress');
+    
+    if (isRunning) {
+        // Show progress
+        if (plotAllButton) {
+            plotAllButton.disabled = true;
+            plotAllButton.textContent = 'Plotting...';
+        }
+        if (plotAllProgress) {
+            plotAllProgress.classList.remove('hidden');
+            plotAllProgress.textContent = 'Starting...';
+        }
+    } else {
+        // Reset to normal state
+        if (plotAllButton) {
+            plotAllButton.disabled = false;
+            plotAllButton.textContent = '⚠️ Plot All';
+        }
+        if (plotAllProgress) {
+            plotAllProgress.classList.add('hidden');
+            plotAllProgress.textContent = '';
+        }
+    }
+}
+
+function updatePlotAllProgress() {
+    const plotAllProgress = document.getElementById('plotAllProgress');
+    if (plotAllProgress && plotAllOperation.isRunning && plotAllOperation.totalCount > 0) {
+        const percentage = Math.round((plotAllOperation.completedCount / plotAllOperation.totalCount) * 100);
+        plotAllProgress.textContent = `Progress: ${plotAllOperation.completedCount}/${plotAllOperation.totalCount} (${percentage}%)`;
     }
 }
 
@@ -1081,6 +1187,7 @@ function setupEventListeners(plottingCapabilities = false) {
         if (plotAllButton) {
             plotAllButton.addEventListener('click', plotAllVariables);
         }
+
 
         const resetAllPlotsButton = document.getElementById('resetAllPlotsButton');
         if (resetAllPlotsButton) {
