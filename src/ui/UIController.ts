@@ -293,8 +293,14 @@ export class UIController {
                 // Generate default filename
                 const state = this.stateManager.getState();
                 const currentFile = state.data.currentFile || 'unknown_file';
-                const fileName = currentFile.split('/').pop()?.split('.')[0] || 'plot';
-                const defaultFileName = `${fileName}_${variable}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                const fileName = currentFile.split('/').pop() || 'plot';
+                let defaultFileName: string;
+                if (variable.includes('/')) {
+                    // Variable is a full path starting with /
+                    defaultFileName = `sdv-plots/${fileName}${variable}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                } else {
+                    defaultFileName = `sdv-plots/${fileName}/${variable}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                }
                 
                 // Show save dialog
                 const saveUri = await vscode.window.showSaveDialog({

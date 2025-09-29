@@ -245,45 +245,37 @@ function displayDataInfo(data, filePath) {
     
     fileInfo.innerHTML = formatInfo;
 
-    // Display dimensions
-    const dimensionsContainer = document.getElementById('dimensions');
-    if (dimensionsContainer) {
-        if (data.datatree_flag && data.dimensions_flattened) {
-            // Display dimensions for each group
-            const groups = Object.keys(data.dimensions_flattened);
-            dimensionsContainer.innerHTML = groups.map(groupName => {
+    // Check if plotting capabilities are enabled
+    const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
+
+    if (data.datatree_flag) {
+        const dimensionsContainer = document.getElementById('dimensions');
+        const coordinatesContainer = document.getElementById('coordinates');
+        const variablesContainer = document.getElementById('variables');
+        dimensionsContainer.classList.add('hidden');
+        coordinatesContainer.classList.add('hidden');
+        variablesContainer.classList.add('hidden');
+        const groupInfoContainer = document.getElementById('group-info-container');
+        groupInfoContainer.classList.remove('hidden');
+
+        // Assumption: dimensions_flattened and coordinates_flattened and variables_flattened
+        //  are always present together and have the same group keys.
+        const groups = Object.keys(data.dimensions_flattened);
+        // const groups = Object.keys(data.coordinates_flattened);
+        // const groups = Object.keys(data.variables_flattened);
+
+        if (data.dimensions_flattened && data.coordinates_flattened && data.variables_flattened) {
+            // Display dimensions, coordinates, and variables for each group
+            groupInfoContainer.innerHTML = groups.map(groupName => {
+                // Add dimensions for group
                 const dimensions = data.dimensions_flattened[groupName];
                 const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0 ?
                     Object.entries(dimensions)
                         .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
                         .join('') :
                     '<p>No dimensions found in this group.</p>';
-                
-                return `
-                    <div class="info-section">
-                        <h3>Dimensions for ${groupName}</h3>
-                        <div class="dimensions">
-                            ${dimensionsHtml}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        } else if (data.dimensions) {
-            dimensionsContainer.innerHTML = Object.entries(data.dimensions)
-                .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
-                .join('');
-        } else {
-            dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
-        }
-    }
-        
-    // Display coordinates
-    const coordinatesContainer = document.getElementById('coordinates');
-    if (coordinatesContainer) {
-        if (data.datatree_flag && data.coordinates_flattened) {
-            // Display coordinates for each group
-            const groups = Object.keys(data.coordinates_flattened);
-            coordinatesContainer.innerHTML = groups.map(groupName => {
+
+                // Add coordinates for group
                 const coordinates = data.coordinates_flattened[groupName];
                 const coordinatesHtml = coordinates && coordinates.length > 0 ?
                     coordinates.map(variable => {
@@ -302,45 +294,7 @@ function displayDataInfo(data, filePath) {
                     }).join('') :
                     '<p>No coordinates found in this group.</p>';
                 
-                return `
-                    <div class="info-section">
-                        <h3>Coordinates for ${groupName}</h3>
-                        <div class="coordinates">${coordinatesHtml}</div>
-                    </div>
-                `;
-            }).join('');
-        } else if (data.coordinates && data.coordinates.length > 0) {
-            coordinatesContainer.innerHTML = data.coordinates
-                .map(variable => {
-                    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                    const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                    const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
-                    
-                    return `
-                        <div class="variable-item" data-variable="${variable.name}">
-                            <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                            <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
-                            <span class="dims">${dimsStr}</span>
-                            ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                        </div>
-                    `;
-                })
-                .join('');
-        } else {
-            coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
-        }
-    }
-
-    // Check if plotting capabilities are enabled
-    const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
-    
-    // Display variables
-    const variablesContainer = document.getElementById('variables');
-    if (variablesContainer) {
-        if (data.datatree_flag && data.variables_flattened) {
-            // Display variables for each group
-            const groups = Object.keys(data.variables_flattened);
-            variablesContainer.innerHTML = groups.map(groupName => {
+                // Add variables for group
                 const variables = data.variables_flattened[groupName];
                 const variablesHtml = variables && variables.length > 0 ?
                     variables.map(variable => {
@@ -368,37 +322,95 @@ function displayDataInfo(data, filePath) {
                     '<p>No variables found in this group.</p>';
                 
                 return `
+                <div class="info-section">
+                    <h3>Group: ${groupName}</h3>
                     <div class="info-section">
-                        <h3>Variables for ${groupName}</h3>
+                        <h4>Dimensions for ${groupName}</h4>
+                        <div class="dimensions">
+                            ${dimensionsHtml}
+                        </div>
+                    </div>  
+                    <div class="info-section">
+                        <h4>Coordinates for ${groupName}</h4>
+                        <div class="coordinates">${coordinatesHtml}</div>
+                    </div>
+                    <div class="info-section">
+                        <h4>Variables for ${groupName}</h4>
                         <div class="variables">${variablesHtml}</div>
                     </div>
+                </div>
                 `;
             }).join('');
-        } else if (data.variables && data.variables.length > 0) {
-            variablesContainer.innerHTML = data.variables
-                .map(variable => {
-                    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                    const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                    const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
-                    
-                    const plotControls = hasPlottingCapabilities ? 
-                        generateVariablePlotControls(variable.name, true) : '';
-                    
-                    return `
-                        <div class="variable-row" data-variable="${variable.name}">
-                            <div class="variable-item">
+        } else {
+            contentContainer.innerHTML = '<p>No data available</p>';
+        }
+    } else {
+        // Display dimensions
+        const dimensionsContainer = document.getElementById('dimensions');
+        const coordinatesContainer = document.getElementById('coordinates');
+        const variablesContainer = document.getElementById('variables');
+        if (dimensionsContainer) {
+            if (data.dimensions) {
+                dimensionsContainer.innerHTML = Object.entries(data.dimensions)
+                    .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
+                    .join('');
+            } else {
+                dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
+            }
+        }
+            
+        // Display coordinates
+        if (coordinatesContainer) {
+            if (data.coordinates && data.coordinates.length > 0) {
+                coordinatesContainer.innerHTML = data.coordinates
+                    .map(variable => {
+                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        
+                        return `
+                            <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
                                 <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                             </div>
-                            ${plotControls}
-                        </div>
-                    `;
-                })
-                .join('');
-        } else {
-            variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
+                        `;
+                    })
+                    .join('');
+            } else {
+                coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
+            }
+        }
+
+        // Display variables
+        if (variablesContainer) {
+            if (data.variables && data.variables.length > 0) {
+                variablesContainer.innerHTML = data.variables
+                    .map(variable => {
+                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        
+                        const plotControls = hasPlottingCapabilities ? 
+                            generateVariablePlotControls(variable.name, true) : '';
+                        
+                        return `
+                            <div class="variable-row" data-variable="${variable.name}">
+                                <div class="variable-item">
+                                    <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                    <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                    <span class="dims">${dimsStr}</span>
+                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                </div>
+                                ${plotControls}
+                            </div>
+                        `;
+                    })
+                    .join('');
+            } else {
+                variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
+            }
         }
     }
     
@@ -469,6 +481,8 @@ function displayPlot(plotData) {
 // Representation display functions
 function displayHtmlRepresentation(htmlData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('htmlRepresentationForGroups') : document.getElementById('htmlRepresentation');
+    container.classList.remove('hidden');
+    
     if (htmlData) {
         if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
             // Handle datatree flattened HTML representations
@@ -476,10 +490,11 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
             container.innerHTML = `
                     ${groups.map(groupName => `
                         <div class="group-section">
-                            <h4>${groupName}</h4>
-                            <div class="html-representation">
-                                ${htmlData[groupName] || '<p>No HTML representation available</p>'}
-                            </div>
+                            <details> <summary>${groupName}</summary>
+                                <div class="html-representation">
+                                    ${htmlData[groupName] || '<p>No HTML representation available</p>'}
+                                </div>
+                            </details>
                         </div>
                     `).join('')}
             `;
@@ -494,7 +509,7 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
 
 function displayTextRepresentation(textData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('textRepresentationForGroups') : document.getElementById('textRepresentation');
-    
+    container.classList.remove('hidden');
     if (textData) {
         if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations
@@ -502,14 +517,15 @@ function displayTextRepresentation(textData, isDatatree = false) {
             container.innerHTML = `
                     ${groups.map(groupName => `
                         <div class="group-section">
-                            <h4>${groupName}</h4>
-                            <div class="text-representation-container">
-                                <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
-                                    📋 Copy
-                                </button>
-                                <div class="text-representation" id="textRepresentation-${groupName}">
+                            <details> <summary>${groupName}</summary>
+                                <div class="text-representation-container">
+                                    <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
+                                        📋 Copy
+                                    </button>
+                                    <div class="text-representation" id="textRepresentation-${groupName}">
                                 </div>
                             </div>
+                            </details>
                         </div>
                     `).join('')}
             `;
@@ -929,9 +945,14 @@ async function saveAllPlots() {
 }
 
 function generateDefaultFileName(variable, filePath) {
-    const fileName = filePath.split('/').pop().split('.')[0];
+    const fileName = filePath.split('/').pop();
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    return `${fileName}_${variable}_${timestamp}.png`;
+    if (variable.includes('/')) {
+        // Variable is a full path starting with /
+        return `sdv-plots/${fileName}${variable}_${timestamp}.png`;
+    } else {
+        return `sdv-plots/${fileName}/${variable}_${timestamp}.png`;
+    }
 }
 
 async function savePlot() {

@@ -104,6 +104,9 @@ export class HTMLGenerator {
 
     static generateDimensionsAndVariables(plottingCapabilities: boolean): string {
         return `
+        <div id="group-info-container" class="group-info-container hidden">
+        <!-- This is for datatree groups -->
+        </div>
         <div class="info-section">
             <h3>Dimensions</h3>
             <div id="dimensions" class="dimensions"></div>

@@ -203,6 +203,11 @@ export class CSSGenerator {
             margin-top: 0;
             color: var(--vscode-foreground);
         }
+
+        .info-section h4 {
+            margin-top: 0;
+            color: var(--vscode-foreground);
+        }
         
         .dimensions, .variables, .coordinates {
             display: grid;
