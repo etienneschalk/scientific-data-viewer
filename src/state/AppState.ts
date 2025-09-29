@@ -289,6 +289,24 @@ export class StateManager {
         this.dispatch({ type: 'SET_EXTENSION', payload: extensionConfig });
     }
 
+    updateData(dataUpdate: Partial<DataState>): void {
+        if (dataUpdate.currentFile !== undefined) {
+            this.setCurrentFile(dataUpdate.currentFile);
+        }
+        if (dataUpdate.dataInfo !== undefined) {
+            this.setDataInfo(dataUpdate.dataInfo);
+        }
+        if (dataUpdate.isLoading !== undefined) {
+            this.setLoading(dataUpdate.isLoading);
+        }
+        if (dataUpdate.error !== undefined) {
+            this.setError(dataUpdate.error);
+        }
+        if (dataUpdate.lastLoadTime !== undefined) {
+            this.setLastLoadTime(dataUpdate.lastLoadTime);
+        }
+    }
+
 
     // History management
     canUndo(): boolean {

@@ -61,7 +61,9 @@ suite('DataViewerPanel Test Suite', () => {
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
             getCurrentInterpreterPath: async () => '/usr/bin/python3',
-            setupInterpreterChangeListener: async () => undefined
+            setupInterpreterChangeListener: async () => undefined,
+            hasPythonPath: () => true,
+            checkPackageAvailability: async () => true
         } as any;
 
         // Mock DataProcessor
@@ -330,6 +332,9 @@ suite('DataViewerPanel Test Suite', () => {
         try {
             const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
             
+            // First load a file to set up the state
+            await (panel as any)._handleGetDataInfo();
+            
             // Mock the _handleCreatePlot method to test it directly
             let messagePosted = false;
             const originalPostMessage = mockWebviewPanel.webview.postMessage;
@@ -353,6 +358,20 @@ suite('DataViewerPanel Test Suite', () => {
         // Mock DataProcessor to throw error
         const errorDataProcessor = {
             pythonManagerInstance: mockPythonManager,
+            getDataInfo: async () => ({
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ],
+                    xarray_html_repr: '<div>Test HTML</div>',
+                    xarray_text_repr: 'Test text representation',
+                    xarray_show_versions: 'Test versions'
+                }
+            }),
             createPlot: async () => {
                 throw new Error('Plot creation failed');
             }
@@ -375,6 +394,9 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const panel = DataViewerPanel.create(mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), errorDataProcessor);
+            
+            // First load a file to set up the state
+            await (panel as any)._handleGetDataInfo();
             
             // Mock the _handleCreatePlot method to test it directly
             let messagePosted = false;
@@ -484,6 +506,8 @@ suite('DataViewerPanel Test Suite', () => {
         const html = (panel as any)._getHtmlForWebview(false);
         
         assert.ok(html.includes('Scientific Data Viewer'));
-        assert.ok(!html.includes('plottingCapabilities'));
+        // Check that plotting sections are not included when plotting is disabled
+        assert.ok(!html.includes('Global Plot Controls'));
+        assert.ok(!html.includes('resetAllPlotsButton'));
     });
 });

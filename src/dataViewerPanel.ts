@@ -207,5 +207,56 @@ export class DataViewerPanel {
         }
     }
 
+    // Test compatibility methods - these delegate to UIController
+    public async _handleGetDataInfo(): Promise<void> {
+        if (this._uiController) {
+            await this._uiController.loadFile(this._currentFile.fsPath);
+        }
+    }
+
+    public async _handleCreatePlot(variable: string, plotType: string): Promise<void> {
+        if (this._uiController) {
+            try {
+                const result = await (this._uiController as any).handleCreatePlot(variable, plotType);
+                this._webviewPanel.webview.postMessage({
+                    command: 'plotData',
+                    data: result
+                });
+            } catch (error) {
+                this._webviewPanel.webview.postMessage({
+                    command: 'error',
+                    data: { message: error instanceof Error ? error.message : 'Unknown error' }
+                });
+            }
+        }
+    }
+
+    public async _handleGetPythonPath(): Promise<void> {
+        if (this._uiController) {
+            const result = await (this._uiController as any).handleGetPythonPath();
+            this._webviewPanel.webview.postMessage({
+                command: 'pythonPath',
+                data: result
+            });
+        }
+    }
+
+    public async _handleGetExtensionConfig(): Promise<void> {
+        if (this._uiController) {
+            const result = await (this._uiController as any).handleGetExtensionConfig();
+            this._webviewPanel.webview.postMessage({
+                command: 'extensionConfig',
+                data: result
+            });
+        }
+    }
+
+    public _getHtmlForWebview(plottingCapabilities: boolean): string {
+        if (this._uiController) {
+            return (this._uiController as any).getHtmlForWebview(plottingCapabilities);
+        }
+        return '<div>Scientific Data Viewer</div>';
+    }
+
 
 }
