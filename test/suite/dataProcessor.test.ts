@@ -25,21 +25,7 @@ suite('DataProcessor Test Suite', () => {
                     }
                 };
             },
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                // Mock response for testing
-                return {
-                    result: {
-                        format: 'NetCDF',
-                        fileSize: 1024,
-                        dimensions: { time: 100, lat: 180, lon: 360 },
-                        variables: [
-                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                            { name: 'time', dtype: 'datetime64', shape: [100] }
-                        ]
-                    }
-                };
-            },
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 // Mock response for testing
                 return {
                     result: {
@@ -77,7 +63,7 @@ suite('DataProcessor Test Suite', () => {
     test('should get data info with error handling', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 throw new Error('Python script failed');
             }
         } as any;
@@ -93,7 +79,7 @@ suite('DataProcessor Test Suite', () => {
     test('should create plot', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
             }
         } as any;
@@ -109,7 +95,7 @@ suite('DataProcessor Test Suite', () => {
     test('should create plot with auto type', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
             }
         } as any;
@@ -125,7 +111,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle plot creation error', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 throw new Error('Plot creation failed');
             }
         } as any;
@@ -140,7 +126,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle plot creation with error in result', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return { error: 'Plot creation failed' };
             }
         } as any;
@@ -189,18 +175,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle empty file', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                // Mock response for empty file
-                return {
-                    result: {
-                        format: 'NetCDF',
-                        fileSize: 0,
-                        dimensions: {},
-                        variables: []
-                    }
-                };
-            },
-            executePythonFileWithLogs: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 // Mock response for empty file
                 return {
                     result: {
@@ -228,7 +203,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle data info with error field', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return {
                     format: 'NetCDF',
                     fileSize: 1024,
