@@ -79,6 +79,8 @@ export class HTMLGenerator {
         ${this.generateFileInfo()}
         ${this.generateHtmlRepresentation()}
         ${this.generateTextRepresentation()}
+        ${this.generateHtmlRepresentationForGroups()}
+        ${this.generateTextRepresentationForGroups()}
         ${this.generateDimensionsAndVariables(plottingCapabilities)}
         ${this.generatePlottingSections(plottingCapabilities)}
         ${this.generateTroubleshooting()}
@@ -126,6 +128,14 @@ export class HTMLGenerator {
         </div>`;
     }
 
+    static generateHtmlRepresentationForGroups(): string {
+        return `
+        <div class="info-section">
+            <h3>Xarray HTML Representation (for each group)</h3>
+            <div id="htmlRepresentationForGroups" class="html-representation-for-groups"></div>
+        </div>`;
+    }
+
     static generateTextRepresentation(): string {
         return `
         <div class="info-section">
@@ -136,6 +146,14 @@ export class HTMLGenerator {
                 </button>
                 <div id="textRepresentation" class="text-representation"></div>
             </div>
+        </div>`;
+    }
+
+    static generateTextRepresentationForGroups(): string {
+        return `
+        <div class="info-section">
+            <h3>Xarray Text Representation (for each group)</h3>
+            <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
         </div>`;
     }
 

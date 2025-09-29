@@ -467,15 +467,13 @@ function displayPlot(plotData) {
 }
 
 // Representation display functions
-function displayHtmlRepresentation(htmlData) {
-    const container = document.getElementById('htmlRepresentation');
+function displayHtmlRepresentation(htmlData, isDatatree = false) {
+    const container = isDatatree ? document.getElementById('htmlRepresentationForGroups') : document.getElementById('htmlRepresentation');
     if (htmlData) {
-        if (typeof htmlData === 'object' && htmlData !== null) {
+        if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
             // Handle datatree flattened HTML representations
             const groups = Object.keys(htmlData);
             container.innerHTML = `
-                <div class="info-section">
-                    <h3>Xarray HTML representation (for each group)</h3>
                     ${groups.map(groupName => `
                         <div class="group-section">
                             <h4>${groupName}</h4>
@@ -484,7 +482,6 @@ function displayHtmlRepresentation(htmlData) {
                             </div>
                         </div>
                     `).join('')}
-                </div>
             `;
         } else {
             // Handle regular HTML representation
@@ -495,32 +492,33 @@ function displayHtmlRepresentation(htmlData) {
     }
 }
 
-function displayTextRepresentation(textData) {
-    const container = document.getElementById('textRepresentation');
-    const copyButton = document.getElementById('textCopyButton');
+function displayTextRepresentation(textData, isDatatree = false) {
+    const container = isDatatree ? document.getElementById('textRepresentationForGroups') : document.getElementById('textRepresentation');
     
     if (textData) {
-        if (typeof textData === 'object' && textData !== null) {
+        if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations
             const groups = Object.keys(textData);
             container.innerHTML = `
-                <div class="info-section">
-                    <h3>Xarray Text representation (for each group)</h3>
                     ${groups.map(groupName => `
                         <div class="group-section">
                             <h4>${groupName}</h4>
                             <div class="text-representation-container">
-                                <button class="text-copy-button" data-copy-target="textRepresentation" data-group="${groupName}">📋 Copy</button>
-                                <div class="text-representation">
-                                    ${textData[groupName] || 'No text representation available'}
+                                <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
+                                    📋 Copy
+                                </button>
+                                <div class="text-representation" id="textRepresentation-${groupName}">
                                 </div>
                             </div>
                         </div>
                     `).join('')}
-                </div>
             `;
-            copyButton.classList.remove('hidden');
+            for (const groupName in textData) {
+                const textRepresentation = document.getElementById(`textRepresentation-${groupName}`);
+                textRepresentation.textContent = textData[groupName];
+            }
         } else {
+            const copyButton = document.getElementById('textCopyButton');
             // Handle regular text representation
             container.textContent = textData;
             copyButton.classList.remove('hidden');
@@ -1162,6 +1160,8 @@ function setupCopyEventListeners() {
         });
     }
 
+    // Copy buttons for groups cannot be set here yet, they will be generated dynamically
+    
     // Python path copy button
     const pythonPathCopyButton = document.getElementById('pythonPathCopyButton');
     if (pythonPathCopyButton) {
@@ -1252,15 +1252,42 @@ function setupMessageHandlers() {
         updateTimestamp(state.data.lastLoadTime);
         displayDataInfo(state.data.dataInfo, state.data.currentFile);
         
+
+        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
+        displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
+        
         // Handle datatree vs regular data
         if (state.data.dataInfo.datatree_flag) {
-            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr_flattened);
-            displayTextRepresentation(state.data.dataInfo.xarray_text_repr_flattened);
-        } else {
-            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr);
-            displayTextRepresentation(state.data.dataInfo.xarray_text_repr);
+            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr_flattened, true);
+            displayTextRepresentation(state.data.dataInfo.xarray_text_repr_flattened, true);
+
+            // Text representation copy button for groups
+            const textCopyButtonForGroups =  document.querySelectorAll('[id^="textCopyButton-"]');
+            textCopyButtonForGroups.forEach(button => { 
+                button.addEventListener('click', async () => {
+                    const textRepresentation = document.getElementById(`textRepresentation-${button.dataset.group}`);
+                    const text = textRepresentation ? textRepresentation.textContent : '';
+                    if (text) {
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            button.textContent = '✓ Copied!';
+                            button.classList.add('copied');
+                            setTimeout(() => {
+                                button.textContent = '📋 Copy';
+                                button.classList.remove('copied');
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy text representation:', err);
+                            button.textContent = '❌ Failed';
+                            setTimeout(() => {
+                                button.textContent = '📋 Copy';
+                            }, 2000);
+                        }
+                    }
+                });
+            });
         }
-        
+
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);
         displayPythonPath(state.python.pythonPath);
