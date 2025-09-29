@@ -5,7 +5,10 @@ suite('ErrorBoundary Tests', () => {
     let errorBoundary: ErrorBoundary;
 
     setup(() => {
+        // Clear the singleton instance to ensure clean state
+        (ErrorBoundary as any).instance = undefined;
         errorBoundary = ErrorBoundary.getInstance();
+        errorBoundary.clearErrorHistory();
     });
 
     test('should handle errors with component-specific handlers', () => {

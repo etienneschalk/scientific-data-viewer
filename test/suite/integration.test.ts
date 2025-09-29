@@ -72,17 +72,26 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager to be ready
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async () => ({
-                result: {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ]
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
+                // Return different responses based on the script and args
+                if (args[0] === 'info') {
+                    return {
+                        result: {
+                            format: 'NetCDF',
+                            fileSize: 1024,
+                            dimensions: { time: 100, lat: 180, lon: 360 },
+                            variables: [
+                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                                { name: 'time', dtype: 'datetime64', shape: [100] }
+                            ]
+                        }
+                    };
+                } else if (args[0] === 'plot') {
+                    // Return base64 image data for plot creation
+                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
                 }
-            }),
+                return {};
+            },
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
             getCurrentInterpreterPath: async () => '/usr/bin/python3',
@@ -170,7 +179,7 @@ suite('Integration Test Suite', () => {
         const mockPythonManager = {
             isReady: () => true,
             executePythonFile: async (scriptPath: string, args: string[]) => {
-                const filePath = args[0];
+                const filePath = args[1]; // args[0] is 'info', args[1] is the file path
                 if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
                     return {
                         result: {
@@ -238,13 +247,18 @@ suite('Integration Test Suite', () => {
         const mockPythonManager = {
             isReady: () => true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
-                return {
-                    result: {
-                        format: 'NetCDF',
-                        fileSize: 1024
-                    },
-                    error: 'File corrupted or unsupported format'
-                };
+                if (args[0] === 'info') {
+                    return {
+                        result: {
+                            format: 'NetCDF',
+                            fileSize: 1024
+                        },
+                        error: 'File corrupted or unsupported format'
+                    };
+                } else if (args[0] === 'plot') {
+                    return { error: 'File corrupted or unsupported format' };
+                }
+                return {};
             },
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
@@ -260,9 +274,14 @@ suite('Integration Test Suite', () => {
         assert.ok(dataInfo);
         assert.ok(dataInfo?.error);
 
-        // Test plot creation with error
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
-        assert.strictEqual(plotData, null);
+        // Test plot creation with error - should throw because createPlot throws on error
+        try {
+            await processor.createPlot(mockUri, 'temperature', 'line');
+            assert.fail('Should have thrown an error');
+        } catch (error) {
+            assert.ok(error instanceof Error);
+            assert.strictEqual(error.message, 'File corrupted or unsupported format');
+        }
     });
 
     test('DataProcessor should handle Python script execution errors', async () => {
@@ -284,9 +303,14 @@ suite('Integration Test Suite', () => {
         const dataInfo = await processor.getDataInfo(mockUri);
         assert.strictEqual(dataInfo, null);
 
-        // Test plot creation with execution error
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
-        assert.strictEqual(plotData, null);
+        // Test plot creation with execution error - should throw because createPlot throws on error
+        try {
+            await processor.createPlot(mockUri, 'temperature', 'line');
+            assert.fail('Should have thrown an error');
+        } catch (error) {
+            assert.ok(error instanceof Error);
+            assert.strictEqual(error.message, 'Python script execution failed');
+        }
     });
 
     test('DataViewerPanel should handle different message types', () => {
@@ -415,17 +439,24 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async () => ({
-                result: {
-                    format: 'NetCDF',
-                    fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ]
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
+                if (args[0] === 'info') {
+                    return {
+                        result: {
+                            format: 'NetCDF',
+                            fileSize: 1024,
+                            dimensions: { time: 100, lat: 180, lon: 360 },
+                            variables: [
+                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                                { name: 'time', dtype: 'datetime64', shape: [100] }
+                            ]
+                        }
+                    };
+                } else if (args[0] === 'plot') {
+                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
                 }
-            }),
+                return {};
+            },
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
             getCurrentInterpreterPath: async () => '/usr/bin/python3',

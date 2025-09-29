@@ -27,17 +27,22 @@ suite('DataProcessor Test Suite', () => {
             },
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 // Mock response for testing
-                return {
-                    result: {
-                        format: 'NetCDF',
-                        fileSize: 1024,
-                        dimensions: { time: 100, lat: 180, lon: 360 },
-                        variables: [
-                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                            { name: 'time', dtype: 'datetime64', shape: [100] }
-                        ]
-                    }
-                };
+                if (args[0] === 'info') {
+                    return {
+                        result: {
+                            format: 'NetCDF',
+                            fileSize: 1024,
+                            dimensions: { time: 100, lat: 180, lon: 360 },
+                            variables: [
+                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                                { name: 'time', dtype: 'datetime64', shape: [100] }
+                            ]
+                        }
+                    };
+                } else if (args[0] === 'plot') {
+                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                }
+                return {};
             }
         } as any;
 
@@ -119,8 +124,14 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
-        assert.strictEqual(plotData, null);
+        // createPlot throws errors instead of returning null
+        try {
+            await processor.createPlot(mockUri, 'temperature', 'line');
+            assert.fail('Should have thrown an error');
+        } catch (error) {
+            assert.ok(error instanceof Error);
+            assert.strictEqual(error.message, 'Plot creation failed');
+        }
     });
 
     test('should handle plot creation with error in result', async () => {
@@ -134,8 +145,14 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
-        assert.strictEqual(plotData, null);
+        // createPlot throws errors instead of returning null
+        try {
+            await processor.createPlot(mockUri, 'temperature', 'line');
+            assert.fail('Should have thrown an error');
+        } catch (error) {
+            assert.ok(error instanceof Error);
+            assert.strictEqual(error.message, 'Plot creation failed');
+        }
     });
 
     test('should handle Python environment not ready', async () => {

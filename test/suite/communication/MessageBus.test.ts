@@ -158,12 +158,35 @@ suite('MessageBus Test Suite', () => {
             return { success: true, data: payload };
         });
 
-        // Send a request
-        const result = await messageBus.sendRequest('testCommand', { test: 'data' }) as any;
-        
-        assert.ok(result);
-        assert.strictEqual(result.success, true);
-        assert.strictEqual(result.data.test, 'data');
+        // Mock the webview to properly handle the request/response cycle
+        const originalPostMessage = mockWebview.postMessage;
+        mockWebview.postMessage = (message: any) => {
+            // If it's a request, simulate the response
+            if (message.type === 'request') {
+                setTimeout(() => {
+                    const response = {
+                        type: 'response',
+                        requestId: message.id,
+                        success: true,
+                        payload: { success: true, data: message.payload }
+                    };
+                    (mockWebview as any).messageCallback(response);
+                }, 10);
+            }
+            return Promise.resolve(true);
+        };
+
+        try {
+            // Send a request
+            const result = await messageBus.sendRequest('testCommand', { test: 'data' }) as any;
+            
+            assert.ok(result);
+            assert.strictEqual(result.success, true);
+            assert.strictEqual(result.data.test, 'data');
+        } finally {
+            // Restore original postMessage
+            mockWebview.postMessage = originalPostMessage;
+        }
     });
 
     test('should handle undefined event data', (done) => {
