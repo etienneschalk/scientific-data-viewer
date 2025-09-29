@@ -16,7 +16,7 @@ import io
 import json
 import logging
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import sys
 from typing import Any
 import xarray as xr
@@ -161,6 +161,7 @@ class FileInfoResult:
     attributes_flattened: dict[str, dict[str, Any]]
     xarray_html_repr_flattened: dict[str, str]
     xarray_text_repr_flattened: dict[str, str]
+    datatree_flag: bool
 
 
 @dataclass(frozen=True)
@@ -243,7 +244,7 @@ def open_datatree_with_fallback(
                     backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                 )
                 if hasattr(xdt_or_xds, "groups") and xdt_or_xds.groups == ("/",):
-                    # DataTree with single group can be narrowed down to a dataset
+                    # DataTree with single top-level group can be narrowed down to a dataset
                     xdt_or_xds = xdt_or_xds.to_dataset()
             else:
                 xdt_or_xds = xr.open_dataset(
@@ -341,7 +342,7 @@ def detect_plotting_strategy(var):
     return "default"
 
 
-def create_plot(file_path: Path, variable_name: str, plot_type: str = "line"):
+def create_plot(file_path: Path, variable_path: str, plot_type: str = "line"):
     """Create a plot from a data file variable."""
     try:
         # Detect file format and available engines
@@ -359,11 +360,20 @@ def create_plot(file_path: Path, variable_name: str, plot_type: str = "line"):
             file_path, file_format_info
         )
 
+        if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
+            path = PurePosixPath(variable_path)
+            group_name = path.parent
+            group = xds_or_xdt[str(group_name)].to_dataset()
+            variable_name = path.stem
+        else:
+            group = xds_or_xdt
+            variable_name = variable_path
+
         # Get variable
-        if variable_name in xds_or_xdt.data_vars:
-            var = xds_or_xdt[variable_name]
-        elif variable_name in xds_or_xdt.coords:
-            var = xds_or_xdt[variable_name]
+        if variable_name in group.data_vars:
+            var = group[variable_name]
+        elif variable_name in group.coords:
+            var = group[variable_name]
         else:
             logger.error(f"Variable '{variable_name}' not found in dataset")
             xds_or_xdt.close()
@@ -456,6 +466,10 @@ def get_file_info(file_path: Path):
         # Get text representation using xarray's built-in text representation
         repr_html: str = xds_or_xdt._repr_html_()
 
+        datatree_flag: bool = can_use_datatree(used_engine) and isinstance(
+            xds_or_xdt, xr.DataTree
+        )
+
         info = FileInfoResult(
             format=file_format_info.display_name,
             format_info=file_format_info,
@@ -473,6 +487,7 @@ def get_file_info(file_path: Path):
             attributes_flattened={},
             xarray_html_repr_flattened={},
             xarray_text_repr_flattened={},
+            datatree_flag=datatree_flag,
         )
 
         # Add coordinate variables
@@ -485,9 +500,13 @@ def get_file_info(file_path: Path):
             var_info = create_variable_info(str(var_name), var)
             info.variables.append(var_info)
 
-        if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
+        if datatree_flag:
             xdt = xds_or_xdt
+            logger.info(f"Processing DataTree with {len(xdt.to_dict().keys())} groups")
+            logger.info(f"{xdt=}")
             for group in xdt.to_dict().keys():
+                logger.info(f"Processing group: {group}")
+                logger.info(f"{xdt[group].to_dataset()=}")
                 xds = xdt[group].to_dataset()
 
                 # Add attributes for group
@@ -497,12 +516,12 @@ def get_file_info(file_path: Path):
                 # Add coordinate variables for group
                 for coord_name, coord in xds.coords.items():
                     coord_info = create_coord_info(str(coord_name), coord)
-                    info.coordinates_flattened[group].append(coord_info)
+                    info.coordinates_flattened.setdefault(group, []).append(coord_info)
 
                 # Add data variables for group
                 for var_name, var in xds.data_vars.items():
                     var_info = create_variable_info(str(var_name), var)
-                    info.variables_flattened[group].append(var_info)
+                    info.variables_flattened.setdefault(group, []).append(var_info)
 
                 # Extract information
                 with xr.set_options(**XR_TEXT_OPTIONS):
@@ -517,6 +536,7 @@ def get_file_info(file_path: Path):
         xds_or_xdt.close()
         return info
     except Exception as exc:
+        logger.info(f"Error getting file info: {exc!r}")
         # Handle other errors (file corruption, format issues, etc.)
         error = FileInfoError(
             error=str(exc),

@@ -195,7 +195,7 @@ export class PythonManager {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
         // Core packages required for basic functionality
-        const corePackages = ['xarray'];
+        const corePackages = ['xarray', 'matplotlib'];
         // Additional packages for extended format support
         const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
         const allPackages = [...corePackages, ...extendedPackages];
@@ -283,7 +283,7 @@ export class PythonManager {
 
         try {
             const packages = await this.checkRequiredPackages(this.pythonPath);
-            const corePackages = ['xarray'];
+            const corePackages = ['xarray', 'matplotlib'];
             const missingCorePackages = corePackages.filter(pkg => !packages.includes(pkg));
             
             // Only require core packages for basic functionality

@@ -36,7 +36,20 @@ suite('DataProcessor Test Suite', () => {
                             variables: [
                                 { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
                                 { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
+                            ],
+                            coordinates: [],
+                            xarray_html_repr: '',
+                            xarray_text_repr: '',
+                            xarray_show_versions: '',
+                            attributes: {},
+                            format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
+                            used_engine: 'netcdf4',
+                            coordinates_flattened: {},
+                            variables_flattened: {},
+                            attributes_flattened: {},
+                            xarray_html_repr_flattened: {},
+                            xarray_text_repr_flattened: {},
+                            datatree_flag: false
                         }
                     };
                 } else if (args[0] === 'plot') {

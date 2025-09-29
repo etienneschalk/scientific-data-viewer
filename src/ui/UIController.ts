@@ -119,7 +119,7 @@ export class UIController {
                 }
 
                 if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                    this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['xarray']);
+                    this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['xarray', 'matplotlib']);
                     throw new Error('Python environment not ready. Please install core dependencies first.');
                 }
 

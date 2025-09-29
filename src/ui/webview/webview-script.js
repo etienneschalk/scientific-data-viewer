@@ -26,7 +26,7 @@ class WebviewMessageBus {
     }
 
     // Send a request and wait for response
-    async sendRequest(command, payload, timeout = 10000) {
+    async sendRequest(command, payload, timeout = 60000) {
         const request = this.createRequest(command, payload);
         
         return new Promise((resolve, reject) => {
@@ -260,7 +260,36 @@ function displayDataInfo(data, filePath) {
     // Display coordinates
     const coordinatesContainer = document.getElementById('coordinates');
     if (coordinatesContainer) {
-        if (data.coordinates && data.coordinates.length > 0) {
+        if (data.datatree_flag && data.coordinates_flattened) {
+            // Display coordinates for each group
+            const groups = Object.keys(data.coordinates_flattened);
+            coordinatesContainer.innerHTML = groups.map(groupName => {
+                const coordinates = data.coordinates_flattened[groupName];
+                const coordinatesHtml = coordinates && coordinates.length > 0 ?
+                    coordinates.map(variable => {
+                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        
+                        return `
+                            <div class="variable-item" data-variable="${variable.name}">
+                                <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                <span class="dims">${dimsStr}</span>
+                                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                            </div>
+                        `;
+                    }).join('') :
+                    '<p>No coordinates found in this group.</p>';
+                
+                return `
+                    <div class="info-section">
+                        <h3>Coordinates for ${groupName}</h3>
+                        <div class="coordinates">${coordinatesHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        } else if (data.coordinates && data.coordinates.length > 0) {
             coordinatesContainer.innerHTML = data.coordinates
                 .map(variable => {
                     const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
@@ -288,7 +317,44 @@ function displayDataInfo(data, filePath) {
     // Display variables
     const variablesContainer = document.getElementById('variables');
     if (variablesContainer) {
-        if (data.variables && data.variables.length > 0) {
+        if (data.datatree_flag && data.variables_flattened) {
+            // Display variables for each group
+            const groups = Object.keys(data.variables_flattened);
+            variablesContainer.innerHTML = groups.map(groupName => {
+                const variables = data.variables_flattened[groupName];
+                const variablesHtml = variables && variables.length > 0 ?
+                    variables.map(variable => {
+                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        
+                        // For datatree variables, use full path (group/variable) for plotting
+                        const fullVariableName = `${groupName}/${variable.name}`;
+                        const plotControls = hasPlottingCapabilities ? 
+                            generateVariablePlotControls(fullVariableName, true) : '';
+                        
+                        return `
+                            <div class="variable-row" data-variable="${fullVariableName}">
+                                <div class="variable-item">
+                                    <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
+                                    <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                    <span class="dims">${dimsStr}</span>
+                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                </div>
+                                ${plotControls}
+                            </div>
+                        `;
+                    }).join('') :
+                    '<p>No variables found in this group.</p>';
+                
+                return `
+                    <div class="info-section">
+                        <h3>Variables for ${groupName}</h3>
+                        <div class="variables">${variablesHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        } else if (data.variables && data.variables.length > 0) {
             variablesContainer.innerHTML = data.variables
                 .map(variable => {
                     const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
@@ -317,13 +383,27 @@ function displayDataInfo(data, filePath) {
     }
     
     // Enable create plot buttons for all variables
-    if (hasPlottingCapabilities && data.variables && data.variables.length > 0) {
-        data.variables.forEach(variable => {
-            const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
-            if (createButton) {
-                createButton.disabled = false;
-            }
-        });
+    if (hasPlottingCapabilities) {
+        if (data.datatree_flag && data.variables_flattened) {
+            // Enable buttons for datatree variables
+            Object.keys(data.variables_flattened).forEach(groupName => {
+                data.variables_flattened[groupName].forEach(variable => {
+                    const fullVariableName = `${groupName}/${variable.name}`;
+                    const createButton = document.querySelector(`.create-plot-button[data-variable="${fullVariableName}"]`);
+                    if (createButton) {
+                        createButton.disabled = false;
+                    }
+                });
+            });
+        } else if (data.variables && data.variables.length > 0) {
+            // Enable buttons for regular variables
+            data.variables.forEach(variable => {
+                const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
+                if (createButton) {
+                    createButton.disabled = false;
+                }
+            });
+        }
     }
     
     // Show content
@@ -370,7 +450,26 @@ function displayPlot(plotData) {
 function displayHtmlRepresentation(htmlData) {
     const container = document.getElementById('htmlRepresentation');
     if (htmlData) {
-        container.innerHTML = htmlData;
+        if (typeof htmlData === 'object' && htmlData !== null) {
+            // Handle datatree flattened HTML representations
+            const groups = Object.keys(htmlData);
+            container.innerHTML = `
+                <div class="info-section">
+                    <h3>Xarray HTML representation (for each group)</h3>
+                    ${groups.map(groupName => `
+                        <div class="group-section">
+                            <h4>${groupName}</h4>
+                            <div class="html-representation">
+                                ${htmlData[groupName] || '<p>No HTML representation available</p>'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            // Handle regular HTML representation
+            container.innerHTML = htmlData;
+        }
     } else {
         container.innerHTML = '<p>Failed to load HTML representation</p>';
     }
@@ -381,8 +480,31 @@ function displayTextRepresentation(textData) {
     const copyButton = document.getElementById('textCopyButton');
     
     if (textData) {
-        container.textContent = textData;
-        copyButton.classList.remove('hidden');
+        if (typeof textData === 'object' && textData !== null) {
+            // Handle datatree flattened text representations
+            const groups = Object.keys(textData);
+            container.innerHTML = `
+                <div class="info-section">
+                    <h3>Xarray Text representation (for each group)</h3>
+                    ${groups.map(groupName => `
+                        <div class="group-section">
+                            <h4>${groupName}</h4>
+                            <div class="text-representation-container">
+                                <button class="text-copy-button" data-copy-target="textRepresentation" data-group="${groupName}">📋 Copy</button>
+                                <div class="text-representation">
+                                    ${textData[groupName] || 'No text representation available'}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            copyButton.classList.remove('hidden');
+        } else {
+            // Handle regular text representation
+            container.textContent = textData;
+            copyButton.classList.remove('hidden');
+        }
     } else {
         container.textContent = 'Failed to load text representation';
         copyButton.classList.add('hidden');
@@ -438,7 +560,7 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
         <ol>
             <li>Make sure Python is installed and accessible</li>
             <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
-            <li>Install required packages: <code>pip install xarray</code></li>
+            <li>Install required packages: <code>pip install xarray matplotlib</code></li>
             <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
             <li><a href="#" onclick="executeShowLogsCommand()" style="color: #007acc; text-decoration: underline; cursor: pointer;">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
         </ol>
@@ -1109,8 +1231,16 @@ function setupMessageHandlers() {
         console.log('📊 Data loaded event received:', state);
         updateTimestamp(state.data.lastLoadTime);
         displayDataInfo(state.data.dataInfo, state.data.currentFile);
-        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr);
-        displayTextRepresentation(state.data.dataInfo.xarray_text_repr);
+        
+        // Handle datatree vs regular data
+        if (state.data.dataInfo.datatree_flag) {
+            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr_flattened);
+            displayTextRepresentation(state.data.dataInfo.xarray_text_repr_flattened);
+        } else {
+            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr);
+            displayTextRepresentation(state.data.dataInfo.xarray_text_repr);
+        }
+        
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);
         displayPythonPath(state.python.pythonPath);

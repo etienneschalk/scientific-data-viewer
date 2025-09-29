@@ -26,10 +26,7 @@ export class DataDisplayComponent extends BaseComponent {
             <div class="data-display">
                 ${this.renderFileInfo(data, filePath)}
                 ${this.renderDimensions(data)}
-                ${this.renderCoordinates(data)}
-                ${this.renderVariables(data)}
-                ${this.renderHtmlRepresentation(data)}
-                ${this.renderTextRepresentation(data)}
+                ${this.renderDataSections(data)}
             </div>
         `;
     }
@@ -95,6 +92,115 @@ export class DataDisplayComponent extends BaseComponent {
         `;
     }
 
+    private renderDataSections(data: any): string {
+        if (data.datatree_flag) {
+            return this.renderDatatreeSections(data);
+        } else {
+            return `
+                ${this.renderCoordinates(data)}
+                ${this.renderVariables(data)}
+                ${this.renderHtmlRepresentation(data)}
+                ${this.renderTextRepresentation(data)}
+            `;
+        }
+    }
+
+    private renderDatatreeSections(data: any): string {
+        const groups = Object.keys(data.coordinates_flattened || {});
+        let sections = '';
+
+        // Render coordinates for each group
+        groups.forEach(groupName => {
+            sections += this.renderGroupCoordinates(groupName, data.coordinates_flattened[groupName]);
+        });
+
+        // Render variables for each group
+        groups.forEach(groupName => {
+            sections += this.renderGroupVariables(groupName, data.variables_flattened[groupName]);
+        });
+
+        // Render HTML representations for each group
+        if (data.xarray_html_repr_flattened) {
+            sections += this.renderGroupHtmlRepresentations(data.xarray_html_repr_flattened);
+        }
+
+        // Render text representations for each group
+        if (data.xarray_text_repr_flattened) {
+            sections += this.renderGroupTextRepresentations(data.xarray_text_repr_flattened);
+        }
+
+        return sections;
+    }
+
+    private renderGroupCoordinates(groupName: string, coordinates: any[]): string {
+        return `
+            <div class="info-section">
+                <h3>Coordinates for ${groupName}</h3>
+                <div class="coordinates">
+                    ${coordinates && coordinates.length > 0 ?
+                        coordinates
+                            .map((coord: any) => this.renderVariableItem(coord, 'coordinate'))
+                            .join('') :
+                        '<p>No coordinates found in this group.</p>'
+                    }
+                </div>
+            </div>
+        `;
+    }
+
+    private renderGroupVariables(groupName: string, variables: any[]): string {
+        return `
+            <div class="info-section">
+                <h3>Variables for ${groupName}</h3>
+                <div class="variables">
+                    ${variables && variables.length > 0 ?
+                        variables
+                            .map((variable: any) => this.renderVariableItem(variable, 'variable', groupName))
+                            .join('') :
+                        '<p>No variables found in this group.</p>'
+                    }
+                </div>
+            </div>
+        `;
+    }
+
+    private renderGroupHtmlRepresentations(htmlReprs: { [groupName: string]: string }): string {
+        const groups = Object.keys(htmlReprs);
+        return `
+            <div class="info-section">
+                <h3>Xarray HTML representation (for each group)</h3>
+                ${groups.map(groupName => `
+                    <div class="group-section">
+                        <h4>${groupName}</h4>
+                        <div class="html-representation">
+                            ${htmlReprs[groupName] || '<p>No HTML representation available</p>'}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    private renderGroupTextRepresentations(textReprs: { [groupName: string]: string }): string {
+        const groups = Object.keys(textReprs);
+        return `
+            <div class="info-section">
+                <h3>Xarray Text representation (for each group)</h3>
+                ${groups.map(groupName => `
+                    <div class="group-section">
+                        <h4>${groupName}</h4>
+                        <div class="text-representation-container">
+                            <button class="text-copy-button" data-copy-target="textRepresentation" data-group="${groupName}">📋 Copy</button>
+                            <div class="text-representation">
+                                ${textReprs[groupName] || 'No text representation available'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
     private renderCoordinates(data: any): string {
         return `
             <div class="info-section">
@@ -127,10 +233,13 @@ export class DataDisplayComponent extends BaseComponent {
         `;
     }
 
-    private renderVariableItem(item: any, type: string): string {
+    private renderVariableItem(item: any, type: string, groupName?: string): string {
         const clickable = type === 'variable' && this.props.onVariableClick;
         const className = `variable-item ${clickable ? 'clickable' : ''}`;
-        const dataAttributes = clickable ? `data-variable="${item.name}"` : '';
+        
+        // For datatree variables, use full path (group/variable) for plotting
+        const variableName = groupName ? `${groupName}/${item.name}` : item.name;
+        const dataAttributes = clickable ? `data-variable="${variableName}"` : '';
         
         const shapeStr = item.shape ? `(${item.shape.join(', ')})` : '';
         const dimsStr = item.dimensions ? `Dims: (${item.dimensions.join(', ')})` : '';
@@ -138,7 +247,7 @@ export class DataDisplayComponent extends BaseComponent {
         
         return `
             <div class="${className}" ${dataAttributes}>
-                <span class="variable-name" title="${item.name}">${item.name}</span>
+                <span class="variable-name" title="${variableName}">${item.name}</span>
                 <span class="dtype-shape">${item.dtype} ${shapeStr}</span>
                 <span class="dims">${dimsStr}</span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
@@ -211,8 +320,17 @@ export class DataDisplayComponent extends BaseComponent {
                 textToCopy = this.props.filePath;
                 break;
             case 'textRepresentation':
-                const textElement = this.element?.querySelector('.text-representation');
-                textToCopy = textElement?.textContent || '';
+                const groupName = button.getAttribute('data-group');
+                if (groupName) {
+                    // For group-specific text representation
+                    const groupElement = button.closest('.group-section');
+                    const textElement = groupElement?.querySelector('.text-representation');
+                    textToCopy = textElement?.textContent || '';
+                } else {
+                    // For regular text representation
+                    const textElement = this.element?.querySelector('.text-representation');
+                    textToCopy = textElement?.textContent || '';
+                }
                 break;
         }
 

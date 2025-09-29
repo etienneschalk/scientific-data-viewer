@@ -43,6 +43,27 @@ export interface DataInfoResult {
     xarray_show_versions: string;
     attributes: { [key: string]: any };
     fileSize: number;
+    // New datatree fields
+    coordinates_flattened: { [groupName: string]: Array<{
+        name: string;
+        dtype: string;
+        shape: number[];
+        dimensions: string[];
+        size_bytes: number;
+        attributes?: { [key: string]: any };
+    }> };
+    variables_flattened: { [groupName: string]: Array<{
+        name: string;
+        dtype: string;
+        shape: number[];
+        dimensions: string[];
+        size_bytes: number;
+        attributes?: { [key: string]: any };
+    }> };
+    attributes_flattened: { [groupName: string]: { [key: string]: any } };
+    xarray_html_repr_flattened: { [groupName: string]: string };
+    xarray_text_repr_flattened: { [groupName: string]: string };
+    datatree_flag: boolean;
 }
 export interface DataInfoError {
     error: string;
@@ -74,7 +95,7 @@ export class DataProcessor {
 
         try {
             // Use the new merged CLI with 'info' mode
-            const result = await this.pythonManager.executePythonFile(scriptPath, ['info', filePath]);
+            const result = await this.pythonManager.executePythonFile(scriptPath, ['info', filePath], true);
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return result;
