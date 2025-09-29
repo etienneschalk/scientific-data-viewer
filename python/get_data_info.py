@@ -101,6 +101,7 @@ DEFAULT_ENGINE_BACKEND_KWARGS: dict[str, Any | None] = {
 }
 # Avoid intempestive .idx file creation
 DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
+DEFAULT_ENGINE_BACKEND_KWARGS["rasterio"] = {"mask_and_scale": False}
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = {
@@ -388,23 +389,21 @@ def create_plot(file_path: Path, variable_path: str, plot_type: str = "line"):
         if strategy == "2d_spatial":
             # 2D spatial data - plot directly with appropriate colormap
             logger.info("Creating 2D spatial plot")
-            ax = var.plot.imshow(cmap="viridis", aspect=1)
-
+            ax = var.plot.imshow(cmap="viridis")
+            plt.gca().set_aspect("equal")
         elif strategy == "3d_col":
             # 3D data with spatial dimensions - use col parameter
             logger.info("Creating 3D plot with col parameter")
             first_dim = var.dims[0]
-            ax = var.plot.imshow(col=first_dim, cmap="viridis", aspect=1)
+            ax = var.plot.imshow(col=first_dim, cmap="viridis", aspect=1, size=4)
+
         elif strategy == "4d_col_row":
             # 4D data with spatial dimensions - use col and row parameters
             logger.info("Creating 4D plot with col and row parameters")
             first_dim = var.dims[0]
             second_dim = var.dims[1]
             ax = var.plot.imshow(
-                col=second_dim,
-                row=first_dim,
-                cmap="viridis",
-                aspect=1,
+                col=second_dim, row=first_dim, cmap="viridis", aspect=1, size=4
             )
         else:
             # Default plotting behavior - let xarray decide the best method

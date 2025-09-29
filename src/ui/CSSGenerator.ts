@@ -220,7 +220,7 @@ export class CSSGenerator {
             padding: 6px 8px;
             background-color: var(--vscode-list-hoverBackground);
             border-radius: 4px;
-            cursor: pointer;
+            /* cursor: pointer; */
             transition: background-color 0.2s ease;
             display: flex;
             align-items: center;
@@ -703,8 +703,8 @@ export class CSSGenerator {
         }
         
         .plot-action-button {
-            background-color: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
             border: none;
             padding: 6px 12px;
             border-radius: 4px;
@@ -714,12 +714,12 @@ export class CSSGenerator {
         }
         
         .plot-action-button:hover {
-            background-color: var(--vscode-button-secondaryHoverBackground);
+            background-color: var(--vscode-button-hoverBackground);
         }
         
         .plot-action-button:disabled {
-            background-color: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
             cursor: not-allowed;
             opacity: 0.6;
         }

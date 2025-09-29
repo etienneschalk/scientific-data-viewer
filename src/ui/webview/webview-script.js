@@ -5,6 +5,14 @@
 
 const vscode = acquireVsCodeApi();
 
+const escapeHtml = unsafe => {
+    return unsafe
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  };
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -229,21 +237,21 @@ function displayDataInfo(data, filePath) {
         
     // Display file information
     const fileInfo = document.getElementById('fileInfo');
-    let formatInfo = `<p><strong>Format:</strong> ${data.format || 'Unknown'}</p>`;
+    let formatInfo = `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
     
     if (data.format_info) {
         formatInfo += `
-            <p><strong>File Extension:</strong> ${data.format_info.extension}</p>
-            <p><strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'}</p>
-            ${data.used_engine ? `<p><strong>Used Engine:</strong> ${data.used_engine}</p>` : ''}
+            <strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;
+            <strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'} &nbsp; &nbsp;
+            ${data.used_engine ? `<strong>Used Engine:</strong> ${data.used_engine} &nbsp; &nbsp;` : ''}
         `;
     }
     
     if (data.fileSize) {
-        formatInfo += `<p><strong>Size:</strong> ${formatFileSize(data.fileSize)}</p>`;
+        formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} &nbsp; &nbsp;`;
     }
     
-    fileInfo.innerHTML = formatInfo;
+    fileInfo.innerHTML = `<p>${formatInfo}</p>`;
 
     // Check if plotting capabilities are enabled
     const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
@@ -286,7 +294,7 @@ function displayDataInfo(data, filePath) {
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                             </div>
@@ -311,7 +319,7 @@ function displayDataInfo(data, filePath) {
                             <div class="variable-row" data-variable="${fullVariableName}">
                                 <div class="variable-item">
                                     <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                    <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                    <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                     <span class="dims">${dimsStr}</span>
                                     ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                                 </div>
@@ -371,7 +379,7 @@ function displayDataInfo(data, filePath) {
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
+                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                             </div>
@@ -398,10 +406,10 @@ function displayDataInfo(data, filePath) {
                         return `
                             <div class="variable-row" data-variable="${variable.name}">
                                 <div class="variable-item">
-                                    <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                    <span class="dtype-shape">${variable.dtype} ${shapeStr}</span>
-                                    <span class="dims">${dimsStr}</span>
-                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
+                                <span class="dims">${dimsStr}</span>
+                                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                                 </div>
                                 ${plotControls}
                             </div>
