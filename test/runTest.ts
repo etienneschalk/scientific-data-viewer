@@ -13,12 +13,10 @@ async function main() {
         await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
-            version: '1.74.0', // Use a compatible VS Code version
-            launchArgs: []
+            launchArgs: ['--disable-extensions']
         });
     } catch (err) {
         console.error('Failed to run tests');
-        console.error('Error details:', err);
         process.exit(1);
     }
 }

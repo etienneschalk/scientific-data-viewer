@@ -92,10 +92,6 @@ export class UIController {
         this.messageBus.registerRequestHandler('executeCommand', async (payload) => {
             return this.handleExecuteCommand(payload.command, payload.args);
         });
-
-        this.messageBus.registerRequestHandler('getPythonPath', async () => {
-            return this.handleGetPythonPath();
-        });
     }
 
     private setupStateSubscription(): void {
@@ -509,20 +505,6 @@ export class UIController {
             Logger.info(`🔧 Command executed successfully: ${command}`);
             return result;
         }, context);
-    }
-
-    private async handleGetPythonPath(): Promise<{ pythonPath: string | null }> {
-        const context: ErrorContext = {
-            component: `ui-${this.id}`,
-            operation: 'getPythonPath'
-        };
-
-        const result = await this.errorBoundary.wrapAsync(async () => {
-            const pythonPath = this.dataProcessor.pythonManagerInstance.getCurrentPythonPath();
-            return { pythonPath: pythonPath || null };
-        }, context);
-        
-        return result || { pythonPath: null };
     }
 
     // Cleanup

@@ -180,38 +180,18 @@ export class MessageBus {
     // Event emission methods
     emitDataLoaded(state: any): void {
         this.sendEvent(EVENTS.DATA_LOADED, state);
-        this.triggerLocalEvent(EVENTS.DATA_LOADED, state);
     }
 
     emitError(message: string, details?: string, errorType?: string, formatInfo?: any): void {
-        const errorData = { message, details, errorType, formatInfo };
-        this.sendEvent(EVENTS.ERROR, errorData);
-        this.triggerLocalEvent(EVENTS.ERROR, errorData);
+        this.sendEvent(EVENTS.ERROR, { message, details, errorType, formatInfo });
     }
 
     emitPythonEnvironmentChanged(isReady: boolean, pythonPath: string | null): void {
-        const envData = { isReady, pythonPath };
-        this.sendEvent(EVENTS.PYTHON_ENVIRONMENT_CHANGED, envData);
-        this.triggerLocalEvent(EVENTS.PYTHON_ENVIRONMENT_CHANGED, envData);
+        this.sendEvent(EVENTS.PYTHON_ENVIRONMENT_CHANGED, { isReady, pythonPath });
     }
 
     emitUIStateChanged(state: any): void {
         this.sendEvent(EVENTS.UI_STATE_CHANGED, state);
-        this.triggerLocalEvent(EVENTS.UI_STATE_CHANGED, state);
-    }
-
-    // Helper method to trigger local event listeners
-    private triggerLocalEvent(event: string, payload: any): void {
-        const listeners = this.eventListeners.get(event);
-        if (listeners) {
-            listeners.forEach(listener => {
-                try {
-                    listener(payload);
-                } catch (error) {
-                    console.error(`Error in event listener for ${event}:`, error);
-                }
-            });
-        }
     }
 
     // Cleanup

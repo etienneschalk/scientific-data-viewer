@@ -109,7 +109,7 @@ export class DataProcessor {
             return null;
         } catch (error) {
             Logger.error(`Error creating plot: ${error}`);
-            return null;
+            throw error;
         }
     }
 

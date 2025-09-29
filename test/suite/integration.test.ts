@@ -72,36 +72,17 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager to be ready
         const mockPythonManager = {
             isReady: () => true,
-            hasPythonPath: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], captureLogs?: boolean) => {
-                if (args[0] === 'plot') {
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-                } else if (args[0] === 'info') {
-                    return {
-                        result: {
-                            format: 'NetCDF',
-                            fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
-                        }
-                    };
-                } else {
-                    return {
-                        result: {
-                            format: 'NetCDF',
-                            fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
-                        }
-                    };
+            executePythonFile: async () => ({
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ]
                 }
-            },
+            }),
             executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
@@ -189,9 +170,8 @@ suite('Integration Test Suite', () => {
     test('DataProcessor should handle different data formats', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            hasPythonPath: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], captureLogs?: boolean) => {
-                const filePath = args[1]; // args[0] is 'info', args[1] is the file path
+            executePythonFile: async (scriptPath: string, args: string[]) => {
+                const filePath = args[0];
                 if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
                     return {
                         result: {
@@ -259,8 +239,7 @@ suite('Integration Test Suite', () => {
     test('DataProcessor should handle error responses from Python', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            hasPythonPath: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], captureLogs?: boolean) => {
+            executePythonFile: async () => {
                 return {
                     result: {
                         format: 'NetCDF',
@@ -294,8 +273,7 @@ suite('Integration Test Suite', () => {
     test('DataProcessor should handle Python script execution errors', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            hasPythonPath: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], captureLogs?: boolean) => {
+            executePythonFile: async () => {
                 throw new Error('Python script execution failed');
             },
             executePythonFileWithLogs: async () => {
@@ -447,24 +425,17 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager
         const mockPythonManager = {
             isReady: () => true,
-            hasPythonPath: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], captureLogs?: boolean) => {
-                if (args[0] === 'plot') {
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-                } else {
-                    return {
-                        result: {
-                            format: 'NetCDF',
-                            fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
-                        }
-                    };
+            executePythonFile: async () => ({
+                result: {
+                    format: 'NetCDF',
+                    fileSize: 1024,
+                    dimensions: { time: 100, lat: 180, lon: 360 },
+                    variables: [
+                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
+                        { name: 'time', dtype: 'datetime64', shape: [100] }
+                    ]
                 }
-            },
+            }),
             executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},

@@ -6,8 +6,6 @@ suite('ErrorBoundary Tests', () => {
 
     setup(() => {
         errorBoundary = ErrorBoundary.getInstance();
-        // Clear error history before each test
-        errorBoundary.clearErrorHistory();
     });
 
     test('should handle errors with component-specific handlers', () => {
