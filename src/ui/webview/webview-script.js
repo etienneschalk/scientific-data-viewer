@@ -909,6 +909,33 @@ async function copyPlotError(variable) {
     }
 }
 
+async function plotAllVariables() {
+    console.log('🔍 Plot All Variables - Debug Info:');
+
+    for (const button of document.querySelectorAll('.create-plot-button')) {
+        console.log('🔍 Plotting button:', button, button.getAttribute('data-variable'));
+        const variable = button.getAttribute('data-variable');
+        const plotTypeSelect = document.querySelector(`.plot-type-select[data-variable="${variable}"]`);
+        const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
+        const actualPlotType = plotType === 'auto' ? 'line' : plotType;
+        
+        // Show loading indicator
+        showVariablePlotLoading(variable);
+        
+        try {
+            const plotData = await messageBus.createPlot(variable, actualPlotType);
+            displayVariablePlot(variable, plotData);
+        } catch (error) {
+            console.error('Failed to create plot:', error);
+            // Clear loading state and show error
+            const container = document.querySelector(`.plot-container[data-variable="${variable}"]`);
+            const imageContainer = container.querySelector('.plot-image-container');
+            imageContainer.innerHTML = '';
+            showVariablePlotError(variable, 'Error creating plot: ' + error.message);
+        }
+    }
+}
+
 async function saveAllPlots() {
     const containers = document.querySelectorAll('.plot-container');
     const plotsToSave = [];
@@ -1050,6 +1077,11 @@ function setupEventListeners(plottingCapabilities = false) {
     // Plotting event listeners (if plotting capabilities are enabled)
     if (plottingCapabilities) {
         // Global plot controls
+        const plotAllButton = document.getElementById('plotAllButton');
+        if (plotAllButton) {
+            plotAllButton.addEventListener('click', plotAllVariables);
+        }
+
         const resetAllPlotsButton = document.getElementById('resetAllPlotsButton');
         if (resetAllPlotsButton) {
             resetAllPlotsButton.addEventListener('click', resetAllPlots);

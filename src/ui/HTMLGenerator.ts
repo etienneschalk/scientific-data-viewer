@@ -203,6 +203,7 @@ export class HTMLGenerator {
         <div class="info-section">
             <h3>Global Plot Controls</h3>
             <div class="global-plot-controls">
+                <button id="plotAllButton" class="plot-control-button">Plot All</button>
                 <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                 <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
             </div>
