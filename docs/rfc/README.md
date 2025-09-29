@@ -29,6 +29,11 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#025: Generate Static Webview via Notebook](./025-static-webview-generation.md) - Export and visualization enhancement
 - [#027: Allow User-Configurable kwargs for xarray Products](./027-custom-xarray-kwargs.md) - Advanced user feature
 - [#028: Add Healthcheck System](./028-healthcheck-system.md) - Reliability and monitoring
+- [#029: Multiple Variables Plotting](./029-multiple-variables-plotting.md) - Visualization enhancement
+- [#030: Export HTML Report](./030-export-html-report.md) - Export functionality
+- [#031: Convert HTML to Notebook](./031-convert-html-notebook.md) - Export functionality
+- [#032: Interactive Plotting Tools](./032-interactive-plotting-tools.md) - Visualization enhancement
+- [#033: Flatten DataTree Variables](./033-flatten-datatree-variables.md) - DataTree support enhancement
 
 ### Low Priority
 
