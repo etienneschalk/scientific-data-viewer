@@ -260,9 +260,9 @@ function displayDataInfo(data, filePath) {
         const dimensionsContainer = document.getElementById('dimensions');
         const coordinatesContainer = document.getElementById('coordinates');
         const variablesContainer = document.getElementById('variables');
-        dimensionsContainer.parentElement.classList.add('hidden');
-        coordinatesContainer.parentElement.classList.add('hidden');
-        variablesContainer.parentElement.classList.add('hidden');
+        dimensionsContainer.parentElement.parentElement.classList.add('hidden');
+        coordinatesContainer.parentElement.parentElement.classList.add('hidden');
+        variablesContainer.parentElement.parentElement.classList.add('hidden');
         const groupInfoContainer = document.getElementById('group-info-container');
         groupInfoContainer.classList.remove('hidden');
 
@@ -345,18 +345,25 @@ function displayDataInfo(data, filePath) {
                 <div class="info-section">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
                         <div class="info-section">
-                            <h4>Dimensions</h4>
-                            <div class="dimensions">
-                                ${dimensionsHtml}
-                            </div>
+                            <details class="" open> <summary><h4>Dimensions</h4></summary>
+                                <div class="dimensions">
+                                    ${dimensionsHtml}
+                                </div>
+                            </details>  
                         </div>  
                         <div class="info-section">
-                            <h4>Coordinates</h4>
-                            <div class="coordinates">${coordinatesHtml}</div>
+                            <details class="" open> <summary><h4>Coordinates</h4></summary>
+                                <div class="coordinates">
+                                    ${coordinatesHtml}
+                                </div>
+                            </details>
                         </div>
                         <div class="info-section">
-                            <h4>Variables</h4>
-                            <div class="variables">${variablesHtml}</div>
+                            <details class="" open> <summary><h4>Variables</h4></summary>
+                                <div class="variables">
+                                    ${variablesHtml}
+                                </div>  
+                            </details>
                         </div>
                     </div>
                 </details>
@@ -516,7 +523,7 @@ function displayPlot(plotData) {
 // Representation display functions
 function displayHtmlRepresentation(htmlData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('htmlRepresentationForGroups') : document.getElementById('htmlRepresentation');
-    container.parentElement.classList.remove('hidden');
+    container.parentElement.parentElement.classList.remove('hidden');
     
     if (htmlData) {
         if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
@@ -524,7 +531,7 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
             const groups = Object.keys(htmlData);
             container.innerHTML = `
                     ${groups.map(groupName => `
-                        <div class="group-section">
+                        <div class="info-section">
                             <details> <summary>${groupName}</summary>
                                 <div class="html-representation">
                                     ${htmlData[groupName] || '<p>No HTML representation available</p>'}
@@ -544,14 +551,14 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
 
 function displayTextRepresentation(textData, isDatatree = false) {
     const container = isDatatree ? document.getElementById('textRepresentationForGroups') : document.getElementById('textRepresentation');
-    container.parentElement.classList.remove('hidden');
+    container.parentElement.parentElement.classList.remove('hidden');
     if (textData) {
         if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations
             const groups = Object.keys(textData);
             container.innerHTML = `
                     ${groups.map(groupName => `
-                        <div class="group-section">
+                        <div class="info-section">
                             <details> <summary>${groupName}</summary>
                                 <div class="text-representation-container">
                                     <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">

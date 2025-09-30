@@ -7,8 +7,9 @@ import * as path from 'path';
 export class CSSGenerator {
     private static cssContent: string | null = null;
 
-    static getStyles(): string {
-        if (this.cssContent === null) {
+    static getStyles(devMode: boolean): string {
+        // In dev mode, we always reload the CSS file for shorter development feedback loops.
+        if (this.cssContent === null || devMode) {
             this.loadCSS();
         }
         return this.cssContent || '';
@@ -17,12 +18,7 @@ export class CSSGenerator {
     private static loadCSS(): void {
         try {
             // Try to load from the source directory first (for development)
-            let cssPath = path.join(__dirname, 'styles.css');
-            
-            // If not found, try the compiled output directory
-            if (!fs.existsSync(cssPath)) {
-                cssPath = path.join(__dirname, '..', '..', 'src', 'ui', 'styles.css');
-            }
+            const cssPath = path.join(__dirname, '../../../src/ui', 'webview', 'styles.css');
             
             this.cssContent = fs.readFileSync(cssPath, 'utf8');
         } catch (error) {

@@ -1,3 +1,5 @@
+/* https://gist.github.com/estruyf/ba49203e1a7d6868e9320a4ea480c27a All VS Code theme variables */
+
 /* Base styles */
 body {
     font-family: var(--vscode-font-family);
@@ -12,6 +14,8 @@ body {
 
 * {
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 .hidden {
@@ -165,13 +169,17 @@ select:focus {
 
 /* Info section styles */
 .info-section {
-    margin: 20px 0;
+    margin: 0;
+    /* margin-bottom: 15px; */
     padding: 15px;
-    padding-top: 5px; /* for the sticky header */
+    padding-top: 0;
+    padding-bottom: 0;
     background-color: var(--vscode-editor-background);
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
+    background: cyan;
 }
+/* .info-section:not(:last-child) { margin-bottom:15px; } */
 
 .info-section h3 {
     margin-top: 0;
@@ -179,15 +187,18 @@ select:focus {
     position: sticky;
     top: 0;
     background-color: var(--vscode-editor-background);
-    z-index: 10;
+    z-index: 20;
     padding: 10px 0;
-    border-bottom: 1px solid var(--vscode-panel-border);
+    /* border-bottom: 1px solid var(--vscode-panel-border); */
+    background: yellow;
+
 }
 
 .info-section h4 {
     margin: 0;
-    padding: 0;
+    padding: 10px 0;
     color: var(--vscode-foreground);
+    background: yellow;
 }
 
 .dimensions, .variables, .coordinates {
@@ -428,9 +439,6 @@ select:focus {
 }
 
 .text-copy-button {
-    position: absolute;
-    top: 4px;
-    right: 20px;
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     border: none;
@@ -455,21 +463,6 @@ select:focus {
 }
 
 /* Troubleshooting styles */
-.troubleshooting-section {
-    margin: 20px 0;
-    padding: 15px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-}
-
-.troubleshooting-section h3 {
-    margin-top: 0;
-    margin-bottom: 0;
-    color: var(--vscode-foreground);
-    display: inline-block;
-}
-
 .troubleshooting-content {
     font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
     font-size: 11px;
@@ -484,14 +477,7 @@ select:focus {
     overflow: auto;
 }
 
-.troubleshooting-content-container {
-    position: relative;
-}
-
 .troubleshooting-copy-button {
-    position: absolute;
-    top: 4px;
-    right: 20px;
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     border: none;
@@ -515,11 +501,17 @@ select:focus {
     color: var(--vscode-foreground);
 }
 
+details[open] {
+    margin-bottom: 15px;
+}
+
 details summary {
     cursor: pointer;
     padding: 8px 0;
     font-weight: 500;
     color: var(--vscode-foreground);
+    background: lime;
+
 }
 
 details summary:hover {
@@ -537,7 +529,7 @@ details.sticky-group-details {
     margin-bottom: 0;
 }
 
-details.sticky-group-details summary {
+details.sticky-group-details > summary {
     top: 0;
     position: sticky;
     /* Keep the arrow while having a display-block-like behavior: use display: list-item */
@@ -546,9 +538,15 @@ details.sticky-group-details summary {
     background-color: var(--vscode-editor-background);
     z-index: 10;
     margin-bottom: 0;
+    background: magenta;
+    padding: 10px 0;
+    /* padding: 15px;
+    padding-bottom: 0;
+    padding-top: 0; */
 }
 
-details[open].sticky-group-details summary {
+details[open].sticky-group-details {
+    margin-bottom: 15px;
     border-bottom: 1px solid var(--vscode-panel-border);
 }
 
@@ -746,7 +744,7 @@ details.sticky-group-details summary > *{
 .global-plot-controls {
     display: flex;
     gap: 10px;
-    margin: 10px 0;
+    margin: 0;
     justify-content: center;
     flex-wrap: wrap;
 }

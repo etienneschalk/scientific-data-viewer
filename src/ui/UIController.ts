@@ -540,6 +540,8 @@ export class UIController {
         const loadingAndError = HTMLGenerator.generateLoadingAndError();
         const content = HTMLGenerator.generateContent(plottingCapabilities);
         
-        return HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content);
+        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const devMode = config.get('devMode', false);
+        return HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content, devMode);
     }
 }
