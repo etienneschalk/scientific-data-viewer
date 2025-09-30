@@ -44,9 +44,9 @@ export class CSSGenerator {
         }
         
         .error {
-            color: #ff6b6b;
-            background-color: #2d1b1b;
-            border: 2px solid #ff6b6b;
+            color: var(--vscode-errorForeground);
+            color: var(--vscode-foreground);
+            border: 2px solid var(--vscode-errorForeground);
             padding: 15px;
             border-radius: 6px;
             margin: 15px 0;
@@ -55,7 +55,7 @@ export class CSSGenerator {
         }
         
         .error h3 {
-            color: #ff6b6b;
+            color: var(--vscode-errorForeground);
             margin-top: 0;
             margin-bottom: 10px;
             font-size: 1.2em;
@@ -67,12 +67,12 @@ export class CSSGenerator {
         }
         
         .error strong {
-            color: #ff8a8a;
+            color: var(--vscode-errorForeground);
         }
         
         .error code {
-            background-color: #1a0f0f;
-            color: #ffa8a8;
+            background-color: var(--vscode-textCodeBlock-background);
+            color: var(--vscode-textPreformat-foreground);
             padding: 2px 6px;
             border-radius: 3px;
             font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
@@ -130,6 +130,7 @@ export class CSSGenerator {
         button {
             background-color: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
+            font-family: var(--vscode-font-family, 'Consolas', 'Monaco', monospace);
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
@@ -588,9 +589,9 @@ export class CSSGenerator {
         }
         
         .plot-error {
-            color: #ff6b6b;
-            background-color: #2d1b1b;
-            border: 1px solid #ff6b6b;
+            color:var(--vscode-errorForeground);
+            background-color: var(--vscode-textCodeBlock-background);
+            border: 1px solid var(--vscode-errorForeground);
             padding: 12px;
             border-radius: 4px;
             margin: 10px 0;
@@ -600,7 +601,7 @@ export class CSSGenerator {
         
         .plot-error.success {
             color: #4caf50;
-            background-color: #1b2d1b;
+            background-color: var(--vscode-textCodeBlock-background);
             border: 1px solid #4caf50;
         }
         

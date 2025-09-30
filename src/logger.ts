@@ -30,16 +30,16 @@ class Logger {
         if (typeof console !== 'undefined' && console && typeof console.log === 'function') {
             switch (level) {
                 case 'error':
-                    if (typeof console.error === 'function') console.error(logMessage);
+                    if (typeof console.error === 'function') {console.error(logMessage);}
                     break;
                 case 'warn':
-                    if (typeof console.warn === 'function') console.warn(logMessage);
+                    if (typeof console.warn === 'function') {console.warn(logMessage);}
                     break;
                 case 'debug':
-                    if (typeof console.debug === 'function') console.debug(logMessage);
+                    if (typeof console.debug === 'function') {console.debug(logMessage);}
                     break;
                 default:
-                    if (typeof console.log === 'function') console.log(logMessage);
+                    if (typeof console.log === 'function') {console.log(logMessage);}
             }
         }
     }

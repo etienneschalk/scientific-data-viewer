@@ -16,7 +16,7 @@ Add the ability to plot multiple variables simultaneously in a single visualizat
 
 ## Acceptance Criteria
 
-- [ ] UI allows selection of multiple variables for plotting
+- [x] UI allows selection of multiple variables for plotting
 - [ ] Multiple variables can be plotted in the same visualization
 - [ ] Different plot types can be assigned to different variables
 - [ ] Subplot layouts are configurable (side-by-side, overlay, grid)

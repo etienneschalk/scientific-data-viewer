@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
     function formatConfigValue(key: string, value: any): string {
         const fullKey = `scientificDataViewer.${key}`;
         const schema = configSchema[fullKey];
-        if (!schema) return String(value);
+        if (!schema) {return String(value);}
 
         switch (schema.type) {
             case 'boolean':
@@ -325,6 +325,12 @@ export function activate(context: vscode.ExtensionContext) {
         await refreshPython(pythonManager, statusBarItem);
     };
 
+    const handlePythonEnvironmentCreated = async (environment: any) => {
+        Logger.info('🐍 🔧 Python environment created, refreshing environment...');
+        // Don't do anything with env, delegate to the existing handler
+        await handlePythonInterpreterChange()
+    };  
+
     // Listen for Python interpreter changes - only listen to Python extension events
     const pythonInterpreterChangeListener = vscode.workspace.onDidChangeConfiguration(async (event) => {
         // Only listen to Python extension configuration changes that might affect interpreter
@@ -354,7 +360,7 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
-        pythonManager.setupInterpreterChangeListener(handlePythonInterpreterChange).then((listener) => {
+        pythonManager.setupEnvironmentChangeListeners(handlePythonInterpreterChange, handlePythonEnvironmentCreated).then((listener) => {
             immediateInterpreterListener = listener;
             if (immediateInterpreterListener) {
                 Logger.info('🚀 Immediate Python interpreter change detection enabled');

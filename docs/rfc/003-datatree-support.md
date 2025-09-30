@@ -13,10 +13,12 @@ Implement comprehensive DataTree support for handling complex hierarchical data 
 
 ## Acceptance Criteria
 
-- [ ] DataTree objects are properly detected and handled
+- [x] DataTree objects are properly detected and handled
 - [ ] Native DataTree representation is used in the UI
 - [ ] Test data with complex nested structures is available
-- [ ] DataTree-specific features are exposed in the interface
+  - [ ] many nested groups in Zarr format
+  - [ ] many groups in NetCDF format
+- [x] DataTree-specific features are exposed in the interface
 
 ## Priority
 

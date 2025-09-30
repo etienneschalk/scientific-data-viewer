@@ -644,33 +644,80 @@ export class PythonManager {
     }
 
     /**
-     * Set up immediate event listener for Python interpreter changes
+     * Set up event listeners for Python environment changes and creation
      * Returns a disposable that should be disposed when the extension is deactivated
      */
-    async setupInterpreterChangeListener(onInterpreterChange: () => Promise<void>): Promise<vscode.Disposable | undefined> {
+    async setupEnvironmentChangeListeners(
+        onInterpreterChange: () => Promise<void>,
+        onEnvironmentCreated: (environment: any) => Promise<void>
+    ): Promise<vscode.Disposable | undefined> {
         try {
             const pythonApi = await this.getPythonExtensionApi();
             if (!pythonApi || !pythonApi.environments) {
-                Logger.debug('🐍 ⚠️ Python extension API or environments API not available for event listener');
+                Logger.debug('🐍 ⚠️ Python extension API or environments API not available for event listeners');
                 return undefined;
             }
 
-            // Check if the onDidChangeActiveEnvironmentPath method exists
-            if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
-                Logger.info('🐍 🔧 Setting up immediate Python interpreter change listener...');
+            const disposables: vscode.Disposable[] = [];
 
-                const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
-                    Logger.info(`🐍 🔔 Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
+            // Listen for active interpreter changes (existing functionality)
+            if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
+                Logger.info('🐍 🔧 Setting up Python interpreter change listener...');
+                
+                const interpreterDisposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (event: any) => {
+                    Logger.info(`🐍 🔔 Python interpreter changed: ${event?.path || 'undefined'}`);
                     await onInterpreterChange();
                 });
-
-                return disposable;
-            } else {
-                Logger.debug('🐍 ⚠️ onDidChangeActiveEnvironmentPath method not available in Python extension API');
-                return undefined;
+                
+                disposables.push(interpreterDisposable);
             }
+
+            // Listen for environment creation/removal/updates (NEW functionality)
+            if (typeof pythonApi.environments.onDidEnvironmentsChanged === 'function') {
+                Logger.info('🐍 🔧 Setting up Python environment change listener...');
+              
+                const environmentDisposable = pythonApi.environments.onDidEnvironmentsChanged(async (event: any) => {
+                    // Add comprehensive debugging
+                    Logger.debug(`🐍 🔍 Environment change event received: ${JSON.stringify(event, null, 2)}`);
+        
+                    // Handle newly created environments
+                    if (event.added && event.added.length > 0) {
+                        Logger.info(`🐍 🆕 New Python environments created: ${event.added.length}`);
+                        for (const env of event.added) {
+                            Logger.info(`🐍 🆕 New environment: ${env.path || env.id || 'unknown'}`);
+                            await onEnvironmentCreated(env);
+                        }
+                    }
+
+                    // Handle removed environments
+                    if (event.removed && event.removed.length > 0) {
+                        Logger.info(`🐍 🗑️ Python environments removed: ${event.removed.length}`);
+                        for (const env of event.removed) {
+                            Logger.info(`🐍 🗑️ Removed environment: ${env.path || env.id || 'unknown'}`);
+                        }
+                    }
+
+                    // Handle updated environments
+                    if (event.updated && event.updated.length > 0) {
+                        Logger.info(`🐍 🔄 Python environments updated: ${event.updated.length}`);
+                        for (const env of event.updated) {
+                            Logger.info(`🐍 🔄 Updated environment: ${env.path || env.id || 'unknown'}`);
+                        }
+                    }
+                });
+                
+                disposables.push(environmentDisposable);
+            }
+
+            // Return a combined disposable
+            return {
+                dispose: () => {
+                    disposables.forEach(d => d.dispose());
+                }
+            };
+
         } catch (error) {
-            Logger.warn(`🐍 ❌ Failed to set up Python interpreter change listener: ${error}`);
+            Logger.warn(`🐍 ❌ Failed to set up Python environment change listeners: ${error}`);
             return undefined;
         }
     }

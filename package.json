@@ -2,7 +2,7 @@
   "name": "scientific-data-viewer",
   "displayName": "Scientific Data Viewer",
   "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "eschalk0",
   "icon": "media/icon.png",
   "engines": {
@@ -276,7 +276,7 @@
         },
         "scientificDataViewer.plottingCapabilities": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "experimental": true,
           "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.",
           "description": "Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer."

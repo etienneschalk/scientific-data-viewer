@@ -6,6 +6,8 @@
 
 A powerful VSCode extension for viewing and analyzing scientific data files including NetCDF, Zarr, HDF5, and more. This extension provides an intuitive interface for exploring scientific datasets directly within VSCode, eliminating the need for external tools.
 
+**Current Version: 0.3.0**
+
 <div align="center">
 
 Available on:

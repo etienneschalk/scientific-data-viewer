@@ -119,7 +119,17 @@ export class UIController {
                 }
 
                 if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                    this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['xarray', 'matplotlib']);
+                    const xarrayAvailable = await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!, 'xarray');
+                    const matplotlibAvailable = await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!, 'matplotlib');
+                    if (!xarrayAvailable && !matplotlibAvailable) {
+                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['xarray', 'matplotlib']);
+                    }
+                    else if (!xarrayAvailable) {
+                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['xarray']);
+                    }
+                    else if (!matplotlibAvailable) {
+                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['matplotlib']);
+                    }
                     throw new Error('Python environment not ready. Please install core dependencies first.');
                 }
 
@@ -201,7 +211,7 @@ export class UIController {
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
 
-            const canPlot = await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!, 'matplotlib')
+            const canPlot = await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!, 'matplotlib');
             if (!canPlot) {
                 this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(['matplotlib']);
                 throw new Error('Missing dependencies for plotting');

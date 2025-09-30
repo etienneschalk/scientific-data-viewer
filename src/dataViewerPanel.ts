@@ -24,7 +24,7 @@ const SUPPORTED_EXTENSIONS = [
     ".safe",
     ".nc4",
     ".cdf",
-]
+];
 
 export class DataViewerPanel {
     public static activePanels: Set<DataViewerPanel> = new Set();
@@ -147,7 +147,7 @@ export class DataViewerPanel {
         this._uiController.setPlottingCapabilities(plottingCapabilities);
         
         // Load the file and handle success/error
-        this._uiController.loadFile(fileUri.fsPath)
+        this._uiController.loadFile(fileUri.fsPath);
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();
