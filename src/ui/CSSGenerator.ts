@@ -195,6 +195,7 @@ export class CSSGenerator {
         .info-section {
             margin: 20px 0;
             padding: 15px;
+            padding-top: 5px; /* for the sticky header */
             background-color: var(--vscode-editor-background);
             border: 1px solid var(--vscode-panel-border);
             border-radius: 4px;
@@ -208,12 +209,11 @@ export class CSSGenerator {
             background-color: var(--vscode-editor-background);
             z-index: 10;
             padding: 10px 0;
-            margin-bottom: 10px;
             border-bottom: 1px solid var(--vscode-panel-border);
         }
 
         .info-section h4 {
-            margin-top: 0;
+            padding-top: 5px;
             color: var(--vscode-foreground);
         }
         
@@ -548,7 +548,7 @@ export class CSSGenerator {
             background-color: var(--vscode-charts-green);
             color: var(--vscode-foreground);
         }
-        
+
         details summary {
             cursor: pointer;
             padding: 8px 0;
@@ -559,10 +559,42 @@ export class CSSGenerator {
         details summary:hover {
             color: var(--vscode-button-hoverBackground);
         }
+
+        details.sticky-group-details {
+            margin-top: 0;
+            color: var(--vscode-foreground);
+            position: sticky;
+            top: 0;
+            background-color: var(--vscode-editor-background);
+            z-index: 10;
+            padding: 0 0;
+            margin-bottom: 0;
+        }
         
-        details[open] summary {
-            margin-bottom: 10px;
-        }`;
+        details.sticky-group-details summary {
+            top: 0;
+            position: sticky;
+            /* Keep the arrow while having a display-block-like behavior: use display: list-item */
+            display: list-item;
+            width: 100%;
+            background-color: var(--vscode-editor-background);
+            z-index: 10;
+            margin-bottom: 0;
+        }
+
+        details[open].sticky-group-details summary {
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        details.sticky-group-details summary > *{
+            position: sticky;
+            display: inline;
+            border: none;
+            margin-bottom: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        `;
     }
 
     private static getPlottingStyles(): string {

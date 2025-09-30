@@ -344,7 +344,7 @@ function displayDataInfo(data, filePath) {
                 return `
                 <div class="info-section">
                     
-                    <details> <summary>Group: ${groupName}</summary>
+                    <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
                         <div class="info-section">
                             <h4>Dimensions for ${groupName}</h4>
                             <div class="dimensions">
