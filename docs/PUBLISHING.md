@@ -1,4 +1,4 @@
-# Publishing Guide - Scientific Data Viewer
+# 📦 Publishing Guide - Scientific Data Viewer
 
 This guide covers the complete process of publishing the Scientific Data Viewer VSCode extension to the marketplace.
 

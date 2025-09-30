@@ -1,4 +1,4 @@
-# Development Guide - Scientific Data Viewer
+# 🛠️ Development Guide - Scientific Data Viewer
 
 This guide provides detailed instructions for developing, testing, and maintaining the Scientific Data Viewer VSCode extension.
 
@@ -112,6 +112,7 @@ npx mocha out/test/suite/extension.test.js
 #### Integration Testing
 
 1. **Create sample data**:
+
    ```bash
    cd sample-data
    python python/create_sample_data.py

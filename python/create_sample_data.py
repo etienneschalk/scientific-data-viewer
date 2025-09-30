@@ -1250,6 +1250,495 @@ def create_sample_netcdf4():
     return output_file
 
 
+def create_sample_zarr_arborescence():
+    """Create a sample Zarr file with many subgroups (arborescence) using DataTree."""
+    output_file = "sample_zarr_arborescence.zarr"
+
+    # Check if directory already exists
+    if os.path.exists(output_file):
+        print(
+            f"🌳 Zarr arborescence file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print("🌳 Creating sample Zarr file with arborescence structure...")
+
+    try:
+        import zarr
+        import xarray as xr
+    except ImportError:
+        print(
+            "  ❌ zarr or xarray not available, skipping arborescence Zarr file creation."
+        )
+        return None
+
+    # Create small dimensions for manageable file size
+    time = np.arange(0, 3, 1)
+    lat = np.linspace(-10, 10, 200)
+    lon = np.linspace(-10, 10, 200)
+
+    # Set random seed for reproducible data
+    np.random.seed(42)
+
+    # Create root dataset
+    root_ds = xr.Dataset(
+        {
+            "metadata": (
+                ["time"],
+                np.arange(3),
+                {"long_name": "Root metadata", "units": "1"},
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+        },
+    )
+    root_ds.attrs = {
+        "title": "Sample Zarr Arborescence",
+        "description": "Zarr file with many subgroups for testing tree navigation",
+        "institution": "Test Institute",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    # Create DataTree structure
+    dt = xr.DataTree(name="root")
+    dt["root"] = root_ds
+
+    # Create level 1 groups
+    level1_groups = ["atmosphere", "ocean", "land", "cryosphere", "biosphere"]
+    for group_name in level1_groups:
+        # Create small data arrays for each group
+        data = np.random.normal(0, 1, (3, 200, 200)).astype(np.float32)
+
+        group_ds = xr.Dataset(
+            {
+                f"{group_name}_data": (
+                    ["time", "lat", "lon"],
+                    data,
+                    {
+                        "long_name": f"{group_name.title()} Data",
+                        "units": "1",
+                        "description": f"Sample {group_name} data",
+                    },
+                ),
+            },
+            coords={
+                "time": (
+                    ["time"],
+                    time,
+                    {"long_name": "Time", "units": "days since 2020-01-01"},
+                ),
+                "lat": (
+                    ["lat"],
+                    lat,
+                    {"long_name": "Latitude", "units": "degrees_north"},
+                ),
+                "lon": (
+                    ["lon"],
+                    lon,
+                    {"long_name": "Longitude", "units": "degrees_east"},
+                ),
+            },
+        )
+        group_ds.attrs = {
+            "description": f"{group_name.title()} data group",
+            "data_type": group_name,
+            "level": 1,
+        }
+
+        dt[f"root/{group_name}"] = group_ds
+
+        # Create level 2 subgroups for each level 1 group
+        level2_groups = ["physical", "chemical", "biological"]
+        for sub_group in level2_groups:
+            sub_data = np.random.normal(0, 0.5, (3, 200, 200)).astype(np.float32)
+
+            sub_ds = xr.Dataset(
+                {
+                    f"{sub_group}_data": (
+                        ["time", "lat", "lon"],
+                        sub_data,
+                        {
+                            "long_name": f"{sub_group.title()} {group_name.title()} Data",
+                            "units": "1",
+                            "description": f"Sample {sub_group} {group_name} data",
+                        },
+                    ),
+                },
+                coords={
+                    "time": (
+                        ["time"],
+                        time,
+                        {"long_name": "Time", "units": "days since 2020-01-01"},
+                    ),
+                    "lat": (
+                        ["lat"],
+                        lat,
+                        {"long_name": "Latitude", "units": "degrees_north"},
+                    ),
+                    "lon": (
+                        ["lon"],
+                        lon,
+                        {"long_name": "Longitude", "units": "degrees_east"},
+                    ),
+                },
+            )
+            sub_ds.attrs = {
+                "description": f"{sub_group.title()} {group_name.title()} data",
+                "data_type": f"{group_name}_{sub_group}",
+                "level": 2,
+            }
+
+            dt[f"root/{group_name}/{sub_group}"] = sub_ds
+
+            # Create level 3 subgroups for some combinations
+            if group_name in ["atmosphere", "ocean"] and sub_group == "physical":
+                level3_groups = (
+                    ["temperature", "pressure", "humidity"]
+                    if group_name == "atmosphere"
+                    else ["salinity", "density", "currents"]
+                )
+
+                for var_name in level3_groups:
+                    var_data = np.random.normal(0, 0.3, (3, 200, 200)).astype(
+                        np.float32
+                    )
+
+                    var_ds = xr.Dataset(
+                        {
+                            var_name: (
+                                ["time", "lat", "lon"],
+                                var_data,
+                                {
+                                    "long_name": f"{var_name.title()}",
+                                    "units": "1",
+                                    "description": f"Sample {var_name} data",
+                                },
+                            ),
+                        },
+                        coords={
+                            "time": (
+                                ["time"],
+                                time,
+                                {"long_name": "Time", "units": "days since 2020-01-01"},
+                            ),
+                            "lat": (
+                                ["lat"],
+                                lat,
+                                {"long_name": "Latitude", "units": "degrees_north"},
+                            ),
+                            "lon": (
+                                ["lon"],
+                                lon,
+                                {"long_name": "Longitude", "units": "degrees_east"},
+                            ),
+                        },
+                    )
+                    var_ds.attrs = {
+                        "description": f"{var_name.title()} variable",
+                        "data_type": f"{group_name}_{sub_group}_{var_name}",
+                        "level": 3,
+                    }
+
+                    dt[f"root/{group_name}/{sub_group}/{var_name}"] = var_ds
+
+    # Save to Zarr using DataTree's to_zarr method
+    dt.to_zarr(output_file, mode="w")
+    print(f"✅ Created {output_file} with arborescence structure")
+    return output_file
+
+
+def create_sample_zarr_inherited_coords():
+    """Create a sample Zarr file with inherited coordinates using DataTree."""
+    output_file = "sample_zarr_inherited_coords.zarr"
+
+    # Check if directory already exists
+    if os.path.exists(output_file):
+        print(
+            f"🔗 Zarr inherited coords file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print("🔗 Creating sample Zarr file with inherited coordinates...")
+
+    try:
+        import zarr
+        import xarray as xr
+    except ImportError:
+        print(
+            "  ❌ zarr or xarray not available, skipping inherited coords Zarr file creation."
+        )
+        return None
+
+    # Create dimensions
+    time = np.arange(0, 5, 1)
+    lat = np.linspace(-5, 5, 50)
+    lon = np.linspace(-5, 5, 50)
+
+    # Set random seed for reproducible data
+    np.random.seed(123)
+
+    # Create root dataset with coordinates
+    root_ds = xr.Dataset(
+        {
+            "global_metadata": (
+                ["time"],
+                np.arange(5),
+                {"long_name": "Global metadata index", "units": "1"},
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+    root_ds.attrs = {
+        "title": "Sample Zarr with Inherited Coordinates",
+        "description": "Zarr file demonstrating coordinate inheritance",
+        "institution": "Test Institute",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    # Create DataTree structure
+    dt = xr.DataTree(name="root")
+    dt["root"] = root_ds
+
+    # Create groups that inherit coordinates from parent
+    groups_data = {
+        "temperature": np.random.normal(20, 5, (5, 50, 50)).astype(np.float32),
+        "pressure": np.random.normal(1013, 20, (5, 50, 50)).astype(np.float32),
+        "humidity": np.random.normal(60, 15, (5, 50, 50)).astype(np.float32),
+    }
+
+    for var_name, data in groups_data.items():
+        # Create dataset without explicit coordinates - they will be inherited
+        var_ds = xr.Dataset(
+            {
+                var_name: (
+                    ["time", "lat", "lon"],
+                    data,
+                    {
+                        "long_name": f"{var_name.title()}",
+                        "units": "1",
+                        "description": f"Sample {var_name} data with inherited coordinates",
+                    },
+                ),
+            },
+            # No coords defined here - they will be inherited from parent
+        )
+        var_ds.attrs = {
+            "description": f"{var_name.title()} data group",
+            "data_type": var_name,
+            "inherits_coordinates": True,
+        }
+
+        dt[f"root/{var_name}"] = var_ds
+
+        # Create subgroups that also inherit coordinates
+        sub_groups = ["raw", "processed", "quality_control"]
+        for sub_group in sub_groups:
+            sub_data = np.random.normal(0, 1, (5, 50, 50)).astype(np.float32)
+
+            sub_ds = xr.Dataset(
+                {
+                    f"{var_name}_{sub_group}": (
+                        ["time", "lat", "lon"],
+                        sub_data,
+                        {
+                            "long_name": f"{var_name.title()} {sub_group.title()}",
+                            "units": "1",
+                            "description": f"Sample {var_name} {sub_group} data",
+                        },
+                    ),
+                },
+                # No coords defined here - they will be inherited from parent
+            )
+            sub_ds.attrs = {
+                "description": f"{var_name.title()} {sub_group.title()} data",
+                "data_type": f"{var_name}_{sub_group}",
+                "inherits_coordinates": True,
+            }
+
+            dt[f"root/{var_name}/{sub_group}"] = sub_ds
+
+    # Save to Zarr using DataTree's to_zarr method
+    dt.to_zarr(output_file, mode="w")
+    print(f"✅ Created {output_file} with inherited coordinates")
+    return output_file
+
+
+def create_sample_netcdf_multiple_groups():
+    """Create a sample NetCDF file with multiple groups."""
+    output_file = "sample_data_multiple_groups.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"📁 NetCDF multi-group file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("📁 Creating sample NetCDF file with multiple groups...")
+
+    try:
+        import netCDF4 as nc
+    except ImportError:
+        print("  ❌ netCDF4 not available, skipping multi-group NetCDF file creation.")
+        return None
+
+    # Create dimensions
+    time = np.arange(0, 10, 1)
+    lat = np.linspace(-10, 10, 20)
+    lon = np.linspace(-10, 10, 20)
+
+    # Set random seed for reproducible data
+    np.random.seed(456)
+
+    # Create NetCDF file with groups
+    with nc.Dataset(output_file, "w", format="NETCDF4") as rootgrp:
+        # Add global attributes
+        rootgrp.title = "Sample NetCDF with Multiple Groups"
+        rootgrp.description = "NetCDF file with multiple groups for testing"
+        rootgrp.institution = "Test Institute"
+        rootgrp.source = "Generated for testing"
+        rootgrp.history = f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        rootgrp.Conventions = "CF-1.6"
+
+        # Create dimensions
+        rootgrp.createDimension("time", len(time))
+        rootgrp.createDimension("lat", len(lat))
+        rootgrp.createDimension("lon", len(lon))
+
+        # Create root level variables
+        time_var = rootgrp.createVariable("time", "f4", ("time",))
+        time_var[:] = time
+        time_var.long_name = "Time"
+        time_var.units = "days since 2020-01-01"
+
+        lat_var = rootgrp.createVariable("lat", "f4", ("lat",))
+        lat_var[:] = lat
+        lat_var.long_name = "Latitude"
+        lat_var.units = "degrees_north"
+
+        lon_var = rootgrp.createVariable("lon", "f4", ("lon",))
+        lon_var[:] = lon
+        lon_var.long_name = "Longitude"
+        lon_var.units = "degrees_east"
+
+        # Create root level data
+        root_data = np.random.normal(0, 1, (10, 20, 20)).astype(np.float32)
+        root_var = rootgrp.createVariable("root_data", "f4", ("time", "lat", "lon"))
+        root_var[:] = root_data
+        root_var.long_name = "Root Level Data"
+        root_var.units = "1"
+
+        # Create Group 1: Atmosphere
+        atm_group = rootgrp.createGroup("atmosphere")
+        atm_group.description = "Atmospheric data group"
+        atm_group.data_type = "atmospheric"
+
+        # Add variables to atmosphere group
+        temp_data = np.random.normal(20, 5, (10, 20, 20)).astype(np.float32)
+        temp_var = atm_group.createVariable("temperature", "f4", ("time", "lat", "lon"))
+        temp_var[:] = temp_data
+        temp_var.long_name = "Temperature"
+        temp_var.units = "Celsius"
+
+        press_data = np.random.normal(1013, 20, (10, 20, 20)).astype(np.float32)
+        press_var = atm_group.createVariable("pressure", "f4", ("time", "lat", "lon"))
+        press_var[:] = press_data
+        press_var.long_name = "Pressure"
+        press_var.units = "hPa"
+
+        # Create subgroup in atmosphere
+        wind_group = atm_group.createGroup("wind")
+        wind_group.description = "Wind data subgroup"
+
+        u_wind_data = np.random.normal(0, 5, (10, 20, 20)).astype(np.float32)
+        u_wind_var = wind_group.createVariable(
+            "u_component", "f4", ("time", "lat", "lon")
+        )
+        u_wind_var[:] = u_wind_data
+        u_wind_var.long_name = "U-component of wind"
+        u_wind_var.units = "m/s"
+
+        v_wind_data = np.random.normal(0, 5, (10, 20, 20)).astype(np.float32)
+        v_wind_var = wind_group.createVariable(
+            "v_component", "f4", ("time", "lat", "lon")
+        )
+        v_wind_var[:] = v_wind_data
+        v_wind_var.long_name = "V-component of wind"
+        v_wind_var.units = "m/s"
+
+        # Create Group 2: Ocean
+        ocean_group = rootgrp.createGroup("ocean")
+        ocean_group.description = "Oceanographic data group"
+        ocean_group.data_type = "oceanographic"
+
+        # Add variables to ocean group
+        salinity_data = np.random.normal(35, 2, (10, 20, 20)).astype(np.float32)
+        salinity_var = ocean_group.createVariable(
+            "salinity", "f4", ("time", "lat", "lon")
+        )
+        salinity_var[:] = salinity_data
+        salinity_var.long_name = "Salinity"
+        salinity_var.units = "psu"
+
+        # Create Group 3: Land
+        land_group = rootgrp.createGroup("land")
+        land_group.description = "Land surface data group"
+        land_group.data_type = "land_surface"
+
+        # Add variables to land group
+        soil_data = np.random.normal(0.3, 0.1, (10, 20, 20)).astype(np.float32)
+        soil_var = land_group.createVariable(
+            "soil_moisture", "f4", ("time", "lat", "lon")
+        )
+        soil_var[:] = soil_data
+        soil_var.long_name = "Soil Moisture"
+        soil_var.units = "m³/m³"
+
+    print(f"✅ Created {output_file} with multiple groups")
+    return output_file
+
+
+def create_broken_files():
+    """Create broken files for all supported extensions to test error handling."""
+    print("💥 Creating broken files for error handling testing...")
+
+    broken_files = []
+    file_extensions = [".nc", ".nc4", ".h5", ".grib", ".tif", ".jp2", ".zarr", ".safe"]
+
+    for ext in file_extensions:
+        filename = f"broken_file{ext}"
+        if ext == ".zarr" or ext == ".safe":
+            # Create empty directory for zarr/safe
+            os.makedirs(filename, exist_ok=True)
+        else:
+            # Create empty file for other formats
+            with open(filename, "w") as f:
+                pass  # Empty file
+
+        broken_files.append(filename)
+        print(f"  💥 Created {filename} (empty file/directory)")
+
+    return broken_files
+
+
 def create_sample_netcdf_many_vars():
     """Create a sample NetCDF file with many variables and attributes for stress testing."""
     output_file = "sample_data_many_vars.nc"
@@ -1630,6 +2119,12 @@ def main():
         if many_vars_netcdf_file:
             created_files.append((many_vars_netcdf_file, "NetCDF (Many Variables)"))
 
+        multigroup_netcdf_file = create_sample_netcdf_multiple_groups()
+        if multigroup_netcdf_file:
+            created_files.append((multigroup_netcdf_file, "NetCDF Multiple Groups"))
+        else:
+            skipped_files.append("NetCDF Multiple Groups (netCDF4 not available)")
+
         print("\n📁 Creating HDF5 files...")
         hdf5_file = create_sample_hdf5()
         if hdf5_file:
@@ -1675,12 +2170,30 @@ def main():
         else:
             skipped_files.append("xr.DataTree Zarr (zarr or datatree not available)")
 
+        arborescence_zarr_file = create_sample_zarr_arborescence()
+        if arborescence_zarr_file:
+            created_files.append((arborescence_zarr_file, "Zarr Arborescence"))
+        else:
+            skipped_files.append("Zarr Arborescence (zarr or xarray not available)")
+
+        inherited_coords_zarr_file = create_sample_zarr_inherited_coords()
+        if inherited_coords_zarr_file:
+            created_files.append((inherited_coords_zarr_file, "Zarr Inherited Coords"))
+        else:
+            skipped_files.append("Zarr Inherited Coords (zarr or xarray not available)")
+
         print("\n📁 Creating Sentinel-1 SAFE files...")
         sentinel_file = create_sample_sentinel()
         if sentinel_file:
             created_files.append((sentinel_file, "Sentinel-1 SAFE"))
         else:
             skipped_files.append("Sentinel-1 SAFE (xarray-sentinel not available)")
+
+        print("\n💥 Creating broken files for error handling...")
+        broken_files = create_broken_files()
+        if broken_files:
+            for broken_file in broken_files:
+                created_files.append((broken_file, "Broken File"))
 
         print("\n" + "=" * 80)
         print("✅ Sample data files created successfully!")

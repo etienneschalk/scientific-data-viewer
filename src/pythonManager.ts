@@ -709,6 +709,12 @@ export class PythonManager {
                 disposables.push(environmentDisposable);
             }
 
+            // If no listeners were set up, return undefined
+            if (disposables.length === 0) {
+                Logger.debug('🐍 ⚠️ No compatible event listeners available in Python extension API');
+                return undefined;
+            }
+
             // Return a combined disposable
             return {
                 dispose: () => {
