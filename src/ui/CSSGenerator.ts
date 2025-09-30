@@ -153,14 +153,14 @@ export class CSSGenerator {
             background-color: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
             border: none;
-            padding: 4px 8px;
+            padding: 8px 8px; /* v | h */
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
             display: flex;
             align-items: center;
             gap: 4px;
-            min-width: 60px;
+            min-width: 80px;
         }
         
         .copy-button:hover {
@@ -215,6 +215,19 @@ export class CSSGenerator {
             grid-template-columns: 1fr;
             gap: 8px;
             margin-top: 10px;
+        }
+        
+        .dimensions-compact {
+            padding: 8px 12px;
+            background-color: var(--vscode-list-hoverBackground);
+            border-radius: 4px;
+            line-height: 1.4;
+            color: var(--vscode-foreground);
+        }
+        
+        .dimensions-compact strong {
+            color: var(--vscode-foreground);
+            font-weight: 600;
         }
         
         .dimension-item, .variable-item {
@@ -441,12 +454,12 @@ export class CSSGenerator {
         
         .text-copy-button {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 4px;
+            right: 20px;
             background-color: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
             border: none;
-            padding: 4px 8px;
+            padding: 8px 8px; /* v | h */
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
@@ -454,6 +467,7 @@ export class CSSGenerator {
             align-items: center;
             gap: 4px;
             z-index: 10;
+            min-width: 80px;
         }
         
         .text-copy-button:hover {
@@ -478,7 +492,9 @@ export class CSSGenerator {
         
         .troubleshooting-section h3 {
             margin-top: 0;
+            margin-bottom: 0;
             color: var(--vscode-foreground);
+            display: inline-block;
         }
         
         .troubleshooting-content {
@@ -501,12 +517,12 @@ export class CSSGenerator {
         
         .troubleshooting-copy-button {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 4px;
+            right: 20px;
             background-color: var(--vscode-button-secondaryBackground);
             color: var(--vscode-button-secondaryForeground);
             border: none;
-            padding: 4px 8px;
+            padding: 8px 8px; /* v | h */
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
@@ -514,6 +530,7 @@ export class CSSGenerator {
             align-items: center;
             gap: 4px;
             z-index: 10;
+            min-width: 80px;
         }
         
         .troubleshooting-copy-button:hover {

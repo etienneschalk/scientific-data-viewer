@@ -164,33 +164,34 @@ export class HTMLGenerator {
     static generateTroubleshooting(): string {
         return `
         <div class="troubleshooting-section">
-            <h3>Troubleshooting</h3>
-            <details>
-                <summary>Python Interpreter Path</summary>
-                <div class="troubleshooting-content-container">
-                    <button id="pythonPathCopyButton" class="troubleshooting-copy-button hidden">
-                        📋 Copy
-                    </button>
-                    <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
-                </div>
-            </details>
-            <details>
-                <summary>Extension Configuration</summary>
-                <div class="troubleshooting-content-container">
-                    <button id="extensionConfigCopyButton" class="troubleshooting-copy-button hidden">
-                        📋 Copy
-                    </button>
-                    <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
-                </div>
-            </details>
-            <details>
-                <summary>Show xarray version information</summary>
-                <div class="troubleshooting-content-container">
-                    <button id="showVersionsCopyButton" class="troubleshooting-copy-button hidden">
-                        📋 Copy
-                    </button>
-                    <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
-                </div>
+            <details><summary><h3>Troubleshooting</h3></summary>
+                <details open>
+                    <summary>Python Interpreter Path</summary>
+                    <div class="troubleshooting-content-container">
+                        <button id="pythonPathCopyButton" class="troubleshooting-copy-button hidden">
+                            📋 Copy
+                        </button>
+                        <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
+                    </div>
+                </details>
+                <details open>
+                    <summary>Extension Configuration</summary>
+                    <div class="troubleshooting-content-container">
+                        <button id="extensionConfigCopyButton" class="troubleshooting-copy-button hidden">
+                            📋 Copy
+                        </button>
+                        <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
+                    </div>
+                </details>
+                <details open>
+                    <summary>Show xarray version information</summary>
+                    <div class="troubleshooting-content-container">
+                        <button id="showVersionsCopyButton" class="troubleshooting-copy-button hidden">
+                            📋 Copy
+                        </button>
+                        <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
+                    </div>
+                </details>
             </details>
         </div>`;
     }

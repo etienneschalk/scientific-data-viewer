@@ -278,9 +278,11 @@ function displayDataInfo(data, filePath) {
                 // Add dimensions for group
                 const dimensions = data.dimensions_flattened[groupName];
                 const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0 ?
-                    Object.entries(dimensions)
-                        .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
-                        .join('') :
+                    `<div class="dimensions-compact">
+                        (${Object.entries(dimensions)
+                            .map(([name, size]) => `<strong>${name}</strong>: ${size}`)
+                            .join(', ')})
+                    </div>` :
                     '<p>No dimensions found in this group.</p>';
 
                 // Add coordinates for group
@@ -288,14 +290,19 @@ function displayDataInfo(data, filePath) {
                 const coordinatesHtml = coordinates && coordinates.length > 0 ?
                     coordinates.map(variable => {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
+                                <span class="dtype-shape">
+                                    <code>${escapeHtml(variable.dtype)}</code>
+                                </span>
+                                <span class="dtype-shape">
+                                    ${shapeStr}
+                                </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                             </div>
                         `;
@@ -307,8 +314,8 @@ function displayDataInfo(data, filePath) {
                 const variablesHtml = variables && variables.length > 0 ?
                     variables.map(variable => {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         
                         // For datatree variables, use full path (group/variable) for plotting
                         const fullVariableName = `${groupName}/${variable.name}`;
@@ -319,8 +326,13 @@ function displayDataInfo(data, filePath) {
                             <div class="variable-row" data-variable="${fullVariableName}">
                                 <div class="variable-item">
                                     <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                    <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                     <span class="dims">${dimsStr}</span>
+                                    <span class="dtype-shape">
+                                        <code>${escapeHtml(variable.dtype)}</code>
+                                    </span>
+                                    <span class="dtype-shape">
+                                        ${shapeStr}
+                                    </span>
                                     ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                                 </div>
                                 ${plotControls}
@@ -331,24 +343,28 @@ function displayDataInfo(data, filePath) {
                 
                 return `
                 <div class="info-section">
-                    <h3>Group: ${groupName}</h3>
-                    <div class="info-section">
-                        <h4>Dimensions for ${groupName}</h4>
-                        <div class="dimensions">
-                            ${dimensionsHtml}
+                    
+                    <details> <summary>Group: ${groupName}</summary>
+                        <div class="info-section">
+                            <h4>Dimensions for ${groupName}</h4>
+                            <div class="dimensions">
+                                ${dimensionsHtml}
+                            </div>
+                        </div>  
+                        <div class="info-section">
+                            <h4>Coordinates for ${groupName}</h4>
+                            <div class="coordinates">${coordinatesHtml}</div>
                         </div>
-                    </div>  
-                    <div class="info-section">
-                        <h4>Coordinates for ${groupName}</h4>
-                        <div class="coordinates">${coordinatesHtml}</div>
+                        <div class="info-section">
+                            <h4>Variables for ${groupName}</h4>
+                            <div class="variables">${variablesHtml}</div>
+                        </div>
                     </div>
-                    <div class="info-section">
-                        <h4>Variables for ${groupName}</h4>
-                        <div class="variables">${variablesHtml}</div>
-                    </div>
-                </div>
+                </details>
                 `;
             }).join('');
+            // Open the first group by default
+            groupInfoContainer.querySelector("details").setAttribute("open", "open");
         } else {
             contentContainer.innerHTML = '<p>No data available</p>';
         }
@@ -359,9 +375,11 @@ function displayDataInfo(data, filePath) {
         const variablesContainer = document.getElementById('variables');
         if (dimensionsContainer) {
             if (data.dimensions) {
-                dimensionsContainer.innerHTML = Object.entries(data.dimensions)
-                    .map(([name, size]) => `<div class="dimension-item"><span class="dimension-name">${name}</span><span class="dimension-size">${size}</span></div>`)
-                    .join('');
+                dimensionsContainer.innerHTML = `<div class="dimensions-compact">
+                    (${Object.entries(data.dimensions)
+                        .map(([name, size]) => `<strong>${name}</strong>: ${size}`)
+                        .join(', ')})
+                </div>`;
             } else {
                 dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
             }
@@ -373,14 +391,19 @@ function displayDataInfo(data, filePath) {
                 coordinatesContainer.innerHTML = data.coordinates
                     .map(variable => {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
+                                <span class="dtype-shape">
+                                    <code>${escapeHtml(variable.dtype)}</code>
+                                </span>
+                                <span class="dtype-shape">
+                                    ${shapeStr}
+                                </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                             </div>
                         `;
@@ -397,8 +420,8 @@ function displayDataInfo(data, filePath) {
                 variablesContainer.innerHTML = data.variables
                     .map(variable => {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `Dims: (${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `Size: ${formatFileSize(variable.size_bytes)}` : '';
+                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         
                         const plotControls = hasPlottingCapabilities ? 
                             generateVariablePlotControls(variable.name, true) : '';
@@ -407,8 +430,13 @@ function displayDataInfo(data, filePath) {
                             <div class="variable-row" data-variable="${variable.name}">
                                 <div class="variable-item">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dtype-shape"><code>${escapeHtml(variable.dtype)}</code> ${shapeStr}</span>
                                 <span class="dims">${dimsStr}</span>
+                                <span class="dtype-shape">
+                                    <code>${escapeHtml(variable.dtype)}</code>
+                                </span>
+                                <span class="dtype-shape">
+                                    ${shapeStr}
+                                </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
                                 </div>
                                 ${plotControls}
