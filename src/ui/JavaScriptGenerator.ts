@@ -6,10 +6,7 @@ import * as path from 'path';
  */
 export class JavaScriptGenerator {
     static getCode(plottingCapabilities: boolean): string {
-        // Read the JavaScript file content from the webview directory
-        // Option 1: Use the webview directory (from the npm run copy-assets script)
-        // const jsFilePath = path.join(__dirname, 'webview', 'webview-script.js');
-        // Option 2: Use the src/ui directory (live reload should work?)
+        // Use the src/ui directory (live reload should work?)
         const jsFilePath = path.join(__dirname, '../../../src/ui', 'webview', 'webview-script.js');
         try {
             const jsContent = fs.readFileSync(jsFilePath, 'utf8');
