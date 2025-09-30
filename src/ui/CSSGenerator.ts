@@ -203,6 +203,13 @@ export class CSSGenerator {
         .info-section h3 {
             margin-top: 0;
             color: var(--vscode-foreground);
+            position: sticky;
+            top: 0;
+            background-color: var(--vscode-editor-background);
+            z-index: 10;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--vscode-panel-border);
         }
 
         .info-section h4 {
