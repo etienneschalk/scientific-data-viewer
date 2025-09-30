@@ -239,16 +239,16 @@ function displayDataInfo(data, filePath) {
     const fileInfo = document.getElementById('fileInfo');
     let formatInfo = `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
     
+    if (data.fileSize) {
+        formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} &nbsp; &nbsp;`;
+    }
+
     if (data.format_info) {
         formatInfo += `
             <strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;
             <strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'} &nbsp; &nbsp;
             ${data.used_engine ? `<strong>Used Engine:</strong> ${data.used_engine} &nbsp; &nbsp;` : ''}
         `;
-    }
-    
-    if (data.fileSize) {
-        formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} &nbsp; &nbsp;`;
     }
     
     fileInfo.innerHTML = `<p>${formatInfo}</p>`;
@@ -789,10 +789,10 @@ function showVariablePlotError(variable, message) {
         const formattedMessage = message.replace(/\n/g, '<br>');
         plotError.innerHTML = `
             <div class="error-content">
-                <div class="error-message">${formattedMessage}</div>
                 <button class="error-copy-button" data-variable="${variable}" title="Copy error message">
                     📋 Copy
                 </button>
+                <div class="error-message">${formattedMessage}</div>
             </div>
         `;
         plotError.classList.remove('hidden');
@@ -1572,7 +1572,6 @@ function generateVariablePlotControls(variableName, plottingCapabilities) {
                 <button class="create-plot-button" data-variable="${variableName}">Create Plot</button>
             </div>
             <div class="plot-container" data-variable="${variableName}" style="display: none;">
-                <div class="plot-image-container"></div>
                 <div class="plot-actions">
                     <button class="plot-action-button reset-plot" data-variable="${variableName}">Reset</button>
                     <button class="plot-action-button save-plot" data-variable="${variableName}">Save</button>
@@ -1580,6 +1579,7 @@ function generateVariablePlotControls(variableName, plottingCapabilities) {
                     <button class="plot-action-button open-plot" data-variable="${variableName}">Open</button>
                 </div>
                 <div class="plot-error hidden" data-variable="${variableName}"></div>
+                <div class="plot-image-container"></div>
             </div>
         </div>`;
 }

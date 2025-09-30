@@ -28,32 +28,13 @@ export class HTMLGenerator {
     static generateHeader(plottingCapabilities: boolean, lastLoadTime: string | null): string {
         return `
     <div class="header">
-        <div class="title">Scientific Data Viewer</div>
+        <div class="title">Scientific Data Viewer <small>v0.3.0</small></div>
         <div class="controls">
             ${this.generateTimestamp(lastLoadTime)}
             <button id="refreshButton">Refresh</button>
         </div>
     </div>`;
     }
-
-    static generatePlottingControls(plottingCapabilities: boolean): string {
-        if (!plottingCapabilities) {
-            return '';
-        }
-        
-        return `
-            <select id="variableSelect">
-                <option value="">Select a variable...</option>
-            </select>
-            <select id="plotTypeSelect">
-                <option value="auto" selected>Auto (Recommended)</option>
-                <!-- <option value="line">Line Plot</option> -->
-                <!-- <option value="heatmap">Heatmap</option> -->
-                <!-- <option value="histogram">Histogram</option> -->
-            </select>
-            <button id="plotButton" disabled>Create Plot</button>`;
-    }
-
 
     static generateTimestamp(lastLoadTime: string | null): string {
         if (!lastLoadTime) {
@@ -93,10 +74,10 @@ export class HTMLGenerator {
             <details class="sticky-group-details" open> <summary><h3>File Information</h3></summary>
                 <div id="filePathContainer" class="file-path-container hidden">
                     <p><strong>File Path:</strong></p>
-                    <code id="filePathCode" class="file-path-code"></code>
                     <button id="copyPathButton" class="copy-button">
-                        📋 Copy
+                    📋 Copy
                     </button>
+                    <code id="filePathCode" class="file-path-code"></code>
                 </div>
                 <div id="fileInfo"></div>
             </details>

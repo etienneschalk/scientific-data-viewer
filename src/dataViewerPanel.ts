@@ -119,7 +119,7 @@ export class DataViewerPanel {
 
     private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._webviewPanel = webviewPanel;
-        this._webviewPanel.title = `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`;
+        this._webviewPanel.title = `SDV: ${path.basename(fileUri.fsPath)}`;
         this._currentFile = fileUri;
 
         // Set the webview's initial html content
