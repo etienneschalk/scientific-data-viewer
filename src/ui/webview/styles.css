@@ -199,10 +199,9 @@ select:focus {
 }
 
 .dimensions-compact {
-    padding: 8px 12px;
+    padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
     /* border-radius: 4px; */
-    line-height: 1.4;
     color: var(--vscode-foreground);
     border: 1px solid var(--vscode-panel-border);
     /* max-width: 800px */
