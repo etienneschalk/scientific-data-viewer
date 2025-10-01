@@ -328,7 +328,7 @@ export function activate(context: vscode.ExtensionContext) {
     const handlePythonEnvironmentCreated = async (environment: any) => {
         Logger.info('🐍 🔧 Python environment created, refreshing environment...');
         // Don't do anything with env, delegate to the existing handler
-        await handlePythonInterpreterChange()
+        await handlePythonInterpreterChange();
     };  
 
     // Listen for Python interpreter changes - only listen to Python extension events

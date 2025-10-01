@@ -272,17 +272,6 @@ The extension includes configuration options that act as feature flags to contro
    - Click the "..." menu and select "Install from VSIX..."
    - Select the generated `.vsix` file
 
-### Project Structure
-
-```
-src/
-├── extension.ts          # Main extension entry point and command registration
-├── dataProcessor.ts      # Python integration and data processing
-├── dataViewerPanel.ts    # Webview panel for data visualization
-├── pythonManager.ts      # Advanced Python environment management
-└── logger.ts             # Comprehensive logging utilities
-```
-
 ### Python Scripts
 
 The extension uses several Python scripts for data processing:
@@ -442,42 +431,76 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```
 scientific-data-viewer/
 ├── src/                          # TypeScript source code
-│   ├── extension.ts              # Main extension entry point
-│   ├── dataProvider.ts           # Tree view provider for file explorer
+│   ├── extension.ts              # Main extension entry point and command registration
 │   ├── dataProcessor.ts          # Python integration and data processing
 │   ├── dataViewerPanel.ts        # Webview panel for data visualization
-│   ├── pythonManager.ts          # Python environment management
-│   └── logger.ts                 # Logging utilities
+│   ├── pythonManager.ts          # Advanced Python environment management
+│   ├── logger.ts                 # Comprehensive logging utilities
+│   ├── communication/            # Message passing system
+│   │   ├── MessageBus.ts         # Message bus for communication
+│   │   └── MessageTypes.ts       # Type definitions for messages
+│   ├── error/                    # Error handling
+│   │   └── ErrorBoundary.ts      # Error boundary component
+│   ├── state/                    # Application state management
+│   │   └── AppState.ts           # Global application state
+│   ├── events/                   # Event handling (empty)
+│   └── ui/                       # User interface components
+│       ├── CSSGenerator.ts       # CSS generation utilities
+│       ├── HTMLGenerator.ts      # HTML generation utilities
+│       ├── JavaScriptGenerator.ts # JavaScript generation utilities
+│       ├── UIController.ts       # UI controller logic
+│       └── webview/              # Webview assets
+│           ├── styles.css        # Webview styles
+│           └── webview-script.js # Webview JavaScript
 ├── python/                       # Python scripts for data processing
 │   ├── get_data_info.py          # Extract file metadata and variable info
-│   ├── get_data_slice.py         # Extract data slices from variables
-│   ├── create_plot.py            # Generate visualizations
-│   └── get_html_representation.py # Generate HTML representation
+│   ├── create_sample_data.py     # Generate sample data files
+│   └── tests.ipynb              # Jupyter notebook for testing
 ├── test/                         # Test files
 │   ├── runTest.ts               # Test runner
 │   └── suite/                   # Test suites
 ├── sample-data/                  # Sample data files for testing
 │   ├── sample_data.nc           # NetCDF sample file
 │   ├── sample_data.h5           # HDF5 sample file
-│   ├── sample_data.zarr/        # Zarr sample dataset
-│   └── create_sample_data.py    # Script to generate test data
+│   ├── sample_data.grib         # GRIB sample file
+│   ├── sample_data.jp2          # JPEG2000 sample file
+│   ├── sample_data.tif          # GeoTIFF sample file
+│   ├── sample_data.zarr/        # Zarr sample datasets
+│   │   ├── sample_zarr_arborescence.zarr/
+│   │   ├── sample_zarr_inherited_coords.zarr/
+│   │   ├── sample_zarr_nested_groups_from_datatree.zarr/
+│   │   ├── sample_zarr_nested_groups_from_zarr.zarr/
+│   │   └── sample_zarr_single_group_from_dataset.zarr/
+│   ├── broken_file.*            # Test files for error handling
+│   └── sdv-plots/               # Generated plot outputs
+├── docs/                         # Documentation
+│   ├── ARCHITECTURE_IMPROVEMENTS.md
+│   ├── DEVELOPMENT.md            # Development guide
+│   ├── PUBLISHING.md             # Publishing guide
+│   ├── QUICKSTART.md             # Quick start guide
+│   ├── TECHNICAL_ARCHITECTURE.md # Technical architecture docs
+│   ├── test-extension.md         # Extension testing guide
+│   └── rfc/                      # Request for Comments
+│       ├── README.md
+│       └── 001-033-*.md         # RFC documents
+├── media/                        # Media assets
+│   ├── icon.png                 # Extension icon
+│   ├── icon.svg                 # SVG icon
+│   ├── icon_orig.svg            # Original icon
+│   └── Screenshot*.png          # Screenshots
 ├── out/                          # Compiled JavaScript output
+│   ├── src/                     # Compiled TypeScript
+│   └── test/                    # Compiled tests
 ├── node_modules/                 # Node.js dependencies
-├── .vscode/                      # VSCode configuration
-│   ├── launch.json              # Debug configuration
-│   ├── tasks.json               # Build tasks
-│   └── settings.json            # Workspace settings
 ├── package.json                  # Extension manifest and dependencies
 ├── package-lock.json            # Dependency lock file
 ├── tsconfig.json                # TypeScript configuration
-├── tsconfig.test.json           # Test TypeScript configuration
 ├── .eslintrc.json               # ESLint configuration
 ├── language-configuration.json  # Language configuration
+├── scientific-data-viewer-0.3.0.vsix # Packaged extension
+├── test-publication-readiness.js # Publication readiness test
+├── setup.sh                     # Setup script
 ├── README.md                    # Main documentation
-├── QUICKSTART.md               # Quick start guide
-├── DEVELOPMENT.md              # Development guide
-├── CONTRIBUTING.md             # Contribution guidelines
-├── PUBLISHING.md               # Publishing guide
-├── CHANGELOG.md                # Version history
-└── setup.sh                    # Setup script
+├── CONTRIBUTING.md              # Contribution guidelines
+└── CHANGELOG.md                 # Version history
 ```
