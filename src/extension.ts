@@ -290,14 +290,15 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             }
             
-            // Show notification for supported files
-            const action = await vscode.window.showInformationMessage(
-                `Scientific data file detected: ${document.fileName}`,
-                'Open in Data Viewer'
-            );
-            if (action === 'Open in Data Viewer') {
-                await DataViewerPanel.createFromScratchOrShow(context.extensionUri, document.uri, dataProcessor);
-            }
+            // XXX This is broken, dead notifications show up again. They should not.
+            // // Show notification for supported files
+            // const action = await vscode.window.showInformationMessage(
+            //     `Scientific data file detected: ${document.fileName}`,
+            //     'Open in Data Viewer'
+            // );
+            // if (action === 'Open in Data Viewer') {
+            //     await DataViewerPanel.createFromScratchOrShow(context.extensionUri, document.uri, dataProcessor);
+            // }
         }
     });
 
