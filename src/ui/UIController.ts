@@ -113,6 +113,10 @@ export class UIController {
             this.stateManager.setError(null);
 
             try {
+                // Wait for Python initialization to complete first
+                // This ensures we don't check Python environment before it's ready
+                await this.dataProcessor.pythonManagerInstance.waitForInitialization();
+
                 // Check Python environment
                 if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
                     throw new Error('Python path not found. Please configure Python interpreter first.');

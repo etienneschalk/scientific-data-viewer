@@ -37,10 +37,19 @@ export class DataViewerPanel {
     private _currentFile: vscode.Uri;
     private _uiController: UIController;
 
-    public static createFromScratchOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+    public static async createFromScratchOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
+
+        // Wait for Python initialization to complete before creating the panel
+        // This prevents the race condition where file opening happens before Python validation
+        try {
+            await dataProcessor.pythonManagerInstance.waitForInitialization();
+            Logger.info(`🚚 🧩 Python initialization complete, creating data viewer panel for: ${fileUri.fsPath}`);
+        } catch (error) {
+            Logger.warn(`🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`);
+        }
 
         // Get configuration directly from VSCode
         const config = vscode.workspace.getConfiguration('scientificDataViewer');

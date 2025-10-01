@@ -7,6 +7,7 @@ import { DataViewerPanel } from './dataViewerPanel';
 export class PythonManager {
     private pythonPath: string | undefined;
     private isInitialized: boolean = false;
+    private initializationPromise: Promise<void> | null = null;
 
     constructor(private context: vscode.ExtensionContext) {
         // Initialize without old pythonPath setting - will get from Python extension API
@@ -14,20 +15,37 @@ export class PythonManager {
     }
 
     async _initialize(): Promise<void> {
-        // Get Python interpreter from Python extension API (recommended method)
-        const newPythonPath = await this.getPythonInterpreterFromExtension();
-
-        if (newPythonPath && newPythonPath !== this.pythonPath) {
-            Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
-            this.pythonPath = newPythonPath;
-            // Reset initialization state when interpreter changes
-            this.isInitialized = false;
+        // If initialization is already in progress, wait for it to complete
+        if (this.initializationPromise) {
+            Logger.debug('🐍 ⏳ Python initialization already in progress, waiting...');
+            return this.initializationPromise;
         }
 
-        if (this.pythonPath) {
-            await this.validatePythonEnvironment();
-        } else {
-            await this.findPythonInterpreter();
+        // Start initialization and store the promise
+        this.initializationPromise = this._doInitialize();
+        return this.initializationPromise;
+    }
+
+    private async _doInitialize(): Promise<void> {
+        try {
+            // Get Python interpreter from Python extension API (recommended method)
+            const newPythonPath = await this.getPythonInterpreterFromExtension();
+
+            if (newPythonPath && newPythonPath !== this.pythonPath) {
+                Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
+                this.pythonPath = newPythonPath;
+                // Reset initialization state when interpreter changes
+                this.isInitialized = false;
+            }
+
+            if (this.pythonPath) {
+                await this.validatePythonEnvironment();
+            } else {
+                await this.findPythonInterpreter();
+            }
+        } finally {
+            // Clear the initialization promise when done
+            this.initializationPromise = null;
         }
     }
 
@@ -558,7 +576,19 @@ export class PythonManager {
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
         this.isInitialized = false;
+        this.initializationPromise = null; // Reset any existing initialization
         await this._initialize();
+    }
+
+    /**
+     * Wait for Python initialization to complete
+     * This method should be called before any file operations to prevent race conditions
+     */
+    async waitForInitialization(): Promise<void> {
+        if (this.initializationPromise) {
+            Logger.debug('🐍 ⏳ Waiting for Python initialization to complete...');
+            await this.initializationPromise;
+        }
     }
 
     async getCurrentInterpreterPath(): Promise<string | undefined> {

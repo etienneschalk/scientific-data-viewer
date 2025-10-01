@@ -11,7 +11,7 @@ from logging import Logger
 
 import argparse
 import base64
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import io
 import json
 import logging
@@ -152,16 +152,16 @@ class FileInfoResult:
     format_info: FileFormatInfo
     used_engine: str
     fileSize: int
-    xarray_html_repr: str
-    xarray_text_repr: str
+    xarray_html_repr: str = field(repr=False)
+    xarray_text_repr: str = field(repr=False)
     xarray_show_versions: str
     # For flattented datatrees
     dimensions_flattened: dict[str, dict[str, int]]
     variables_flattened: dict[str, list[VariableInfo]]
     coordinates_flattened: dict[str, list[CoordinateInfo]]
     attributes_flattened: dict[str, dict[str, Any]]
-    xarray_html_repr_flattened: dict[str, str]
-    xarray_text_repr_flattened: dict[str, str]
+    xarray_html_repr_flattened: dict[str, str] = field(repr=False)
+    xarray_text_repr_flattened: dict[str, str] = field(repr=False)
 
 
 @dataclass(frozen=True)

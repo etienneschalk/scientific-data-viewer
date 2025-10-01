@@ -34,6 +34,15 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
     ): Promise<void> {
         Logger.info(`🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`);
 
+        // Wait for Python initialization to complete before creating the panel
+        // This prevents the race condition where file opening happens before Python validation
+        try {
+            await this.dataProcessor.pythonManagerInstance.waitForInitialization();
+            Logger.info(`🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`);
+        } catch (error) {
+            Logger.warn(`🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`);
+        }
+
         // Reuse the provided webviewPanel instead of creating a new one
         // This eliminates the flickering issue
         DataViewerPanel.create(this.context.extensionUri, webviewPanel, document.uri, this.dataProcessor);
@@ -206,7 +215,7 @@ export function activate(context: vscode.ExtensionContext) {
             Logger.info('🎮 👁️ Command: Open data viewer...');
             if (uri) {
                 Logger.info(`🎮 🔧 Opening data viewer for file: ${uri.fsPath}`);
-                DataViewerPanel.createFromScratchOrShow(context.extensionUri, uri, dataProcessor);
+                await DataViewerPanel.createFromScratchOrShow(context.extensionUri, uri, dataProcessor);
             } else {
                 Logger.info('🎮 🔧 Opening file selection dialog for data viewer');
                 const fileUri = await vscode.window.showOpenDialog({
@@ -218,7 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
                 if (fileUri && fileUri[0]) {
                     Logger.info(`🎮 🔧 File selected for data viewer: ${fileUri[0].fsPath}`);
-                    DataViewerPanel.createFromScratchOrShow(context.extensionUri, fileUri[0], dataProcessor);
+                    await DataViewerPanel.createFromScratchOrShow(context.extensionUri, fileUri[0], dataProcessor);
                 }
             }
         }
@@ -304,7 +313,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
-    refreshPython(pythonManager, statusBarItem);
+    const pythonInitializationPromise = refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
