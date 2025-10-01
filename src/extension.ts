@@ -34,18 +34,9 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
     ): Promise<void> {
         Logger.info(`🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`);
 
-        // Instead of showing a text editor, open our data viewer
-        DataViewerPanel.createOrShow(this.context.extensionUri, document.uri, this.dataProcessor);
-        
-        // Close the webview panel since we're using our own panel
-        webviewPanel.dispose();
-        // Note: instead of disposing the webview panel, we could use reuse it.
-        // However, I cannot find a way in the API to set the retainContextWhenHidden property
-        // to true. This is blocking me from using it, as I actuallly want to keep the webview panel,
-        // and not recreate it from scratch when the user opens the file again, which is costly.
-        // Unless there is a way to make the received webview panel to retain its context when hidden,
-        // the flickering is unavoidable.
-        // The flickering occurs as a new tab appears in the UI and then disappears in a fraction of a second.
+        // Reuse the provided webviewPanel instead of creating a new one
+        // This eliminates the flickering issue
+        DataViewerPanel.create(this.context.extensionUri, webviewPanel, document.uri, this.dataProcessor);
     }
 }
 
@@ -170,29 +161,40 @@ export function activate(context: vscode.ExtensionContext) {
     const gribEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
     const geotiffEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
 
+    const options = {
+        webviewOptions: {
+            retainContextWhenHidden: true,
+            enableFindWidget: true,
+        }
+    }
     const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
         'netcdfEditor',
-        netcdfEditorProvider
+        netcdfEditorProvider,
+        options
     );
 
     const hdf5EditorRegistration = vscode.window.registerCustomEditorProvider(
         'hdf5Editor',
-        hdf5EditorProvider
+        hdf5EditorProvider,
+        options
     );
 
     const zarrEditorRegistration = vscode.window.registerCustomEditorProvider(
         'zarrEditor',
-        zarrEditorProvider
+        zarrEditorProvider,
+        options
     );
 
     const gribEditorRegistration = vscode.window.registerCustomEditorProvider(
         'gribEditor',
-        gribEditorProvider
+        gribEditorProvider,
+        options
     );
 
     const geotiffEditorRegistration = vscode.window.registerCustomEditorProvider(
         'geotiffEditor',
-        geotiffEditorProvider
+        geotiffEditorProvider,
+        options
     );
 
     Logger.info('🚀 Custom editor providers registered successfully');
@@ -204,7 +206,7 @@ export function activate(context: vscode.ExtensionContext) {
             Logger.info('🎮 👁️ Command: Open data viewer...');
             if (uri) {
                 Logger.info(`🎮 🔧 Opening data viewer for file: ${uri.fsPath}`);
-                DataViewerPanel.createOrShow(context.extensionUri, uri, dataProcessor);
+                DataViewerPanel.createFromScratchOrShow(context.extensionUri, uri, dataProcessor);
             } else {
                 Logger.info('🎮 🔧 Opening file selection dialog for data viewer');
                 const fileUri = await vscode.window.showOpenDialog({
@@ -216,7 +218,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
                 if (fileUri && fileUri[0]) {
                     Logger.info(`🎮 🔧 File selected for data viewer: ${fileUri[0].fsPath}`);
-                    DataViewerPanel.createOrShow(context.extensionUri, fileUri[0], dataProcessor);
+                    DataViewerPanel.createFromScratchOrShow(context.extensionUri, fileUri[0], dataProcessor);
                 }
             }
         }
@@ -294,14 +296,10 @@ export function activate(context: vscode.ExtensionContext) {
                 'Open in Data Viewer'
             );
             if (action === 'Open in Data Viewer') {
-                await DataViewerPanel.createOrShow(context.extensionUri, document.uri, dataProcessor);
+                await DataViewerPanel.createFromScratchOrShow(context.extensionUri, document.uri, dataProcessor);
             }
         }
     });
-
-    context.subscriptions.push(
-        openViewerCommand
-    );
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');

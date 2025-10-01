@@ -119,7 +119,10 @@
           "NetCDF",
           "netcdf"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "hdf5",
@@ -131,7 +134,10 @@
           "HDF5",
           "hdf5"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "zarr",
@@ -142,7 +148,10 @@
           "Zarr",
           "zarr"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "grib",
@@ -154,7 +163,10 @@
           "GRIB",
           "grib"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "geotiff",
@@ -169,7 +181,10 @@
           "GeoTIFF",
           "geotiff"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       }
     ],
     "customEditors": [
@@ -189,7 +204,11 @@
           {
             "filenamePattern": "*.cdf"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "hdf5Editor",
@@ -201,7 +220,11 @@
           {
             "filenamePattern": "*.hdf5"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "zarrEditor",
@@ -210,7 +233,11 @@
           {
             "filenamePattern": "*.zarr"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "gribEditor",
@@ -222,7 +249,11 @@
           {
             "filenamePattern": "*.grib2"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "geotiffEditor",
@@ -243,7 +274,11 @@
           {
             "filenamePattern": "*.jpeg2000"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       }
     ],
     "configuration": {

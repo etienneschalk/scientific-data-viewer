@@ -37,7 +37,7 @@ export class DataViewerPanel {
     private _currentFile: vscode.Uri;
     private _uiController: UIController;
 
-    public static createOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
+    public static createFromScratchOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
@@ -62,7 +62,7 @@ export class DataViewerPanel {
         // File is not open or multiple tabs are allowed, create a new panel
         const panel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
-            `Scientific Data Viewer: ${path.basename(fileUri.fsPath)}`,
+            path.basename(fileUri.fsPath),
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -76,14 +76,32 @@ export class DataViewerPanel {
         );
         
         // Set the icon for the panel
-        panel.iconPath = vscode.Uri.joinPath(extensionUri, 'media', 'icon.png');
-        DataViewerPanel.create(panel, fileUri, dataProcessor);
+        // Only needed when creating a new panel from scratch, eg via 
+        // Scientific Data Viewer: Open Scientific Data Viewer command.
+        // When clicking on a file in the explorer, the icon is set automatically,
+        // as configured in package.json (section contributes -> languages -> icon)
+        panel.iconPath = vscode.Uri.joinPath(extensionUri, 'media', 'icon.svg');
+
+        DataViewerPanel.create(extensionUri, panel, fileUri, dataProcessor);
     }
 
-    public static create(panel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor): DataViewerPanel {
+    public static create(extensionUri: vscode.Uri, panel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor): DataViewerPanel {
+        // Configure the webview panel
+        panel.webview.options = {
+			enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(extensionUri, 'media'),
+                vscode.Uri.joinPath(extensionUri, 'out')
+            ]
+		};
+
+        // Keep track of the number of panels created (used for identifying the panel)
         DataViewerPanel.createdCount++;
+        // Create the data viewer panel
         const dataViewerPanel = new DataViewerPanel(panel, fileUri, dataProcessor);
+        // Add the data viewer panel to the active panels set
         DataViewerPanel.activePanels.add(dataViewerPanel);
+        // Return the data viewer panel
         return dataViewerPanel;
     }
 
@@ -122,8 +140,12 @@ export class DataViewerPanel {
 
     private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._webviewPanel = webviewPanel;
-        this._webviewPanel.title = `SDV: ${path.basename(fileUri.fsPath)}`;
+        this._webviewPanel.title = path.basename(fileUri.fsPath)
         this._currentFile = fileUri;
+
+        // Configure webview panel properties for optimal experience
+        // Note: Some properties like retainContextWhenHidden might not be settable on existing panels
+        // but we can set other properties that are available
 
         // Set the webview's initial html content
         Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);

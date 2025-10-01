@@ -460,6 +460,10 @@ details.sticky-group-details summary > * {
     border-radius: 4px;
     margin: 10px 0;
     font-weight: 500;
+    max-width: 100%;
+    overflow: auto;
+    word-break: break-all;
+
 }
 
 .plot-error.success {
