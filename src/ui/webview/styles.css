@@ -352,7 +352,7 @@ select:focus {
 .html-representation {
     max-height: 500px;
     overflow: auto;
-    /* border: 1px solid var(--vscode-panel-border); */
+    border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
     padding: 10px;
     background-color: var(--vscode-editor-background);

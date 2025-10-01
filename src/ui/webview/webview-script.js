@@ -1583,7 +1583,7 @@ function generateVariablePlotControls(variableName, plottingCapabilities) {
             </div>
         </div>`;
 }
-
+    
 // Function to execute the show logs command
 async function executeShowLogsCommand() {
     try {
