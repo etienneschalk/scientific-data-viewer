@@ -174,10 +174,8 @@ select:focus {
 .info-section h3 {
     margin-top: 0;
     color: var(--vscode-foreground);
-    position: sticky;
     top: 0;
     background-color: var(--vscode-editor-background);
-    z-index: 20;
     padding: 10px 0;
     font-size: 1.1em;
     font-weight: normal;
@@ -395,7 +393,6 @@ details summary:hover {
 details.sticky-group-details {
     margin-top: 0;
     color: var(--vscode-foreground);
-    position: sticky;
     top: 0;
     background-color: var(--vscode-editor-background);
     z-index: 10;
@@ -403,7 +400,7 @@ details.sticky-group-details {
 }
 
 details.sticky-group-details > summary {
-    top: 0;
+    top: -1px; /* fix empirical one pixel gap observed in VS Code */
     position: sticky;
     display: list-item;
     width: 100%;
@@ -415,20 +412,13 @@ details.sticky-group-details > summary {
 
 details[open].sticky-group-details {
     margin-bottom: 15px;
-    /* border-bottom: 1px solid var(--vscode-panel-border); */
 }
 
 details.sticky-group-details summary > * {
-    position: sticky;
     display: inline;
     border: none;
     margin: 0;
     padding: 0;
-}
-
-/* Plotting styles */
-.plot-container {
-    margin: 20px 0;
 }
 
 /* Plot image styles */
@@ -436,7 +426,7 @@ details.sticky-group-details summary > * {
     max-width: 100%;
     height: auto;
     border: 1px solid var(--vscode-panel-border);
-    /* border-radius: 4px; */
+    border-radius: 4px;
 }
 
 /* Plot control button variant */
@@ -519,9 +509,6 @@ details.sticky-group-details summary > * {
 .variable-plot-controls {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
-    /* border-radius: 4px; */
-    /* border: 1px solid var(--vscode-panel-border); */
-    /* margin-top: 2px; */
 }
 
 .plot-controls-row {
@@ -560,7 +547,7 @@ details.sticky-group-details summary > * {
 }
 
 .plot-image-container {
-    margin: 10px 0;
+    margin-top: 10px;
 }
 
 .plot-actions {

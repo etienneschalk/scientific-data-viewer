@@ -241,18 +241,17 @@ function displayDataInfo(data, filePath) {
 
     
     if (data.fileSize) {
-        formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} &nbsp; &nbsp;`;
+        formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} · `;
     }
     
-    formatInfo += `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
-    formatInfo += `<strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;`;
-    
-    formatInfo += `<br>`
+    formatInfo += `<strong>Format:</strong> ${data.format || 'Unknown'} · `;
+    // Redundant with Format and File Path
+    // formatInfo += `<strong>File Extension:</strong> ${data.format_info.extension} · `;
     
     if (data.format_info) {
         formatInfo += `
-            <strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'} &nbsp; &nbsp;
-            ${data.used_engine ? `<strong>Used Engine:</strong> ${data.used_engine} &nbsp; &nbsp;` : ''}
+            <strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'} · 
+            ${data.used_engine ? `<strong>Used Engine:</strong> ${data.used_engine}` : ''}
         `;
     }
     
