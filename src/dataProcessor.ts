@@ -21,28 +21,10 @@ export interface DataInfoResult {
     format: string;
     format_info: DataInfoFormatInfo;
     used_engine: string;
-    dimensions: { [key: string]: number };
-    variables: Array<{
-        name: string;
-        dtype: string;
-        shape: number[];
-        dimensions: string[];
-        size_bytes: number;
-        attributes?: { [key: string]: any };
-    }>;
-    coordinates: Array<{
-        name: string;
-        dtype: string;
-        shape: number[];
-        dimensions: string[];
-        size_bytes: number;
-        attributes?: { [key: string]: any };
-    }>;
+    fileSize: number;
     xarray_html_repr: string;
     xarray_text_repr: string;
     xarray_show_versions: string;
-    attributes: { [key: string]: any };
-    fileSize: number;
     // New datatree fields
     dimensions_flattened: { [groupName: string]: { [key: string]: number } };
     coordinates_flattened: { [groupName: string]: Array<{
@@ -64,7 +46,6 @@ export interface DataInfoResult {
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
     xarray_html_repr_flattened: { [groupName: string]: string };
     xarray_text_repr_flattened: { [groupName: string]: string };
-    datatree_flag: boolean;
 }
 export interface DataInfoError {
     error: string;

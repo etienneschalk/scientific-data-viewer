@@ -79,11 +79,6 @@ suite('Integration Test Suite', () => {
                         result: {
                             format: 'NetCDF',
                             fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
                         }
                     };
                 } else if (args[0] === 'plot') {
@@ -185,15 +180,9 @@ suite('Integration Test Suite', () => {
                         result: {
                             format: 'NetCDF',
                             fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
-                            ],
-                            coordinates: [],
                             xarray_html_repr: '',
                             xarray_text_repr: '',
                             xarray_show_versions: '',
-                            attributes: {},
                             format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
                             used_engine: 'netcdf4',
                             dimensions_flattened: {},
@@ -201,8 +190,7 @@ suite('Integration Test Suite', () => {
                             variables_flattened: {},
                             attributes_flattened: {},
                             xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                            datatree_flag: false
+                            xarray_text_repr_flattened: {}
                         }
                     };
                 } else if (filePath.endsWith('.h5') || filePath.endsWith('.hdf5')) {
@@ -210,15 +198,9 @@ suite('Integration Test Suite', () => {
                         result: {
                             format: 'HDF5',
                             fileSize: 2048,
-                            dimensions: { time: 50, lat: 90, lon: 180 },
-                            variables: [
-                                { name: 'pressure', dtype: 'float64', shape: [50, 90, 180] }
-                            ],
-                            coordinates: [],
                             xarray_html_repr: '',
                             xarray_text_repr: '',
                             xarray_show_versions: '',
-                            attributes: {},
                             format_info: { extension: 'h5', available_engines: [], missing_packages: [], is_supported: true },
                             used_engine: 'h5netcdf',
                             dimensions_flattened: {},
@@ -226,8 +208,7 @@ suite('Integration Test Suite', () => {
                             variables_flattened: {},
                             attributes_flattened: {},
                             xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                            datatree_flag: false
+                            xarray_text_repr_flattened: {}
                         }
                     };
                 } else if (filePath.endsWith('.zarr')) {
@@ -235,15 +216,9 @@ suite('Integration Test Suite', () => {
                         result: {
                             format: 'Zarr',
                             fileSize: 512,
-                            dimensions: { x: 100, y: 100 },
-                            variables: [
-                                { name: 'data', dtype: 'int32', shape: [100, 100] }
-                            ],
-                            coordinates: [],
                             xarray_html_repr: '',
                             xarray_text_repr: '',
                             xarray_show_versions: '',
-                            attributes: {},
                             format_info: { extension: 'zarr', available_engines: [], missing_packages: [], is_supported: true },
                             used_engine: 'zarr',
                             dimensions_flattened: {},
@@ -251,8 +226,7 @@ suite('Integration Test Suite', () => {
                             variables_flattened: {},
                             attributes_flattened: {},
                             xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                            datatree_flag: false
+                            xarray_text_repr_flattened: {}
                         }
                     };
                 }
@@ -487,11 +461,6 @@ suite('Integration Test Suite', () => {
                         result: {
                             format: 'NetCDF',
                             fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ]
                         }
                     };
                 } else if (args[0] === 'plot') {
@@ -575,10 +544,6 @@ suite('Integration Test Suite', () => {
             executePythonFile: async () => ({
                 format: 'NetCDF',
                 fileSize: 1024,
-                dimensions: { time: 100, lat: 180, lon: 360 },
-                variables: [
-                    { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
-                ]
             }),
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
@@ -617,10 +582,6 @@ suite('Integration Test Suite', () => {
                     result: {
                         format: 'NetCDF',
                         fileSize: 1024,
-                        dimensions: { time: 100, lat: 180, lon: 360 },
-                        variables: [
-                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] }
-                        ]
                     }
                 };
             },

@@ -71,16 +71,9 @@ suite('DataViewerPanel Test Suite', () => {
                 result: {
                     format: 'NetCDF',
                     fileSize: 1024,
-                    dimensions: { time: 100, lat: 180, lon: 360 },
-                    variables: [
-                        { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                        { name: 'time', dtype: 'datetime64', shape: [100] }
-                    ],
-                    coordinates: [],
                     xarray_html_repr: '<div>Test HTML</div>',
                     xarray_text_repr: 'Test text representation',
                     xarray_show_versions: 'Test versions',
-                    attributes: {},
                     format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
                     used_engine: 'netcdf4',
                     dimensions_flattened: {},
@@ -88,8 +81,7 @@ suite('DataViewerPanel Test Suite', () => {
                     variables_flattened: {},
                     attributes_flattened: {},
                     xarray_html_repr_flattened: {},
-                    xarray_text_repr_flattened: {},
-                    datatree_flag: false
+                    xarray_text_repr_flattened: {}
                 }
             }),
             getVariableList: async () => ['temperature', 'time'],

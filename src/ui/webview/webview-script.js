@@ -261,15 +261,14 @@ function displayDataInfo(data, filePath) {
     // Check if plotting capabilities are enabled
     const hasPlottingCapabilities = document.getElementById('resetAllPlotsButton') !== null;
 
-    if (data.datatree_flag) {
-        const dimensionsContainer = document.getElementById('dimensions');
-        const coordinatesContainer = document.getElementById('coordinates');
-        const variablesContainer = document.getElementById('variables');
-        dimensionsContainer.parentElement.parentElement.classList.add('hidden');
-        coordinatesContainer.parentElement.parentElement.classList.add('hidden');
-        variablesContainer.parentElement.parentElement.classList.add('hidden');
-        const groupInfoContainer = document.getElementById('group-info-container');
-        groupInfoContainer.classList.remove('hidden');
+    const dimensionsContainer = document.getElementById('dimensions');
+    const coordinatesContainer = document.getElementById('coordinates');
+    const variablesContainer = document.getElementById('variables');
+    dimensionsContainer.parentElement.parentElement.classList.add('hidden');
+    coordinatesContainer.parentElement.parentElement.classList.add('hidden');
+    variablesContainer.parentElement.parentElement.classList.add('hidden');
+    const groupInfoContainer = document.getElementById('group-info-container');
+    groupInfoContainer.classList.remove('hidden');
 
         // Assumption: dimensions_flattened and coordinates_flattened and variables_flattened
         //  are always present together and have the same group keys.
@@ -379,91 +378,10 @@ function displayDataInfo(data, filePath) {
         } else {
             contentContainer.innerHTML = '<p>No data available</p>';
         }
-    } else {
-        // Display dimensions
-        const dimensionsContainer = document.getElementById('dimensions');
-        const coordinatesContainer = document.getElementById('coordinates');
-        const variablesContainer = document.getElementById('variables');
-        if (dimensionsContainer) {
-            if (data.dimensions) {
-                dimensionsContainer.innerHTML = `<div class="dimensions-compact">
-                    (${Object.entries(data.dimensions)
-                        .map(([name, size]) => `<strong>${name}</strong>: ${size}`)
-                        .join(', ')})
-                </div>`;
-            } else {
-                dimensionsContainer.innerHTML = '<p>No dimensions found</p>';
-            }
-        }
-            
-        // Display coordinates
-        if (coordinatesContainer) {
-            if (data.coordinates && data.coordinates.length > 0) {
-                coordinatesContainer.innerHTML = data.coordinates
-                    .map(variable => {
-                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
-                        
-                        return `
-                            <div class="variable-item" data-variable="${variable.name}">
-                                <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                    <code>${escapeHtml(variable.dtype)}</code>
-                                </span>
-                                <span class="dtype-shape" title="${shapeStr}">
-                                    ${shapeStr}
-                                </span>
-                                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                            </div>
-                        `;
-                    })
-                    .join('');
-            } else {
-                coordinatesContainer.innerHTML = '<p>No coordinates found at top-level group.</p>';
-            }
-        }
-
-        // Display variables
-        if (variablesContainer) {
-            if (data.variables && data.variables.length > 0) {
-                variablesContainer.innerHTML = data.variables
-                    .map(variable => {
-                        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-                        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
-                        const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
-                        
-                        const plotControls = hasPlottingCapabilities ? 
-                            generateVariablePlotControls(variable.name, true) : '';
-                        
-                        return `
-                            <div class="variable-row" data-variable="${variable.name}">
-                                <div class="variable-item">
-                                <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                    <code>${escapeHtml(variable.dtype)}</code>
-                                </span>
-                                <span class="dtype-shape" title="${shapeStr}">
-                                    ${shapeStr}
-                                </span>
-                                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                </div>
-                                ${plotControls}
-                            </div>
-                        `;
-                    })
-                    .join('');
-            } else {
-                variablesContainer.innerHTML = '<p>No variables found at top-level group.</p>';
-            }
-        }
-    }
     
     // Enable create plot buttons for all variables
     if (hasPlottingCapabilities) {
-        if (data.datatree_flag && data.variables_flattened) {
+        if (data.variables_flattened) {
             // Enable buttons for datatree variables
             Object.keys(data.variables_flattened).forEach(groupName => {
                 data.variables_flattened[groupName].forEach(variable => {
@@ -473,14 +391,6 @@ function displayDataInfo(data, filePath) {
                         createButton.disabled = false;
                     }
                 });
-            });
-        } else if (data.variables && data.variables.length > 0) {
-            // Enable buttons for regular variables
-            data.variables.forEach(variable => {
-                const createButton = document.querySelector(`.create-plot-button[data-variable="${variable.name}"]`);
-                if (createButton) {
-                    createButton.disabled = false;
-                }
             });
         }
     }
@@ -1462,37 +1372,35 @@ function setupMessageHandlers() {
         displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
         displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
         
-        // Handle datatree vs regular data
-        if (state.data.dataInfo.datatree_flag) {
-            displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr_flattened, true);
-            displayTextRepresentation(state.data.dataInfo.xarray_text_repr_flattened, true);
+        // Handle datatree data
+        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr_flattened, true);
+        displayTextRepresentation(state.data.dataInfo.xarray_text_repr_flattened, true);
 
-            // Text representation copy button for groups
-            const textCopyButtonForGroups =  document.querySelectorAll('[id^="textCopyButton-"]');
-            textCopyButtonForGroups.forEach(button => { 
-                button.addEventListener('click', async () => {
-                    const textRepresentation = document.getElementById(`textRepresentation-${button.dataset.group}`);
-                    const text = textRepresentation ? textRepresentation.textContent : '';
-                    if (text) {
-                        try {
-                            await navigator.clipboard.writeText(text);
-                            button.textContent = '✓ Copied!';
-                            button.classList.add('copied');
-                            setTimeout(() => {
-                                button.textContent = '📋 Copy';
-                                button.classList.remove('copied');
-                            }, 2000);
-                        } catch (err) {
-                            console.error('Failed to copy text representation:', err);
-                            button.textContent = '❌ Failed';
-                            setTimeout(() => {
-                                button.textContent = '📋 Copy';
-                            }, 2000);
-                        }
+        // Text representation copy button for groups
+        const textCopyButtonForGroups =  document.querySelectorAll('[id^="textCopyButton-"]');
+        textCopyButtonForGroups.forEach(button => { 
+            button.addEventListener('click', async () => {
+                const textRepresentation = document.getElementById(`textRepresentation-${button.dataset.group}`);
+                const text = textRepresentation ? textRepresentation.textContent : '';
+                if (text) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        button.textContent = '✓ Copied!';
+                        button.classList.add('copied');
+                        setTimeout(() => {
+                            button.textContent = '📋 Copy';
+                            button.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text representation:', err);
+                        button.textContent = '❌ Failed';
+                        setTimeout(() => {
+                            button.textContent = '📋 Copy';
+                        }, 2000);
                     }
-                });
+                }
             });
-        }
+        });
 
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);

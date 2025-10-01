@@ -152,10 +152,6 @@ class FileInfoResult:
     format_info: FileFormatInfo
     used_engine: str
     fileSize: int
-    dimensions: dict[str, int]
-    variables: list[VariableInfo]
-    coordinates: list[CoordinateInfo]
-    attributes: dict[str, Any]
     xarray_html_repr: str
     xarray_text_repr: str
     xarray_show_versions: str
@@ -166,7 +162,6 @@ class FileInfoResult:
     attributes_flattened: dict[str, dict[str, Any]]
     xarray_html_repr_flattened: dict[str, str]
     xarray_text_repr_flattened: dict[str, str]
-    datatree_flag: bool
 
 
 @dataclass(frozen=True)
@@ -589,14 +584,6 @@ def get_file_info(file_path: Path):
             format_info=file_format_info,
             used_engine=used_engine,
             fileSize=os.path.getsize(file_path),
-            # Legacy single group start
-            # dimensions={str(k): v for k, v in xds_or_xdt.dims.items()},
-            dimensions={},
-            variables=[],
-            coordinates=[],
-            # attributes={str(k): v for k, v in xds_or_xdt.attrs.items()},
-            attributes={},
-            # Legacy single group end
             xarray_html_repr=repr_html,
             xarray_text_repr=repr_text,
             xarray_show_versions=versions_text,
@@ -606,21 +593,7 @@ def get_file_info(file_path: Path):
             attributes_flattened={},
             xarray_html_repr_flattened={},
             xarray_text_repr_flattened={},
-            # TODO eschalk Rename this field to sth like "UI Multiple Groups Mode"
-            # And drop support for single group support for a simpler codebase (2 times duplicate code)
-            # Single group case is the same as Multi group case with one group (singleton).
-            datatree_flag=True,  # For the UI, trigger the "multiple groups mode".
         )
-
-        # # Add coordinate variables
-        # for coord_name, coord in xds_or_xdt.coords.items():
-        #     coord_info = create_coord_info(str(coord_name), coord)
-        #     info.coordinates.append(coord_info)
-
-        # # Add data variables
-        # for var_name, var in xds_or_xdt.data_vars.items():
-        #     var_info = create_variable_info(str(var_name), var)
-        #     info.variables.append(var_info)
 
         for group in flat_dict_of_xds.keys():
             logger.info(f"Processing group: {group}")

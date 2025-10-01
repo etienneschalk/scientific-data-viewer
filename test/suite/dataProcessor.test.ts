@@ -16,12 +16,7 @@ suite('DataProcessor Test Suite', () => {
                 return {
                     result: {
                         format: 'NetCDF',
-                        fileSize: 1024,
-                        dimensions: { time: 100, lat: 180, lon: 360 },
-                        variables: [
-                            { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                            { name: 'time', dtype: 'datetime64', shape: [100] }
-                        ]
+                        fileSize: 1024
                     }
                 };
             },
@@ -32,16 +27,9 @@ suite('DataProcessor Test Suite', () => {
                         result: {
                             format: 'NetCDF',
                             fileSize: 1024,
-                            dimensions: { time: 100, lat: 180, lon: 360 },
-                            variables: [
-                                { name: 'temperature', dtype: 'float32', shape: [100, 180, 360] },
-                                { name: 'time', dtype: 'datetime64', shape: [100] }
-                            ],
-                            coordinates: [],
                             xarray_html_repr: '',
                             xarray_text_repr: '',
                             xarray_show_versions: '',
-                            attributes: {},
                             format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
                             used_engine: 'netcdf4',
                             dimensions_flattened: {},
@@ -49,8 +37,7 @@ suite('DataProcessor Test Suite', () => {
                             variables_flattened: {},
                             attributes_flattened: {},
                             xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                            datatree_flag: false
+                            xarray_text_repr_flattened: {}
                         }
                     };
                 } else if (args[0] === 'plot') {
@@ -74,8 +61,6 @@ suite('DataProcessor Test Suite', () => {
 
         assert.ok(dataInfo);
         assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
-        assert.ok(dataInfo?.result?.dimensions);
-        assert.ok(dataInfo?.result?.variables);
         assert.strictEqual(dataInfo?.result?.fileSize, 1024);
     });
 
@@ -211,9 +196,7 @@ suite('DataProcessor Test Suite', () => {
                 return {
                     result: {
                         format: 'NetCDF',
-                        fileSize: 0,
-                        dimensions: {},
-                        variables: []
+                        fileSize: 0
                     }
                 };
             }
@@ -226,9 +209,6 @@ suite('DataProcessor Test Suite', () => {
         assert.ok(dataInfo);
         assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
         assert.strictEqual(dataInfo?.result?.fileSize, 0);
-        assert.ok(dataInfo?.result?.dimensions);
-        assert.ok(dataInfo?.result?.variables);
-        assert.strictEqual(dataInfo?.result?.variables?.length, 0);
     });
 
     test('should handle data info with error field', async () => {
