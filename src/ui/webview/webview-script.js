@@ -245,12 +245,12 @@ function displayDataInfo(data, filePath) {
     }
     
     formatInfo += `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
-
+    formatInfo += `<strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;`;
+    
     formatInfo += `<br>`
     
     if (data.format_info) {
         formatInfo += `
-            <strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;
             <strong>Available Engines:</strong> ${data.format_info.available_engines.join(', ') || 'None'} &nbsp; &nbsp;
             ${data.used_engine ? `<strong>Used Engine:</strong> ${data.used_engine} &nbsp; &nbsp;` : ''}
         `;

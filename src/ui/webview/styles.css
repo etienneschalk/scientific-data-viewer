@@ -201,7 +201,7 @@ select:focus {
 .dimensions-compact {
     padding: 8px 12px;
     background-color: var(--vscode-list-hoverBackground);
-    border-radius: 4px;
+    /* border-radius: 4px; */
     line-height: 1.4;
     color: var(--vscode-foreground);
     border: 1px solid var(--vscode-panel-border);
@@ -216,7 +216,7 @@ select:focus {
 .dimension-item, .variable-item {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
-    border-radius: 4px;
+    /* border-radius: 4px; */
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
@@ -229,7 +229,6 @@ select:focus {
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin-bottom: 8px;
 }
 
 .dimension-item:hover, .variable-item:hover {
@@ -438,7 +437,7 @@ details.sticky-group-details summary > * {
     max-width: 100%;
     height: auto;
     border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+    /* border-radius: 4px; */
 }
 
 /* Plot control button variant */
@@ -521,16 +520,15 @@ details.sticky-group-details summary > * {
 .variable-plot-controls {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
-    border-radius: 4px;
+    /* border-radius: 4px; */
     /* border: 1px solid var(--vscode-panel-border); */
-    margin-top: 2px;
+    /* margin-top: 2px; */
 }
 
 .plot-controls-row {
     display: flex;
     gap: 10px;
     align-items: center;
-    margin-bottom: 10px;
 }
 
 .plot-type-select {

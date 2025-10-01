@@ -542,7 +542,10 @@ def get_file_info(file_path: Path):
             logger.info(f"{xdt=}")
 
             flat_dict_of_xds: DictOfDatasets = {
-                group: group_xdt for group, group_xdt in xdt.to_dict().items()
+                group: group_xdt
+                for group, group_xdt in sorted(
+                    xdt.to_dict().items(), key=lambda x: x[0]
+                )
             }
             logger.info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
