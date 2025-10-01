@@ -561,13 +561,16 @@ def get_file_info(file_path: Path):
             # Otherwise, need to do a custom repr.
             else:
                 with xr.set_options(**XR_TEXT_OPTIONS):
-                    repr_text: str = "\n\n".join(
-                        (f"Group:{group}\n\n{xds!s}" for group, xds in xds_dict.items())
+                    repr_text: str = f"{'-' * 80}\n\n".join(
+                        (
+                            f"Group: {group}\n\n{xds!s}\n\n"
+                            for group, xds in xds_dict.items()
+                        )
                     )
                 with xr.set_options(**XR_HTML_OPTIONS):
                     repr_html: str = "<br><br>".join(
                         (
-                            f"<p>Group:{group}</p><br><br>{xds!s}"
+                            f"<p>Group: {group}</p><br><br>{xds._repr_html_()}"
                             for group, xds in xds_dict.items()
                         )
                     )
