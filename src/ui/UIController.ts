@@ -266,7 +266,7 @@ export class UIController {
                             if (action === 'Open File') {
                                 // Open the file in VSCode (this will work for images in newer VSCode versions)
                                 try {
-                                    await vscode.commands.executeCommand('vscode.open', savePath);
+                                    await vscode.commands.executeCommand('vscode.open', savePath, vscode.ViewColumn.Beside);
                                 } catch (error) {
                                     // If opening in VSCode fails, open with external application
                                     await vscode.env.openExternal(savePath);
@@ -339,7 +339,7 @@ export class UIController {
                 // Handle user action
                 if (action === 'Open File') {
                     try {
-                        await vscode.commands.executeCommand('vscode.open', saveUri);
+                        await vscode.commands.executeCommand('vscode.open', saveUri, vscode.ViewColumn.Beside);
                     } catch (error) {
                         await vscode.env.openExternal(saveUri);
                     }
@@ -378,7 +378,7 @@ export class UIController {
             
             // Immediately try to open in VSCode first, fallback to external app
             try {
-                await vscode.commands.executeCommand('vscode.open', tempFile);
+                await vscode.commands.executeCommand('vscode.open', tempFile, vscode.ViewColumn.Beside);
                 Logger.info(`Plot opened in VSCode: ${tempFile.fsPath}`);
             } catch (vscodeError) {
                 // If opening in VSCode fails, open with external application
