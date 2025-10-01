@@ -296,11 +296,11 @@ function displayDataInfo(data, filePath) {
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dims">${dimsStr}</span>
-                                <span class="dtype-shape">
+                                <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
                                     <code>${escapeHtml(variable.dtype)}</code>
                                 </span>
-                                <span class="dtype-shape">
+                                <span class="dtype-shape" title="${shapeStr}">
                                     ${shapeStr}
                                 </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
@@ -318,7 +318,7 @@ function displayDataInfo(data, filePath) {
                         const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         
                         // For datatree variables, use full path (group/variable) for plotting
-                        const fullVariableName = `${groupName}/${variable.name}`;
+                        const fullVariableName = `${groupName == "/" ? "" : groupName}/${variable.name}`;
                         const plotControls = hasPlottingCapabilities ? 
                             generateVariablePlotControls(fullVariableName, true) : '';
                         
@@ -326,11 +326,11 @@ function displayDataInfo(data, filePath) {
                             <div class="variable-row" data-variable="${fullVariableName}">
                                 <div class="variable-item">
                                     <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                    <span class="dims">${dimsStr}</span>
-                                    <span class="dtype-shape">
+                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                    <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
                                         <code>${escapeHtml(variable.dtype)}</code>
                                     </span>
-                                    <span class="dtype-shape">
+                                    <span class="dtype-shape" title="${shapeStr}">
                                         ${shapeStr}
                                     </span>
                                     ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
@@ -403,11 +403,11 @@ function displayDataInfo(data, filePath) {
                         return `
                             <div class="variable-item" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dims">${dimsStr}</span>
-                                <span class="dtype-shape">
+                                <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
                                     <code>${escapeHtml(variable.dtype)}</code>
                                 </span>
-                                <span class="dtype-shape">
+                                <span class="dtype-shape" title="${shapeStr}">
                                     ${shapeStr}
                                 </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
@@ -436,11 +436,11 @@ function displayDataInfo(data, filePath) {
                             <div class="variable-row" data-variable="${variable.name}">
                                 <div class="variable-item">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                <span class="dims">${dimsStr}</span>
-                                <span class="dtype-shape">
+                                <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
                                     <code>${escapeHtml(variable.dtype)}</code>
                                 </span>
-                                <span class="dtype-shape">
+                                <span class="dtype-shape" title="${shapeStr}">
                                     ${shapeStr}
                                 </span>
                                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
@@ -462,7 +462,7 @@ function displayDataInfo(data, filePath) {
             // Enable buttons for datatree variables
             Object.keys(data.variables_flattened).forEach(groupName => {
                 data.variables_flattened[groupName].forEach(variable => {
-                    const fullVariableName = `${groupName}/${variable.name}`;
+                    const fullVariableName = `${groupName == "/" ? "" : groupName}/${variable.name}`;
                     const createButton = document.querySelector(`.create-plot-button[data-variable="${fullVariableName}"]`);
                     if (createButton) {
                         createButton.disabled = false;
@@ -980,13 +980,12 @@ async function plotAllVariables() {
         const variable = button.getAttribute('data-variable');
         const plotTypeSelect = document.querySelector(`.plot-type-select[data-variable="${variable}"]`);
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
-        const actualPlotType = plotType === 'auto' ? 'line' : plotType;
         
         // Show loading indicator
         showVariablePlotLoading(variable);
         
         try {
-            const plotData = await messageBus.createPlot(variable, actualPlotType);
+            const plotData = await messageBus.createPlot(variable, plotType);
             displayVariablePlot(variable, plotData);
             plotAllOperation.completedCount++;
             updatePlotAllProgress();
@@ -1240,13 +1239,12 @@ function setupEventListeners(plottingCapabilities = false) {
                 const variable = e.target.getAttribute('data-variable');
                 const plotTypeSelect = document.querySelector(`.plot-type-select[data-variable="${variable}"]`);
                 const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
-                const actualPlotType = plotType === 'auto' ? 'line' : plotType;
                 
                 // Show loading indicator
                 showVariablePlotLoading(variable);
                 
                 try {
-                    const plotData = await messageBus.createPlot(variable, actualPlotType);
+                    const plotData = await messageBus.createPlot(variable, plotType);
                     displayVariablePlot(variable, plotData);
                 } catch (error) {
                     console.error('Failed to create plot:', error);

@@ -8,7 +8,7 @@ body {
     color: var(--vscode-foreground);
     background-color: var(--vscode-editor-background);
     padding: 20px;
-    /* line-height: 1.5; */
+    max-width: 768px;
 }
 
 * {
@@ -45,7 +45,6 @@ body {
 
 .error p {
     margin: 8px 0;
-    line-height: 1.5;
 }
 
 .error strong {
@@ -67,7 +66,6 @@ body {
 
 .error li {
     margin: 5px 0;
-    line-height: 1.4;
 }
 
 /* Header styles */
@@ -164,11 +162,11 @@ select:focus {
 /* Info section styles */
 .info-section {
     margin: 0;
-    padding: 0 15px;
+    /* padding: 0 15px; */
     background-color: var(--vscode-editor-background);
     /* border: 1px solid var(--vscode-panel-border); */
     border-radius: 4px;
-    margin: 2px 0;
+    /* margin: 2px 0; */
 }
 
 .info-section h3 {
@@ -194,6 +192,8 @@ select:focus {
     grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 10px;
+    /* max-width: 800px */
+
 }
 
 .dimensions-compact {
@@ -203,6 +203,7 @@ select:focus {
     line-height: 1.4;
     color: var(--vscode-foreground);
     border: 1px solid var(--vscode-panel-border);
+    /* max-width: 800px */
 }
 
 .dimensions-compact strong {
@@ -242,48 +243,47 @@ select:focus {
     flex: 1;
 }
 
+.variable-item .dims {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+
+}
+
 .variable-item .variable-name {
     font-weight: bold;
     flex: 1;
-    min-width: 120px;
-    padding-right: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 300px;
 }
 
 .variable-item .dtype-shape {
     flex: 1;
-    min-width: 100px;
-    padding: 0 12px;
     color: var(--vscode-descriptionForeground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: right;
+    max-width: 100px;
 }
 
-.variable-item .dims {
-    flex: 1;
-    min-width: 100px;
-    padding: 0 12px;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+
 
 .variable-item .size {
     flex: 1;
-    min-width: 80px;
-    padding-left: 12px;
     color: var(--vscode-descriptionForeground);
     white-space: nowrap;
     text-align: right;
+    max-width: 100px;
 }
 
 /* Responsive design for small screens */
-@media (max-width: 768px) {
+@media (max-width: 480px) {
     .variable-item {
         flex-direction: column;
         align-items: flex-start;
@@ -300,33 +300,6 @@ select:focus {
         width: 100%;
         padding: 1px 0;
         text-align: left;
-        line-height: 1.2;
-    }
-    
-    .variable-item .size {
-        text-align: right;
-    }
-}
-
-/* For very small screens, make it even more compact */
-@media (max-width: 480px) {
-    .variable-item {
-        padding: 3px 6px;
-        gap: 0;
-    }
-    
-    .variable-item .variable-name,
-    .variable-item .dtype-shape,
-    .variable-item .dims,
-    .variable-item .size {
-        padding: 0.5px 0;
-        line-height: 1.1;
-    }
-    
-
-    
-    .variable-plot-controls {
-        padding: 6px;
     }
 }
 

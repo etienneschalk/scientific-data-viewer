@@ -106,7 +106,7 @@ export class DataProcessor {
         }
     }
 
-    async createPlot(uri: vscode.Uri, variable: string, plotType: string = 'line'): Promise<string | null> {
+    async createPlot(uri: vscode.Uri, variable: string, plotType: string = 'auto'): Promise<string | null> {
         if (!this.pythonManager.isReady()) {
             throw new Error('Python environment not ready');
         }

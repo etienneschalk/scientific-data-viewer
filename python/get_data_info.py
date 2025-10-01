@@ -344,9 +344,12 @@ def detect_plotting_strategy(var):
     return "default"
 
 
-def create_plot(file_path: Path, variable_path: str, plot_type: str = "line"):
+def create_plot(file_path: Path, variable_path: str, plot_type: str = "auto"):
     """Create a plot from a data file variable."""
+
     try:
+        if plot_type != "auto":
+            raise ValueError(f"Invalid plot type: {plot_type}")
         # Detect file format and available engines
         file_format_info = detect_file_format(file_path)
 
@@ -427,8 +430,10 @@ def create_plot(file_path: Path, variable_path: str, plot_type: str = "line"):
         logger.info("Plot created successfully")
         return image_base64
 
-    except Exception as e:
-        logger.error(f"Error creating plot: {str(e)}")
+    except Exception as exc:
+        logger.error(
+            f"Error creating plot: {exc!r} ({file_path=} {variable_path=} {plot_type=})"
+        )
         return None
 
 
@@ -525,6 +530,10 @@ def get_file_info(file_path: Path):
                 # Add data variables for group
                 for var_name, var in xds.data_vars.items():
                     var_info = create_variable_info(str(var_name), var)
+                    logger.info(
+                        f"Processing group and var: {group=}  {var_name=} {var_info=}"
+                    )
+
                     info.variables_flattened.setdefault(group, []).append(var_info)
 
                 # Extract information
@@ -603,8 +612,8 @@ Examples:
     parser.add_argument(
         "plot_type",
         nargs="?",
-        default="line",
-        help="Plot type: 'line' or 'histogram' (optional, default: 'line')",
+        default="auto",
+        help="Plot type: 'line' or 'histogram' (optional, default: 'auto')",
     )
 
     args = parser.parse_args()
