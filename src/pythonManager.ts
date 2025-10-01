@@ -76,12 +76,37 @@ export class PythonManager {
                 }
             }
 
-            // Try the new environments API first
+            // Try the new environments API with resolveEnvironment (recommended approach)
             if (pythonApi && pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
-                    const activeEnvironment = await pythonApi.environments.getActiveEnvironmentPath();
-                    Logger.debug(`🐍 🔍 Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
-                    return activeEnvironment?.path;
+                    const activeEnvironmentPath = await pythonApi.environments.getActiveEnvironmentPath();
+                    Logger.debug(`🐍 🔍 Python extension API active environment path: ${JSON.stringify(activeEnvironmentPath)}`);
+                    
+                    if (activeEnvironmentPath && activeEnvironmentPath.path) {
+                        // Resolve the environment to get complete details and ensure it's valid
+                        if (typeof pythonApi.environments.resolveEnvironment === 'function') {
+                            try {
+                                const resolvedEnvironment = await pythonApi.environments.resolveEnvironment(activeEnvironmentPath);
+                                Logger.debug(`🐍 🔍 Resolved environment details: ${JSON.stringify(resolvedEnvironment)}`);
+                                
+                                if (resolvedEnvironment) {
+                                    // Use the resolved environment's path, which should be more reliable
+                                    const resolvedPath = resolvedEnvironment.path || resolvedEnvironment.executable?.path || activeEnvironmentPath.path;
+                                    Logger.info(`🐍 ✅ Using resolved Python environment: ${resolvedPath}`);
+                                    return resolvedPath;
+                                } else {
+                                    Logger.warn('🐍 ⚠️ Environment resolution returned null, using original path');
+                                    return activeEnvironmentPath.path;
+                                }
+                            } catch (resolveError) {
+                                Logger.warn(`🐍 ⚠️ Environment resolution failed: ${resolveError}, using original path`);
+                                return activeEnvironmentPath.path;
+                            }
+                        } else {
+                            Logger.debug('🐍 ⚠️ resolveEnvironment not available, using original path');
+                            return activeEnvironmentPath.path;
+                        }
+                    }
                 } catch (envError) {
                     Logger.debug(`🐍 ⚠️ Environments API error: ${envError}`);
                     // Continue to VSCode configuration fallback
@@ -593,6 +618,57 @@ export class PythonManager {
 
     async getCurrentInterpreterPath(): Promise<string | undefined> {
         return await this.getPythonInterpreterFromExtension();
+    }
+
+    /**
+     * Get the resolved environment details for the current Python interpreter
+     * This provides complete environment information including executable path, environment variables, etc.
+     */
+    async getResolvedEnvironment(): Promise<any | undefined> {
+        try {
+            const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+            if (!pythonExtension) {
+                Logger.error('🐍 ❌ Python extension not found');
+                return undefined;
+            }
+
+            const pythonApi = await pythonExtension.activate();
+            if (!pythonApi || !pythonApi.environments) {
+                Logger.warn('🐍 ⚠️ Python extension API or environments API not available');
+                return undefined;
+            }
+
+            // Get the active environment path first
+            if (typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
+                try {
+                    const activeEnvironmentPath = await pythonApi.environments.getActiveEnvironmentPath();
+                    if (activeEnvironmentPath && activeEnvironmentPath.path) {
+                        // Resolve the environment to get complete details
+                        if (typeof pythonApi.environments.resolveEnvironment === 'function') {
+                            try {
+                                const resolvedEnvironment = await pythonApi.environments.resolveEnvironment(activeEnvironmentPath);
+                                Logger.debug(`🐍 🔍 Resolved environment details: ${JSON.stringify(resolvedEnvironment)}`);
+                                return resolvedEnvironment;
+                            } catch (resolveError) {
+                                Logger.warn(`🐍 ⚠️ Environment resolution failed: ${resolveError}`);
+                                return undefined;
+                            }
+                        } else {
+                            Logger.debug('🐍 ⚠️ resolveEnvironment not available');
+                            return undefined;
+                        }
+                    }
+                } catch (envError) {
+                    Logger.warn(`🐍 ⚠️ Failed to get active environment path: ${envError}`);
+                    return undefined;
+                }
+            }
+
+            return undefined;
+        } catch (error) {
+            Logger.warn(`🐍 ⚠️ Could not get resolved environment: ${error}`);
+            return undefined;
+        }
     }
 
     /**
