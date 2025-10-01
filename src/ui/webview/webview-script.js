@@ -237,12 +237,17 @@ function displayDataInfo(data, filePath) {
         
     // Display file information
     const fileInfo = document.getElementById('fileInfo');
-    let formatInfo = `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
+    let formatInfo = '';
+
     
     if (data.fileSize) {
         formatInfo += `<strong>Size:</strong> ${formatFileSize(data.fileSize)} &nbsp; &nbsp;`;
     }
+    
+    formatInfo += `<strong>Format:</strong> ${data.format || 'Unknown'} &nbsp; &nbsp;`;
 
+    formatInfo += `<br>`
+    
     if (data.format_info) {
         formatInfo += `
             <strong>File Extension:</strong> ${data.format_info.extension} &nbsp; &nbsp;

@@ -33,6 +33,7 @@ body {
     padding: 15px;
     border-radius: 6px;
     margin: 15px 0;
+    margin-left: 15px;
     font-weight: 500;
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
 }
@@ -74,7 +75,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 10px;
+    padding-left: 15px;
     /* border-bottom: 1px solid var(--vscode-panel-border); */
 }
 
@@ -167,6 +168,7 @@ select:focus {
     /* border: 1px solid var(--vscode-panel-border); */
     border-radius: 4px;
     /* margin: 2px 0; */
+    padding-left: 15px;
 }
 
 .info-section h3 {
@@ -250,7 +252,6 @@ select:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 300px;
-
 }
 
 .variable-item .variable-name {
@@ -323,7 +324,7 @@ select:focus {
 
 /* Representation styles */
 .html-representation {
-    max-height: 500px;
+    /* max-height: 500px; */
     overflow: auto;
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;

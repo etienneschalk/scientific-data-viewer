@@ -149,7 +149,7 @@ export class UIController {
                     throw new Error('Failed to load data file. The file might be corrupted or in an unsupported format.');
                 }
 
-                if (dataInfo.error && dataInfo.error.format_info.missing_packages) {
+                if (dataInfo.error && dataInfo.error.format_info.missing_packages.length > 0) {
                     this.dataProcessor.pythonManagerInstance.promptToInstallPackagesForFormat(
                         dataInfo.error.format_info.display_name, 
                         dataInfo.error.format_info.missing_packages,
