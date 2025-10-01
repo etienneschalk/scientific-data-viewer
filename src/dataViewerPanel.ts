@@ -74,6 +74,9 @@ export class DataViewerPanel {
                 ]
             }
         );
+        
+        // Set the icon for the panel
+        panel.iconPath = vscode.Uri.joinPath(extensionUri, 'media', 'icon.png');
         DataViewerPanel.create(panel, fileUri, dataProcessor);
     }
 
