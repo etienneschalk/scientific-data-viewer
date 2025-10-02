@@ -17,8 +17,6 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private currentFile: vscode.Uri | undefined;
     private fileHeaders: Map<string, HeaderItem[]> = new Map();
     private treeView: vscode.TreeView<HeaderItem> | undefined;
-    private fileExpansionState: Map<string, Set<string>> = new Map();
-    private originalIdToFileSpecificId: Map<string, string> = new Map();
 
     constructor() {
         Logger.info('📋 OutlineProvider initialized');
@@ -29,32 +27,6 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      */
     setTreeView(treeView: vscode.TreeView<HeaderItem>): void {
         this.treeView = treeView;
-        this.setupTreeViewListeners();
-    }
-
-    /**
-     * Set up listeners for tree view expansion/collapse events
-     */
-    private setupTreeViewListeners(): void {
-        if (!this.treeView) {
-            return;
-        }
-
-        // Listen for when elements are revealed (expanded)
-        this.treeView.onDidExpandElement((event) => {
-            if (event.element.id) {
-                const originalId = this.originalIdToFileSpecificId.get(event.element.id) || event.element.id;
-                this.setElementExpanded(originalId, true);
-            }
-        });
-
-        // Listen for when elements are collapsed
-        this.treeView.onDidCollapseElement((event) => {
-            if (event.element.id) {
-                const originalId = this.originalIdToFileSpecificId.get(event.element.id) || event.element.id;
-                this.setElementExpanded(originalId, false);
-            }
-        });
     }
 
     refresh(): void {
@@ -62,25 +34,18 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     }
 
     updateHeaders(headers: HeaderItem[], fileUri: vscode.Uri): void {
-        // Make headers file-specific by updating their IDs
-        const fileSpecificHeaders = this.makeHeadersFileSpecific(headers, fileUri);
-        
-        this.headers = fileSpecificHeaders;
+        this.headers = headers;
         this.currentFile = fileUri;
-        this.fileHeaders.set(fileUri.fsPath, fileSpecificHeaders);
-        Logger.info(`📋 Updated outline with ${fileSpecificHeaders.length} headers for file: ${fileUri.fsPath}`);
+        this.fileHeaders.set(fileUri.fsPath, headers);
+        Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${fileUri.fsPath}`);
         this.refresh();
     }
 
     getTreeItem(element: HeaderItem): vscode.TreeItem {
-        // Determine expansion state based on saved state
-        let collapsibleState = vscode.TreeItemCollapsibleState.None;
-        if (element.children.length > 0) {
-            const isExpanded = this.isElementExpanded(element);
-            collapsibleState = isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
-        }
-
-        const treeItem = new vscode.TreeItem(element.label, collapsibleState);
+        const treeItem = new vscode.TreeItem(
+            element.label,
+            element.children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+        );
 
         // Set icon based on header level
         switch (element.level) {
@@ -148,7 +113,6 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this.headers = [];
         this.currentFile = undefined;
         this.fileHeaders.clear();
-        this.fileExpansionState.clear();
         this.refresh();
     }
 
@@ -165,24 +129,14 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             return;
         }
         
-        // Save current expansion state before switching
-        if (this.currentFile) {
-            this.saveExpansionState();
-        }
-        
         const filePath = fileUri.fsPath;
         const headers = this.fileHeaders.get(filePath);
         
         if (headers) {
-            // Make headers file-specific by updating their IDs
-            const fileSpecificHeaders = this.makeHeadersFileSpecific(headers, fileUri);
-            this.headers = fileSpecificHeaders;
+            this.headers = headers;
             this.currentFile = fileUri;
             Logger.info(`📋 Switched outline to file: ${filePath}`);
             this.refresh();
-            
-            // Restore expansion state after switching
-            this.restoreExpansionState();
         } else {
             // If no headers are cached for this file, clear the outline
             this.headers = [];
@@ -212,12 +166,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         if (!fileUri || !fileUri.fsPath) {
             return undefined;
         }
-        const headers = this.fileHeaders.get(fileUri.fsPath);
-        if (headers) {
-            // Make headers file-specific by updating their IDs
-            return this.makeHeadersFileSpecific(headers, fileUri);
-        }
-        return undefined;
+        return this.fileHeaders.get(fileUri.fsPath);
     }
 
     /**
@@ -283,175 +232,5 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         
         collectElements(headers);
         return elements;
-    }
-
-    /**
-     * Generate a file-specific ID by incorporating the file path
-     */
-    private generateFileSpecificId(originalId: string, fileUri: vscode.Uri): string {
-        // Create a simple hash of the file path for uniqueness
-        const filePath = fileUri.fsPath;
-        const pathHash = this.simpleHash(filePath);
-        return `${originalId}-${pathHash}`;
-    }
-
-    /**
-     * Simple hash function for file paths
-     */
-    private simpleHash(str: string): string {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return Math.abs(hash).toString(36);
-    }
-
-    /**
-     * Make headers file-specific by updating their IDs and labels
-     */
-    private makeHeadersFileSpecific(headers: HeaderItem[], fileUri: vscode.Uri): HeaderItem[] {
-        const filePath = fileUri.fsPath;
-        const fileName = filePath.split('/').pop() || 'unknown';
-        const fileHash = this.simpleHash(filePath).substring(0, 4);
-        
-        // Clear the mapping for this file
-        this.originalIdToFileSpecificId.clear();
-        
-        const makeFileSpecific = (items: HeaderItem[]): HeaderItem[] => {
-            return items.map(item => {
-                const originalId = item.id;
-                const fileSpecificId = item.id ? this.generateFileSpecificId(item.id, fileUri) : undefined;
-                
-                // Add file identifier to label for testing
-                const fileSpecificLabel = `[${fileName}-${fileHash}] ${item.label}`;
-                // const fileSpecificLabel = item.label;
-                
-                // Track the mapping between original and file-specific IDs
-                if (originalId && fileSpecificId) {
-                    this.originalIdToFileSpecificId.set(fileSpecificId, originalId);
-                    Logger.debug(`📋 Made ID file-specific: ${originalId} -> ${fileSpecificId} for file: ${fileUri.fsPath}`);
-                }
-                
-                return {
-                    ...item,
-                    label: fileSpecificLabel,
-                    id: fileSpecificId,
-                    children: makeFileSpecific(item.children)
-                };
-            });
-        };
-
-        return makeFileSpecific(headers);
-    }
-
-    /**
-     * Check if an element should be expanded based on saved state
-     */
-    private isElementExpanded(element: HeaderItem): boolean {
-        if (!this.currentFile || !element.id) {
-            return false;
-        }
-        
-        // Get the original ID for this file-specific ID
-        const originalId = this.originalIdToFileSpecificId.get(element.id) || element.id;
-        const filePath = this.currentFile.fsPath;
-        const expansionState = this.fileExpansionState.get(filePath);
-        return expansionState ? expansionState.has(originalId) : false;
-    }
-
-    /**
-     * Save the current expansion state for the current file
-     * Note: This method is called before switching files to preserve the current state
-     */
-    public saveExpansionState(): void {
-        if (!this.currentFile) {
-            return;
-        }
-
-        const filePath = this.currentFile.fsPath;
-        // The expansion state is already being tracked by the event listeners
-        // This method is mainly for documentation and potential future enhancements
-        const currentState = this.fileExpansionState.get(filePath);
-        Logger.debug(`📋 Current expansion state for file: ${filePath} (${currentState?.size || 0} expanded items)`);
-    }
-
-    /**
-     * Set expansion state for specific elements
-     */
-    public setElementExpanded(elementId: string, expanded: boolean): void {
-        if (!this.currentFile) {
-            return;
-        }
-
-        const filePath = this.currentFile.fsPath;
-        let expansionState = this.fileExpansionState.get(filePath);
-        if (!expansionState) {
-            expansionState = new Set<string>();
-            this.fileExpansionState.set(filePath, expansionState);
-        }
-
-        if (expanded) {
-            expansionState.add(elementId);
-        } else {
-            expansionState.delete(elementId);
-        }
-
-        Logger.debug(`📋 Set element ${elementId} expansion state to ${expanded} for file: ${filePath}`);
-    }
-
-    /**
-     * Clear expansion state for a specific file
-     */
-    public clearExpansionState(fileUri?: vscode.Uri): void {
-        if (fileUri) {
-            this.fileExpansionState.delete(fileUri.fsPath);
-            Logger.debug(`📋 Cleared expansion state for file: ${fileUri.fsPath}`);
-        } else {
-            this.fileExpansionState.clear();
-            Logger.debug('📋 Cleared all expansion states');
-        }
-    }
-
-    /**
-     * Restore expansion state for the current file after switching
-     */
-    public restoreExpansionState(): void {
-        if (!this.currentFile || !this.treeView) {
-            return;
-        }
-
-        const filePath = this.currentFile.fsPath;
-        const expansionState = this.fileExpansionState.get(filePath);
-        
-        if (!expansionState || expansionState.size === 0) {
-            Logger.debug(`📋 No expansion state to restore for file: ${filePath}`);
-            return;
-        }
-
-        // Find elements that should be expanded and reveal them
-        const allElements = this.getAllElements(this.headers);
-        const elementsToExpand = allElements.filter(element => {
-            if (!element.id || element.children.length === 0) {
-                return false;
-            }
-            
-            // Get the original ID for this file-specific ID
-            const originalId = this.originalIdToFileSpecificId.get(element.id) || element.id;
-            return expansionState.has(originalId);
-        });
-
-        // Use a small delay to ensure the tree view is ready
-        setTimeout(() => {
-            elementsToExpand.forEach(element => {
-                try {
-                    this.treeView!.reveal(element, { select: false, focus: false, expand: true });
-                } catch (error) {
-                    Logger.debug(`Could not expand element: ${element.id}`);
-                }
-            });
-            Logger.debug(`📋 Restored expansion state for file: ${filePath} (${elementsToExpand.length} elements)`);
-        }, 100);
     }
 }
