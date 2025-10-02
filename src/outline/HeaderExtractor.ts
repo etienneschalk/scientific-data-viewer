@@ -1,5 +1,6 @@
 import { HeaderItem } from './OutlineProvider';
 import { Logger } from '../logger';
+import { DataInfoResult } from '../dataProcessor';
 
 export class HeaderExtractor {
     /**
@@ -175,6 +176,118 @@ export class HeaderExtractor {
                 children: []
             }
         ];
+    }
+
+    /**
+     * Create dynamic headers based on data information, including group details
+     */
+    static createDynamicDataViewerHeaders(dataInfo?: DataInfoResult): HeaderItem[] {
+        const baseHeaders = this.createDataViewerHeaders();
+        
+        if (!dataInfo) {
+            return baseHeaders;
+        }
+
+        // Find the group representation sections and enrich them with group information
+        const enrichedHeaders = baseHeaders.map(header => {
+            if (header.id === 'html-representation-for-groups' || header.id === 'text-representation-for-groups') {
+                const groupNames = Object.keys(dataInfo.xarray_html_repr_flattened || {});
+                
+                if (groupNames.length > 0) {
+                    const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
+                        label: groupName === '/' ? 'Root Group' : groupName,
+                        level: 2,
+                        id: `${header.id}-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
+                        children: this.createGroupSubHeaders(groupName, dataInfo, header.id || 'unknown')
+                    }));
+
+                    return {
+                        ...header,
+                        children: groupHeaders
+                    };
+                }
+            }
+            
+            return header;
+        });
+
+        Logger.info(`📋 Created dynamic outline with ${enrichedHeaders.length} main sections and group information`);
+        return enrichedHeaders;
+    }
+
+    /**
+     * Create sub-headers for a specific group (variables, coordinates, dimensions, attributes)
+     */
+    private static createGroupSubHeaders(groupName: string, dataInfo: DataInfoResult, parentHeaderId: string): HeaderItem[] {
+        const subHeaders: HeaderItem[] = [];
+
+        // Add variables section
+        const variables = dataInfo.variables_flattened[groupName] || [];
+        if (variables.length > 0) {
+            subHeaders.push({
+                label: `Variables (${variables.length})`,
+                level: 3,
+                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-variables`,
+                children: variables.map(variable => ({
+                    label: `${variable.name} (${variable.dtype})`,
+                    level: 4,
+                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-var-${variable.name}`,
+                    children: []
+                }))
+            });
+        }
+
+        // Add coordinates section
+        const coordinates = dataInfo.coordinates_flattened[groupName] || [];
+        if (coordinates.length > 0) {
+            subHeaders.push({
+                label: `Coordinates (${coordinates.length})`,
+                level: 3,
+                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-coordinates`,
+                children: coordinates.map(coord => ({
+                    label: `${coord.name} (${coord.dtype})`,
+                    level: 4,
+                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-coord-${coord.name}`,
+                    children: []
+                }))
+            });
+        }
+
+        // Add dimensions section
+        const dimensions = dataInfo.dimensions_flattened[groupName] || {};
+        const dimensionEntries = Object.entries(dimensions);
+        if (dimensionEntries.length > 0) {
+            subHeaders.push({
+                label: `Dimensions (${dimensionEntries.length})`,
+                level: 3,
+                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-dimensions`,
+                children: dimensionEntries.map(([dimName, size]) => ({
+                    label: `${dimName}: ${size}`,
+                    level: 4,
+                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-dim-${dimName}`,
+                    children: []
+                }))
+            });
+        }
+
+        // Add attributes section
+        const attributes = dataInfo.attributes_flattened[groupName] || {};
+        const attributeEntries = Object.entries(attributes);
+        if (attributeEntries.length > 0) {
+            subHeaders.push({
+                label: `Attributes (${attributeEntries.length})`,
+                level: 3,
+                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-attributes`,
+                children: attributeEntries.map(([attrName, value]) => ({
+                    label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                    level: 4,
+                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-attr-${attrName}`,
+                    children: []
+                }))
+            });
+        }
+
+        return subHeaders;
     }
 }
 

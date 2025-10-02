@@ -524,6 +524,13 @@ export class UIController {
         return this.stateManager.getState();
     }
 
+    /**
+     * Get the current data information
+     */
+    public getDataInfo(): any | null {
+        return this.stateManager.getState().data.dataInfo;
+    }
+
     public setPlottingCapabilities(enabled: boolean): void {
         this.stateManager.dispatch({ type: 'SET_PLOTTING_CAPABILITIES', payload: enabled });
     }

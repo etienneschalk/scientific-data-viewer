@@ -326,8 +326,11 @@ export class DataViewerPanel {
      */
     public updateOutline(): void {
         if (DataViewerPanel.outlineProvider) {
-            // Create headers for the data viewer sections
-            const headers = HeaderExtractor.createDataViewerHeaders();
+            // Get data information from the UI controller's state
+            const dataInfo = this._uiController.getDataInfo();
+            
+            // Create dynamic headers based on data information
+            const headers = HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
             DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
             Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
         }
