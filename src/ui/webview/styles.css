@@ -382,6 +382,7 @@ select:focus {
 .attribute-item {
     display: flex;
     align-items: flex-start;
+    gap: 4px;
 }
 .attribute-item:hover {
     background-color: var(--vscode-list-activeSelectionBackground);
@@ -400,7 +401,7 @@ select:focus {
 }
 
 /* Enhanced highlighting for individual attributes */
-/* .attribute-item.highlighted {
+/* .attribute-item.highlighted {q
     background-color: var(--vscode-textBlockQuote-background) !important;
     border-left: 3px solid var(--vscode-textBlockQuote-border) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
