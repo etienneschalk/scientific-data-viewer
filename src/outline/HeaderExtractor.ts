@@ -280,12 +280,32 @@ export class HeaderExtractor {
                 label: `Coordinates (${coordinates.length})`,
                 level: 3,
                 id: `${groupId}-coordinates`,
-                children: coordinates.map(coord => ({
-                    label: `${coord.name} (${coord.dtype})`,
-                    level: 4,
-                    id: `${groupId}-coord-${coord.name}`,
-                    children: []
-                }))
+                children: coordinates.map(coord => {
+                    const coordChildren: HeaderItem[] = [];
+                    
+                    // Add attributes for this coordinate if they exist
+                    if (coord.attributes && Object.keys(coord.attributes).length > 0) {
+                        const attrEntries = Object.entries(coord.attributes);
+                        coordChildren.push({
+                            label: `Attributes (${attrEntries.length})`,
+                            level: 5,
+                            id: `${groupId}-coord-${coord.name}-attributes`,
+                            children: attrEntries.map(([attrName, value]) => ({
+                                label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                                level: 6,
+                                id: `${groupId}-coord-${coord.name}-attr-${attrName}`,
+                                children: []
+                            }))
+                        });
+                    }
+                    
+                    return {
+                        label: `${coord.name} (${coord.dtype})`,
+                        level: 4,
+                        id: `${groupId}-coord-${coord.name}`,
+                        children: coordChildren
+                    };
+                })
             });
         }
 
@@ -296,12 +316,32 @@ export class HeaderExtractor {
                 label: `Variables (${variables.length})`,
                 level: 3,
                 id: `${groupId}-variables`,
-                children: variables.map(variable => ({
-                    label: `${variable.name} (${variable.dtype})`,
-                    level: 4,
-                    id: `${groupId}-var-${variable.name}`,
-                    children: []
-                }))
+                children: variables.map(variable => {
+                    const varChildren: HeaderItem[] = [];
+                    
+                    // Add attributes for this variable if they exist
+                    if (variable.attributes && Object.keys(variable.attributes).length > 0) {
+                        const attrEntries = Object.entries(variable.attributes);
+                        varChildren.push({
+                            label: `Attributes (${attrEntries.length})`,
+                            level: 5,
+                            id: `${groupId}-var-${variable.name}-attributes`,
+                            children: attrEntries.map(([attrName, value]) => ({
+                                label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                                level: 6,
+                                id: `${groupId}-var-${variable.name}-attr-${attrName}`,
+                                children: []
+                            }))
+                        });
+                    }
+                    
+                    return {
+                        label: `${variable.name} (${variable.dtype})`,
+                        level: 4,
+                        id: `${groupId}-var-${variable.name}`,
+                        children: varChildren
+                    };
+                })
             });
         }
 
