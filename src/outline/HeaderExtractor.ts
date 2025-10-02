@@ -202,7 +202,7 @@ export class HeaderExtractor {
             if (header.id === 'html-representation-for-groups' || header.id === 'text-representation-for-groups') {
                 if (groupNames.length > 0) {
                     const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
-                        label: groupName === '/' ? 'Root Group' : groupName,
+                        label: groupName,
                         level: 2,
                         id: `${header.id}-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
                         children: this.createGroupSubHeaders(groupName, dataInfo, header.id || 'unknown')
@@ -219,7 +219,7 @@ export class HeaderExtractor {
             if (header.id === 'data-groups') {
                 if (groupNames.length > 0) {
                     const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
-                        label: groupName === '/' ? 'Root Group' : groupName,
+                        label: groupName,
                         level: 2,
                         id: `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
                         children: this.createDataGroupSubHeaders(groupName, dataInfo)
