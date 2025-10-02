@@ -164,15 +164,15 @@ export class HeaderExtractor {
                 children: []
             },
             {
-                label: 'Data Groups',
-                level: 1,
-                id: 'data-groups',
-                children: []
-            },
-            {
                 label: 'Global Plot Controls',
                 level: 1,
                 id: 'plot-controls',
+                children: []
+            },
+            {
+                label: 'Data Groups',
+                level: 1,
+                id: 'data-groups',
                 children: []
             },
             {

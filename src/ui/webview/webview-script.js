@@ -508,7 +508,7 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
             const groups = Object.keys(htmlData);
             container.innerHTML = `
                     ${groups.map(groupName => `
-                        <div class="info-section">
+                        <div class="info-section" id="html-representation-for-groups-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}">
                             <details> <summary>${groupName}</summary>
                                 <div class="html-representation">
                                     ${htmlData[groupName] || '<p>No HTML representation available</p>'}
@@ -535,7 +535,7 @@ function displayTextRepresentation(textData, isDatatree = false) {
             const groups = Object.keys(textData);
             container.innerHTML = `
                     ${groups.map(groupName => `
-                        <div class="info-section">
+                        <div class="info-section" id="text-representation-for-groups-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}">
                             <details> <summary>${groupName}</summary>
                                 <div class="text-representation-container">
                                     <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
