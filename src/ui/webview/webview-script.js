@@ -1542,11 +1542,15 @@ function scrollToHeader(headerId, headerLabel) {
             console.log(`📋 Opened ${openedCount} parent details groups for: ${headerLabel}`);
         }
         
-        // Scroll to the element
-        element.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
+        // Scroll to the element with offset to account for sticky headers
+        const offset = 80; // Adjust this value based on your sticky header height
+        const elementRect = element.getBoundingClientRect();
+        const absoluteElementTop = elementRect.top + window.pageYOffset;
+        const offsetPosition = absoluteElementTop - offset;
+        
+        window.scrollTo({
+            top: Math.max(0, offsetPosition), // Ensure we don't scroll above the page
+            behavior: 'smooth'
         });
         
         // Add a temporary highlight effect
