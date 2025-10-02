@@ -1566,12 +1566,31 @@ function scrollToHeader(headerId, headerLabel) {
             }
             
             console.log(`📋 Looking for parent element: ${parentId}`);
-            element = document.getElementById(parentId);
+            const parentElement = document.getElementById(parentId);
             
             // If we found the parent, ensure it's a details element and open it
-            if (element && element.tagName === 'DETAILS') {
-                element.open = true;
+            if (parentElement && parentElement.tagName === 'DETAILS') {
+                parentElement.open = true;
                 console.log(`📋 Opened details element for: ${parentId}`);
+                
+                // Now try to find the specific attribute within the details content
+                // Look for attribute items that match the header label
+                const attributeItems = parentElement.querySelectorAll('.attribute-item');
+                for (const attrItem of attributeItems) {
+                    const attrName = attrItem.querySelector('.attribute-name');
+                    if (attrName && attrName.textContent.trim() === headerLabel.split(':')[0].trim()) {
+                        element = attrItem;
+                        console.log(`📋 Found specific attribute: ${headerLabel}`);
+                        break;
+                    }
+                }
+                
+                // If we didn't find the specific attribute, fall back to the parent element
+                if (!element) {
+                    element = parentElement;
+                }
+            } else {
+                element = parentElement;
             }
         }
     }
@@ -1653,10 +1672,21 @@ function scrollToHeader(headerId, headerLabel) {
         });
         
         // Add a temporary highlight effect
-        element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
-        element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
-        element.style.paddingLeft = '8px';
-        element.style.borderRadius = '4px';
+        if (element.classList.contains('attribute-item')) {
+            // Special highlighting for individual attribute items
+            element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
+            element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
+            element.style.paddingLeft = '8px';
+            element.style.borderRadius = '4px';
+            element.style.marginLeft = '8px';
+            element.style.marginRight = '8px';
+        } else {
+            // Standard highlighting for other elements
+            element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
+            element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
+            element.style.paddingLeft = '8px';
+            element.style.borderRadius = '4px';
+        }
         
         // Remove highlight after 3 seconds
         setTimeout(() => {
@@ -1664,6 +1694,8 @@ function scrollToHeader(headerId, headerLabel) {
             element.style.borderLeft = '';
             element.style.paddingLeft = '';
             element.style.borderRadius = '';
+            element.style.marginLeft = '';
+            element.style.marginRight = '';
         }, 3000);
         
         console.log(`📋 Successfully scrolled to header: ${headerLabel}`);
