@@ -379,11 +379,11 @@ select:focus {
 .attributes {
     padding-left: 10px;
 }
-.attribute-item {
+/* .attribute-item {
     display: flex;
     align-items: flex-start;
     gap: 4px;
-}
+} */
 .attribute-item:hover {
     background-color: var(--vscode-list-activeSelectionBackground);
 }
