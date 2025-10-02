@@ -368,4 +368,11 @@ export class DataViewerPanel {
         }
     }
 
+    /**
+     * Get the unique ID of this data viewer panel
+     */
+    public getId(): number {
+        return this._uiController.getId();
+    }
+
 }

@@ -525,6 +525,13 @@ export class UIController {
     }
 
     /**
+     * Get the unique ID of this UI controller
+     */
+    public getId(): number {
+        return this.id;
+    }
+
+    /**
      * Get the current data information
      */
     public getDataInfo(): any | null {

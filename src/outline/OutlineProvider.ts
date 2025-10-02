@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Logger } from '../logger';
+import { DataViewerPanel } from '../dataViewerPanel';
 
 export interface HeaderItem {
     label: string;
@@ -46,7 +47,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             element.label,
             element.children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
         );
-
+        
         // Set icon based on header level
         switch (element.level) {
             case 1:
@@ -80,6 +81,12 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
 
         // Add context value for potential future context menu actions
         treeItem.contextValue = `header-${element.level}`;
+
+        // Set ID based on active pane ID and element properties
+        const activePaneId = this.getActivePaneId();
+        const sanitizedLabel = this.sanitizeLabel(element.label);
+        const uniqueId = this.generateUniqueId(activePaneId, element.level, sanitizedLabel, element);
+        treeItem.id = uniqueId;
 
         return treeItem;
     }
@@ -232,5 +239,79 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         
         collectElements(headers);
         return elements;
+    }
+
+    /**
+     * Get the active pane ID for the current file
+     */
+    private getActivePaneId(): number {
+        if (!this.currentFile) {
+            return 0; // Default ID when no current file
+        }
+
+        const activePanel = DataViewerPanel.getActivePanel(this.currentFile);
+        if (activePanel) {
+            return activePanel.getId();
+        }
+
+        return 0; // Default ID when no active panel found
+    }
+
+    /**
+     * Sanitize a label to be safe for use in IDs
+     */
+    private sanitizeLabel(label: string): string {
+        if (!label || label.trim() === '') {
+            return 'unnamed';
+        }
+        
+        // Replace special characters and spaces with underscores
+        // Keep only alphanumeric characters, underscores, and hyphens
+        return label
+            .trim()
+            .replace(/[^a-zA-Z0-9\s\-_]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
+            .substring(0, 50); // Limit length to prevent very long IDs
+    }
+
+    /**
+     * Generate a unique ID for a tree item
+     */
+    private generateUniqueId(activePaneId: number, level: number, sanitizedLabel: string, element: HeaderItem): string {
+        // Create a base ID
+        let baseId = `${activePaneId}-${level}-${sanitizedLabel}`;
+        
+        // If the element has an existing ID, use it as part of the unique identifier
+        if (element.id) {
+            baseId += `-${element.id}`;
+        }
+        
+        // Add line number if available to ensure uniqueness
+        if (element.line !== undefined) {
+            baseId += `-line${element.line}`;
+        }
+        
+        // If the label is still empty or very short, add a hash of the full label
+        if (sanitizedLabel === 'unnamed' || sanitizedLabel.length < 3) {
+            const labelHash = this.simpleHash(element.label || 'empty');
+            baseId += `-${labelHash}`;
+        }
+        
+        return baseId;
+    }
+
+    /**
+     * Simple hash function for generating short unique identifiers
+     */
+    private simpleHash(str: string): string {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash).toString(36).substring(0, 6);
     }
 }
