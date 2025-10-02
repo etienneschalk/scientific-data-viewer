@@ -217,8 +217,8 @@ function generateAttributesContent(attributes) {
         const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
         return `
             <div class="attribute-item">
-                <span class="attribute-name" title="${attrName}">${attrName}</span>
-                <span class="attribute-value" title="${valueStr}">: ${valueStr}</span>
+                <span class="attribute-name" title="${attrName}">${attrName} : </span>
+                <span class="attribute-value" title="${valueStr}">${valueStr}</span>
             </div>
         `;
     }).join('');
@@ -326,40 +326,23 @@ function displayDataInfo(data, filePath) {
                         const attributesContent = hasAttributes ? 
                             generateAttributesContent(variable.attributes) : '';
                         
-                        if (hasAttributes) {
-                            return `
-                                <details class="variable-details" id="${coordId}" data-variable="${variable.name}">
-                                    <summary class="variable-summary">
-                                        <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                            <code>${escapeHtml(variable.dtype)}</code>
-                                        </span>
-                                        <span class="dtype-shape" title="${shapeStr}">
-                                            ${shapeStr}
-                                        </span>
-                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    </summary>
-                                    ${attributesContent}
-                                </details>
-                            `;
-                        } else {
-                            return `
-                                <div class="variable-row" id="${coordId}" data-variable="${variable.name}">
-                                    <div class="variable-item">
-                                        <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                            <code>${escapeHtml(variable.dtype)}</code>
-                                        </span>
-                                        <span class="dtype-shape" title="${shapeStr}">
-                                            ${shapeStr}
-                                        </span>
-                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    </div>
-                                </div>
-                            `;
-                        }
+                        return `
+                            <details class="variable-details" id="${coordId}" data-variable="${variable.name}">
+                                <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+                                    <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                    <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                        <code>${escapeHtml(variable.dtype)}</code>
+                                    </span>
+                                    <span class="dtype-shape" title="${shapeStr}">
+                                        ${shapeStr}
+                                    </span>
+                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                </summary>
+                                ${attributesContent}
+                            </details>
+                        `;
+    
                     }).join('') :
                     '<p>No coordinates found in this group.</p>';
                 
@@ -381,42 +364,23 @@ function displayDataInfo(data, filePath) {
                         const plotControls = hasPlottingCapabilities ? 
                             generateVariablePlotControls(fullVariableName, true) : '';
                         
-                        if (hasAttributes) {
-                            return `
-                                <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
-                                    <summary class="variable-summary">
-                                        <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                            <code>${escapeHtml(variable.dtype)}</code>
-                                        </span>
-                                        <span class="dtype-shape" title="${shapeStr}">
-                                            ${shapeStr}
-                                        </span>
-                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    </summary>
-                                    ${attributesContent}
-                                    ${plotControls}
-                                </details>
-                            `;
-                        } else {
-                            return `
-                                <div class="variable-row" id="${varId}" data-variable="${fullVariableName}">
-                                    <div class="variable-item">
-                                        <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                            <code>${escapeHtml(variable.dtype)}</code>
-                                        </span>
-                                        <span class="dtype-shape" title="${shapeStr}">
-                                            ${shapeStr}
-                                        </span>
-                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    </div>
-                                    ${plotControls}
-                                </div>
-                            `;
-                        }
+                        return `
+                            <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
+                                <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+                                    <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
+                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                    <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                        <code>${escapeHtml(variable.dtype)}</code>
+                                    </span>
+                                    <span class="dtype-shape" title="${shapeStr}">
+                                        ${shapeStr}
+                                    </span>
+                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                </summary>
+                                ${attributesContent}
+                                ${plotControls}
+                            </details>
+                        `;
                     }).join('') :
                     '<p>No variables found in this group.</p>';
                 
@@ -1578,10 +1542,28 @@ function scrollToHeader(headerId, headerLabel) {
                 const attributeItems = parentElement.querySelectorAll('.attribute-item');
                 for (const attrItem of attributeItems) {
                     const attrName = attrItem.querySelector('.attribute-name');
-                    if (attrName && attrName.textContent.trim() === headerLabel.split(':')[0].trim()) {
-                        element = attrItem;
-                        console.log(`📋 Found specific attribute: ${headerLabel}`);
-                        break;
+                    const attrValue = attrItem.querySelector('.attribute-value');
+                    
+                    if (attrName) {
+                        const attrNameText = attrName.textContent.trim().replace(' :', '').trim();
+                        const headerName = headerLabel.split(':')[0].trim();
+                        
+                        // Match by attribute name
+                        if (attrNameText === headerName) {
+                            element = attrItem;
+                            console.log(`📋 Found specific attribute by name: ${headerName}`);
+                            break;
+                        }
+                        
+                        // Also try to match the full label if it contains the value
+                        if (attrValue) {
+                            const fullAttrText = `${attrNameText}: ${attrValue.textContent.trim()}`;
+                            if (fullAttrText === headerLabel.trim()) {
+                                element = attrItem;
+                                console.log(`📋 Found specific attribute by full text: ${headerLabel}`);
+                                break;
+                            }
+                        }
                     }
                 }
                 
@@ -1673,30 +1655,28 @@ function scrollToHeader(headerId, headerLabel) {
         
         // Add a temporary highlight effect
         if (element.classList.contains('attribute-item')) {
-            // Special highlighting for individual attribute items
-            element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
-            element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
-            element.style.paddingLeft = '8px';
-            element.style.borderRadius = '4px';
-            element.style.marginLeft = '8px';
-            element.style.marginRight = '8px';
+            // Special highlighting for individual attribute items using CSS class
+            element.classList.add('highlighted');
+            
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+                element.classList.remove('highlighted');
+            }, 3000);
         } else {
             // Standard highlighting for other elements
             element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
             element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
             element.style.paddingLeft = '8px';
             element.style.borderRadius = '4px';
+            
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+                element.style.borderLeft = '';
+                element.style.paddingLeft = '';
+                element.style.borderRadius = '';
+            }, 3000);
         }
-        
-        // Remove highlight after 3 seconds
-        setTimeout(() => {
-            element.style.backgroundColor = '';
-            element.style.borderLeft = '';
-            element.style.paddingLeft = '';
-            element.style.borderRadius = '';
-            element.style.marginLeft = '';
-            element.style.marginRight = '';
-        }, 3000);
         
         console.log(`📋 Successfully scrolled to header: ${headerLabel}`);
     } else {

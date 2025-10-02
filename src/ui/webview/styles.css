@@ -270,7 +270,6 @@ select:focus {
 }
 
 
-
 .variable-item .size {
     flex: 1;
     color: var(--vscode-descriptionForeground);
@@ -311,8 +310,24 @@ select:focus {
     content: "📄";
 }
 
+.variable-summary.not-clickable:active {
+    pointer-events: none;
+}
+
+.variable-summary.not-clickable::before {
+    opacity: 0.5;
+}
+
 .variable-summary:hover {
     background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+.variable-summary.not-clickable {
+    cursor: default;
+}
+
+.variable-summary.not-clickable:hover {
+    background-color: transparent;
 }
 
 .variable-summary .variable-name {
@@ -373,6 +388,24 @@ select:focus {
     color: var(--vscode-descriptionForeground);
     word-break: break-word;
     flex: 1;
+}
+
+/* Enhanced highlighting for individual attributes */
+.attribute-item.highlighted {
+    background-color: var(--vscode-textBlockQuote-background) !important;
+    border-left: 3px solid var(--vscode-textBlockQuote-border) !important;
+    padding-left: 8px !important;
+    border-radius: 4px !important;
+    margin-left: 8px !important;
+    margin-right: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    animation: attributePulse 0.5s ease-in-out;
+}
+
+@keyframes attributePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
 } 
 
 /* Responsive design for small screens */
