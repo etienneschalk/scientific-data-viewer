@@ -279,6 +279,54 @@ select:focus {
     max-width: 100px;
 }
 
+/* Attributes button styling */
+.attributes-button {
+    background: none;
+    color: var(--vscode-foreground);
+    padding: 0;
+    padding-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.attributes-button:disabled {
+    background: none;
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+.attributes-button:hover {
+    background: none;
+    color: var(--vscode-button-hoverBackground);
+}
+
+.attributes-button:active {
+    background: none;
+    color: var(--vscode-button-activeBackground);
+}
+
+/* Attributes details styling */
+.attributes-container {
+    background-color: var(--vscode-textCodeBlock-background);
+    padding: 4px 8px;
+}
+.attribute-item {
+    display: flex;
+    align-items: flex-start;
+}
+
+.attribute-name {
+    font-weight: bold;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.attribute-value {
+    color: var(--vscode-descriptionForeground);
+    word-break: break-word;
+    flex: 1;
+} 
+
 /* Responsive design for small screens */
 @media (max-width: 480px) {
     .variable-item {
