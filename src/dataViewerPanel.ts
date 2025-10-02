@@ -48,7 +48,7 @@ export class DataViewerPanel {
     /**
      * Notify that this panel has become active
      */
-    public notifyPanelActive(): void {
+    private notifyPanelActive(): void {
         if (DataViewerPanel.outlineProvider && this._currentFile) {
             Logger.info(`📋 Panel became active for file: ${this._currentFile.fsPath}`);
             
@@ -216,8 +216,8 @@ export class DataViewerPanel {
             Logger.info(`[UIController] Success: ${success}`);
             DataViewerPanel.removePanelWithError(this);
         }, () => {
-            // Update outline when data is loaded
-            this.updateOutline();
+            // // Update outline when data is loaded
+            // this.updateOutline();
             // Also notify that the panel is active to ensure proper outline display
             this.notifyPanelActive();
         });
@@ -240,8 +240,8 @@ export class DataViewerPanel {
         // Initialize outline with data viewer headers
         this._initializeOutline();
 
-        // Notify that this panel is active to ensure outline is displayed
-        this.notifyPanelActive();
+        // // Notify that this panel is active to ensure outline is displayed
+        // this.notifyPanelActive();
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();
@@ -331,9 +331,9 @@ export class DataViewerPanel {
     private _initializeOutline(): void {
         if (DataViewerPanel.outlineProvider) {
             // Create headers for the data viewer sections
-            const headers = HeaderExtractor.createDataViewerHeaders();
-            DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
-            Logger.info(`📋 Initialized outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
+            // const headers = HeaderExtractor.createDataViewerHeaders();
+            // DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
+            // Logger.info(`📋 Initialized outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
         } else {
             Logger.warn('📋 Outline provider not available');
         }
@@ -350,7 +350,6 @@ export class DataViewerPanel {
             // Create dynamic headers based on data information
             const headers = HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
             DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
-            Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
         }
     }
 
