@@ -121,11 +121,35 @@
         },
         {
           "command": "scientificDataViewer.collapseAll",
-          "when": "scientificDataViewer.outline == focus"
+          "when": "view == scientificDataViewer.outline"
         },
         {
           "command": "scientificDataViewer.expandAll",
-          "when": "scientificDataViewer.outline == focus"
+          "when": "view == scientificDataViewer.outline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "scientificDataViewer.collapseAll",
+          "when": "view == scientificDataViewer.outline",
+          "group": "navigation"
+        },
+        {
+          "command": "scientificDataViewer.expandAll",
+          "when": "view == scientificDataViewer.outline",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "scientificDataViewer.collapseAll",
+          "when": "view == scientificDataViewer.outline",
+          "group": "navigation"
+        },
+        {
+          "command": "scientificDataViewer.expandAll",
+          "when": "view == scientificDataViewer.outline",
+          "group": "navigation"
         }
       ]
     },

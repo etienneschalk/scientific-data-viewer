@@ -173,9 +173,9 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         }
 
         try {
-            // Get all visible elements and collapse them
-            const visibleElements = this.getAllElements(this.headers);
-            visibleElements.forEach(element => {
+            // Get all elements and collapse them using reveal
+            const allElements = this.getAllElements(this.headers);
+            allElements.forEach(element => {
                 if (element.children.length > 0) {
                     this.treeView!.reveal(element, { select: false, focus: false, expand: false });
                 }
@@ -196,7 +196,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         }
 
         try {
-            // Get all elements and expand them
+            // Get all elements and expand them using reveal
             const allElements = this.getAllElements(this.headers);
             allElements.forEach(element => {
                 if (element.children.length > 0) {
