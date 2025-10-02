@@ -15,6 +15,7 @@ from dataclasses import asdict, dataclass, field
 import io
 import json
 import logging
+from math import e
 import os
 from pathlib import Path, PurePosixPath
 import sys
@@ -332,7 +333,9 @@ def is_spatial_dimension(dim_name):
     return any(pattern in dim_name.lower() for pattern in spatial_patterns)
 
 
-def detect_plotting_strategy(var):
+def detect_plotting_strategy(
+    var: xr.DataArray,
+) -> Literal["2d_classic", "3d_col", "4d_col_row", "2d_classic_isel", "default"]:
     """Detect the best plotting strategy based on variable dimensions."""
     dims = list(var.dims)
     ndim = var.ndim
@@ -357,9 +360,11 @@ def detect_plotting_strategy(var):
             # and is_spatial_dimension(dims[-2])
             # and is_spatial_dimension(dims[-1])
         ):
-            logger.info("Using 3D plotting strategy with col parameter")
-            return "3d_col"
-
+            if var.shape[0] == 1:
+                return "2d_classic_isel"
+            else:
+                logger.info("Using 3D plotting strategy with col parameter")
+                return "3d_col"
     elif ndim == 4:
         # Check if last two dimensions are spatial
         if (
@@ -441,12 +446,18 @@ def create_plot(file_path: Path, variable_path: str, plot_type: str = "auto"):
             logger.info("Creating 2D spatial plot")
             ax = var.plot.imshow(cmap="viridis")
             plt.gca().set_aspect("equal")
+        elif strategy == "2d_classic_isel":
+            logger.info("Creating 2D spatial plot with isel")
+            first_dim = var.dims[0]
+            ax = var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
+            plt.gca().set_aspect("equal")
         elif strategy == "3d_col":
             # 3D data with spatial dimensions - use col parameter
             logger.info("Creating 3D plot with col parameter")
             first_dim = var.dims[0]
-            ax = var.plot.imshow(col=first_dim, cmap="viridis", aspect=1, size=4)
-
+            ax = var.plot.imshow(
+                col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=4
+            )
         elif strategy == "4d_col_row":
             # 4D data with spatial dimensions - use col and row parameters
             logger.info("Creating 4D plot with col and row parameters")
