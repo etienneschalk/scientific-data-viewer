@@ -75,11 +75,6 @@
         "category": "Scientific Data Viewer"
       },
       {
-        "command": "scientificDataViewer.scrollToHeader",
-        "title": "Scroll to Header",
-        "category": "Scientific Data Viewer"
-      },
-      {
         "command": "scientificDataViewer.collapseAll",
         "title": "Collapse All",
         "category": "Scientific Data Viewer"
