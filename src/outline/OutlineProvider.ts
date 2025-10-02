@@ -44,7 +44,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     getTreeItem(element: HeaderItem): vscode.TreeItem {
         const treeItem = new vscode.TreeItem(
             element.label,
-            element.children.length > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None
+            element.children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
         );
 
         // Set icon based on header level
