@@ -344,24 +344,25 @@ function displayDataInfo(data, filePath) {
                     }).join('') :
                     '<p>No variables found in this group.</p>';
                 
+                const groupId = `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`;
                 return `
-                <div class="info-section">
+                <div class="info-section" id="${groupId}">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
-                        <div class="info-section">
+                        <div class="info-section" id="${groupId}-dimensions">
                             <details class="" open> <summary><h4>Dimensions</h4></summary>
                                 <div class="dimensions">
                                     ${dimensionsHtml}
                                 </div>
                             </details>  
                         </div>  
-                        <div class="info-section">
+                        <div class="info-section" id="${groupId}-coordinates">
                             <details class="" open> <summary><h4>Coordinates</h4></summary>
                                 <div class="coordinates">
                                     ${coordinatesHtml}
                                 </div>
                             </details>
                         </div>
-                        <div class="info-section">
+                        <div class="info-section" id="${groupId}-variables">
                             <details class="" open> <summary><h4>Variables</h4></summary>
                                 <div class="variables">
                                     ${variablesHtml}

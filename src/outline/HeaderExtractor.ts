@@ -164,6 +164,12 @@ export class HeaderExtractor {
                 children: []
             },
             {
+                label: 'Data Groups',
+                level: 1,
+                id: 'data-groups',
+                children: []
+            },
+            {
                 label: 'Global Plot Controls',
                 level: 1,
                 id: 'plot-controls',
@@ -188,17 +194,35 @@ export class HeaderExtractor {
             return baseHeaders;
         }
 
-        // Find the group representation sections and enrich them with group information
+        // Find sections that should be enriched with group information
         const enrichedHeaders = baseHeaders.map(header => {
+            const groupNames = Object.keys(dataInfo.xarray_html_repr_flattened || {});
+            
+            // Enrich group representation sections
             if (header.id === 'html-representation-for-groups' || header.id === 'text-representation-for-groups') {
-                const groupNames = Object.keys(dataInfo.xarray_html_repr_flattened || {});
-                
                 if (groupNames.length > 0) {
                     const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
                         label: groupName === '/' ? 'Root Group' : groupName,
                         level: 2,
                         id: `${header.id}-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
                         children: this.createGroupSubHeaders(groupName, dataInfo, header.id || 'unknown')
+                    }));
+
+                    return {
+                        ...header,
+                        children: groupHeaders
+                    };
+                }
+            }
+            
+            // Enrich Data Groups section with actual group information
+            if (header.id === 'data-groups') {
+                if (groupNames.length > 0) {
+                    const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
+                        label: groupName === '/' ? 'Root Group' : groupName,
+                        level: 2,
+                        id: `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
+                        children: this.createDataGroupSubHeaders(groupName, dataInfo)
                     }));
 
                     return {
@@ -282,6 +306,65 @@ export class HeaderExtractor {
                     label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
                     level: 4,
                     id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-attr-${attrName}`,
+                    children: []
+                }))
+            });
+        }
+
+        return subHeaders;
+    }
+
+    /**
+     * Create sub-headers for data group sections (Dimensions, Coordinates, Variables)
+     */
+    private static createDataGroupSubHeaders(groupName: string, dataInfo: DataInfoResult): HeaderItem[] {
+        const subHeaders: HeaderItem[] = [];
+        const groupId = `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+        // Add dimensions section
+        const dimensions = dataInfo.dimensions_flattened[groupName] || {};
+        const dimensionEntries = Object.entries(dimensions);
+        if (dimensionEntries.length > 0) {
+            subHeaders.push({
+                label: `Dimensions (${dimensionEntries.length})`,
+                level: 3,
+                id: `${groupId}-dimensions`,
+                children: dimensionEntries.map(([dimName, size]) => ({
+                    label: `${dimName}: ${size}`,
+                    level: 4,
+                    id: `${groupId}-dim-${dimName}`,
+                    children: []
+                }))
+            });
+        }
+
+        // Add coordinates section
+        const coordinates = dataInfo.coordinates_flattened[groupName] || [];
+        if (coordinates.length > 0) {
+            subHeaders.push({
+                label: `Coordinates (${coordinates.length})`,
+                level: 3,
+                id: `${groupId}-coordinates`,
+                children: coordinates.map(coord => ({
+                    label: `${coord.name} (${coord.dtype})`,
+                    level: 4,
+                    id: `${groupId}-coord-${coord.name}`,
+                    children: []
+                }))
+            });
+        }
+
+        // Add variables section
+        const variables = dataInfo.variables_flattened[groupName] || [];
+        if (variables.length > 0) {
+            subHeaders.push({
+                label: `Variables (${variables.length})`,
+                level: 3,
+                id: `${groupId}-variables`,
+                children: variables.map(variable => ({
+                    label: `${variable.name} (${variable.dtype})`,
+                    level: 4,
+                    id: `${groupId}-var-${variable.name}`,
                     children: []
                 }))
             });
