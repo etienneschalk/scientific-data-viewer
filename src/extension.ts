@@ -277,6 +277,9 @@ export function activate(context: vscode.ExtensionContext) {
         treeDataProvider: outlineProvider
     });
 
+    // Set tree view reference for collapse/expand operations
+    outlineProvider.setTreeView(outlineTreeView);
+
     // Make outline provider accessible to DataViewerPanel
     DataViewerPanel.setOutlineProvider(outlineProvider);
 
@@ -307,6 +310,24 @@ export function activate(context: vscode.ExtensionContext) {
             Logger.warn('📋 No active DataViewerPanel found for scrolling');
         }
     });
+
+    // Collapse all command for outline
+    const collapseAllCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.collapseAll',
+        () => {
+            Logger.info('🎮 📋 Command: Collapsing all outline items');
+            outlineProvider.collapseAll();
+        }
+    );
+
+    // Expand all command for outline
+    const expandAllCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.expandAll',
+        () => {
+            Logger.info('🎮 📋 Command: Expanding all outline items');
+            outlineProvider.expandAll();
+        }
+    );
 
     // Register context menu for supported files
     const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
@@ -430,6 +451,8 @@ export function activate(context: vscode.ExtensionContext) {
         showSettingsCommand,
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
+        collapseAllCommand,
+        expandAllCommand,
         outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,

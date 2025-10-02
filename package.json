@@ -78,6 +78,16 @@
         "command": "scientificDataViewer.scrollToHeader",
         "title": "Scroll to Header",
         "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.collapseAll",
+        "title": "Collapse All",
+        "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.expandAll",
+        "title": "Expand All",
+        "category": "Scientific Data Viewer"
       }
     ],
     "menus": {
@@ -108,6 +118,14 @@
         {
           "command": "scientificDataViewer.openDeveloperTools",
           "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.collapseAll",
+          "when": "scientificDataViewer.outline == focus"
+        },
+        {
+          "command": "scientificDataViewer.expandAll",
+          "when": "scientificDataViewer.outline == focus"
         }
       ]
     },

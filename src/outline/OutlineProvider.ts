@@ -16,9 +16,17 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private headers: HeaderItem[] = [];
     private currentFile: vscode.Uri | undefined;
     private fileHeaders: Map<string, HeaderItem[]> = new Map();
+    private treeView: vscode.TreeView<HeaderItem> | undefined;
 
     constructor() {
         Logger.info('📋 OutlineProvider initialized');
+    }
+
+    /**
+     * Set the tree view reference for collapse/expand operations
+     */
+    setTreeView(treeView: vscode.TreeView<HeaderItem>): void {
+        this.treeView = treeView;
     }
 
     refresh(): void {
@@ -153,5 +161,70 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             return undefined;
         }
         return this.fileHeaders.get(fileUri.fsPath);
+    }
+
+    /**
+     * Collapse all items in the tree view
+     */
+    collapseAll(): void {
+        if (!this.treeView) {
+            Logger.warn('📋 Tree view not available for collapse operation');
+            return;
+        }
+
+        try {
+            // Get all visible elements and collapse them
+            const visibleElements = this.getAllElements(this.headers);
+            visibleElements.forEach(element => {
+                if (element.children.length > 0) {
+                    this.treeView!.reveal(element, { select: false, focus: false, expand: false });
+                }
+            });
+            Logger.info('📋 Collapsed all outline items');
+        } catch (error) {
+            Logger.error(`❌ Error collapsing all items: ${error}`);
+        }
+    }
+
+    /**
+     * Expand all items in the tree view
+     */
+    expandAll(): void {
+        if (!this.treeView) {
+            Logger.warn('📋 Tree view not available for expand operation');
+            return;
+        }
+
+        try {
+            // Get all elements and expand them
+            const allElements = this.getAllElements(this.headers);
+            allElements.forEach(element => {
+                if (element.children.length > 0) {
+                    this.treeView!.reveal(element, { select: false, focus: false, expand: true });
+                }
+            });
+            Logger.info('📋 Expanded all outline items');
+        } catch (error) {
+            Logger.error(`❌ Error expanding all items: ${error}`);
+        }
+    }
+
+    /**
+     * Get all elements recursively from the headers array
+     */
+    private getAllElements(headers: HeaderItem[]): HeaderItem[] {
+        const elements: HeaderItem[] = [];
+        
+        const collectElements = (items: HeaderItem[]) => {
+            items.forEach(item => {
+                elements.push(item);
+                if (item.children.length > 0) {
+                    collectElements(item.children);
+                }
+            });
+        };
+        
+        collectElements(headers);
+        return elements;
     }
 }
