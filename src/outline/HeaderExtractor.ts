@@ -241,77 +241,12 @@ export class HeaderExtractor {
 
     /**
      * Create sub-headers for a specific group (variables, coordinates, dimensions, attributes)
+     * For xarray HTML and Text representations, only show group names without detailed sub-items
      */
     private static createGroupSubHeaders(groupName: string, dataInfo: DataInfoResult, parentHeaderId: string): HeaderItem[] {
-        const subHeaders: HeaderItem[] = [];
-
-        // Add variables section
-        const variables = dataInfo.variables_flattened[groupName] || [];
-        if (variables.length > 0) {
-            subHeaders.push({
-                label: `Variables (${variables.length})`,
-                level: 3,
-                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-variables`,
-                children: variables.map(variable => ({
-                    label: `${variable.name} (${variable.dtype})`,
-                    level: 4,
-                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-var-${variable.name}`,
-                    children: []
-                }))
-            });
-        }
-
-        // Add coordinates section
-        const coordinates = dataInfo.coordinates_flattened[groupName] || [];
-        if (coordinates.length > 0) {
-            subHeaders.push({
-                label: `Coordinates (${coordinates.length})`,
-                level: 3,
-                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-coordinates`,
-                children: coordinates.map(coord => ({
-                    label: `${coord.name} (${coord.dtype})`,
-                    level: 4,
-                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-coord-${coord.name}`,
-                    children: []
-                }))
-            });
-        }
-
-        // Add dimensions section
-        const dimensions = dataInfo.dimensions_flattened[groupName] || {};
-        const dimensionEntries = Object.entries(dimensions);
-        if (dimensionEntries.length > 0) {
-            subHeaders.push({
-                label: `Dimensions (${dimensionEntries.length})`,
-                level: 3,
-                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-dimensions`,
-                children: dimensionEntries.map(([dimName, size]) => ({
-                    label: `${dimName}: ${size}`,
-                    level: 4,
-                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-dim-${dimName}`,
-                    children: []
-                }))
-            });
-        }
-
-        // Add attributes section
-        const attributes = dataInfo.attributes_flattened[groupName] || {};
-        const attributeEntries = Object.entries(attributes);
-        if (attributeEntries.length > 0) {
-            subHeaders.push({
-                label: `Attributes (${attributeEntries.length})`,
-                level: 3,
-                id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-attributes`,
-                children: attributeEntries.map(([attrName, value]) => ({
-                    label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
-                    level: 4,
-                    id: `${parentHeaderId}-group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}-attr-${attrName}`,
-                    children: []
-                }))
-            });
-        }
-
-        return subHeaders;
+        // Return empty array to simplify the tree view - only show group names
+        // without variables, coordinates, dimensions, or attributes
+        return [];
     }
 
     /**
