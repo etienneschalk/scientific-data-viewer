@@ -207,8 +207,8 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Helper function to generate attributes HTML
-function generateAttributesHtml(attributes, targetId) {
+// Helper function to generate attributes HTML for details content
+function generateAttributesContent(attributes) {
     if (!attributes || Object.keys(attributes).length === 0) {
         return '';
     }
@@ -224,10 +224,8 @@ function generateAttributesHtml(attributes, targetId) {
     }).join('');
     
     return `
-        <div class="attributes-details hidden" id="${targetId}">
-            <div class="attributes-container">
-                ${attributesList}
-            </div>
+        <div class="attributes-container">
+            ${attributesList}
         </div>
     `;
 }
@@ -324,29 +322,44 @@ function displayDataInfo(data, filePath) {
                         const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         const coordId = `${groupId}-coord-${variable.name}`;
                         const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
-                        const attributesButton =  
-                            `<button class="attributes-button" data-target="${coordId}-attributes" title="Show attributes" ${hasAttributes ? '' : 'disabled'}>📄</button>`
                         
-                        const attributesHtml = hasAttributes ? 
-                            generateAttributesHtml(variable.attributes, `${coordId}-attributes`) : '';
+                        const attributesContent = hasAttributes ? 
+                            generateAttributesContent(variable.attributes) : '';
                         
-                        return `
-                            <div class="variable-row" id="${coordId}" data-variable="${variable.name}">
-                                <div class="variable-item">
-                                    <span class="variable-name" title="${variable.name}">${variable.name}</span>
-                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                    <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                        <code>${escapeHtml(variable.dtype)}</code>
-                                    </span>
-                                    <span class="dtype-shape" title="${shapeStr}">
-                                        ${shapeStr}
-                                    </span>
-                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    ${attributesButton}
+                        if (hasAttributes) {
+                            return `
+                                <details class="variable-details" id="${coordId}" data-variable="${variable.name}">
+                                    <summary class="variable-summary">
+                                        <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                            <code>${escapeHtml(variable.dtype)}</code>
+                                        </span>
+                                        <span class="dtype-shape" title="${shapeStr}">
+                                            ${shapeStr}
+                                        </span>
+                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                    </summary>
+                                    ${attributesContent}
+                                </details>
+                            `;
+                        } else {
+                            return `
+                                <div class="variable-row" id="${coordId}" data-variable="${variable.name}">
+                                    <div class="variable-item">
+                                        <span class="variable-name" title="${variable.name}">${variable.name}</span>
+                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                            <code>${escapeHtml(variable.dtype)}</code>
+                                        </span>
+                                        <span class="dtype-shape" title="${shapeStr}">
+                                            ${shapeStr}
+                                        </span>
+                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                    </div>
                                 </div>
-                                ${attributesHtml}
-                            </div>
-                        `;
+                            `;
+                        }
                     }).join('') :
                     '<p>No coordinates found in this group.</p>';
                 
@@ -359,35 +372,51 @@ function displayDataInfo(data, filePath) {
                         const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
                         const varId = `${groupId}-var-${variable.name}`;
                         const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
-                        const attributesButton = hasAttributes ? 
-                            `<button class="attributes-button" data-target="${varId}-attributes" title="Show attributes">📄</button>` : '';
                         
-                        const attributesHtml = hasAttributes ? 
-                            generateAttributesHtml(variable.attributes, `${varId}-attributes`) : '';
+                        const attributesContent = hasAttributes ? 
+                            generateAttributesContent(variable.attributes) : '';
                         
                         // For datatree variables, use full path (group/variable) for plotting
                         const fullVariableName = `${groupName == "/" ? "" : groupName}/${variable.name}`;
                         const plotControls = hasPlottingCapabilities ? 
                             generateVariablePlotControls(fullVariableName, true) : '';
                         
-                        return `
-                            <div class="variable-row" id="${varId}" data-variable="${fullVariableName}">
-                                <div class="variable-item">
-                                    <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
-                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                    <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
-                                        <code>${escapeHtml(variable.dtype)}</code>
-                                    </span>
-                                    <span class="dtype-shape" title="${shapeStr}">
-                                        ${shapeStr}
-                                    </span>
-                                    ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
-                                    ${attributesButton}
+                        if (hasAttributes) {
+                            return `
+                                <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
+                                    <summary class="variable-summary">
+                                        <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
+                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                            <code>${escapeHtml(variable.dtype)}</code>
+                                        </span>
+                                        <span class="dtype-shape" title="${shapeStr}">
+                                            ${shapeStr}
+                                        </span>
+                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                    </summary>
+                                    ${attributesContent}
+                                    ${plotControls}
+                                </details>
+                            `;
+                        } else {
+                            return `
+                                <div class="variable-row" id="${varId}" data-variable="${fullVariableName}">
+                                    <div class="variable-item">
+                                        <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
+                                        <span class="dims" title="${dimsStr}">${dimsStr}</span>
+                                        <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                                            <code>${escapeHtml(variable.dtype)}</code>
+                                        </span>
+                                        <span class="dtype-shape" title="${shapeStr}">
+                                            ${shapeStr}
+                                        </span>
+                                        ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+                                    </div>
+                                    ${plotControls}
                                 </div>
-                                ${attributesHtml}
-                                ${plotControls}
-                            </div>
-                        `;
+                            `;
+                        }
                     }).join('') :
                     '<p>No variables found in this group.</p>';
                 
@@ -1471,26 +1500,7 @@ function setupMessageHandlers() {
             });
         });
 
-        // Attributes button handlers for variables and coordinates
-        const attributesButtons = document.querySelectorAll('.attributes-button');
-        attributesButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const targetId = button.dataset.target;
-                const attributesDetails = document.getElementById(targetId);
-                if (attributesDetails) {
-                    attributesDetails.classList.toggle('hidden');
-                    // Update button text to show state
-                    if (attributesDetails.classList.contains('hidden')) {
-                        button.textContent = '📄';
-                        button.title = 'Show attributes';
-                    } else {
-                        button.textContent = '📄';
-                        button.title = 'Hide attributes';
-                    }
-                }
-            });
-        });
+        // Attributes are now handled natively by details elements, no JavaScript needed
 
         displayShowVersions(state.data.dataInfo.xarray_show_versions);
         displayExtensionConfig(state.extension.extensionConfig);

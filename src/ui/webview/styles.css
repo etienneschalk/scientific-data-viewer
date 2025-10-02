@@ -279,36 +279,84 @@ select:focus {
     max-width: 100px;
 }
 
-/* Attributes button styling */
-.attributes-button {
-    background: none;
-    color: var(--vscode-foreground);
-    padding: 0;
-    padding-left: 8px;
+/* Variable details styling */
+.variable-details {
+    margin: 0;
+    border: 1px solid var(--vscode-panel-border);
+    background-color: var(--vscode-list-hoverBackground);
+}
+
+.variable-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 6px 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    list-style: none; /* Remove default list style */
 }
 
-.attributes-button:disabled {
-    background: none;
-    cursor: not-allowed;
-    opacity: 0.3;
+.variable-summary::-webkit-details-marker {
+    display: none; /* Hide default arrow */
 }
 
-.attributes-button:hover {
-    background: none;
-    color: var(--vscode-button-hoverBackground);
+.variable-summary::before {
+    content: "📄";
+    margin-left: 8px;
+    order: 999; /* Move to the right */
 }
 
-.attributes-button:active {
-    background: none;
-    color: var(--vscode-button-activeBackground);
+.variable-details[open] .variable-summary::before {
+    content: "📄";
+}
+
+.variable-summary:hover {
+    background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+.variable-summary .variable-name {
+    font-weight: bold;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+.variable-summary .dims {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.variable-summary .dtype-shape {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+    max-width: 100px;
+}
+
+.variable-summary .size {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    text-align: right;
+    max-width: 100px;
 }
 
 /* Attributes details styling */
 .attributes-container {
     background-color: var(--vscode-textCodeBlock-background);
     padding: 4px 8px;
+    margin: 0;
+    border-top: 1px solid var(--vscode-panel-border);
 }
 .attribute-item {
     display: flex;
