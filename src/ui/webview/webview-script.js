@@ -348,6 +348,22 @@ function displayDataInfo(data, filePath) {
                     }).join('') :
                     '<p>No variables found in this group.</p>';
                 
+                // Add attributes for group
+                const attributes = data.attributes_flattened[groupName];
+                const attributesHtml = attributes && Object.keys(attributes).length > 0 ?
+                    Object.entries(attributes).map(([attrName, value]) => {
+                        const attrId = `${groupId}-attr-${attrName}`;
+                        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+                        
+                        return `
+                            <div class="attribute-item" id="${attrId}">
+                                <span class="attribute-name" title="${attrName}">${attrName}</span>
+                                <span class="attribute-value" title="${valueStr}">: ${valueStr}</span>
+                            </div>
+                        `;
+                    }).join('') :
+                    '<p>No attributes found in this group.</p>';
+                
                 return `
                 <div class="info-section" id="${groupId}">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
@@ -369,6 +385,13 @@ function displayDataInfo(data, filePath) {
                             <details class="" open> <summary><h4>Variables</h4></summary>
                                 <div class="variables">
                                     ${variablesHtml}
+                                </div>  
+                            </details>
+                        </div>
+                        <div class="info-section" id="${groupId}-attributes">
+                            <details class="" open> <summary><h4>Attributes</h4></summary>
+                                <div class="attributes">
+                                    ${attributesHtml}
                                 </div>  
                             </details>
                         </div>

@@ -370,6 +370,23 @@ export class HeaderExtractor {
             });
         }
 
+        // Add attributes section
+        const attributes = dataInfo.attributes_flattened[groupName] || {};
+        const attributeEntries = Object.entries(attributes);
+        if (attributeEntries.length > 0) {
+            subHeaders.push({
+                label: `Attributes (${attributeEntries.length})`,
+                level: 3,
+                id: `${groupId}-attributes`,
+                children: attributeEntries.map(([attrName, value]) => ({
+                    label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                    level: 4,
+                    id: `${groupId}-attr-${attrName}`,
+                    children: []
+                }))
+            });
+        }
+
         return subHeaders;
     }
 }
