@@ -3,6 +3,8 @@ import * as path from 'path';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { UIController } from './ui/UIController';
+import { OutlineProvider } from './outline/OutlineProvider';
+import { HeaderExtractor } from './outline/HeaderExtractor';
 
 
 // Taken from python/get_data_info.py
@@ -31,11 +33,32 @@ export class DataViewerPanel {
     public static panelsWithErrors: Set<DataViewerPanel> = new Set();
     public static createdCount = 0;
     public static readonly viewType = 'scientificDataViewer';
+    private static outlineProvider: OutlineProvider | undefined;
 
     private readonly _webviewPanel: vscode.WebviewPanel;
     private _disposables: vscode.Disposable[] = [];
     private _currentFile: vscode.Uri;
     private _uiController: UIController;
+
+    public static setOutlineProvider(outlineProvider: OutlineProvider): void {
+        DataViewerPanel.outlineProvider = outlineProvider;
+    }
+
+    public static getActivePanel(fileUri: vscode.Uri): DataViewerPanel | undefined {
+        // XXX TODO eschalk use vscode.DocumentSymbolProvider
+        return Array.from(DataViewerPanel.activePanels).pop();
+        // Logger.info(`🚚 📋 Getting active panel for file: ${fileUri.fsPath}`);
+        // // Find and return the first panel that matches the given file path
+        // const panel = Array.from(DataViewerPanel.activePanels).find(panel => 
+        //     panel._currentFile.fsPath === fileUri.fsPath
+        // );
+        // if (panel) {
+        //     Logger.info(`🚚 📋 Found active panel for file: ${fileUri.fsPath}`);
+        //     return panel;
+        // }
+        // Logger.info(`🚚 📋 No active panel found for file: ${fileUri.fsPath}`);
+        // return undefined;
+    }
 
     public static async createFromScratchOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         const column = vscode.window.activeTextEditor
@@ -159,6 +182,9 @@ export class DataViewerPanel {
         // Set the webview's initial html content
         Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);
 
+        // Add this panel to the active panels set
+        DataViewerPanel.activePanels.add(this);
+
         // Initialize state management and UI controller
         this._uiController = new UIController(DataViewerPanel.createdCount, webviewPanel.webview, dataProcessor, (error) => {
             Logger.error(`[UIController] Error: ${error.message}`);
@@ -183,6 +209,9 @@ export class DataViewerPanel {
         // Load the file and handle success/error
         this._uiController.loadFile(fileUri.fsPath);
 
+        // Initialize outline with data viewer headers
+        this._initializeOutline();
+
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();
 
@@ -197,6 +226,11 @@ export class DataViewerPanel {
 
         // Remove this panel from the error tracking set
         DataViewerPanel.removePanelWithError(this);
+
+        // Clear outline when panel is disposed
+        if (DataViewerPanel.outlineProvider) {
+            DataViewerPanel.outlineProvider.clear();
+        }
 
         // Clean up UI controller
         if (this._uiController) {
@@ -241,5 +275,30 @@ export class DataViewerPanel {
         }
     }
 
+    private _initializeOutline(): void {
+        if (DataViewerPanel.outlineProvider) {
+            // Create headers for the data viewer sections
+            const headers = HeaderExtractor.createDataViewerHeaders();
+            DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
+            Logger.info(`📋 Initialized outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
+        } else {
+            Logger.warn('📋 Outline provider not available');
+        }
+    }
+
+    public async scrollToHeader(headerId: string, headerLabel: string): Promise<void> {
+        try {
+            // Send message to webview to scroll to the header
+            this._webviewPanel.webview.postMessage({
+                command: 'scrollToHeader',
+                headerId: headerId,
+                headerLabel: headerLabel
+            });
+            Logger.info(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
+        } catch (error) {
+            Logger.error(`❌ Error scrolling to header: ${error}`);
+            throw error;
+        }
+    }
 
 }

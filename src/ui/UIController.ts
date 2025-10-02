@@ -92,6 +92,14 @@ export class UIController {
         this.messageBus.registerRequestHandler('executeCommand', async (payload) => {
             return this.handleExecuteCommand(payload.command, payload.args);
         });
+
+        this.messageBus.registerRequestHandler('updateHeaders', async (payload) => {
+            return this.handleUpdateHeaders(payload.headers);
+        });
+
+        this.messageBus.registerRequestHandler('scrollToHeader', async (payload) => {
+            return this.handleScrollToHeader(payload.headerId, payload.headerLabel);
+        });
     }
 
     private setupStateSubscription(): void {
@@ -547,5 +555,31 @@ export class UIController {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         const devMode = config.get('devMode', false);
         return HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content, devMode);
+    }
+
+    private async handleUpdateHeaders(headers: any[]): Promise<void> {
+        try {
+            // This will be handled by the outline provider when we register it
+            Logger.info(`📋 Received header update with ${headers.length} headers`);
+            // The actual outline update will be handled by the DataViewerPanel
+        } catch (error) {
+            Logger.error(`❌ Error handling header update: ${error}`);
+            throw error;
+        }
+    }
+
+    private async handleScrollToHeader(headerId: string, headerLabel: string): Promise<void> {
+        try {
+            // Send message to webview to scroll to the header
+            this.webview.postMessage({
+                command: 'scrollToHeader',
+                headerId: headerId,
+                headerLabel: headerLabel,
+            });
+            Logger.info(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
+        } catch (error) {
+            Logger.error(`❌ Error scrolling to header: ${error}`);
+            throw error;
+        }
     }
 }

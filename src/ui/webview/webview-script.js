@@ -1419,6 +1419,14 @@ function setupMessageHandlers() {
     messageBus.onUIStateChanged((state) => {
         console.log('🔄 UI state changed:', state);
     });
+
+    // Listen for scroll to header messages
+    window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (message.command === 'scrollToHeader') {
+            scrollToHeader(message.headerId, message.headerLabel);
+        }
+    });
     
     // Add debugging for all message bus communications
     const originalSendRequest = messageBus.sendRequest.bind(messageBus);
@@ -1433,6 +1441,94 @@ function setupMessageHandlers() {
             throw error;
         }
     };
+}
+
+// Scroll to header function
+function scrollToHeader(headerId, headerLabel) {
+    console.log(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
+    
+    // Try to find the element by ID first
+    let element = document.getElementById(headerId);
+    
+    // If not found by ID, try to find by text content in summary elements (for details/summary structure)
+    if (!element) {
+        const summaries = document.querySelectorAll('summary');
+        for (const summary of summaries) {
+            if (summary.textContent.trim().includes(headerLabel)) {
+                element = summary;
+                break;
+            }
+        }
+    }
+    
+    // If still not found, try to find by text content in headers
+    if (!element) {
+        const headers = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        for (const header of headers) {
+            if (header.textContent.trim() === headerLabel) {
+                element = header;
+                break;
+            }
+        }
+    }
+    
+    // If still not found, try to find by partial text match in headers
+    if (!element) {
+        const headers = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        for (const header of headers) {
+            if (header.textContent.trim().includes(headerLabel)) {
+                element = header;
+                break;
+            }
+        }
+    }
+    
+    // If still not found, try to find by partial text match in summaries
+    if (!element) {
+        const summaries = document.querySelectorAll('summary');
+        for (const summary of summaries) {
+            if (summary.textContent.trim().includes(headerLabel)) {
+                element = summary;
+                break;
+            }
+        }
+    }
+    
+    if (element) {
+        // Ensure the element is visible by expanding parent details if needed
+        let parentDetails = element.closest('details');
+        if (parentDetails && !parentDetails.open) {
+            parentDetails.open = true;
+            console.log(`📋 Opened parent details for: ${headerLabel}`);
+        }
+        
+        // Scroll to the element
+        element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+        });
+        
+        // Add a temporary highlight effect
+        element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
+        element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
+        element.style.paddingLeft = '8px';
+        element.style.borderRadius = '4px';
+        
+        // Remove highlight after 3 seconds
+        setTimeout(() => {
+            element.style.backgroundColor = '';
+            element.style.borderLeft = '';
+            element.style.paddingLeft = '';
+            element.style.borderRadius = '';
+        }, 3000);
+        
+        console.log(`📋 Successfully scrolled to header: ${headerLabel}`);
+    } else {
+        console.warn(`📋 Header not found: ${headerLabel} (${headerId})`);
+        console.log('📋 Available headers:', Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).map(h => h.textContent.trim()));
+        console.log('📋 Available summaries:', Array.from(document.querySelectorAll('summary')).map(s => s.textContent.trim()));
+    }
 }
 
 // Initialization

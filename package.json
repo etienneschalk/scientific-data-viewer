@@ -73,6 +73,11 @@
         "command": "scientificDataViewer.openDeveloperTools",
         "title": "Open Developer Tools",
         "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.scrollToHeader",
+        "title": "Scroll to Header",
+        "category": "Scientific Data Viewer"
       }
     ],
     "menus": {
@@ -187,6 +192,15 @@
         }
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "scientificDataViewer.outline",
+          "name": "Data Structure",
+          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf"
+        }
+      ]
+    },
     "customEditors": [
       {
         "viewType": "netcdfEditor",

@@ -4,6 +4,7 @@ import { PythonManager } from './pythonManager';
 import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
+import { OutlineProvider } from './outline/OutlineProvider';
 
 class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
     constructor(
@@ -270,6 +271,29 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // Register outline provider
+    const outlineProvider = new OutlineProvider();
+    const outlineTreeView = vscode.window.createTreeView('scientificDataViewer.outline', {
+        treeDataProvider: outlineProvider
+    });
+
+    // Make outline provider accessible to DataViewerPanel
+    DataViewerPanel.setOutlineProvider(outlineProvider);
+
+    const scrollToHeaderCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.scrollToHeader',
+        async (headerId: string, headerLabel: string, documentUri: vscode.Uri) => {
+            Logger.info(`🎮 📋 Command: Scrolling to header ${headerLabel} (${headerId})`);
+            
+        // Find the active DataViewerPanel and scroll to the header
+        const activePanel = DataViewerPanel.getActivePanel(documentUri);
+        if (activePanel) {
+            await activePanel.scrollToHeader(headerId, headerLabel);
+        } else {
+            Logger.warn('📋 No active DataViewerPanel found for scrolling');
+        }
+    });
+
     // Register context menu for supported files
     const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
     vscode.workspace.onDidOpenTextDocument(async (document) => {
@@ -391,6 +415,8 @@ export function activate(context: vscode.ExtensionContext) {
         showLogsCommand,
         showSettingsCommand,
         openDeveloperToolsCommand,
+        scrollToHeaderCommand,
+        outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,
         workspaceChangeListener,

@@ -28,7 +28,7 @@ export class HTMLGenerator {
     static generateHeader(plottingCapabilities: boolean, lastLoadTime: string | null): string {
         return `
     <div class="header">
-        <div class="title">Scientific Data Viewer <small>v0.3.0</small></div>
+        <div class="title" id="title">Scientific Data Viewer <small>v0.3.0</small></div>
         <div class="controls">
             ${this.generateTimestamp(lastLoadTime)}
             <button id="refreshButton">Refresh</button>

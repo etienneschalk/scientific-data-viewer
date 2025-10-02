@@ -85,6 +85,21 @@ export interface ShowNotificationRequest {
     type: 'info' | 'warning' | 'error';
 }
 
+export interface HeaderUpdateRequest {
+    headers: Array<{
+        label: string;
+        level: number;
+        id?: string;
+        line?: number;
+        children: any[];
+    }>;
+}
+
+export interface ScrollToHeaderRequest {
+    headerId: string;
+    headerLabel: string;
+}
+
 export interface ErrorResponse {
     message: string;
     details?: string;
@@ -169,7 +184,9 @@ export const COMMANDS = {
     SAVE_PLOT_AS: 'savePlotAs',
     OPEN_PLOT: 'openPlot',
     REFRESH: 'refresh',
-    SHOW_NOTIFICATION: 'showNotification'
+    SHOW_NOTIFICATION: 'showNotification',
+    UPDATE_HEADERS: 'updateHeaders',
+    SCROLL_TO_HEADER: 'scrollToHeader'
 } as const;
 
 export const EVENTS = {
