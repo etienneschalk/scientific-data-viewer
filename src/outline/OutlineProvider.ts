@@ -53,13 +53,19 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
                 treeItem.iconPath = new vscode.ThemeIcon('symbol-class');
                 break;
             case 2:
-                treeItem.iconPath = new vscode.ThemeIcon('symbol-method');
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-folder');
                 break;
             case 3:
-                treeItem.iconPath = new vscode.ThemeIcon('symbol-property');
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-method');
+                break;
+            case 4:
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-file');
+                break;
+            case 5:
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-method');
                 break;
             default:
-                treeItem.iconPath = new vscode.ThemeIcon('symbol-field');
+                treeItem.iconPath = new vscode.ThemeIcon('symbol-file');
         }
 
         // Add command to scroll to header in webview

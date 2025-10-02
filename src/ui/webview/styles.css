@@ -190,7 +190,7 @@ select:focus {
     display: grid;
     grid-template-columns: 1fr;
     /* gap: -1px; */
-    gap: 8px;
+    /* gap: 8px; */
     /* gap: 2px; */
     /* margin: 0; */
     /* margin-top: 10px; */
@@ -285,6 +285,11 @@ select:focus {
     margin: 0;
     border: 1px solid var(--vscode-panel-border);
     background-color: var(--vscode-list-hoverBackground);
+    margin-top: 8px;
+}
+
+.variable-details:first-child {
+    margin-top: 0;
 }
 
 .variable-summary {
