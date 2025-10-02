@@ -526,7 +526,7 @@ details.sticky-group-details {
     color: var(--vscode-foreground);
     top: 0;
     background-color: var(--vscode-editor-background);
-    z-index: 10;
+    /* z-index: 10; */
     margin-bottom: 0;
 }
 
