@@ -166,7 +166,6 @@ select:focus {
     /* padding: 0 15px; */
     background-color: var(--vscode-editor-background);
     /* border: 1px solid var(--vscode-panel-border); */
-    border-radius: 4px;
     /* margin: 2px 0; */
     padding-left: 15px;
 }
@@ -190,8 +189,11 @@ select:focus {
 .dimensions, .variables, .coordinates {
     display: grid;
     grid-template-columns: 1fr;
+    /* gap: -1px; */
     gap: 8px;
-    margin-top: 10px;
+    /* gap: 2px; */
+    /* margin: 0; */
+    /* margin-top: 10px; */
     /* max-width: 800px */
 
 }
@@ -326,10 +328,6 @@ select:focus {
     cursor: default;
 }
 
-.variable-summary.not-clickable:hover {
-    background-color: transparent;
-}
-
 .variable-summary .variable-name {
     font-weight: bold;
     flex: 1;
@@ -391,22 +389,18 @@ select:focus {
 }
 
 /* Enhanced highlighting for individual attributes */
-.attribute-item.highlighted {
+/* .attribute-item.highlighted {
     background-color: var(--vscode-textBlockQuote-background) !important;
     border-left: 3px solid var(--vscode-textBlockQuote-border) !important;
-    padding-left: 8px !important;
-    border-radius: 4px !important;
-    margin-left: 8px !important;
-    margin-right: 8px !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
     animation: attributePulse 0.5s ease-in-out;
-}
+} */
 
-@keyframes attributePulse {
+/* @keyframes attributePulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.02); }
     100% { transform: scale(1); }
-} 
+}  */
 
 /* Responsive design for small screens */
 @media (max-width: 480px) {
@@ -504,10 +498,6 @@ select:focus {
     overflow: auto;
 }
 
-details[open] {
-    margin-bottom: 15px;
-}
-
 details summary {
     cursor: pointer;
     padding: 8px 0;
@@ -539,9 +529,9 @@ details.sticky-group-details > summary {
     padding: 10px 0;
 }
 
-details[open].sticky-group-details {
+/* details[open].sticky-group-details {
     margin-bottom: 15px;
-}
+} */
 
 details.sticky-group-details summary > * {
     display: inline;
@@ -641,6 +631,7 @@ details.sticky-group-details summary > * {
 /* Per-variable plot controls */
 .variable-plot-controls {
     padding: 6px 8px;
+    margin: 0;
     background-color: var(--vscode-list-hoverBackground);
 }
 
