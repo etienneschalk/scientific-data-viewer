@@ -1499,11 +1499,24 @@ function scrollToHeader(headerId, headerLabel) {
     }
     
     if (element) {
-        // Ensure the element is visible by expanding parent details if needed
-        let parentDetails = element.closest('details');
-        if (parentDetails && !parentDetails.open) {
-            parentDetails.open = true;
-            console.log(`📋 Opened parent details for: ${headerLabel}`);
+        // Ensure the element is visible by expanding ALL parent details if needed
+        let currentElement = element;
+        let openedCount = 0;
+        
+        // Walk up the DOM tree and open all parent details elements
+        while (currentElement) {
+            const parentDetails = currentElement.closest('details');
+            if (parentDetails && !parentDetails.open) {
+                parentDetails.open = true;
+                openedCount++;
+                console.log(`📋 Opened parent details: ${parentDetails.querySelector('summary')?.textContent?.trim() || 'Unknown'}`);
+            }
+            // Move up to the parent of the current details element to check for more nested details
+            currentElement = parentDetails?.parentElement;
+        }
+        
+        if (openedCount > 0) {
+            console.log(`📋 Opened ${openedCount} parent details groups for: ${headerLabel}`);
         }
         
         // Scroll to the element
