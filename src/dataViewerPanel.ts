@@ -217,6 +217,8 @@ export class DataViewerPanel {
         }, () => {
             // Update outline when data is loaded
             this.updateOutline();
+            // Also notify that the panel is active to ensure proper outline display
+            this.notifyPanelActive();
         });
 
         // Update the panel title to reflect the new file
@@ -237,7 +239,7 @@ export class DataViewerPanel {
         // Initialize outline with data viewer headers
         this._initializeOutline();
 
-        // Notify that this panel is active (in case it's the first/only panel)
+        // Notify that this panel is active to ensure outline is displayed
         this.notifyPanelActive();
 
         // Check if devMode is enabled and run commands automatically after webview is ready

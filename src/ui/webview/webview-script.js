@@ -393,8 +393,8 @@ function displayDataInfo(data, filePath) {
                         
                         return `
                             <div class="attribute-item" id="${attrId}">
-                                <span class="attribute-name" title="${attrName}">${attrName}</span>
-                                <span class="attribute-value" title="${valueStr}">: ${valueStr}</span>
+                                <span class="attribute-name" title="${attrName}">${attrName} : </span>
+                                <span class="attribute-value" title="${valueStr}">${valueStr}</span>
                             </div>
                         `;
                     }).join('') :
@@ -868,7 +868,7 @@ async function openVariablePlot(variable) {
     
     try {
         await messageBus.openPlot(plotData, variable, fileName);
-        showVariablePlotSuccess(variable, `Plot opened: ${fileName}`);
+        // showVariablePlotSuccess(variable, `Plot opened: ${fileName}`);
     } catch (error) {
         console.error('Error opening plot:', error);
         showVariablePlotError(variable, 'Failed to open plot: ' + error.message);

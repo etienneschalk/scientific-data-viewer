@@ -214,8 +214,7 @@
       "explorer": [
         {
           "id": "scientificDataViewer.outline",
-          "name": "Data Structure",
-          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf"
+          "name": "Data Structure"
         }
       ]
     },

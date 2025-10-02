@@ -376,14 +376,20 @@ select:focus {
     margin: 0;
     border-top: 1px solid var(--vscode-panel-border);
 }
+.attributes {
+    padding-left: 10px;
+}
 .attribute-item {
     display: flex;
     align-items: flex-start;
 }
+.attribute-item:hover {
+    background-color: var(--vscode-list-activeSelectionBackground);
+}
 
 .attribute-name {
     font-weight: bold;
-    min-width: 120px;
+    min-width: 180px;
     flex-shrink: 0;
 }
 
