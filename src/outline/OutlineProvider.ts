@@ -18,6 +18,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private currentFile: vscode.Uri | undefined;
     private fileHeaders: Map<string, HeaderItem[]> = new Map();
     private treeView: vscode.TreeView<HeaderItem> | undefined;
+    private expandedStates: Map<string, Set<string>> = new Map(); // filePath -> Set of expanded item IDs
 
     constructor() {
         Logger.info('📋 OutlineProvider initialized');
@@ -28,6 +29,15 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      */
     setTreeView(treeView: vscode.TreeView<HeaderItem>): void {
         this.treeView = treeView;
+        
+        // Set up event listeners for expand/collapse state tracking
+        this.treeView.onDidExpandElement((e) => {
+            this.saveExpandedState(e.element);
+        });
+        
+        this.treeView.onDidCollapseElement((e) => {
+            this.saveCollapsedState(e.element);
+        });
     }
 
     refresh(): void {
@@ -43,10 +53,14 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     }
 
     getTreeItem(element: HeaderItem): vscode.TreeItem {
-        const treeItem = new vscode.TreeItem(
-            element.label,
-            element.children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
-        );
+        // Determine the initial collapse state based on saved state
+        let collapsibleState = vscode.TreeItemCollapsibleState.None;
+        if (element.children.length > 0) {
+            const isExpanded = this.isItemExpanded(element);
+            collapsibleState = isExpanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed;
+        }
+        
+        const treeItem = new vscode.TreeItem(element.label, collapsibleState);
         
         // Set icon based on header level
         switch (element.level) {
@@ -120,6 +134,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this.headers = [];
         this.currentFile = undefined;
         this.fileHeaders.clear();
+        this.expandedStates.clear();
         this.refresh();
     }
 
@@ -143,6 +158,12 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             this.headers = headers;
             this.currentFile = fileUri;
             Logger.info(`📋 Switched outline to file: ${filePath}`);
+            
+            // Restore expanded state after a short delay to ensure tree view is ready
+            setTimeout(() => {
+                this.restoreExpandedState(filePath);
+            }, 100);
+            
             this.refresh();
         } else {
             // If no headers are cached for this file, clear the outline
@@ -313,5 +334,96 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             hash = hash & hash; // Convert to 32-bit integer
         }
         return Math.abs(hash).toString(36).substring(0, 6);
+    }
+
+    /**
+     * Save the expanded state of an element
+     */
+    private saveExpandedState(element: HeaderItem): void {
+        if (!this.currentFile) return;
+        
+        const filePath = this.currentFile.fsPath;
+        const elementId = this.getElementId(element);
+        
+        if (!this.expandedStates.has(filePath)) {
+            this.expandedStates.set(filePath, new Set());
+        }
+        
+        this.expandedStates.get(filePath)!.add(elementId);
+        Logger.debug(`📋 Saved expanded state for element: ${elementId} in file: ${filePath}`);
+    }
+
+    /**
+     * Save the collapsed state of an element
+     */
+    private saveCollapsedState(element: HeaderItem): void {
+        if (!this.currentFile) return;
+        
+        const filePath = this.currentFile.fsPath;
+        const elementId = this.getElementId(element);
+        
+        if (this.expandedStates.has(filePath)) {
+            this.expandedStates.get(filePath)!.delete(elementId);
+            Logger.debug(`📋 Saved collapsed state for element: ${elementId} in file: ${filePath}`);
+        }
+    }
+
+    /**
+     * Check if an element should be expanded based on saved state
+     */
+    private isItemExpanded(element: HeaderItem): boolean {
+        if (!this.currentFile) return false;
+        
+        const filePath = this.currentFile.fsPath;
+        const elementId = this.getElementId(element);
+        
+        return this.expandedStates.has(filePath) && 
+               this.expandedStates.get(filePath)!.has(elementId);
+    }
+
+    /**
+     * Get a unique identifier for an element
+     */
+    private getElementId(element: HeaderItem): string {
+        const activePaneId = this.getActivePaneId();
+        const sanitizedLabel = this.sanitizeLabel(element.label);
+        return this.generateUniqueId(activePaneId, element.level, sanitizedLabel, element);
+    }
+
+    /**
+     * Restore the expanded state for a file
+     */
+    private restoreExpandedState(filePath: string): void {
+        if (!this.treeView || !this.expandedStates.has(filePath)) {
+            return;
+        }
+
+        const expandedIds = this.expandedStates.get(filePath)!;
+        if (expandedIds.size === 0) {
+            return;
+        }
+
+        Logger.debug(`📋 Restoring expanded state for ${expandedIds.size} elements in file: ${filePath}`);
+
+        // Find and expand all elements that should be expanded
+        const allElements = this.getAllElements(this.headers);
+        allElements.forEach(element => {
+            const elementId = this.getElementId(element);
+            if (expandedIds.has(elementId) && element.children.length > 0) {
+                try {
+                    this.treeView!.reveal(element, { select: false, focus: false, expand: true });
+                } catch (error) {
+                    Logger.debug(`📋 Failed to expand element: ${elementId}, ${error}`);
+                }
+            }
+        });
+    }
+
+    /**
+     * Clear expanded state for a file
+     */
+    private clearExpandedState(filePath: string): void {
+        this.expandedStates.delete(filePath);
+        Logger.debug(`📋 Cleared expanded state for file: ${filePath}`);
     }
 }
