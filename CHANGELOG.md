@@ -10,6 +10,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Added
 
+- **Enhanced Data Structure Navigation**: Improved outline view functionality
+  - Attributes display for coordinates and variables in outline
+  - Granular highlighting for individual attributes with precise navigation
 - **Comprehensive DataTree Support**: Full support for hierarchical data structures with group-specific sections
   - Group-specific coordinates, variables, and attributes display
   - Flattened dimensions support for nested datatree groups
@@ -41,6 +44,11 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Enhanced
 
+- **User Interface Improvements**: Better visual feedback and navigation
+  - Simplified highlighting with improved visual layout
+  - Better icon positioning and spacing in outline view
+  - Enhanced scroll functionality with sticky header offset
+  - Tree view navigation
 - **User Experience**: Improved interface and workflow
   - Per-variable plot controls with intuitive positioning
   - Responsive design (for window resize)
@@ -62,6 +70,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Technical Improvements
 
+- **Code Quality**: Enhanced implementation details
+  - Simplified Data Structure view for xarray HTML and Text representations
+  - Enhanced HeaderExtractor with attributes display for coordinates and variables
+  - Improved plotting strategy and 2D classic plotting support
 - **Architecture Refactoring**: Complete modularization of UI components
   - HTMLGenerator: Centralized HTML generation utilities
   - CSSGenerator: Modular CSS organization and styling
@@ -88,6 +100,11 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
+- **Data Structure Tree View**: Resolved loading issues
+  - Fixed data structure tree view not loading for right-click opened files
+  - Fixed tree view scrolling for attributes with details elements
+  - Fixed treeview navigation with proper IDs for TXT and HTML group representations
+  - Improved timing issues in DataViewerPanel constructor
 - **Plot Controls**: Resolved issues with grayed-out plot buttons
 - **Layout Issues**: Fixed broken variable display structure
 - **Event Handling**: Corrected event listener setup for dynamic content
