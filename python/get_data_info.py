@@ -348,7 +348,7 @@ def detect_plotting_strategy(var):
             # and is_spatial_dimension(dims[-1])
         ):
             logger.info("Using 2D spatial plotting strategy")
-            return "2d_spatial"
+            return "2d_classic"
 
     elif ndim == 3:
         # Check if last two dimensions are spatial
@@ -436,7 +436,7 @@ def create_plot(file_path: Path, variable_path: str, plot_type: str = "auto"):
         logger.info(f"Using plotting strategy: {strategy}")
 
         # Create plot using xarray's native plotting methods
-        if strategy == "2d_spatial":
+        if strategy == "2d_classic":
             # 2D spatial data - plot directly with appropriate colormap
             logger.info("Creating 2D spatial plot")
             ax = var.plot.imshow(cmap="viridis")
