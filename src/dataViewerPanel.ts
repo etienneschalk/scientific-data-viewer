@@ -39,6 +39,7 @@ export class DataViewerPanel {
     private _disposables: vscode.Disposable[] = [];
     private _currentFile: vscode.Uri;
     private _uiController: UIController;
+    private _isDisposed: boolean = false;
 
     public static setOutlineProvider(outlineProvider: OutlineProvider): void {
         DataViewerPanel.outlineProvider = outlineProvider;
@@ -155,6 +156,7 @@ export class DataViewerPanel {
         const dataViewerPanel = new DataViewerPanel(panel, fileUri, dataProcessor);
         // Add the data viewer panel to the active panels set
         DataViewerPanel.activePanels.add(dataViewerPanel);
+        Logger.debug(`[create] Added panel to activePanels - total: ${DataViewerPanel.activePanels.size}`);
         // Return the data viewer panel
         return dataViewerPanel;
     }
@@ -204,8 +206,7 @@ export class DataViewerPanel {
         // Set the webview's initial html content
         Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);
 
-        // Add this panel to the active panels set
-        DataViewerPanel.activePanels.add(this);
+        // Note: Panel is already added to activePanels in the create() method
 
         // Initialize state management and UI controller
         this._uiController = new UIController(DataViewerPanel.createdCount, webviewPanel.webview, dataProcessor, (error) => {
@@ -254,15 +255,28 @@ export class DataViewerPanel {
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
-        this._webviewPanel.onDidDispose(() => this.dispose(), null, this._disposables);
+        this._webviewPanel.onDidDispose(() => this.dispose());
     }
 
     public dispose() {
+        // Prevent multiple disposal calls
+        if (this._isDisposed) {
+            Logger.debug(`[dispose] Panel already disposed, skipping: ${this._currentFile.fsPath}`);
+            return;
+        }
+        
+        this._isDisposed = true;
+        Logger.info(`🚚 🗑️ Disposing panel for file: ${this._currentFile.fsPath}`);
+        Logger.debug(`[dispose] Before cleanup - activePanels: ${DataViewerPanel.activePanels.size}, panelsWithErrors: ${DataViewerPanel.panelsWithErrors.size}`);
+        
         // Remove this panel from the active panels set
-        DataViewerPanel.activePanels.delete(this);
+        const wasInActivePanels = DataViewerPanel.activePanels.delete(this);
+        Logger.debug(`[dispose] Removed from activePanels: ${wasInActivePanels}`);
 
         // Remove this panel from the error tracking set
         DataViewerPanel.removePanelWithError(this);
+
+        Logger.debug(`[dispose] After cleanup - activePanels: ${DataViewerPanel.activePanels.size}, panelsWithErrors: ${DataViewerPanel.panelsWithErrors.size}`);
 
         // Clear outline when panel is disposed
         if (DataViewerPanel.outlineProvider) {
@@ -283,6 +297,8 @@ export class DataViewerPanel {
                 x.dispose();
             }
         }
+        
+        Logger.info(`🚚 ✅ Panel disposal completed for file: ${this._currentFile.fsPath}`);
     }
 
     private async _handleDevMode(): Promise<void> {

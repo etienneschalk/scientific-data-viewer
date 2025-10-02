@@ -612,10 +612,11 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
         <h4>💡 Troubleshooting Steps:</h4>
         <ol>
             <li>Make sure Python is installed and accessible</li>
-            <li>Use Command Palette (Ctrl+Shift+P) → "Python: Select Interpreter"</li>
+            <li>Use Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → "Python: Select Interpreter"</li>
             <li>Install required packages: <code>pip install xarray matplotlib</code></li>
             <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
             <li><a href="#" onclick="executeShowLogsCommand()" style="color: #007acc; text-decoration: underline; cursor: pointer;">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
+            <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
             <li>In doubt, close and reopen the file</li>
         </ol>
         <p>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">Scientific Data Viewer GitHub repository</a>.</p>
