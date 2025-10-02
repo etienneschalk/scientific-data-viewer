@@ -278,12 +278,14 @@ function displayDataInfo(data, filePath) {
         if (data.dimensions_flattened && data.coordinates_flattened && data.variables_flattened) {
             // Display dimensions, coordinates, and variables for each group
             groupInfoContainer.innerHTML = groups.map(groupName => {
+                const groupId = `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                
                 // Add dimensions for group
                 const dimensions = data.dimensions_flattened[groupName];
                 const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0 ?
                     `<div class="dimensions-compact">
                         (${Object.entries(dimensions)
-                            .map(([name, size]) => `<strong>${name}</strong>: ${size}`)
+                            .map(([name, size]) => `<strong id="${groupId}-dim-${name}">${name}</strong>: ${size}`)
                             .join(', ')})
                     </div>` :
                     '<p>No dimensions found in this group.</p>';
@@ -295,9 +297,10 @@ function displayDataInfo(data, filePath) {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
                         const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
                         const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
+                        const coordId = `${groupId}-coord-${variable.name}`;
                         
                         return `
-                            <div class="variable-item" data-variable="${variable.name}">
+                            <div class="variable-item" id="${coordId}" data-variable="${variable.name}">
                                 <span class="variable-name" title="${variable.name}">${variable.name}</span>
                                 <span class="dims" title="${dimsStr}">${dimsStr}</span>
                                 <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
@@ -319,6 +322,7 @@ function displayDataInfo(data, filePath) {
                         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
                         const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
                         const sizeStr = variable.size_bytes ? `${formatFileSize(variable.size_bytes)}` : '';
+                        const varId = `${groupId}-var-${variable.name}`;
                         
                         // For datatree variables, use full path (group/variable) for plotting
                         const fullVariableName = `${groupName == "/" ? "" : groupName}/${variable.name}`;
@@ -326,7 +330,7 @@ function displayDataInfo(data, filePath) {
                             generateVariablePlotControls(fullVariableName, true) : '';
                         
                         return `
-                            <div class="variable-row" data-variable="${fullVariableName}">
+                            <div class="variable-row" id="${varId}" data-variable="${fullVariableName}">
                                 <div class="variable-item">
                                     <span class="variable-name" title="${fullVariableName}">${variable.name}</span>
                                     <span class="dims" title="${dimsStr}">${dimsStr}</span>
@@ -344,7 +348,6 @@ function displayDataInfo(data, filePath) {
                     }).join('') :
                     '<p>No variables found in this group.</p>';
                 
-                const groupId = `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`;
                 return `
                 <div class="info-section" id="${groupId}">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
