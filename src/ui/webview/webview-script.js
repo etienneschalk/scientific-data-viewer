@@ -609,7 +609,7 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
     const formattedDetails = details ? details.replace(/\n/g, '<br>') : '';
     
     let troubleshootingSteps = `
-        <h4>💡 Troubleshooting Steps:</h4>
+        <h4>💡 Generic Troubleshooting Steps:</h4>
         <ol>
             <li>Make sure Python is installed and accessible</li>
             <li>Use Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → "Python: Select Interpreter"</li>
@@ -655,12 +655,24 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
     errorDiv.classList.remove('hidden');
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.add('hidden');
+    
+    // Hide refresh button when error is displayed
+    const refreshButton = document.getElementById('refreshButton');
+    if (refreshButton) {
+        refreshButton.classList.add('hidden');
+    }
 }
 
 function hideError() {
     const errorDiv = document.getElementById('error');
     errorDiv.classList.add('hidden');
     errorDiv.innerHTML = '';
+    
+    // Show refresh button when error is cleared
+    const refreshButton = document.getElementById('refreshButton');
+    if (refreshButton) {
+        refreshButton.classList.remove('hidden');
+    }
 }
 
 // Plot-specific error handling
