@@ -22,19 +22,22 @@ export class UIController {
     private lastLoadTime: Date | null = null;
     private onErrorPanelCallback: (error: Error) => void;
     private onSuccessPanelCallback: (success: string) => void;
+    private onOutlineUpdateCallback?: () => void;
 
     constructor(
         id: number,
         webview: vscode.Webview,
         dataProcessor: DataProcessor,
         onErrorCallback: (error: Error) => void,
-        onSuccessCallback: (success: string) => void
+        onSuccessCallback: (success: string) => void,
+        onOutlineUpdateCallback?: () => void
     ) {
         this.id = id;
         this.webview = webview;
         this.dataProcessor = dataProcessor;
         this.onErrorPanelCallback = onErrorCallback;
         this.onSuccessPanelCallback = onSuccessCallback;
+        this.onOutlineUpdateCallback = onOutlineUpdateCallback;
 
         this.stateManager = new StateManager();
         this.messageBus = new MessageBus(webview);
@@ -187,6 +190,11 @@ export class UIController {
 
                 // Notify the panel about the success
                 this.onSuccessPanelCallback('Data loaded successfully');
+
+                // Update outline if callback is provided
+                if (this.onOutlineUpdateCallback) {
+                    this.onOutlineUpdateCallback();
+                }
 
                 return {
                     data: dataInfo.result,
@@ -575,6 +583,7 @@ export class UIController {
                 command: 'scrollToHeader',
                 headerId: headerId,
                 headerLabel: headerLabel,
+                documentUri: this.stateManager.getState().data.currentFile
             });
             Logger.info(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
         } catch (error) {

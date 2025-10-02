@@ -15,6 +15,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
 
     private headers: HeaderItem[] = [];
     private currentFile: vscode.Uri | undefined;
+    private fileHeaders: Map<string, HeaderItem[]> = new Map();
 
     constructor() {
         Logger.info('📋 OutlineProvider initialized');
@@ -27,6 +28,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     updateHeaders(headers: HeaderItem[], fileUri: vscode.Uri): void {
         this.headers = headers;
         this.currentFile = fileUri;
+        this.fileHeaders.set(fileUri.fsPath, headers);
         Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${fileUri.fsPath}`);
         this.refresh();
     }
@@ -96,10 +98,60 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     clear(): void {
         this.headers = [];
         this.currentFile = undefined;
+        this.fileHeaders.clear();
         this.refresh();
     }
 
     getCurrentFile(): vscode.Uri | undefined {
         return this.currentFile;
+    }
+
+    /**
+     * Switch to display headers for a different file
+     */
+    switchToFile(fileUri: vscode.Uri): void {
+        if (!fileUri || !fileUri.fsPath) {
+            Logger.warn(`📋 Invalid fileUri provided to switchToFile`);
+            return;
+        }
+        
+        const filePath = fileUri.fsPath;
+        const headers = this.fileHeaders.get(filePath);
+        
+        if (headers) {
+            this.headers = headers;
+            this.currentFile = fileUri;
+            Logger.info(`📋 Switched outline to file: ${filePath}`);
+            this.refresh();
+        } else {
+            // If no headers are cached for this file, clear the outline
+            this.headers = [];
+            this.currentFile = fileUri;
+            Logger.info(`📋 No cached headers for file: ${filePath}, clearing outline`);
+            this.refresh();
+        }
+    }
+
+    /**
+     * Check if a file is supported for outline display
+     */
+    isFileSupported(fileUri: vscode.Uri): boolean {
+        if (!fileUri || !fileUri.path) {
+            return false;
+        }
+        
+        const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
+        const fileExtension = fileUri.path.split('.').pop()?.toLowerCase();
+        return fileExtension ? supportedExtensions.includes(`.${fileExtension}`) : false;
+    }
+
+    /**
+     * Get headers for a specific file without switching to it
+     */
+    getHeadersForFile(fileUri: vscode.Uri): HeaderItem[] | undefined {
+        if (!fileUri || !fileUri.fsPath) {
+            return undefined;
+        }
+        return this.fileHeaders.get(fileUri.fsPath);
     }
 }

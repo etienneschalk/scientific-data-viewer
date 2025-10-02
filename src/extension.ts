@@ -280,13 +280,27 @@ export function activate(context: vscode.ExtensionContext) {
     // Make outline provider accessible to DataViewerPanel
     DataViewerPanel.setOutlineProvider(outlineProvider);
 
+    // The outline will be updated automatically when DataViewerPanels become active
+    // via the onDidChangeViewState listener in DataViewerPanel
+
     const scrollToHeaderCommand = vscode.commands.registerCommand(
         'scientificDataViewer.scrollToHeader',
-        async (headerId: string, headerLabel: string, documentUri: vscode.Uri) => {
-            Logger.info(`🎮 📋 Command: Scrolling to header ${headerLabel} (${headerId})`);
+        async (headerId: string, headerLabel: string, documentUri?: vscode.Uri) => {
+            // If no documentUri provided, try to get it from the outline provider
+            let targetUri = documentUri;
+            if (!targetUri) {
+                targetUri = outlineProvider.getCurrentFile();
+            }
+            
+            if (!targetUri || !targetUri.fsPath) {
+                Logger.warn(`🎮 📋 No valid documentUri available for scrollToHeader command`);
+                return;
+            }
+            
+            Logger.info(`🎮 📋 Command: Scrolling to header ${headerLabel} (${headerId}) for file: ${targetUri.fsPath}`);
             
         // Find the active DataViewerPanel and scroll to the header
-        const activePanel = DataViewerPanel.getActivePanel(documentUri);
+        const activePanel = DataViewerPanel.getActivePanel(targetUri);
         if (activePanel) {
             await activePanel.scrollToHeader(headerId, headerLabel);
         } else {

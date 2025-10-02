@@ -44,20 +44,42 @@ export class DataViewerPanel {
         DataViewerPanel.outlineProvider = outlineProvider;
     }
 
+    /**
+     * Notify that this panel has become active
+     */
+    public notifyPanelActive(): void {
+        if (DataViewerPanel.outlineProvider && this._currentFile) {
+            Logger.info(`📋 Panel became active for file: ${this._currentFile.fsPath}`);
+            
+            // Check if we have headers cached for this file
+            const cachedHeaders = DataViewerPanel.outlineProvider.getHeadersForFile(this._currentFile);
+            if (cachedHeaders) {
+                // Switch to the cached headers for this file
+                DataViewerPanel.outlineProvider.switchToFile(this._currentFile);
+            } else {
+                // Update outline for this panel
+                this.updateOutline();
+            }
+        }
+    }
+
     public static getActivePanel(fileUri: vscode.Uri): DataViewerPanel | undefined {
-        // XXX TODO eschalk use vscode.DocumentSymbolProvider
-        return Array.from(DataViewerPanel.activePanels).pop();
-        // Logger.info(`🚚 📋 Getting active panel for file: ${fileUri.fsPath}`);
-        // // Find and return the first panel that matches the given file path
-        // const panel = Array.from(DataViewerPanel.activePanels).find(panel => 
-        //     panel._currentFile.fsPath === fileUri.fsPath
-        // );
-        // if (panel) {
-        //     Logger.info(`🚚 📋 Found active panel for file: ${fileUri.fsPath}`);
-        //     return panel;
-        // }
-        // Logger.info(`🚚 📋 No active panel found for file: ${fileUri.fsPath}`);
-        // return undefined;
+        if (!fileUri || !fileUri.fsPath) {
+            Logger.warn(`🚚 📋 Invalid fileUri provided to getActivePanel`);
+            return undefined;
+        }
+        
+        Logger.info(`🚚 📋 Getting active panel for file: ${fileUri.fsPath}`);
+        // Find and return the first panel that matches the given file path
+        const panel = Array.from(DataViewerPanel.activePanels).find(panel => 
+            panel._currentFile && panel._currentFile.fsPath === fileUri.fsPath
+        );
+        if (panel) {
+            Logger.info(`🚚 📋 Found active panel for file: ${fileUri.fsPath}`);
+            return panel;
+        }
+        Logger.info(`🚚 📋 No active panel found for file: ${fileUri.fsPath}`);
+        return undefined;
     }
 
     public static async createFromScratchOrShow(extensionUri: vscode.Uri, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
@@ -192,6 +214,9 @@ export class DataViewerPanel {
         }, (success) => {
             Logger.info(`[UIController] Success: ${success}`);
             DataViewerPanel.removePanelWithError(this);
+        }, () => {
+            // Update outline when data is loaded
+            this.updateOutline();
         });
 
         // Update the panel title to reflect the new file
@@ -212,8 +237,18 @@ export class DataViewerPanel {
         // Initialize outline with data viewer headers
         this._initializeOutline();
 
+        // Notify that this panel is active (in case it's the first/only panel)
+        this.notifyPanelActive();
+
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();
+
+        // Listen for when the panel becomes visible to update outline
+        this._webviewPanel.onDidChangeViewState((e) => {
+            if (e.webviewPanel.visible) {
+                this.notifyPanelActive();
+            }
+        }, null, this._disposables);
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
@@ -283,6 +318,18 @@ export class DataViewerPanel {
             Logger.info(`📋 Initialized outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
         } else {
             Logger.warn('📋 Outline provider not available');
+        }
+    }
+
+    /**
+     * Update the outline when data is loaded for this panel
+     */
+    public updateOutline(): void {
+        if (DataViewerPanel.outlineProvider) {
+            // Create headers for the data viewer sections
+            const headers = HeaderExtractor.createDataViewerHeaders();
+            DataViewerPanel.outlineProvider.updateHeaders(headers, this._currentFile);
+            Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${this._currentFile.fsPath}`);
         }
     }
 
