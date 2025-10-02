@@ -1551,7 +1551,32 @@ function scrollToHeader(headerId, headerLabel) {
     // Try to find the element by ID first
     let element = document.getElementById(headerId);
     
-    // If not found by ID, try to find by text content in summary elements (for details/summary structure)
+    // If not found by ID, check if this is an attribute ID and find the parent variable/coordinate
+    if (!element) {
+        // Check if this is an attribute ID (contains '-attr-' or '-attributes')
+        if (headerId.includes('-attr-') || headerId.includes('-attributes')) {
+            // Extract the parent variable/coordinate ID
+            let parentId = headerId;
+            
+            // Remove attribute-specific parts to get parent ID
+            if (headerId.includes('-attr-')) {
+                parentId = headerId.split('-attr-')[0];
+            } else if (headerId.includes('-attributes')) {
+                parentId = headerId.replace('-attributes', '');
+            }
+            
+            console.log(`📋 Looking for parent element: ${parentId}`);
+            element = document.getElementById(parentId);
+            
+            // If we found the parent, ensure it's a details element and open it
+            if (element && element.tagName === 'DETAILS') {
+                element.open = true;
+                console.log(`📋 Opened details element for: ${parentId}`);
+            }
+        }
+    }
+    
+    // If still not found by ID, try to find by text content in summary elements (for details/summary structure)
     if (!element) {
         const summaries = document.querySelectorAll('summary');
         for (const summary of summaries) {
