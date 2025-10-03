@@ -368,7 +368,7 @@ npm run lint
    - Test with sample data files
    - Verify Python integration works correctly
 
-### ❓ Debugging
+### 🐛 Debugging
 
 1. **Set breakpoints** in your TypeScript code
 2. **Press F5** to launch the Extension Development Host
