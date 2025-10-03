@@ -123,6 +123,21 @@ Before using this extension, you need:
 
 ## 🎯 Usage
 
+### 🐍 Configuring Python Environment
+
+1. **Automatic Detection**:
+
+   - The extension will automatically detect Python installations
+   - It will check for required packages and prompt to install missing ones
+   - When opening a file, it will check for optional packages and prompt to install missing ones
+
+2. **Configure Python via the Python Extension**:
+
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
+   - Type "Python: Select Interpreter"
+   - Choose your preferred Python environment
+   - The extension will automatically detect it and use it
+
 ### 📂 Opening Data Files
 
 1. **Direct File Opening**:
@@ -144,21 +159,6 @@ Before using this extension, you need:
 4. **Auto-detection**:
    - Open any supported file in VSCode
    - The extension will detect it and offer to open it in the data viewer
-
-### 🐍 Configuring Python Environment
-
-1. **Automatic Detection**:
-
-   - The extension will automatically detect Python installations
-   - It will check for required packages and prompt to install missing ones
-   - When opening a file, it will check for optional packages and prompt to install missing ones
-
-2. **Configure Python via the Python Extension**:
-
-   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
-   - Type "Python: Select Interpreter"
-   - Choose your preferred Python environment
-   - The extension will automatically detect it and use it
 
 ### 🔬 Exploring Data
 
