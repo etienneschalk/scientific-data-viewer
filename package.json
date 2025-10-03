@@ -339,7 +339,7 @@
         "scientificDataViewer.devMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened."
+          "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
         },
         "scientificDataViewer.matplotlibStyle": {
           "type": "string",
