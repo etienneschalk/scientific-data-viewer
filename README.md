@@ -43,9 +43,7 @@ Available on:
 
 ## 📸 Screenshot Gallery
 
-### v0.3.0 - October 2025
-
-#### Data Visualization and Plotting
+**Data Visualization and Plotting**
 
 <div align="center">
   <a href="media/screenshots/light-tif-plot-0.3.0.png" target="_blank">
@@ -68,7 +66,7 @@ Available on:
   <p><em>Light theme: GeoTIFF plot in opened/expanded state</em></p>
 </div>
 
-#### Data Structure Exploration
+**Data Structure Exploration**
 
 <div align="center">
   <a href="media/screenshots/light-nc-xarray-html-and-text-repr-0.3.0.png" target="_blank">
@@ -190,7 +188,7 @@ The extension can be configured through VSCode settings:
 | `scientificDataViewer.allowMultipleTabsForSameFile` <br> (type: `boolean`, default: `false`) | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
 | `scientificDataViewer.plottingCapabilities` <br> (type: `boolean`, default: `true`)          | ⚠️ **Experimental** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.                                                                                                                                                                                    |
 | `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
-| `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string)     | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
+| `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
 #### Feature Flags
 
@@ -247,9 +245,9 @@ Right-click on supported file types in the Explorer to access:
 
 - **Consult the Troubleshooting section**: Available at the end of the opened file. Copy buttons are present to help creating an issue.
 - **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
-- **Report issues**: [Create an issue (🐛 Bug Report) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
-- **Ask questions**: [Create an issue (❓ Question / Discussion) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
-- **I would like a specific feature**: [Create an issue (✨ Feature Request) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new) to suggest a new feature or enhancement for the Scientific Data Viewer extension
+- **Report issues**: [Create an issue (🐛 Bug Report) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=bug_report.yml)
+- **Ask questions**: [Create an issue (❓ Question / Discussion) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=question.yml)
+- **I would like a specific feature**: [Create an issue (✨ Feature Request) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=feature_request.yml) to suggest a new feature or enhancement for the Scientific Data Viewer extension
 
 ---
 
@@ -381,7 +379,7 @@ Note: It is recommended to run the task `start-watch-mode` for hot reload with
 
 Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
 
-#### About debugging the error handling
+**About debugging the error handling**
 
 To get a clean state in the development VSCode instance, uninstall dependencies
 to test the full error handling scenarios
@@ -392,7 +390,7 @@ python -m pip uninstall xarray matplotlib numpy netCDF4 h5py rioxarray cfgrib za
 
 Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Developer: Reload Window
 
-#### See the Webview console logs
+**See the Webview console logs**
 
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>: Open Webview Developer Tools
 
@@ -400,7 +398,7 @@ Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-### Development Setup
+**Development Setup**
 
 1. Fork the repository
 2. Create a feature branch
