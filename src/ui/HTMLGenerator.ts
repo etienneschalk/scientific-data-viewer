@@ -202,7 +202,7 @@ export class HTMLGenerator {
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
-                <div id="plotAllProgress" class="plot-progress hidden" style="margin-top: 10px; padding: 8px; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); border-radius: 4px; font-size: 14px; color: var(--vscode-foreground);">
+                <div id="plotAllProgress" class="plot-progress hidden" style="margin-top: 10px; padding: 8px; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); font-size: 14px; color: var(--vscode-foreground);">
                     Progress: 0/0 (0%)
                 </div>
             </details>

@@ -31,7 +31,6 @@ body {
     color: var(--vscode-foreground);
     border: 2px solid var(--vscode-errorForeground);
     padding: 15px;
-    /* border-radius: 6px; */
     margin: 15px 0;
     margin-left: 15px;
     /* font-weight: 500; */
@@ -200,7 +199,6 @@ select:focus {
 .dimensions-compact {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
-    /* border-radius: 4px; */
     color: var(--vscode-foreground);
     border: 1px solid var(--vscode-panel-border);
     /* max-width: 800px */
@@ -214,7 +212,6 @@ select:focus {
 .dimension-item, .variable-item {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
-    /* border-radius: 4px; */
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
@@ -612,7 +609,6 @@ button:active {
     background-color: var(--vscode-textCodeBlock-background);
     border: 1px solid var(--vscode-errorForeground);
     padding: 12px;
-    border-radius: 4px;
     margin: 10px 0;
     font-weight: 500;
     max-width: 100%;
