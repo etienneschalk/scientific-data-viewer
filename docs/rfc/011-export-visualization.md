@@ -13,7 +13,7 @@ Add ability to export visualizations to notebook or HTML format for sharing and 
 
 ## Acceptance Criteria
 
-- [ ] Export button available for visualizations
+- [x] Export button available for visualizations (PNG Plots)
 - [ ] Notebook export includes code and data
 - [ ] HTML export is self-contained
 - [ ] Exported files are reproducible

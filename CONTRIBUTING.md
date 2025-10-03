@@ -1,4 +1,4 @@
-# Contributing to Scientific Data Viewer
+# 🤝 Contributing to Scientific Data Viewer
 
 Thank you for your interest in contributing to the Scientific Data Viewer VSCode extension! This document provides guidelines and information for contributors.
 
@@ -14,22 +14,26 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 ### Development Setup
 
 1. **Fork and clone the repository**:
+
    ```bash
    git clone https://github.com/etienneschalk/scientific-data-viewer.git
    cd scientific-data-viewer
    ```
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Install Python dependencies**:
+
    ```bash
    pip install xarray netCDF4 zarr h5py numpy matplotlib
    ```
 
 4. **Compile the extension**:
+
    ```bash
    npm run compile
    ```
@@ -44,16 +48,19 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 ### Making Changes
 
 1. **Create a feature branch**:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. **Make your changes**:
+
    - Write code following the project's style guidelines
    - Add tests for new functionality
    - Update documentation as needed
 
 3. **Test your changes**:
+
    ```bash
    npm run compile
    npm test
@@ -125,12 +132,14 @@ test/
 ### Pull Request Process
 
 1. **Ensure your code is ready**:
+
    - All tests pass
    - Code is properly formatted
    - Documentation is updated
    - No console.log statements left in
 
 2. **Create a pull request**:
+
    - Use a descriptive title
    - Provide a detailed description
    - Link any related issues
@@ -145,20 +154,24 @@ test/
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
 - [ ] Manual testing completed
 
 ## Checklist
+
 - [ ] Code follows project style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated
@@ -209,6 +222,7 @@ For feature requests, please include:
 ### Version Numbering
 
 We use [Semantic Versioning](https://semver.org/):
+
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
@@ -240,6 +254,7 @@ We use [Semantic Versioning](https://semver.org/):
 ## Recognition
 
 Contributors will be recognized in:
+
 - **README.md** contributors section
 - **Release notes** for significant contributions
 - **GitHub contributors** page
@@ -247,6 +262,7 @@ Contributors will be recognized in:
 ## Questions?
 
 If you have questions about contributing, please:
+
 - Open a GitHub issue
 - Start a GitHub discussion
 - Contact the maintainers directly

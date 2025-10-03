@@ -232,9 +232,9 @@ suite('PythonManager Test Suite', () => {
         }
     });
 
-    test('should handle executePythonFileWithLogs when not ready', async () => {
+    test('should handle executePythonFile with logs when not ready', async () => {
         try {
-            await pythonManager.executePythonFileWithLogs('/path/to/script.py');
+            await pythonManager.executePythonFile('/path/to/script.py', [], true);
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
@@ -254,7 +254,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupInterpreterChangeListener(async () => {});
+            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
             assert.ok(listener);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -267,7 +267,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => undefined;
 
         try {
-            const listener = await pythonManager.setupInterpreterChangeListener(async () => {});
+            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -280,7 +280,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => ({});
 
         try {
-            const listener = await pythonManager.setupInterpreterChangeListener(async () => {});
+            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -295,7 +295,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupInterpreterChangeListener(async () => {});
+            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -310,7 +310,7 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            const listener = await pythonManager.setupInterpreterChangeListener(async () => {});
+            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;

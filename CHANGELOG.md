@@ -6,6 +6,112 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.3.0] - 2025-01-27
+
+### Added
+
+- **Enhanced Data Structure Navigation**: Improved outline view functionality
+  - Attributes display for coordinates and variables in outline
+  - Granular highlighting for individual attributes with precise navigation
+- **Comprehensive DataTree Support**: Full support for hierarchical data structures with group-specific sections
+  - Group-specific coordinates, variables, and attributes display
+  - Flattened dimensions support for nested datatree groups
+  - Enhanced plotting capabilities for nested variables
+  - Backward compatibility with regular datasets
+- **Advanced Plotting System**: Per-variable plotting capabilities
+  - Individual plot controls for each variable
+  - Multiple simultaneous plots support
+  - Per-variable plot actions (Reset, Save, Save As, Open)
+  - Global plot operations (Plot All, Reset All Plots, Save All Plots)
+  - Enhanced plot management with VSCode notifications
+- **Export and Visualization Features**: Complete visualization export capabilities
+  - Save plot functionality with file dialog integration
+  - "Save Plot As" with smart filename generation
+  - Open plot in new tab with external app fallback
+  - PNG export support with configurable resolution
+  - VSCode-native file operations and notifications
+- **Stress Testing Support**: Comprehensive testing infrastructure for large datasets
+  - Test data generator for 100+ variables and attributes
+  - Enhanced text representation with size limits
+- **Modular Architecture**: Complete UI architecture overhaul
+  - Split monolithic DataViewerPanel into focused generator classes
+  - HTMLGenerator, CSSGenerator, and JavaScriptGenerator modules
+  - Centralized state management with Redux-like pattern
+  - Type-safe communication system with MessageBus
+  - Component-based UI system with lifecycle management
+  - Error boundary system for robust error handling
+  - Note: The codebase can still be improved, and the need for an UI framework emerges.
+
+### Enhanced
+
+- **User Interface Improvements**: Better visual feedback and navigation
+  - Simplified highlighting with improved visual layout
+  - Better icon positioning and spacing in outline view
+  - Enhanced scroll functionality with sticky header offset
+  - Tree view navigation
+- **User Experience**: Improved interface and workflow
+  - Per-variable plot controls with intuitive positioning
+  - Responsive design (for window resize)
+  - Event delegation for efficient dynamic content handling
+  - Non-blocking notifications and better error feedback (eg for installing packages)
+- **Performance**: Performance improvements
+  - Parallelized plot generation with progress tracking
+  - Efficient event handling for multiple plot instances
+  - Optimized text representation for large datasets
+- **Code Quality**: Major architectural improvements
+  - 72% reduction in main panel code (1,500+ to ~420 lines)
+  - Separation of concerns between UI and business logic
+  - Type-safe message system with timeout handling
+  - Comprehensive error recovery mechanisms
+- **DataTree Integration**: Enhanced hierarchical data support
+  - Group-specific sections for coordinates, variables, and attributes
+  - Flattened dimensions display for nested structures
+  - Enhanced plotting with full variable paths (group/variable)
+
+### Technical Improvements
+
+- **Code Quality**: Enhanced implementation details
+  - Simplified Data Structure view for xarray HTML and Text representations
+  - Enhanced HeaderExtractor with attributes display for coordinates and variables
+  - Improved plotting strategy and 2D classic plotting support
+- **Architecture Refactoring**: Complete modularization of UI components
+  - HTMLGenerator: Centralized HTML generation utilities
+  - CSSGenerator: Modular CSS organization and styling
+  - JavaScriptGenerator: Client-side code generation
+  - UIController: Separated UI logic from business logic
+  - MessageBus: Type-safe communication system
+- **State Management**: Centralized, immutable state updates
+  - Redux-like pattern for state management
+  - Type-safe request/response pattern
+  - Component-specific and global error recovery
+  - Validation and error handling throughout
+  - Note: The current state management system is not used fully.
+  - Note: Plot generation is independent of current state management.
+- **Error Handling**: Robust error management system
+  - Error boundary system for component isolation
+  - Per-variable error messages and recovery
+  - VSCode integration for user notifications
+  - Graceful fallback mechanisms
+- **Testing Infrastructure**: Enhanced stress testing capabilities
+  - Sample data generator for 100+ variables
+  - Performance testing with large datasets
+  - Text representation optimization
+  - Memory usage monitoring
+
+### Fixed
+
+- **Data Structure Tree View**: Resolved loading issues
+  - Fixed data structure tree view not loading for right-click opened files
+  - Fixed tree view scrolling for attributes with details elements
+  - Fixed treeview navigation with proper IDs for TXT and HTML group representations
+  - Improved timing issues in DataViewerPanel constructor
+- **Plot Controls**: Resolved issues with grayed-out plot buttons
+- **Layout Issues**: Fixed broken variable display structure
+- **Event Handling**: Corrected event listener setup for dynamic content
+- **Alert Usage**: Replaced all alert() calls with VSCode notifications
+- **UI Elements**: Hidden useless divs and removed unnecessary code
+- **Display Issues**: Various display fixes for better visual presentation
+
 ## [0.2.0] - 2025-09-14
 
 ### Added

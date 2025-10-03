@@ -13,10 +13,10 @@ Add text representation of xarray Dataset/DataTree with copy-to-clipboard functi
 
 ## Acceptance Criteria
 
-- [ ] Text representation is displayed in UI
-- [ ] Copy to clipboard works reliably
-- [ ] Format is clean and readable
-- [ ] Works for both Dataset and DataTree
+- [x] Text representation is displayed in UI
+- [x] Copy to clipboard works reliably
+- [x] Format is clean and readable
+- [x] Works for both Dataset and DataTree
 
 ## Priority
 

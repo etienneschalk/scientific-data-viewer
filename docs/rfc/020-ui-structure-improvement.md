@@ -13,10 +13,10 @@ Improve the structure and organization of UI code in template files, potentially
 
 ## Acceptance Criteria
 
-- [ ] UI code is better structured
+- [x] UI code is better structured
 - [ ] Lightweight framework is chosen if needed
-- [ ] Code is more maintainable
-- [ ] Templates are more readable
+- [x] Code is more maintainable
+- [x] Templates are more readable
 
 ## Priority
 

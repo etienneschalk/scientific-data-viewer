@@ -2,10 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
+import { DataViewerPanel } from './dataViewerPanel';
 
 export class PythonManager {
     private pythonPath: string | undefined;
     private isInitialized: boolean = false;
+    private initializationPromise: Promise<void> | null = null;
 
     constructor(private context: vscode.ExtensionContext) {
         // Initialize without old pythonPath setting - will get from Python extension API
@@ -13,20 +15,37 @@ export class PythonManager {
     }
 
     async _initialize(): Promise<void> {
-        // Get Python interpreter from Python extension API (recommended method)
-        const newPythonPath = await this.getPythonInterpreterFromExtension();
-
-        if (newPythonPath && newPythonPath !== this.pythonPath) {
-            Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
-            this.pythonPath = newPythonPath;
-            // Reset initialization state when interpreter changes
-            this.isInitialized = false;
+        // If initialization is already in progress, wait for it to complete
+        if (this.initializationPromise) {
+            Logger.debug('🐍 ⏳ Python initialization already in progress, waiting...');
+            return this.initializationPromise;
         }
 
-        if (this.pythonPath) {
-            await this.validatePythonEnvironment();
-        } else {
-            await this.findPythonInterpreter();
+        // Start initialization and store the promise
+        this.initializationPromise = this._doInitialize();
+        return this.initializationPromise;
+    }
+
+    private async _doInitialize(): Promise<void> {
+        try {
+            // Get Python interpreter from Python extension API (recommended method)
+            const newPythonPath = await this.getPythonInterpreterFromExtension();
+
+            if (newPythonPath && newPythonPath !== this.pythonPath) {
+                Logger.info(`🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`);
+                this.pythonPath = newPythonPath;
+                // Reset initialization state when interpreter changes
+                this.isInitialized = false;
+            }
+
+            if (this.pythonPath) {
+                await this.validatePythonEnvironment();
+            } else {
+                await this.findPythonInterpreter();
+            }
+        } finally {
+            // Clear the initialization promise when done
+            this.initializationPromise = null;
         }
     }
 
@@ -57,12 +76,37 @@ export class PythonManager {
                 }
             }
 
-            // Try the new environments API first
+            // Try the new environments API with resolveEnvironment (recommended approach)
             if (pythonApi && pythonApi.environments && typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
                 try {
-                    const activeEnvironment = await pythonApi.environments.getActiveEnvironmentPath();
-                    Logger.debug(`🐍 🔍 Python extension API active environment: ${JSON.stringify(activeEnvironment)}`);
-                    return activeEnvironment?.path;
+                    const activeEnvironmentPath = await pythonApi.environments.getActiveEnvironmentPath();
+                    Logger.debug(`🐍 🔍 Python extension API active environment path: ${JSON.stringify(activeEnvironmentPath)}`);
+                    
+                    if (activeEnvironmentPath && activeEnvironmentPath.path) {
+                        // Resolve the environment to get complete details and ensure it's valid
+                        if (typeof pythonApi.environments.resolveEnvironment === 'function') {
+                            try {
+                                const resolvedEnvironment = await pythonApi.environments.resolveEnvironment(activeEnvironmentPath);
+                                Logger.debug(`🐍 🔍 Resolved environment details: ${JSON.stringify(resolvedEnvironment)}`);
+                                
+                                if (resolvedEnvironment) {
+                                    // Use the resolved environment's path, which should be more reliable
+                                    const resolvedPath = resolvedEnvironment.path || resolvedEnvironment.executable?.path || activeEnvironmentPath.path;
+                                    Logger.info(`🐍 ✅ Using resolved Python environment: ${resolvedPath}`);
+                                    return resolvedPath;
+                                } else {
+                                    Logger.warn('🐍 ⚠️ Environment resolution returned null, using original path');
+                                    return activeEnvironmentPath.path;
+                                }
+                            } catch (resolveError) {
+                                Logger.warn(`🐍 ⚠️ Environment resolution failed: ${resolveError}, using original path`);
+                                return activeEnvironmentPath.path;
+                            }
+                        } else {
+                            Logger.debug('🐍 ⚠️ resolveEnvironment not available, using original path');
+                            return activeEnvironmentPath.path;
+                        }
+                    }
                 } catch (envError) {
                     Logger.debug(`🐍 ⚠️ Environments API error: ${envError}`);
                     // Continue to VSCode configuration fallback
@@ -190,11 +234,11 @@ export class PythonManager {
     }
 
 
-    private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
+    public async checkRequiredPackages(pythonPath: string): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
         // Core packages required for basic functionality
-        const corePackages = ['xarray'];
+        const corePackages = ['xarray', 'matplotlib'];
         // Additional packages for extended format support
         const extendedPackages = ['netCDF4', 'h5netcdf', 'zarr', 'h5py', 'scipy', 'cfgrib', 'rioxarray', 'xarray-sentinel'];
         const allPackages = [...corePackages, ...extendedPackages];
@@ -215,13 +259,13 @@ export class PythonManager {
             }
         }
 
-        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages}`);
+        Logger.debug(`🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`);
         return availablePackages;
     }
 
-    private async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
+    public async checkPackageAvailability(pythonPath: string, packageName: string): Promise<boolean> {
         return new Promise((resolve) => {
-            const args = ['-c', `'import ${packageName}'`];
+            const args = ['-c', `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`];
             const process = spawn(pythonPath, args, { shell: true });
 
             process.on('close', (code) => {
@@ -282,34 +326,14 @@ export class PythonManager {
 
         try {
             const packages = await this.checkRequiredPackages(this.pythonPath);
-            const corePackages = ['xarray'];
+            const corePackages = ['xarray', 'matplotlib'];
             const missingCorePackages = corePackages.filter(pkg => !packages.includes(pkg));
             
             // Only require core packages for basic functionality
             const missingPackages = missingCorePackages;
 
             if (missingPackages.length > 0) {
-                const action = await vscode.window.showWarningMessage(
-                    `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
-                    'Install',
-                    'Show Details'
-                );
-
-                if (action === 'Install') {
-                    try {
-                        await this.installPackages(missingPackages);
-                    } catch (error) {
-                        Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                        // Show detailed error information
-                        const errorMessage = error instanceof Error ? error.message : String(error);
-                        vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
-                        throw error; // Re-throw to be caught by the outer try-catch
-                    }
-                } else {
-                    // User cancelled installation, but we still have a valid Python interpreter
-                    // Set as initialized so the extension can work with what's available
-                    Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
-                }
+                this.promptToInstallRequiredPackages(missingPackages);
             } else {
                 this.isInitialized = true;
                 // Don't show notification during initialization - only when interpreter changes
@@ -452,7 +476,7 @@ export class PythonManager {
                     } else if (errorMessage.includes('FileNotFoundError')) {
                         reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
                     } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
+                        reject(new Error(`Python script failed (exit code ${code}): \n${errorMessage}`));
                     }
                 }
             });
@@ -467,68 +491,13 @@ export class PythonManager {
         });
     }
 
-    async executePythonFile(scriptPath: string, args: string[] = []): Promise<any> {
+    async executePythonFile(scriptPath: string, args: string[] = [], enableLogs: boolean = false): Promise<any> {
         if (!this.pythonPath || !this.isInitialized) {
             throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
         }
 
-        Logger.log(`🐍 📦 📜 executePythonFile: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
-
-        return new Promise((resolve, reject) => {
-            const process = spawn(this.pythonPath!, [scriptPath, ...args], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
-
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            process.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    try {
-                        const result = JSON.parse(stdout);
-                        resolve(result);
-                    } catch (error) {
-                        resolve(stdout);
-                    }
-                } else {
-                    const errorMessage = stderr || 'Unknown Python error';
-                    if (errorMessage.includes('ModuleNotFoundError')) {
-                        reject(new Error(`Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`));
-                    } else if (errorMessage.includes('PermissionError')) {
-                        reject(new Error(`Permission denied: ${errorMessage}. Please check file permissions.`));
-                    } else if (errorMessage.includes('FileNotFoundError')) {
-                        reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
-                    } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
-                    }
-                }
-            });
-
-            process.on('error', (error) => {
-                if (error.message.includes('ENOENT')) {
-                    reject(new Error(`Python interpreter not found at: ${this.pythonPath}. Please check your Python installation.`));
-                } else {
-                    reject(new Error(`Failed to execute Python script: ${error.message}`));
-                }
-            });
-        });
-    }
-
-    async executePythonFileWithLogs(scriptPath: string, args: string[] = []): Promise<any> {
-        if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized. Please run "Python: Select Interpreter" command first.');
-        }
-
-        Logger.log(`🐍 📜 executePythonFileWithLogs: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
+        const methodName = enableLogs ? 'executePythonFileWithLogs' : 'executePythonFile';
+        Logger.log(`🐍 📜 ${methodName}: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this.pythonPath} | Is initialized: ${this.isInitialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(this.pythonPath!, [scriptPath, ...args], {
@@ -547,35 +516,37 @@ export class PythonManager {
                 const logData = data.toString();
                 stderr += logData;
 
-                // Forward Python logs to VSCode Logger
-                // Parse log lines and forward them
-                const lines = logData.split('\n').filter((line: string) => line.trim());
-                lines.forEach((line: string) => {
-                    if (line.includes(' - INFO - ')) {
-                        const message = line.split(' - INFO - ')[1];
-                        if (message) {
-                            Logger.info(`🐍 📜 [Python] ${message}`);
+                if (enableLogs) {
+                    // Forward Python logs to VSCode Logger
+                    // Parse log lines and forward them
+                    const lines = logData.split('\n').filter((line: string) => line.trim());
+                    lines.forEach((line: string) => {
+                        if (line.includes(' - INFO - ')) {
+                            const message = line.split(' - INFO - ')[1];
+                            if (message) {
+                                Logger.info(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - ERROR - ')) {
+                            const message = line.split(' - ERROR - ')[1];
+                            if (message) {
+                                Logger.error(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - WARNING - ')) {
+                            const message = line.split(' - WARNING - ')[1];
+                            if (message) {
+                                Logger.warn(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.includes(' - DEBUG - ')) {
+                            const message = line.split(' - DEBUG - ')[1];
+                            if (message) {
+                                Logger.debug(`🐍 📜 [Python] ${message}`);
+                            }
+                        } else if (line.trim()) {
+                            // Any other stderr output that doesn't match the log format
+                            Logger.info(`🐍 📜 [Python] ${line.trim()}`);
                         }
-                    } else if (line.includes(' - ERROR - ')) {
-                        const message = line.split(' - ERROR - ')[1];
-                        if (message) {
-                            Logger.error(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.includes(' - WARNING - ')) {
-                        const message = line.split(' - WARNING - ')[1];
-                        if (message) {
-                            Logger.warn(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.includes(' - DEBUG - ')) {
-                        const message = line.split(' - DEBUG - ')[1];
-                        if (message) {
-                            Logger.debug(`🐍 📜 [Python] ${message}`);
-                        }
-                    } else if (line.trim()) {
-                        // Any other stderr output that doesn't match the log format
-                        Logger.info(`🐍 📜 [Python] ${line.trim()}`);
-                    }
-                });
+                    });
+                }
             });
 
             process.on('close', (code) => {
@@ -595,7 +566,7 @@ export class PythonManager {
                     } else if (errorMessage.includes('FileNotFoundError')) {
                         reject(new Error(`File not found: ${errorMessage}. Please check the file path.`));
                     } else {
-                        reject(new Error(`Python script failed (exit code ${code}): ${errorMessage}`));
+                        reject(new Error(`Python script failed (exit code ${code}): \n${errorMessage}`));
                     }
                 }
             });
@@ -609,6 +580,7 @@ export class PythonManager {
             });
         });
     }
+
 
     getPythonPath(): string | undefined {
         return this.pythonPath;
@@ -629,11 +601,74 @@ export class PythonManager {
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
         this.isInitialized = false;
+        this.initializationPromise = null; // Reset any existing initialization
         await this._initialize();
+    }
+
+    /**
+     * Wait for Python initialization to complete
+     * This method should be called before any file operations to prevent race conditions
+     */
+    async waitForInitialization(): Promise<void> {
+        if (this.initializationPromise) {
+            Logger.debug('🐍 ⏳ Waiting for Python initialization to complete...');
+            await this.initializationPromise;
+        }
     }
 
     async getCurrentInterpreterPath(): Promise<string | undefined> {
         return await this.getPythonInterpreterFromExtension();
+    }
+
+    /**
+     * Get the resolved environment details for the current Python interpreter
+     * This provides complete environment information including executable path, environment variables, etc.
+     */
+    async getResolvedEnvironment(): Promise<any | undefined> {
+        try {
+            const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+            if (!pythonExtension) {
+                Logger.error('🐍 ❌ Python extension not found');
+                return undefined;
+            }
+
+            const pythonApi = await pythonExtension.activate();
+            if (!pythonApi || !pythonApi.environments) {
+                Logger.warn('🐍 ⚠️ Python extension API or environments API not available');
+                return undefined;
+            }
+
+            // Get the active environment path first
+            if (typeof pythonApi.environments.getActiveEnvironmentPath === 'function') {
+                try {
+                    const activeEnvironmentPath = await pythonApi.environments.getActiveEnvironmentPath();
+                    if (activeEnvironmentPath && activeEnvironmentPath.path) {
+                        // Resolve the environment to get complete details
+                        if (typeof pythonApi.environments.resolveEnvironment === 'function') {
+                            try {
+                                const resolvedEnvironment = await pythonApi.environments.resolveEnvironment(activeEnvironmentPath);
+                                Logger.debug(`🐍 🔍 Resolved environment details: ${JSON.stringify(resolvedEnvironment)}`);
+                                return resolvedEnvironment;
+                            } catch (resolveError) {
+                                Logger.warn(`🐍 ⚠️ Environment resolution failed: ${resolveError}`);
+                                return undefined;
+                            }
+                        } else {
+                            Logger.debug('🐍 ⚠️ resolveEnvironment not available');
+                            return undefined;
+                        }
+                    }
+                } catch (envError) {
+                    Logger.warn(`🐍 ⚠️ Failed to get active environment path: ${envError}`);
+                    return undefined;
+                }
+            }
+
+            return undefined;
+        } catch (error) {
+            Logger.warn(`🐍 ⚠️ Could not get resolved environment: ${error}`);
+            return undefined;
+        }
     }
 
     /**
@@ -660,54 +695,141 @@ export class PythonManager {
         }
     }
 
-    /**
-     * Install packages for a specific file format
-     */
-    async installPackagesForFormat(missingPackages: string[]): Promise<void> {
-        if (!this.pythonPath || !this.isInitialized) {
-            throw new Error('Python environment not properly initialized');
-        }
+    async promptToInstallRequiredPackages(missingPackages: string[]): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${this.pythonPath}. Missing required packages: ${missingPackages.join(', ')}. Install them?`,
+            'Install',
+            'Cancel'
+        );
 
-        if (missingPackages.length === 0) {
-            return;
+        if (action === 'Install') {
+            try {
+                await this.installPackages(missingPackages);
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX 
+                await DataViewerPanel.refreshPanelsWithErrors();
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(`🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this.pythonPath}`);
         }
+    }
 
-        try {
-            await this.installPackages(missingPackages);
-        } catch (error) {
-            Logger.error(`🐍 📦 ❌ Failed to install packages for format: ${error}`);
-            throw error;
+    async promptToInstallPackagesForFormat(format: string, missingPackages: string[]): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${this.pythonPath}. Missing packages for format ${format}: ${missingPackages.join(', ')}. Install them?`,
+            'Install',
+            'Cancel'
+        );
+
+        if (action === 'Install') {
+            try {
+                await this.installPackages(missingPackages);
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX 
+                await DataViewerPanel.refreshPanelsWithErrors();
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Package installation failed: ${errorMessage}`);
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(`🐍 📦 ⚠️ Installation cancelled for format ${format}: ${missingPackages.join(', ')}.`);
         }
     }
 
     /**
-     * Set up immediate event listener for Python interpreter changes
+     * Set up event listeners for Python environment changes and creation
      * Returns a disposable that should be disposed when the extension is deactivated
      */
-    async setupInterpreterChangeListener(onInterpreterChange: () => Promise<void>): Promise<vscode.Disposable | undefined> {
+    async setupEnvironmentChangeListeners(
+        onInterpreterChange: () => Promise<void>,
+        onEnvironmentCreated: (environment: any) => Promise<void>
+    ): Promise<vscode.Disposable | undefined> {
         try {
             const pythonApi = await this.getPythonExtensionApi();
             if (!pythonApi || !pythonApi.environments) {
-                Logger.debug('🐍 ⚠️ Python extension API or environments API not available for event listener');
+                Logger.debug('🐍 ⚠️ Python extension API or environments API not available for event listeners');
                 return undefined;
             }
 
-            // Check if the onDidChangeActiveEnvironmentPath method exists
-            if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
-                Logger.info('🐍 🔧 Setting up immediate Python interpreter change listener...');
+            const disposables: vscode.Disposable[] = [];
 
-                const disposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (environmentPath: any) => {
-                    Logger.info(`🐍 🔔 Python interpreter changed immediately via event: ${environmentPath?.path || 'undefined'}`);
+            // Listen for active interpreter changes (existing functionality)
+            if (typeof pythonApi.environments.onDidChangeActiveEnvironmentPath === 'function') {
+                Logger.info('🐍 🔧 Setting up Python interpreter change listener...');
+                
+                const interpreterDisposable = pythonApi.environments.onDidChangeActiveEnvironmentPath(async (event: any) => {
+                    Logger.info(`🐍 🔔 Python interpreter changed: ${event?.path || 'undefined'}`);
                     await onInterpreterChange();
                 });
+                
+                disposables.push(interpreterDisposable);
+            }
 
-                return disposable;
-            } else {
-                Logger.debug('🐍 ⚠️ onDidChangeActiveEnvironmentPath method not available in Python extension API');
+            // Listen for environment creation/removal/updates (NEW functionality)
+            if (typeof pythonApi.environments.onDidEnvironmentsChanged === 'function') {
+                Logger.info('🐍 🔧 Setting up Python environment change listener...');
+              
+                const environmentDisposable = pythonApi.environments.onDidEnvironmentsChanged(async (event: any) => {
+                    // Add comprehensive debugging
+                    Logger.debug(`🐍 🔍 Environment change event received: ${JSON.stringify(event, null, 2)}`);
+        
+                    // Handle newly created environments
+                    if (event.added && event.added.length > 0) {
+                        Logger.info(`🐍 🆕 New Python environments created: ${event.added.length}`);
+                        for (const env of event.added) {
+                            Logger.info(`🐍 🆕 New environment: ${env.path || env.id || 'unknown'}`);
+                            await onEnvironmentCreated(env);
+                        }
+                    }
+
+                    // Handle removed environments
+                    if (event.removed && event.removed.length > 0) {
+                        Logger.info(`🐍 🗑️ Python environments removed: ${event.removed.length}`);
+                        for (const env of event.removed) {
+                            Logger.info(`🐍 🗑️ Removed environment: ${env.path || env.id || 'unknown'}`);
+                        }
+                    }
+
+                    // Handle updated environments
+                    if (event.updated && event.updated.length > 0) {
+                        Logger.info(`🐍 🔄 Python environments updated: ${event.updated.length}`);
+                        for (const env of event.updated) {
+                            Logger.info(`🐍 🔄 Updated environment: ${env.path || env.id || 'unknown'}`);
+                        }
+                    }
+                });
+                
+                disposables.push(environmentDisposable);
+            }
+
+            // If no listeners were set up, return undefined
+            if (disposables.length === 0) {
+                Logger.debug('🐍 ⚠️ No compatible event listeners available in Python extension API');
                 return undefined;
             }
+
+            // Return a combined disposable
+            return {
+                dispose: () => {
+                    disposables.forEach(d => d.dispose());
+                }
+            };
+
         } catch (error) {
-            Logger.warn(`🐍 ❌ Failed to set up Python interpreter change listener: ${error}`);
+            Logger.warn(`🐍 ❌ Failed to set up Python environment change listeners: ${error}`);
             return undefined;
         }
     }

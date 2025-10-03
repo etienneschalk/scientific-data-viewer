@@ -28,6 +28,7 @@ env/
 venv/
 .env
 .venv
+venv
 
 # Exclude Node.js files
 node_modules/**

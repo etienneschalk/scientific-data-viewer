@@ -7,20 +7,23 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 ### High Priority
 
 - [#001: Add support for all possible formats](./001-format-support.md) - **MOSTLY IMPLEMENTED** ✅ (with known limitations) - Core functionality
+- [#003: Add DataTree usage and support](./003-datatree-support.md) - **MOSTLY IMPLEMENTED** ✅ - Feature enhancement
+- [#004: Stress testing with many small variables](./004-stress-testing.md) - **MOSTLY IMPLEMENTED** ✅ - Quality assurance
 - [#006: Fix interpreter error message handling](./006-interpreter-error-handling.md) - Bug fix
+- [#011: Export visualization functionality](./011-export-visualization.md) - **MOSTLY IMPLEMENTED** ✅ - User convenience
+- [#012: Text representation with copy functionality](./012-text-representation.md) - **FULLY IMPLEMENTED** ✅ - User convenience
+- [#013: Save plots to PNG](./013-save-plots-png.md) - **IMPLEMENTED** ✅ - Nice to have
+- [#020: Better structured UI in template files](./020-ui-structure-improvement.md) - **MOSTLY IMPLEMENTED** ✅ - Code quality
 - [#023: Support Tiling Grid S2 (Sentinel-2 SAFE)](./023-sentinel2-tiling-grid.md) - Core functionality enhancement
 - [#026: Optimize Python Script Calls](./026-python-script-optimization.md) - Performance optimization
+- [#029: Multiple Variables Plotting](./029-multiple-variables-plotting.md) - **STARTED IMPLEMENTATION** ✅ - Visualization enhancement
 
 ### Medium Priority
 
 - [#002: Allow Editor split view](./002-split-view.md) - Complex UI feature
-- [#003: Add DataTree usage and support](./003-datatree-support.md) - Feature enhancement
-- [#004: Stress testing with many small variables](./004-stress-testing.md) - Quality assurance
 - [#005: Export to notebook functionality](./005-export-notebook.md) - User convenience
 - [#007: Lazy initialization with feature flags](./007-lazy-initialization.md) - Performance
 - [#009: Optional dependencies for plotting](./009-optional-plotting-deps.md) - Architecture
-- [#011: Export visualization functionality](./011-export-visualization.md) - User convenience
-- [#012: Text representation with copy functionality](./012-text-representation.md) - User convenience
 - [#015: Comprehensive feature flag system](./015-feature-flags.md) - Architecture
 - [#017: Better installed package detection](./017-package-detection.md) - Reliability
 - [#021: Fix tree view data provider](./021-tree-view-fix.md) - Bug fix
@@ -29,6 +32,10 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#025: Generate Static Webview via Notebook](./025-static-webview-generation.md) - Export and visualization enhancement
 - [#027: Allow User-Configurable kwargs for xarray Products](./027-custom-xarray-kwargs.md) - Advanced user feature
 - [#028: Add Healthcheck System](./028-healthcheck-system.md) - Reliability and monitoring
+- [#030: Export HTML Report](./030-export-html-report.md) - Export functionality
+- [#031: Convert HTML to Notebook](./031-convert-html-notebook.md) - Export functionality
+- [#032: Interactive Plotting Tools](./032-interactive-plotting-tools.md) - Visualization enhancement
+- [#033: Flatten DataTree Variables](./033-flatten-datatree-variables.md) - DataTree support enhancement
 
 ### Low Priority
 
@@ -44,6 +51,10 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 ## Completed RFCs
 
 - [x] [#001: Add support for all possible formats](./001-format-support.md) - **MOSTLY IMPLEMENTED** ✅ (with known limitations)
+- [x] [#012: Text representation with copy functionality](./012-text-representation.md) - **FULLY IMPLEMENTED** ✅
+
+## Completed features (not listed in RFCs)
+
 - [x] Open multiple files in their single tab
 - [x] Use xarray native representation of Datasets
 - [x] Tab Name not updated (bug fix)

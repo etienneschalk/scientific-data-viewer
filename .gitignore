@@ -8,3 +8,5 @@ node_modules
 sample-data/
 **/__pycache__/
 **/*.pyc
+.venv/
+venv/

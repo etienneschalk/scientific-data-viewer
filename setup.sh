@@ -10,7 +10,7 @@ echo "=============================================="
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 16+ and try again."
+    echo "❌ Node.js is not installed. Please install Node.js 22+ and try again."
     exit 1
 fi
 
@@ -55,6 +55,7 @@ npm run compile
 
 # Create sample data
 echo "📊 Creating sample data files..."
+echo "   This will regenerate all sample files including disposable test files..."
 python3 python/create_sample_data.py
 
 # Run tests

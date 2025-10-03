@@ -35,7 +35,7 @@
   </defs>
   
   <!-- Background with gradient -->
-  <rect width="128" height="128" fill="url(#bgGradient)" rx="16"/>
+  <rect width="128" height="128" fill="transparent" rx="16"/>
   
   <!-- Outer glow ring - multiple layers for glow effect -->
   <circle cx="64" cy="64" r="65" fill="url(#glowGradient)" opacity="0.3"/>

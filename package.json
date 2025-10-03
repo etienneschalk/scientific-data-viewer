@@ -2,7 +2,7 @@
   "name": "scientific-data-viewer",
   "displayName": "Scientific Data Viewer",
   "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "eschalk0",
   "icon": "media/icon.png",
   "engines": {
@@ -35,16 +35,19 @@
     "onLanguage:hdf5",
     "onLanguage:grib",
     "onLanguage:geotiff",
+    "onLanguage:jp2",
     "onCommand:scientificDataViewer.openViewer",
     "onFileSystem:netcdf",
     "onFileSystem:zarr",
     "onFileSystem:grib",
     "onFileSystem:geotiff",
+    "onFileSystem:jp2",
     "onCustomEditor:netcdfEditor",
     "onCustomEditor:hdf5Editor",
     "onCustomEditor:zarrEditor",
     "onCustomEditor:gribEditor",
-    "onCustomEditor:geotiffEditor"
+    "onCustomEditor:geotiffEditor",
+    "onCustomEditor:jp2Editor"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -68,12 +71,23 @@
         "command": "scientificDataViewer.showSettings",
         "title": "Show Settings",
         "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.openDeveloperTools",
+        "title": "Open Developer Tools",
+        "category": "Scientific Data Viewer"
+      },
+      {
+        "command": "scientificDataViewer.expandAll",
+        "title": "Expand All",
+        "category": "Scientific Data Viewer",
+        "icon": "$(expand-all)"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
           "command": "scientificDataViewer.openViewer",
           "group": "navigation"
         }
@@ -94,6 +108,21 @@
         {
           "command": "scientificDataViewer.showSettings",
           "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.openDeveloperTools",
+          "when": "true"
+        },
+        {
+          "command": "scientificDataViewer.expandAll",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "scientificDataViewer.expandAll",
+          "when": "view == scientificDataViewer.outline",
+          "group": "navigation@2"
         }
       ]
     },
@@ -110,7 +139,10 @@
           "NetCDF",
           "netcdf"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "hdf5",
@@ -122,7 +154,10 @@
           "HDF5",
           "hdf5"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "zarr",
@@ -133,36 +168,67 @@
           "Zarr",
           "zarr"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "grib",
         "extensions": [
           ".grib",
-          ".grib2"
+          ".grib2",
+          ".grb"
         ],
         "aliases": [
           "GRIB",
           "grib"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "id": "geotiff",
         "extensions": [
           ".tif",
           ".tiff",
-          ".geotiff",
-          ".jp2",
-          ".jpeg2000"
+          ".geotiff"
         ],
         "aliases": [
           "GeoTIFF",
           "geotiff"
         ],
-        "configuration": "./language-configuration.json"
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
+      },
+      {
+        "id": "jp2",
+        "extensions": [
+          ".jp2",
+          ".jpeg2000"
+        ],
+        "aliases": [
+          "JPEG-2000",
+          "jpeg2000"
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "scientificDataViewer.outline",
+          "name": "Data Structure"
+        }
+      ]
+    },
     "customEditors": [
       {
         "viewType": "netcdfEditor",
@@ -180,7 +246,11 @@
           {
             "filenamePattern": "*.cdf"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "hdf5Editor",
@@ -192,7 +262,11 @@
           {
             "filenamePattern": "*.hdf5"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "zarrEditor",
@@ -201,7 +275,11 @@
           {
             "filenamePattern": "*.zarr"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "gribEditor",
@@ -212,8 +290,15 @@
           },
           {
             "filenamePattern": "*.grib2"
+          },
+          {
+            "filenamePattern": "*.grb"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       },
       {
         "viewType": "geotiffEditor",
@@ -227,27 +312,36 @@
           },
           {
             "filenamePattern": "*.geotiff"
-          },
+          }
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
+      },
+      {
+        "viewType": "jp2Editor",
+        "displayName": "JPEG-2000 Data Viewer",
+        "selector": [
           {
             "filenamePattern": "*.jp2"
           },
           {
             "filenamePattern": "*.jpeg2000"
           }
-        ]
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
       }
     ],
     "configuration": {
       "title": "Scientific Data Viewer",
       "properties": {
-        "scientificDataViewer.autoRefresh": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically refresh data when files change"
-        },
         "scientificDataViewer.maxFileSize": {
           "type": "number",
-          "default": 500,
+          "default": 10000,
           "description": "Maximum file size in MB to load automatically"
         },
         "scientificDataViewer.defaultView": {
@@ -267,10 +361,21 @@
         },
         "scientificDataViewer.plottingCapabilities": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "experimental": true,
           "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.",
           "description": "Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer."
+        },
+        "scientificDataViewer.devMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
+        },
+        "scientificDataViewer.matplotlibStyle": {
+          "type": "string",
+          "default": "",
+          "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
+          "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
         }
       }
     }
@@ -279,28 +384,29 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src --ext ts --fix",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
     "publish": "vsce publish",
     "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.0",
     "@types/node": "22.x",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
-    "eslint": "^8.28.0",
-    "typescript": "^4.9.4",
-    "@vscode/test-electron": "^2.2.0",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^2.22.0",
-    "mocha": "^10.2.0",
+    "eslint": "^8.28.0",
     "glob": "^10.3.0",
-    "@types/mocha": "^10.0.0",
-    "@types/glob": "^8.1.0"
+    "mocha": "^10.2.0",
+    "typescript": "^4.9.4"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "jsdom": "^27.0.0"
   },
   "repository": {
     "type": "git",

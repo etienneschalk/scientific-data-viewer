@@ -13,9 +13,9 @@ Create comprehensive stress testing to ensure UI robustness when handling datase
 
 ## Acceptance Criteria
 
-- [ ] Test data generator creates datasets with many small variables
-- [ ] UI remains responsive with large variable counts
-- [ ] Memory usage is optimized for large datasets
+- [x] Test data generator creates datasets with many small variables
+- [x] UI remains responsive with large variable counts
+- [x] Memory usage is optimized for large datasets (done via xarray's lazy loading)
 - [ ] Performance benchmarks are established
 
 ## Priority

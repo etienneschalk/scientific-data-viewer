@@ -34,11 +34,11 @@ suite('Extension Test Suite', () => {
                     contributes: {
                         configuration: {
                             properties: {
-                                'scientificDataViewer.autoRefresh': { type: 'boolean', default: true },
                                 'scientificDataViewer.maxFileSize': { type: 'number', default: 500 },
                                 'scientificDataViewer.defaultView': { type: 'string', default: 'default' },
                                 'scientificDataViewer.allowMultipleTabsForSameFile': { type: 'boolean', default: false },
-                                'scientificDataViewer.plottingCapabilities': { type: 'boolean', default: false }
+                                'scientificDataViewer.plottingCapabilities': { type: 'boolean', default: false },
+                                'scientificDataViewer.devMode': { type: 'boolean', default: false }
                             }
                         }
                     }
@@ -102,11 +102,10 @@ suite('Extension Test Suite', () => {
 
         // Check if configuration properties are available
         // In test environment, some properties might not be available
-        const hasAutoRefresh = config.has('autoRefresh');
         const hasMaxFileSize = config.has('maxFileSize');
         const hasDefaultView = config.has('defaultView');
 
-        if (hasAutoRefresh && hasMaxFileSize && hasDefaultView) {
+        if (hasMaxFileSize && hasDefaultView) {
             assert.ok(true, 'All configuration properties available');
         } else {
             console.log('Some configuration properties not available in test environment');
@@ -117,10 +116,6 @@ suite('Extension Test Suite', () => {
 
     test('Configuration properties should have correct types', () => {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        
-        // Test autoRefresh property
-        const autoRefresh = config.get('autoRefresh');
-        assert.ok(typeof autoRefresh === 'boolean' || autoRefresh === undefined, 'autoRefresh should be boolean or undefined');
         
         // Test maxFileSize property
         const maxFileSize = config.get('maxFileSize');
