@@ -2,10 +2,7 @@
 
 <div align="center">
   <img src="media/icon.png" alt="Scientific Data Viewer Icon" width="128" height="128">
-  <!-- <img src="media/icon_orig.svg" alt="Scientific Data Viewer Icon" width="128" height="128"> -->
 </div>
-
-<!-- ![Scientific Data Viewer logo](media/icon_orig.svg) -->
 
 A powerful VSCode extension for viewing and analyzing scientific data files including NetCDF, Zarr, HDF5, and more. This extension provides an intuitive interface for exploring scientific datasets directly within VSCode, eliminating the need for external tools.
 
@@ -35,10 +32,47 @@ Available on:
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
 
-## 📸 Screenshot
+## 📸 Screenshot Gallery
+
+### v0.3.0 - October 2025
+
+#### Data Visualization and Plotting
 
 <div align="center">
-  <img src="media/Screenshot from 2025-09-13 17-09-58.png" alt="Scientific Data Viewer Screenshot" width="800">
+  <a href="media/screenshots/light-tif-plot-0.3.0.png" target="_blank">
+    <img width="200" src="media/screenshots/light-tif-plot-0.3.0.png" alt="Light theme TIF file plot">
+  </a>
+  <p><em>Light theme: GeoTIFF data visualization with plotting capabilities</em></p>
+</div>
+
+<div align="center">
+  <a href="media/screenshots/dark-tif-plot-0.3.0.png" target="_blank">
+    <img width="200" src="media/screenshots/dark-tif-plot-0.3.0.png" alt="Dark theme TIF file plot">
+  </a>
+  <p><em>Dark theme: GeoTIFF data visualization with plotting capabilities</em></p>
+</div>
+
+<div align="center">
+  <a href="media/screenshots/light-tif-plot-opened-0.3.0.png" target="_blank">
+    <img width="200" src="media/screenshots/light-tif-plot-opened-0.3.0.png" alt="Light theme TIF file plot opened">
+  </a>
+  <p><em>Light theme: GeoTIFF plot in opened/expanded state</em></p>
+</div>
+
+#### Data Structure Exploration
+
+<div align="center">
+  <a href="media/screenshots/light-nc-xarray-html-and-text-repr-0.3.0.png" target="_blank">
+    <img width="200" src="media/screenshots/light-nc-xarray-html-and-text-repr-0.3.0.png" alt="Light theme NetCDF xarray representation">
+  </a>
+  <p><em>Light theme: NetCDF file with xarray HTML and text representation</em></p>
+</div>
+
+<div align="center">
+  <a href="media/screenshots/light-zarr-tree-view-focus-on-variable-0.3.0.png" target="_blank">
+    <img width="200" src="media/screenshots/light-zarr-tree-view-focus-on-variable-0.3.0.png" alt="Light theme Zarr tree view">
+  </a>
+  <p><em>Light theme: Zarr dataset tree view with variable focus</em></p>
 </div>
 
 ## 📦 Installation
@@ -385,7 +419,7 @@ To make the extension available in Cursor, VSCodium, and other VSCode-compatible
 3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
 4. **Publish**: `npm run openvsx-publish`
 
-See [PUBLISHING.md](PUBLISHING.md) for detailed Open VSX publishing instructions.
+See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instructions.
 
 ### Manual Publishing
 
