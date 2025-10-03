@@ -195,64 +195,44 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     }
 
     /**
-     * Collapse all items in the tree view
-     */
-    collapseAll(): void {
-        if (!this.treeView) {
-            Logger.warn('📋 Tree view not available for collapse operation');
-            return;
-        }
-
-        try {
-            // Clear all expanded states for the current file
-            if (this.currentFile) {
-                this.expandedStates.delete(this.currentFile.fsPath);
-            }
-            
-            // Force refresh to rebuild the tree with collapsed state
-            this.refresh();
-            
-            Logger.info('📋 Collapsed all outline items');
-        } catch (error) {
-            Logger.error(`❌ Error collapsing all items: ${error}`);
-        }
-    }
-
-    /**
      * Expand all items in the tree view
      */
     expandAll(): void {
         if (!this.treeView) {
-            Logger.warn('📋 Tree view not available for expand operation');
+            Logger.warn('📋 Tree view not available for expandAll operation');
             return;
         }
 
-        try {
-            // Get all elements with children
-            const allElements = this.getAllElements(this.headers);
-            
-            // Save expanded state for all elements first
-            if (this.currentFile) {
-                const filePath = this.currentFile.fsPath;
-                if (!this.expandedStates.has(filePath)) {
-                    this.expandedStates.set(filePath, new Set());
-                }
-                
-                allElements.forEach(element => {
-                    if (element.children.length > 0) {
-                        const elementId = this.getElementId(element);
-                        this.expandedStates.get(filePath)!.add(elementId);
-                    }
-                });
+        // Get all elements that have children (can be expanded)
+        const allElements = this.getAllElements(this.headers);
+        const expandableElements = allElements.filter(element => element.children.length > 0);
+
+        // Add all expandable elements to the expanded state for the current file
+        if (this.currentFile) {
+            const filePath = this.currentFile.fsPath;
+            if (!this.expandedStates.has(filePath)) {
+                this.expandedStates.set(filePath, new Set());
             }
             
-            // Force refresh to rebuild the tree with expanded state
-            this.refresh();
+            const expandedSet = this.expandedStates.get(filePath)!;
+            expandableElements.forEach(element => {
+                const elementId = this.getElementId(element);
+                expandedSet.add(elementId);
+            });
             
-            Logger.info('📋 Expanded all outline items');
-        } catch (error) {
-            Logger.error(`❌ Error expanding all items: ${error}`);
+            Logger.info(`📋 Added ${expandableElements.length} items to expanded state for file: ${filePath}`);
         }
+
+        // Expand all elements by revealing them with expand: true
+        expandableElements.forEach(element => {
+            try {
+                this.treeView!.reveal(element, { select: false, focus: false, expand: true });
+            } catch (error) {
+                Logger.debug(`📋 Failed to expand element: ${element.label}, ${error}`);
+            }
+        });
+
+        Logger.info(`📋 Expanded ${expandableElements.length} items in tree view`);
     }
 
     /**
@@ -405,7 +385,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     /**
      * Restore the expanded state for a file
      */
-    private restoreExpandedState(filePath: string): void {
+    private restoreExpandedState(filePath: string, forceExpand: boolean = true): void {
         if (!this.treeView || !this.expandedStates.has(filePath)) {
             return;
         }
@@ -423,7 +403,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             const elementId = this.getElementId(element);
             if (expandedIds.has(elementId) && element.children.length > 0) {
                 try {
-                    this.treeView!.reveal(element, { select: false, focus: false, expand: true });
+                    this.treeView!.reveal(element, { select: false, focus: false, expand: forceExpand });
                 } catch (error) {
                     Logger.debug(`📋 Failed to expand element: ${elementId}, ${error}`);
                 }

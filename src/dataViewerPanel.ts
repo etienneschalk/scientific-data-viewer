@@ -65,21 +65,24 @@ export class DataViewerPanel {
     }
 
     public static getActivePanel(fileUri: vscode.Uri): DataViewerPanel | undefined {
+        // XXX This is a hot method, called many times (eg by OutlineProvider)
+        // It should be optimized, eg having a maps of paneid to pane instead 
+        // of the current search through the activePanels set...
         if (!fileUri || !fileUri.fsPath) {
             Logger.warn(`🚚 📋 Invalid fileUri provided to getActivePanel`);
             return undefined;
         }
         
-        Logger.info(`🚚 📋 Getting active panel for file: ${fileUri.fsPath}`);
+        Logger.debug(`🚚 📋 Getting active panel for file: ${fileUri.fsPath}`);
         // Find and return the first panel that matches the given file path
         const panel = Array.from(DataViewerPanel.activePanels).find(panel => 
             panel._currentFile && panel._currentFile.fsPath === fileUri.fsPath
         );
         if (panel) {
-            Logger.info(`🚚 📋 Found active panel for file: ${fileUri.fsPath}`);
+            Logger.debug(`🚚 📋 Found active panel for file: ${fileUri.fsPath}`);
             return panel;
         }
-        Logger.info(`🚚 📋 No active panel found for file: ${fileUri.fsPath}`);
+        Logger.debug(`🚚 📋 No active panel found for file: ${fileUri.fsPath}`);
         return undefined;
     }
 
@@ -280,6 +283,8 @@ export class DataViewerPanel {
 
         // Clear outline when panel is disposed
         if (DataViewerPanel.outlineProvider) {
+            // Note: this will break if allowMultipleTabsForSameFile is true,
+            // as it will clear the outline for all panels with the same file path
             DataViewerPanel.outlineProvider.clear(this._currentFile);
         }
 
@@ -298,7 +303,7 @@ export class DataViewerPanel {
             }
         }
         
-        Logger.info(`🚚 ✅ Panel disposal completed for file: ${this._currentFile.fsPath}`);
+        Logger.info(`🚚 ✅ Panel disposal completed for file: ${this._currentFile.fsPath}, remaining activePanels: ${DataViewerPanel.activePanels.size}`);
     }
 
     private async _handleDevMode(): Promise<void> {
