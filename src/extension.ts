@@ -101,7 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Check each configuration property for changes
             for (const [fullKey, schema] of Object.entries(configSchema)) {
-                // Extract the property name from the full key (e.g., "scientificDataViewer.autoRefresh" -> "autoRefresh")
+                // Extract the property name from the full key (e.g., "scientificDataViewer.devMode" -> "devMode")
                 const key = fullKey.replace('scientificDataViewer.', '');
 
                 if (event.affectsConfiguration(fullKey)) {

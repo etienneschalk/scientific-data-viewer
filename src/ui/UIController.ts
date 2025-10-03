@@ -425,7 +425,6 @@ export class UIController {
                 'scientificDataViewer.allowMultipleTabsForSameFile': config.get('allowMultipleTabsForSameFile'),
                 'scientificDataViewer.plottingCapabilities': config.get('plottingCapabilities'),
                 'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
-                'scientificDataViewer.autoRefresh': config.get('autoRefresh'),
                 'scientificDataViewer.devMode': config.get('devMode')
             };
         }, context) || {};

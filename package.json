@@ -310,14 +310,9 @@
     "configuration": {
       "title": "Scientific Data Viewer",
       "properties": {
-        "scientificDataViewer.autoRefresh": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically refresh data when files change"
-        },
         "scientificDataViewer.maxFileSize": {
           "type": "number",
-          "default": 500,
+          "default": 10000,
           "description": "Maximum file size in MB to load automatically"
         },
         "scientificDataViewer.defaultView": {
