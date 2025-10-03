@@ -17,6 +17,12 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#023: Support Tiling Grid S2 (Sentinel-2 SAFE)](./023-sentinel2-tiling-grid.md) - Core functionality enhancement
 - [#026: Optimize Python Script Calls](./026-python-script-optimization.md) - Performance optimization
 - [#029: Multiple Variables Plotting](./029-multiple-variables-plotting.md) - **STARTED IMPLEMENTATION** ✅ - Visualization enhancement
+- [#035: Enhanced Error Handling System](./035-enhanced-error-handling.md) - User experience and reliability
+- [#036: Outline and Breadcrumbs Navigation](./036-outline-breadcrumbs-navigation.md) - Navigation enhancement
+- [#038: Multi-Plot Query Optimization](./038-multi-plot-query-optimization.md) - Performance optimization
+- [#043: Remote Dataset Support (S3/Zarr)](./043-remote-dataset-support.md) - Data access enhancement
+- [#047: Xarray HTML Repr UI Foundation](./047-xarray-html-repr-ui-foundation.md) - Architecture improvement
+- [#050: True Outline Implementation](./050-true-outline-implementation.md) - Navigation improvement
 
 ### Medium Priority
 
@@ -36,6 +42,14 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#031: Convert HTML to Notebook](./031-convert-html-notebook.md) - Export functionality
 - [#032: Interactive Plotting Tools](./032-interactive-plotting-tools.md) - Visualization enhancement
 - [#033: Flatten DataTree Variables](./033-flatten-datatree-variables.md) - DataTree support enhancement
+- [#034: French Translation Support](./034-french-translation.md) - Accessibility enhancement
+- [#037: Categorical Raster Plotting](./037-categorical-raster-plotting.md) - Specialized visualization
+- [#039: Webview Search (Ctrl+F) Support](./039-webview-search-support.md) - User convenience
+- [#041: Code Formatting Standardization](./041-code-formatting-standardization.md) - Code quality
+- [#042: Enhanced Xarray HTML Representation](./042-enhanced-xarray-html-representation.md) - User experience
+- [#044: Data Structure Collapse/Expand Controls](./044-data-structure-collapse-expand.md) - User experience
+- [#045: Xarray Statistics Calculation](./045-xarray-statistics-calculation.md) - Data analysis
+- [#049: Details Section for Attributes](./049-details-section-for-attributes.md) - UI improvement
 
 ### Low Priority
 
@@ -47,6 +61,10 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [#018: Add refresh timestamp to webview](./018-refresh-timestamp.md) - User experience
 - [#019: Webview skeleton loading](./019-skeleton-loading.md) - User experience
 - [#020: Better structured UI in template files](./020-ui-structure-improvement.md) - Code quality
+- [#040: Xarray Color Alternation](./040-xarray-color-alternation.md) - Visual enhancement
+- [#046: Data Range Display (Begin/End)](./046-data-range-display.md) - Data overview
+- [#048: Attributes Wrench Icon Interface](./048-attributes-wrench-icon-interface.md) - UI enhancement
+- [#051: Xarray Contrib Integration](./051-xarray-contrib-integration.md) - Ecosystem integration
 
 ## Completed RFCs
 
