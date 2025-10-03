@@ -2,6 +2,72 @@
 
 This guide covers the complete process of publishing the Scientific Data Viewer VSCode extension to the marketplace.
 
+## Overview
+
+(this section was taken from the README.md)
+
+### Preparing for Publication
+
+1. **Update version** in `package.json`
+2. **Update CHANGELOG.md** with new features and fixes
+3. **Test thoroughly** with various file types and sizes
+4. **Update documentation** if needed
+
+### Publishing to VSCode Marketplace
+
+1. **Install vsce** (if not already installed):
+
+   ```bash
+   npm install -g vsce
+   ```
+
+2. **Login to Azure DevOps**:
+
+   ```bash
+   vsce login <publisher-name>
+   ```
+
+3. **Package the extension**:
+
+   ```bash
+   vsce package
+   ```
+
+4. **Publish**:
+   ```bash
+   vsce publish
+   ```
+
+### Publishing to Open VSX (for Cursor and other editors)
+
+To make the extension available in Cursor, VSCodium, and other VSCode-compatible editors:
+
+1. **Create Eclipse account** and sign Publisher Agreement at [open-vsx.org](https://open-vsx.org)
+2. **Generate access token** from your Open VSX profile
+3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
+4. **Publish**: `npm run openvsx-publish`
+
+See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instructions.
+
+### Manual Publishing
+
+1. **Create a Personal Access Token**:
+
+   - Go to Azure DevOps
+   - Create a new Personal Access Token with Marketplace permissions
+
+2. **Login**:
+
+   ```bash
+   vsce login <publisher-name>
+   # Enter your Personal Access Token when prompted
+   ```
+
+3. **Publish**:
+   ```bash
+   vsce publish
+   ```
+
 ## Prerequisites
 
 ### 1. Azure DevOps Account

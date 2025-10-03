@@ -32,11 +32,12 @@ Available on:
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
 - **Custom Editors**: Direct file opening with dedicated editors
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
-- **Variable Information**: View variable dimension names, data types, shapes, and memory usage
-- **Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
+- **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
+- **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
 - **Command Palette Integration**: Multiple commands for data viewer operations
 - **Status Bar Integration**: Shows current Python interpreter status
 - **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
+- **Easy Settings Access**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> ➜ _Scientific Data Viewer: Show Settings_
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
 
@@ -85,8 +86,6 @@ Available on:
 
 ## 📦 Installation
 
-### Quick Install (Recommended)
-
 1. **Install from VSCode Marketplace**:
 
    - Open VSCode
@@ -94,36 +93,35 @@ Available on:
    - Search for "Scientific Data Viewer"
    - Click Install
 
-2. **Install Python dependencies**:
+2. **Install required Python dependencies**: (prompted by extension)
+
    ```bash
-   pip install xarray netCDF4 zarr h5py numpy matplotlib
+   pip install xarray matplotlib
    ```
 
-### Manual Install
+3. **Install optional Python dependencies**: (prompted by extension)
 
-1. **Download the extension**:
+   ```bash
+   pip install netCDF4 h5py rioxarray cfgrib zarr
+   ```
 
-   - Go to the [Releases page](https://github.com/etienneschalk/scientific-data-viewer/releases)
-   - Download the latest `.vsix` file
-
-2. **Install the .vsix file**:
-   - Open VSCode
-   - Go to Extensions view (`Ctrl+Shift+X`)
-   - Click the "..." menu and select "Install from VSIX..."
-   - Select the downloaded `.vsix` file
+4. **Open a supported file 🎉**
 
 ## ⚙️ Prerequisites
 
 Before using this extension, you need:
 
 1. **Python 3.13+** installed on your system
+   - Former versions may work, but it is not guaranteed nor supported.
 2. **Required Python packages**:
    - xarray
-   - netCDF4
-   - zarr
-   - h5py
-   - numpy
    - matplotlib
+3. **Optional Python packages**:
+   - netCDF4
+   - h5py
+   - rioxarray
+   - cfgrib
+   - zarr
 
 ## 🎯 Usage
 
@@ -131,17 +129,17 @@ Before using this extension, you need:
 
 1. **Direct File Opening**:
 
-   - Double-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
+   - Double-click on any supported file
    - Files open directly in the Scientific Data Viewer
 
 2. **From File Explorer**:
 
-   - Right-click on any supported file (.nc, .netcdf, .zarr, .h5, .hdf5)
+   - Right-click on any supported file
    - Select "Open in Scientific Data Viewer"
 
 3. **From Command Palette**:
 
-   - Press `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
    - Type "Open Scientific Data Viewer"
    - Select a file from the file picker
 
@@ -155,62 +153,72 @@ Before using this extension, you need:
 
    - The extension will automatically detect Python installations
    - It will check for required packages and prompt to install missing ones
+   - When opening a file, it will check for optional packages and prompt to install missing ones
 
-2. **Manual Configuration**:
+2. **Configure Python via the Python Extension**:
 
-   - Press `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
    - The extension will automatically detect it and use it
 
-3. **Settings**:
-   - Open VSCode Settings (`Ctrl+,`)
-   - Search for "Scientific Data Viewer"
-   - Configure Python path and other options
-
 ### Exploring Data
 
-The data viewer shows:
+You can explore the data via the editor itself, or via the _Data Structure_ tree view displayed on the VSCode's left pane.
 
-- **File Information**: Format, size, and basic metadata
-- **Dimensions**: Dataset dimensions and their sizes
-- **Variables**: All data variables with their types, shapes, dimension names, and memory usage
-- ~~**Visualization**: Interactive plots and charts~~
+The data viewer editor shows:
 
-The data representation is based entirely on the native xarray's Dataset HTML representation.
+- **File Information**: Path, size, format, and basic metadata
+- **Xarray HTML and Text Representations**: Users that are habituated to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
+- **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened (using a sorted [`DataTree.to_dict()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dict.html)). Dataset representations are always used for groups.
+- **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
+- **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
+  - **Dimensions**: Dataset dimensions and their sizes
+  - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a coordinate..
+  - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a variable.
+    - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
+  - **Attributes**: Show group's attributes.
 
-### Creating Visualizations (:warning: EXPERIMENTAL)
-
-1. Select a variable from the dropdown or click on it in the variables list
-2. Choose a plot type (Line Plot, Heatmap, Histogram)
-3. Click "Create Plot" to generate the visualization
-
-## ⚙️ Configuration
+## ⚙️ Settings
 
 The extension can be configured through VSCode settings:
 
-- `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
-- `scientificDataViewer.defaultView`: Default view mode (default)
-- `scientificDataViewer.allowMultipleTabsForSameFile`: Allow opening multiple tabs for the same file (Experimental)
-- `scientificDataViewer.plottingCapabilities`: Enable plotting capabilities (Experimental)
+| Setting                                             | Type    | Default      | Description                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------- | ------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scientificDataViewer.maxFileSize`                  | number  | `10000`      | Maximum file size in MB to load automatically                                                                                                                                                                                                                                                                                    |
+| `scientificDataViewer.defaultView`                  | string  | `"default"`  | Default view mode for data display. **Options:** `default`                                                                                                                                                                                                                                                                       |
+| `scientificDataViewer.allowMultipleTabsForSameFile` | boolean | `false`      | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
+| `scientificDataViewer.plottingCapabilities`         | boolean | `true`       | ⚠️ **Experimental** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.                                                                                                                                                                                    |
+| `scientificDataViewer.devMode`                      | boolean | `false`      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
+| `scientificDataViewer.matplotlibStyle`              | string  | `""` (empty) | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
-### Available Commands
-
-Access these commands via the Command Palette (`<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>`):
-
-- **Open Scientific Data Viewer**: Open a file in the data viewer
-- **Refresh Python Environment**: Manually refresh the Python environment
-- **Show Extension Logs**: View detailed extension logs
-- **Show Settings**: Open Scientific Data Viewer settings
-
-### Feature Flags
+#### Feature Flags
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
 - **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
 - **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
-- **Settings UI**: Each setting appears as a checkbox in VSCode Settings
-- **Real-time Updates**: Configuration changes take effect immediately
+- **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
+
+### Available Commands
+
+Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
+
+| Command                                               | Description                                            |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| `Scientific Data Viewer: Open Scientific Data Viewer` | Opens the Scientific Data Viewer for the current file  |
+| `Scientific Data Viewer: Refresh Python Environment`  | Refreshes the Python environment used by the extension |
+| `Scientific Data Viewer: Show Extension Logs`         | Opens the extension's log output for debugging         |
+| `Scientific Data Viewer: Show Settings`               | Opens the extension settings                           |
+| `Scientific Data Viewer: Open Developer Tools`        | Opens the developer tools for the webview              |
+
+### Context Menu Commands
+
+Right-click on supported file types in the Explorer to access:
+
+- **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
+
+**Supported file formats:** `.nc`, `.netcdf`, `.zarr`, `.h5`, `.hdf5`, `.grib`, `.grib2`, `.grb`, `.tif`, `.tiff`, `.geotiff`, `.jp2`, `.jpeg2000`, `.safe`, `.nc4`, `.cdf`
 
 ## 🔧 Troubleshooting
 
@@ -237,9 +245,11 @@ The extension includes configuration options that act as feature flags to contro
 
 ### Getting Help
 
+- **Consult the Troubleshooting section**: Available at the end of the opened file. Copy buttons are present to help creating an issue.
 - **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
-- **Report issues**: [Create an issue on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
-- **Ask questions**: Use the GitHub Discussions section
+- **Report issues**: [Create an issue (🐛 Bug Report) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
+- **Ask questions**: [Create an issue (❓ Question / Discussion) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new)
+- **I would like a specific feature**: [Create an issue (✨ Feature Request) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new) to suggest a new feature or enhancement for the Scientific Data Viewer extension
 
 ---
 
@@ -289,7 +299,7 @@ The extension includes configuration options that act as feature flags to contro
 4. **Install Python dependencies** (if not already installed):
 
    ```bash
-   pip install xarray netCDF4 zarr h5py numpy matplotlib
+   pip install xarray matplotlib
    ```
 
 5. **Open in VSCode**:
@@ -300,7 +310,7 @@ The extension includes configuration options that act as feature flags to contro
 
 6. **Run the extension**:
    - Press `F5` to open a new Extension Development Host window
-   - Or use `<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>` and run "Developer: Reload Window"
+   - Or use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and run "Developer: Reload Window"
 
 ### Production Installation
 
@@ -320,16 +330,16 @@ The extension includes configuration options that act as feature flags to contro
 
 The extension uses several Python scripts for data processing:
 
-- **`get_data_info.py`**: Extracts file metadata, dimensions, variables, and their properties
-- **`get_data_slice.py`**: Retrieves specific data slices from variables
-- **`create_plot.py`**: Generates visualizations using matplotlib
-- **`get_html_representation.py`**: Creates HTML representation of xarray datasets
-- **`get_text_representation.py`**: Creates text representation of datasets
-- **`get_show_versions.py`**: Shows Python package versions for debugging
-- **`create_sample_data.py`**: Generates sample data files for testing
-- **`test_data_structure.py`**: Tests data structure and format detection
+- **`get_data_info.py`**:
+  - Extracts file metadata, dimensions, variables, and their properties,
+  - Creates HTML representation of xarray datasets
+  - Creates text representation of datasets
+  - Generates visualizations using matplotlib
+  - Shows Python package versions for debugging
+- **`create_sample_data.py`**:
+  - Generates sample data files for testing
 
-Disclaimer: most visualization scripts are experimental and produce unusable plots!
+Disclaimer: most visualization scripts are experimental and can produce unusable plots!
 
 ### Building
 
@@ -369,13 +379,15 @@ npm run lint
 Note: It is recommended to run the task `start-watch-mode` for hot reload with
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
 
+Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
+
 #### About debugging the error handling
 
 To get a clean state in the development VSCode instance, uninstall dependencies
 to test the full error handling scenarios
 
 ```
-python -m pip uninstall xarray netCDF4 zarr h5py numpy matplotlib rioxarray cfgrib zarr
+python -m pip uninstall xarray matplotlib numpy netCDF4 h5py rioxarray cfgrib zarr
 ```
 
 Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Developer: Reload Window
@@ -383,70 +395,6 @@ Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</
 #### See the Webview console logs
 
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>: Open Webview Developer Tools
-
-## 📦 Publishing
-
-### Preparing for Publication
-
-1. **Update version** in `package.json`
-2. **Update CHANGELOG.md** with new features and fixes
-3. **Test thoroughly** with various file types and sizes
-4. **Update documentation** if needed
-
-### Publishing to VSCode Marketplace
-
-1. **Install vsce** (if not already installed):
-
-   ```bash
-   npm install -g vsce
-   ```
-
-2. **Login to Azure DevOps**:
-
-   ```bash
-   vsce login <publisher-name>
-   ```
-
-3. **Package the extension**:
-
-   ```bash
-   vsce package
-   ```
-
-4. **Publish**:
-   ```bash
-   vsce publish
-   ```
-
-### Publishing to Open VSX (for Cursor and other editors)
-
-To make the extension available in Cursor, VSCodium, and other VSCode-compatible editors:
-
-1. **Create Eclipse account** and sign Publisher Agreement at [open-vsx.org](https://open-vsx.org)
-2. **Generate access token** from your Open VSX profile
-3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
-4. **Publish**: `npm run openvsx-publish`
-
-See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instructions.
-
-### Manual Publishing
-
-1. **Create a Personal Access Token**:
-
-   - Go to Azure DevOps
-   - Create a new Personal Access Token with Marketplace permissions
-
-2. **Login**:
-
-   ```bash
-   vsce login <publisher-name>
-   # Enter your Personal Access Token when prompted
-   ```
-
-3. **Publish**:
-   ```bash
-   vsce publish
-   ```
 
 ## 🤝 Contributing
 
@@ -471,6 +419,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Uses [VSCode Extension API](https://code.visualstudio.com/api) for integration
 
 ## 📁 Project Structure
+
+**Disclaimer**: The information below is provided for reference purposes only and may be outdated. Please refer to actual source code for the most current information.
 
 ```
 scientific-data-viewer/

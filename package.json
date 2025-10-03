@@ -112,7 +112,7 @@
         },
         {
           "command": "scientificDataViewer.expandAll",
-          "when": "scientificDataViewer.outline == focus"
+          "when": "false"
         }
       ],
       "view/title": [
@@ -174,7 +174,8 @@
         "id": "grib",
         "extensions": [
           ".grib",
-          ".grib2"
+          ".grib2",
+          ".grb"
         ],
         "aliases": [
           "GRIB",
@@ -273,6 +274,9 @@
           },
           {
             "filenamePattern": "*.grib2"
+          },
+          {
+            "filenamePattern": "*.grb"
           }
         ],
         "icon": {
