@@ -9,7 +9,7 @@ echo "🔬 Scientific Data Viewer - Ensure Script"
 echo "=============================================="
 
 # Use Node.js 22
-nvm use 22
+source ~/.nvm/nvm.sh && nvm use 22
 
 # Activate project's Python virtual environment
 source .venv/bin/activate
