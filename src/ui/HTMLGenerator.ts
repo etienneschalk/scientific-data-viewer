@@ -13,7 +13,7 @@ export class HTMLGenerator {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scientific Data Viewer</title>
     <style>
-        ${this.getCSSStyles(devMode)}
+        ${this.getCSS(devMode)}
     </style>
 </head>
 <body>
@@ -210,12 +210,12 @@ export class HTMLGenerator {
         return date.toLocaleTimeString();
     }
 
-    private static getCSSStyles(devMode: boolean): string {
-        return CSSGenerator.getStyles(devMode);
+    private static getCSS(devMode: boolean): string {
+        return CSSGenerator.get(devMode);
     }
 
 
     private static getJavaScriptCode(plottingCapabilities: boolean): string {
-        return JavaScriptGenerator.getCode(plottingCapabilities);
+        return JavaScriptGenerator.get(plottingCapabilities);
     }
 }

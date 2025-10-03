@@ -1667,23 +1667,11 @@ function scrollToHeader(headerId, headerLabel) {
         });
         
         // Add a temporary highlight effect
-        // element.style.backgroundColor = 'var(--vscode-textBlockQuote-background)';
-        // element.style.borderLeft = '3px solid var(--vscode-textBlockQuote-border)';
-        // element.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-        // element.style.boxShadow = 'inset 0px 0px 10px 4px var(--vscode-textBlockQuote-border)';
-        // element.style.boxShadow = 'inset 0px 0px 0px 6px var(--vscode-textBlockQuote-border)';
-        // element.style.boxShadow = 'inset 12px 0px 0px 0px var(--vscode-textBlockQuote-border)';
-        element.style.boxShadow = 'inset 4px 0px 0px 0px var(--vscode-button-background)';
-        // element.style.paddingLeft = '8px';
-        // element.style.borderRadius = '4px';
+        element.classList.add('highlighted');
         
         // Remove highlight after 3 seconds
         setTimeout(() => {
-            // element.style.backgroundColor = '';
-            element.style.borderLeft = '';
-            element.style.boxShadow = '';
-            // element.style.paddingLeft =  '';
-            // element.style.borderRadius = '';
+            element.classList.remove('highlighted');
         }, 3000);
         
         console.log(`📋 Successfully scrolled to header: ${headerLabel}`);

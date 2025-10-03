@@ -701,3 +701,7 @@ details.sticky-group-details summary > * {
     justify-content: left;
     flex-wrap: wrap;
 }
+
+.highlighted {
+    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
+}
