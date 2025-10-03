@@ -71,7 +71,7 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [x] [#001: Add support for all possible formats](./001-format-support.md) - **MOSTLY IMPLEMENTED** ✅ (with known limitations)
 - [x] [#012: Text representation with copy functionality](./012-text-representation.md) - **FULLY IMPLEMENTED** ✅
 
-## Completed features (not listed in RFCs)
+## Completed issues (not listed in RFCs)
 
 - [x] Open multiple files in their single tab
 - [x] Use xarray native representation of Datasets
@@ -79,6 +79,22 @@ This directory contains organized issue descriptions for the Scientific Data Vie
 - [x] Command to show settings
 - [x] Add a `xr.show_versions()` at the end for troubleshooting
 - [x] Add the python interpreter path inside the Troubleshooting section
+- [x] Refresh button not working on error page (hide it!)
+- [x] Merge display logic for datatree and dataset
+- [x] Lost live reload for static assets which is annoying
+- [x] Use resolveEnvironment
+- [x] Fix tab flickering
+- [x] HIGHLY NEEDED open file via Ctrl+P should trigger SDV!!!
+- [x] Add a timeout before showing the error for "Error in ui-1.getDataInfo: Python environment not ready..."
+- [x] Possibility to zoom in the matplotlib PNG plot directly from the SDV View
+- [x] Ctrl+Shift+T is broken
+- [x] Make light theme svg icon
+- [x] Simplify HTML and TEXT section (only groups)
+- [x] DO NOT FORGET TO UPDATE CHANGELOG
+- [x] Collapse by default Data Groups when opening
+- [x] Fix bug where clicking on text repr in treeview scroll to tree repr
+- [x] Plot control not in details
+- [x] Cache mechanism for treeviews
 
 ## Issue Categories
 
