@@ -1250,6 +1250,950 @@ def create_sample_netcdf4():
     return output_file
 
 
+def create_sample_netcdf_cdf():
+    """Create a sample NetCDF file with .cdf extension."""
+    output_file = "sample_data.cdf"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF CDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌡️ Creating sample NetCDF CDF file...")
+
+    # Create time dimension
+    time = np.arange(0, 12, 1)  # Monthly data
+    dates = [datetime(2020, 1, 1) + timedelta(days=int(t * 30)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(-90, 90, 90)
+    lon = np.linspace(-180, 180, 180)
+
+    # Create sample climate data
+    np.random.seed(303)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    temperature = (
+        15
+        + 10 * np.sin(2 * np.pi * time_3d / 12)
+        + np.random.normal(0, 2, (12, 90, 180))
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "temperature": (
+                ["time", "lat", "lon"],
+                temperature,
+                {
+                    "long_name": "Monthly Temperature",
+                    "units": "Celsius",
+                    "standard_name": "air_temperature",
+                    "valid_range": [-50, 50],
+                    "missing_value": -9999,
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample NetCDF CDF Data",
+        "description": "Sample NetCDF file with .cdf extension for testing VSCode extension",
+        "institution": "Climate Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.7",
+        "featureType": "timeSeries",
+    }
+
+    # Save to NetCDF
+    ds.to_netcdf(output_file)
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_netcdf_netcdf():
+    """Create a sample NetCDF file with .netcdf extension."""
+    output_file = "sample_data.netcdf"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF NETCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌡️ Creating sample NetCDF NETCDF file...")
+
+    # Create time dimension
+    time = np.arange(0, 6, 1)  # 6 time steps
+    dates = [datetime(2020, 1, 1) + timedelta(days=int(t * 30)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(-45, 45, 45)
+    lon = np.linspace(-90, 90, 90)
+
+    # Create sample climate data
+    np.random.seed(404)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    precipitation = np.clip(np.random.exponential(2, (6, 45, 90)), 0, 50).astype(
+        np.float32
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "precipitation": (
+                ["time", "lat", "lon"],
+                precipitation,
+                {
+                    "long_name": "Monthly Precipitation",
+                    "units": "mm",
+                    "standard_name": "precipitation_amount",
+                    "valid_range": [0, 1000],
+                    "missing_value": -9999,
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample NetCDF NETCDF Data",
+        "description": "Sample NetCDF file with .netcdf extension for testing VSCode extension",
+        "institution": "Climate Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.7",
+        "featureType": "timeSeries",
+    }
+
+    # Save to NetCDF
+    ds.to_netcdf(output_file)
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_hdf5_hdf5():
+    """Create a sample HDF5 file with .hdf5 extension."""
+    output_file = "sample_data.hdf5"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"🛰️ HDF5 HDF5 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🛰️ Creating sample HDF5 HDF5 file...")
+
+    # Create dimensions
+    time = np.arange(0, 20, 1)  # 20 days
+    lat = np.linspace(-60, 60, 60)
+    lon = np.linspace(-180, 180, 120)
+
+    # Create sample satellite data
+    np.random.seed(505)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    cloud_fraction = np.clip(
+        0.1
+        + 0.3 * np.sin(2 * np.pi * time_3d / 20)
+        + np.random.normal(0, 0.1, (20, 60, 120)),
+        0,
+        1,
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "cloud_fraction": (
+                ["time", "lat", "lon"],
+                cloud_fraction,
+                {
+                    "long_name": "Cloud Fraction",
+                    "units": "1",
+                    "valid_range": [0, 1],
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {"long_name": "Time", "units": "days since 2020-01-01"},
+            ),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample HDF5 HDF5 Data",
+        "description": "Sample HDF5 file with .hdf5 extension for testing VSCode extension",
+        "institution": "Satellite Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Save to HDF5
+    ds.to_netcdf(output_file, engine="h5netcdf")
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_grib_grib2():
+    """Create a sample GRIB2 file."""
+    output_file = "sample_data.grib2"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"🌦️ GRIB2 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌦️ Creating sample GRIB2 file...")
+
+    try:
+        import eccodes
+
+        print("  ✅ eccodes available, creating GRIB2 file")
+    except ImportError:
+        print("  ❌ eccodes not available, skipping GRIB2 file creation.")
+        return None
+
+    # Create time dimension
+    time = np.arange(0, 12, 3)  # 3-hourly data for 12 hours
+    dates = [datetime(2020, 1, 1) + timedelta(hours=int(t)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(60, 30, 12)  # Smaller grid for GRIB2
+    lon = np.linspace(0, 30, 16)
+
+    # Create sample weather data
+    np.random.seed(606)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    wind_speed = (
+        5 + 10 * np.sin(2 * np.pi * time_3d / 12) + np.random.normal(0, 2, (4, 12, 16))
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "wind_speed": (
+                ["time", "latitude", "longitude"],
+                wind_speed,
+                {
+                    "long_name": "Wind Speed",
+                    "units": "m/s",
+                    "standard_name": "wind_speed",
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "latitude": (
+                ["latitude"],
+                lat,
+                {"long_name": "Latitude", "units": "degrees_north"},
+            ),
+            "longitude": (
+                ["longitude"],
+                lon,
+                {"long_name": "Longitude", "units": "degrees_east"},
+            ),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample GRIB2 Data",
+        "description": "Sample GRIB2 file for testing VSCode extension",
+        "institution": "Weather Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Save to GRIB2 using eccodes directly
+    try:
+        with open(output_file, "wb") as f:
+            for i, time_val in enumerate(dates):
+                grib_id = eccodes.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+
+                try:
+                    eccodes.codes_set_string(grib_id, "shortName", "10si")
+                    eccodes.codes_set_long(
+                        grib_id, "dataDate", int(time_val.strftime("%Y%m%d"))
+                    )
+                    eccodes.codes_set_long(
+                        grib_id, "dataTime", int(time_val.strftime("%H%M"))
+                    )
+
+                    data_2d = ds["wind_speed"].isel(time=i).values
+                    if data_2d.size != eccodes.codes_get_size(grib_id, "values"):
+                        expected_size = eccodes.codes_get_size(grib_id, "values")
+                        if data_2d.size < expected_size:
+                            padded_data = np.zeros(expected_size)
+                            padded_data[: data_2d.size] = data_2d.flatten()
+                            data_2d = padded_data
+                        else:
+                            data_2d = data_2d.flatten()[:expected_size]
+                    else:
+                        data_2d = data_2d.flatten()
+
+                    eccodes.codes_set_values(grib_id, data_2d)
+                    eccodes.codes_write(grib_id, f)
+
+                finally:
+                    eccodes.codes_release(grib_id)
+
+        print(f"✅ Created {output_file} (GRIB2 format)")
+
+    except Exception as e:
+        print(f"  ⚠️ Error writing GRIB2 file with eccodes: {e}")
+        print("  🔄 Falling back to NetCDF format with .grib2 extension")
+        temp_file = output_file.replace(".grib2", "_temp.nc")
+        ds.to_netcdf(temp_file, engine="netcdf4")
+        import shutil
+
+        shutil.move(temp_file, output_file)
+        print(f"✅ Created {output_file} (NetCDF format with .grib2 extension)")
+
+    return output_file
+
+
+def create_sample_grib_grb():
+    """Create a sample GRIB file with .grb extension."""
+    output_file = "sample_data.grb"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"🌦️ GRIB GRB file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌦️ Creating sample GRIB GRB file...")
+
+    try:
+        import eccodes
+
+        print("  ✅ eccodes available, creating GRIB GRB file")
+    except ImportError:
+        print("  ❌ eccodes not available, skipping GRIB GRB file creation.")
+        return None
+
+    # Create time dimension
+    time = np.arange(0, 8, 2)  # 2-hourly data for 8 hours
+    dates = [datetime(2020, 1, 1) + timedelta(hours=int(t)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(50, 40, 10)
+    lon = np.linspace(0, 20, 15)
+
+    # Create sample weather data
+    np.random.seed(707)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    humidity = np.clip(
+        50
+        + 30 * np.sin(2 * np.pi * time_3d / 8)
+        + np.random.normal(0, 10, (4, 10, 15)),
+        0,
+        100,
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "humidity": (
+                ["time", "latitude", "longitude"],
+                humidity,
+                {
+                    "long_name": "Relative Humidity",
+                    "units": "%",
+                    "standard_name": "relative_humidity",
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "latitude": (
+                ["latitude"],
+                lat,
+                {"long_name": "Latitude", "units": "degrees_north"},
+            ),
+            "longitude": (
+                ["longitude"],
+                lon,
+                {"long_name": "Longitude", "units": "degrees_east"},
+            ),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample GRIB GRB Data",
+        "description": "Sample GRIB file with .grb extension for testing VSCode extension",
+        "institution": "Weather Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Save to GRIB using eccodes directly
+    try:
+        with open(output_file, "wb") as f:
+            for i, time_val in enumerate(dates):
+                grib_id = eccodes.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+
+                try:
+                    eccodes.codes_set_string(grib_id, "shortName", "r")
+                    eccodes.codes_set_long(
+                        grib_id, "dataDate", int(time_val.strftime("%Y%m%d"))
+                    )
+                    eccodes.codes_set_long(
+                        grib_id, "dataTime", int(time_val.strftime("%H%M"))
+                    )
+
+                    data_2d = ds["humidity"].isel(time=i).values
+                    if data_2d.size != eccodes.codes_get_size(grib_id, "values"):
+                        expected_size = eccodes.codes_get_size(grib_id, "values")
+                        if data_2d.size < expected_size:
+                            padded_data = np.zeros(expected_size)
+                            padded_data[: data_2d.size] = data_2d.flatten()
+                            data_2d = padded_data
+                        else:
+                            data_2d = data_2d.flatten()[:expected_size]
+                    else:
+                        data_2d = data_2d.flatten()
+
+                    eccodes.codes_set_values(grib_id, data_2d)
+                    eccodes.codes_write(grib_id, f)
+
+                finally:
+                    eccodes.codes_release(grib_id)
+
+        print(f"✅ Created {output_file} (GRIB format)")
+
+    except Exception as e:
+        print(f"  ⚠️ Error writing GRIB GRB file with eccodes: {e}")
+        print("  🔄 Falling back to NetCDF format with .grb extension")
+        temp_file = output_file.replace(".grb", "_temp.nc")
+        ds.to_netcdf(temp_file, engine="netcdf4")
+        import shutil
+
+        shutil.move(temp_file, output_file)
+        print(f"✅ Created {output_file} (NetCDF format with .grb extension)")
+
+    return output_file
+
+
+def create_sample_geotiff_tiff():
+    """Create a sample GeoTIFF file with .tiff extension."""
+    output_file = "sample_data.tiff"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"🛰️ GeoTIFF TIFF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🛰️ Creating sample GeoTIFF TIFF file...")
+
+    try:
+        import rioxarray
+
+        print("  ✅ rioxarray available, creating GeoTIFF TIFF file")
+    except ImportError:
+        print("  ❌ rioxarray not available, skipping GeoTIFF TIFF file creation.")
+        return None
+
+    # Create spatial dimensions
+    height = 100
+    width = 100
+
+    # Create sample satellite imagery data
+    np.random.seed(808)
+
+    # Create single band data
+    data = np.random.randint(0, 255, (height, width), dtype=np.uint8)
+
+    # Add spatial patterns
+    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+    data = np.clip(
+        data + 100 * np.sin(5 * np.pi * x) * np.cos(5 * np.pi * y), 0, 255
+    ).astype(np.uint8)
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "band1": (["y", "x"], data, {"long_name": "Satellite band", "units": "DN"}),
+        },
+        coords={
+            "x": (
+                ["x"],
+                np.linspace(-10, 10, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(10, -10, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
+        },
+    )
+
+    # Add CRS information
+    ds = ds.rio.write_crs("EPSG:3857")  # Web Mercator
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample GeoTIFF TIFF Data",
+        "description": "Sample GeoTIFF file with .tiff extension for testing VSCode extension",
+        "institution": "Satellite Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    # Save to GeoTIFF
+    ds.rio.to_raster(output_file, driver="GTiff")
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_geotiff_geotiff():
+    """Create a sample GeoTIFF file with .geotiff extension."""
+    output_file = "sample_data.geotiff"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"🛰️ GeoTIFF GEOTIFF file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🛰️ Creating sample GeoTIFF GEOTIFF file...")
+
+    try:
+        import rioxarray
+
+        print("  ✅ rioxarray available, creating GeoTIFF GEOTIFF file")
+    except ImportError:
+        print("  ❌ rioxarray not available, skipping GeoTIFF GEOTIFF file creation.")
+        return None
+
+    # Create spatial dimensions
+    height = 80
+    width = 80
+
+    # Create sample satellite imagery data
+    np.random.seed(909)
+
+    # Create single band data
+    data = np.random.randint(0, 255, (height, width), dtype=np.uint8)
+
+    # Add spatial patterns
+    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+    data = np.clip(
+        data + 80 * np.sin(3 * np.pi * x) * np.cos(3 * np.pi * y), 0, 255
+    ).astype(np.uint8)
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "band1": (["y", "x"], data, {"long_name": "Satellite band", "units": "DN"}),
+        },
+        coords={
+            "x": (
+                ["x"],
+                np.linspace(-5, 5, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(5, -5, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
+        },
+    )
+
+    # Add CRS information
+    ds = ds.rio.write_crs("EPSG:4326")  # WGS84
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample GeoTIFF GEOTIFF Data",
+        "description": "Sample GeoTIFF file with .geotiff extension for testing VSCode extension",
+        "institution": "Satellite Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    # Save to GeoTIFF
+    ds.rio.to_raster(output_file, driver="GTiff")
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_jp2_jpeg2000():
+    """Create a sample JPEG-2000 file with .jpeg2000 extension."""
+    output_file = "sample_data.jpeg2000"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"📸 JPEG-2000 JPEG2000 file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("📸 Creating sample JPEG-2000 JPEG2000 file...")
+
+    try:
+        import rioxarray
+    except ImportError:
+        print(
+            "  ❌ rioxarray not available, skipping JPEG-2000 JPEG2000 file creation."
+        )
+        return None
+
+    # Create spatial dimensions
+    height = 40
+    width = 40
+
+    # Create sample satellite data
+    np.random.seed(1010)
+
+    # Create single band data
+    data = np.random.randint(0, 255, (height, width), dtype=np.uint8)
+
+    # Add spatial patterns
+    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+    data = np.clip(
+        data + 50 * np.sin(8 * np.pi * x) * np.cos(8 * np.pi * y), 0, 255
+    ).astype(np.uint8)
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "band1": (["y", "x"], data, {"long_name": "Satellite band", "units": "DN"}),
+        },
+        coords={
+            "x": (
+                ["x"],
+                np.linspace(-5, 5, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(5, -5, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
+        },
+    )
+
+    # Add CRS information
+    ds = ds.rio.write_crs("EPSG:3857")  # Web Mercator
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample JPEG-2000 JPEG2000 Data",
+        "description": "Sample JPEG-2000 file with .jpeg2000 extension for testing VSCode extension",
+        "institution": "Satellite Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    # Save to JPEG-2000
+    ds.rio.to_raster(output_file, driver="JPEG")
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_sample_file_with_spaces():
+    """Create a sample file with spaces in the name."""
+    output_file = "sample data with spaces.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"📄 File with spaces {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("📄 Creating sample file with spaces in name...")
+
+    # Create time dimension
+    time = np.arange(0, 5, 1)  # 5 time steps
+    dates = [datetime(2020, 1, 1) + timedelta(days=int(t)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(-30, 30, 30)
+    lon = np.linspace(-60, 60, 60)
+
+    # Create sample data
+    np.random.seed(1111)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    data = (
+        20 + 10 * np.sin(2 * np.pi * time_3d / 5) + np.random.normal(0, 2, (5, 30, 60))
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "test_variable": (
+                ["time", "lat", "lon"],
+                data,
+                {
+                    "long_name": "Test Variable with Spaces in Filename",
+                    "units": "1",
+                    "description": "This file tests handling of filenames with spaces",
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
+            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample Data with Spaces in Filename",
+        "description": "Test file with spaces in the filename for testing VSCode extension",
+        "institution": "Test Center",
+        "source": "Generated for testing filename handling",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "test_purpose": "filename_with_spaces",
+    }
+
+    # Save to NetCDF
+    ds.to_netcdf(output_file)
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
+def cleanup_disposable_files():
+    """Clean up existing disposable files before creating new ones."""
+    disposable_dir = "disposable"
+
+    if os.path.exists(disposable_dir):
+        print(
+            f"🧹 Cleaning up existing disposable files in {disposable_dir}/ directory..."
+        )
+        import shutil
+
+        shutil.rmtree(disposable_dir)
+        print(f"  ✅ Cleaned up {disposable_dir}/ directory")
+
+    # Recreate the directory
+    os.makedirs(disposable_dir, exist_ok=True)
+
+
+def create_disposable_netcdf_files():
+    """Create 10 small NetCDF files in a disposable subdirectory for testing deletion."""
+    disposable_dir = "disposable"
+
+    # Create disposable directory
+    os.makedirs(disposable_dir, exist_ok=True)
+
+    print(f"🗑️ Creating 10 small NetCDF files in {disposable_dir}/ directory...")
+
+    created_files = []
+
+    for i in range(10):
+        output_file = os.path.join(disposable_dir, f"disposable_file_{i:02d}.nc")
+
+        # Check if file already exists
+        if os.path.exists(output_file):
+            print(
+                f"  📄 Disposable file {output_file} already exists. Skipping creation."
+            )
+            created_files.append(output_file)
+            continue
+
+        # Create very small dimensions to keep files small
+        time = np.arange(0, 2, 1)  # 2 time steps
+        lat = np.linspace(-10, 10, 10)  # 10 latitude points
+        lon = np.linspace(-10, 10, 10)  # 10 longitude points
+
+        # Create sample data
+        np.random.seed(2000 + i)
+        time_3d = time[:, np.newaxis, np.newaxis]
+        data = (
+            10
+            + 5 * np.sin(2 * np.pi * time_3d / 2)
+            + np.random.normal(0, 1, (2, 10, 10))
+        )
+
+        # Create dataset
+        ds = xr.Dataset(
+            {
+                f"variable_{i:02d}": (
+                    ["time", "lat", "lon"],
+                    data,
+                    {
+                        "long_name": f"Disposable Variable {i:02d}",
+                        "units": "1",
+                        "description": f"Small test variable {i:02d} for deletion testing",
+                    },
+                ),
+            },
+            coords={
+                "time": (
+                    ["time"],
+                    time,
+                    {"long_name": "Time", "units": "days since 2020-01-01"},
+                ),
+                "lat": (
+                    ["lat"],
+                    lat,
+                    {"long_name": "Latitude", "units": "degrees_north"},
+                ),
+                "lon": (
+                    ["lon"],
+                    lon,
+                    {"long_name": "Longitude", "units": "degrees_east"},
+                ),
+            },
+        )
+
+        # Add global attributes
+        ds.attrs = {
+            "title": f"Disposable Test File {i:02d}",
+            "description": f"Small disposable NetCDF file {i:02d} for testing file deletion",
+            "institution": "Test Center",
+            "source": "Generated for testing deletion",
+            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Conventions": "CF-1.6",
+            "test_purpose": "disposable_deletion_testing",
+            "file_number": i,
+        }
+
+        # Save to NetCDF
+        ds.to_netcdf(output_file)
+        created_files.append(output_file)
+        print(f"  ✅ Created {output_file}")
+
+    print(
+        f"✅ Created {len(created_files)} disposable files in {disposable_dir}/ directory"
+    )
+    return created_files
+
+
+def create_disposable_zarr_files():
+    """Create 10 small Zarr files in a disposable subdirectory for testing deletion."""
+    disposable_dir = "disposable"
+
+    # Create disposable directory
+    os.makedirs(disposable_dir, exist_ok=True)
+
+    print(f"🗑️ Creating 10 small Zarr files in {disposable_dir}/ directory...")
+
+    try:
+        import zarr
+        import xarray as xr
+    except ImportError:
+        print(
+            "  ❌ zarr or xarray not available, skipping disposable Zarr file creation."
+        )
+        return []
+
+    created_files = []
+
+    for i in range(10):
+        output_file = os.path.join(disposable_dir, f"disposable_file_{i:02d}.zarr")
+
+        # Check if file already exists
+        if os.path.exists(output_file):
+            print(
+                f"  📦 Disposable Zarr file {output_file} already exists. Skipping creation."
+            )
+            created_files.append(output_file)
+            continue
+
+        # Create very small dimensions to keep files small
+        time = np.arange(0, 2, 1)  # 2 time steps
+        lat = np.linspace(-5, 5, 8)  # 8 latitude points
+        lon = np.linspace(-5, 5, 8)  # 8 longitude points
+
+        # Create sample data
+        np.random.seed(3000 + i)
+        time_3d = time[:, np.newaxis, np.newaxis]
+        data = (
+            5
+            + 3 * np.sin(2 * np.pi * time_3d / 2)
+            + np.random.normal(0, 0.5, (2, 8, 8))
+        )
+
+        # Create dataset
+        ds = xr.Dataset(
+            {
+                f"zarr_variable_{i:02d}": (
+                    ["time", "lat", "lon"],
+                    data,
+                    {
+                        "long_name": f"Disposable Zarr Variable {i:02d}",
+                        "units": "1",
+                        "description": f"Small test Zarr variable {i:02d} for deletion testing",
+                    },
+                ),
+            },
+            coords={
+                "time": (
+                    ["time"],
+                    time,
+                    {"long_name": "Time", "units": "days since 2020-01-01"},
+                ),
+                "lat": (
+                    ["lat"],
+                    lat,
+                    {"long_name": "Latitude", "units": "degrees_north"},
+                ),
+                "lon": (
+                    ["lon"],
+                    lon,
+                    {"long_name": "Longitude", "units": "degrees_east"},
+                ),
+            },
+        )
+
+        # Add global attributes
+        ds.attrs = {
+            "title": f"Disposable Zarr Test File {i:02d}",
+            "description": f"Small disposable Zarr file {i:02d} for testing file deletion",
+            "institution": "Test Center",
+            "source": "Generated for testing deletion",
+            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Conventions": "CF-1.6",
+            "test_purpose": "disposable_deletion_testing",
+            "file_number": i,
+            "format": "zarr",
+        }
+
+        # Save to Zarr
+        ds.to_zarr(output_file)
+        created_files.append(output_file)
+        print(f"  ✅ Created {output_file}")
+
+    print(
+        f"✅ Created {len(created_files)} disposable Zarr files in {disposable_dir}/ directory"
+    )
+    return created_files
+
+
 def create_sample_zarr_arborescence():
     """Create a sample Zarr file with many subgroups (arborescence) using DataTree."""
     output_file = "sample_zarr_arborescence.zarr"
@@ -2581,6 +3525,14 @@ def main():
         if netcdf4_file:
             created_files.append((netcdf4_file, "NetCDF4"))
 
+        netcdf_cdf_file = create_sample_netcdf_cdf()
+        if netcdf_cdf_file:
+            created_files.append((netcdf_cdf_file, "NetCDF CDF"))
+
+        netcdf_netcdf_file = create_sample_netcdf_netcdf()
+        if netcdf_netcdf_file:
+            created_files.append((netcdf_netcdf_file, "NetCDF NETCDF"))
+
         many_vars_netcdf_file = create_sample_netcdf_many_vars()
         if many_vars_netcdf_file:
             created_files.append((many_vars_netcdf_file, "NetCDF (Many Variables)"))
@@ -2608,12 +3560,28 @@ def main():
         if hdf5_file:
             created_files.append((hdf5_file, "HDF5"))
 
+        hdf5_hdf5_file = create_sample_hdf5_hdf5()
+        if hdf5_hdf5_file:
+            created_files.append((hdf5_hdf5_file, "HDF5 HDF5"))
+
         print("\n📁 Creating GRIB files...")
         grib_file = create_sample_grib()
         if grib_file:
             created_files.append((grib_file, "GRIB"))
         else:
             skipped_files.append("GRIB (cfgrib not available)")
+
+        grib2_file = create_sample_grib_grib2()
+        if grib2_file:
+            created_files.append((grib2_file, "GRIB2"))
+        else:
+            skipped_files.append("GRIB2 (eccodes not available)")
+
+        grib_grb_file = create_sample_grib_grb()
+        if grib_grb_file:
+            created_files.append((grib_grb_file, "GRIB GRB"))
+        else:
+            skipped_files.append("GRIB GRB (eccodes not available)")
 
         print("\n📁 Creating GeoTIFF files...")
         geotiff_file = create_sample_geotiff()
@@ -2622,12 +3590,30 @@ def main():
         else:
             skipped_files.append("GeoTIFF (rioxarray not available)")
 
+        geotiff_tiff_file = create_sample_geotiff_tiff()
+        if geotiff_tiff_file:
+            created_files.append((geotiff_tiff_file, "GeoTIFF TIFF"))
+        else:
+            skipped_files.append("GeoTIFF TIFF (rioxarray not available)")
+
+        geotiff_geotiff_file = create_sample_geotiff_geotiff()
+        if geotiff_geotiff_file:
+            created_files.append((geotiff_geotiff_file, "GeoTIFF GEOTIFF"))
+        else:
+            skipped_files.append("GeoTIFF GEOTIFF (rioxarray not available)")
+
         print("\n📁 Creating JPEG-2000 files...")
         jp2_file = create_sample_jp2()
         if jp2_file:
             created_files.append((jp2_file, "JPEG-2000"))
         else:
             skipped_files.append("JPEG-2000 (rioxarray not available)")
+
+        jp2_jpeg2000_file = create_sample_jp2_jpeg2000()
+        if jp2_jpeg2000_file:
+            created_files.append((jp2_jpeg2000_file, "JPEG-2000 JPEG2000"))
+        else:
+            skipped_files.append("JPEG-2000 JPEG2000 (rioxarray not available)")
 
         print("\n📁 Creating Zarr files...")
         zarr_file = create_sample_zarr_single_group_from_dataset()
@@ -2667,11 +3653,29 @@ def main():
         else:
             skipped_files.append("Sentinel-1 SAFE (xarray-sentinel not available)")
 
+        print("\n📄 Creating file with spaces in name...")
+        spaces_file = create_sample_file_with_spaces()
+        if spaces_file:
+            created_files.append((spaces_file, "File with Spaces"))
+
         print("\n💥 Creating broken files for error handling...")
         broken_files = create_broken_files()
         if broken_files:
             for broken_file in broken_files:
                 created_files.append((broken_file, "Broken File"))
+
+        print("\n🗑️ Creating disposable files for deletion testing...")
+        cleanup_disposable_files()
+
+        disposable_netcdf_files = create_disposable_netcdf_files()
+        if disposable_netcdf_files:
+            for disposable_file in disposable_netcdf_files:
+                created_files.append((disposable_file, "Disposable NetCDF"))
+
+        disposable_zarr_files = create_disposable_zarr_files()
+        if disposable_zarr_files:
+            for disposable_file in disposable_zarr_files:
+                created_files.append((disposable_file, "Disposable Zarr"))
 
         print("\n" + "=" * 80)
         print("✅ Sample data files created successfully!")

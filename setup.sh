@@ -55,6 +55,7 @@ npm run compile
 
 # Create sample data
 echo "📊 Creating sample data files..."
+echo "   This will regenerate all sample files including disposable test files..."
 python3 python/create_sample_data.py
 
 # Run tests

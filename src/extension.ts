@@ -170,6 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
     const zarrEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
     const gribEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
     const geotiffEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const jp2EditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
 
     const options = {
         webviewOptions: {
@@ -204,6 +205,12 @@ export function activate(context: vscode.ExtensionContext) {
     const geotiffEditorRegistration = vscode.window.registerCustomEditorProvider(
         'geotiffEditor',
         geotiffEditorProvider,
+        options
+    );
+
+    const jp2EditorRegistration = vscode.window.registerCustomEditorProvider(
+        'jp2Editor',
+        jp2EditorProvider,
         options
     );
 
@@ -453,6 +460,7 @@ export function activate(context: vscode.ExtensionContext) {
         zarrEditorRegistration,
         gribEditorRegistration,
         geotiffEditorRegistration,
+        jp2EditorRegistration,
         configListener
     );
 

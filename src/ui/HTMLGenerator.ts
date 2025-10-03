@@ -29,7 +29,7 @@ export class HTMLGenerator {
         return `
     <div class="header">
         <div class="title" id="title">Scientific Data Viewer <small>v0.3.0</small></div>
-        <div class="controls">
+        <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
                 <button id="expandAllButton" class="tree-control-button" title="Expand all sections">📂 Expand All</button>

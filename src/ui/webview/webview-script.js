@@ -614,7 +614,7 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
             <li>Make sure Python is installed and accessible</li>
             <li>Use Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → "Python: Select Interpreter"</li>
             <li>Install required packages: <code>pip install xarray matplotlib</code></li>
-            <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
+            <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .grb, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
             <li><a href="#" onclick="executeShowLogsCommand()" style="color: #007acc; text-decoration: underline; cursor: pointer;">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
             <li>In doubt, close and reopen the file</li>
@@ -657,9 +657,9 @@ function showError(message, details = '', errorType = '', formatInfo = null) {
     document.getElementById('content').classList.add('hidden');
     
     // Hide refresh button when error is displayed
-    const refreshButton = document.getElementById('refreshButton');
-    if (refreshButton) {
-        refreshButton.classList.add('hidden');
+    const headerControls = document.getElementById('header-controls');
+    if (headerControls) {
+        headerControls.classList.add('hidden');
     }
 }
 
@@ -669,9 +669,9 @@ function hideError() {
     errorDiv.innerHTML = '';
     
     // Show refresh button when error is cleared
-    const refreshButton = document.getElementById('refreshButton');
-    if (refreshButton) {
-        refreshButton.classList.remove('hidden');
+    const headerControls = document.getElementById('header-controls');
+    if (headerControls) {
+        headerControls.classList.remove('hidden');
     }
 }
 

@@ -35,16 +35,19 @@
     "onLanguage:hdf5",
     "onLanguage:grib",
     "onLanguage:geotiff",
+    "onLanguage:jp2",
     "onCommand:scientificDataViewer.openViewer",
     "onFileSystem:netcdf",
     "onFileSystem:zarr",
     "onFileSystem:grib",
     "onFileSystem:geotiff",
+    "onFileSystem:jp2",
     "onCustomEditor:netcdfEditor",
     "onCustomEditor:hdf5Editor",
     "onCustomEditor:zarrEditor",
     "onCustomEditor:gribEditor",
-    "onCustomEditor:geotiffEditor"
+    "onCustomEditor:geotiffEditor",
+    "onCustomEditor:jp2Editor"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -191,13 +194,26 @@
         "extensions": [
           ".tif",
           ".tiff",
-          ".geotiff",
-          ".jp2",
-          ".jpeg2000"
+          ".geotiff"
         ],
         "aliases": [
           "GeoTIFF",
           "geotiff"
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
+      },
+      {
+        "id": "jp2",
+        "extensions": [
+          ".jp2",
+          ".jpeg2000"
+        ],
+        "aliases": [
+          "JPEG-2000",
+          "jpeg2000"
         ],
         "icon": {
           "light": "./media/icon.svg",
@@ -296,7 +312,17 @@
           },
           {
             "filenamePattern": "*.geotiff"
-          },
+          }
+        ],
+        "icon": {
+          "light": "./media/icon.svg",
+          "dark": "./media/icon.svg"
+        }
+      },
+      {
+        "viewType": "jp2Editor",
+        "displayName": "JPEG-2000 Data Viewer",
+        "selector": [
           {
             "filenamePattern": "*.jp2"
           },
