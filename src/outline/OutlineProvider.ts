@@ -130,12 +130,9 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         return findParent(this.headers, element);
     }
 
-    clear(): void {
-        this.headers = [];
-        this.currentFile = undefined;
-        this.fileHeaders.clear();
-        this.expandedStates.clear();
-        this.refresh();
+    clear(fileUri: vscode.Uri | undefined): void {
+        this.clearFileHeadersForFile(fileUri);
+        this.clearExpandedStateForFile(fileUri);
     }
 
     getCurrentFile(): vscode.Uri | undefined {
@@ -207,13 +204,14 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         }
 
         try {
-            // Get all visible elements and collapse them
-            const visibleElements = this.getAllElements(this.headers);
-            visibleElements.forEach(element => {
-                if (element.children.length > 0) {
-                    this.treeView!.reveal(element, { select: false, focus: false, expand: false });
-                }
-            });
+            // Clear all expanded states for the current file
+            if (this.currentFile) {
+                this.expandedStates.delete(this.currentFile.fsPath);
+            }
+            
+            // Force refresh to rebuild the tree with collapsed state
+            this.refresh();
+            
             Logger.info('📋 Collapsed all outline items');
         } catch (error) {
             Logger.error(`❌ Error collapsing all items: ${error}`);
@@ -230,13 +228,27 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         }
 
         try {
-            // Get all elements and expand them
+            // Get all elements with children
             const allElements = this.getAllElements(this.headers);
-            allElements.forEach(element => {
-                if (element.children.length > 0) {
-                    this.treeView!.reveal(element, { select: false, focus: false, expand: true });
+            
+            // Save expanded state for all elements first
+            if (this.currentFile) {
+                const filePath = this.currentFile.fsPath;
+                if (!this.expandedStates.has(filePath)) {
+                    this.expandedStates.set(filePath, new Set());
                 }
-            });
+                
+                allElements.forEach(element => {
+                    if (element.children.length > 0) {
+                        const elementId = this.getElementId(element);
+                        this.expandedStates.get(filePath)!.add(elementId);
+                    }
+                });
+            }
+            
+            // Force refresh to rebuild the tree with expanded state
+            this.refresh();
+            
             Logger.info('📋 Expanded all outline items');
         } catch (error) {
             Logger.error(`❌ Error expanding all items: ${error}`);
@@ -420,10 +432,24 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     }
 
     /**
-     * Clear expanded state for a file
+     * Clear expanded state for a specific file (public method)
      */
-    private clearExpandedState(filePath: string): void {
+    private clearExpandedStateForFile(fileUri: vscode.Uri | undefined): void {
+        if (!fileUri || !fileUri.fsPath) {
+            Logger.warn(`📋 Invalid fileUri provided to clearExpandedStateForFile`);
+            return;
+        }
+        
+        const filePath = fileUri.fsPath;
         this.expandedStates.delete(filePath);
-        Logger.debug(`📋 Cleared expanded state for file: ${filePath}`);
+        Logger.info(`📋 Cleared expanded state for file: ${filePath}`);
+    }
+
+    private clearFileHeadersForFile(fileUri: vscode.Uri | undefined): void {
+        if (!fileUri || !fileUri.fsPath) {
+            Logger.warn(`📋 Invalid fileUri provided to clearFileHeadersForFile`);
+            return;
+        }
+        this.fileHeaders.delete(fileUri.fsPath);
     }
 }

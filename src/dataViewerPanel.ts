@@ -280,7 +280,7 @@ export class DataViewerPanel {
 
         // Clear outline when panel is disposed
         if (DataViewerPanel.outlineProvider) {
-            DataViewerPanel.outlineProvider.clear();
+            DataViewerPanel.outlineProvider.clear(this._currentFile);
         }
 
         // Clean up UI controller
