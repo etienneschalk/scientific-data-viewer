@@ -123,7 +123,7 @@ Before using this extension, you need:
 
 ## 🎯 Usage
 
-### Opening Data Files
+### 📂 Opening Data Files
 
 1. **Direct File Opening**:
 
@@ -145,7 +145,7 @@ Before using this extension, you need:
    - Open any supported file in VSCode
    - The extension will detect it and offer to open it in the data viewer
 
-### Configuring Python Environment
+### 🐍 Configuring Python Environment
 
 1. **Automatic Detection**:
 
@@ -160,7 +160,7 @@ Before using this extension, you need:
    - Choose your preferred Python environment
    - The extension will automatically detect it and use it
 
-### Exploring Data
+### 🔬 Exploring Data
 
 You can explore the data via the editor itself, or via the _Data Structure_ tree view displayed on the VSCode's left pane.
 
@@ -190,7 +190,7 @@ The extension can be configured through VSCode settings:
 | `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
 | `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
-#### Feature Flags
+**🚩 Feature Flags**
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
@@ -198,7 +198,7 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
 - **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
 
-### Available Commands
+### 🎮 Available Commands
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
@@ -210,7 +210,7 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 | `Scientific Data Viewer: Show Settings`               | Opens the extension settings                           |
 | `Scientific Data Viewer: Open Developer Tools`        | Opens the developer tools for the webview              |
 
-### Context Menu Commands
+### 🖱️ Context Menu Commands
 
 Right-click on supported file types in the Explorer to access:
 
@@ -220,7 +220,7 @@ Right-click on supported file types in the Explorer to access:
 
 ## 🔧 Troubleshooting
 
-### Common Issues
+### ⚠️ Common Issues
 
 1. **Python not found**:
 
@@ -241,7 +241,7 @@ Right-click on supported file types in the Explorer to access:
    - Ensure the extension has permission to read your data files
    - Check file permissions and VSCode workspace settings
 
-### Getting Help
+### 💬 Getting Help
 
 - **Consult the Troubleshooting section**: Available at the end of the opened file. Copy buttons are present to help creating an issue.
 - **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
@@ -253,7 +253,7 @@ Right-click on supported file types in the Explorer to access:
 
 ## 🛠️ Development
 
-### Quick Start for Developers
+### ⚡ Quick Start for Developers
 
 1. **Clone and setup**:
 
@@ -273,7 +273,7 @@ Right-click on supported file types in the Explorer to access:
    - Press `F5` to launch Extension Development Host
    - Test with sample data files
 
-### Development Installation
+### 🔧 Development Installation
 
 1. **Clone the repository**:
 
@@ -310,7 +310,7 @@ Right-click on supported file types in the Explorer to access:
    - Press `F5` to open a new Extension Development Host window
    - Or use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and run "Developer: Reload Window"
 
-### Production Installation
+### 📦 Production Installation
 
 1. **Package the extension**:
 
@@ -324,7 +324,7 @@ Right-click on supported file types in the Explorer to access:
    - Click the "..." menu and select "Install from VSIX..."
    - Select the generated `.vsix` file
 
-### Python Scripts
+### 📜 Python Scripts
 
 The extension uses several Python scripts for data processing:
 
@@ -339,7 +339,7 @@ The extension uses several Python scripts for data processing:
 
 Disclaimer: most visualization scripts are experimental and can produce unusable plots!
 
-### Building
+### 🏗️ Building
 
 ```bash
 # Compile TypeScript
@@ -355,7 +355,7 @@ npm test
 npm run lint
 ```
 
-### Testing
+### 🧪 Testing
 
 1. **Unit Tests**:
 
@@ -368,7 +368,7 @@ npm run lint
    - Test with sample data files
    - Verify Python integration works correctly
 
-### Debugging
+### ❓ Debugging
 
 1. **Set breakpoints** in your TypeScript code
 2. **Press F5** to launch the Extension Development Host
