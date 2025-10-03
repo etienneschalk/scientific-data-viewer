@@ -1,10 +1,32 @@
 #!/usr/bin/env python3
 """
-Script to get data file information and create plots from data file variables.
-Supports all xarray-compatible formats with automatic engine detection and dependency management.
+Scientific Data Viewer - Data Information and Plotting Script
+
+This script provides functionality to extract metadata and create visualizations
+from scientific data files. It supports multiple data formats including NetCDF,
+Zarr, HDF5, GRIB, GeoTIFF, and more through xarray's engine system.
+
+The script can operate in two modes:
+1. Info mode: Extract and display comprehensive metadata about data files
+2. Plot mode: Create matplotlib visualizations of data variables
+
+Features:
+- Automatic engine detection and dependency management
+- Support for DataTree and Dataset structures
+- Intelligent plotting strategy detection based on data dimensions
+- VSCode theme-aware matplotlib styling
+- Comprehensive error handling and logging
+
 Usage:
-  python get_data_info.py info <file_path>
-  python get_data_info.py plot <file_path> <variable_name> [plot_type]
+    python get_data_info.py info <file_path>
+    python get_data_info.py plot <file_path> <variable_name> [plot_type] [--style STYLE]
+
+Examples:
+    python get_data_info.py info sample_data.nc
+    python get_data_info.py plot sample_data.nc temperature
+    python get_data_info.py plot sample_data.nc temperature --style dark_background
+
+Author: Scientific Data Viewer Extension
 """
 
 from logging import Logger
@@ -132,6 +154,19 @@ DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 
 @dataclass(frozen=True)
 class FileFormatInfo:
+    """Information about a supported file format.
+    
+    Attributes
+    ----------
+    extension : str
+        File extension (e.g., '.nc', '.zarr')
+    display_name : str
+        Human-readable format name (e.g., 'NetCDF', 'Zarr')
+    available_engines : List[str]
+        List of xarray engines that can read this format
+    missing_packages : List[str]
+        List of required packages that are not installed
+    """
     extension: str
     display_name: str
     available_engines: List[str]
@@ -139,11 +174,35 @@ class FileFormatInfo:
 
     @property
     def is_supported(self) -> bool:
+        """Check if the format is supported by any available engine.
+        
+        Returns
+        -------
+        bool
+            True if at least one engine is available, False otherwise
+        """
         return len(self.available_engines) > 0
 
 
 @dataclass(frozen=True)
 class VariableInfo:
+    """Information about a data variable.
+    
+    Attributes
+    ----------
+    name : str
+        Variable name
+    dtype : str
+        Data type (e.g., 'float64', 'int32')
+    shape : List[int]
+        Shape of the variable array
+    dimensions : List[str]
+        Names of the dimensions
+    size_bytes : int
+        Memory size in bytes
+    attributes : Dict[str, Any]
+        Variable attributes/metadata
+    """
     name: str
     dtype: str
     shape: List[int]
@@ -154,6 +213,23 @@ class VariableInfo:
 
 @dataclass(frozen=True)
 class CoordinateInfo:
+    """Information about a coordinate variable.
+    
+    Attributes
+    ----------
+    name : str
+        Coordinate name
+    dtype : str
+        Data type (e.g., 'float64', 'datetime64[ns]')
+    shape : List[int]
+        Shape of the coordinate array
+    dimensions : List[str]
+        Names of the dimensions
+    size_bytes : int
+        Memory size in bytes
+    attributes : Dict[str, Any]
+        Coordinate attributes/metadata
+    """
     name: str
     dtype: str
     shape: List[int]
@@ -164,6 +240,37 @@ class CoordinateInfo:
 
 @dataclass(frozen=True)
 class FileInfoResult:
+    """Complete information about a data file.
+    
+    Attributes
+    ----------
+    format : str
+        Human-readable format name
+    format_info : FileFormatInfo
+        Detailed format information
+    used_engine : str
+        xarray engine used to read the file
+    fileSize : int
+        File size in bytes
+    xarray_html_repr : str
+        HTML representation of the dataset
+    xarray_text_repr : str
+        Text representation of the dataset
+    xarray_show_versions : str
+        Version information for all packages
+    dimensions_flattened : Dict[str, Dict[str, int]]
+        Dimensions for each group (for DataTree support)
+    variables_flattened : Dict[str, List[VariableInfo]]
+        Variables for each group (for DataTree support)
+    coordinates_flattened : Dict[str, List[CoordinateInfo]]
+        Coordinates for each group (for DataTree support)
+    attributes_flattened : Dict[str, Dict[str, Any]]
+        Attributes for each group (for DataTree support)
+    xarray_html_repr_flattened : Dict[str, str]
+        HTML representation for each group
+    xarray_text_repr_flattened : Dict[str, str]
+        Text representation for each group
+    """
     format: str
     format_info: FileFormatInfo
     used_engine: str
@@ -182,6 +289,21 @@ class FileInfoResult:
 
 @dataclass(frozen=True)
 class FileInfoError:
+    """Error information when file processing fails.
+    
+    Attributes
+    ----------
+    error : str
+        Error message describing what went wrong
+    error_type : str
+        Type of error (e.g., 'ImportError', 'FileNotFoundError')
+    suggestion : str
+        Suggested action to resolve the error
+    format_info : FileFormatInfo
+        Format information for the file that failed
+    xarray_show_versions : str
+        Version information for debugging
+    """
     error: str
     error_type: str
     suggestion: str
@@ -190,13 +312,35 @@ class FileInfoError:
 
 
 def check_package_availability(package_name: str) -> bool:
-    """Check if a Python package is available."""
+    """Check if a Python package is available.
+    
+    Parameters
+    ----------
+    package_name : str
+        Name of the package to check
+        
+    Returns
+    -------
+    bool
+        True if package is available, False otherwise
+    """
     logger.info(f"Checking package availability: {package_name}")
     return find_spec(package_name) is not None
 
 
 def get_available_engines(file_extension: str) -> List[str]:
-    """Get available engines for a file extension."""
+    """Get available engines for a file extension.
+    
+    Parameters
+    ----------
+    file_extension : str
+        File extension (e.g., '.nc', '.zarr')
+        
+    Returns
+    -------
+    List[str]
+        List of available xarray engines for the file extension
+    """
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
@@ -210,7 +354,18 @@ def get_available_engines(file_extension: str) -> List[str]:
 
 
 def get_missing_packages(file_extension: str) -> List[str]:
-    """Get missing packages required for a file extension."""
+    """Get missing packages required for a file extension.
+    
+    Parameters
+    ----------
+    file_extension : str
+        File extension (e.g., '.nc', '.zarr')
+        
+    Returns
+    -------
+    List[str]
+        List of missing packages required for the file extension
+    """
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
@@ -224,11 +379,22 @@ def get_missing_packages(file_extension: str) -> List[str]:
 
 
 def detect_file_format(file_path: Path) -> FileFormatInfo:
-    """Detect file format and return extension, display name, and available engines."""
+    """Detect file format and return format information.
+    
+    Parameters
+    ----------
+    file_path : Path
+        Path to the data file
+        
+    Returns
+    -------
+    FileFormatInfo
+        Information about the detected file format including available engines
+    """
     ext: str = file_path.suffix.lower()
     display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
-    available_engines: list[str] = get_available_engines(ext)
-    missing_packages: list[str] = get_missing_packages(ext)
+    available_engines: List[str] = get_available_engines(ext)
+    missing_packages: List[str] = get_missing_packages(ext)
 
     return FileFormatInfo(
         extension=ext,
@@ -241,7 +407,31 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 def open_datatree_with_fallback(
     file_path: Path, file_format_info: FileFormatInfo
 ) -> "tuple[Union[xr.DataTree, DictOfDatasets], str]":
-    """Open datatree or dataset with fallback to different engines."""
+    """Open datatree or dataset with fallback to different engines.
+    
+    Attempts to open the file as a DataTree first, then falls back to
+    opening as individual datasets grouped by hierarchy.
+    
+    Parameters
+    ----------
+    file_path : Path
+        Path to the data file
+    file_format_info : FileFormatInfo
+        Format information for the file
+        
+    Returns
+    -------
+    tuple
+        Tuple containing (data_structure, engine_name) where data_structure
+        is either a DataTree or DictOfDatasets
+        
+    Raises
+    ------
+    ImportError
+        If no engines are available for the file format
+    Exception
+        If all engines fail to open the file
+    """
     if not file_format_info.is_supported:
         raise ImportError(
             f"No engines available for {file_format_info.extension} files. "
@@ -321,6 +511,18 @@ def open_datatree_with_fallback(
 
 
 def can_use_datatree(engine: str) -> bool:
+    """Check if DataTree can be used with the given engine.
+    
+    Parameters
+    ----------
+    engine : str
+        xarray engine name
+        
+    Returns
+    -------
+    bool
+        True if DataTree can be used, False otherwise
+    """
     return (
         hasattr(xr, "open_datatree")
         and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
@@ -328,7 +530,18 @@ def can_use_datatree(engine: str) -> bool:
 
 
 def is_spatial_dimension(dim_name):
-    """Check if a dimension name represents spatial coordinates."""
+    """Check if a dimension name represents spatial coordinates.
+    
+    Parameters
+    ----------
+    dim_name : str
+        Dimension name to check
+        
+    Returns
+    -------
+    bool
+        True if the dimension appears to be spatial, False otherwise
+    """
     spatial_patterns = [
         "x",
         "y",
@@ -351,7 +564,26 @@ def is_spatial_dimension(dim_name):
 def detect_plotting_strategy(
     var: xr.DataArray,
 ) -> Literal["2d_classic", "3d_col", "4d_col_row", "2d_classic_isel", "default"]:
-    """Detect the best plotting strategy based on variable dimensions."""
+    """Detect the best plotting strategy based on variable dimensions.
+    
+    Analyzes the variable's dimensions and shape to determine the most
+    appropriate plotting strategy for visualization.
+    
+    Parameters
+    ----------
+    var : xr.DataArray
+        DataArray to analyze for plotting strategy
+        
+    Returns
+    -------
+    str
+        Plotting strategy name:
+        - '2d_classic': 2D spatial data
+        - '2d_classic_isel': 2D data with single time step
+        - '3d_col': 3D data with spatial dimensions
+        - '4d_col_row': 4D data with spatial dimensions
+        - 'default': Fallback strategy
+    """
     dims = list(var.dims)
     ndim = var.ndim
 
@@ -397,7 +629,28 @@ def detect_plotting_strategy(
 def create_plot(
     file_path: Path, variable_path: str, plot_type: str = "auto", style: str = "auto"
 ):
-    """Create a plot from a data file variable."""
+    """Create a plot from a data file variable.
+    
+    Opens a data file, extracts the specified variable, and creates a
+    matplotlib visualization. The plotting strategy is automatically
+    determined based on the variable's dimensions.
+    
+    Parameters
+    ----------
+    file_path : Path
+        Path to the data file
+    variable_path : str
+        Path to the variable within the file (e.g., '/temperature')
+    plot_type : str, optional
+        Type of plot to create (currently only 'auto' supported)
+    style : str, optional
+        Matplotlib style to use (e.g., 'default', 'dark_background')
+        
+    Returns
+    -------
+    str or None
+        Base64-encoded PNG image data if successful, None if failed
+    """
 
     try:
         if plot_type != "auto":
@@ -537,6 +790,22 @@ def create_plot(
 
 
 def get_file_info(file_path: Path):
+    """Extract comprehensive information from a data file.
+    
+    Analyzes a data file and extracts metadata including format information,
+    variables, coordinates, dimensions, and attributes. Supports both
+    DataTree and Dataset structures.
+    
+    Parameters
+    ----------
+    file_path : Path
+        Path to the data file
+        
+    Returns
+    -------
+    FileInfoResult or FileInfoError
+        Complete file information if successful, error information if failed
+    """
     # Diagnostic: xr.show_versions()
     # Capture the output of xr.show_versions() by passing a StringIO object
     output = io.StringIO()
@@ -696,6 +965,20 @@ def get_file_info(file_path: Path):
 
 
 def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
+    """Create VariableInfo from a DataArray.
+    
+    Parameters
+    ----------
+    var_name : str
+        Name of the variable
+    var : xr.DataArray
+        DataArray to extract information from
+        
+    Returns
+    -------
+    VariableInfo
+        Information about the variable
+    """
     return VariableInfo(
         name=str(var_name),
         dtype=str(var.dtype),
@@ -707,6 +990,20 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
 
 
 def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
+    """Create CoordinateInfo from a DataArray.
+    
+    Parameters
+    ----------
+    coord_name : str
+        Name of the coordinate
+    coord : xr.DataArray
+        DataArray to extract information from
+        
+    Returns
+    -------
+    CoordinateInfo
+        Information about the coordinate
+    """
     return CoordinateInfo(
         name=str(coord_name),
         dtype=str(coord.dtype),
@@ -718,6 +1015,11 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
 
 
 def main() -> None:
+    """Main entry point for the script.
+    
+    Parses command line arguments and executes the appropriate mode
+    (info or plot) based on user input.
+    """
     parser = argparse.ArgumentParser(
         description="Get data file information and create plots from data file variables",
         formatter_class=argparse.RawDescriptionHelpFormatter,
