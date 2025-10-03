@@ -140,10 +140,9 @@ button:disabled {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-/* .copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
-    background-color: var(--vscode-charts-green);
-    color: var(--vscode-foreground);
-} */
+.copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
+    background-color: var(--vscode-button-background);
+}
 
 /* Form styles */
 select {
@@ -581,6 +580,31 @@ details.sticky-group-details summary > * {
 .plot-control-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Tree control button styles */
+.tree-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+.tree-control-button {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    font-size: 0.9em;
+}
+
+.tree-control-button:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.tree-control-button:active {
+    background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
 .plot-error {

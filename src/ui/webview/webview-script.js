@@ -1202,8 +1202,50 @@ async function openPlotInNewTab() {
     }
 }
 
+// Tree view control functions
+function expandAllSections() {
+    console.log('📂 Expanding all sections...');
+    const allDetails = document.querySelectorAll('details');
+    let expandedCount = 0;
+    
+    allDetails.forEach(details => {
+        if (!details.open) {
+            details.open = true;
+            expandedCount++;
+        }
+    });
+    
+    console.log(`📂 Expanded ${expandedCount} sections`);
+}
+
+function collapseAllSections() {
+    console.log('📁 Collapsing all sections...');
+    const allDetails = document.querySelectorAll('details');
+    let collapsedCount = 0;
+    
+    allDetails.forEach(details => {
+        if (details.open) {
+            details.open = false;
+            collapsedCount++;
+        }
+    });
+    
+    console.log(`📁 Collapsed ${collapsedCount} sections`);
+}
+
 // Event listeners setup
 function setupEventListeners(plottingCapabilities = false) {
+    // Tree control event listeners
+    const expandAllButton = document.getElementById('expandAllButton');
+    if (expandAllButton) {
+        expandAllButton.addEventListener('click', expandAllSections);
+    }
+
+    const collapseAllButton = document.getElementById('collapseAllButton');
+    if (collapseAllButton) {
+        collapseAllButton.addEventListener('click', collapseAllSections);
+    }
+
     // Plotting event listeners (if plotting capabilities are enabled)
     if (plottingCapabilities) {
         // Global plot controls
