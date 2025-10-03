@@ -74,39 +74,53 @@ XR_HTML_OPTIONS: Dict[str, Any] = {}
 FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
+    ".nc4": ["netcdf4", "h5netcdf"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
+    ".cdf": ["netcdf4", "h5netcdf", "scipy"],
+    #
     ".zarr": ["zarr"],
+    #
     ".h5": ["h5netcdf", "h5py", "netcdf4"],
     ".hdf5": ["h5netcdf", "h5py", "netcdf4"],
+    #
     ".grib": ["cfgrib"],
     ".grib2": ["cfgrib"],
+    ".grb": ["cfgrib"],
+    #
     ".tif": ["rasterio"],
     ".tiff": ["rasterio"],
     ".geotiff": ["rasterio"],
+    #
     ".jp2": ["rasterio"],
     ".jpeg2000": ["rasterio"],
+    #
     ".safe": ["sentinel"],
-    ".nc4": ["netcdf4", "h5netcdf"],
-    ".cdf": ["netcdf4", "h5netcdf", "scipy"],
 }
 
 # Format display names
 FORMAT_DISPLAY_NAMES: Dict[str, str] = {
     ".nc": "NetCDF",
+    ".nc4": "NetCDF4",
     ".netcdf": "NetCDF",
+    ".cdf": "CDF/NetCDF",
+    #
     ".zarr": "Zarr",
+    #
     ".h5": "HDF5",
     ".hdf5": "HDF5",
+    #
     ".grib": "GRIB",
     ".grib2": "GRIB2",
+    ".grb": "GRIB",
+    #
     ".tif": "GeoTIFF",
     ".tiff": "GeoTIFF",
     ".geotiff": "GeoTIFF",
+    #
     ".jp2": "JPEG-2000",
     ".jpeg2000": "JPEG-2000",
+    #
     ".safe": "Sentinel-1 SAFE",
-    ".nc4": "NetCDF4",
-    ".cdf": "CDF/NetCDF",
 }
 
 # Required packages for each engine

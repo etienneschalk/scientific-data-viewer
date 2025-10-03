@@ -4,11 +4,11 @@
   <img src="media/icon.png" alt="Scientific Data Viewer Icon" width="128" height="128">
 </div>
 
-A powerful VSCode extension for viewing and analyzing scientific data files including NetCDF, Zarr, HDF5, and more. This extension provides an intuitive interface for exploring scientific datasets directly within VSCode, eliminating the need for external tools.
-
-**Current Version: 0.3.0**
+An extension to explore the metadata of scientific data files within your IDE, including NetCDF, Zarr, HDF5, GRIB, GeoTIFF and JPEG-2000.
 
 <div align="center">
+
+**Current Version: 0.3.0**
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) | [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -17,17 +17,25 @@ Available on:
 
 ## 🚀 Features
 
-- **Multi-format Support**: View NetCDF (.nc, .netcdf), Zarr (.zarr), and HDF5 (.h5, .hdf5) files
-- **Custom Editors**: Direct file opening with dedicated NetCDF and HDF5 editors
-- **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
-- **Enhanced Variable Information**: View variable dimension names, data types, shapes, and memory usage
-- **Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, disabled by default)**
-- **Advanced Python Integration**: Automatic Python environment detection and management
+- **Multi-format Support**:
+
+| Format    | File Extension           |
+| --------- | ------------------------ |
+| NetCDF    | .nc, .netcdf, .nc4, .cdf |
+| Zarr      | .zarr                    |
+| HDF5      | .h5, .hdf5               |
+| GRIB      | .grib, .grib2, .grb      |
+| GeoTIFF   | .tif, .tiff, .geotiff    |
+| JPEG-2000 | .jp2, .jpeg2000          |
+
+- **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
+- **Custom Editors**: Direct file opening with dedicated editors
+- **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
+- **Variable Information**: View variable dimension names, data types, shapes, and memory usage
+- **Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
 - **Command Palette Integration**: Multiple commands for data viewer operations
-- **Real-time Configuration**: Immediate application of setting changes without restart
 - **Status Bar Integration**: Shows current Python interpreter status
-- **Comprehensive Logging**: Detailed logging system for debugging and monitoring
 - **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
