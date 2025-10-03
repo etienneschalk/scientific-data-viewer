@@ -455,8 +455,9 @@ def create_plot(file_path: Path, variable_path: str, plot_type: str = "auto"):
             # 3D data with spatial dimensions - use col parameter
             logger.info("Creating 3D plot with col parameter")
             first_dim = var.dims[0]
+            col_wrap = min(4, var.shape[0])
             ax = var.plot.imshow(
-                col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=4
+                col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=col_wrap
             )
         elif strategy == "4d_col_row":
             # 4D data with spatial dimensions - use col and row parameters

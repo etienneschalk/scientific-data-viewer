@@ -140,10 +140,10 @@ button:disabled {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-.copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
+/* .copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
     background-color: var(--vscode-charts-green);
     color: var(--vscode-foreground);
-}
+} */
 
 /* Form styles */
 select {
@@ -527,7 +527,7 @@ details.sticky-group-details {
     top: 0;
     background-color: var(--vscode-editor-background);
     /* z-index: 10; */
-    margin-bottom: 0;
+    margin-bottom: 8px;
 }
 
 details.sticky-group-details > summary {
@@ -704,4 +704,9 @@ details.sticky-group-details summary > * {
 
 .highlighted {
     box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
+    /* box-shadow: 0px 0px 0px 2px var(--vscode-button-background); */
+    /* box-shadow: 
+        +4px 0px 0px 0px var(--vscode-button-background),
+        -4px 0px 0px 0px var(--vscode-button-background); */
+
 }

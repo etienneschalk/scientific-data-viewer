@@ -398,7 +398,7 @@ function displayDataInfo(data, filePath) {
                             </div>
                         `;
                     }).join('') :
-                    '<p>No attributes found in this group.</p>';
+                    '<p class="attribute-value">No attributes found in this group.</p>';
                 
                 return `
                 <div class="info-section" id="${groupId}">
