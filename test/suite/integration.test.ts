@@ -174,7 +174,9 @@ suite('Integration Test Suite', () => {
         const mockPythonManager = {
             isReady: () => true,
             executePythonFile: async (scriptPath: string, args: string[]) => {
-                const filePath = args[1]; // args[0] is 'info', args[1] is the file path
+                // args[0] is 'info', args[1] is the file path
+                // Slicing to remove the single quotes added by the PythonManager
+                const filePath = args[1].slice(1, -1); 
                 if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
                     return {
                         result: {
