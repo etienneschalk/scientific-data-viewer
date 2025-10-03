@@ -422,10 +422,12 @@ export class UIController {
         return this.errorBoundary.wrapAsync(async () => {
             const config = vscode.workspace.getConfiguration('scientificDataViewer');
             return {
+                'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
+                'scientificDataViewer.defaultView': config.get('defaultView'),
                 'scientificDataViewer.allowMultipleTabsForSameFile': config.get('allowMultipleTabsForSameFile'),
                 'scientificDataViewer.plottingCapabilities': config.get('plottingCapabilities'),
-                'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
-                'scientificDataViewer.devMode': config.get('devMode')
+                'scientificDataViewer.devMode': config.get('devMode'),
+                'scientificDataViewer.matplotlibStyle': config.get('matplotlibStyle'),
             };
         }, context) || {};
     }
