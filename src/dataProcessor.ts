@@ -62,6 +62,34 @@ export class DataProcessor {
         this.pythonScriptsHomeDir = path.join(__dirname, '../..', 'python');
     }
 
+    private detectVSCodeTheme(): string {
+        // Get the current VSCode theme
+        const currentTheme = vscode.window.activeColorTheme;
+        
+        // Check if it's a dark theme
+        if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
+            Logger.info('Detected dark VSCode theme, using dark_background style');
+            return 'dark_background';
+        } else {
+            Logger.info('Detected light VSCode theme, using default style');
+            return 'default';
+        }
+    }
+
+    private getMatplotlibStyle(): string {
+        // Get the user setting
+        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const userStyle = config.get<string>('matplotlibStyle', '');
+        
+        if (userStyle && userStyle.trim() !== '') {
+            Logger.info(`Using user-specified matplotlib style: ${userStyle}`);
+            return userStyle;
+        } else {
+            // Auto-detect based on VSCode theme
+            return this.detectVSCodeTheme();
+        }
+    }
+
     get pythonManagerInstance(): PythonManager {
         return this.pythonManager;
     }
@@ -94,11 +122,15 @@ export class DataProcessor {
 
         const filePath = uri.fsPath;
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
-        // Use the new merged CLI with 'plot' mode
-        const args = ['plot', filePath, variable, plotType];
+        
+        // Get the matplotlib style (either from user setting or auto-detected)
+        const style = this.getMatplotlibStyle();
+        
+        // Use the new merged CLI with 'plot' mode and style parameter
+        const args = ['plot', filePath, variable, plotType, '--style', style];
 
         try {
-            Logger.info(`Creating plot for variable '${variable}' with type '${plotType}'`);
+            Logger.info(`Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`);
 
             // Execute Python script and capture both stdout and stderr
             const result = await this.pythonManager.executePythonFile(scriptPath, args, true);

@@ -15,11 +15,18 @@ from dataclasses import asdict, dataclass, field
 import io
 import json
 import logging
-from math import e
 import os
 from pathlib import Path, PurePosixPath
 import sys
-from typing import Any, Literal, TypeAlias, cast
+from typing import Any, Literal, cast, Union, List, Dict
+
+# TypeAlias is available in Python 3.10+, for older versions we use a simple type alias
+try:
+    from typing import TypeAlias
+except ImportError:
+    # For Python < 3.10, we'll define it ourselves
+    TypeAlias = type
+
 import xarray as xr
 import matplotlib as mpl
 import numpy as np
@@ -28,7 +35,15 @@ from importlib.util import find_spec
 import matplotlib.pyplot as plt
 from io import BytesIO
 
-DictOfDatasets: TypeAlias = dict[str, xr.Dataset]
+# For Python < 3.10, we need to use Union instead of | syntax
+import sys
+
+if sys.version_info >= (3, 9):
+    DictOfDatasets: TypeAlias = dict[str, xr.Dataset]
+else:
+    from typing import Dict
+
+    DictOfDatasets = Dict[str, xr.Dataset]
 
 # Set up logging
 # Redirect logging to stderr so it doesn't interfere with the base64 output
@@ -45,11 +60,11 @@ mpl.rcParams["axes.formatter.use_mathtext"] = True
 xr.set_options(display_expand_attrs=False, display_expand_data=False)
 np.set_printoptions(threshold=20, edgeitems=2)
 
-XR_TEXT_OPTIONS: dict[str, Any] = {"display_max_rows": 1000}
-XR_HTML_OPTIONS: dict[str, Any] = {}
+XR_TEXT_OPTIONS: Dict[str, Any] = {"display_max_rows": 1000}
+XR_HTML_OPTIONS: Dict[str, Any] = {}
 
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP: dict[str, list[str]] = {
+FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
@@ -69,7 +84,7 @@ FORMAT_ENGINE_MAP: dict[str, list[str]] = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES: dict[str, str] = {
+FORMAT_DISPLAY_NAMES: Dict[str, str] = {
     ".nc": "NetCDF",
     ".netcdf": "NetCDF",
     ".zarr": "Zarr",
@@ -88,7 +103,7 @@ FORMAT_DISPLAY_NAMES: dict[str, str] = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES: dict[str, str] = {
+ENGINE_PACKAGES: Dict[str, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -100,7 +115,7 @@ ENGINE_PACKAGES: dict[str, str] = {
 }
 
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS: dict[str, Any | None] = {
+DEFAULT_ENGINE_BACKEND_KWARGS: Dict[str, Union[Any, None]] = {
     engine: None for engine in ENGINE_PACKAGES
 }
 # Avoid intempestive .idx file creation
@@ -108,7 +123,7 @@ DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
 DEFAULT_ENGINE_BACKEND_KWARGS["rasterio"] = {"mask_and_scale": False}
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = {
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = {
     engine: False for engine in ENGINE_PACKAGES
 }
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
@@ -119,8 +134,8 @@ DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 class FileFormatInfo:
     extension: str
     display_name: str
-    available_engines: list[str]
-    missing_packages: list[str]
+    available_engines: List[str]
+    missing_packages: List[str]
 
     @property
     def is_supported(self) -> bool:
@@ -131,20 +146,20 @@ class FileFormatInfo:
 class VariableInfo:
     name: str
     dtype: str
-    shape: list[int]
-    dimensions: list[str]
+    shape: List[int]
+    dimensions: List[str]
     size_bytes: int
-    attributes: dict[str, Any]
+    attributes: Dict[str, Any]
 
 
 @dataclass(frozen=True)
 class CoordinateInfo:
     name: str
     dtype: str
-    shape: list[int]
-    dimensions: list[str]
+    shape: List[int]
+    dimensions: List[str]
     size_bytes: int
-    attributes: dict[str, Any]
+    attributes: Dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -157,12 +172,12 @@ class FileInfoResult:
     xarray_text_repr: str = field(repr=False)
     xarray_show_versions: str
     # For flattented datatrees
-    dimensions_flattened: dict[str, dict[str, int]]
-    variables_flattened: dict[str, list[VariableInfo]]
-    coordinates_flattened: dict[str, list[CoordinateInfo]]
-    attributes_flattened: dict[str, dict[str, Any]]
-    xarray_html_repr_flattened: dict[str, str] = field(repr=False)
-    xarray_text_repr_flattened: dict[str, str] = field(repr=False)
+    dimensions_flattened: Dict[str, Dict[str, int]]
+    variables_flattened: Dict[str, List[VariableInfo]]
+    coordinates_flattened: Dict[str, List[CoordinateInfo]]
+    attributes_flattened: Dict[str, Dict[str, Any]]
+    xarray_html_repr_flattened: Dict[str, str] = field(repr=False)
+    xarray_text_repr_flattened: Dict[str, str] = field(repr=False)
 
 
 @dataclass(frozen=True)
@@ -180,12 +195,12 @@ def check_package_availability(package_name: str) -> bool:
     return find_spec(package_name) is not None
 
 
-def get_available_engines(file_extension: str) -> list[str]:
+def get_available_engines(file_extension: str) -> List[str]:
     """Get available engines for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    available_engines: list[str] = []
+    available_engines: List[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_availability(package_name):
@@ -194,12 +209,12 @@ def get_available_engines(file_extension: str) -> list[str]:
     return available_engines
 
 
-def get_missing_packages(file_extension: str) -> list[str]:
+def get_missing_packages(file_extension: str) -> List[str]:
     """Get missing packages required for a file extension."""
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    missing_packages: list[str] = []
+    missing_packages: List[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if not check_package_availability(package_name):
@@ -225,7 +240,7 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 
 def open_datatree_with_fallback(
     file_path: Path, file_format_info: FileFormatInfo
-) -> "tuple[xr.DataTree | DictOfDatasets, str]":
+) -> "tuple[Union[xr.DataTree, DictOfDatasets], str]":
     """Open datatree or dataset with fallback to different engines."""
     if not file_format_info.is_supported:
         raise ImportError(
@@ -379,12 +394,27 @@ def detect_plotting_strategy(
     return "default"
 
 
-def create_plot(file_path: Path, variable_path: str, plot_type: str = "auto"):
+def create_plot(
+    file_path: Path, variable_path: str, plot_type: str = "auto", style: str = "auto"
+):
     """Create a plot from a data file variable."""
 
     try:
         if plot_type != "auto":
             raise ValueError(f"Invalid plot type: {plot_type}")
+
+        # Apply matplotlib style provided by VSCode extension
+        if style and style.strip():
+            try:
+                logger.info(f"Using matplotlib style: {style}")
+                plt.style.use(style)
+            except Exception as exc:
+                logger.warning(f"Failed to apply style '{style}': {exc}, using default")
+                plt.style.use("default")
+        else:
+            logger.info("No style specified, using default")
+            plt.style.use("default")
+
         # Detect file format and available engines
         file_format_info = detect_file_format(file_path)
 
@@ -696,6 +726,9 @@ Examples:
   python get_data_info.py info sample_data.nc
   python get_data_info.py plot sample_data.nc temperature
   python get_data_info.py plot sample_data.nc temperature histogram
+  python get_data_info.py plot sample_data.nc temperature --style dark_background
+  python get_data_info.py plot sample_data.nc temperature --style default
+  python get_data_info.py plot sample_data.nc temperature --style seaborn
         """,
     )
 
@@ -720,6 +753,12 @@ Examples:
         help="Plot type: 'line' or 'histogram' (optional, default: 'auto')",
     )
 
+    parser.add_argument(
+        "--style",
+        default="",
+        help="Matplotlib plot style. Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -738,7 +777,9 @@ Examples:
 
     elif args.mode == "plot":
         # Create plot
-        result = create_plot(args.file_path, args.variable_name, args.plot_type)
+        result = create_plot(
+            args.file_path, args.variable_name, args.plot_type, args.style
+        )
         if result:
             print(result)
         else:
