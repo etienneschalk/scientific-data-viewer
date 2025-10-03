@@ -100,7 +100,7 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = uri.fsPath;
+        const filePath = `'${uri.fsPath}'`;
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
 
         try {
@@ -120,7 +120,7 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = uri.fsPath;
+        const filePath = `'${uri.fsPath}'`;
         const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
         
         // Get the matplotlib style (either from user setting or auto-detected)
