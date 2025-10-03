@@ -332,7 +332,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      * Save the expanded state of an element
      */
     private saveExpandedState(element: HeaderItem): void {
-        if (!this.currentFile) return;
+        if (!this.currentFile) {return;}
         
         const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);
@@ -349,7 +349,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      * Save the collapsed state of an element
      */
     private saveCollapsedState(element: HeaderItem): void {
-        if (!this.currentFile) return;
+        if (!this.currentFile) {return;}
         
         const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);
@@ -364,7 +364,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      * Check if an element should be expanded based on saved state
      */
     private isItemExpanded(element: HeaderItem): boolean {
-        if (!this.currentFile) return false;
+        if (!this.currentFile) {return false;}
         
         const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);

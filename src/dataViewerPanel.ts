@@ -199,7 +199,7 @@ export class DataViewerPanel {
 
     private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._webviewPanel = webviewPanel;
-        this._webviewPanel.title = path.basename(fileUri.fsPath)
+        this._webviewPanel.title = path.basename(fileUri.fsPath);
         this._currentFile = fileUri;
 
         // Configure webview panel properties for optimal experience

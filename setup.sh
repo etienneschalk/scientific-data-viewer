@@ -10,7 +10,7 @@ echo "=============================================="
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 16+ and try again."
+    echo "❌ Node.js is not installed. Please install Node.js 22+ and try again."
     exit 1
 fi
 

@@ -177,7 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
             retainContextWhenHidden: true,
             enableFindWidget: true,
         }
-    }
+    };
     const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
         'netcdfEditor',
         netcdfEditorProvider,
