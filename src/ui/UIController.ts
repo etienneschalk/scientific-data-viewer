@@ -26,14 +26,13 @@ export class UIController {
     constructor(
         id: number,
         webview: vscode.Webview,
-        dataProcessor: DataProcessor,
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void,
         onOutlineUpdateCallback?: () => void
     ) {
         this.id = id;
         this.webview = webview;
-        this.dataProcessor = dataProcessor;
+        this.dataProcessor = DataProcessor.getInstance();
         this.onErrorPanelCallback = onErrorCallback;
         this.onSuccessPanelCallback = onSuccessCallback;
         this.onOutlineUpdateCallback = onOutlineUpdateCallback;

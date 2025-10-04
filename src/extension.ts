@@ -10,7 +10,7 @@ class ScientificDataEditorProvider
     implements vscode.CustomReadonlyEditorProvider
 {
     constructor(
-        private readonly context: vscode.ExtensionContext,
+        private readonly extensionContext: vscode.ExtensionContext,
         private readonly dataProcessor: DataProcessor
     ) {}
 
@@ -56,11 +56,12 @@ class ScientificDataEditorProvider
 
         // Reuse the provided webviewPanel instead of creating a new one
         // This eliminates the flickering issue
-        DataViewerPanel.create(
-            this.context.extensionUri,
-            webviewPanel,
+        // No need to createOrReveal since VSCode is handling itself the uniqueness
+        // of the opened tab.
+        DataViewerPanel.createFromWebviewPanel(
             document.uri,
-            this.dataProcessor
+            webviewPanel,
+            getWebviewOptions(this.extensionContext),
         );
     }
 }
@@ -172,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     try {
         pythonManager = new PythonManager();
-        dataProcessor = new DataProcessor(pythonManager);
+        dataProcessor = DataProcessor.createInstance(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
     } catch (error) {
         Logger.error(`❌ Failed to initialize Python manager: ${error}`);
@@ -207,6 +208,17 @@ export function activate(context: vscode.ExtensionContext) {
     statusBarItem.text = '$(python) Python: Not Set';
     // Don't show by default - only show when interpreter is selected
 
+    const webviewPanelOptions: vscode.WebviewPanelOptions = {
+        enableFindWidget: true,
+        retainContextWhenHidden: true,
+    };
+    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(context);
+    const iconPath = vscode.Uri.joinPath(
+        context.extensionUri,
+        'media',
+        'icon.svg'
+    );
+
     // Register custom editor providers
     Logger.info('🔧 Registering custom editor providers...');
     const sciEditorProvider = new ScientificDataEditorProvider(
@@ -214,10 +226,10 @@ export function activate(context: vscode.ExtensionContext) {
         dataProcessor
     );
     const options = {
-        webviewOptions: {
-            retainContextWhenHidden: true,
-            enableFindWidget: true,
-        },
+        // Warning! Naming is confusing!
+        webviewOptions: webviewPanelOptions,
+        // TODO eschalk supportsMultipleEditorsPerDocument to allow split editor??
+        supportsMultipleEditorsPerDocument: true,
     };
     const editorRegistrations = [
         'netcdfEditor',
@@ -244,10 +256,12 @@ export function activate(context: vscode.ExtensionContext) {
                 Logger.info(
                     `🎮 🔧 Opening data viewer for file: ${uri.fsPath}`
                 );
-                await DataViewerPanel.createFromScratchOrShow(
-                    context.extensionUri,
+                await waitThenCreateOrRevealPanel(
                     uri,
-                    dataProcessor
+                    iconPath,
+                    webviewOptions,
+                    webviewPanelOptions,
+                    pythonManager
                 );
             } else {
                 Logger.info(
@@ -281,14 +295,16 @@ export function activate(context: vscode.ExtensionContext) {
                         'JPEG-2000': ['jp2', 'jpeg2000'],
                     },
                 });
-                fileUriList?.forEach(async (fileUri) => {
+                fileUriList?.forEach(async (uri) => {
                     Logger.info(
-                        `🎮 🔧 File selected for data viewer: ${fileUri.fsPath}`
+                        `🎮 🔧 File selected for data viewer: ${uri.fsPath}`
                     );
-                    await DataViewerPanel.createFromScratchOrShow(
-                        context.extensionUri,
-                        fileUri,
-                        dataProcessor
+                    await waitThenCreateOrRevealPanel(
+                        uri,
+                        iconPath,
+                        webviewOptions,
+                        webviewPanelOptions,
+                        pythonManager
                     );
                 });
             }
@@ -303,10 +319,12 @@ export function activate(context: vscode.ExtensionContext) {
                 Logger.info(
                     `🎮 🔧 Opening data viewer for folder: ${uri.fsPath}`
                 );
-                await DataViewerPanel.createFromScratchOrShow(
-                    context.extensionUri,
+                await waitThenCreateOrRevealPanel(
                     uri,
-                    dataProcessor
+                    iconPath,
+                    webviewOptions,
+                    webviewPanelOptions,
+                    pythonManager
                 );
             } else {
                 Logger.info(
@@ -322,14 +340,16 @@ export function activate(context: vscode.ExtensionContext) {
                         Zarr: ['zarr'],
                     },
                 });
-                folderUriList?.forEach(async (folderUri) => {
+                folderUriList?.forEach(async (uri) => {
                     Logger.info(
-                        `🎮 🔧 Folders selected for data viewer: ${folderUri.fsPath}`
+                        `🎮 🔧 Folder selected for data viewer: ${uri.fsPath}`
                     );
-                    await DataViewerPanel.createFromScratchOrShow(
-                        context.extensionUri,
-                        folderUri,
-                        dataProcessor
+                    await waitThenCreateOrRevealPanel(
+                        uri,
+                        iconPath,
+                        webviewOptions,
+                        webviewPanelOptions,
+                        pythonManager
                     );
                 });
             }
@@ -503,10 +523,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
-    refreshPython(
-        pythonManager,
-        statusBarItem
-    );
+    refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
@@ -636,6 +653,16 @@ export function activate(context: vscode.ExtensionContext) {
     // Status bar will only be shown when an interpreter is actually selected
 }
 
+function getWebviewOptions(context: vscode.ExtensionContext): vscode.WebviewOptions {
+    return {
+        enableScripts: true,
+        localResourceRoots: [
+            vscode.Uri.joinPath(context.extensionUri, 'media'),
+            vscode.Uri.joinPath(context.extensionUri, 'out'),
+        ],
+    };
+}
+
 async function refreshPython(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
@@ -681,6 +708,33 @@ function updateStatusBar(
     }
 }
 
+async function waitThenCreateOrRevealPanel(
+    uri: vscode.Uri,
+    iconPath: vscode.Uri,
+    webviewOptions: vscode.WebviewOptions,
+    webviewPanelOptions: vscode.WebviewPanelOptions,
+    pythonManager: PythonManager
+) {
+    // Wait for Python initialization to complete before creating the panel
+    // This prevents the race condition where file opening happens before Python validation
+    try {
+        await pythonManager.waitForInitialization();
+        Logger.info(
+            `🚚 👍 Python initialization complete, creating data viewer panel for: ${uri.fsPath}`
+        );
+    } catch (error) {
+        Logger.warn(
+            `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
+        );
+    }
+
+    DataViewerPanel.createOrReveal(
+        uri,
+        iconPath,
+        webviewOptions,
+        webviewPanelOptions
+    );
+}
 export function deactivate() {
     Logger.info('');
     Logger.info('');

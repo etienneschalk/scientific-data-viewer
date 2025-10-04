@@ -135,7 +135,7 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.createFromScratchOrShow(mockContext.extensionUri, fileUri, mockDataProcessor);
+            DataViewerPanel.waitThenCreateOrReveal(mockContext.extensionUri, fileUri, mockDataProcessor);
             
             // Should not throw an error
             assert.ok(true);
@@ -166,7 +166,7 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.createFromScratchOrShow(mockContext.extensionUri, fileUri, mockDataProcessor);
+            DataViewerPanel.waitThenCreateOrReveal(mockContext.extensionUri, fileUri, mockDataProcessor);
             
             // Should not throw an error
             assert.ok(true);
@@ -206,7 +206,7 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.createFromScratchOrShow(mockContext.extensionUri, fileUri, mockDataProcessor);
+            DataViewerPanel.waitThenCreateOrReveal(mockContext.extensionUri, fileUri, mockDataProcessor);
             
             // Should not throw an error
             assert.ok(true);
@@ -222,7 +222,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should revive panel', () => {
-        DataViewerPanel.create(mockContext.extensionUri, mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        DataViewerPanel.createFromWebviewPanel(mockContext.extensionUri, mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Should not throw an error
         assert.ok(true);
@@ -314,7 +314,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should dispose panel', () => {
-        const panel = DataViewerPanel.create(mockContext.extensionUri, mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
+        const panel = DataViewerPanel.createFromWebviewPanel(mockContext.extensionUri, mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), mockDataProcessor);
         
         // Add to active panels
         DataViewerPanel.activePanels.add(panel);

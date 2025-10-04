@@ -56,6 +56,17 @@ export interface DataInfoError {
 }
 
 export class DataProcessor {
+    private static instance: DataProcessor;
+
+    static getInstance(): DataProcessor {
+        return DataProcessor.instance;
+    }
+
+    static createInstance(pythonManager: PythonManager): DataProcessor {
+        DataProcessor.instance = new DataProcessor(pythonManager);
+        return DataProcessor.instance;
+    }
+    
     private readonly pythonScriptsHomeDir: string;
 
     constructor(private pythonManager: PythonManager) {

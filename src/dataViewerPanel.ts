@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { UIController } from './ui/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
@@ -48,27 +47,15 @@ export class DataViewerPanel {
         return undefined;
     }
 
-    public static async createFromScratchOrShow(
-        extensionUri: vscode.Uri,
+    public static async createOrReveal(
         fileUri: vscode.Uri,
-        dataProcessor: DataProcessor
+        iconPath: vscode.Uri,
+        webviewOptions: vscode.WebviewOptions,
+        webviewPanelOptions: vscode.WebviewPanelOptions
     ) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
-
-        // Wait for Python initialization to complete before creating the panel
-        // This prevents the race condition where file opening happens before Python validation
-        try {
-            await dataProcessor.pythonManagerInstance.waitForInitialization();
-            Logger.info(
-                `🚚 🧩 Python initialization complete, creating data viewer panel for: ${fileUri.fsPath}`
-            );
-        } catch (error) {
-            Logger.warn(
-                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
-            );
-        }
 
         // Get configuration directly from VSCode
         const config = vscode.workspace.getConfiguration(
@@ -98,19 +85,17 @@ export class DataViewerPanel {
             `Creating new panel for ${fileUri.fsPath} (allowMultipleTabsForSameFile: true)`
         );
 
-        // File is not open or multiple tabs are allowed, create a new panel
-        const panel = vscode.window.createWebviewPanel(
+        // WebviewPanelOptions & WebviewOptions
+
+        // File is not opened or multiple tabs are allowed, create a new panel
+
+        const webviewPanel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
-            path.basename(fileUri.fsPath),
+            path.basename(fileUri.fsPath), // TODO eschalk add [counter] if dev mode !
             column || vscode.ViewColumn.One,
             {
-                enableScripts: true,
-                retainContextWhenHidden: true,
-                enableFindWidget: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media'),
-                    vscode.Uri.joinPath(extensionUri, 'out'),
-                ],
+                ...webviewOptions,
+                ...webviewPanelOptions,
             }
         );
 
@@ -119,36 +104,31 @@ export class DataViewerPanel {
         // Scientific Data Viewer: Open Scientific Data Viewer command.
         // When clicking on a file in the explorer, the icon is set automatically,
         // as configured in package.json (section contributes -> languages -> icon)
-        panel.iconPath = vscode.Uri.joinPath(extensionUri, 'media', 'icon.svg');
+        webviewPanel.iconPath = iconPath;
 
-        DataViewerPanel.create(extensionUri, panel, fileUri, dataProcessor);
+        DataViewerPanel.createFromWebviewPanel(
+            fileUri,
+            webviewPanel,
+            webviewOptions
+        );
     }
 
-    public static create(
-        extensionUri: vscode.Uri,
-        webviewPanel: vscode.WebviewPanel,
+    public static createFromWebviewPanel(
         fileUri: vscode.Uri,
-        dataProcessor: DataProcessor
+        webviewPanel: vscode.WebviewPanel,
+        webviewOptions: vscode.WebviewOptions
     ): DataViewerPanel {
         // Configure the webview panel
-        webviewPanel.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.joinPath(extensionUri, 'media'),
-                vscode.Uri.joinPath(extensionUri, 'out'),
-            ],
-        };
+        webviewPanel.webview.options = webviewOptions;
 
         // Keep track of the number of panels created (used for identifying the panel)
-        DataViewerPanel.createdCount++;
-        const panelId = DataViewerPanel.createdCount;
+        DataViewerPanel.increaseCreatedCount();
 
         // Create the data viewer panel
         const dataViewerPanel = new DataViewerPanel(
-            panelId,
-            webviewPanel,
+            DataViewerPanel.createdCount,
             fileUri,
-            dataProcessor
+            webviewPanel
         );
         // Add the data viewer panel to the active panels set
         DataViewerPanel.activePanels.add(dataViewerPanel);
@@ -157,6 +137,10 @@ export class DataViewerPanel {
         );
         // Return the data viewer panel
         return dataViewerPanel;
+    }
+
+    private static increaseCreatedCount() {
+        DataViewerPanel.createdCount++;
     }
 
     public static async refreshPanelsWithErrors() {
@@ -211,9 +195,8 @@ export class DataViewerPanel {
 
     private constructor(
         id: number,
-        webviewPanel: vscode.WebviewPanel,
         fileUri: vscode.Uri,
-        dataProcessor: DataProcessor
+        webviewPanel: vscode.WebviewPanel
     ) {
         this._id = id;
         this._fileUri = fileUri;
@@ -231,7 +214,6 @@ export class DataViewerPanel {
         this._uiController = new UIController(
             id,
             webviewPanel.webview,
-            dataProcessor,
             (error) => {
                 Logger.error(`[UIController] Error: ${error.message}`);
                 DataViewerPanel.addPanelWithError(this);
@@ -308,7 +290,11 @@ export class DataViewerPanel {
             return;
         }
 
-        Logger.info(`[${this.getId()}] 🚚 🗑️ Disposing panel for file: ${this._fileUri.fsPath}`);
+        Logger.info(
+            `[${this.getId()}] 🚚 🗑️ Disposing panel for file: ${
+                this._fileUri.fsPath
+            }`
+        );
         Logger.debug(
             `[dispose] Before cleanup - activePanels: ${DataViewerPanel.activePanels.size}, panelsWithErrors: ${DataViewerPanel.panelsWithErrors.size}`
         );
@@ -349,7 +335,9 @@ export class DataViewerPanel {
         }
 
         Logger.info(
-            `[${this.getId()}] 🚚 ✅ Panel disposal completed for file: ${this._fileUri.fsPath}, remaining activePanels: ${DataViewerPanel.activePanels.size}`
+            `[${this.getId()}] 🚚 ✅ Panel disposal completed for file: ${
+                this._fileUri.fsPath
+            }, remaining activePanels: ${DataViewerPanel.activePanels.size}`
         );
 
         this._isDisposed = true;
