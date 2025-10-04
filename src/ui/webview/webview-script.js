@@ -245,6 +245,16 @@ function formatFileSize(bytes) {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
+function generateDefaultFileName(datasetFilePath, variablePath) {
+    const fileName = datasetFilePath.split('/').pop();
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    // Variable must be is a full path starting with /
+    if (!variablePath.startsWith('/')) {
+        variablePath = `/${variablePath}`;
+    }
+    return `sdv-plots/${fileName}${variablePath}_${timestamp}.png`;
+}
+
 function generateUUID() {
     return window.crypto.randomUUID();
 }
@@ -259,7 +269,7 @@ function setupMessageHandlers() {
 
     messageBus.onError((error) => {
         console.error('❌ Error event received:', error);
-        displayError(
+        displayGlobalError(
             error.message,
             error.details,
             error.errorType,
@@ -277,7 +287,7 @@ function setupMessageHandlers() {
     });
 
     messageBus.onScrollToHeader(({ headerId, headerLabel }) => {
-        scrollToHeader(headerId, headerLabel);
+        doScrollToHeader(headerId, headerLabel);
     });
 
     // Add debugging for all message bus communications
@@ -310,10 +320,10 @@ function displayAll(state) {
     displayPythonPath(state.python.pythonPath);
     displayExtensionConfig(state.extension.extensionConfig);
     displayShowVersions(state.data.dataInfo.xarray_show_versions);
-    updateTimestamp(state.data.lastLoadTime);
+    displayTimestamp(state.data.lastLoadTime);
 }
 
-function updateTimestamp(isoString, isLoading = false) {
+function displayTimestamp(isoString, isLoading = false) {
     const timestampElement = document.getElementById('timestamp');
     const timestampText = document.getElementById('timestampText');
 
@@ -333,12 +343,12 @@ function updateTimestamp(isoString, isLoading = false) {
 // Display functions
 function displayDataInfo(data, filePath) {
     if (!data) {
-        displayError('No data available');
+        displayGlobalError('No data available');
         return;
     }
 
     if (data.error) {
-        displayError(data.error);
+        displayGlobalError(data.error);
         return;
     }
 
@@ -346,21 +356,62 @@ function displayDataInfo(data, filePath) {
     globalState.currentDatasetFilePath = filePath;
 
     // Hide any previous errors since data loaded successfully
-    hideError();
+    hideGlobalError();
 
     // Display file path in code format with copy button
-    const filePathContainer = document.getElementById('filePathContainer');
     const filePathCode = document.getElementById('filePathCode');
-    if (filePath) {
-        filePathCode.textContent = filePath;
-        filePathContainer.classList.remove('hidden');
-    } else {
-        filePathContainer.classList.add('hidden');
-    }
+    filePathCode.textContent = filePath;
 
     // Display file information
     const fileInfo = document.getElementById('fileInfo');
-    let formatInfo = '';
+    fileInfo.innerHTML = renderFileInformation(data);
+
+    const groupInfoContainer = document.getElementById('group-info-container');
+    groupInfoContainer.classList.remove('hidden');
+
+    // Assumption: dimensions_flattened and coordinates_flattened and variables_flattened
+    // are always present together and have the same group keys.
+    const groups = Object.keys(data.dimensions_flattened);
+
+    if (
+        data.dimensions_flattened &&
+        data.coordinates_flattened &&
+        data.variables_flattened
+    ) {
+        // Display dimensions, coordinates, and variables for each group
+        groupInfoContainer.innerHTML = groups
+            .map((groupName) => renderGroup(data, groupName))
+            .join('');
+        // Open the first group by default
+        groupInfoContainer
+            .querySelector('details')
+            .setAttribute('open', 'open');
+
+        // Enable buttons for datatree variables
+        Object.keys(data.variables_flattened).forEach((groupName) => {
+            data.variables_flattened[groupName].forEach((variable) => {
+                const fullVariableName = `${
+                    groupName == '/' ? '' : groupName
+                }/${variable.name}`;
+                const createButton = document.querySelector(
+                    `.create-plot-button[data-variable="${fullVariableName}"]`
+                );
+                if (createButton) {
+                    createButton.disabled = false;
+                }
+            });
+        });
+    } else {
+        contentContainer.innerHTML = '<p>No data available</p>';
+    }
+
+    // Show content
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('content').classList.remove('hidden');
+}
+
+function renderFileInformation(data) {
+    let formatInfo = '<p>';
 
     if (data.fileSize) {
         formatInfo += /*html*/ `<strong>Size:</strong> ${formatFileSize(
@@ -384,322 +435,257 @@ function displayDataInfo(data, filePath) {
             }
         `;
     }
+    formatInfo += '</p>';
+    return formatInfo;
+}
 
-    fileInfo.innerHTML = /*html*/ `<p>${formatInfo}</p>`;
+function renderGroup(data, groupName) {
+    // Add dimensions for group
+    const dimensions = data.dimensions_flattened[groupName];
+    const dimensionsHtml =
+        dimensions && Object.keys(dimensions).length > 0
+            ? renderGroupDimensions(dimensions, groupName)
+            : /*html*/ `<p class="muted-text">No dimensions found in this group.</p>`;
 
-    const groupInfoContainer = document.getElementById('group-info-container');
-    groupInfoContainer.classList.remove('hidden');
+    // Add coordinates for group
+    const coordinates = data.coordinates_flattened[groupName];
+    const coordinatesHtml =
+        coordinates && coordinates.length > 0
+            ? renderGroupCoordinateVariables(coordinates, groupName)
+            : /*html*/ `<p class="muted-text">No coordinates found in this group.</p>`;
 
-    // Assumption: dimensions_flattened and coordinates_flattened and variables_flattened
-    //  are always present together and have the same group keys.
-    const groups = Object.keys(data.dimensions_flattened);
+    // Add variables for group
+    const variables = data.variables_flattened[groupName];
+    const variablesHtml =
+        variables && variables.length > 0
+            ? renderGroupDataVariables(variables, groupName)
+            : /*html*/ `<p class="muted-text">No variables found in this group.</p>`;
 
-    if (
-        data.dimensions_flattened &&
-        data.coordinates_flattened &&
-        data.variables_flattened
-    ) {
-        // Display dimensions, coordinates, and variables for each group
-        groupInfoContainer.innerHTML = groups
-            .map((groupName) => {
-                // Add dimensions for group
-                const dimensions = data.dimensions_flattened[groupName];
-                const dimensionsHtml =
-                    dimensions && Object.keys(dimensions).length > 0
-                        ? /*html*/ `<div class="dimensions-compact">
-                        (${Object.entries(dimensions)
-                            .map(
-                                ([name, size]) =>
-                                    `<strong id="${joinId([
-                                        'data-group',
-                                        groupName,
-                                        'dimension',
-                                        name,
-                                    ])}">${name}</strong>: ${size}`
-                            )
-                            .join(', ')})
-                    </div>`
-                        : /*html*/ `<p class="muted-text">No dimensions found in this group.</p>`;
+    // Add attributes for group
+    const attributes = data.attributes_flattened[groupName];
+    const attributesHtml =
+        attributes && Object.keys(attributes).length > 0
+            ? Object.entries(attributes)
+                  .map(([attrName, value]) => {
+                      return renderGroupAttributes(groupName, attrName, value);
+                  })
+                  .join('')
+            : /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
 
-                // Add coordinates for group
-                const coordinates = data.coordinates_flattened[groupName];
-                const coordinatesHtml =
-                    coordinates && coordinates.length > 0
-                        ? coordinates
-                              .map((variable) => {
-                                  const shapeStr = variable.shape
-                                      ? `(${variable.shape.join(', ')})`
-                                      : '';
-                                  const dimsStr = variable.dimensions
-                                      ? `(${variable.dimensions.join(', ')})`
-                                      : '';
-                                  const sizeStr = variable.size_bytes
-                                      ? `${formatFileSize(variable.size_bytes)}`
-                                      : '';
-                                  const coordId = joinId([
-                                      'data-group',
-                                      groupName,
-                                      'coordinate',
-                                      variable.name,
-                                  ]);
-                                  const hasAttributes =
-                                      variable.attributes &&
-                                      Object.keys(variable.attributes).length >
-                                          0;
-
-                                  const attributesContent = hasAttributes
-                                      ? renderAttributesContent(
-                                            variable.attributes,
-                                            joinId([
-                                                'data-group',
-                                                groupName,
-                                                'coordinate',
-                                                variable.name,
-                                            ])
-                                        )
-                                      : '';
-
-                                  return /*html*/ `
-                            <details class="variable-details" id="${coordId}" data-variable="${
-                                      variable.name
-                                  }">
-                                <summary class="variable-summary ${
-                                    hasAttributes ? '' : 'not-clickable'
-                                }">
-                                    <span class="variable-name" title="${
-                                        variable.name
-                                    }">${variable.name}</span>
-                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                    <span class="dtype-shape" title="${escapeHtml(
-                                        variable.dtype
-                                    )}">
-                                        <code>${escapeHtml(
-                                            variable.dtype
-                                        )}</code>
-                                    </span>
-                                    <span class="dtype-shape" title="${shapeStr}">
-                                        ${shapeStr}
-                                    </span>
-                                    ${
-                                        sizeStr
-                                            ? `<span class="size">${sizeStr}</span>`
-                                            : ''
-                                    }
-                                </summary>
-                                <div id="${joinId([
-                                    'data-group',
-                                    groupName,
-                                    'coordinate',
-                                    variable.name,
-                                    'attributes',
-                                ])}">${attributesContent}</div>
-                            </details>
-                        `;
-                              })
-                              .join('')
-                        : /*html*/ `<p class="muted-text">No coordinates found in this group.</p>`;
-
-                // Add variables for group
-                const variables = data.variables_flattened[groupName];
-                const variablesHtml =
-                    variables && variables.length > 0
-                        ? variables
-                              .map((variable) => {
-                                  const shapeStr = variable.shape
-                                      ? `(${variable.shape.join(', ')})`
-                                      : '';
-                                  const dimsStr = variable.dimensions
-                                      ? `(${variable.dimensions.join(', ')})`
-                                      : '';
-                                  const sizeStr = variable.size_bytes
-                                      ? `${formatFileSize(variable.size_bytes)}`
-                                      : '';
-                                  const varId = joinId([
-                                      'data-group',
-                                      groupName,
-                                      'variable',
-                                      variable.name,
-                                  ]);
-                                  const hasAttributes =
-                                      variable.attributes &&
-                                      Object.keys(variable.attributes).length >
-                                          0;
-
-                                  const attributesContent = hasAttributes
-                                      ? renderAttributesContent(
-                                            variable.attributes,
-                                            joinId([
-                                                'data-group',
-                                                groupName,
-                                                'variable',
-                                                variable.name,
-                                            ])
-                                        )
-                                      : '';
-
-                                  // For datatree variables, use full path (group/variable) for plotting
-                                  const fullVariableName = `${
-                                      groupName == '/' ? '' : groupName
-                                  }/${variable.name}`;
-                                  const plotControls =
-                                      renderVariablePlotControls(
-                                          fullVariableName
-                                      );
-
-                                  return /*html*/ `
-                            <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
-                                <summary class="variable-summary ${
-                                    hasAttributes ? '' : 'not-clickable'
-                                }">
-                                    <span class="variable-name" title="${fullVariableName}">${
-                                      variable.name
-                                  }</span>
-                                    <span class="dims" title="${dimsStr}">${dimsStr}</span>
-                                    <span class="dtype-shape" title="${escapeHtml(
-                                        variable.dtype
-                                    )}">
-                                        <code>${escapeHtml(
-                                            variable.dtype
-                                        )}</code>
-                                    </span>
-                                    <span class="dtype-shape" title="${shapeStr}">
-                                        ${shapeStr}
-                                    </span>
-                                    ${
-                                        sizeStr
-                                            ? `<span class="size">${sizeStr}</span>`
-                                            : ''
-                                    }
-                                </summary>
-                                <div id="${joinId([
-                                    'data-group',
-                                    groupName,
-                                    'variable',
-                                    variable.name,
-                                    'attributes',
-                                ])}">${attributesContent}</div>
-                            </details>
-                            ${plotControls}
-                        `;
-                              })
-                              .join('')
-                        : /*html*/ `<p class="muted-text">No variables found in this group.</p>`;
-
-                // Add attributes for group
-                const attributes = data.attributes_flattened[groupName];
-                const attributesHtml =
-                    attributes && Object.keys(attributes).length > 0
-                        ? Object.entries(attributes)
-                              .map(([attrName, value]) => {
-                                  const attrId = joinId([
-                                      'data-group',
-                                      groupName,
-                                      'attribute',
-                                      attrName,
-                                  ]);
-                                  const valueStr =
-                                      typeof value === 'string'
-                                          ? value
-                                          : JSON.stringify(value);
-
-                                  return /*html*/ `
-                            <div class="attribute-item" id="${attrId}">
-                                <span class="attribute-name" title="${attrName}">${attrName} : </span>
-                                <span class="attribute-value" title="${valueStr}">${valueStr}</span>
-                            </div>
-                        `;
-                              })
-                              .join('')
-                        : /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
-
-                return /*html*/ `
+    return /*html*/ `
+        <div class="info-section" id="${joinId(['data-group', groupName])}">
+            <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
                 <div class="info-section" id="${joinId([
                     'data-group',
                     groupName,
+                    'dimensions',
                 ])}">
-                    <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
-                        <div class="info-section" id="${joinId([
-                            'data-group',
-                            groupName,
-                            'dimensions',
-                        ])}">
-                            <details class="" open> <summary><h4>Dimensions</h4></summary>
-                                <div class="dimensions">
-                                    ${dimensionsHtml}
-                                </div>
-                            </details>  
+                    <details class="" open> <summary><h4>Dimensions</h4></summary>
+                        <div class="dimensions">
+                            ${dimensionsHtml}
+                        </div>
+                    </details>  
+                </div>  
+                <div class="info-section" id="${joinId([
+                    'data-group',
+                    groupName,
+                    'coordinates',
+                ])}">
+                    <details class="" open> <summary><h4>Coordinates</h4></summary>
+                        <div class="coordinates">
+                            ${coordinatesHtml}
+                        </div>
+                    </details>
+                </div>
+                <div class="info-section" id="${joinId([
+                    'data-group',
+                    groupName,
+                    'variables',
+                ])}">
+                    <details class="" open> <summary><h4>Variables</h4></summary>
+                        <div class="variables">
+                            ${variablesHtml}
                         </div>  
-                        <div class="info-section" id="${joinId([
-                            'data-group',
-                            groupName,
-                            'coordinates',
-                        ])}">
-                            <details class="" open> <summary><h4>Coordinates</h4></summary>
-                                <div class="coordinates">
-                                    ${coordinatesHtml}
-                                </div>
-                            </details>
-                        </div>
-                        <div class="info-section" id="${joinId([
-                            'data-group',
-                            groupName,
-                            'variables',
-                        ])}">
-                            <details class="" open> <summary><h4>Variables</h4></summary>
-                                <div class="variables">
-                                    ${variablesHtml}
-                                </div>  
-                            </details>
-                        </div>
-                        <div class="info-section" id="${joinId([
-                            'data-group',
-                            groupName,
-                            'attributes',
-                        ])}">
-                            <details class="" open> <summary><h4>Attributes</h4></summary>
-                                <div class="attributes">
-                                    ${attributesHtml}
-                                </div>  
-                            </details>
-                        </div>
-                    </div>
-                </details>
-                `;
-            })
-            .join('');
-        // Open the first group by default
-        groupInfoContainer
-            .querySelector('details')
-            .setAttribute('open', 'open');
-    } else {
-        contentContainer.innerHTML = '<p>No data available</p>';
-    }
+                    </details>
+                </div>
+                <div class="info-section" id="${joinId([
+                    'data-group',
+                    groupName,
+                    'attributes',
+                ])}">
+                    <details class="" open> <summary><h4>Attributes</h4></summary>
+                        <div class="attributes">
+                            ${attributesHtml}
+                        </div>  
+                    </details>
+                </div>
+            </div>
+        </details>
+        `;
+}
 
-    // Enable create plot buttons for all variables
-    if (data.variables_flattened) {
-        // Enable buttons for datatree variables
-        Object.keys(data.variables_flattened).forEach((groupName) => {
-            data.variables_flattened[groupName].forEach((variable) => {
-                const fullVariableName = `${
-                    groupName == '/' ? '' : groupName
-                }/${variable.name}`;
-                const createButton = document.querySelector(
-                    `.create-plot-button[data-variable="${fullVariableName}"]`
-                );
-                if (createButton) {
-                    createButton.disabled = false;
-                }
-            });
-        });
-    }
+function renderGroupDimensions(dimensions, groupName) {
+    return /*html*/ `
+        <div class="dimensions-compact">
+            (${Object.entries(dimensions)
+                .map(([name, size]) => renderDimension(groupName, name, size))
+                .join(', ')})
+        </div>`;
+}
 
-    // Show content
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('content').classList.remove('hidden');
+function renderGroupCoordinateVariables(coordinates, groupName) {
+    return coordinates
+        .map((variable) => {
+            return renderCoordinateVariable(variable, groupName);
+        })
+        .join('');
+}
+
+function renderGroupDataVariables(variables, groupName) {
+    return variables
+        .map((variable) => {
+            return renderDataVariable(variable, groupName);
+        })
+        .join('');
+}
+
+function renderGroupAttributes(groupName, attrName, value) {
+    const attrId = joinId(['data-group', groupName, 'attribute', attrName]);
+    const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+
+    return /*html*/ `
+        <div class="attribute-item" id="${attrId}">
+            <span class="attribute-name" title="${attrName}">${attrName} : </span>
+            <span class="attribute-value" title="${valueStr}">${valueStr}</span>
+        </div>
+    `;
+}
+
+function renderDimension(groupName, name, size) {
+    return /*html*/ `<strong id="${joinId([
+        'data-group',
+        groupName,
+        'dimension',
+        name,
+    ])}">${name}</strong>: ${size}`;
+}
+
+function renderCoordinateVariable(variable, groupName) {
+    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+    const dimsStr = variable.dimensions
+        ? `(${variable.dimensions.join(', ')})`
+        : '';
+    const sizeStr = variable.size_bytes
+        ? `${formatFileSize(variable.size_bytes)}`
+        : '';
+    const coordId = joinId([
+        'data-group',
+        groupName,
+        'coordinate',
+        variable.name,
+    ]);
+    const hasAttributes =
+        variable.attributes && Object.keys(variable.attributes).length > 0;
+
+    const attributesContent = hasAttributes
+        ? renderVariableAttributes(
+              variable.attributes,
+              joinId(['data-group', groupName, 'coordinate', variable.name])
+          )
+        : '';
+
+    return /*html*/ `
+        <details 
+            class="variable-details" 
+            id="${coordId}" 
+            data-variable="${variable.name}"
+        >
+            <summary    
+                class="variable-summary ${hasAttributes ? '' : 'not-clickable'}"
+            >
+                <span class="variable-name" title="${variable.name}">
+                    ${variable.name}
+                </span>
+                <span class="dims" title="${dimsStr}">
+                    ${dimsStr}
+                </span>
+                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                    <code>${escapeHtml(variable.dtype)}</code>
+                </span>
+                <span class="dtype-shape" title="${shapeStr}">
+                    ${shapeStr}
+                </span>
+                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+            </summary>
+            <div id="${joinId([
+                'data-group',
+                groupName,
+                'coordinate',
+                variable.name,
+                'attributes',
+            ])}">${attributesContent}</div>
+        </details>
+    `;
+}
+
+function renderDataVariable(variable, groupName) {
+    const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+    const dimsStr = variable.dimensions
+        ? `(${variable.dimensions.join(', ')})`
+        : '';
+    const sizeStr = variable.size_bytes
+        ? `${formatFileSize(variable.size_bytes)}`
+        : '';
+    const varId = joinId(['data-group', groupName, 'variable', variable.name]);
+    const hasAttributes =
+        variable.attributes && Object.keys(variable.attributes).length > 0;
+
+    const attributesContent = hasAttributes
+        ? renderVariableAttributes(
+              variable.attributes,
+              joinId(['data-group', groupName, 'variable', variable.name])
+          )
+        : '';
+
+    // For datatree variables, use full path (group/variable) for plotting
+    const fullVariableName = `${groupName == '/' ? '' : groupName}/${
+        variable.name
+    }`;
+    const plotControls = renderVariablePlotControls(fullVariableName);
+
+    return /*html*/ `
+        <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
+            <summary class="variable-summary ${
+                hasAttributes ? '' : 'not-clickable'
+            }">
+                <span class="variable-name" title="${fullVariableName}">
+                    ${variable.name}
+                </span>
+                <span class="dims" title="${dimsStr}">
+                    ${dimsStr}
+                </span>
+                <span class="dtype-shape" title="${escapeHtml(variable.dtype)}">
+                    <code>${escapeHtml(variable.dtype)}</code>
+                </span>
+                <span class="dtype-shape" title="${shapeStr}">
+                    ${shapeStr}
+                </span>
+                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+            </summary>
+            <div id="${joinId([
+                'data-group',
+                groupName,
+                'variable',
+                variable.name,
+                'attributes',
+            ])}">${attributesContent}</div>
+        </details>
+        ${plotControls}
+    `;
 }
 
 // Helper function to generate attributes HTML for details content
-function renderAttributesContent(attributes, parentId) {
+function renderVariableAttributes(attributes, parentId) {
     if (!attributes || Object.keys(attributes).length === 0) {
         return '';
     }
@@ -870,7 +856,7 @@ function displayExtensionConfig(configData) {
 }
 
 // Error handling functions
-function displayError(
+function displayGlobalError(
     message,
     details = '',
     errorType = '',
@@ -946,72 +932,27 @@ function displayError(
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.add('hidden');
 
-    // Hide refresh button when error is displayed
+    // Hide header controls when error is displayed
     const headerControls = document.getElementById('header-controls');
     if (headerControls) {
         headerControls.classList.add('hidden');
     }
 }
 
-function hideError() {
+function hideGlobalError() {
     const errorDiv = document.getElementById('error');
     errorDiv.classList.add('hidden');
     errorDiv.innerHTML = '';
 
-    // Show refresh button when error is cleared
+    // Show header controls when error is cleared
     const headerControls = document.getElementById('header-controls');
     if (headerControls) {
         headerControls.classList.remove('hidden');
     }
 }
 
-// Plot-specific error handling
-function showPlotError(message) {
-    const plotError = document.getElementById('plotError');
-    if (plotError) {
-        // Format message to handle multi-line errors
-        const formattedMessage = message.replace(/\n/g, '<br>');
-        plotError.innerHTML = formattedMessage;
-        plotError.classList.remove('hidden');
-        plotError.classList.remove('success');
-        plotError.classList.add('error');
-    }
-}
-
-function showPlotSuccess(message) {
-    const plotError = document.getElementById('plotError');
-    if (plotError) {
-        // Format message to handle multi-line messages
-        const formattedMessage = message.replace(/\n/g, '<br>');
-        plotError.innerHTML = formattedMessage;
-        plotError.classList.remove('hidden');
-        plotError.classList.remove('error');
-        plotError.classList.add('success');
-    }
-}
-
-function hidePlotError() {
-    const plotError = document.getElementById('plotError');
-    if (plotError) {
-        plotError.classList.add('hidden');
-        plotError.textContent = '';
-        plotError.classList.remove('error', 'success');
-    }
-}
-
-// Plot control functions
-function resetPlot() {
-    const container = document.getElementById('plotContainer');
-    const plotControls = document.getElementById('plotControls');
-    const plotError = document.getElementById('plotError');
-
-    container.innerHTML = '';
-    plotControls.classList.add('hidden');
-    hidePlotError();
-}
-
 // Per-variable plot functions
-function showVariablePlotLoading(variable) {
+function displayVariablePlotLoading(variable) {
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1041,7 +982,7 @@ function displayVariablePlot(variable, plotData) {
     } else {
         // Clear the image container and show error in the dedicated error element
         imageContainer.innerHTML = '';
-        showVariablePlotError(
+        displayVariablePlotError(
             variable,
             'Error creating plot: Python script failed'
         );
@@ -1049,7 +990,7 @@ function displayVariablePlot(variable, plotData) {
     }
 }
 
-function showVariablePlotError(variable, message) {
+function displayVariablePlotError(variable, message) {
     const plotError = document.querySelector(
         `.plot-error[data-variable="${variable}"]`
     );
@@ -1073,7 +1014,7 @@ function showVariablePlotError(variable, message) {
     }
 }
 
-function showVariablePlotSuccess(variable, message) {
+function displayVariablePlotSuccess(variable, message) {
     const plotError = document.querySelector(
         `.plot-error[data-variable="${variable}"]`
     );
@@ -1138,103 +1079,6 @@ function updatePlotAllProgress() {
                 100
         );
         plotAllProgress.textContent = `Progress: ${globalStateCreateAllPlotsOperation.completedCount}/${globalStateCreateAllPlotsOperation.totalCount} (${percentage}%)`;
-    }
-}
-
-function generateDefaultFileName(variable, filePath) {
-    const fileName = filePath.split('/').pop();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    if (variable.includes('/')) {
-        // Variable is a full path starting with /
-        return `sdv-plots/${fileName}${variable}_${timestamp}.png`;
-    } else {
-        return `sdv-plots/${fileName}/${variable}_${timestamp}.png`;
-    }
-}
-
-async function savePlot() {
-    const container = document.getElementById('plotContainer');
-    const img = container.querySelector('img');
-
-    if (!img) {
-        showPlotError('No plot to save');
-        return;
-    }
-
-    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
-    const variable = document.getElementById('variableSelect').value;
-    const filePath = globalState.currentDatasetFilePath || 'unknown_file';
-    const fileName = generateDefaultFileName(variable, filePath);
-
-    try {
-        const result = await messageBus.savePlot(plotData, variable, fileName);
-        if (result.success) {
-            // Show success message in the plot area
-            showPlotSuccess(`Plot saved successfully: ${fileName}`);
-            console.log('Plot saved successfully:', result.filePath);
-        } else {
-            showPlotError(`Failed to save plot: ${result.error}`);
-        }
-    } catch (error) {
-        console.error('Error saving plot:', error);
-        showPlotError('Failed to save plot: ' + error.message);
-    }
-}
-
-async function savePlotAs() {
-    const container = document.getElementById('plotContainer');
-    const img = container.querySelector('img');
-
-    if (!img) {
-        showPlotError('No plot to save');
-        return;
-    }
-
-    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
-    const variable = document.getElementById('variableSelect').value;
-
-    try {
-        const result = await messageBus.savePlotAs(plotData, variable);
-        if (result.success) {
-            // Show success message in the plot area
-            showPlotSuccess(
-                `Plot saved as: ${
-                    result.filePath?.split('/').pop() || 'plot.png'
-                }`
-            );
-            console.log('Plot saved as:', result.filePath);
-        } else {
-            if (result.error !== 'Save cancelled by user') {
-                showPlotError(`Failed to save plot: ${result.error}`);
-            }
-        }
-    } catch (error) {
-        console.error('Error saving plot as:', error);
-        showPlotError('Failed to save plot: ' + error.message);
-    }
-}
-
-async function openPlotInNewTab() {
-    const container = document.getElementById('plotContainer');
-    const img = container.querySelector('img');
-
-    if (!img) {
-        showPlotError('No plot to open');
-        return;
-    }
-
-    const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
-    const variable = document.getElementById('variableSelect').value;
-    const filePath = globalState.currentDatasetFilePath || 'unknown_file';
-    const fileName = generateDefaultFileName(variable, filePath);
-
-    try {
-        await messageBus.openPlot(plotData, variable, fileName);
-        // Show success message
-        showPlotSuccess(`Plot opened: ${fileName}`);
-    } catch (error) {
-        console.error('Error opening plot:', error);
-        showPlotError('Failed to open plot: ' + error.message);
     }
 }
 
@@ -1331,12 +1175,12 @@ async function handleTextCopy(button) {
 }
 
 async function handleRefresh() {
-    updateTimestamp(null, true);
+    displayTimestamp(null, true);
     try {
         await messageBus.refresh();
     } catch (error) {
         console.error('Failed to refresh data:', error);
-        displayError('Failed to refresh data: ' + error.message);
+        displayGlobalError('Failed to refresh data: ' + error.message);
     }
 }
 
@@ -1404,7 +1248,7 @@ async function handleCreateAllPlots() {
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
         // Show loading indicator
-        showVariablePlotLoading(variable);
+        displayVariablePlotLoading(variable);
 
         try {
             const plotData = await messageBus.createPlot(variable, plotType);
@@ -1424,7 +1268,7 @@ async function handleCreateAllPlots() {
                 '.plot-image-container'
             );
             imageContainer.innerHTML = '';
-            showVariablePlotError(
+            displayVariablePlotError(
                 variable,
                 'Error creating plot: ' + error.message
             );
@@ -1509,16 +1353,16 @@ async function handleSaveAllPlots() {
         for (const { variable, plotData } of plotsToSave) {
             const filePath =
                 globalState.currentDatasetFilePath || 'unknown_file';
-            const fileName = generateDefaultFileName(variable, filePath);
+            const fileName = generateDefaultFileName(filePath, variable);
             const result = await messageBus.savePlot(
                 plotData,
                 variable,
                 fileName
             );
             if (result.success) {
-                showVariablePlotSuccess(variable, `Plot saved: ${fileName}`);
+                displayVariablePlotSuccess(variable, `Plot saved: ${fileName}`);
             } else {
-                showVariablePlotError(
+                displayVariablePlotError(
                     variable,
                     `Failed to save: ${result.error}`
                 );
@@ -1544,7 +1388,7 @@ async function handleCreateVariablePlot(variable) {
     const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
     // Show loading indicator
-    showVariablePlotLoading(variable);
+    displayVariablePlotLoading(variable);
 
     try {
         const plotData = await messageBus.createPlot(variable, plotType);
@@ -1557,7 +1401,7 @@ async function handleCreateVariablePlot(variable) {
         );
         const imageContainer = container.querySelector('.plot-image-container');
         imageContainer.innerHTML = '';
-        showVariablePlotError(
+        displayVariablePlotError(
             variable,
             'Error creating plot: ' + error.message
         );
@@ -1582,31 +1426,31 @@ async function handleSaveVariablePlot(variable) {
     const img = container.querySelector('img');
 
     if (!img) {
-        showVariablePlotError(variable, 'No plot to save');
+        displayVariablePlotError(variable, 'No plot to save');
         return;
     }
 
     const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
     const filePath = globalState.currentDatasetFilePath || 'unknown_file';
-    const fileName = generateDefaultFileName(variable, filePath);
+    const fileName = generateDefaultFileName(filePath, variable);
 
     try {
         const result = await messageBus.savePlot(plotData, variable, fileName);
         if (result.success) {
-            showVariablePlotSuccess(
+            displayVariablePlotSuccess(
                 variable,
                 `Plot saved successfully: ${fileName}`
             );
             console.log('Plot saved successfully:', result.filePath);
         } else {
-            showVariablePlotError(
+            displayVariablePlotError(
                 variable,
                 `Failed to save plot: ${result.error}`
             );
         }
     } catch (error) {
         console.error('Error saving plot:', error);
-        showVariablePlotError(
+        displayVariablePlotError(
             variable,
             'Failed to save plot: ' + error.message
         );
@@ -1620,7 +1464,7 @@ async function handleSaveVariablePlotAs(variable) {
     const img = container.querySelector('img');
 
     if (!img) {
-        showVariablePlotError(variable, 'No plot to save');
+        displayVariablePlotError(variable, 'No plot to save');
         return;
     }
 
@@ -1629,7 +1473,7 @@ async function handleSaveVariablePlotAs(variable) {
     try {
         const result = await messageBus.savePlotAs(plotData, variable);
         if (result.success) {
-            showVariablePlotSuccess(
+            displayVariablePlotSuccess(
                 variable,
                 `Plot saved as: ${
                     result.filePath?.split('/').pop() || 'plot.png'
@@ -1638,7 +1482,7 @@ async function handleSaveVariablePlotAs(variable) {
             console.log('Plot saved as:', result.filePath);
         } else {
             if (result.error !== 'Save cancelled by user') {
-                showVariablePlotError(
+                displayVariablePlotError(
                     variable,
                     `Failed to save plot: ${result.error}`
                 );
@@ -1646,7 +1490,7 @@ async function handleSaveVariablePlotAs(variable) {
         }
     } catch (error) {
         console.error('Error saving plot as:', error);
-        showVariablePlotError(
+        displayVariablePlotError(
             variable,
             'Failed to save plot: ' + error.message
         );
@@ -1660,20 +1504,20 @@ async function handleOpenVariablePlot(variable) {
     const img = container.querySelector('img');
 
     if (!img) {
-        showVariablePlotError(variable, 'No plot to open');
+        displayVariablePlotError(variable, 'No plot to open');
         return;
     }
 
     const plotData = img.src.split(',')[1]; // Remove data:image/png;base64, prefix
     const filePath = globalState.currentDatasetFilePath || 'unknown_file';
-    const fileName = generateDefaultFileName(variable, filePath);
+    const fileName = generateDefaultFileName(filePath, variable);
 
     try {
         await messageBus.openPlot(plotData, variable, fileName);
         // showVariablePlotSuccess(variable, `Plot opened: ${fileName}`);
     } catch (error) {
         console.error('Error opening plot:', error);
-        showVariablePlotError(
+        displayVariablePlotError(
             variable,
             'Failed to open plot: ' + error.message
         );
@@ -1690,7 +1534,12 @@ async function handlePlotTypeSelect(variable) {
 }
 
 // Scroll to header function
-function scrollToHeader(headerId, headerLabel, verticalOffset = 80, highlightTimeout = 3000) {
+function doScrollToHeader(
+    headerId,
+    headerLabel,
+    verticalOffset = 80,
+    highlightTimeout = 3000
+) {
     console.log(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
 
     // Try to find the element by ID first
@@ -1772,7 +1621,7 @@ async function executeShowLogsCommand() {
     } catch (error) {
         console.error('❌ Failed to execute show logs command:', error);
         // Fallback: show a notification to the user
-        displayError(
+        displayGlobalError(
             'Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"'
         );
     }
