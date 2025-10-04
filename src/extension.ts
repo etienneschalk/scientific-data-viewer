@@ -299,9 +299,8 @@ export function activate(context: vscode.ExtensionContext) {
                 );
                 const fileUriList = await vscode.window.showOpenDialog({
                     canSelectFiles: true,
-                    // TODO eschalk create command dedicated to selecting folders (Zarr)
-                    canSelectFolders: false, // XXX seems mutually exclusive with canSelectFiles 
-                    canSelectMany: true, // TODO eschalk to test
+                    canSelectFolders: false, 
+                    canSelectMany: true,
                     filters: {
                         // Note: Update this list to match the supported file types in package.json
                         "Scientific Data Files": [
@@ -309,7 +308,6 @@ export function activate(context: vscode.ExtensionContext) {
                             'netcdf',
                             'nc4',
                             'cdf',
-                            'zarr',
                             'h5',
                             'hdf5',
                             'grib',
@@ -321,7 +319,6 @@ export function activate(context: vscode.ExtensionContext) {
                             'jpeg2000',
                         ],
                         NetCDF: ['nc', 'netcdf', 'nc4', 'cdf'],
-                        Zarr: ['zarr'],
                         HDF5: ['h5', 'hdf5'],
                         GRIB: ['grib', 'grib2', 'grb'],
                         GeoTIFF: ['tif', 'tiff', 'geotiff'],
@@ -341,6 +338,50 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     );
+
+    const openViewerFolderCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.openViewerFolder',
+        async (uri?: vscode.Uri) => {
+            Logger.info('🎮 👁️ Command: Open data viewer (folder)...');
+            if (uri) {
+                Logger.info(
+                    `🎮 🔧 Opening data viewer for folder: ${uri.fsPath}`
+                );
+                await DataViewerPanel.createFromScratchOrShow(
+                    context.extensionUri,
+                    uri,
+                    dataProcessor
+                );
+            } else {
+                Logger.info(
+                    '🎮 🔧 Opening folder selection dialog for data viewer'
+                );
+                const folderUriList = await vscode.window.showOpenDialog({
+                    canSelectFiles: false,
+                    canSelectFolders: true,
+                    canSelectMany: true,
+                    filters: {
+                        // Note: Update this list to match the supported file types in package.json
+                        "Scientific Data Folders": [
+                            'zarr',
+                        ],
+                        Zarr: ['zarr'],
+                    },
+                });
+                folderUriList?.forEach(async (folderUri) => {
+                    Logger.info(
+                        `🎮 🔧 Folders selected for data viewer: ${folderUri.fsPath}`
+                    );
+                    await DataViewerPanel.createFromScratchOrShow(
+                        context.extensionUri,
+                        folderUri,
+                        dataProcessor
+                    );
+                });
+            }
+        }
+    );
+
 
     const refreshPythonEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.refreshPythonEnvironment',
@@ -634,6 +675,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         openViewerCommand,
+        openViewerFolderCommand,
         refreshPythonEnvironmentCommand,
         showLogsCommand,
         showSettingsCommand,

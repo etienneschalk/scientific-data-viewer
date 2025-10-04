@@ -80,6 +80,7 @@ suite('Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands(true);
         const expectedCommands = [
             'scientificDataViewer.openViewer',
+            'scientificDataViewer.openViewerFolder',
             'scientificDataViewer.refreshPythonEnvironment',
             'scientificDataViewer.showLogs',
             'scientificDataViewer.showSettings'
@@ -253,6 +254,7 @@ suite('Extension Test Suite', () => {
             
             const expectedCommands = [
                 'scientificDataViewer.openViewer',
+                'scientificDataViewer.openViewerFolder',
                 'scientificDataViewer.refreshPythonEnvironment',
                 'scientificDataViewer.showLogs',
                 'scientificDataViewer.showSettings'

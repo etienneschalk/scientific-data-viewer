@@ -51,6 +51,11 @@
                 "category": "Scientific Data Viewer"
             },
             {
+                "command": "scientificDataViewer.openViewerFolder",
+                "title": "Open Scientific Data Viewer (Folder)",
+                "category": "Scientific Data Viewer"
+            },
+            {
                 "command": "scientificDataViewer.refreshPythonEnvironment",
                 "title": "Refresh Python Environment",
                 "category": "Scientific Data Viewer"
@@ -88,6 +93,10 @@
             "commandPalette": [
                 {
                     "command": "scientificDataViewer.openViewer",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openViewerFolder",
                     "when": "true"
                 },
                 {
