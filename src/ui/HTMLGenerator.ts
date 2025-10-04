@@ -195,12 +195,12 @@ export class HTMLGenerator {
             <details class="sticky-group-details" id="section-global-plot-controls"> 
                 <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
-                    <button id="plotAllButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
+                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
                 <div 
-                    id="plotAllProgress" 
+                    id="createAllPlotsProgress" 
                     class="plot-progress hidden" 
                 >
                     Progress: 0/0 (0%)
