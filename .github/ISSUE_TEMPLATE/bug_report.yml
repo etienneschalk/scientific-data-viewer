@@ -106,8 +106,7 @@ body:
       placeholder: |
         Go to VSCode Settings (Ctrl+,) and search for "Scientific Data Viewer", then copy the relevant settings:
         - scientificDataViewer.maxFileSize: 
-        - scientificDataViewer.allowMultipleTabsForSameFile: 
-        - scientificDataViewer.plottingCapabilities:
+        - scientificDataViewer.allowMultipleTabsForSameFile:
     validations:
       required: false
 

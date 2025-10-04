@@ -56,7 +56,12 @@ body {
     color: var(--vscode-textPreformat-foreground);
     padding: 2px 6px;
     border-radius: 3px;
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
 }
 
 .error ol {
@@ -96,7 +101,6 @@ body {
     gap: 5px;
 }
 
-
 /* Button styles */
 button {
     background-color: var(--vscode-button-background);
@@ -121,7 +125,9 @@ button:disabled {
 }
 
 /* Copy button variant */
-.copy-button, .text-copy-button, .troubleshooting-copy-button {
+.copy-button,
+.text-copy-button,
+.troubleshooting-copy-button {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     padding: 4px;
@@ -135,11 +141,15 @@ button:disabled {
     transition: background-color 0.2s ease;
 }
 
-.copy-button:hover, .text-copy-button:hover, .troubleshooting-copy-button:hover {
+.copy-button:hover,
+.text-copy-button:hover,
+.troubleshooting-copy-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-.copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
+.copy-button.copied,
+.text-copy-button.copied,
+.troubleshooting-copy-button.copied {
     background-color: var(--vscode-button-background);
 }
 
@@ -184,7 +194,9 @@ select:focus {
     color: var(--vscode-foreground);
 }
 
-.dimensions, .variables, .coordinates {
+.dimensions,
+.variables,
+.coordinates {
     display: grid;
     grid-template-columns: 1fr;
     /* gap: -1px; */
@@ -193,7 +205,6 @@ select:focus {
     /* margin: 0; */
     /* margin-top: 10px; */
     /* max-width: 800px */
-
 }
 
 .dimensions-compact {
@@ -209,7 +220,8 @@ select:focus {
     font-weight: 600;
 }
 
-.dimension-item, .variable-item {
+.dimension-item,
+.variable-item {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
     transition: background-color 0.2s ease;
@@ -226,7 +238,8 @@ select:focus {
     gap: 0;
 }
 
-.dimension-item:hover, .variable-item:hover {
+.dimension-item:hover,
+.variable-item:hover {
     background-color: var(--vscode-list-activeSelectionBackground);
 }
 
@@ -267,7 +280,6 @@ select:focus {
     max-width: 100px;
 }
 
-
 .variable-item .size {
     flex: 1;
     color: var(--vscode-descriptionForeground);
@@ -304,13 +316,13 @@ select:focus {
 }
 
 .variable-summary::before {
-    content: "📄";
+    content: '📄';
     margin-left: 8px;
     order: 999; /* Move to the right */
 }
 
 .variable-details[open] .variable-summary::before {
-    content: "📄";
+    content: '📄';
 }
 
 .variable-summary.not-clickable:active {
@@ -418,7 +430,7 @@ select:focus {
         gap: 1px;
         padding: 4px 8px;
     }
-    
+
     .variable-item .variable-name,
     .variable-item .dtype-shape,
     .variable-item .dims,
@@ -441,7 +453,12 @@ select:focus {
 .file-path-code {
     background-color: var(--vscode-textCodeBlock-background);
     color: var(--vscode-textPreformat-foreground);
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
     padding: 4px 8px;
     border-radius: 3px;
     border: 1px solid var(--vscode-panel-border);
@@ -465,7 +482,8 @@ select:focus {
     margin: 5px 0;
 }
 
-.html-representation th, .html-representation td {
+.html-representation th,
+.html-representation td {
     border: 1px solid var(--vscode-panel-border);
     padding: 4px 8px;
     text-align: left;
@@ -483,7 +501,12 @@ select:focus {
     border-radius: 4px;
     padding: 10px;
     background-color: var(--vscode-editor-background);
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
     white-space: pre-wrap;
     word-wrap: break-word;
 }
@@ -494,7 +517,12 @@ select:focus {
 
 /* Troubleshooting styles */
 .troubleshooting-content {
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
     white-space: pre-wrap;
     word-wrap: break-word;
     background-color: var(--vscode-textCodeBlock-background);
@@ -549,7 +577,8 @@ details.sticky-group-details summary > * {
 }
 
 /* Plot image styles */
-.plot-container img, .plot-image-container img {
+.plot-container img,
+.plot-image-container img {
     max-width: 100%;
     height: auto;
     border: 1px solid var(--vscode-panel-border);
@@ -614,7 +643,6 @@ button:active {
     max-width: 100%;
     overflow: auto;
     word-break: break-all;
-
 }
 
 .plot-error.success {
@@ -682,7 +710,8 @@ button:active {
 }
 
 /* Plot action button variant */
-.create-plot-button, .plot-action-button {
+.create-plot-button,
+.plot-action-button {
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     padding: 6px 12px;
@@ -692,11 +721,13 @@ button:active {
     transition: background-color 0.2s ease;
 }
 
-.create-plot-button:hover:not(:disabled), .plot-action-button:hover:not(:disabled) {
+.create-plot-button:hover:not(:disabled),
+.plot-action-button:hover:not(:disabled) {
     background-color: var(--vscode-button-hoverBackground);
 }
 
-.create-plot-button:disabled, .plot-action-button:disabled {
+.create-plot-button:disabled,
+.plot-action-button:disabled {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     cursor: not-allowed;
@@ -728,5 +759,13 @@ button:active {
     /* box-shadow: 
         +4px 0px 0px 0px var(--vscode-button-background),
         -4px 0px 0px 0px var(--vscode-button-background); */
+}
 
+.plot-progress {
+    margin-top: 10px;
+    padding: 8px;
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    font-size: 14px;
+    color: var(--vscode-foreground);
 }

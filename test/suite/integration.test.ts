@@ -366,46 +366,6 @@ suite('Integration Test Suite', () => {
         }
     });
 
-    test('DataViewerPanel should handle plotting capabilities configuration', () => {
-        // Mock vscode.workspace.getConfiguration
-        const originalGetConfiguration = vscode.workspace.getConfiguration;
-        vscode.workspace.getConfiguration = () => ({
-            get: (key: string) => {
-                if (key === 'plottingCapabilities') {
-                    return true;
-                }
-                return undefined;
-            }
-        }) as any;
-
-        try {
-            const mockWebviewPanel = {
-                title: 'Test Panel',
-                webview: {
-                    html: '',
-                    postMessage: async () => {},
-                    onDidReceiveMessage: () => ({ dispose: () => {} })
-                },
-                reveal: () => {},
-                dispose: () => {},
-                onDidDispose: () => ({ dispose: () => {} }),
-                viewColumn: vscode.ViewColumn.One,
-                active: true,
-                visible: true,
-                onDidChangeViewState: () => ({ dispose: () => {} }),
-                onDidChangeWebviewVisibility: () => ({ dispose: () => {} })
-            } as any;
-
-            const panel = DataViewerPanel.create(mockContext.extensionUri, mockWebviewPanel, vscode.Uri.file('/path/to/test.nc'), dataProcessor);
-            
-            // Test HTML generation with plotting capabilities - skipped because _getHtmlForWebview was removed
-            // The functionality is now handled by UIController
-            assert.ok(true, 'HTML generation test skipped - _getHtmlForWebview method was removed from DataViewerPanel');
-        } finally {
-            vscode.workspace.getConfiguration = originalGetConfiguration;
-        }
-    });
-
     test('DataViewerPanel should handle multiple tabs configuration', () => {
         // Mock vscode.workspace.getConfiguration
         const originalGetConfiguration = vscode.workspace.getConfiguration;
@@ -503,8 +463,6 @@ suite('Integration Test Suite', () => {
                 switch (key) {
                     case 'maxFileSize':
                         return 100;
-                    case 'plottingCapabilities':
-                        return true;
                     case 'allowMultipleTabsForSameFile':
                         return false;
                     default:

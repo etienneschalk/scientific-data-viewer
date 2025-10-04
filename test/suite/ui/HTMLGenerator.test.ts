@@ -4,7 +4,7 @@ import { HTMLGenerator } from '../../../src/ui/HTMLGenerator';
 suite('HTMLGenerator Test Suite', () => {
     test('should generate main HTML', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content, false);
+        const html = HTMLGenerator.generateMainHTML(true, content);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -17,7 +17,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML without plotting capabilities', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(false, content, false);
+        const html = HTMLGenerator.generateMainHTML(false, content);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -27,7 +27,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML in dev mode', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content, true);
+        const html = HTMLGenerator.generateMainHTML(true, content);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -36,7 +36,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header', () => {
-        const header = HTMLGenerator.generateHeader(true, '2023-01-01T00:00:00Z');
+        const header = HTMLGenerator.generateHeader('2023-01-01T00:00:00Z');
         
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -45,7 +45,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header without timestamp', () => {
-        const header = HTMLGenerator.generateHeader(false, null);
+        const header = HTMLGenerator.generateHeader(null);
         
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -84,7 +84,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate content', () => {
-        const content = HTMLGenerator.generateContent(true);
+        const content = HTMLGenerator.generateContent();
         
         assert.ok(content);
         assert.ok(typeof content === 'string');
@@ -100,7 +100,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate dimensions and variables', () => {
-        const content = HTMLGenerator.generateDimensionsAndVariables(true);
+        const content = HTMLGenerator.generateDimensionsAndVariables();
         
         assert.ok(content);
         assert.ok(typeof content === 'string');
@@ -132,9 +132,9 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate complete HTML with all components', () => {
-        const content = HTMLGenerator.generateContent(true);
-        const header = HTMLGenerator.generateHeader(true, '2023-01-01T00:00:00Z');
-        const html = HTMLGenerator.generateMainHTML(true, header + content, false);
+        const content = HTMLGenerator.generateContent();
+        const header = HTMLGenerator.generateHeader('2023-01-01T00:00:00Z');
+        const html = HTMLGenerator.generateMainHTML(true, '2023-01-01T00:00:00Z');
         
         assert.ok(html);
         assert.ok(typeof html === 'string');

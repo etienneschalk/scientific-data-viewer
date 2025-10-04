@@ -11,7 +11,6 @@ export interface DataState {
 }
 
 export interface UIState {
-    plottingCapabilities: boolean;
     selectedVariable: string | null;
     plotType: string;
     showTimestamp: boolean;
@@ -42,7 +41,6 @@ export type Action =
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: string | null }
     | { type: 'SET_LAST_LOAD_TIME'; payload: Date | null }
-    | { type: 'SET_PLOTTING_CAPABILITIES'; payload: boolean }
     | { type: 'SET_SELECTED_VARIABLE'; payload: string | null }
     | { type: 'SET_PLOT_TYPE'; payload: string }
     | { type: 'SET_SHOW_TIMESTAMP'; payload: boolean }
@@ -70,7 +68,6 @@ export class StateManager {
                 error: null
             },
             ui: {
-                plottingCapabilities: false,
                 selectedVariable: null,
                 plotType: 'auto',
                 showTimestamp: true,
@@ -164,12 +161,6 @@ export class StateManager {
                     data: { ...state.data, lastLoadTime: action.payload }
                 };
             
-            case 'SET_PLOTTING_CAPABILITIES':
-                return {
-                    ...state,
-                    ui: { ...state.ui, plottingCapabilities: action.payload }
-                };
-            
             case 'SET_SELECTED_VARIABLE':
                 return {
                     ...state,
@@ -234,7 +225,6 @@ export class StateManager {
                         error: null
                     },
                     ui: {
-                        plottingCapabilities: false,
                         selectedVariable: null,
                         plotType: 'auto',
                         showTimestamp: true,

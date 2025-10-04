@@ -104,11 +104,11 @@ suite('MessageBus Test Suite', () => {
 
     test('should handle UI state change events', (done) => {
         let stateChangeReceived = false;
-        const testState = { ui: { plottingCapabilities: true } };
+        const testState = { ui: { allowMultipleTabsForSameFile: true } };
         
         messageBus.onEvent('uiStateChanged', (state: any) => {
             stateChangeReceived = true;
-            assert.strictEqual(state.ui.plottingCapabilities, true);
+            assert.strictEqual(state.ui.allowMultipleTabsForSameFile, true);
             done();
         });
         

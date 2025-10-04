@@ -199,17 +199,14 @@ export class DataViewerPanel {
 
     private constructor(webviewPanel: vscode.WebviewPanel, fileUri: vscode.Uri, dataProcessor: DataProcessor) {
         this._webviewPanel = webviewPanel;
-        this._webviewPanel.title = path.basename(fileUri.fsPath);
         this._currentFile = fileUri;
+        
+        // Update the panel title to reflect the new file
+        this._webviewPanel.title = path.basename(fileUri.fsPath);
 
-        // Configure webview panel properties for optimal experience
-        // Note: Some properties like retainContextWhenHidden might not be settable on existing panels
-        // but we can set other properties that are available
 
         // Set the webview's initial html content
         Logger.info(`🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`);
-
-        // Note: Panel is already added to activePanels in the create() method
 
         // Initialize state management and UI controller
         this._uiController = new UIController(DataViewerPanel.createdCount, webviewPanel.webview, dataProcessor, (error) => {
@@ -219,32 +216,18 @@ export class DataViewerPanel {
             Logger.info(`[UIController] Success: ${success}`);
             DataViewerPanel.removePanelWithError(this);
         }, () => {
-            // // Update outline when data is loaded
-            // this.updateOutline();
             // Also notify that the panel is active to ensure proper outline display
             this.notifyPanelActive();
         });
 
-        // Update the panel title to reflect the new file
-
-        // Get configuration for plotting capabilities
-        const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        const plottingCapabilities = config.get('plottingCapabilities', false);
-
         // Set initial HTML first
-
-        // Update UI controller with new configuration
-        this._uiController.setHtml(plottingCapabilities);
-        this._uiController.setPlottingCapabilities(plottingCapabilities);
+        this._uiController.setHtml();
         
         // Load the file and handle success/error
         this._uiController.loadFile(fileUri.fsPath);
 
         // Initialize outline with data viewer headers
         this._initializeOutline();
-
-        // // Notify that this panel is active to ensure outline is displayed
-        // this.notifyPanelActive();
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this._handleDevMode();

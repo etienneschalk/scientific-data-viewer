@@ -19,7 +19,6 @@ export class UIController {
     private dataProcessor: DataProcessor;
     private webview: vscode.Webview;
     private unsubscribeState?: () => void;
-    private lastLoadTime: Date | null = null;
     private onErrorPanelCallback: (error: Error) => void;
     private onSuccessPanelCallback: (success: string) => void;
     private onOutlineUpdateCallback?: () => void;
@@ -425,7 +424,6 @@ export class UIController {
                 'scientificDataViewer.maxFileSize': config.get('maxFileSize'),
                 'scientificDataViewer.defaultView': config.get('defaultView'),
                 'scientificDataViewer.allowMultipleTabsForSameFile': config.get('allowMultipleTabsForSameFile'),
-                'scientificDataViewer.plottingCapabilities': config.get('plottingCapabilities'),
                 'scientificDataViewer.devMode': config.get('devMode'),
                 'scientificDataViewer.matplotlibStyle': config.get('matplotlibStyle'),
             };
@@ -485,27 +483,8 @@ export class UIController {
     }
 
     private updateUI(state: AppState): void {
-        // Only regenerate HTML if plotting capabilities changed or this is the first load
-        // For other state changes, just emit the state change event to update the webview content
-        const plottingCapabilities = state.ui.plottingCapabilities;
-        const lastLoadTime = state.data.lastLoadTime?.toISOString() || null;
-        
-        // Check if we need to regenerate the HTML structure
-        const needsHTMLRegeneration = this.shouldRegenerateHTML(state);
-        
-        if (needsHTMLRegeneration) {
-            this.setHtml(plottingCapabilities);
-        }
-
         // Always emit state change event for content updates
         this.messageBus.emitUIStateChanged(state);
-    }
-
-    private shouldRegenerateHTML(state: AppState): boolean {
-        // Only regenerate HTML when plotting capabilities change
-        // Other state changes (data loading, errors, etc.) should only update content via events
-        // This prevents unnecessary webview reinitialization that causes duplicate console logs
-        return false;
     }
 
     // Public methods for external control
@@ -539,10 +518,6 @@ export class UIController {
         return this.stateManager.getState().data.dataInfo;
     }
 
-    public setPlottingCapabilities(enabled: boolean): void {
-        this.stateManager.dispatch({ type: 'SET_PLOTTING_CAPABILITIES', payload: enabled });
-    }
-
     private async handleExecuteCommand(command: string, args?: any[]): Promise<any> {
         const context: ErrorContext = {
             component: `ui-${this.id}`,
@@ -566,18 +541,15 @@ export class UIController {
         this.messageBus.dispose();
     }
 
-    public setHtml(plottingCapabilities: boolean): void {
-        this.webview.html = this.getHtmlForWebview(plottingCapabilities);
+    public setHtml(): void {
+        this.webview.html = this.getHtmlForWebview();
     }
 
-    private getHtmlForWebview(plottingCapabilities: boolean = false) {
-        const header = HTMLGenerator.generateHeader(plottingCapabilities, this.lastLoadTime?.toISOString() || null);
-        const loadingAndError = HTMLGenerator.generateLoadingAndError();
-        const content = HTMLGenerator.generateContent(plottingCapabilities);
-        
+    private getHtmlForWebview() {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         const devMode = config.get('devMode', false);
-        return HTMLGenerator.generateMainHTML(plottingCapabilities, header + loadingAndError + content, devMode);
+        const lastLoadTime = this.stateManager.getState().data.lastLoadTime?.toISOString() || null;
+        return HTMLGenerator.generateMainHTML(devMode, lastLoadTime);
     }
 
     private async handleUpdateHeaders(headers: any[]): Promise<void> {

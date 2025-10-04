@@ -5,8 +5,20 @@ import { JavaScriptGenerator } from './JavaScriptGenerator';
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
 export class HTMLGenerator {
-    static generateMainHTML(plottingCapabilities: boolean, content: string, devMode: boolean): string {
-        return `<!DOCTYPE html>
+    private static formatTimestamp(isoString: string): string {
+        return new Date(isoString).toLocaleTimeString();
+    }
+
+    private static getCSS(devMode: boolean): string {
+        return CSSGenerator.get(devMode);
+    }
+
+    private static getJavaScriptCode(devMode: boolean): string {
+        return JavaScriptGenerator.get(devMode);
+    }
+
+    static generateMainHTML(devMode: boolean, lastLoadTime: string | null): string {
+        return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,16 +29,18 @@ export class HTMLGenerator {
     </style>
 </head>
 <body>
-    ${content}
+    ${this.generateHeader(lastLoadTime)}
+    ${this.generateLoadingAndError()}
+    ${this.generateContent()}
     <script>
-        ${this.getJavaScriptCode(plottingCapabilities)}
+        ${this.getJavaScriptCode(devMode)}
     </script>
 </body>
 </html>`;
     }
 
-    static generateHeader(plottingCapabilities: boolean, lastLoadTime: string | null): string {
-        return `
+    static generateHeader(lastLoadTime: string | null): string {
+        return /*html*/ `
     <div class="header">
         <div class="title" id="title">Scientific Data Viewer <small>v0.3.0</small></div>
         <div class="controls" id="header-controls">
@@ -41,39 +55,40 @@ export class HTMLGenerator {
     }
 
     static generateTimestamp(lastLoadTime: string | null): string {
-        if (!lastLoadTime) {
-            return '<div id="timestamp" class="timestamp hidden"><span class="timestamp-icon">🕒</span><span id="timestampText">Last loaded: --</span></div>';
-        }
-        
-        return `
-        <div id="timestamp" class="timestamp">
+        return /*html*/ `
+        <div id="timestamp" class="timestamp hidden">
             <span class="timestamp-icon">🕒</span>
-            <span id="timestampText">Last loaded: ${this.formatTimestamp(lastLoadTime)}</span>
-        </div>`;
+            <span id="timestampText">Last loaded: ${
+                lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
+            }</span>
+        </div>
+        `;
     }
 
     static generateLoadingAndError(): string {
-        return `
+        return /*html*/ `
     <div id="loading" class="loading">Loading data...</div>
-    <div id="error" class="error hidden"></div>`;
+    <div id="error" class="error hidden"></div>
+    `;
     }
 
-    static generateContent(plottingCapabilities: boolean): string {
-        return `
+    static generateContent(): string {
+        return /*html*/ `
     <div id="content" class="hidden">
         ${this.generateFileInfo()}
         ${this.generateHtmlRepresentation()}
         ${this.generateTextRepresentation()}
         ${this.generateHtmlRepresentationForGroups()}
         ${this.generateTextRepresentationForGroups()}
-        ${this.generatePlottingSections(plottingCapabilities)}
-        ${this.generateDimensionsAndVariables(plottingCapabilities)}
+        ${this.generatePlottingSections()}
+        ${this.generateDimensionsAndVariables()}
         ${this.generateTroubleshooting()}
-    </div>`;
+    </div>
+    `;
     }
 
     static generateFileInfo(): string {
-        return `
+        return /*html*/ `
         <div class="info-section">
             <details class="sticky-group-details" open> <summary><h3>File Information</h3></summary>
                 <div id="filePathContainer" class="file-path-container hidden">
@@ -88,33 +103,15 @@ export class HTMLGenerator {
         </div>`;
     }
 
-    static generateDimensionsAndVariables(plottingCapabilities: boolean): string {
-        return `
-        <div id="group-info-container" class="group-info-container hidden">
+    static generateDimensionsAndVariables(): string {
+        return /*html*/ `
         <!-- This is for datatree groups -->
-        </div>
-        <!-- This is for non-datatree groups -->
-        <div class="info-section">
-            <details class="sticky-group-details" open> <summary><h3>Dimensions</h3></summary>
-                <div id="dimensions" class="dimensions"></div>
-            </details>
-        </div>
-
-        <div class="info-section">
-            <details class="sticky-group-details" open> <summary><h3>Coordinates</h3></summary>
-                <div id="coordinates" class="coordinates"></div>
-            </details>
-        </div>
-        
-        <div class="info-section">
-            <details class="sticky-group-details" open> <summary><h3>Variables</h3></summary>
-                <div id="variables" class="variables"></div>
-            </details>
-        </div>`;
+        <div id="group-info-container" class="group-info-container hidden"></div>
+        `;
     }
 
     static generateHtmlRepresentation(): string {
-        return `
+        return /*html*/ `
         <div class="info-section">
             <details class="sticky-group-details" open> <summary><h3>Xarray HTML Representation</h3></summary>
                 <div id="htmlRepresentation" class="html-representation"></div>
@@ -123,7 +120,7 @@ export class HTMLGenerator {
     }
 
     static generateHtmlRepresentationForGroups(): string {
-        return `
+        return /*html*/ `
         <div class="info-section hidden">
             <details class="sticky-group-details"> <summary><h3>Xarray HTML Representation (for each group)</h3></summary>
                 <div id="htmlRepresentationForGroups" class="html-representation-for-groups"></div>
@@ -132,9 +129,10 @@ export class HTMLGenerator {
     }
 
     static generateTextRepresentation(): string {
-        return `
+        return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details"> <summary><h3>Xarray Text Representation</h3></summary>
+            <details class="sticky-group-details"> 
+                <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button id="textCopyButton" class="text-copy-button hidden">
                         📋 Copy
@@ -146,16 +144,17 @@ export class HTMLGenerator {
     }
 
     static generateTextRepresentationForGroups(): string {
-        return `
+        return /*html*/ `
         <div class="info-section hidden">
-            <details class="sticky-group-details"> <summary><h3>Xarray Text Representation (for each group)</h3></summary>
+            <details class="sticky-group-details"> 
+            <summary><h3>Xarray Text Representation (for each group)</h3></summary>
                 <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
             </details>
         </div>`;
     }
 
     static generateTroubleshooting(): string {
-        return `
+        return /*html*/ `
         <div class="info-section">
             <details class="sticky-group-details"> <summary><h3>Troubleshooting</h3></summary>
                 <div class="info-section">
@@ -164,7 +163,9 @@ export class HTMLGenerator {
                             <button id="pythonPathCopyButton" class="troubleshooting-copy-button hidden">
                                 📋 Copy
                             </button>
-                            <div id="pythonPath" class="troubleshooting-content">Loading Python path...</div>
+                            <div id="pythonPath" class="troubleshooting-content">
+                                Loading Python path...
+                            </div>
                     </details>
                 </div>
                 <div class="info-section">
@@ -173,7 +174,9 @@ export class HTMLGenerator {
                             <button id="extensionConfigCopyButton" class="troubleshooting-copy-button hidden">
                                 📋 Copy
                             </button>
-                            <div id="extensionConfig" class="troubleshooting-content">Loading configuration...</div>
+                            <div id="extensionConfig" class="troubleshooting-content">
+                                Loading configuration...
+                            </div>
                     </details>
                 </div>
                 <div class="info-section">
@@ -182,19 +185,17 @@ export class HTMLGenerator {
                             <button id="showVersionsCopyButton" class="troubleshooting-copy-button hidden">
                                 📋 Copy
                             </button>
-                            <div id="showVersions" class="troubleshooting-content">Loading version information...</div>
+                            <div id="showVersions" class="troubleshooting-content">
+                                Loading version information...
+                            </div>
                     </details>
                 </div>
             </details>
         </div>`;
     }
 
-    static generatePlottingSections(plottingCapabilities: boolean): string {
-        if (!plottingCapabilities) {
-            return '';
-        }
-        
-        return `
+    static generatePlottingSections(): string {
+        return /*html*/ `
         <div class="info-section">
             <details class="sticky-group-details"> <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
@@ -202,24 +203,13 @@ export class HTMLGenerator {
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
-                <div id="plotAllProgress" class="plot-progress hidden" style="margin-top: 10px; padding: 8px; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); font-size: 14px; color: var(--vscode-foreground);">
+                <div 
+                    id="plotAllProgress" 
+                    class="plot-progress hidden" 
+                >
                     Progress: 0/0 (0%)
                 </div>
             </details>
         </div>`;
-    }
-
-    private static formatTimestamp(isoString: string): string {
-        const date = new Date(isoString);
-        return date.toLocaleTimeString();
-    }
-
-    private static getCSS(devMode: boolean): string {
-        return CSSGenerator.get(devMode);
-    }
-
-
-    private static getJavaScriptCode(plottingCapabilities: boolean): string {
-        return JavaScriptGenerator.get(plottingCapabilities);
     }
 }
