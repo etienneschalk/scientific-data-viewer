@@ -61,7 +61,7 @@ class ScientificDataEditorProvider
         DataViewerPanel.createFromWebviewPanel(
             document.uri,
             webviewPanel,
-            getWebviewOptions(this.extensionContext),
+            getWebviewOptions(this.extensionContext)
         );
     }
 }
@@ -653,7 +653,9 @@ export function activate(context: vscode.ExtensionContext) {
     // Status bar will only be shown when an interpreter is actually selected
 }
 
-function getWebviewOptions(context: vscode.ExtensionContext): vscode.WebviewOptions {
+function getWebviewOptions(
+    context: vscode.ExtensionContext
+): vscode.WebviewOptions {
     return {
         enableScripts: true,
         localResourceRoots: [

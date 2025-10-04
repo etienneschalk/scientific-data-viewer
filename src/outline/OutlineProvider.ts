@@ -11,7 +11,6 @@ export interface HeaderItem {
 
 const VERBOSE_DEBUG_LOGS = false;
 
-
 export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<
         HeaderItem | undefined | null | void
@@ -109,10 +108,11 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
                 title: 'Scroll to Header',
                 arguments: [element.id, element.label],
             };
-            if (VERBOSE_DEBUG_LOGS)
-                {Logger.debug(
+            if (VERBOSE_DEBUG_LOGS) {
+                Logger.debug(
                     `[${this.currentPanelId}] 📋 Added scroll command for header: ${element.label} (${element.id})`
-                );}
+                );
+            }
         }
 
         // Add context value for potential future context menu actions

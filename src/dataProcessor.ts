@@ -27,22 +27,26 @@ export interface DataInfoResult {
     xarray_show_versions: string;
     // New datatree fields
     dimensions_flattened: { [groupName: string]: { [key: string]: number } };
-    coordinates_flattened: { [groupName: string]: Array<{
-        name: string;
-        dtype: string;
-        shape: number[];
-        dimensions: string[];
-        size_bytes: number;
-        attributes?: { [key: string]: any };
-    }> };
-    variables_flattened: { [groupName: string]: Array<{
-        name: string;
-        dtype: string;
-        shape: number[];
-        dimensions: string[];
-        size_bytes: number;
-        attributes?: { [key: string]: any };
-    }> };
+    coordinates_flattened: {
+        [groupName: string]: Array<{
+            name: string;
+            dtype: string;
+            shape: number[];
+            dimensions: string[];
+            size_bytes: number;
+            attributes?: { [key: string]: any };
+        }>;
+    };
+    variables_flattened: {
+        [groupName: string]: Array<{
+            name: string;
+            dtype: string;
+            shape: number[];
+            dimensions: string[];
+            size_bytes: number;
+            attributes?: { [key: string]: any };
+        }>;
+    };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
     xarray_html_repr_flattened: { [groupName: string]: string };
     xarray_text_repr_flattened: { [groupName: string]: string };
@@ -66,7 +70,7 @@ export class DataProcessor {
         DataProcessor.instance = new DataProcessor(pythonManager);
         return DataProcessor.instance;
     }
-    
+
     private readonly pythonScriptsHomeDir: string;
 
     constructor(private pythonManager: PythonManager) {
@@ -76,10 +80,12 @@ export class DataProcessor {
     private detectVSCodeTheme(): string {
         // Get the current VSCode theme
         const currentTheme = vscode.window.activeColorTheme;
-        
+
         // Check if it's a dark theme
         if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
-            Logger.info('Detected dark VSCode theme, using dark_background style');
+            Logger.info(
+                'Detected dark VSCode theme, using dark_background style'
+            );
             return 'dark_background';
         } else {
             Logger.info('Detected light VSCode theme, using default style');
@@ -89,9 +95,11 @@ export class DataProcessor {
 
     private getMatplotlibStyle(): string {
         // Get the user setting
-        const config = vscode.workspace.getConfiguration('scientificDataViewer');
+        const config = vscode.workspace.getConfiguration(
+            'scientificDataViewer'
+        );
         const userStyle = config.get<string>('matplotlibStyle', '');
-        
+
         if (userStyle && userStyle.trim() !== '') {
             Logger.info(`Using user-specified matplotlib style: ${userStyle}`);
             return userStyle;
@@ -112,11 +120,18 @@ export class DataProcessor {
         }
 
         const filePath = `'${uri.fsPath}'`;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py'
+        );
 
         try {
             // Use the new merged CLI with 'info' mode
-            const result = await this.pythonManager.executePythonFile(scriptPath, ['info', filePath], true);
+            const result = await this.pythonManager.executePythonFile(
+                scriptPath,
+                ['info', filePath],
+                true
+            );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return result;
@@ -126,28 +141,43 @@ export class DataProcessor {
         }
     }
 
-    async createPlot(uri: vscode.Uri, variable: string, plotType: string = 'auto'): Promise<string | null> {
+    async createPlot(
+        uri: vscode.Uri,
+        variable: string,
+        plotType: string = 'auto'
+    ): Promise<string | null> {
         if (!this.pythonManager.isReady()) {
             throw new Error('Python environment not ready');
         }
 
         const filePath = `'${uri.fsPath}'`;
-        const scriptPath = path.join(this.pythonScriptsHomeDir, 'get_data_info.py');
-        
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py'
+        );
+
         // Get the matplotlib style (either from user setting or auto-detected)
         const style = this.getMatplotlibStyle();
-        
+
         // Use the new merged CLI with 'plot' mode and style parameter
         const args = ['plot', filePath, variable, plotType, '--style', style];
 
         try {
-            Logger.info(`Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`);
+            Logger.info(
+                `Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
+            );
 
             // Execute Python script and capture both stdout and stderr
-            const result = await this.pythonManager.executePythonFile(scriptPath, args, true);
+            const result = await this.pythonManager.executePythonFile(
+                scriptPath,
+                args,
+                true
+            );
 
             if (typeof result === 'string' && result.startsWith('iVBOR')) {
-                Logger.info(`Plot created successfully for variable '${variable}'`);
+                Logger.info(
+                    `Plot created successfully for variable '${variable}'`
+                );
                 return result; // Base64 image data
             } else if (result.error) {
                 throw new Error(result.error);
@@ -158,6 +188,4 @@ export class DataProcessor {
             throw error;
         }
     }
-
-
 }

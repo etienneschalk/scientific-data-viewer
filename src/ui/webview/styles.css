@@ -128,7 +128,7 @@ button:disabled {
 }
 
 /* Copy button variant */
-.text-copy-button{
+.text-copy-button {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     padding: 4px;
@@ -142,7 +142,7 @@ button:disabled {
     transition: background-color 0.2s ease;
 }
 
-.text-copy-button:hover{
+.text-copy-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 

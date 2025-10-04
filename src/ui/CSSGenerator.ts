@@ -5,7 +5,10 @@ import * as path from 'path';
  * CSS generation utilities to separate styles from the main panel
  */
 export class CSSGenerator {
-    private static readonly cssPath = path.join(__dirname, '../../../src/ui/webview/styles.css');
+    private static readonly cssPath = path.join(
+        __dirname,
+        '../../../src/ui/webview/styles.css'
+    );
     private static content: string | null = null;
 
     static get(devMode: boolean): string {
@@ -26,6 +29,4 @@ export class CSSGenerator {
             this.content = '';
         }
     }
-
 }
-

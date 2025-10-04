@@ -5,7 +5,10 @@ import * as path from 'path';
  * JavaScript generation utilities to separate client-side logic from the main panel
  */
 export class JavaScriptGenerator {
-    private static readonly jsPath = path.join(__dirname, '../../../src/ui/webview/webview-script.js');
+    private static readonly jsPath = path.join(
+        __dirname,
+        '../../../src/ui/webview/webview-script.js'
+    );
     private static content: string | null = null;
 
     static get(devMode: boolean): string {

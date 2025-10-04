@@ -17,7 +17,11 @@ export class HTMLGenerator {
         return JavaScriptGenerator.get(devMode);
     }
 
-    static generateMainHTML(devMode: boolean, lastLoadTime: string | null, panelId: number): string {
+    static generateMainHTML(
+        devMode: boolean,
+        lastLoadTime: string | null,
+        panelId: number
+    ): string {
         return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,10 +43,16 @@ export class HTMLGenerator {
 </html>`;
     }
 
-    static generateHeader(devMode: boolean, lastLoadTime: string | null, panelId: number): string {
+    static generateHeader(
+        devMode: boolean,
+        lastLoadTime: string | null,
+        panelId: number
+    ): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0 ${devMode ? `[${panelId}]` : ''}</small></div>
+        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0 ${
+            devMode ? `[${panelId}]` : ''
+        }</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">

@@ -27,7 +27,10 @@ export interface EventMessage<T = any> extends BaseMessage {
     payload: T;
 }
 
-export type Message<T = any> = RequestMessage<T> | ResponseMessage<T> | EventMessage<T>;
+export type Message<T = any> =
+    | RequestMessage<T>
+    | ResponseMessage<T>
+    | EventMessage<T>;
 
 // Specific message types
 export interface DataInfoRequest {
@@ -127,7 +130,9 @@ export interface PythonEnvironmentChangedEvent {
 // Message factory functions
 export class MessageFactory {
     private static generateId(): string {
-        return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        return (
+            Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
+        );
     }
 
     static createRequest<T>(command: string, payload: T): RequestMessage<T> {
@@ -136,11 +141,16 @@ export class MessageFactory {
             timestamp: Date.now(),
             type: 'request',
             command,
-            payload
+            payload,
         };
     }
 
-    static createResponse<T>(requestId: string, success: boolean, payload?: T, error?: string): ResponseMessage<T> {
+    static createResponse<T>(
+        requestId: string,
+        success: boolean,
+        payload?: T,
+        error?: string
+    ): ResponseMessage<T> {
         return {
             id: this.generateId(),
             timestamp: Date.now(),
@@ -148,7 +158,7 @@ export class MessageFactory {
             requestId,
             success,
             payload,
-            error
+            error,
         };
     }
 
@@ -158,7 +168,7 @@ export class MessageFactory {
             timestamp: Date.now(),
             type: 'event',
             event,
-            payload
+            payload,
         };
     }
 }
@@ -168,7 +178,9 @@ export function isRequestMessage(message: Message): message is RequestMessage {
     return message.type === 'request';
 }
 
-export function isResponseMessage(message: Message): message is ResponseMessage {
+export function isResponseMessage(
+    message: Message
+): message is ResponseMessage {
     return message.type === 'response';
 }
 
@@ -196,5 +208,5 @@ export const EVENTS = {
     SCROLL_TO_HEADER: 'scrollToHeader',
 } as const;
 
-export type Command = typeof COMMANDS[keyof typeof COMMANDS];
-export type Event = typeof EVENTS[keyof typeof EVENTS];
+export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];
+export type Event = (typeof EVENTS)[keyof typeof EVENTS];
