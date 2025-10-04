@@ -48,7 +48,7 @@ suite('PythonManager Test Suite', () => {
     });
 
     setup(() => {
-        pythonManager = new PythonManager(mockContext);
+        pythonManager = new PythonManager();
     });
 
     teardown(() => {

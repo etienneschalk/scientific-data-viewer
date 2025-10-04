@@ -9,11 +9,6 @@ export class PythonManager {
     private isInitialized: boolean = false;
     private initializationPromise: Promise<void> | null = null;
 
-    constructor(private context: vscode.ExtensionContext) {
-        // Initialize without old pythonPath setting - will get from Python extension API
-        this.pythonPath = undefined;
-    }
-
     async _initialize(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
         if (this.initializationPromise) {

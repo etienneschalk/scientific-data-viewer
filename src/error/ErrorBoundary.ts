@@ -42,14 +42,6 @@ export class ErrorBoundary {
                 operation: 'uncaughtException'
             });
         });
-
-        process.on('unhandledRejection', (reason) => {
-            const error = reason instanceof Error ? reason : new Error(String(reason));
-            this.handleError(error, {
-                component: this,
-                operation: 'unhandledRejection'
-            });
-        });
     }
 
     registerHandler(component: any, handler: ErrorHandler): void {

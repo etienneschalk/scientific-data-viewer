@@ -57,7 +57,7 @@ suite('Integration Test Suite', () => {
 
     setup(() => {
         // Create fresh instances for each test
-        pythonManager = new PythonManager(mockContext);
+        pythonManager = new PythonManager();
         dataProcessor = new DataProcessor(pythonManager);
     });
 

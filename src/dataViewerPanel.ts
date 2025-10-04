@@ -205,13 +205,6 @@ export class DataViewerPanel {
      * Dispose of static resources
      */
     public static dispose(): void {
-        for (const panel of DataViewerPanel.activePanels) {
-            panel.dispose();
-        }
-        for (const panel of DataViewerPanel.panelsWithErrors) {
-            panel.dispose();
-        }
-
         DataViewerPanel.activePanels.clear();
         DataViewerPanel.panelsWithErrors.clear();
     }

@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
     let dataProcessor: DataProcessor;
 
     try {
-        pythonManager = new PythonManager(context);
+        pythonManager = new PythonManager();
         dataProcessor = new DataProcessor(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
     } catch (error) {
@@ -209,74 +209,30 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register custom editor providers
     Logger.info('🔧 Registering custom editor providers...');
-    const netcdfEditorProvider = new ScientificDataEditorProvider(
+    const sciEditorProvider = new ScientificDataEditorProvider(
         context,
         dataProcessor
     );
-    const hdf5EditorProvider = new ScientificDataEditorProvider(
-        context,
-        dataProcessor
-    );
-    const zarrEditorProvider = new ScientificDataEditorProvider(
-        context,
-        dataProcessor
-    );
-    const gribEditorProvider = new ScientificDataEditorProvider(
-        context,
-        dataProcessor
-    );
-    const geotiffEditorProvider = new ScientificDataEditorProvider(
-        context,
-        dataProcessor
-    );
-    const jp2EditorProvider = new ScientificDataEditorProvider(
-        context,
-        dataProcessor
-    );
-
     const options = {
         webviewOptions: {
             retainContextWhenHidden: true,
             enableFindWidget: true,
         },
     };
-    const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
+    const editorRegistrations = [
         'netcdfEditor',
-        netcdfEditorProvider,
-        options
-    );
-
-    const hdf5EditorRegistration = vscode.window.registerCustomEditorProvider(
         'hdf5Editor',
-        hdf5EditorProvider,
-        options
-    );
-
-    const zarrEditorRegistration = vscode.window.registerCustomEditorProvider(
         'zarrEditor',
-        zarrEditorProvider,
-        options
-    );
-
-    const gribEditorRegistration = vscode.window.registerCustomEditorProvider(
         'gribEditor',
-        gribEditorProvider,
-        options
-    );
-
-    const geotiffEditorRegistration =
-        vscode.window.registerCustomEditorProvider(
-            'geotiffEditor',
-            geotiffEditorProvider,
-            options
-        );
-
-    const jp2EditorRegistration = vscode.window.registerCustomEditorProvider(
+        'geotiffEditor',
         'jp2Editor',
-        jp2EditorProvider,
-        options
+    ].map((viewType) =>
+        vscode.window.registerCustomEditorProvider(
+            viewType,
+            sciEditorProvider,
+            options
+        )
     );
-
     Logger.info('🚀 Custom editor providers registered successfully');
 
     // Register commands
@@ -299,11 +255,11 @@ export function activate(context: vscode.ExtensionContext) {
                 );
                 const fileUriList = await vscode.window.showOpenDialog({
                     canSelectFiles: true,
-                    canSelectFolders: false, 
+                    canSelectFolders: false,
                     canSelectMany: true,
                     filters: {
                         // Note: Update this list to match the supported file types in package.json
-                        "Scientific Data Files": [
+                        'Scientific Data Files': [
                             'nc',
                             'netcdf',
                             'nc4',
@@ -362,9 +318,7 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectMany: true,
                     filters: {
                         // Note: Update this list to match the supported file types in package.json
-                        "Scientific Data Folders": [
-                            'zarr',
-                        ],
+                        'Scientific Data Folders': ['zarr'],
                         Zarr: ['zarr'],
                     },
                 });
@@ -381,7 +335,6 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     );
-
 
     const refreshPythonEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.refreshPythonEnvironment',
@@ -545,22 +498,12 @@ export function activate(context: vscode.ExtensionContext) {
                     );
                 }
             }
-
-            // XXX This is broken, dead notifications show up again. They should not.
-            // // Show notification for supported files
-            // const action = await vscode.window.showInformationMessage(
-            //     `Scientific data file detected: ${document.fileName}`,
-            //     'Open in Data Viewer'
-            // );
-            // if (action === 'Open in Data Viewer') {
-            //     await DataViewerPanel.createFromScratchOrShow(context.extensionUri, document.uri, dataProcessor);
-            // }
         }
     });
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
-    const pythonInitializationPromise = refreshPython(
+    refreshPython(
         pythonManager,
         statusBarItem
     );
@@ -686,12 +629,7 @@ export function activate(context: vscode.ExtensionContext) {
         statusBarItem,
         pythonInterpreterChangeListener,
         workspaceChangeListener,
-        netcdfEditorRegistration,
-        hdf5EditorRegistration,
-        zarrEditorRegistration,
-        gribEditorRegistration,
-        geotiffEditorRegistration,
-        jp2EditorRegistration,
+        ...editorRegistrations,
         configListener
     );
 
@@ -744,10 +682,26 @@ function updateStatusBar(
 }
 
 export function deactivate() {
-    Logger.info('Scientific Data Viewer extension is now deactivated!');
-
+    Logger.info('');
+    Logger.info('');
+    Logger.info('');
+    Logger.info("Starting extension's deactivation procedure...");
     // Dispose of data viewer panel static resources
     DataViewerPanel.dispose();
+    ErrorBoundary.getInstance().dispose();
+    // Has event listeners that needs to be disposed
+    // Could be a singleton
+    // Needs to access instance
+    // Cannot activate return disposables?
+    // PythonManager
 
+    // Nothing to dispose.
+    // DataProcessor
+
+    // Panes-related data is disposed by panes themselves.
+    // OutlineProvider
+
+    Logger.info('Scientific Data Viewer extension is now deactivated!');
+    Logger.info('Last word before disposing the Logger.');
     Logger.dispose();
 }
