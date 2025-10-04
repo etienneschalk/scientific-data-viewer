@@ -26,7 +26,7 @@ class ScientificDataEditorProvider
             uri: uri,
             dispose: () => {
                 Logger.info(
-                    `🚚 📕 Disposing custom document for: ${uri.fsPath}`
+                    `🚚 📕 Disposed custom document for: ${uri.fsPath}`
                 );
             },
         };

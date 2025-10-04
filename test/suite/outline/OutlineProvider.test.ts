@@ -12,7 +12,7 @@ suite('OutlineProvider Test Suite', () => {
     teardown(() => {
         // Clean up any resources
         if (outlineProvider) {
-            outlineProvider.clear(0);
+            outlineProvider.disposeForPanel(0);
         }
     });
 
@@ -195,14 +195,14 @@ suite('OutlineProvider Test Suite', () => {
     test('should handle null file URI in clear', () => {
         // Should not throw an error
         assert.doesNotThrow(() => {
-            outlineProvider.clear(0);
+            outlineProvider.disposeForPanel(0);
         });
     });
 
     test('should handle invalid file URI in clear', () => {
         // Should not throw an error
         assert.doesNotThrow(() => {
-            outlineProvider.clear(0);
+            outlineProvider.disposeForPanel(0);
         });
     });
 

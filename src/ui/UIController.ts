@@ -560,6 +560,6 @@ export class UIController {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
         const devMode = config.get('devMode', false);
         const lastLoadTime = this.stateManager.getState().data.lastLoadTime?.toISOString() || null;
-        return HTMLGenerator.generateMainHTML(devMode, lastLoadTime);
+        return HTMLGenerator.generateMainHTML(devMode, lastLoadTime, this.getId());
     }
 }

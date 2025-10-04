@@ -227,7 +227,11 @@
             "explorer": [
                 {
                     "id": "scientificDataViewer.outline",
-                    "name": "Data Structure"
+                    "name": "Data Structure",
+                    "type": "tree",
+                    "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
+                    "visibility": "visible",
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf"
                 }
             ]
         },

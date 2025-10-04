@@ -4,7 +4,7 @@ import { HTMLGenerator } from '../../../src/ui/HTMLGenerator';
 suite('HTMLGenerator Test Suite', () => {
     test('should generate main HTML', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content);
+        const html = HTMLGenerator.generateMainHTML(true, content, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -17,7 +17,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML without plotting capabilities', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(false, content);
+        const html = HTMLGenerator.generateMainHTML(false, content, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -27,7 +27,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML in dev mode', () => {
         const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content);
+        const html = HTMLGenerator.generateMainHTML(true, content, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -36,7 +36,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header', () => {
-        const header = HTMLGenerator.generateHeader('2023-01-01T00:00:00Z');
+        const header = HTMLGenerator.generateHeader(true, '2023-01-01T00:00:00Z', 1);
         
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -45,7 +45,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header without timestamp', () => {
-        const header = HTMLGenerator.generateHeader(null);
+        const header = HTMLGenerator.generateHeader(true, null, 1);
         
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -133,8 +133,8 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate complete HTML with all components', () => {
         const content = HTMLGenerator.generateContent();
-        const header = HTMLGenerator.generateHeader('2023-01-01T00:00:00Z');
-        const html = HTMLGenerator.generateMainHTML(true, '2023-01-01T00:00:00Z');
+        const header = HTMLGenerator.generateHeader(true, '2023-01-01T00:00:00Z', 1);
+        const html = HTMLGenerator.generateMainHTML(true, '2023-01-01T00:00:00Z', 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');

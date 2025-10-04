@@ -323,7 +323,7 @@ function updateTimestamp(isoString, isLoading = false) {
     } else if (isoString) {
         const date = new Date(isoString);
         const timeString = date.toLocaleTimeString();
-        timestampText.textContent = `Last loaded: ${timeString}`;
+        timestampText.textContent = `loaded: ${timeString}`;
         timestampElement.classList.remove('hidden');
     } else {
         timestampElement.classList.add('hidden');

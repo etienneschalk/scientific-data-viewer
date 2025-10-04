@@ -17,7 +17,7 @@ export class HTMLGenerator {
         return JavaScriptGenerator.get(devMode);
     }
 
-    static generateMainHTML(devMode: boolean, lastLoadTime: string | null): string {
+    static generateMainHTML(devMode: boolean, lastLoadTime: string | null, panelId: number): string {
         return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +29,7 @@ export class HTMLGenerator {
     </style>
 </head>
 <body>
-    ${this.generateHeader(lastLoadTime)}
+    ${this.generateHeader(devMode, lastLoadTime, panelId)}
     ${this.generateLoadingAndError()}
     ${this.generateContent()}
     <script>
@@ -39,10 +39,10 @@ export class HTMLGenerator {
 </html>`;
     }
 
-    static generateHeader(lastLoadTime: string | null): string {
+    static generateHeader(devMode: boolean, lastLoadTime: string | null, panelId: number): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0</small></div>
+        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0 ${devMode ? `[${panelId}]` : ''}</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
@@ -58,7 +58,7 @@ export class HTMLGenerator {
         return /*html*/ `
         <div id="timestamp" class="timestamp hidden">
             <span class="timestamp-icon">🕒</span>
-            <span id="timestampText">Last loaded: ${
+            <span id="timestampText">loaded: ${
                 lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
             }</span>
         </div>

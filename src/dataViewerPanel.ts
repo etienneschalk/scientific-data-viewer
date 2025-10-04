@@ -183,21 +183,21 @@ export class DataViewerPanel {
 
     private static addPanelWithError(panel: DataViewerPanel) {
         Logger.debug(
-            `[addPanelWithError]    ${DataViewerPanel.panelsWithErrors.size} panels with errors`
+            `[addPanelWithError]    (before add) ${DataViewerPanel.panelsWithErrors.size} panels with errors`
         );
         DataViewerPanel.panelsWithErrors.add(panel);
         Logger.debug(
-            `[addPanelWithError]    ${DataViewerPanel.panelsWithErrors.size} panels with errors`
+            `[addPanelWithError]    (after add) ${DataViewerPanel.panelsWithErrors.size} panels with errors`
         );
     }
 
     private static removePanelWithError(panel: DataViewerPanel) {
         Logger.debug(
-            `[removePanelWithError] ${DataViewerPanel.panelsWithErrors.size} panels with errors`
+            `[removePanelWithError] (before remove) ${DataViewerPanel.panelsWithErrors.size} panels with errors`
         );
         DataViewerPanel.panelsWithErrors.delete(panel);
         Logger.debug(
-            `[removePanelWithError] ${DataViewerPanel.panelsWithErrors.size} panels with errors`
+            `[removePanelWithError] (after remove) ${DataViewerPanel.panelsWithErrors.size} panels with errors`
         );
     }
 
@@ -205,7 +205,15 @@ export class DataViewerPanel {
      * Dispose of static resources
      */
     public static dispose(): void {
-        // Static resources are now managed by the main extension
+        for (const panel of DataViewerPanel.activePanels) {
+            panel.dispose();
+        }
+        for (const panel of DataViewerPanel.panelsWithErrors) {
+            panel.dispose();
+        }
+
+        DataViewerPanel.activePanels.clear();
+        DataViewerPanel.panelsWithErrors.clear();
     }
 
     private constructor(
@@ -260,6 +268,7 @@ export class DataViewerPanel {
         // Listen for when the panel becomes visible to update outline
         this._webviewPanel.onDidChangeViewState(
             (e) => {
+                Logger.debug(`[onDidChangeViewState] ${e}`);
                 if (e.webviewPanel.visible) {
                     this.notifyPanelActive();
                 }
@@ -306,8 +315,7 @@ export class DataViewerPanel {
             return;
         }
 
-        this._isDisposed = true;
-        Logger.info(`🚚 🗑️ Disposing panel for file: ${this._fileUri.fsPath}`);
+        Logger.info(`[${this.getId()}] 🚚 🗑️ Disposing panel for file: ${this._fileUri.fsPath}`);
         Logger.debug(
             `[dispose] Before cleanup - activePanels: ${DataViewerPanel.activePanels.size}, panelsWithErrors: ${DataViewerPanel.panelsWithErrors.size}`
         );
@@ -329,7 +337,7 @@ export class DataViewerPanel {
         if (DataViewerPanel._outlineProvider) {
             // Note: this will break if allowMultipleTabsForSameFile is true,
             // as it will clear the outline for all panels with the same file path
-            DataViewerPanel._outlineProvider.clear(this.getId());
+            DataViewerPanel._outlineProvider.disposeForPanel(this.getId());
         }
 
         // Clean up UI controller
@@ -348,8 +356,10 @@ export class DataViewerPanel {
         }
 
         Logger.info(
-            `🚚 ✅ Panel disposal completed for file: ${this._fileUri.fsPath}, remaining activePanels: ${DataViewerPanel.activePanels.size}`
+            `[${this.getId()}] 🚚 ✅ Panel disposal completed for file: ${this._fileUri.fsPath}, remaining activePanels: ${DataViewerPanel.activePanels.size}`
         );
+
+        this._isDisposed = true;
     }
 
     private async _handleDevMode(): Promise<void> {
