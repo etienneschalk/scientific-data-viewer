@@ -151,7 +151,7 @@ export class HeaderExtractor {
                         label: groupName || 'Unnamed Group',
                         level: 2,
                         id: HeaderExtractor.joinId([header.id, groupName]),
-                        children: this.createGroupSubHeaders(groupName, dataInfo, header.id)
+                        children: []
                     }));
 
                     return {
@@ -183,16 +183,6 @@ export class HeaderExtractor {
 
         Logger.info(`📋 Created dynamic outline with ${enrichedHeaders.length} main sections and group information`);
         return enrichedHeaders;
-    }
-
-    /**
-     * Create sub-headers for a specific group (variables, coordinates, dimensions, attributes)
-     * For xarray HTML and Text representations, only show group names without detailed sub-items
-     */
-    private static createGroupSubHeaders(groupName: string, dataInfo: DataInfoResult, parentHeaderId: string): HeaderItem[] {
-        // Return empty array to simplify the tree view - only show group names
-        // without variables, coordinates, dimensions, or attributes
-        return [];
     }
 
     /**
