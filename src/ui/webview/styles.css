@@ -21,6 +21,10 @@ body {
     display: none !important;
 }
 
+.highlighted {
+    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
+}
+
 .loading {
     text-align: center;
     padding: 20px;
@@ -33,7 +37,6 @@ body {
     padding: 15px;
     margin: 15px 0;
     margin-left: 15px;
-    /* font-weight: 500; */
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
 }
 
@@ -751,14 +754,6 @@ button:active {
     margin: 0;
     justify-content: left;
     flex-wrap: wrap;
-}
-
-.highlighted {
-    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
-    /* box-shadow: 0px 0px 0px 2px var(--vscode-button-background); */
-    /* box-shadow: 
-        +4px 0px 0px 0px var(--vscode-button-background),
-        -4px 0px 0px 0px var(--vscode-button-background); */
 }
 
 .plot-progress {

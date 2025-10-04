@@ -226,7 +226,7 @@ function escapeHtml(unsafe) {
 // JoinId is used to join parts of an id together with a separator
 // Must be similar to the one used in the HeaderExtractor.ts
 function joinId(parts) {
-    return parts.map(part => part.replace(/[^a-zA-Z0-9_]/g, '-')).join('___');
+    return parts.map((part) => part.replace(/[^a-zA-Z0-9_]/g, '-')).join('___');
 }
 
 function formatFileSize(bytes) {
@@ -333,7 +333,12 @@ function displayDataInfo(data, filePath) {
                         (${Object.entries(dimensions)
                             .map(
                                 ([name, size]) =>
-                                    `<strong id="${joinId(['data-group', groupName, 'dimension', name])}">${name}</strong>: ${size}`
+                                    `<strong id="${joinId([
+                                        'data-group',
+                                        groupName,
+                                        'dimension',
+                                        name,
+                                    ])}">${name}</strong>: ${size}`
                             )
                             .join(', ')})
                     </div>`
@@ -354,7 +359,12 @@ function displayDataInfo(data, filePath) {
                                   const sizeStr = variable.size_bytes
                                       ? `${formatFileSize(variable.size_bytes)}`
                                       : '';
-                                  const coordId = joinId(['data-group', groupName, 'coordinate', variable.name]);
+                                  const coordId = joinId([
+                                      'data-group',
+                                      groupName,
+                                      'coordinate',
+                                      variable.name,
+                                  ]);
                                   const hasAttributes =
                                       variable.attributes &&
                                       Object.keys(variable.attributes).length >
@@ -363,7 +373,12 @@ function displayDataInfo(data, filePath) {
                                   const attributesContent = hasAttributes
                                       ? generateAttributesContent(
                                             variable.attributes,
-                                            joinId(['data-group', groupName, 'coordinate', variable.name])
+                                            joinId([
+                                                'data-group',
+                                                groupName,
+                                                'coordinate',
+                                                variable.name,
+                                            ])
                                         )
                                       : '';
 
@@ -394,7 +409,13 @@ function displayDataInfo(data, filePath) {
                                             : ''
                                     }
                                 </summary>
-                                <div id="${joinId(['data-group', groupName, 'coordinate', variable.name, 'attributes'])}">${attributesContent}</div>
+                                <div id="${joinId([
+                                    'data-group',
+                                    groupName,
+                                    'coordinate',
+                                    variable.name,
+                                    'attributes',
+                                ])}">${attributesContent}</div>
                             </details>
                         `;
                               })
@@ -416,7 +437,12 @@ function displayDataInfo(data, filePath) {
                                   const sizeStr = variable.size_bytes
                                       ? `${formatFileSize(variable.size_bytes)}`
                                       : '';
-                                  const varId = joinId(['data-group', groupName, 'variable', variable.name]);
+                                  const varId = joinId([
+                                      'data-group',
+                                      groupName,
+                                      'variable',
+                                      variable.name,
+                                  ]);
                                   const hasAttributes =
                                       variable.attributes &&
                                       Object.keys(variable.attributes).length >
@@ -425,7 +451,12 @@ function displayDataInfo(data, filePath) {
                                   const attributesContent = hasAttributes
                                       ? generateAttributesContent(
                                             variable.attributes,
-                                            joinId(['data-group', groupName, 'variable', variable.name])
+                                            joinId([
+                                                'data-group',
+                                                groupName,
+                                                'variable',
+                                                variable.name,
+                                            ])
                                         )
                                       : '';
 
@@ -463,7 +494,13 @@ function displayDataInfo(data, filePath) {
                                             : ''
                                     }
                                 </summary>
-                                <div id="${joinId(['data-group', groupName, 'variable', variable.name, 'attributes'])}">${attributesContent}</div>
+                                <div id="${joinId([
+                                    'data-group',
+                                    groupName,
+                                    'variable',
+                                    variable.name,
+                                    'attributes',
+                                ])}">${attributesContent}</div>
                             </details>
                             ${plotControls}
                         `;
@@ -477,7 +514,12 @@ function displayDataInfo(data, filePath) {
                     attributes && Object.keys(attributes).length > 0
                         ? Object.entries(attributes)
                               .map(([attrName, value]) => {
-                                  const attrId = joinId(['data-group', groupName, 'attribute', attrName]);
+                                  const attrId = joinId([
+                                      'data-group',
+                                      groupName,
+                                      'attribute',
+                                      attrName,
+                                  ]);
                                   const valueStr =
                                       typeof value === 'string'
                                           ? value
@@ -494,30 +536,49 @@ function displayDataInfo(data, filePath) {
                         : /*html*/ `<p class="attribute-value">No attributes found in this group.</p>`;
 
                 return /*html*/ `
-                <div class="info-section" id="${joinId(['data-group', groupName])}">
+                <div class="info-section" id="${joinId([
+                    'data-group',
+                    groupName,
+                ])}">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
-                        <div class="info-section" id="${joinId(['data-group', groupName, 'dimensions'])}">
+                        <div class="info-section" id="${joinId([
+                            'data-group',
+                            groupName,
+                            'dimensions',
+                        ])}">
                             <details class="" open> <summary><h4>Dimensions</h4></summary>
                                 <div class="dimensions">
                                     ${dimensionsHtml}
                                 </div>
                             </details>  
                         </div>  
-                        <div class="info-section" id="${joinId(['data-group', groupName, 'coordinates'])}">
+                        <div class="info-section" id="${joinId([
+                            'data-group',
+                            groupName,
+                            'coordinates',
+                        ])}">
                             <details class="" open> <summary><h4>Coordinates</h4></summary>
                                 <div class="coordinates">
                                     ${coordinatesHtml}
                                 </div>
                             </details>
                         </div>
-                        <div class="info-section" id="${joinId(['data-group', groupName, 'variables'])}">
+                        <div class="info-section" id="${joinId([
+                            'data-group',
+                            groupName,
+                            'variables',
+                        ])}">
                             <details class="" open> <summary><h4>Variables</h4></summary>
                                 <div class="variables">
                                     ${variablesHtml}
                                 </div>  
                             </details>
                         </div>
-                        <div class="info-section" id="${joinId(['data-group', groupName, 'attributes'])}">
+                        <div class="info-section" id="${joinId([
+                            'data-group',
+                            groupName,
+                            'attributes',
+                        ])}">
                             <details class="" open> <summary><h4>Attributes</h4></summary>
                                 <div class="attributes">
                                     ${attributesHtml}
@@ -591,7 +652,7 @@ function displayPlot(plotData) {
 }
 
 // Representation display functions
-function displayHtmlRepresentation(htmlData, isDatatree = false) {
+function displayHtmlRepresentation(htmlData, isDatatree) {
     const container = isDatatree
         ? document.getElementById('htmlRepresentationForGroups')
         : document.getElementById('htmlRepresentation');
@@ -600,26 +661,12 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
     if (htmlData) {
         if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
             // Handle datatree flattened HTML representations
-            const groups = Object.keys(htmlData);
             const prefixId = 'section-html-representation-for-groups';
-            container.innerHTML = /*html*/ `
-                    ${groups
-                        .map(
-                            (groupName) => `
-                        <div class="info-section" id="${joinId([prefixId, groupName])}">
-                            <details> <summary>${groupName}</summary>
-                                <div class="html-representation">
-                                    ${
-                                        htmlData[groupName] ||
-                                        /*html*/ `<p>No HTML representation available</p>`
-                                    }
-                                </div>
-                            </details>
-                        </div>
-                    `
-                        )
-                        .join('')}
-            `;
+            container.innerHTML = Object.entries(htmlData)
+                .map(([name, value]) =>
+                    renderHtmlRepresentationForGroup(prefixId, name, value)
+                )
+                .join('');
         } else {
             // Handle regular HTML representation
             container.innerHTML = htmlData;
@@ -629,51 +676,73 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
     }
 }
 
+function renderHtmlRepresentationForGroup(prefixId, groupName, value) {
+    return /*html*/ `
+    <div class="info-section" id="${joinId([prefixId, groupName])}">
+        <details> <summary>${groupName}</summary>
+            <div class="html-representation">
+                ${value || /*html*/ `<p>No HTML representation available</p>`}
+            </div>
+        </details>
+    </div>
+    `;
+}
+
 function displayTextRepresentation(textData, isDatatree = false) {
     const container = isDatatree
         ? document.getElementById('textRepresentationForGroups')
         : document.getElementById('textRepresentation');
     container.parentElement.parentElement.classList.remove('hidden');
+
+    // This function uses textContent to avoid issue with special characters.
     if (textData) {
         if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations
-            const groups = Object.keys(textData);
             const prefixId = 'section-text-representation-for-groups';
-            container.innerHTML = /*html*/ `
-                    ${groups
-                        .map(
-                            (groupName) => /*html*/ `
-                        <div class="info-section" id="${joinId([prefixId, groupName])}">
-                            <details> <summary>${groupName}</summary>
-                                <div class="text-representation-container">
-                                    <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
-                                        📋 Copy
-                                    </button>
-                                    <div class="text-representation" id="textRepresentation-${groupName}">
-                                </div>
-                            </div>
-                            </details>
-                        </div>
-                    `
-                        )
-                        .join('')}
-            `;
-            for (const groupName in textData) {
+            container.innerHTML = Object.keys(textData)
+                .map((name) =>
+                    renderEmptyTextRepresentationForGroup(prefixId, name)
+                )
+                .join('');
+
+            for (const [name, value] of Object.entries(textData)) {
                 const textRepresentation = document.getElementById(
-                    `textRepresentation-${groupName}`
+                    joinId(['groupTextRepresentation', name])
                 );
-                textRepresentation.textContent = textData[groupName];
+                textRepresentation.textContent = value;
             }
         } else {
             const copyButton = document.getElementById('textCopyButton');
-            // Handle regular text representation
-            container.textContent = textData;
             copyButton.classList.remove('hidden');
+            container.textContent = textData;
         }
     } else {
         container.textContent = 'Failed to load text representation';
         copyButton.classList.add('hidden');
     }
+}
+
+function renderEmptyTextRepresentationForGroup(prefixId, name) {
+    console.log('renderEmptyTextRepresentationForGroup', prefixId, name);
+    const preId = joinId(['groupTextRepresentation', name]);
+    return /*html*/ `
+    <div class="info-section" id="${joinId([prefixId, name])}">
+        <details> <summary>${name}</summary>
+            <div class="text-representation-container">
+                <button 
+                    id="${joinId(['groupTextCopyButton', name])}" 
+                    data-target-id="${preId}"
+                    class="text-copy-button"
+                > 📋 Copy </button>
+                <pre 
+                    class="text-representation" 
+                    id="${preId}"
+                ></pre>
+            </div>
+        </div>  
+        </details>
+    </div>
+    `;
 }
 
 function displayShowVersions(versionsData) {
@@ -1246,7 +1315,8 @@ function updatePlotAllProgress() {
         globalStatePlotAllOperation.totalCount > 0
     ) {
         const percentage = Math.round(
-            (globalStatePlotAllOperation.completedCount / globalStatePlotAllOperation.totalCount) *
+            (globalStatePlotAllOperation.completedCount /
+                globalStatePlotAllOperation.totalCount) *
                 100
         );
         plotAllProgress.textContent = `Progress: ${globalStatePlotAllOperation.completedCount}/${globalStatePlotAllOperation.totalCount} (${percentage}%)`;
@@ -1277,7 +1347,8 @@ async function saveAllPlots() {
 
     try {
         for (const { variable, plotData } of plotsToSave) {
-            const filePath = globalState.currentDatasetFilePath || 'unknown_file';
+            const filePath =
+                globalState.currentDatasetFilePath || 'unknown_file';
             const fileName = generateDefaultFileName(variable, filePath);
             const result = await messageBus.savePlot(
                 plotData,
@@ -1464,6 +1535,7 @@ function setupEventListeners() {
         saveAllPlotsButton.addEventListener('click', saveAllPlots);
     }
 
+    // Event delegation for dynamic event handling (eg tags added after page load)
     // Per-variable plot controls - use event delegation
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('create-plot-button')) {
@@ -1512,6 +1584,28 @@ function setupEventListeners() {
         } else if (e.target.classList.contains('error-copy-button')) {
             const variable = e.target.getAttribute('data-variable');
             await copyPlotError(variable);
+        } else if (e.target.classList.contains('text-copy-button')) {
+            const button = e.target;
+            const text = document.getElementById(
+                button.dataset.targetId
+            )?.textContent;
+            if (text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    button.textContent = '✓ Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.textContent = '📋 Copy';
+                        button.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text representation:', err);
+                    button.textContent = '❌ Failed';
+                    setTimeout(() => {
+                        button.textContent = '📋 Copy';
+                    }, 2000);
+                }
+            }
         }
     });
 
@@ -1577,38 +1671,6 @@ function setupCopyEventListeners() {
             }
         });
     }
-
-    // Text representation copy button
-    const textCopyButton = document.getElementById('textCopyButton');
-    if (textCopyButton) {
-        textCopyButton.addEventListener('click', async () => {
-            const textRepresentation =
-                document.getElementById('textRepresentation');
-            const text = textRepresentation
-                ? textRepresentation.textContent
-                : '';
-
-            if (text) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    textCopyButton.textContent = '✓ Copied!';
-                    textCopyButton.classList.add('copied');
-                    setTimeout(() => {
-                        textCopyButton.textContent = '📋 Copy';
-                        textCopyButton.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy text representation:', err);
-                    textCopyButton.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        textCopyButton.textContent = '📋 Copy';
-                    }, 2000);
-                }
-            }
-        });
-    }
-
-    // Copy buttons for groups cannot be set here yet, they will be generated dynamically
 
     // Python path copy button
     const pythonPathCopyButton = document.getElementById(
@@ -1730,41 +1792,6 @@ function setupMessageHandlers() {
             state.data.dataInfo.xarray_text_repr_flattened,
             true
         );
-
-        // Text representation copy button for groups
-        const textCopyButtonForGroups = document.querySelectorAll(
-            '[id^="textCopyButton-"]'
-        );
-        textCopyButtonForGroups.forEach((button) => {
-            button.addEventListener('click', async () => {
-                const textRepresentation = document.getElementById(
-                    `textRepresentation-${button.dataset.group}`
-                );
-                const text = textRepresentation
-                    ? textRepresentation.textContent
-                    : '';
-                if (text) {
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        button.textContent = '✓ Copied!';
-                        button.classList.add('copied');
-                        setTimeout(() => {
-                            button.textContent = '📋 Copy';
-                            button.classList.remove('copied');
-                        }, 2000);
-                    } catch (err) {
-                        console.error(
-                            'Failed to copy text representation:',
-                            err
-                        );
-                        button.textContent = '❌ Failed';
-                        setTimeout(() => {
-                            button.textContent = '📋 Copy';
-                        }, 2000);
-                    }
-                }
-            });
-        });
 
         // Attributes are now handled natively by details elements, no JavaScript needed
 
@@ -1898,7 +1925,11 @@ function generateAttributesContent(attributes, parentId) {
             const valueStr =
                 typeof value === 'string' ? value : JSON.stringify(value);
             return /*html*/ `
-            <div class="attribute-item" id="${joinId([parentId, 'attribute', attrName])}">
+            <div class="attribute-item" id="${joinId([
+                parentId,
+                'attribute',
+                attrName,
+            ])}">
                 <span class="attribute-name" title="${attrName}">${attrName} : </span>
                 <span class="attribute-value" title="${valueStr}">${valueStr}</span>
             </div>

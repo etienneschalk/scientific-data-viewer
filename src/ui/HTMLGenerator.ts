@@ -134,7 +134,7 @@ export class HTMLGenerator {
             <details class="sticky-group-details" id="section-text-representation"> 
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
-                    <button id="textCopyButton" class="text-copy-button hidden">
+                    <button id="textCopyButton" data-target-id="textRepresentation" class="text-copy-button hidden">
                         📋 Copy
                     </button>
                     <div id="textRepresentation" class="text-representation"></div>
