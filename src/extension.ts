@@ -296,12 +296,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     const scrollToHeaderCommand = vscode.commands.registerCommand(
         'scientificDataViewer.scrollToHeader',
-        async (headerId: string, headerLabel: string, documentUri?: vscode.Uri) => {
-            // If no documentUri provided, try to get it from the outline provider
-            let targetUri = documentUri;
-            if (!targetUri) {
-                targetUri = outlineProvider.getCurrentFile();
-            }
+        async (headerId: string, headerLabel: string) => {
+            // We can only manage one file at a time, so we need to get the current file from the outline provider
+            let targetUri = outlineProvider.getCurrentFile();
             
             if (!targetUri || !targetUri.fsPath) {
                 Logger.warn(`🎮 📋 No valid documentUri available for scrollToHeader command`);

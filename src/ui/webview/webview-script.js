@@ -1,48 +1,6 @@
 /**
  * Webview JavaScript for Scientific Data Viewer
- * Generated from JavaScriptGenerator.ts
  */
-
-const vscode = acquireVsCodeApi();
-
-// Initialization
-function initialize() {
-    console.log('🔧 WebView initialized - starting debug session');
-    console.log('📍 Current location:', window.location);
-    console.log('📍 Pathname:', window.location.pathname);
-    console.log('📍 Search:', window.location.search);
-    console.log('📍 Hash:', window.location.hash);
-
-    // Set up event listeners
-    setupEventListeners();
-    setupMessageHandlers();
-
-    console.log(
-        '🚀 WebView initialized - waiting for data to be loaded via message system...'
-    );
-}
-
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initialize();
-    });
-} else {
-    // DOM is already loaded
-    initialize();
-}
-
-// Global state for file path
-const globalState = {
-    currentDatasetFilePath: null,
-};
-
-// Global state for plot all operation
-const globalStatePlotAllOperation = {
-    isRunning: false,
-    completedCount: 0,
-    totalCount: 0,
-};
 
 class WebviewMessageBus {
     constructor(vscode) {
@@ -55,6 +13,7 @@ class WebviewMessageBus {
     setupMessageListener() {
         window.addEventListener('message', (event) => {
             const message = event.data;
+            console.log("🚌 Bus: Message received:", message);
 
             if (message.type === 'response') {
                 this.handleResponse(message);
@@ -209,9 +168,59 @@ class WebviewMessageBus {
     onUIStateChanged(callback) {
         return this.onEvent('uiStateChanged', callback);
     }
+
+    onScrollToHeader(callback) {
+        return this.onEvent('scrollToHeader', callback);
+    }
 }
 
-const messageBus = new WebviewMessageBus(vscode);
+// Do not use vscode directly ; communicate with vscode through messageBus
+const _vscode = acquireVsCodeApi();
+const messageBus = new WebviewMessageBus(_vscode);
+
+// Global state for file path
+const globalState = {
+    currentDatasetFilePath: null,
+};
+
+// Global state for plot all operation
+const globalStateCreateAllPlotsOperation = {
+    isRunning: false,
+    completedCount: 0,
+    totalCount: 0,
+};
+
+
+// Initialization
+function initialize() {
+    console.log('🔧 WebView initialized - starting debug session');
+    console.log('📍 Current location:', window.location);
+    console.log('📍 Pathname:', window.location.pathname);
+    console.log('📍 Search:', window.location.search);
+    console.log('📍 Hash:', window.location.hash);
+
+    // Set up message handlers - communication with vscode via messageBus
+    setupMessageHandlers();
+
+    // Set up event listeners - user actions via event delegation
+    setupEventListeners();
+
+    console.log(
+        '🚀 WebView initialized - waiting for data to be loaded via message system...'
+    );
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    console.log('⚛️ 🔧 Document is not ready - Attach event listener to DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', () => {
+        initialize();
+    });
+    } else {
+        console.log('⚛️ 🔧 Document is ready - DOM already loaded');
+    initialize();
+}
+
 
 // Utility functions
 function escapeHtml(unsafe) {
@@ -236,6 +245,74 @@ function formatFileSize(bytes) {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
+function generateUUID() {
+    return window.crypto.randomUUID();
+}
+
+// Message bus event handlers
+function setupMessageHandlers() {
+    // Set up event listeners for new message system
+    messageBus.onDataLoaded((state) => {
+        console.log('📊 Data loaded event received:', state);
+        displayAll(state);
+    });
+
+    messageBus.onError((error) => {
+        console.error('❌ Error event received:', error);
+        displayError(
+            error.message,
+            error.details,
+            error.errorType,
+            error.formatInfo
+        );
+    });
+
+    messageBus.onPythonEnvironmentChanged((data) => {
+        console.log('🐍 Python environment changed:', data);
+        displayPythonPath(data.pythonPath);
+    });
+
+    messageBus.onUIStateChanged((state) => {
+        console.log('🔄 UI state changed:', state);
+    });
+
+    messageBus.onScrollToHeader(({headerId, headerLabel}) => {
+        scrollToHeader(headerId, headerLabel);
+    });
+
+    // Add debugging for all message bus communications
+    const originalSendRequest = messageBus.sendRequest.bind(messageBus);
+    messageBus.sendRequest = async function (command, payload, timeout) {
+        console.log('📤 Sending request:', { command, payload, timeout });
+        try {
+            const result = await originalSendRequest(command, payload, timeout);
+            console.log('📥 ✅ Request successful:', { command, result });
+            return result;
+        } catch (error) {
+            console.error('📥 ❌ Request failed:', { command, error });
+            throw error;
+        }
+    };
+}
+
+function displayAll(state) {
+    displayDataInfo(state.data.dataInfo, state.data.currentFile);
+    displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
+    displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
+    displayHtmlRepresentation(
+        state.data.dataInfo.xarray_html_repr_flattened,
+        true
+    );
+    displayTextRepresentation(
+        state.data.dataInfo.xarray_text_repr_flattened,
+        true
+    );
+    displayPythonPath(state.python.pythonPath);
+    displayExtensionConfig(state.extension.extensionConfig);
+    displayShowVersions(state.data.dataInfo.xarray_show_versions);
+    updateTimestamp(state.data.lastLoadTime);
+}
+
 function updateTimestamp(isoString, isLoading = false) {
     const timestampElement = document.getElementById('timestamp');
     const timestampText = document.getElementById('timestampText');
@@ -256,12 +333,12 @@ function updateTimestamp(isoString, isLoading = false) {
 // Display functions
 function displayDataInfo(data, filePath) {
     if (!data) {
-        showError('No data available');
+        displayError('No data available');
         return;
     }
 
     if (data.error) {
-        showError(data.error);
+        displayError(data.error);
         return;
     }
 
@@ -792,7 +869,7 @@ function displayExtensionConfig(configData) {
 }
 
 // Error handling functions
-function showError(message, details = '', errorType = '', formatInfo = null) {
+function displayError(message, details = '', errorType = '', formatInfo = null) {
     const errorDiv = document.getElementById('error');
 
     // Format message to handle multi-line errors
@@ -966,15 +1043,11 @@ function displayVariablePlot(variable, plotData) {
     }
 }
 
-
-
-
-
 function showVariablePlotError(variable, message) {
     const plotError = document.querySelector(
         `.plot-error[data-variable="${variable}"]`
     );
-    const errorMessageId = window.crypto.randomUUID();
+    const errorMessageId = generateUUID();
     if (plotError) {
         plotError.innerHTML = /*html*/ `
             <div>
@@ -993,6 +1066,8 @@ function showVariablePlotError(variable, message) {
         plotError.classList.add('error');
     }
 }
+
+
 
 function showVariablePlotSuccess(variable, message) {
     const plotError = document.querySelector(
@@ -1053,15 +1128,15 @@ function updatePlotAllProgress() {
     const plotAllProgress = document.getElementById('plotAllProgress');
     if (
         plotAllProgress &&
-        globalStatePlotAllOperation.isRunning &&
-        globalStatePlotAllOperation.totalCount > 0
+        globalStateCreateAllPlotsOperation.isRunning &&
+        globalStateCreateAllPlotsOperation.totalCount > 0
     ) {
         const percentage = Math.round(
-            (globalStatePlotAllOperation.completedCount /
-                globalStatePlotAllOperation.totalCount) *
+            (globalStateCreateAllPlotsOperation.completedCount /
+                globalStateCreateAllPlotsOperation.totalCount) *
                 100
         );
-        plotAllProgress.textContent = `Progress: ${globalStatePlotAllOperation.completedCount}/${globalStatePlotAllOperation.totalCount} (${percentage}%)`;
+        plotAllProgress.textContent = `Progress: ${globalStateCreateAllPlotsOperation.completedCount}/${globalStateCreateAllPlotsOperation.totalCount} (${percentage}%)`;
     }
 }
 
@@ -1255,14 +1330,10 @@ async function handleTextCopy(button) {
 async function handleRefresh() {
     updateTimestamp(null, true);
     try {
-        const data = await messageBus.refresh();
-        if (data) {
-            displayDataInfo(data.data, data.filePath);
-            updateTimestamp(data.lastLoadTime);
-        }
+        await messageBus.refresh();
     } catch (error) {
         console.error('Failed to refresh data:', error);
-        showError('Failed to refresh data: ' + error.message);
+        displayError('Failed to refresh data: ' + error.message);
     }
 }
 
@@ -1301,7 +1372,7 @@ async function handleCreateAllPlots() {
     console.log('🔍 Plot All Variables - Debug Info:');
 
     // Check if operation is already running
-    if (globalStatePlotAllOperation.isRunning) {
+    if (globalStateCreateAllPlotsOperation.isRunning) {
         console.log('Plot all operation already running');
         return;
     }
@@ -1314,9 +1385,9 @@ async function handleCreateAllPlots() {
     }
 
     // Initialize operation state
-    globalStatePlotAllOperation.isRunning = true;
-    globalStatePlotAllOperation.completedCount = 0;
-    globalStatePlotAllOperation.totalCount = buttons.length;
+    globalStateCreateAllPlotsOperation.isRunning = true;
+    globalStateCreateAllPlotsOperation.completedCount = 0;
+    globalStateCreateAllPlotsOperation.totalCount = buttons.length;
 
     // Update UI to show operation in progress
     updatePlotAllUI(true);
@@ -1335,7 +1406,7 @@ async function handleCreateAllPlots() {
         try {
             const plotData = await messageBus.createPlot(variable, plotType);
             displayVariablePlot(variable, plotData);
-            globalStatePlotAllOperation.completedCount++;
+            globalStateCreateAllPlotsOperation.completedCount++;
             updatePlotAllProgress();
 
             return { variable, success: true };
@@ -1355,7 +1426,7 @@ async function handleCreateAllPlots() {
                 'Error creating plot: ' + error.message
             );
 
-            globalStatePlotAllOperation.completedCount++;
+            globalStateCreateAllPlotsOperation.completedCount++;
             updatePlotAllProgress();
 
             return { variable, success: false, error: error.message };
@@ -1389,9 +1460,9 @@ async function handleCreateAllPlots() {
         console.error('Error in plot all operation:', error);
     } finally {
         // Reset operation state
-        globalStatePlotAllOperation.isRunning = false;
-        globalStatePlotAllOperation.completedCount = 0;
-        globalStatePlotAllOperation.totalCount = 0;
+        globalStateCreateAllPlotsOperation.isRunning = false;
+        globalStateCreateAllPlotsOperation.completedCount = 0;
+        globalStateCreateAllPlotsOperation.totalCount = 0;
 
         // Update UI to show operation completed
         updatePlotAllUI(false);
@@ -1621,75 +1692,6 @@ async function handlePlotTypeSelect(variable) {
     }
 }
 
-// Message bus event handlers
-function setupMessageHandlers() {
-    // Set up event listeners for new message system
-    messageBus.onDataLoaded((state) => {
-        console.log('📊 Data loaded event received:', state);
-        updateTimestamp(state.data.lastLoadTime);
-        displayDataInfo(state.data.dataInfo, state.data.currentFile);
-
-        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
-        displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
-
-        // Handle datatree data
-        displayHtmlRepresentation(
-            state.data.dataInfo.xarray_html_repr_flattened,
-            true
-        );
-        displayTextRepresentation(
-            state.data.dataInfo.xarray_text_repr_flattened,
-            true
-        );
-
-        // Attributes are now handled natively by details elements, no JavaScript needed
-
-        displayShowVersions(state.data.dataInfo.xarray_show_versions);
-        displayExtensionConfig(state.extension.extensionConfig);
-        displayPythonPath(state.python.pythonPath);
-    });
-
-    messageBus.onError((error) => {
-        console.error('❌ Error event received:', error);
-        showError(
-            error.message,
-            error.details,
-            error.errorType,
-            error.formatInfo
-        );
-    });
-
-    messageBus.onPythonEnvironmentChanged((data) => {
-        console.log('🐍 Python environment changed:', data);
-        displayPythonPath(data.pythonPath);
-    });
-
-    messageBus.onUIStateChanged((state) => {
-        console.log('🔄 UI state changed:', state);
-    });
-
-    // Listen for scroll to header messages
-    window.addEventListener('message', (event) => {
-        const message = event.data;
-        if (message.command === 'scrollToHeader') {
-            scrollToHeader(message.headerId, message.headerLabel);
-        }
-    });
-
-    // Add debugging for all message bus communications
-    const originalSendRequest = messageBus.sendRequest.bind(messageBus);
-    messageBus.sendRequest = async function (command, payload, timeout) {
-        console.log('📤 Sending request:', { command, payload, timeout });
-        try {
-            const result = await originalSendRequest(command, payload, timeout);
-            console.log('📥 Request successful:', { command, result });
-            return result;
-        } catch (error) {
-            console.error('📥 Request failed:', { command, error });
-            throw error;
-        }
-    };
-}
 
 // Scroll to header function
 function scrollToHeader(headerId, headerLabel, verticalOffset = 80) {
@@ -1774,7 +1776,7 @@ async function executeShowLogsCommand() {
     } catch (error) {
         console.error('❌ Failed to execute show logs command:', error);
         // Fallback: show a notification to the user
-        showError(
+        displayError(
             'Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"'
         );
     }

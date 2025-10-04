@@ -194,6 +194,10 @@ export class MessageBus {
         this.sendEvent(EVENTS.UI_STATE_CHANGED, state);
     }
 
+    emitScrollToHeader(headerId: string, headerLabel: string): void {
+        this.sendEvent(EVENTS.SCROLL_TO_HEADER, { headerId, headerLabel });
+    }
+
     // Cleanup
     dispose(): void {
         this.pendingRequests.clear();

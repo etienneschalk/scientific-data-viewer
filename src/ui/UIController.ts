@@ -98,10 +98,6 @@ export class UIController {
         this.messageBus.registerRequestHandler('updateHeaders', async (payload) => {
             return this.handleUpdateHeaders(payload.headers);
         });
-
-        this.messageBus.registerRequestHandler('scrollToHeader', async (payload) => {
-            return this.handleScrollToHeader(payload.headerId, payload.headerLabel);
-        });
     }
 
     private setupStateSubscription(): void {
@@ -482,9 +478,24 @@ export class UIController {
         }, context);
     }
 
+    private async handleUpdateHeaders(headers: any[]): Promise<void> {
+        try {
+            // This will be handled by the outline provider when we register it
+            Logger.info(`📋 Received header update with ${headers.length} headers`);
+            // The actual outline update will be handled by the DataViewerPanel
+        } catch (error) {
+            Logger.error(`❌ Error handling header update: ${error}`);
+            throw error;
+        }
+    }
+
     private updateUI(state: AppState): void {
         // Always emit state change event for content updates
         this.messageBus.emitUIStateChanged(state);
+    }
+
+    public scrollToHeader(headerId: string, headerLabel: string): void {
+        this.messageBus.emitScrollToHeader(headerId, headerLabel);
     }
 
     // Public methods for external control
@@ -550,32 +561,5 @@ export class UIController {
         const devMode = config.get('devMode', false);
         const lastLoadTime = this.stateManager.getState().data.lastLoadTime?.toISOString() || null;
         return HTMLGenerator.generateMainHTML(devMode, lastLoadTime);
-    }
-
-    private async handleUpdateHeaders(headers: any[]): Promise<void> {
-        try {
-            // This will be handled by the outline provider when we register it
-            Logger.info(`📋 Received header update with ${headers.length} headers`);
-            // The actual outline update will be handled by the DataViewerPanel
-        } catch (error) {
-            Logger.error(`❌ Error handling header update: ${error}`);
-            throw error;
-        }
-    }
-
-    private async handleScrollToHeader(headerId: string, headerLabel: string): Promise<void> {
-        try {
-            // Send message to webview to scroll to the header
-            this.webview.postMessage({
-                command: 'scrollToHeader',
-                headerId: headerId,
-                headerLabel: headerLabel,
-                documentUri: this.stateManager.getState().data.currentFile
-            });
-            Logger.info(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
-        } catch (error) {
-            Logger.error(`❌ Error scrolling to header: ${error}`);
-            throw error;
-        }
     }
 }

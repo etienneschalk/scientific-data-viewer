@@ -342,18 +342,7 @@ export class DataViewerPanel {
     }
 
     public async scrollToHeader(headerId: string, headerLabel: string): Promise<void> {
-        try {
-            // Send message to webview to scroll to the header
-            this._webviewPanel.webview.postMessage({
-                command: 'scrollToHeader',
-                headerId: headerId,
-                headerLabel: headerLabel
-            });
-            Logger.info(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
-        } catch (error) {
-            Logger.error(`❌ Error scrolling to header: ${error}`);
-            throw error;
-        }
+        this._uiController.scrollToHeader(headerId, headerLabel);
     }
 
     /**

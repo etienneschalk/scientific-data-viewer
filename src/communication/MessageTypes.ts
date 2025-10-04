@@ -186,14 +186,14 @@ export const COMMANDS = {
     REFRESH: 'refresh',
     SHOW_NOTIFICATION: 'showNotification',
     UPDATE_HEADERS: 'updateHeaders',
-    SCROLL_TO_HEADER: 'scrollToHeader'
 } as const;
 
 export const EVENTS = {
     DATA_LOADED: 'dataLoaded',
     ERROR: 'error',
     PYTHON_ENVIRONMENT_CHANGED: 'pythonEnvironmentChanged',
-    UI_STATE_CHANGED: 'uiStateChanged'
+    UI_STATE_CHANGED: 'uiStateChanged',
+    SCROLL_TO_HEADER: 'scrollToHeader',
 } as const;
 
 export type Command = typeof COMMANDS[keyof typeof COMMANDS];
