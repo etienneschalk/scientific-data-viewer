@@ -342,7 +342,7 @@ function displayDataInfo(data, filePath) {
                             )
                             .join(', ')})
                     </div>`
-                        : /*html*/ `<p>No dimensions found in this group.</p>`;
+                        : /*html*/ `<p class="muted-text">No dimensions found in this group.</p>`;
 
                 // Add coordinates for group
                 const coordinates = data.coordinates_flattened[groupName];
@@ -420,7 +420,7 @@ function displayDataInfo(data, filePath) {
                         `;
                               })
                               .join('')
-                        : /*html*/ `<p>No coordinates found in this group.</p>`;
+                        : /*html*/ `<p class="muted-text">No coordinates found in this group.</p>`;
 
                 // Add variables for group
                 const variables = data.variables_flattened[groupName];
@@ -506,7 +506,7 @@ function displayDataInfo(data, filePath) {
                         `;
                               })
                               .join('')
-                        : /*html*/ `<p>No variables found in this group.</p>`;
+                        : /*html*/ `<p class="muted-text">No variables found in this group.</p>`;
 
                 // Add attributes for group
                 const attributes = data.attributes_flattened[groupName];
@@ -533,7 +533,7 @@ function displayDataInfo(data, filePath) {
                         `;
                               })
                               .join('')
-                        : /*html*/ `<p class="attribute-value">No attributes found in this group.</p>`;
+                        : /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
 
                 return /*html*/ `
                 <div class="info-section" id="${joinId([
@@ -672,7 +672,7 @@ function displayHtmlRepresentation(htmlData, isDatatree) {
             container.innerHTML = htmlData;
         }
     } else {
-        container.innerHTML = '<p>Failed to load HTML representation</p>';
+        container.innerHTML = '<p class="muted-text">Failed to load HTML representation</p>';
     }
 }
 
@@ -712,13 +712,10 @@ function displayTextRepresentation(textData, isDatatree = false) {
                 textRepresentation.textContent = value;
             }
         } else {
-            const copyButton = document.getElementById('textCopyButton');
-            copyButton.classList.remove('hidden');
             container.textContent = textData;
         }
     } else {
-        container.textContent = 'Failed to load text representation';
-        copyButton.classList.add('hidden');
+        container.textContent = `<p class="muted-text">Failed to load text representation</p>`;
     }
 }
 
@@ -735,7 +732,6 @@ function renderEmptyTextRepresentationForGroup(prefixId, name) {
                     class="text-copy-button"
                 > 📋 Copy </button>
                 <pre 
-                    class="text-representation" 
                     id="${preId}"
                 ></pre>
             </div>
@@ -747,37 +743,28 @@ function renderEmptyTextRepresentationForGroup(prefixId, name) {
 
 function displayShowVersions(versionsData) {
     const container = document.getElementById('showVersions');
-    const copyButton = document.getElementById('showVersionsCopyButton');
     if (versionsData) {
         container.textContent = versionsData;
-        copyButton.classList.remove('hidden');
     } else {
-        container.textContent = 'Failed to load version information';
-        copyButton.classList.add('hidden');
+        container.textContent = /*html*/ `<p class="muted-text">Failed to load version information</p>`;
     }
 }
 
 function displayPythonPath(pythonPath) {
     const container = document.getElementById('pythonPath');
-    const copyButton = document.getElementById('pythonPathCopyButton');
     if (pythonPath) {
         container.textContent = pythonPath;
-        copyButton.classList.remove('hidden');
     } else {
-        container.textContent = 'No Python interpreter configured';
-        copyButton.classList.add('hidden');
+        container.textContent = /*html*/ `<p class="muted-text">No Python interpreter configured</p>`;
     }
 }
 
 function displayExtensionConfig(configData) {
     const container = document.getElementById('extensionConfig');
-    const copyButton = document.getElementById('extensionConfigCopyButton');
     if (configData) {
         container.textContent = JSON.stringify(configData, null, 2);
-        copyButton.classList.remove('hidden');
     } else {
-        container.textContent = 'Failed to load extension configuration';
-        copyButton.classList.add('hidden');
+        container.textContent = /*html*/ `<p class="muted-text">Failed to load extension configuration</p>`;
     }
 }
 
@@ -982,17 +969,20 @@ function showVariablePlotError(variable, message) {
     const plotError = document.querySelector(
         `.plot-error[data-variable="${variable}"]`
     );
+    const errorMessageId = window.crypto.randomUUID();
     if (plotError) {
-        // Format message to handle multi-line errors
-        const formattedMessage = message.replace(/\n/g, '<br>');
         plotError.innerHTML = /*html*/ `
-            <div class="error-content">
-                <button class="error-copy-button" data-variable="${variable}" title="Copy error message">
-                    📋 Copy
-                </button>
-                <div class="error-message">${formattedMessage}</div>
+            <div>
+                <button 
+                    class="text-copy-button" 
+                    data-target-id="${errorMessageId}" 
+                    title="Copy error message"
+                >📋 Copy</button>
+                <pre id="${errorMessageId}"></pre>
             </div>
         `;
+        const textRepresentation = document.getElementById(errorMessageId);
+        textRepresentation.textContent = message;
         plotError.classList.remove('hidden');
         plotError.classList.remove('success');
         plotError.classList.add('error');
@@ -1126,56 +1116,6 @@ async function openVariablePlot(variable) {
             variable,
             'Failed to open plot: ' + error.message
         );
-    }
-}
-
-async function copyPlotError(variable) {
-    try {
-        const plotError = document.querySelector(
-            `.plot-error[data-variable="${variable}"]`
-        );
-        if (!plotError) {
-            return;
-        }
-
-        const errorMessage = plotError.querySelector('.error-message');
-        if (!errorMessage) {
-            return;
-        }
-
-        // Get the HTML content and convert <br> tags to newlines
-        const htmlContent = errorMessage.innerHTML || '';
-        const textContent = htmlContent.replace(/<br\s*\/?>/gi, '\n');
-
-        await navigator.clipboard.writeText(textContent);
-
-        // Show feedback
-        const copyButton = plotError.querySelector('.error-copy-button');
-        if (copyButton) {
-            const originalText = copyButton.textContent;
-            copyButton.textContent = '✓ Copied!';
-            copyButton.style.color = '#4caf50';
-
-            // Reset after 2 seconds
-            setTimeout(() => {
-                copyButton.textContent = originalText;
-                copyButton.style.color = '';
-            }, 2000);
-        }
-    } catch (error) {
-        console.error('Failed to copy error message:', error);
-        // Fallback: show the error message in an alert
-        const plotError = document.querySelector(
-            `.plot-error[data-variable="${variable}"]`
-        );
-        if (plotError) {
-            const errorMessage = plotError.querySelector('.error-message');
-            if (errorMessage) {
-                const htmlContent = errorMessage.innerHTML || '';
-                const textContent = htmlContent.replace(/<br\s*\/?>/gi, '\n');
-                alert('Error message:\n\n' + textContent);
-            }
-        }
     }
 }
 
@@ -1581,30 +1521,25 @@ function setupEventListeners() {
         } else if (e.target.classList.contains('open-plot')) {
             const variable = e.target.getAttribute('data-variable');
             await openVariablePlot(variable);
-        } else if (e.target.classList.contains('error-copy-button')) {
-            const variable = e.target.getAttribute('data-variable');
-            await copyPlotError(variable);
         } else if (e.target.classList.contains('text-copy-button')) {
             const button = e.target;
             const text = document.getElementById(
                 button.dataset.targetId
             )?.textContent;
-            if (text) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    button.textContent = '✓ Copied!';
-                    button.classList.add('copied');
-                    setTimeout(() => {
-                        button.textContent = '📋 Copy';
-                        button.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy text representation:', err);
-                    button.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        button.textContent = '📋 Copy';
-                    }, 2000);
-                }
+            try {
+                await navigator.clipboard.writeText(text);
+                button.textContent = '✓ Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = '📋 Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text representation:', err);
+                button.textContent = '❌ Failed';
+                setTimeout(() => {
+                    button.textContent = '📋 Copy';
+                }, 2000);
             }
         }
     });
@@ -1636,137 +1571,6 @@ function setupEventListeners() {
             } catch (error) {
                 console.error('Failed to refresh data:', error);
                 showError('Failed to refresh data: ' + error.message);
-            }
-        });
-    }
-
-    // Copy event listeners
-    setupCopyEventListeners();
-}
-
-function setupCopyEventListeners() {
-    // File path copy button
-    const copyPathButton = document.getElementById('copyPathButton');
-    if (copyPathButton) {
-        copyPathButton.addEventListener('click', async () => {
-            const filePathCode = document.getElementById('filePathCode');
-            const filePath = filePathCode ? filePathCode.textContent : '';
-
-            if (filePath) {
-                try {
-                    await navigator.clipboard.writeText(filePath);
-                    copyPathButton.textContent = '✓ Copied!';
-                    copyPathButton.classList.add('copied');
-                    setTimeout(() => {
-                        copyPathButton.textContent = '📋 Copy';
-                        copyPathButton.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy file path:', err);
-                    copyPathButton.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        copyPathButton.textContent = '📋 Copy';
-                    }, 2000);
-                }
-            }
-        });
-    }
-
-    // Python path copy button
-    const pythonPathCopyButton = document.getElementById(
-        'pythonPathCopyButton'
-    );
-    if (pythonPathCopyButton) {
-        pythonPathCopyButton.addEventListener('click', async () => {
-            const pythonPath = document.getElementById('pythonPath');
-            const text = pythonPath ? pythonPath.textContent : '';
-
-            if (
-                text &&
-                text !== 'Loading Python path...' &&
-                text !== 'No Python interpreter configured'
-            ) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    pythonPathCopyButton.textContent = '✓ Copied!';
-                    pythonPathCopyButton.classList.add('copied');
-                    setTimeout(() => {
-                        pythonPathCopyButton.textContent = '📋 Copy';
-                        pythonPathCopyButton.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy Python path:', err);
-                    pythonPathCopyButton.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        pythonPathCopyButton.textContent = '📋 Copy';
-                    }, 2000);
-                }
-            }
-        });
-    }
-
-    // Extension config copy button
-    const extensionConfigCopyButton = document.getElementById(
-        'extensionConfigCopyButton'
-    );
-    if (extensionConfigCopyButton) {
-        extensionConfigCopyButton.addEventListener('click', async () => {
-            const extensionConfig = document.getElementById('extensionConfig');
-            const text = extensionConfig ? extensionConfig.textContent : '';
-
-            if (
-                text &&
-                text !== 'Loading configuration...' &&
-                text !== 'Failed to load extension configuration'
-            ) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    extensionConfigCopyButton.textContent = '✓ Copied!';
-                    extensionConfigCopyButton.classList.add('copied');
-                    setTimeout(() => {
-                        extensionConfigCopyButton.textContent = '📋 Copy';
-                        extensionConfigCopyButton.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy extension config:', err);
-                    extensionConfigCopyButton.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        extensionConfigCopyButton.textContent = '📋 Copy';
-                    }, 2000);
-                }
-            }
-        });
-    }
-
-    // Show versions copy button
-    const showVersionsCopyButton = document.getElementById(
-        'showVersionsCopyButton'
-    );
-    if (showVersionsCopyButton) {
-        showVersionsCopyButton.addEventListener('click', async () => {
-            const showVersions = document.getElementById('showVersions');
-            const text = showVersions ? showVersions.textContent : '';
-
-            if (
-                text &&
-                text !== 'Loading version information...' &&
-                text !== 'Failed to load version information'
-            ) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showVersionsCopyButton.textContent = '✓ Copied!';
-                    showVersionsCopyButton.classList.add('copied');
-                    setTimeout(() => {
-                        showVersionsCopyButton.textContent = '📋 Copy';
-                        showVersionsCopyButton.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy version information:', err);
-                    showVersionsCopyButton.textContent = '❌ Failed';
-                    setTimeout(() => {
-                        showVersionsCopyButton.textContent = '📋 Copy';
-                    }, 2000);
-                }
             }
         });
     }

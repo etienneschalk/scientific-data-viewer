@@ -91,9 +91,9 @@ export class HTMLGenerator {
         return /*html*/ `
         <div class="info-section">
             <details class="sticky-group-details" open id="section-file-information"> <summary><h3>File Information</h3></summary>
-                <div id="filePathContainer" class="file-path-container hidden">
+                <div id="filePathContainer" class="file-path-container">
                     <p><strong>File Path:</strong></p>
-                    <button id="copyPathButton" class="copy-button">
+                    <button data-target-id="filePathCode" class="text-copy-button">
                     📋 Copy
                     </button>
                     <code id="filePathCode" class="file-path-code"></code>
@@ -106,7 +106,7 @@ export class HTMLGenerator {
     static generateDimensionsAndVariables(): string {
         return /*html*/ `
         <!-- This is for datatree groups -->
-        <div id="group-info-container" class="group-info-container hidden"></div>
+        <div id="group-info-container" class="group-info-container"></div>
         `;
     }
 
@@ -121,7 +121,7 @@ export class HTMLGenerator {
 
     static generateHtmlRepresentationForGroups(): string {
         return /*html*/ `
-        <div class="info-section hidden">
+        <div class="info-section">
             <details class="sticky-group-details" id="section-html-representation-for-groups"> <summary><h3>Xarray HTML Representation (for each group)</h3></summary>
                 <div id="htmlRepresentationForGroups" class="html-representation-for-groups"></div>
             </details>
@@ -134,10 +134,10 @@ export class HTMLGenerator {
             <details class="sticky-group-details" id="section-text-representation"> 
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
-                    <button id="textCopyButton" data-target-id="textRepresentation" class="text-copy-button hidden">
+                    <button data-target-id="textRepresentation" class="text-copy-button">
                         📋 Copy
                     </button>
-                    <div id="textRepresentation" class="text-representation"></div>
+                    <pre id="textRepresentation" class="text-representation"></pre>
                 </div>
             </details>
         </div>`;
@@ -145,7 +145,7 @@ export class HTMLGenerator {
 
     static generateTextRepresentationForGroups(): string {
         return /*html*/ `
-        <div class="info-section hidden">
+        <div class="info-section">
             <details class="sticky-group-details" id="section-text-representation-for-groups"> 
             <summary><h3>Xarray Text Representation (for each group)</h3></summary>
                 <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
@@ -161,34 +161,28 @@ export class HTMLGenerator {
                 <div class="info-section">
                     <details open>
                         <summary>Python Interpreter Path</summary>
-                            <button id="pythonPathCopyButton" class="troubleshooting-copy-button hidden">
+                            <button data-target-id="pythonPath" class="text-copy-button">
                                 📋 Copy
                             </button>
-                            <div id="pythonPath" class="troubleshooting-content">
-                                Loading Python path...
-                            </div>
+                            <pre id="pythonPath">Loading Python path... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxXXXXXXXXXXXxx</pre>
                     </details>
                 </div>
                 <div class="info-section">
                     <details open>
                         <summary>Extension Configuration</summary>
-                            <button id="extensionConfigCopyButton" class="troubleshooting-copy-button hidden">
+                            <button data-target-id="extensionConfig" class="text-copy-button">
                                 📋 Copy
                             </button>
-                            <div id="extensionConfig" class="troubleshooting-content">
-                                Loading configuration...
-                            </div>
+                            <pre id="extensionConfig">Loading configuration...</pre>
                     </details>
                 </div>
                 <div class="info-section">
                     <details open>
                         <summary>Show xarray version information</summary>
-                            <button id="showVersionsCopyButton" class="troubleshooting-copy-button hidden">
+                            <button data-target-id="showVersions" class="text-copy-button">
                                 📋 Copy
                             </button>
-                            <div id="showVersions" class="troubleshooting-content">
-                                Loading version information...
-                            </div>
+                            <pre id="showVersions">Loading version information...</pre>
                     </details>
                 </div>
             </details>
