@@ -15,10 +15,10 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     readonly onDidChangeTreeData: vscode.Event<HeaderItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private headers: HeaderItem[] = [];
-    private currentFile: vscode.Uri | undefined;
-    private fileHeaders: Map<string, HeaderItem[]> = new Map();
+    private currentPanelId: number | undefined;
+    private headersToPanelId: Map<number, HeaderItem[]> = new Map();
     private treeView: vscode.TreeView<HeaderItem> | undefined;
-    private expandedStates: Map<string, Set<string>> = new Map(); // filePath -> Set of expanded item IDs
+    private expandedStates: Map<number, Set<string>> = new Map(); // panelId -> Set of expanded item IDs
 
     constructor() {
         Logger.info('📋 OutlineProvider initialized');
@@ -27,7 +27,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     /**
      * Set the tree view reference for collapse/expand operations
      */
-    setTreeView(treeView: vscode.TreeView<HeaderItem>): void {
+    public setTreeView(treeView: vscode.TreeView<HeaderItem>): void {
         this.treeView = treeView;
         
         // Set up event listeners for expand/collapse state tracking
@@ -44,15 +44,21 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this._onDidChangeTreeData.fire();
     }
 
-    updateHeaders(headers: HeaderItem[], fileUri: vscode.Uri): void {
+    updateHeaders(currentPanelId: number, headers: HeaderItem[]): void {
         this.headers = headers;
-        this.currentFile = fileUri;
-        this.fileHeaders.set(fileUri.fsPath, headers);
-        Logger.info(`📋 Updated outline with ${headers.length} headers for file: ${fileUri.fsPath}`);
+        this.currentPanelId = currentPanelId;
+        this.headersToPanelId.set(currentPanelId, headers);
+        Logger.info(`📋 Updated outline with ${headers.length} headers for panel with ID: ${currentPanelId}`);
         this.refresh();
     }
 
     getTreeItem(element: HeaderItem): vscode.TreeItem {
+        const currentPanelId = this.currentPanelId;
+        if (currentPanelId === undefined) {
+            Logger.warn('📋 No current panel ID found');
+            return new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
+        }
+
         // Determine the initial collapse state based on saved state
         let collapsibleState = vscode.TreeItemCollapsibleState.None;
         if (element.children.length > 0) {
@@ -97,9 +103,8 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         treeItem.contextValue = `header-${element.level}`;
 
         // Set ID based on active pane ID and element properties
-        const activePaneId = this.getActivePaneId();
         const sanitizedLabel = this.sanitizeLabel(element.label);
-        const uniqueId = this.generateUniqueId(activePaneId, element.level, sanitizedLabel, element);
+        const uniqueId = this.generateUniqueId(currentPanelId, element.level, sanitizedLabel, element);
         treeItem.id = uniqueId;
 
         return treeItem;
@@ -130,68 +135,46 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         return findParent(this.headers, element);
     }
 
-    clear(fileUri: vscode.Uri | undefined): void {
-        this.clearFileHeadersForFile(fileUri);
-        this.clearExpandedStateForFile(fileUri);
+    clear(panelId: number): void {
+        this.clearFileHeadersForPanel(panelId);
+        this.clearExpandedStateForPanel(panelId);
     }
 
-    getCurrentFile(): vscode.Uri | undefined {
-        return this.currentFile;
+    public getCurrentPanelId(): number | undefined {
+        return this.currentPanelId;
     }
 
     /**
      * Switch to display headers for a different file
      */
-    switchToFile(fileUri: vscode.Uri): void {
-        if (!fileUri || !fileUri.fsPath) {
-            Logger.warn(`📋 Invalid fileUri provided to switchToFile`);
-            return;
-        }
+    switchToPanel(panelId: number): void {
+        const headers = this.headersToPanelId.get(panelId);
         
-        const filePath = fileUri.fsPath;
-        const headers = this.fileHeaders.get(filePath);
-        
+        this.currentPanelId = panelId;
+
         if (headers) {
             this.headers = headers;
-            this.currentFile = fileUri;
-            Logger.info(`📋 Switched outline to file: ${filePath}`);
+            Logger.info(`📋 Switched outline to panel with ID: ${panelId}`);
             
             // Restore expanded state after a short delay to ensure tree view is ready
             setTimeout(() => {
-                this.restoreExpandedState(filePath);
+                this.restoreExpandedState(panelId);
             }, 100);
             
             this.refresh();
         } else {
             // If no headers are cached for this file, clear the outline
             this.headers = [];
-            this.currentFile = fileUri;
-            Logger.info(`📋 No cached headers for file: ${filePath}, clearing outline`);
+            Logger.info(`📋 No cached headers for panel with ID: ${panelId}, clearing outline`);
             this.refresh();
         }
     }
 
     /**
-     * Check if a file is supported for outline display
-     */
-    isFileSupported(fileUri: vscode.Uri): boolean {
-        if (!fileUri || !fileUri.path) {
-            return false;
-        }
-        
-        const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
-        const fileExtension = fileUri.path.split('.').pop()?.toLowerCase();
-        return fileExtension ? supportedExtensions.includes(`.${fileExtension}`) : false;
-    }
-
-    /**
      * Get headers for a specific file without switching to it
      */
-    getHeadersForFile(fileUri: vscode.Uri): HeaderItem[] | undefined {
-        if (!fileUri || !fileUri.fsPath) {
-            return undefined;
-        }
-        return this.fileHeaders.get(fileUri.fsPath);
+    getHeadersForPanel(panelId: number): HeaderItem[] | undefined {
+        return this.headersToPanelId.get(panelId);
     }
 
     /**
@@ -208,19 +191,18 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         const expandableElements = allElements.filter(element => element.children.length > 0);
 
         // Add all expandable elements to the expanded state for the current file
-        if (this.currentFile) {
-            const filePath = this.currentFile.fsPath;
-            if (!this.expandedStates.has(filePath)) {
-                this.expandedStates.set(filePath, new Set());
+        if (this.currentPanelId) {
+            if (!this.expandedStates.has(this.currentPanelId)) {
+                this.expandedStates.set(this.currentPanelId, new Set());
             }
             
-            const expandedSet = this.expandedStates.get(filePath)!;
+            const expandedSet = this.expandedStates.get(this.currentPanelId)!;
             expandableElements.forEach(element => {
                 const elementId = this.getElementId(element);
                 expandedSet.add(elementId);
             });
             
-            Logger.info(`📋 Added ${expandableElements.length} items to expanded state for file: ${filePath}`);
+            Logger.info(`📋 Added ${expandableElements.length} items to expanded state for panel with ID: ${this.currentPanelId}`);
         }
 
         // Expand all elements by revealing them with expand: true
@@ -252,22 +234,6 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         
         collectElements(headers);
         return elements;
-    }
-
-    /**
-     * Get the active pane ID for the current file
-     */
-    private getActivePaneId(): number {
-        if (!this.currentFile) {
-            return 0; // Default ID when no current file
-        }
-
-        const activePanel = DataViewerPanel.getActivePanel(this.currentFile);
-        if (activePanel) {
-            return activePanel.getId();
-        }
-
-        return 0; // Default ID when no active panel found
     }
 
     /**
@@ -332,31 +298,29 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      * Save the expanded state of an element
      */
     private saveExpandedState(element: HeaderItem): void {
-        if (!this.currentFile) {return;}
+        if (!this.currentPanelId) {return;}
         
-        const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);
         
-        if (!this.expandedStates.has(filePath)) {
-            this.expandedStates.set(filePath, new Set());
+        if (!this.expandedStates.has(this.currentPanelId)) {
+            this.expandedStates.set(this.currentPanelId, new Set());
         }
         
-        this.expandedStates.get(filePath)!.add(elementId);
-        Logger.debug(`📋 Saved expanded state for element: ${elementId} in file: ${filePath}`);
+        this.expandedStates.get(this.currentPanelId)!.add(elementId);
+        Logger.debug(`📋 Saved expanded state for element: ${elementId} in panel with ID: ${this.currentPanelId}`);
     }
 
     /**
      * Save the collapsed state of an element
      */
     private saveCollapsedState(element: HeaderItem): void {
-        if (!this.currentFile) {return;}
+        if (!this.currentPanelId) {return;}
         
-        const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);
         
-        if (this.expandedStates.has(filePath)) {
-            this.expandedStates.get(filePath)!.delete(elementId);
-            Logger.debug(`📋 Saved collapsed state for element: ${elementId} in file: ${filePath}`);
+        if (this.expandedStates.has(this.currentPanelId)) {
+            this.expandedStates.get(this.currentPanelId)!.delete(elementId);
+            Logger.debug(`📋 Saved collapsed state for element: ${elementId} in panel with ID: ${this.currentPanelId}`);
         }
     }
 
@@ -364,38 +328,36 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      * Check if an element should be expanded based on saved state
      */
     private isItemExpanded(element: HeaderItem): boolean {
-        if (!this.currentFile) {return false;}
+        if (!this.currentPanelId) {return false;}
         
-        const filePath = this.currentFile.fsPath;
         const elementId = this.getElementId(element);
         
-        return this.expandedStates.has(filePath) && 
-               this.expandedStates.get(filePath)!.has(elementId);
+        return this.expandedStates.has(this.currentPanelId) && 
+               this.expandedStates.get(this.currentPanelId)!.has(elementId);
     }
 
     /**
      * Get a unique identifier for an element
      */
     private getElementId(element: HeaderItem): string {
-        const activePaneId = this.getActivePaneId();
         const sanitizedLabel = this.sanitizeLabel(element.label);
-        return this.generateUniqueId(activePaneId, element.level, sanitizedLabel, element);
+        return this.generateUniqueId(this.currentPanelId!, element.level, sanitizedLabel, element);
     }
 
     /**
      * Restore the expanded state for a file
      */
-    private restoreExpandedState(filePath: string, forceExpand: boolean = true): void {
-        if (!this.treeView || !this.expandedStates.has(filePath)) {
+    private restoreExpandedState(panelId: number, forceExpand: boolean = true): void {
+        if (!this.treeView || !this.expandedStates.has(panelId)) {
             return;
         }
 
-        const expandedIds = this.expandedStates.get(filePath)!;
+        const expandedIds = this.expandedStates.get(panelId)!;
         if (expandedIds.size === 0) {
             return;
         }
 
-        Logger.debug(`📋 Restoring expanded state for ${expandedIds.size} elements in file: ${filePath}`);
+        Logger.debug(`📋 Restoring expanded state for ${expandedIds.size} elements in panel with ID: ${panelId}`);
 
         // Find and expand all elements that should be expanded
         const allElements = this.getAllElements(this.headers);
@@ -414,22 +376,21 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     /**
      * Clear expanded state for a specific file (public method)
      */
-    private clearExpandedStateForFile(fileUri: vscode.Uri | undefined): void {
-        if (!fileUri || !fileUri.fsPath) {
-            Logger.warn(`📋 Invalid fileUri provided to clearExpandedStateForFile`);
+    private clearExpandedStateForPanel(panelId: number): void {
+        if (!panelId) {
+            Logger.warn(`📋 Invalid panelId provided to clearExpandedStateForPanel`);
             return;
         }
         
-        const filePath = fileUri.fsPath;
-        this.expandedStates.delete(filePath);
-        Logger.info(`📋 Cleared expanded state for file: ${filePath}`);
+        this.expandedStates.delete(panelId);
+        Logger.info(`📋 Cleared expanded state for panel with ID: ${panelId}`);
     }
 
-    private clearFileHeadersForFile(fileUri: vscode.Uri | undefined): void {
-        if (!fileUri || !fileUri.fsPath) {
-            Logger.warn(`📋 Invalid fileUri provided to clearFileHeadersForFile`);
+    private clearFileHeadersForPanel(panelId: number): void {
+        if (!panelId) {
+            Logger.warn(`📋 Invalid panelId provided to clearFileHeadersForPanel`);
             return;
         }
-        this.fileHeaders.delete(fileUri.fsPath);
+        this.headersToPanelId.delete(panelId);
     }
 }

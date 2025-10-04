@@ -6,11 +6,13 @@ import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
 
-class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvider {
+class ScientificDataEditorProvider
+    implements vscode.CustomReadonlyEditorProvider
+{
     constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly dataProcessor: DataProcessor
-    ) { }
+    ) {}
 
     public async openCustomDocument(
         uri: vscode.Uri,
@@ -23,8 +25,10 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
         return {
             uri: uri,
             dispose: () => {
-                Logger.info(`🚚 📕 Disposing custom document for: ${uri.fsPath}`);
-            }
+                Logger.info(
+                    `🚚 📕 Disposing custom document for: ${uri.fsPath}`
+                );
+            },
         };
     }
 
@@ -33,20 +37,31 @@ class ScientificDataEditorProvider implements vscode.CustomReadonlyEditorProvide
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
-        Logger.info(`🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`);
+        Logger.info(
+            `🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`
+        );
 
         // Wait for Python initialization to complete before creating the panel
         // This prevents the race condition where file opening happens before Python validation
         try {
             await this.dataProcessor.pythonManagerInstance.waitForInitialization();
-            Logger.info(`🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`);
+            Logger.info(
+                `🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`
+            );
         } catch (error) {
-            Logger.warn(`🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`);
+            Logger.warn(
+                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
+            );
         }
 
         // Reuse the provided webviewPanel instead of creating a new one
         // This eliminates the flickering issue
-        DataViewerPanel.create(this.context.extensionUri, webviewPanel, document.uri, this.dataProcessor);
+        DataViewerPanel.create(
+            this.context.extensionUri,
+            webviewPanel,
+            document.uri,
+            this.dataProcessor
+        );
     }
 }
 
@@ -58,19 +73,26 @@ export function activate(context: vscode.ExtensionContext) {
     const errorBoundary = ErrorBoundary.getInstance();
     errorBoundary.registerGlobalHandler((error, context) => {
         Logger.error(`Global error: ${error.message}`);
-        vscode.window.showErrorMessage(`Scientific Data Viewer Error: ${error.message}`);
+        vscode.window.showErrorMessage(
+            `Scientific Data Viewer Error: ${error.message}`
+        );
     });
 
     // Get configuration schema from extension manifest
-    const extension = vscode.extensions.getExtension('eschalk0.scientific-data-viewer') || vscode.extensions.getExtension(context.extension.id);
+    const extension =
+        vscode.extensions.getExtension('eschalk0.scientific-data-viewer') ||
+        vscode.extensions.getExtension(context.extension.id);
     const packageJson = extension?.packageJSON;
-    const configSchema = packageJson?.contributes?.configuration?.properties || {};
+    const configSchema =
+        packageJson?.contributes?.configuration?.properties || {};
 
     // Helper function to format configuration value based on type
     function formatConfigValue(key: string, value: any): string {
         const fullKey = `scientificDataViewer.${key}`;
         const schema = configSchema[fullKey];
-        if (!schema) {return String(value);}
+        if (!schema) {
+            return String(value);
+        }
 
         switch (schema.type) {
             case 'boolean':
@@ -92,43 +114,56 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Set up configuration change listener for all Scientific Data Viewer settings
-    const configListener = vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration('scientificDataViewer')) {
-            Logger.info('Scientific Data Viewer configuration changed');
+    const configListener = vscode.workspace.onDidChangeConfiguration(
+        (event) => {
+            if (event.affectsConfiguration('scientificDataViewer')) {
+                Logger.info('Scientific Data Viewer configuration changed');
 
-            const config = vscode.workspace.getConfiguration('scientificDataViewer');
-            const changedSettings: string[] = [];
+                const config = vscode.workspace.getConfiguration(
+                    'scientificDataViewer'
+                );
+                const changedSettings: string[] = [];
 
-            // Check each configuration property for changes
-            for (const [fullKey, schema] of Object.entries(configSchema)) {
-                // Extract the property name from the full key (e.g., "scientificDataViewer.devMode" -> "devMode")
-                const key = fullKey.replace('scientificDataViewer.', '');
+                // Check each configuration property for changes
+                for (const [fullKey, schema] of Object.entries(configSchema)) {
+                    // Extract the property name from the full key (e.g., "scientificDataViewer.devMode" -> "devMode")
+                    const key = fullKey.replace('scientificDataViewer.', '');
 
-                if (event.affectsConfiguration(fullKey)) {
-                    const value = config.get(key);
-                    const formattedValue = formatConfigValue(key, value);
-                    const description = getConfigDescription(key);
+                    if (event.affectsConfiguration(fullKey)) {
+                        const value = config.get(key);
+                        const formattedValue = formatConfigValue(key, value);
+                        const description = getConfigDescription(key);
 
-                    Logger.info(`${key} is now: ${value}`);
-                    changedSettings.push(`${description} is now ${formattedValue}`);
+                        Logger.info(`${key} is now: ${value}`);
+                        changedSettings.push(
+                            `${description} is now ${formattedValue}`
+                        );
+                    }
+                }
+
+                if (changedSettings.length > 0) {
+                    // Show specific notification for changed settings
+                    const message =
+                        changedSettings.length === 1
+                            ? `Configuration updated: ${changedSettings[0]}`
+                            : `Configuration updated:\n• ${changedSettings.join(
+                                  '\n• '
+                              )}`;
+
+                    vscode.window
+                        .showInformationMessage(message, 'OK', 'Show Settings')
+                        .then((selection) => {
+                            if (selection === 'Show Settings') {
+                                vscode.commands.executeCommand(
+                                    'workbench.action.openSettings',
+                                    'scientificDataViewer'
+                                );
+                            }
+                        });
                 }
             }
-
-            if (changedSettings.length > 0) {
-                // Show specific notification for changed settings
-                const message = changedSettings.length === 1
-                    ? `Configuration updated: ${changedSettings[0]}`
-                    : `Configuration updated:\n• ${changedSettings.join('\n• ')}`;
-
-                vscode.window.showInformationMessage(message,
-                    'OK', 'Show Settings',).then(selection => {
-                        if (selection === 'Show Settings') {
-                            vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
-                        }
-                    });
-            }
         }
-    });
+    );
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
@@ -144,39 +179,66 @@ export function activate(context: vscode.ExtensionContext) {
         // Create a mock PythonManager for testing or when Python extension is not available
         pythonManager = {
             isReady: () => false,
-            executePythonScript: async () => { throw new Error('Python environment not available'); },
-            executePythonFile: async () => { throw new Error('Python environment not available'); },
+            executePythonScript: async () => {
+                throw new Error('Python environment not available');
+            },
+            executePythonFile: async () => {
+                throw new Error('Python environment not available');
+            },
             getPythonPath: () => undefined,
             getCurrentPythonPath: () => undefined,
-            forceReinitialize: async () => { },
+            forceReinitialize: async () => {},
             getCurrentInterpreterPath: async () => undefined,
-            setupInterpreterChangeListener: async () => undefined
+            setupInterpreterChangeListener: async () => undefined,
         } as any;
         dataProcessor = new DataProcessor(pythonManager);
-        Logger.warn('🚨 Extension initialized with mock Python manager (Python extension not available)');
+        Logger.warn(
+            '🚨 Extension initialized with mock Python manager (Python extension not available)'
+        );
     }
 
     // Create status bar item for Python interpreter (hidden by default)
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.tooltip = 'Current Python interpreter for Scientific Data Viewer';
+    const statusBarItem = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Right,
+        100
+    );
+    statusBarItem.tooltip =
+        'Current Python interpreter for Scientific Data Viewer';
     statusBarItem.text = '$(python) Python: Not Set';
     // Don't show by default - only show when interpreter is selected
 
-
     // Register custom editor providers
     Logger.info('🔧 Registering custom editor providers...');
-    const netcdfEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
-    const hdf5EditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
-    const zarrEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
-    const gribEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
-    const geotiffEditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
-    const jp2EditorProvider = new ScientificDataEditorProvider(context, dataProcessor);
+    const netcdfEditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
+    const hdf5EditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
+    const zarrEditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
+    const gribEditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
+    const geotiffEditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
+    const jp2EditorProvider = new ScientificDataEditorProvider(
+        context,
+        dataProcessor
+    );
 
     const options = {
         webviewOptions: {
             retainContextWhenHidden: true,
             enableFindWidget: true,
-        }
+        },
     };
     const netcdfEditorRegistration = vscode.window.registerCustomEditorProvider(
         'netcdfEditor',
@@ -202,11 +264,12 @@ export function activate(context: vscode.ExtensionContext) {
         options
     );
 
-    const geotiffEditorRegistration = vscode.window.registerCustomEditorProvider(
-        'geotiffEditor',
-        geotiffEditorProvider,
-        options
-    );
+    const geotiffEditorRegistration =
+        vscode.window.registerCustomEditorProvider(
+            'geotiffEditor',
+            geotiffEditorProvider,
+            options
+        );
 
     const jp2EditorRegistration = vscode.window.registerCustomEditorProvider(
         'jp2Editor',
@@ -222,33 +285,73 @@ export function activate(context: vscode.ExtensionContext) {
         async (uri?: vscode.Uri) => {
             Logger.info('🎮 👁️ Command: Open data viewer...');
             if (uri) {
-                Logger.info(`🎮 🔧 Opening data viewer for file: ${uri.fsPath}`);
-                await DataViewerPanel.createFromScratchOrShow(context.extensionUri, uri, dataProcessor);
+                Logger.info(
+                    `🎮 🔧 Opening data viewer for file: ${uri.fsPath}`
+                );
+                await DataViewerPanel.createFromScratchOrShow(
+                    context.extensionUri,
+                    uri,
+                    dataProcessor
+                );
             } else {
-                Logger.info('🎮 🔧 Opening file selection dialog for data viewer');
-                const fileUri = await vscode.window.showOpenDialog({
+                Logger.info(
+                    '🎮 🔧 Opening file selection dialog for data viewer'
+                );
+                const fileUriList = await vscode.window.showOpenDialog({
                     canSelectFiles: true,
-                    canSelectFolders: false,
+                    // TODO eschalk create command dedicated to selecting folders (Zarr)
+                    canSelectFolders: false, // XXX seems mutually exclusive with canSelectFiles 
+                    canSelectMany: true, // TODO eschalk to test
                     filters: {
-                        'Scientific Data Files': ['nc', 'netcdf', 'zarr', 'h5', 'hdf5', 'grib', 'grib2', 'tif', 'tiff', 'geotiff', 'jp2', 'jpeg2000', 'safe', 'nc4', 'cdf']
-                    }
+                        // Note: Update this list to match the supported file types in package.json
+                        "Scientific Data Files": [
+                            'nc',
+                            'netcdf',
+                            'nc4',
+                            'cdf',
+                            'zarr',
+                            'h5',
+                            'hdf5',
+                            'grib',
+                            'grib2',
+                            'tif',
+                            'tiff',
+                            'geotiff',
+                            'jp2',
+                            'jpeg2000',
+                        ],
+                        NetCDF: ['nc', 'netcdf', 'nc4', 'cdf'],
+                        Zarr: ['zarr'],
+                        HDF5: ['h5', 'hdf5'],
+                        GRIB: ['grib', 'grib2', 'grb'],
+                        GeoTIFF: ['tif', 'tiff', 'geotiff'],
+                        'JPEG-2000': ['jp2', 'jpeg2000'],
+                    },
                 });
-                if (fileUri && fileUri[0]) {
-                    Logger.info(`🎮 🔧 File selected for data viewer: ${fileUri[0].fsPath}`);
-                    await DataViewerPanel.createFromScratchOrShow(context.extensionUri, fileUri[0], dataProcessor);
-                }
+                fileUriList?.forEach(async (fileUri) => {
+                    Logger.info(
+                        `🎮 🔧 File selected for data viewer: ${fileUri.fsPath}`
+                    );
+                    await DataViewerPanel.createFromScratchOrShow(
+                        context.extensionUri,
+                        fileUri,
+                        dataProcessor
+                    );
+                });
             }
         }
     );
 
-
-
     const refreshPythonEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.refreshPythonEnvironment',
         async () => {
-            Logger.info('🎮 🔄 Command: Manually refreshing Python environment...');
+            Logger.info(
+                '🎮 🔄 Command: Manually refreshing Python environment...'
+            );
             await refreshPython(pythonManager, statusBarItem);
-            vscode.window.showInformationMessage('Python environment refreshed!');
+            vscode.window.showInformationMessage(
+                'Python environment refreshed!'
+            );
         }
     );
 
@@ -260,30 +363,41 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-
     const showSettingsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.showSettings',
         () => {
-            Logger.info('🎮 ⚙️ Command: Opening Scientific Data Viewer settings...');
-            vscode.commands.executeCommand('workbench.action.openSettings', 'scientificDataViewer');
+            Logger.info(
+                '🎮 ⚙️ Command: Opening Scientific Data Viewer settings...'
+            );
+            vscode.commands.executeCommand(
+                'workbench.action.openSettings',
+                'scientificDataViewer'
+            );
         }
     );
 
     const openDeveloperToolsCommand = vscode.commands.registerCommand(
         'scientificDataViewer.openDeveloperTools',
         () => {
-            Logger.info('🎮 🔧 Command: Opening developer tools for WebView...');
+            Logger.info(
+                '🎮 🔧 Command: Opening developer tools for WebView...'
+            );
             // This will open the developer tools for the currently active WebView
-            vscode.commands.executeCommand('workbench.action.webview.openDeveloperTools');
+            vscode.commands.executeCommand(
+                'workbench.action.webview.openDeveloperTools'
+            );
         }
     );
 
     // Register outline provider
     const outlineProvider = new OutlineProvider();
-    const outlineTreeView = vscode.window.createTreeView('scientificDataViewer.outline', {
-        treeDataProvider: outlineProvider,
-        showCollapseAll: true
-    });
+    const outlineTreeView = vscode.window.createTreeView(
+        'scientificDataViewer.outline',
+        {
+            treeDataProvider: outlineProvider,
+            showCollapseAll: true,
+        }
+    );
 
     // Set tree view reference for collapse/expand operations
     outlineProvider.setTreeView(outlineTreeView);
@@ -298,23 +412,28 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.scrollToHeader',
         async (headerId: string, headerLabel: string) => {
             // We can only manage one file at a time, so we need to get the current file from the outline provider
-            let targetUri = outlineProvider.getCurrentFile();
-            
-            if (!targetUri || !targetUri.fsPath) {
-                Logger.warn(`🎮 📋 No valid documentUri available for scrollToHeader command`);
+            let currentPanelId = outlineProvider.getCurrentPanelId();
+
+            if (!currentPanelId) {
+                Logger.warn(
+                    `🎮 📋 No valid documentUri available for scrollToHeader command`
+                );
                 return;
             }
-            
-            Logger.info(`🎮 📋 Command: Scrolling to header ${headerLabel} (${headerId}) for file: ${targetUri.fsPath}`);
-            
-        // Find the active DataViewerPanel and scroll to the header
-        const activePanel = DataViewerPanel.getActivePanel(targetUri);
-        if (activePanel) {
-            await activePanel.scrollToHeader(headerId, headerLabel);
-        } else {
-            Logger.warn('📋 No active DataViewerPanel found for scrolling');
+
+            Logger.info(
+                `🎮 📋 Command: Scrolling to header ${headerLabel} (${headerId}) for panel with ID: ${currentPanelId}`
+            );
+
+            // Find the active DataViewerPanel and scroll to the header
+            const activePanel = DataViewerPanel.getActivePanel(currentPanelId);
+            if (activePanel) {
+                await activePanel.scrollToHeader(headerId, headerLabel);
+            } else {
+                Logger.warn('📋 No active DataViewerPanel found for scrolling');
+            }
         }
-    });
+    );
 
     // Expand all command for outline
     const expandAllCommand = vscode.commands.registerCommand(
@@ -326,34 +445,66 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Register context menu for supported files
-    const supportedExtensions = ['.nc', '.netcdf', '.zarr', '.h5', '.hdf5', '.grib', '.grib2', '.tif', '.tiff', '.geotiff', '.jp2', '.jpeg2000', '.safe', '.nc4', '.cdf'];
+    const supportedExtensions = [
+        '.nc',
+        '.netcdf',
+        '.zarr',
+        '.h5',
+        '.hdf5',
+        '.grib',
+        '.grib2',
+        '.tif',
+        '.tiff',
+        '.geotiff',
+        '.jp2',
+        '.jpeg2000',
+        '.safe',
+        '.nc4',
+        '.cdf',
+    ];
     vscode.workspace.onDidOpenTextDocument(async (document) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
             // Check if devMode is enabled
-            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const config = vscode.workspace.getConfiguration(
+                'scientificDataViewer'
+            );
             const devMode = config.get('devMode', false);
-            
+
             if (devMode) {
-                Logger.info('🔧 DevMode enabled - automatically running development commands for opened file...');
-                
+                Logger.info(
+                    '🔧 DevMode enabled - automatically running development commands for opened file...'
+                );
+
                 // Run "Show Extension Logs" command immediately
                 try {
-                    await vscode.commands.executeCommand('scientificDataViewer.showLogs');
-                    Logger.info('🔧 DevMode: Show Extension Logs command executed');
+                    await vscode.commands.executeCommand(
+                        'scientificDataViewer.showLogs'
+                    );
+                    Logger.info(
+                        '🔧 DevMode: Show Extension Logs command executed'
+                    );
                 } catch (error) {
-                    Logger.error(`🔧 DevMode: Failed to execute showLogs command: ${error}`);
+                    Logger.error(
+                        `🔧 DevMode: Failed to execute showLogs command: ${error}`
+                    );
                 }
-                
+
                 // Run "Open Developer Tools" command immediately
                 try {
-                    await vscode.commands.executeCommand('scientificDataViewer.openDeveloperTools');
-                    Logger.info('🔧 DevMode: Open Developer Tools command executed');
+                    await vscode.commands.executeCommand(
+                        'scientificDataViewer.openDeveloperTools'
+                    );
+                    Logger.info(
+                        '🔧 DevMode: Open Developer Tools command executed'
+                    );
                 } catch (error) {
-                    Logger.error(`🔧 DevMode: Failed to execute openDeveloperTools command: ${error}`);
+                    Logger.error(
+                        `🔧 DevMode: Failed to execute openDeveloperTools command: ${error}`
+                    );
                 }
             }
-            
+
             // XXX This is broken, dead notifications show up again. They should not.
             // // Show notification for supported files
             // const action = await vscode.window.showInformationMessage(
@@ -368,77 +519,118 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
-    const pythonInitializationPromise = refreshPython(pythonManager, statusBarItem);
+    const pythonInitializationPromise = refreshPython(
+        pythonManager,
+        statusBarItem
+    );
 
     // Function to handle Python interpreter changes
     const handlePythonInterpreterChange = async () => {
-        Logger.info('🐍 🔧 Python interpreter configuration changed, re-validating environment...');
+        Logger.info(
+            '🐍 🔧 Python interpreter configuration changed, re-validating environment...'
+        );
 
         // Get the current interpreter path for logging
-        const currentInterpreterPath = await pythonManager.getCurrentInterpreterPath();
+        const currentInterpreterPath =
+            await pythonManager.getCurrentInterpreterPath();
 
         // Show immediate notification that interpreter change was detected with path
         if (currentInterpreterPath) {
-            const interpreterName = currentInterpreterPath.split('/').pop() || currentInterpreterPath.split('\\').pop() || 'Unknown';
-            vscode.window.showInformationMessage(`New interpreter is now considered by the extension: ${interpreterName} (${currentInterpreterPath})`);
+            const interpreterName =
+                currentInterpreterPath.split('/').pop() ||
+                currentInterpreterPath.split('\\').pop() ||
+                'Unknown';
+            vscode.window.showInformationMessage(
+                `New interpreter is now considered by the extension: ${interpreterName} (${currentInterpreterPath})`
+            );
         } else {
-            vscode.window.showInformationMessage('New interpreter is now considered by the extension');
+            vscode.window.showInformationMessage(
+                'New interpreter is now considered by the extension'
+            );
         }
 
         await refreshPython(pythonManager, statusBarItem);
     };
 
     const handlePythonEnvironmentCreated = async (environment: any) => {
-        Logger.info('🐍 🔧 Python environment created, refreshing environment...');
+        Logger.info(
+            '🐍 🔧 Python environment created, refreshing environment...'
+        );
         // Don't do anything with env, delegate to the existing handler
         await handlePythonInterpreterChange();
-    };  
+    };
 
     // Listen for Python interpreter changes - only listen to Python extension events
-    const pythonInterpreterChangeListener = vscode.workspace.onDidChangeConfiguration(async (event) => {
-        // Only listen to Python extension configuration changes that might affect interpreter
-        if (event.affectsConfiguration('python.condaPath') ||
-            event.affectsConfiguration('python.venvPath') ||
-            event.affectsConfiguration('python.terminal.activateEnvironment') ||
-            event.affectsConfiguration('python.terminal.activateEnvInCurrentTerminal')) {
-
-            await handlePythonInterpreterChange();
-        }
-    });
-
-    // Also listen for workspace folder changes (when Python interpreter might change)
-    const workspaceChangeListener = vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-        // Check if Python interpreter changed when workspace changes using Python extension API
-        try {
-            const currentPythonPath = await pythonManager.getCurrentInterpreterPath();
-
-            if (currentPythonPath && currentPythonPath !== pythonManager.getPythonPath()) {
+    const pythonInterpreterChangeListener =
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
+            // Only listen to Python extension configuration changes that might affect interpreter
+            if (
+                event.affectsConfiguration('python.condaPath') ||
+                event.affectsConfiguration('python.venvPath') ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvironment'
+                ) ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvInCurrentTerminal'
+                )
+            ) {
                 await handlePythonInterpreterChange();
             }
-        } catch (error) {
-            Logger.error(`🔧 ❌ Error checking Python interpreter on workspace change: ${error}`);
-        }
-    });
+        });
+
+    // Also listen for workspace folder changes (when Python interpreter might change)
+    const workspaceChangeListener =
+        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+            // Check if Python interpreter changed when workspace changes using Python extension API
+            try {
+                const currentPythonPath =
+                    await pythonManager.getCurrentInterpreterPath();
+
+                if (
+                    currentPythonPath &&
+                    currentPythonPath !== pythonManager.getPythonPath()
+                ) {
+                    await handlePythonInterpreterChange();
+                }
+            } catch (error) {
+                Logger.error(
+                    `🔧 ❌ Error checking Python interpreter on workspace change: ${error}`
+                );
+            }
+        });
 
     Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
-        pythonManager.setupEnvironmentChangeListeners(handlePythonInterpreterChange, handlePythonEnvironmentCreated).then((listener) => {
-            immediateInterpreterListener = listener;
-            if (immediateInterpreterListener) {
-                Logger.info('🚀 Immediate Python interpreter change detection enabled');
-                // Add to subscriptions after it's created
-                context.subscriptions.push(immediateInterpreterListener);
-            } else {
-                Logger.warn('⚠️ Immediate Python interpreter change detection not available');
-            }
-        }).catch((error) => {
-            Logger.error(`❌ Failed to set up immediate Python interpreter change detection: ${error}`);
-        });
+        pythonManager
+            .setupEnvironmentChangeListeners(
+                handlePythonInterpreterChange,
+                handlePythonEnvironmentCreated
+            )
+            .then((listener) => {
+                immediateInterpreterListener = listener;
+                if (immediateInterpreterListener) {
+                    Logger.info(
+                        '🚀 Immediate Python interpreter change detection enabled'
+                    );
+                    // Add to subscriptions after it's created
+                    context.subscriptions.push(immediateInterpreterListener);
+                } else {
+                    Logger.warn(
+                        '⚠️ Immediate Python interpreter change detection not available'
+                    );
+                }
+            })
+            .catch((error) => {
+                Logger.error(
+                    `❌ Failed to set up immediate Python interpreter change detection: ${error}`
+                );
+            });
     } catch (error) {
-        Logger.error(`🔧 ❌ Failed to set up Python interpreter change detection: ${error}`);
+        Logger.error(
+            `🔧 ❌ Failed to set up Python interpreter change detection: ${error}`
+        );
     }
-
 
     context.subscriptions.push(
         openViewerCommand,
@@ -464,7 +656,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Status bar will only be shown when an interpreter is actually selected
 }
 
-async function refreshPython(pythonManager: PythonManager, statusBarItem: vscode.StatusBarItem) {
+async function refreshPython(
+    pythonManager: PythonManager,
+    statusBarItem: vscode.StatusBarItem
+) {
     try {
         await pythonManager.forceInitialize();
 
@@ -479,16 +674,24 @@ async function refreshPython(pythonManager: PythonManager, statusBarItem: vscode
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
-        vscode.window.showErrorMessage(`❌ Failed to validate Python environment: ${error}`);
+        vscode.window.showErrorMessage(
+            `❌ Failed to validate Python environment: ${error}`
+        );
     }
 }
 
 // Function to update status bar with current Python interpreter
-function updateStatusBar (pythonManager: PythonManager, statusBarItem: vscode.StatusBarItem) {
+function updateStatusBar(
+    pythonManager: PythonManager,
+    statusBarItem: vscode.StatusBarItem
+) {
     const pythonPath = pythonManager.getPythonPath();
     if (pythonPath && pythonManager.isReady()) {
         // Only show status bar when interpreter is selected and ready
-        const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
+        const interpreterName =
+            pythonPath.split('/').pop() ||
+            pythonPath.split('\\').pop() ||
+            'Unknown';
         statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
@@ -496,7 +699,7 @@ function updateStatusBar (pythonManager: PythonManager, statusBarItem: vscode.St
         // Hide status bar when no interpreter or not ready
         statusBarItem.hide();
     }
-};
+}
 
 export function deactivate() {
     Logger.info('Scientific Data Viewer extension is now deactivated!');
