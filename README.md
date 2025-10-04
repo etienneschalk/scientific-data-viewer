@@ -125,18 +125,70 @@ Before using this extension, you need:
 
 ### 🐍 Configuring Python Environment
 
-1. **Automatic Detection**:
+The extension supports multiple ways to configure your Python environment:
 
-    - The extension will automatically detect Python installations
-    - It will check for required packages and prompt to install missing ones
-    - When opening a file, it will check for optional packages and prompt to install missing ones
+1. **Virtual Environment Support** (Recommended):
 
-2. **Configure Python via the Python Extension**:
+    - **Automatic Detection**: The extension automatically detects virtual environments in your workspace
+    - **Supported Types**: uv, venv, conda, pipenv, poetry
+    - **Priority Order**: uv > venv > conda > pipenv > poetry
+    - **Manual Selection**: Use "Select Python Interpreter" command to choose from detected environments
+
+2. **Python Extension Integration**:
 
     - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
     - Type "Python: Select Interpreter"
     - Choose your preferred Python environment
     - The extension will automatically detect it and use it
+
+3. **Manual Configuration**:
+
+    - Set `scientificDataViewer.pythonInterpreter` in settings to a specific Python executable
+    - Example: `"./venv/bin/python"` or `"C:\\venv\\Scripts\\python.exe"`
+
+4. **Virtual Environment Commands**:
+
+    - **Select Python Interpreter**: Choose from detected virtual environments
+    - **Detect Virtual Environments**: Scan workspace for virtual environments
+    - **Reset to Default**: Use Python extension's default interpreter
+
+#### Virtual Environment Examples
+
+**Using uv (recommended for modern Python projects)**:
+
+```bash
+# Create a uv environment
+uv venv
+
+# Install required packages
+uv pip install xarray matplotlib netCDF4 zarr h5py
+
+# The extension will automatically detect and use .venv/bin/python
+```
+
+**Using venv**:
+
+```bash
+# Create a virtual environment
+python -m venv venv
+
+# Activate and install packages
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install xarray matplotlib netCDF4 zarr h5py
+
+# The extension will detect and use venv/bin/python
+```
+
+**Using conda**:
+
+```bash
+# Create a conda environment
+conda create -n myenv python=3.11
+conda activate myenv
+conda install xarray matplotlib netcdf4 zarr h5py
+
+# The extension will detect and use the conda environment
+```
 
 ### 📂 Opening Data Files
 
@@ -189,6 +241,14 @@ The extension can be configured through VSCode settings:
 | `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
 | `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
+**🐍 Virtual Environment Settings**
+
+The extension includes specific settings for virtual environment management:
+
+-   **`scientificDataViewer.pythonInterpreter`** (string, default: `""`): Python interpreter path for the extension. If empty, uses the Python extension's active interpreter. Can be set to a virtual environment Python executable. **Examples:** `"./venv/bin/python"`, `"C:\\venv\\Scripts\\python.exe"`
+-   **`scientificDataViewer.autoDetectVirtualEnvironments`** (boolean, default: `true`): Automatically detect and suggest virtual environments in the workspace (uv, venv, conda, pipenv, poetry). When enabled, the extension will scan the workspace for these environments and offer them as options when no Python interpreter is configured.
+-   **`scientificDataViewer.virtualEnvironmentPaths`** (array, default: `[]`): Additional paths to search for virtual environments beyond the workspace root. Each path should be a directory that may contain virtual environment folders. **Examples:** `["../shared-envs", "/opt/conda/envs"]`
+
 **🚩 Feature Flags**
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
@@ -200,13 +260,16 @@ The extension includes configuration options that act as feature flags to contro
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command                                               | Description                                            |
-| ----------------------------------------------------- | ------------------------------------------------------ |
-| `Scientific Data Viewer: Open Scientific Data Viewer` | Opens the Scientific Data Viewer for the current file  |
-| `Scientific Data Viewer: Refresh Python Environment`  | Refreshes the Python environment used by the extension |
-| `Scientific Data Viewer: Show Extension Logs`         | Opens the extension's log output for debugging         |
-| `Scientific Data Viewer: Show Settings`               | Opens the extension settings                           |
-| `Scientific Data Viewer: Open Developer Tools`        | Opens the developer tools for the webview              |
+| Command                                                       | Description                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------ |
+| `Scientific Data Viewer: Open Scientific Data Viewer`         | Opens the Scientific Data Viewer for the current file  |
+| `Scientific Data Viewer: Refresh Python Environment`          | Refreshes the Python environment used by the extension |
+| `Scientific Data Viewer: Show Extension Logs`                 | Opens the extension's log output for debugging         |
+| `Scientific Data Viewer: Show Settings`                       | Opens the extension settings                           |
+| `Scientific Data Viewer: Open Developer Tools`                | Opens the developer tools for the webview              |
+| `Scientific Data Viewer: Select Python Interpreter`           | Choose from detected virtual environments              |
+| `Scientific Data Viewer: Detect Virtual Environments`         | Scan workspace for virtual environments                |
+| `Scientific Data Viewer: Reset to Default Python Interpreter` | Use Python extension's default interpreter             |
 
 ### 🖱️ Context Menu Commands
 

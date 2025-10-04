@@ -3,11 +3,17 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
 import { DataViewerPanel } from './dataViewerPanel';
+import { VirtualEnvironmentManager, VirtualEnvironment } from './virtualEnvironmentManager';
 
 export class PythonManager {
-    private pythonPath: string | undefined;
+    private pythonPath: string | undefined = undefined;
     private isInitialized: boolean = false;
     private initializationPromise: Promise<void> | null = null;
+    private virtualEnvManager: VirtualEnvironmentManager;
+
+    constructor() {
+        this.virtualEnvManager = new VirtualEnvironmentManager();
+    }
 
     async _initialize(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
@@ -25,9 +31,36 @@ export class PythonManager {
 
     private async _doInitialize(): Promise<void> {
         try {
-            // Get Python interpreter from Python extension API (recommended method)
-            const newPythonPath =
-                await this.getPythonInterpreterFromExtension();
+            // First, check if there's a configured Python interpreter in settings
+            const settingsInterpreter = this.virtualEnvManager.getCurrentInterpreterFromSettings();
+            if (settingsInterpreter) {
+                Logger.info(`🐍 🔧 Using configured Python interpreter: ${settingsInterpreter}`);
+                this.pythonPath = settingsInterpreter;
+                this.isInitialized = false;
+                await this.validatePythonEnvironment();
+                return;
+            }
+
+            // Check if auto-detection is enabled
+            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const autoDetect = config.get<boolean>('autoDetectVirtualEnvironments', true);
+            
+            if (autoDetect) {
+                // Try to find and use a virtual environment
+                const virtualEnvs = await this.virtualEnvManager.detectVirtualEnvironments();
+                const bestEnv = this.virtualEnvManager.getBestEnvironment();
+                
+                if (bestEnv) {
+                    Logger.info(`🐍 🔍 Found virtual environment: ${bestEnv.name} (${bestEnv.type}) at ${bestEnv.pythonPath}`);
+                    this.pythonPath = bestEnv.pythonPath;
+                    this.isInitialized = false;
+                    await this.validatePythonEnvironment();
+                    return;
+                }
+            }
+
+            // Fall back to Python extension API (original behavior)
+            const newPythonPath = await this.getPythonInterpreterFromExtension();
 
             if (newPythonPath && newPythonPath !== this.pythonPath) {
                 Logger.info(
@@ -1017,6 +1050,130 @@ export class PythonManager {
                     ', '
                 )}.`
             );
+        }
+    }
+
+    /**
+     * Get the virtual environment manager
+     */
+    getVirtualEnvironmentManager(): VirtualEnvironmentManager {
+        return this.virtualEnvManager;
+    }
+
+    /**
+     * Select a Python interpreter from detected virtual environments
+     */
+    async selectPythonInterpreter(): Promise<void> {
+        try {
+            const selectedEnv = await this.virtualEnvManager.showEnvironmentSelector();
+            if (selectedEnv) {
+                await this.virtualEnvManager.setPythonInterpreter(selectedEnv.pythonPath);
+                this.pythonPath = selectedEnv.pythonPath;
+                this.isInitialized = false;
+                await this.validatePythonEnvironment();
+                
+                vscode.window.showInformationMessage(
+                    `Selected Python interpreter: ${selectedEnv.name} (${selectedEnv.type})`
+                );
+            }
+        } catch (error) {
+            Logger.error(`🐍 ❌ Failed to select Python interpreter: ${error}`);
+            vscode.window.showErrorMessage(`Failed to select Python interpreter: ${error}`);
+        }
+    }
+
+    /**
+     * Detect virtual environments in the workspace
+     */
+    async detectVirtualEnvironments(): Promise<void> {
+        try {
+            const environments = await this.virtualEnvManager.detectVirtualEnvironments();
+            
+            if (environments.length === 0) {
+                vscode.window.showInformationMessage('No virtual environments found in the workspace.');
+                return;
+            }
+
+            const validEnvs = environments.filter(env => env.isValid);
+            const invalidEnvs = environments.filter(env => !env.isValid);
+
+            let message = `Found ${environments.length} virtual environment(s):\n\n`;
+            
+            if (validEnvs.length > 0) {
+                message += `✅ Valid environments (${validEnvs.length}):\n`;
+                for (const env of validEnvs) {
+                    message += `  | ${env.name} (${env.type}) - ${env.packages?.length || 0} packages\n`;
+                }
+            }
+
+            if (invalidEnvs.length > 0) {
+                message += `\n❌ Invalid environments (${invalidEnvs.length}):\n`;
+                for (const env of invalidEnvs) {
+                    message += `  | ${env.name} (${env.type}) - Invalid Python interpreter\n`;
+                }
+            }
+
+            message += ` | Use "Select Python Interpreter" to choose an environment.`;
+
+            vscode.window.showInformationMessage(message, "OK");
+        } catch (error) {
+            Logger.error(`🐍 ❌ Failed to detect virtual environments: ${error}`);
+            vscode.window.showErrorMessage(`Failed to detect virtual environments: ${error}`);
+        }
+    }
+
+    /**
+     * Reset to use the Python extension's default interpreter
+     */
+    async resetPythonInterpreter(): Promise<void> {
+        try {
+            await this.virtualEnvManager.resetPythonInterpreter();
+            this.pythonPath = undefined;
+            this.isInitialized = false;
+            await this.forceInitialize();
+            
+            vscode.window.showInformationMessage('Reset to use Python extension\'s default interpreter.');
+        } catch (error) {
+            Logger.error(`🐍 ❌ Failed to reset Python interpreter: ${error}`);
+            vscode.window.showErrorMessage(`Failed to reset Python interpreter: ${error}`);
+        }
+    }
+
+    /**
+     * Get information about the current Python environment
+     */
+    async getCurrentEnvironmentInfo(): Promise<{ type: string; path: string; packages: string[] } | undefined> {
+        if (!this.pythonPath) {
+            return undefined;
+        }
+
+        // Check if current interpreter is from a detected virtual environment
+        const detectedEnvs = this.virtualEnvManager.getDetectedEnvironments();
+        const currentEnv = detectedEnvs.find(env => env.pythonPath === this.pythonPath);
+        
+        if (currentEnv) {
+            return {
+                type: currentEnv.type,
+                path: currentEnv.path,
+                packages: currentEnv.packages || []
+            };
+        }
+
+        // If not from a detected environment, get basic info
+        try {
+            const packages = await this.virtualEnvManager.getInstalledPackages(this.pythonPath);
+            return {
+                type: 'system',
+                path: this.pythonPath,
+                packages: packages
+            };
+        } catch (error) {
+            Logger.debug(`🐍 Could not get environment info: ${error}`);
+            return {
+                type: 'unknown',
+                path: this.pythonPath,
+                packages: []
+            };
         }
     }
 

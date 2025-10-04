@@ -80,6 +80,21 @@
                 "title": "Expand All",
                 "category": "Scientific Data Viewer",
                 "icon": "$(expand-all)"
+            },
+            {
+                "command": "scientificDataViewer.selectPythonInterpreter",
+                "title": "Select Python Interpreter",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.detectVirtualEnvironments",
+                "title": "Detect Virtual Environments",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.resetPythonInterpreter",
+                "title": "Reset to Default Python Interpreter",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -118,6 +133,18 @@
                 {
                     "command": "scientificDataViewer.expandAll",
                     "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.selectPythonInterpreter",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.detectVirtualEnvironments",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.resetPythonInterpreter",
+                    "when": "true"
                 }
             ],
             "view/title": [
@@ -375,6 +402,27 @@
                     "default": "",
                     "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
                     "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
+                },
+                "scientificDataViewer.pythonInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Python interpreter path for the extension. If empty, uses the Python extension's active interpreter. Can be set to a virtual environment Python executable.",
+                    "markdownDescription": "Python interpreter path for the Scientific Data Viewer extension. If empty, the extension will use the Python extension's active interpreter. You can set this to a specific virtual environment Python executable (e.g., `./venv/bin/python` or `C:\\venv\\Scripts\\python.exe`).\n\n**Examples:**\n- `./venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting overrides the Python extension's interpreter selection for this extension only."
+                },
+                "scientificDataViewer.autoDetectVirtualEnvironments": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically detect and suggest virtual environments in the workspace (uv, venv, conda, etc.)",
+                    "markdownDescription": "Automatically detect virtual environments in the workspace and suggest them for use with the extension. Supports:\n\n- **uv** environments (`.venv` folder)\n- **venv** environments (`venv` folder)\n- **conda** environments\n- **pipenv** environments\n- **poetry** environments\n\nWhen enabled, the extension will scan the workspace for these environments and offer them as options when no Python interpreter is configured."
+                },
+                "scientificDataViewer.virtualEnvironmentPaths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "description": "Additional paths to search for virtual environments",
+                    "markdownDescription": "Additional paths to search for virtual environments beyond the workspace root. Each path should be a directory that may contain virtual environment folders.\n\n**Examples:**\n- `[\"../shared-envs\", \"/opt/conda/envs\"]`\n- `[\"C:\\Users\\username\\Envs\"]`"
                 }
             }
         }

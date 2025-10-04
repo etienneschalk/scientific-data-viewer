@@ -10,6 +10,19 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Added
 
+-   **Virtual Environment Support**: Full support for virtual environments including uv, venv, conda, pipenv, and poetry
+-   **Automatic Virtual Environment Detection**: Automatically detects and suggests virtual environments in the workspace
+-   **Python Interpreter Selection**: New command to select Python interpreter from detected virtual environments
+-   **Virtual Environment Management Commands**:
+    -   `Select Python Interpreter`: Choose from detected virtual environments
+    -   `Detect Virtual Environments`: Scan workspace for virtual environments
+    -   `Reset to Default Python Interpreter`: Use Python extension's default interpreter
+-   **Enhanced Status Bar**: Shows virtual environment type and interpreter information
+-   **Configuration Settings**:
+    -   `scientificDataViewer.pythonInterpreter`: Set specific Python interpreter path
+    -   `scientificDataViewer.autoDetectVirtualEnvironments`: Enable/disable automatic detection
+    -   `scientificDataViewer.virtualEnvironmentPaths`: Additional paths to search for environments
+
 ### Enhanced
 
 ### Removed

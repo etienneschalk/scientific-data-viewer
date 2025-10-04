@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                         Logger.info(`${key} is now: ${value}`);
                         changedSettings.push(
-                            `${description} is now ${formattedValue}`
+                            `${key} is now ${formattedValue}. (${description})`
                         );
                     }
                 }
@@ -458,6 +458,31 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // Virtual Environment Commands
+    const selectPythonInterpreterCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.selectPythonInterpreter',
+        async () => {
+            Logger.info('🎮 🐍 Command: Select Python Interpreter');
+            await pythonManager.selectPythonInterpreter();
+        }
+    );
+
+    const detectVirtualEnvironmentsCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.detectVirtualEnvironments',
+        async () => {
+            Logger.info('🎮 🔍 Command: Detect Virtual Environments');
+            await pythonManager.detectVirtualEnvironments();
+        }
+    );
+
+    const resetPythonInterpreterCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.resetPythonInterpreter',
+        async () => {
+            Logger.info('🎮 🔄 Command: Reset Python Interpreter');
+            await pythonManager.resetPythonInterpreter();
+        }
+    );
+
     // Register context menu for supported files
     const supportedExtensions = [
         '.nc',
@@ -642,6 +667,9 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
+        selectPythonInterpreterCommand,
+        detectVirtualEnvironmentsCommand,
+        resetPythonInterpreterCommand,
         outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,
@@ -677,7 +705,7 @@ async function refreshPython(
         if (pythonPath) {
             // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
             // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
-            updateStatusBar(pythonManager, statusBarItem);
+            await updateStatusBar(pythonManager, statusBarItem);
         }
 
         await DataViewerPanel.refreshPanelsWithErrors();
@@ -690,7 +718,7 @@ async function refreshPython(
 }
 
 // Function to update status bar with current Python interpreter
-function updateStatusBar(
+async function updateStatusBar(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
@@ -701,7 +729,30 @@ function updateStatusBar(
             pythonPath.split('/').pop() ||
             pythonPath.split('\\').pop() ||
             'Unknown';
-        statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
+        
+        // Get environment info to show virtual environment type
+        try {
+            const envInfo = await pythonManager.getCurrentEnvironmentInfo();
+            if (envInfo) {
+                const envType = envInfo.type === 'system' ? 'System' : 
+                               envInfo.type === 'uv' ? 'UV' :
+                               envInfo.type === 'venv' ? 'Venv' :
+                               envInfo.type === 'conda' ? 'Conda' :
+                               envInfo.type === 'pipenv' ? 'Pipenv' :
+                               envInfo.type === 'poetry' ? 'Poetry' :
+                               envInfo.type;
+                
+                statusBarItem.text = `$(check) SDV: Ready (${envType} - ${interpreterName})`;
+                statusBarItem.tooltip = `Current Python interpreter for Scientific Data Viewer: ${interpreterName} (${pythonPath})`;
+            } else {
+                statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
+                statusBarItem.tooltip = `Current Python interpreter for Scientific Data Viewer: ${interpreterName} (${pythonPath})`;
+            }
+        } catch (error) {
+            Logger.debug(`Could not get environment info: ${error}`);
+            statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
+        }
+        
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
     } else {
