@@ -440,7 +440,7 @@ export function activate(context: vscode.ExtensionContext) {
             );
 
             // Find the active DataViewerPanel and scroll to the header
-            const activePanel = DataViewerPanel.getActivePanel(currentPanelId);
+            const activePanel = DataViewerPanel.getPanel(currentPanelId);
             if (activePanel) {
                 await activePanel.scrollToHeader(headerId, headerLabel);
             } else {
