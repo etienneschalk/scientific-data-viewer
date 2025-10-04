@@ -5,7 +5,7 @@ import { DataViewerPanel } from '../dataViewerPanel';
 export interface HeaderItem {
     label: string;
     level: number;
-    id?: string;
+    id: string;
     line?: number;
     children: HeaderItem[];
 }

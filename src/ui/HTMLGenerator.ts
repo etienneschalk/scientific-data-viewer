@@ -42,7 +42,7 @@ export class HTMLGenerator {
     static generateHeader(lastLoadTime: string | null): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="title">Scientific Data Viewer <small>v0.3.0</small></div>
+        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
@@ -90,7 +90,7 @@ export class HTMLGenerator {
     static generateFileInfo(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" open> <summary><h3>File Information</h3></summary>
+            <details class="sticky-group-details" open id="section-file-information"> <summary><h3>File Information</h3></summary>
                 <div id="filePathContainer" class="file-path-container hidden">
                     <p><strong>File Path:</strong></p>
                     <button id="copyPathButton" class="copy-button">
@@ -113,7 +113,7 @@ export class HTMLGenerator {
     static generateHtmlRepresentation(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" open> <summary><h3>Xarray HTML Representation</h3></summary>
+            <details class="sticky-group-details" open id="section-html-representation"> <summary><h3>Xarray HTML Representation</h3></summary>
                 <div id="htmlRepresentation" class="html-representation"></div>
             </details>
         </div>`;
@@ -122,7 +122,7 @@ export class HTMLGenerator {
     static generateHtmlRepresentationForGroups(): string {
         return /*html*/ `
         <div class="info-section hidden">
-            <details class="sticky-group-details"> <summary><h3>Xarray HTML Representation (for each group)</h3></summary>
+            <details class="sticky-group-details" id="section-html-representation-for-groups"> <summary><h3>Xarray HTML Representation (for each group)</h3></summary>
                 <div id="htmlRepresentationForGroups" class="html-representation-for-groups"></div>
             </details>
         </div>`;
@@ -131,7 +131,7 @@ export class HTMLGenerator {
     static generateTextRepresentation(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details"> 
+            <details class="sticky-group-details" id="section-text-representation"> 
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button id="textCopyButton" class="text-copy-button hidden">
@@ -146,7 +146,7 @@ export class HTMLGenerator {
     static generateTextRepresentationForGroups(): string {
         return /*html*/ `
         <div class="info-section hidden">
-            <details class="sticky-group-details"> 
+            <details class="sticky-group-details" id="section-text-representation-for-groups"> 
             <summary><h3>Xarray Text Representation (for each group)</h3></summary>
                 <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
             </details>
@@ -156,7 +156,8 @@ export class HTMLGenerator {
     static generateTroubleshooting(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details"> <summary><h3>Troubleshooting</h3></summary>
+            <details class="sticky-group-details" id="section-troubleshooting"> 
+                <summary><h3>Troubleshooting</h3></summary>
                 <div class="info-section">
                     <details open>
                         <summary>Python Interpreter Path</summary>
@@ -197,7 +198,8 @@ export class HTMLGenerator {
     static generatePlottingSections(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details"> <summary><h3>Global Plot Controls</h3></summary>
+            <details class="sticky-group-details" id="section-global-plot-controls"> 
+                <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
                     <button id="plotAllButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>

@@ -223,6 +223,12 @@ function escapeHtml(unsafe) {
         .replaceAll("'", '&#039;');
 }
 
+// JoinId is used to join parts of an id together with a separator
+// Must be similar to the one used in the HeaderExtractor.ts
+function joinId(parts) {
+    return parts.map(part => part.replace(/[^a-zA-Z0-9_]/g, '-')).join('___');
+}
+
 function formatFileSize(bytes) {
     const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 B';
@@ -319,11 +325,6 @@ function displayDataInfo(data, filePath) {
         // Display dimensions, coordinates, and variables for each group
         groupInfoContainer.innerHTML = groups
             .map((groupName) => {
-                const groupId = `group-${groupName.replace(
-                    /[^a-zA-Z0-9]/g,
-                    '-'
-                )}`;
-
                 // Add dimensions for group
                 const dimensions = data.dimensions_flattened[groupName];
                 const dimensionsHtml =
@@ -332,7 +333,7 @@ function displayDataInfo(data, filePath) {
                         (${Object.entries(dimensions)
                             .map(
                                 ([name, size]) =>
-                                    `<strong id="${groupId}-dim-${name}">${name}</strong>: ${size}`
+                                    `<strong id="${joinId(['data-group', groupName, 'dimension', name])}">${name}</strong>: ${size}`
                             )
                             .join(', ')})
                     </div>`
@@ -353,7 +354,7 @@ function displayDataInfo(data, filePath) {
                                   const sizeStr = variable.size_bytes
                                       ? `${formatFileSize(variable.size_bytes)}`
                                       : '';
-                                  const coordId = `${groupId}-coord-${variable.name}`;
+                                  const coordId = joinId(['data-group', groupName, 'coordinate', variable.name]);
                                   const hasAttributes =
                                       variable.attributes &&
                                       Object.keys(variable.attributes).length >
@@ -361,7 +362,8 @@ function displayDataInfo(data, filePath) {
 
                                   const attributesContent = hasAttributes
                                       ? generateAttributesContent(
-                                            variable.attributes
+                                            variable.attributes,
+                                            joinId(['data-group', groupName, 'coordinate', variable.name])
                                         )
                                       : '';
 
@@ -392,7 +394,7 @@ function displayDataInfo(data, filePath) {
                                             : ''
                                     }
                                 </summary>
-                                ${attributesContent}
+                                <div id="${joinId(['data-group', groupName, 'coordinate', variable.name, 'attributes'])}">${attributesContent}</div>
                             </details>
                         `;
                               })
@@ -414,7 +416,7 @@ function displayDataInfo(data, filePath) {
                                   const sizeStr = variable.size_bytes
                                       ? `${formatFileSize(variable.size_bytes)}`
                                       : '';
-                                  const varId = `${groupId}-var-${variable.name}`;
+                                  const varId = joinId(['data-group', groupName, 'variable', variable.name]);
                                   const hasAttributes =
                                       variable.attributes &&
                                       Object.keys(variable.attributes).length >
@@ -422,7 +424,8 @@ function displayDataInfo(data, filePath) {
 
                                   const attributesContent = hasAttributes
                                       ? generateAttributesContent(
-                                            variable.attributes
+                                            variable.attributes,
+                                            joinId(['data-group', groupName, 'variable', variable.name])
                                         )
                                       : '';
 
@@ -460,7 +463,7 @@ function displayDataInfo(data, filePath) {
                                             : ''
                                     }
                                 </summary>
-                                ${attributesContent}
+                                <div id="${joinId(['data-group', groupName, 'variable', variable.name, 'attributes'])}">${attributesContent}</div>
                             </details>
                             ${plotControls}
                         `;
@@ -474,7 +477,7 @@ function displayDataInfo(data, filePath) {
                     attributes && Object.keys(attributes).length > 0
                         ? Object.entries(attributes)
                               .map(([attrName, value]) => {
-                                  const attrId = `${groupId}-attr-${attrName}`;
+                                  const attrId = joinId(['data-group', groupName, 'attribute', attrName]);
                                   const valueStr =
                                       typeof value === 'string'
                                           ? value
@@ -491,30 +494,30 @@ function displayDataInfo(data, filePath) {
                         : /*html*/ `<p class="attribute-value">No attributes found in this group.</p>`;
 
                 return /*html*/ `
-                <div class="info-section" id="${groupId}">
+                <div class="info-section" id="${joinId(['data-group', groupName])}">
                     <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
-                        <div class="info-section" id="${groupId}-dimensions">
+                        <div class="info-section" id="${joinId(['data-group', groupName, 'dimensions'])}">
                             <details class="" open> <summary><h4>Dimensions</h4></summary>
                                 <div class="dimensions">
                                     ${dimensionsHtml}
                                 </div>
                             </details>  
                         </div>  
-                        <div class="info-section" id="${groupId}-coordinates">
+                        <div class="info-section" id="${joinId(['data-group', groupName, 'coordinates'])}">
                             <details class="" open> <summary><h4>Coordinates</h4></summary>
                                 <div class="coordinates">
                                     ${coordinatesHtml}
                                 </div>
                             </details>
                         </div>
-                        <div class="info-section" id="${groupId}-variables">
+                        <div class="info-section" id="${joinId(['data-group', groupName, 'variables'])}">
                             <details class="" open> <summary><h4>Variables</h4></summary>
                                 <div class="variables">
                                     ${variablesHtml}
                                 </div>  
                             </details>
                         </div>
-                        <div class="info-section" id="${groupId}-attributes">
+                        <div class="info-section" id="${joinId(['data-group', groupName, 'attributes'])}">
                             <details class="" open> <summary><h4>Attributes</h4></summary>
                                 <div class="attributes">
                                     ${attributesHtml}
@@ -598,14 +601,12 @@ function displayHtmlRepresentation(htmlData, isDatatree = false) {
         if (isDatatree && typeof htmlData === 'object' && htmlData !== null) {
             // Handle datatree flattened HTML representations
             const groups = Object.keys(htmlData);
+            const prefixId = 'section-html-representation-for-groups';
             container.innerHTML = /*html*/ `
                     ${groups
                         .map(
                             (groupName) => `
-                        <div class="info-section" id="html-representation-for-groups-${groupName.replace(
-                            /[^a-zA-Z0-9]/g,
-                            '-'
-                        )}">
+                        <div class="info-section" id="${joinId([prefixId, groupName])}">
                             <details> <summary>${groupName}</summary>
                                 <div class="html-representation">
                                     ${
@@ -637,14 +638,12 @@ function displayTextRepresentation(textData, isDatatree = false) {
         if (isDatatree && typeof textData === 'object' && textData !== null) {
             // Handle datatree flattened text representations
             const groups = Object.keys(textData);
+            const prefixId = 'section-text-representation-for-groups';
             container.innerHTML = /*html*/ `
                     ${groups
                         .map(
                             (groupName) => /*html*/ `
-                        <div class="info-section" id="text-representation-for-groups-${groupName.replace(
-                            /[^a-zA-Z0-9]/g,
-                            '-'
-                        )}">
+                        <div class="info-section" id="${joinId([prefixId, groupName])}">
                             <details> <summary>${groupName}</summary>
                                 <div class="text-representation-container">
                                     <button id="textCopyButton-${groupName}" data-group="${groupName}" class="text-copy-button">
@@ -1817,126 +1816,11 @@ function setupMessageHandlers() {
 }
 
 // Scroll to header function
-function scrollToHeader(headerId, headerLabel) {
+function scrollToHeader(headerId, headerLabel, verticalOffset = 80) {
     console.log(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
 
     // Try to find the element by ID first
     let element = document.getElementById(headerId);
-
-    // If not found by ID, check if this is an attribute ID and find the parent variable/coordinate
-    if (!element) {
-        // Check if this is an attribute ID (contains '-attr-' or '-attributes')
-        if (headerId.includes('-attr-') || headerId.includes('-attributes')) {
-            // Extract the parent variable/coordinate ID
-            let parentId = headerId;
-
-            // Remove attribute-specific parts to get parent ID
-            if (headerId.includes('-attr-')) {
-                parentId = headerId.split('-attr-')[0];
-            } else if (headerId.includes('-attributes')) {
-                parentId = headerId.replace('-attributes', '');
-            }
-
-            console.log(`📋 Looking for parent element: ${parentId}`);
-            const parentElement = document.getElementById(parentId);
-
-            // If we found the parent, ensure it's a details element and open it
-            if (parentElement && parentElement.tagName === 'DETAILS') {
-                parentElement.open = true;
-                console.log(`📋 Opened details element for: ${parentId}`);
-
-                // Now try to find the specific attribute within the details content
-                // Look for attribute items that match the header label
-                const attributeItems =
-                    parentElement.querySelectorAll('.attribute-item');
-                for (const attrItem of attributeItems) {
-                    const attrName = attrItem.querySelector('.attribute-name');
-                    const attrValue =
-                        attrItem.querySelector('.attribute-value');
-
-                    if (attrName) {
-                        const attrNameText = attrName.textContent
-                            .trim()
-                            .replace(' :', '')
-                            .trim();
-                        const headerName = headerLabel.split(':')[0].trim();
-
-                        // Match by attribute name
-                        if (attrNameText === headerName) {
-                            element = attrItem;
-                            console.log(
-                                `📋 Found specific attribute by name: ${headerName}`
-                            );
-                            break;
-                        }
-
-                        // Also try to match the full label if it contains the value
-                        if (attrValue) {
-                            const fullAttrText = `${attrNameText}: ${attrValue.textContent.trim()}`;
-                            if (fullAttrText === headerLabel.trim()) {
-                                element = attrItem;
-                                console.log(
-                                    `📋 Found specific attribute by full text: ${headerLabel}`
-                                );
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // If we didn't find the specific attribute, fall back to the parent element
-                if (!element) {
-                    element = parentElement;
-                }
-            } else {
-                element = parentElement;
-            }
-        }
-    }
-
-    // If still not found by ID, try to find by text content in summary elements (for details/summary structure)
-    if (!element) {
-        const summaries = document.querySelectorAll('summary');
-        for (const summary of summaries) {
-            if (summary.textContent.trim().includes(headerLabel)) {
-                element = summary;
-                break;
-            }
-        }
-    }
-
-    // If still not found, try to find by text content in headers
-    if (!element) {
-        const headers = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        for (const header of headers) {
-            if (header.textContent.trim() === headerLabel) {
-                element = header;
-                break;
-            }
-        }
-    }
-
-    // If still not found, try to find by partial text match in headers
-    if (!element) {
-        const headers = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        for (const header of headers) {
-            if (header.textContent.trim().includes(headerLabel)) {
-                element = header;
-                break;
-            }
-        }
-    }
-
-    // If still not found, try to find by partial text match in summaries
-    if (!element) {
-        const summaries = document.querySelectorAll('summary');
-        for (const summary of summaries) {
-            if (summary.textContent.trim().includes(headerLabel)) {
-                element = summary;
-                break;
-            }
-        }
-    }
 
     if (element) {
         // Ensure the element is visible by expanding ALL parent details if needed
@@ -1968,10 +1852,9 @@ function scrollToHeader(headerId, headerLabel) {
         }
 
         // Scroll to the element with offset to account for sticky headers
-        const offset = 80; // Adjust this value based on your sticky header height
         const elementRect = element.getBoundingClientRect();
         const absoluteElementTop = elementRect.top + window.pageYOffset;
-        const offsetPosition = absoluteElementTop - offset;
+        const offsetPosition = absoluteElementTop - verticalOffset;
 
         window.scrollTo({
             top: Math.max(0, offsetPosition), // Ensure we don't scroll above the page
@@ -2005,7 +1888,7 @@ function scrollToHeader(headerId, headerLabel) {
 }
 
 // Helper function to generate attributes HTML for details content
-function generateAttributesContent(attributes) {
+function generateAttributesContent(attributes, parentId) {
     if (!attributes || Object.keys(attributes).length === 0) {
         return '';
     }
@@ -2015,7 +1898,7 @@ function generateAttributesContent(attributes) {
             const valueStr =
                 typeof value === 'string' ? value : JSON.stringify(value);
             return /*html*/ `
-            <div class="attribute-item">
+            <div class="attribute-item" id="${joinId([parentId, 'attribute', attrName])}">
                 <span class="attribute-name" title="${attrName}">${attrName} : </span>
                 <span class="attribute-value" title="${valueStr}">${valueStr}</span>
             </div>

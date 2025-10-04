@@ -36,18 +36,11 @@
         "onLanguage:grib",
         "onLanguage:geotiff",
         "onLanguage:jp2",
-        "onCommand:scientificDataViewer.openViewer",
         "onFileSystem:netcdf",
         "onFileSystem:zarr",
         "onFileSystem:grib",
         "onFileSystem:geotiff",
-        "onFileSystem:jp2",
-        "onCustomEditor:netcdfEditor",
-        "onCustomEditor:hdf5Editor",
-        "onCustomEditor:zarrEditor",
-        "onCustomEditor:gribEditor",
-        "onCustomEditor:geotiffEditor",
-        "onCustomEditor:jp2Editor"
+        "onFileSystem:jp2"
     ],
     "main": "./out/src/extension.js",
     "contributes": {

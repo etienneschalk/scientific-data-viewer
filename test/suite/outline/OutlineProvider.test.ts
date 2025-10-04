@@ -260,19 +260,6 @@ suite('OutlineProvider Test Suite', () => {
         assert.strictEqual(treeItem.command?.command, 'scientificDataViewer.scrollToHeader');
     });
 
-    test('should handle tree item without ID', () => {
-        const mockElement: HeaderItem = {
-            label: 'Test Header',
-            level: 1,
-            children: []
-        };
-
-        const treeItem = outlineProvider.getTreeItem(mockElement);
-        
-        assert.ok(treeItem);
-        assert.strictEqual(treeItem.command, undefined);
-    });
-
     test('should handle different header levels', () => {
         const mockElement1: HeaderItem = {
             label: 'Level 1',

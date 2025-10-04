@@ -3,6 +3,13 @@ import { Logger } from '../logger';
 import { DataInfoResult } from '../dataProcessor';
 
 export class HeaderExtractor {
+
+    // JoinId is used to join parts of an id together with a separator
+    // Must be similar to the one used in the HeaderExtractor.ts
+    static joinId(parts: string[]) {
+        return parts.map(part => part.replace(/[^a-zA-Z0-9_]/g, '-')).join('___');
+    }
+
     /**
      * Extract headers from HTML content and organize them into a hierarchical structure
      */
@@ -61,68 +68,6 @@ export class HeaderExtractor {
     }
 
     /**
-     * Extract headers from a specific container element
-     */
-    static extractHeadersFromContainer(containerId: string, htmlContent: string): HeaderItem[] {
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlContent, 'text/html');
-            const container = doc.getElementById(containerId);
-            
-            if (!container) {
-                Logger.warn(`📋 Container with ID '${containerId}' not found`);
-                return [];
-            }
-
-            // Find headers within the container
-            const headerElements = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            
-            const headers: HeaderItem[] = [];
-            const stack: HeaderItem[] = [];
-
-            headerElements.forEach((element, index) => {
-                const level = parseInt(element.tagName.charAt(1));
-                const text = element.textContent?.trim() || '';
-                const id = element.id || `header-${containerId}-${index}`;
-                
-                // Ensure element has an ID for navigation
-                if (!element.id) {
-                    element.id = id;
-                }
-
-                const headerItem: HeaderItem = {
-                    label: text,
-                    level: level,
-                    id: id,
-                    children: []
-                };
-
-                // Find the appropriate parent based on header level
-                while (stack.length > 0 && stack[stack.length - 1].level >= level) {
-                    stack.pop();
-                }
-
-                if (stack.length === 0) {
-                    // Top-level header
-                    headers.push(headerItem);
-                } else {
-                    // Child header
-                    stack[stack.length - 1].children.push(headerItem);
-                }
-
-                stack.push(headerItem);
-            });
-
-            Logger.info(`📋 Extracted ${headers.length} headers from container '${containerId}'`);
-            return headers;
-
-        } catch (error) {
-            Logger.error(`❌ Error extracting headers from container '${containerId}': ${error}`);
-            return [];
-        }
-    }
-
-    /**
      * Create a simple header structure for the main sections of the data viewer
      */
     static createDataViewerHeaders(): HeaderItem[] {
@@ -130,55 +75,55 @@ export class HeaderExtractor {
             {
                 label: 'Scientific Data Viewer',
                 level: 1,
-                id: 'title',
+                id: 'top-level-title',
                 children: []
             },
             {
                 label: 'File Information',
                 level: 1,
-                id: 'file-info',
+                id: 'section-file-information',
                 children: []
             },
             {
                 label: 'Xarray HTML Representation',
                 level: 1,
-                id: 'html-representation',
+                id: 'section-html-representation',
                 children: []
             },
             {
                 label: 'Xarray Text Representation',
                 level: 1,
-                id: 'text-representation',
+                id: 'section-text-representation',
                 children: []
             },
             {
                 label: 'Xarray HTML Representation (for each group)',
                 level: 1,
-                id: 'html-representation-for-groups',
+                id: 'section-html-representation-for-groups',
                 children: []
             },
             {
                 label: 'Xarray Text Representation (for each group)',
                 level: 1,
-                id: 'text-representation-for-groups',
+                id: 'section-text-representation-for-groups',
                 children: []
             },
             {
                 label: 'Global Plot Controls',
                 level: 1,
-                id: 'plot-controls',
+                id: 'section-global-plot-controls',
                 children: []
             },
             {
                 label: 'Data Groups',
                 level: 1,
-                id: 'data-groups',
+                id: 'section-data-groups',
                 children: []
             },
             {
                 label: 'Troubleshooting',
                 level: 1,
-                id: 'troubleshooting',
+                id: 'section-troubleshooting',
                 children: []
             }
         ];
@@ -200,13 +145,13 @@ export class HeaderExtractor {
                 .filter(groupName => groupName && groupName.trim() !== ''); // Filter out empty group names
             
             // Enrich group representation sections
-            if (header.id === 'html-representation-for-groups' || header.id === 'text-representation-for-groups') {
+            if (header.id === 'section-html-representation-for-groups' || header.id === 'section-text-representation-for-groups') {
                 if (groupNames.length > 0) {
                     const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
                         label: groupName || 'Unnamed Group',
                         level: 2,
-                        id: `${header.id}-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
-                        children: this.createGroupSubHeaders(groupName, dataInfo, header.id || 'unknown')
+                        id: HeaderExtractor.joinId([header.id, groupName]),
+                        children: this.createGroupSubHeaders(groupName, dataInfo, header.id)
                     }));
 
                     return {
@@ -217,12 +162,12 @@ export class HeaderExtractor {
             }
             
             // Enrich Data Groups section with actual group information
-            if (header.id === 'data-groups') {
+            if (header.id === 'section-data-groups') {
                 if (groupNames.length > 0) {
                     const groupHeaders: HeaderItem[] = groupNames.map(groupName => ({
                         label: groupName || 'Unnamed Group',
                         level: 2,
-                        id: `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`,
+                        id: HeaderExtractor.joinId(['data-group', groupName]),
                         children: this.createDataGroupSubHeaders(groupName, dataInfo)
                     }));
 
@@ -255,7 +200,6 @@ export class HeaderExtractor {
      */
     private static createDataGroupSubHeaders(groupName: string, dataInfo: DataInfoResult): HeaderItem[] {
         const subHeaders: HeaderItem[] = [];
-        const groupId = `group-${groupName.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
         // Add dimensions section
         const dimensions = dataInfo.dimensions_flattened[groupName] || {};
@@ -264,13 +208,13 @@ export class HeaderExtractor {
             subHeaders.push({
                 label: `Dimensions (${dimensionEntries.length})`,
                 level: 3,
-                id: `${groupId}-dimensions`,
+                id: HeaderExtractor.joinId(['data-group', groupName, 'dimensions']),
                 children: dimensionEntries
                     .filter(([dimName]) => dimName && dimName.trim() !== '') // Filter out empty dimension names
                     .map(([dimName, size]) => ({
-                        label: `${dimName || 'Unnamed'}: ${size}`,
+                        label: `${dimName}: ${size}`,
                         level: 4,
-                        id: `${groupId}-dim-${dimName || 'unnamed'}`,
+                        id: HeaderExtractor.joinId(['data-group', groupName, 'dimension', dimName]),
                         children: []
                     }))
             });
@@ -282,7 +226,7 @@ export class HeaderExtractor {
             subHeaders.push({
                 label: `Coordinates (${coordinates.length})`,
                 level: 3,
-                id: `${groupId}-coordinates`,
+                id: HeaderExtractor.joinId(['data-group', groupName, 'coordinates']),
                 children: coordinates
                     .filter(coord => coord.name && coord.name.trim() !== '') // Filter out empty coordinate names
                     .map(coord => {
@@ -296,11 +240,11 @@ export class HeaderExtractor {
                                 coordChildren.push({
                                     label: `Attributes (${attrEntries.length})`,
                                     level: 5,
-                                    id: `${groupId}-coord-${coord.name}-attributes`,
+                                    id: HeaderExtractor.joinId(['data-group', groupName, 'coordinate', coord.name, 'attributes']),
                                     children: attrEntries.map(([attrName, value]) => ({
-                                        label: `${attrName || 'Unnamed'}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                                        label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
                                         level: 6,
-                                        id: `${groupId}-coord-${coord.name}-attr-${attrName || 'unnamed'}`,
+                                        id: HeaderExtractor.joinId(['data-group', groupName, 'coordinate', coord.name, 'attribute', attrName]),
                                         children: []
                                     }))
                                 });
@@ -308,9 +252,9 @@ export class HeaderExtractor {
                         }
                         
                         return {
-                            label: `${coord.name || 'Unnamed'} (${coord.dtype || 'unknown'})`,
+                            label: `${coord.name} (${coord.dtype})`,
                             level: 4,
-                            id: `${groupId}-coord-${coord.name || 'unnamed'}`,
+                            id: HeaderExtractor.joinId(['data-group', groupName, 'coordinate', coord.name]),
                             children: coordChildren
                         };
                     })
@@ -323,7 +267,7 @@ export class HeaderExtractor {
             subHeaders.push({
                 label: `Variables (${variables.length})`,
                 level: 3,
-                id: `${groupId}-variables`,
+                id: HeaderExtractor.joinId(['data-group', groupName, 'variables']),
                 children: variables
                     .filter(variable => variable.name && variable.name.trim() !== '') // Filter out empty variable names
                     .map(variable => {
@@ -337,11 +281,11 @@ export class HeaderExtractor {
                                 varChildren.push({
                                     label: `Attributes (${attrEntries.length})`,
                                     level: 5,
-                                    id: `${groupId}-var-${variable.name}-attributes`,
+                                    id: HeaderExtractor.joinId(['data-group', groupName, 'variable', variable.name, 'attributes']),
                                     children: attrEntries.map(([attrName, value]) => ({
-                                        label: `${attrName || 'Unnamed'}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                                        label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
                                         level: 6,
-                                        id: `${groupId}-var-${variable.name}-attr-${attrName || 'unnamed'}`,
+                                        id: HeaderExtractor.joinId(['data-group', groupName, 'variable', variable.name, 'attribute', attrName]),
                                         children: []
                                     }))
                                 });
@@ -349,9 +293,9 @@ export class HeaderExtractor {
                         }
                         
                         return {
-                            label: `${variable.name || 'Unnamed'} (${variable.dtype || 'unknown'})`,
+                            label: `${variable.name} (${variable.dtype})`,
                             level: 4,
-                            id: `${groupId}-var-${variable.name || 'unnamed'}`,
+                            id: HeaderExtractor.joinId(['data-group', groupName, 'variable', variable.name]),
                             children: varChildren
                         };
                     })
@@ -365,13 +309,13 @@ export class HeaderExtractor {
             subHeaders.push({
                 label: `Attributes (${attributeEntries.length})`,
                 level: 3,
-                id: `${groupId}-attributes`,
+                id: HeaderExtractor.joinId(['data-group', groupName, 'attributes']),
                 children: attributeEntries
                     .filter(([attrName]) => attrName && attrName.trim() !== '') // Filter out empty attribute names
                     .map(([attrName, value]) => ({
-                        label: `${attrName || 'Unnamed'}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+                        label: `${attrName}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
                         level: 4,
-                        id: `${groupId}-attr-${attrName || 'unnamed'}`,
+                        id: HeaderExtractor.joinId(['data-group', groupName, 'attribute', attrName]),
                         children: []
                     }))
             });
