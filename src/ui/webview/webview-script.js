@@ -13,7 +13,7 @@ class WebviewMessageBus {
     setupMessageListener() {
         window.addEventListener('message', (event) => {
             const message = event.data;
-            console.log("🚌 Bus: Message received:", message);
+            console.log('🚌 Bus: Message received:', message);
 
             if (message.type === 'response') {
                 this.handleResponse(message);
@@ -190,7 +190,6 @@ const globalStateCreateAllPlotsOperation = {
     totalCount: 0,
 };
 
-
 // Initialization
 function initialize() {
     console.log('🔧 WebView initialized - starting debug session');
@@ -212,15 +211,16 @@ function initialize() {
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    console.log('⚛️ 🔧 Document is not ready - Attach event listener to DOMContentLoaded');
+    console.log(
+        '⚛️ 🔧 Document is not ready - Attach event listener to DOMContentLoaded'
+    );
     document.addEventListener('DOMContentLoaded', () => {
         initialize();
     });
-    } else {
-        console.log('⚛️ 🔧 Document is ready - DOM already loaded');
+} else {
+    console.log('⚛️ 🔧 Document is ready - DOM already loaded');
     initialize();
 }
-
 
 // Utility functions
 function escapeHtml(unsafe) {
@@ -276,7 +276,7 @@ function setupMessageHandlers() {
         console.log('🔄 UI state changed:', state);
     });
 
-    messageBus.onScrollToHeader(({headerId, headerLabel}) => {
+    messageBus.onScrollToHeader(({ headerId, headerLabel }) => {
         scrollToHeader(headerId, headerLabel);
     });
 
@@ -772,7 +772,8 @@ function displayHtmlRepresentation(htmlData, isDatatree) {
             container.innerHTML = htmlData;
         }
     } else {
-        container.innerHTML = '<p class="muted-text">Failed to load HTML representation</p>';
+        container.innerHTML =
+            '<p class="muted-text">Failed to load HTML representation</p>';
     }
 }
 
@@ -869,7 +870,12 @@ function displayExtensionConfig(configData) {
 }
 
 // Error handling functions
-function displayError(message, details = '', errorType = '', formatInfo = null) {
+function displayError(
+    message,
+    details = '',
+    errorType = '',
+    formatInfo = null
+) {
     const errorDiv = document.getElementById('error');
 
     // Format message to handle multi-line errors
@@ -1067,8 +1073,6 @@ function showVariablePlotError(variable, message) {
     }
 }
 
-
-
 function showVariablePlotSuccess(variable, message) {
     const plotError = document.querySelector(
         `.plot-error[data-variable="${variable}"]`
@@ -1093,9 +1097,6 @@ function hideVariablePlotError(variable) {
         plotError.classList.remove('error', 'success');
     }
 }
-
-
-
 
 function updatePlotAllUI(isRunning) {
     const button = document.getElementById('createAllPlotsButton');
@@ -1139,7 +1140,6 @@ function updatePlotAllProgress() {
         plotAllProgress.textContent = `Progress: ${globalStateCreateAllPlotsOperation.completedCount}/${globalStateCreateAllPlotsOperation.totalCount} (${percentage}%)`;
     }
 }
-
 
 function generateDefaultFileName(variable, filePath) {
     const fileName = filePath.split('/').pop();
@@ -1243,15 +1243,15 @@ function setupEventListeners() {
     // Global event listeners (no data-variable attribute)
     const clickEventMappingIdToHandler = {
         // Refresh button
-        'refreshButton': handleRefresh,
+        refreshButton: handleRefresh,
         // Tree control event listeners
-        'expandAllButton': handleExpandAllSections,
-        'collapseAllButton': handleCollapseAllSections,
+        expandAllButton: handleExpandAllSections,
+        collapseAllButton: handleCollapseAllSections,
         // Global plot controls
-        'createAllPlotsButton': handleCreateAllPlots,
-        'resetAllPlotsButton': handleResetAllPlots,
-        'saveAllPlotsButton': handleSaveAllPlots,
-    }
+        createAllPlotsButton: handleCreateAllPlots,
+        resetAllPlotsButton: handleResetAllPlots,
+        saveAllPlotsButton: handleSaveAllPlots,
+    };
 
     // Per-variable event listeners for plot controls (needs data-variable attribute)
     const clickEventMappingClassToHandler = {
@@ -1260,12 +1260,12 @@ function setupEventListeners() {
         'save-plot': handleSaveVariablePlot,
         'save-plot-as': handleSaveVariablePlotAs,
         'open-plot': handleOpenVariablePlot,
-    }
+    };
 
     // Change event listeners for plot type select
     const changeEventMappingClassToHandler = {
         'plot-type-select': handlePlotTypeSelect,
-    }
+    };
 
     // Event delegation for dynamic event handling (eg tags added after page load)
     document.addEventListener('click', async (e) => {
@@ -1277,7 +1277,9 @@ function setupEventListeners() {
         }
 
         // Global event listeners (no data-variable attribute)
-        for (const [id, handler] of Object.entries(clickEventMappingIdToHandler)) {
+        for (const [id, handler] of Object.entries(
+            clickEventMappingIdToHandler
+        )) {
             if (e.target.id === id) {
                 handler();
                 return;
@@ -1285,7 +1287,9 @@ function setupEventListeners() {
         }
 
         // Per-variable event listeners for plot controls (needs data-variable attribute)
-        for (const [className, handler] of Object.entries(clickEventMappingClassToHandler)) {
+        for (const [className, handler] of Object.entries(
+            clickEventMappingClassToHandler
+        )) {
             if (e.target.classList.contains(className)) {
                 const variable = e.target.dataset.variable;
                 await handler(variable);
@@ -1295,7 +1299,9 @@ function setupEventListeners() {
     });
     document.addEventListener('change', async (e) => {
         // Change event listeners for plot type select
-        for (const [className, handler] of Object.entries(changeEventMappingClassToHandler)) {
+        for (const [className, handler] of Object.entries(
+            changeEventMappingClassToHandler
+        )) {
             if (e.target.classList.contains(className)) {
                 const variable = e.target.getAttribute('data-variable');
                 await handler(variable);
@@ -1303,13 +1309,10 @@ function setupEventListeners() {
             }
         }
     });
-
 }
 
 async function handleTextCopy(button) {
-    const text = document.getElementById(
-        button.dataset.targetId
-    )?.textContent;
+    const text = document.getElementById(button.dataset.targetId)?.textContent;
     try {
         await navigator.clipboard.writeText(text);
         button.textContent = '✓ Copied!';
@@ -1534,7 +1537,6 @@ async function handleSaveAllPlots() {
     }
 }
 
-
 async function handleCreateVariablePlot(variable) {
     const plotTypeSelect = document.querySelector(
         `.plot-type-select[data-variable="${variable}"]`
@@ -1545,10 +1547,7 @@ async function handleCreateVariablePlot(variable) {
     showVariablePlotLoading(variable);
 
     try {
-        const plotData = await messageBus.createPlot(
-            variable,
-            plotType
-        );
+        const plotData = await messageBus.createPlot(variable, plotType);
         displayVariablePlot(variable, plotData);
     } catch (error) {
         console.error('Failed to create plot:', error);
@@ -1556,9 +1555,7 @@ async function handleCreateVariablePlot(variable) {
         const container = document.querySelector(
             `.plot-container[data-variable="${variable}"]`
         );
-        const imageContainer = container.querySelector(
-            '.plot-image-container'
-        );
+        const imageContainer = container.querySelector('.plot-image-container');
         imageContainer.innerHTML = '';
         showVariablePlotError(
             variable,
@@ -1692,9 +1689,8 @@ async function handlePlotTypeSelect(variable) {
     }
 }
 
-
 // Scroll to header function
-function scrollToHeader(headerId, headerLabel, verticalOffset = 80) {
+function scrollToHeader(headerId, headerLabel, verticalOffset = 80, highlightTimeout = 3000) {
     console.log(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
 
     // Try to find the element by ID first
@@ -1745,7 +1741,7 @@ function scrollToHeader(headerId, headerLabel, verticalOffset = 80) {
         // Remove highlight after 3 seconds
         setTimeout(() => {
             element.classList.remove('highlighted');
-        }, 3000);
+        }, highlightTimeout);
 
         console.log(`📋 Successfully scrolled to header: ${headerLabel}`);
     } else {
