@@ -10,8 +10,9 @@ export class PythonManager {
     private isInitialized: boolean = false;
     private initializationPromise: Promise<void> | null = null;
 
-    constructor(private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager) {
-    }
+    constructor(
+        private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager
+    ) {}
 
     async _initialize(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
@@ -29,47 +30,65 @@ export class PythonManager {
 
     private async _doInitialize(): Promise<void> {
         try {
-            const config = vscode.workspace.getConfiguration('scientificDataViewer.python');
-            
+            Logger.info('🐍 🔧 [INIT] Initializing Python manager');
+            const config = vscode.workspace.getConfiguration(
+                'scientificDataViewer.python'
+            );
+
             // First, check if there's an override interpreter set
-            const overrideInterpreter = config.get<string>('overridePythonInterpreter', '');
+            const overrideInterpreter = config.get<string>(
+                'overridePythonInterpreter',
+                ''
+            );
             if (overrideInterpreter) {
-                Logger.info(`🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`);
+                Logger.info(
+                    `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`
+                );
                 await this.validatePythonEnvironment(overrideInterpreter);
                 await this.updateCurrentlyUsedInterpreter('override');
                 return;
             }
-            
+
             // Check if extension environment is enabled
-            const useExtensionEnv = config.get<boolean>('useExtensionOwnEnvironment', false);
+            const useExtensionEnv = config.get<boolean>(
+                'useExtensionOwnEnvironment',
+                false
+            );
             if (useExtensionEnv) {
                 Logger.info('🐍 🔧 Using extension virtual environment');
-                
+
                 if (this.extensionEnvManager.isReady()) {
-                    await this.validatePythonEnvironment(this.extensionEnvManager.getPythonPath());
+                    await this.validatePythonEnvironment(
+                        this.extensionEnvManager.getPythonPath()
+                    );
                     await this.updateCurrentlyUsedInterpreter('extension');
                     return;
                 } else {
                     // Try to create the extension environment
-                    const created = await this.extensionEnvManager.createExtensionEnvironment();
+                    const created =
+                        await this.extensionEnvManager.createExtensionEnvironment();
                     if (created && this.extensionEnvManager.isReady()) {
-                        await this.validatePythonEnvironment(this.extensionEnvManager.getPythonPath());
+                        await this.validatePythonEnvironment(
+                            this.extensionEnvManager.getPythonPath()
+                        );
                         await this.updateCurrentlyUsedInterpreter('extension');
                         return;
                     } else {
-                        Logger.warn('🐍 ⚠️ Failed to create extension environment, falling back to Python extension');
+                        Logger.warn(
+                            '🐍 ⚠️ Failed to create extension environment, falling back to Python extension'
+                        );
                     }
                 }
             }
 
             // Fallback: Use Python extension API (original behavior)
-            const newPythonPath = await this.getPythonInterpreterFromExtension();
+            const newPythonPath =
+                await this.getPythonInterpreterFromExtension();
 
-            if (newPythonPath && newPythonPath !== this.pythonPath) {
+            if (newPythonPath) {
                 Logger.info(
                     `🐍 🔀 Python interpreter changed from ${this.pythonPath} to ${newPythonPath}`
                 );
-                this.pythonPath = newPythonPath;
                 await this.validatePythonEnvironment(newPythonPath);
                 await this.updateCurrentlyUsedInterpreter('python-extension');
                 return;
@@ -105,9 +124,7 @@ export class PythonManager {
         }
     }
 
-    private async getPythonInterpreterFromExtension(): Promise<
-        string | null
-    > {
+    private async getPythonInterpreterFromExtension(): Promise<string | null> {
         try {
             const pythonExtension =
                 vscode.extensions.getExtension('ms-python.python');
@@ -449,7 +466,9 @@ export class PythonManager {
         });
     }
 
-    private async validatePythonEnvironment(pythonPath: string | null): Promise<void> {
+    private async validatePythonEnvironment(
+        pythonPath: string | null
+    ): Promise<void> {
         this.isInitialized = false;
         this.pythonPath = pythonPath;
 
@@ -462,6 +481,7 @@ export class PythonManager {
         }
 
         try {
+            // TODO eschalk CHECK VERSION to ensure the interpreter path is correct and not dsajdas !
             const packages = await this.checkRequiredPackages(this.pythonPath);
             const corePackages = ['xarray', 'matplotlib'];
             const missingCorePackages = corePackages.filter(
@@ -1059,66 +1079,71 @@ export class PythonManager {
     ): Promise<void> {
         const interpreterPath = this.pythonPath;
         try {
-            const config = vscode.workspace.getConfiguration('scientificDataViewer.python');
-            const currentValue = config.get<string>('currentlyInUseInterpreter', '');
-            
+            const config = vscode.workspace.getConfiguration(
+                'scientificDataViewer.python'
+            );
+            const currentValue = config.get<string>(
+                'currentlyInUseInterpreter',
+                ''
+            );
+
             if (currentValue !== interpreterPath) {
                 await config.update(
                     'currentlyInUseInterpreter',
                     interpreterPath,
                     vscode.ConfigurationTarget.Workspace
                 );
-                Logger.info(`🐍 📝 Updated currently used interpreter: ${interpreterPath} (source: ${source})`);
+                Logger.info(
+                    `🐍 📝 Updated currently used interpreter: ${interpreterPath} (source: ${source})`
+                );
             }
         } catch (error) {
-            Logger.warn(`🐍 ⚠️ Failed to update currently used interpreter: ${error}`);
+            Logger.warn(
+                `🐍 ⚠️ Failed to update currently used interpreter: ${error}`
+            );
         }
     }
 
     /**
      * Get information about the current Python environment
      */
-    async getCurrentEnvironmentInfo(): Promise<{ type: string; path: string; packages: string[] } | undefined> {
+    async getCurrentEnvironmentInfo(): Promise<
+        { type: string; path: string; packages: string[] } | undefined
+    > {
         if (!this.pythonPath) {
             return undefined;
+        }
+
+        // Check if current interpreter is from override
+        const overrideInterpreter = vscode.workspace
+            .getConfiguration('scientificDataViewer.python')
+            .get<string>('overridePythonInterpreter', '');
+        if (overrideInterpreter && this.pythonPath === overrideInterpreter) {
+            return {
+                type: 'override',
+                path: this.pythonPath,
+                packages: [],
+            };
         }
 
         // Check if current interpreter is from the extension environment
         const extensionEnv = this.extensionEnvManager.getExtensionEnvironment();
         if (extensionEnv && this.pythonPath === extensionEnv.pythonPath) {
             return {
-                type: 'extension',
-                path: extensionEnv.path,
-                packages: extensionEnv.packages || []
+                type: 'own-uv-env',
+                path: this.pythonPath,
+                packages: extensionEnv.packages || [],
             };
         }
 
-        // Check if current interpreter is from a detected virtual environment
-        const detectedEnvs = this.virtualEnvManager.getDetectedEnvironments();
-        const currentEnv = detectedEnvs.find(env => env.pythonPath === this.pythonPath);
-        
-        if (currentEnv) {
+        // Check if current interpreter is from the Python official extension
+        if (
+            this.pythonPath === (await this.getPythonInterpreterFromExtension())
+        ) {
             return {
-                type: currentEnv.type,
-                path: currentEnv.path,
-                packages: currentEnv.packages || []
-            };
-        }
-
-        // If not from a detected environment, get basic info
-        try {
-            const packages = await this.virtualEnvManager.getInstalledPackages(this.pythonPath);
-            return {
-                type: 'system',
+                type: 'python-extension',
                 path: this.pythonPath,
-                packages: packages
-            };
-        } catch (error) {
-            Logger.debug(`🐍 Could not get environment info: ${error}`);
-            return {
-                type: 'unknown',
-                path: this.pythonPath,
-                packages: []
+                packages: [],
             };
         }
     }
@@ -1126,18 +1151,21 @@ export class PythonManager {
     /**
      * Create the extension virtual environment
      */
-    async createExtensionEnvironment(): Promise<void> {
+    async createExtensionOwnEnvironment(): Promise<void> {
         try {
-            const created = await this.extensionEnvManager.createExtensionEnvironment();
-            
+            const created =
+                await this.extensionEnvManager.createExtensionEnvironment();
+
             if (created) {
                 // Update the configuration to use the extension environment
-                const config = vscode.workspace.getConfiguration('scientificDataViewer.python');
-                await config.update('useExtensionOwnEnvironment', true, vscode.ConfigurationTarget.Workspace);
-                
-                await this.validatePythonEnvironment(this.extensionEnvManager.getPythonPath()!);
-                await this.updateCurrentlyUsedInterpreter('extension');
-                
+                const config = vscode.workspace.getConfiguration(
+                    'scientificDataViewer.python'
+                );
+                await config.update(
+                    'useExtensionOwnEnvironment',
+                    true,
+                    vscode.ConfigurationTarget.Workspace
+                );
                 vscode.window.showInformationMessage(
                     '✅ Extension virtual environment created successfully! The extension will now use its own isolated environment.'
                 );
@@ -1147,35 +1175,43 @@ export class PythonManager {
                 );
             }
         } catch (error) {
-            Logger.error(`🔧 ❌ Failed to create extension environment: ${error}`);
-            vscode.window.showErrorMessage(`Failed to create extension environment: ${error}`);
+            Logger.error(
+                `🔧 ❌ Failed to create extension environment: ${error}`
+            );
+            vscode.window.showErrorMessage(
+                `Failed to create extension environment: ${error}`
+            );
         }
     }
 
     /**
      * Manage the extension virtual environment
      */
-    async manageExtensionEnvironment(): Promise<void> {
+    async manageExtensionOwnEnvironment(): Promise<void> {
         try {
             const envInfo = this.extensionEnvManager.getEnvironmentInfo();
-            
+
             if (!envInfo.isCreated) {
                 const action = await vscode.window.showInformationMessage(
                     'Extension virtual environment not found. Would you like to create one?',
                     'Create Environment',
                     'Cancel'
                 );
-                
+
                 if (action === 'Create Environment') {
-                    await this.createExtensionEnvironment();
+                    await this.createExtensionOwnEnvironment();
                 }
                 return;
             }
 
-            const sizeText = envInfo.size ? this.extensionEnvManager.formatBytes(envInfo.size) : 'Unknown';
+            const sizeText = envInfo.size
+                ? this.extensionEnvManager.formatBytes(envInfo.size)
+                : 'Unknown';
             const lastUpdated = envInfo.lastUpdated.toLocaleString();
-            
-            const toolUsed = (envInfo as any).createdWithUv ? 'uv (Python 3.13)' : 'Python venv';
+
+            const toolUsed = (envInfo as any).createdWithUv
+                ? 'uv (Python 3.13)'
+                : 'Python venv';
             const message = `Extension Virtual Environment Status:
 
 📁 Path: ${envInfo.path}
@@ -1198,76 +1234,96 @@ What would you like to do?`;
 
             switch (action) {
                 case 'Update Packages':
-                    await this.updateExtensionEnvironmentPackages();
+                    await this.updateExtensionOwnEnvironmentPackages();
                     break;
                 case 'Delete Environment':
-                    await this.deleteExtensionEnvironment();
+                    await this.deleteExtensionOwnEnvironment();
                     break;
                 case 'Open in Explorer':
-                    vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(envInfo.path));
+                    vscode.commands.executeCommand(
+                        'revealFileInOS',
+                        vscode.Uri.file(envInfo.path)
+                    );
                     break;
             }
         } catch (error) {
-            Logger.error(`🔧 ❌ Failed to manage extension environment: ${error}`);
-            vscode.window.showErrorMessage(`Failed to manage extension environment: ${error}`);
+            Logger.error(
+                `🔧 ❌ Failed to manage extension environment: ${error}`
+            );
+            vscode.window.showErrorMessage(
+                `Failed to manage extension environment: ${error}`
+            );
         }
     }
 
     /**
      * Update packages in the extension virtual environment
      */
-    async updateExtensionEnvironmentPackages(): Promise<void> {
+    async updateExtensionOwnEnvironmentPackages(): Promise<void> {
         try {
             Logger.info('📦 Updating extension environment packages...');
             const updated = await this.extensionEnvManager.updatePackages();
-            
+
             if (updated) {
-                vscode.window.showInformationMessage('✅ Extension environment packages updated successfully!');
+                vscode.window.showInformationMessage(
+                    '✅ Extension environment packages updated successfully!'
+                );
             } else {
-                vscode.window.showErrorMessage('❌ Failed to update extension environment packages.');
+                vscode.window.showErrorMessage(
+                    '❌ Failed to update extension environment packages.'
+                );
             }
         } catch (error) {
-            Logger.error(`📦 ❌ Failed to update extension environment packages: ${error}`);
-            vscode.window.showErrorMessage(`Failed to update packages: ${error}`);
+            Logger.error(
+                `📦 ❌ Failed to update extension environment packages: ${error}`
+            );
+            vscode.window.showErrorMessage(
+                `Failed to update packages: ${error}`
+            );
         }
     }
 
     /**
      * Delete the extension virtual environment
      */
-    async deleteExtensionEnvironment(): Promise<void> {
+    async deleteExtensionOwnEnvironment(): Promise<void> {
         try {
             const action = await vscode.window.showWarningMessage(
                 'Are you sure you want to delete the extension virtual environment? This action cannot be undone.',
                 'Delete',
                 'Cancel'
             );
-            
+
             if (action === 'Delete') {
                 Logger.info('🗑️ Deleting extension virtual environment...');
-                const deleted = await this.extensionEnvManager.deleteExtensionEnvironment();
-                
+                const deleted =
+                    await this.extensionEnvManager.deleteExtensionEnvironment();
+
                 if (deleted) {
-                    // Reset to use other environments
-                    const config = vscode.workspace.getConfiguration('scientificDataViewer.python');
-                    await config.update('useExtensionOwnEnvironment', false, vscode.ConfigurationTarget.Workspace);
-                    
-                    // Clear the currently used interpreter
-                    await config.update('currentlyInUseInterpreter', '', vscode.ConfigurationTarget.Workspace);
-                    
-                    // Reinitialize with other options
-                    this.pythonPath = undefined;
-                    this.isInitialized = false;
-                    await this.forceInitialize();
-                    
-                    vscode.window.showInformationMessage('✅ Extension virtual environment deleted successfully!');
+                    const config = vscode.workspace.getConfiguration(
+                        'scientificDataViewer.python'
+                    );
+                    await config.update(
+                        'useExtensionOwnEnvironment',
+                        false,
+                        vscode.ConfigurationTarget.Workspace
+                    );
+                    vscode.window.showInformationMessage(
+                        '✅ Extension virtual environment deleted successfully!'
+                    );
                 } else {
-                    vscode.window.showErrorMessage('❌ Failed to delete extension virtual environment.');
+                    vscode.window.showErrorMessage(
+                        '❌ Failed to delete extension virtual environment.'
+                    );
                 }
             }
         } catch (error) {
-            Logger.error(`🗑️ ❌ Failed to delete extension environment: ${error}`);
-            vscode.window.showErrorMessage(`Failed to delete extension environment: ${error}`);
+            Logger.error(
+                `🗑️ ❌ Failed to delete extension environment: ${error}`
+            );
+            vscode.window.showErrorMessage(
+                `Failed to delete extension environment: ${error}`
+            );
         }
     }
 

@@ -6,66 +6,7 @@ import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
-
-class ScientificDataEditorProvider
-    implements vscode.CustomReadonlyEditorProvider
-{
-    constructor(
-        private readonly extensionContext: vscode.ExtensionContext,
-        private readonly dataProcessor: DataProcessor
-    ) {}
-
-    public async openCustomDocument(
-        uri: vscode.Uri,
-        openContext: vscode.CustomDocumentOpenContext,
-        _token: vscode.CancellationToken
-    ): Promise<vscode.CustomDocument> {
-        Logger.info(`🚚 📖 Opening custom document for: ${uri.fsPath}`);
-
-        // Create a custom document that represents the file
-        return {
-            uri: uri,
-            dispose: () => {
-                Logger.info(
-                    `🚚 📕 Disposed custom document for: ${uri.fsPath}`
-                );
-            },
-        };
-    }
-
-    public async resolveCustomEditor(
-        document: vscode.CustomDocument,
-        webviewPanel: vscode.WebviewPanel,
-        _token: vscode.CancellationToken
-    ): Promise<void> {
-        Logger.info(
-            `🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`
-        );
-
-        // Wait for Python initialization to complete before creating the panel
-        // This prevents the race condition where file opening happens before Python validation
-        try {
-            await this.dataProcessor.pythonManagerInstance.waitForInitialization();
-            Logger.info(
-                `🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`
-            );
-        } catch (error) {
-            Logger.warn(
-                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
-            );
-        }
-
-        // Reuse the provided webviewPanel instead of creating a new one
-        // This eliminates the flickering issue
-        // No need to createOrReveal since VSCode is handling itself the uniqueness
-        // of the opened tab.
-        DataViewerPanel.createFromWebviewPanel(
-            document.uri,
-            webviewPanel,
-            getWebviewOptions(this.extensionContext)
-        );
-    }
-}
+import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -122,6 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const config = vscode.workspace.getConfiguration(
                     'scientificDataViewer'
                 );
+                const devMode = config.get('devMode', false);
                 const changedSettings: string[] = [];
 
                 // Check each configuration property for changes
@@ -141,34 +83,45 @@ export function activate(context: vscode.ExtensionContext) {
 
                         if (key == 'python.overridePythonInterpreter') {
                             // Show a notification that the overridePythonInterpreter has changed
-                            vscode.window.showInformationMessage(
-                                `The overriden Python interpreter has changed to ${formattedValue}. (${description})`
-                            );
+                            if (devMode)
+                                vscode.window.showInformationMessage(
+                                    `The overriden Python interpreter has changed to ${formattedValue}. (${description})`
+                                );
+                            refreshPython(pythonManager, statusBarItem);
+                        } else if (key == 'python.useExtensionOwnEnvironment') {
+                            if (devMode)
+                                vscode.window.showInformationMessage(
+                                    `The extension's usage of its own virtual environment has changed to ${formattedValue}. (${description})`
+                                );
                             refreshPython(pythonManager, statusBarItem);
                         }
                     }
-                }
 
-                // TODO eschalk Only show the notification for devMode as it is intrusive.
-                if (changedSettings.length > 0) {
-                    // Show specific notification for changed settings
-                    const message =
-                        changedSettings.length === 1
-                            ? `Configuration updated: ${changedSettings[0]}`
-                            : `Configuration updated:\n• ${changedSettings.join(
-                                  '\n• '
-                              )}`;
+                    // Only show the notification for devMode as it is intrusive.
+                    if (devMode && changedSettings.length > 0) {
+                        // Show specific notification for changed settings
+                        const message =
+                            changedSettings.length === 1
+                                ? `Configuration updated: ${changedSettings[0]}`
+                                : `Configuration updated:\n• ${changedSettings.join(
+                                      '\n• '
+                                  )}`;
 
-                    vscode.window
-                        .showInformationMessage(message, 'OK', 'Show Settings')
-                        .then((selection) => {
-                            if (selection === 'Show Settings') {
-                                vscode.commands.executeCommand(
-                                    'workbench.action.openSettings',
-                                    'scientificDataViewer'
-                                );
-                            }
-                        });
+                        vscode.window
+                            .showInformationMessage(
+                                message,
+                                'OK',
+                                'Show Settings'
+                            )
+                            .then((selection) => {
+                                if (selection === 'Show Settings') {
+                                    vscode.commands.executeCommand(
+                                        'workbench.action.openSettings',
+                                        'scientificDataViewer'
+                                    );
+                                }
+                            });
+                    }
                 }
             }
         }
@@ -233,7 +186,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register custom editor providers
     Logger.info('🔧 Registering custom editor providers...');
     const sciEditorProvider = new ScientificDataEditorProvider(
-        context,
+        webviewOptions,
         dataProcessor
     );
     const options = {
@@ -454,7 +407,7 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.uv.createExtensionEnvironment',
         async () => {
             Logger.info('🎮 🔧 Command: Create Extension Virtual Environment');
-            await pythonManager.createExtensionEnvironment();
+            await pythonManager.createExtensionOwnEnvironment();
         }
     );
 
@@ -462,7 +415,7 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.uv.manageExtensionEnvironment',
         async () => {
             Logger.info('🎮 🔧 Command: Manage Extension Virtual Environment');
-            await pythonManager.manageExtensionEnvironment();
+            await pythonManager.manageExtensionOwnEnvironment();
         }
     );
 
@@ -470,7 +423,7 @@ export function activate(context: vscode.ExtensionContext) {
         'scientificDataViewer.uv.deleteExtensionEnvironment',
         async () => {
             Logger.info('🎮 🗑️ Command: Delete Extension Virtual Environment');
-            await pythonManager.deleteExtensionEnvironment();
+            await pythonManager.deleteExtensionOwnEnvironment();
         }
     );
 
@@ -701,7 +654,7 @@ async function updateStatusBar(
     statusBarItem: vscode.StatusBarItem
 ) {
     const pythonPath = pythonManager.getPythonPath();
-    if (pythonPath && pythonManager.isReady()) {
+    if (pythonPath) {
         // Only show status bar when interpreter is selected and ready
         const interpreterName =
             pythonPath.split('/').pop() ||
@@ -710,41 +663,21 @@ async function updateStatusBar(
 
         // Get environment info to show virtual environment type
         try {
+            const readyString = pythonManager.isReady() ? 'Ready' : 'Not Ready';
+            const icon = pythonManager.isReady() ? '$(check)' : '$(x)';
             const envInfo = await pythonManager.getCurrentEnvironmentInfo();
             if (envInfo) {
-                const envType =
-                    envInfo.type === 'system'
-                        ? 'System'
-                        : envInfo.type === 'extension'
-                        ? 'Extension'
-                        : envInfo.type === 'uv'
-                        ? 'UV'
-                        : envInfo.type === 'venv'
-                        ? 'Venv'
-                        : envInfo.type === 'conda'
-                        ? 'Conda'
-                        : envInfo.type === 'pipenv'
-                        ? 'Pipenv'
-                        : envInfo.type === 'poetry'
-                        ? 'Poetry'
-                        : envInfo.type;
-
-                statusBarItem.text = `$(check) SDV: Ready (${envType} - ${interpreterName})`;
-                statusBarItem.tooltip = `Current Python interpreter for Scientific Data Viewer: ${interpreterName} (${pythonPath})`;
+                statusBarItem.text = `${icon} SDV: ${readyString} (${envInfo.type})`;
             } else {
-                statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
-                statusBarItem.tooltip = `Current Python interpreter for Scientific Data Viewer: ${interpreterName} (${pythonPath})`;
+                statusBarItem.text = `${icon} SDV: ${readyString}`;
             }
         } catch (error) {
             Logger.debug(`Could not get environment info: ${error}`);
-            statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
+            statusBarItem.text = `$(question) SDV: Unknown`;
         }
-
+        statusBarItem.tooltip = `Scientific Data Viewer: Current Python interpreter: ${interpreterName} (${pythonPath})`;
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
-    } else {
-        // Hide status bar when no interpreter or not ready
-        statusBarItem.hide();
     }
 }
 
