@@ -115,7 +115,7 @@ export class DataProcessor {
 
     async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
         Logger.debug(`[getDataInfo] Getting data info for file: ${uri.fsPath}`);
-        if (!this.pythonManager.isReady()) {
+        if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
 
@@ -145,7 +145,7 @@ export class DataProcessor {
         variable: string,
         plotType: string = 'auto'
     ): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
+        if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
 

@@ -2,6 +2,25 @@
  * Webview JavaScript for Scientific Data Viewer
  */
 
+// TODO eschalk remove hardcoded supported extensions and use package.json
+const SUPPORTED_EXTENSIONS_HARDOCDED = [
+    '.nc',
+    '.netcdf',
+    '.nc4',
+    '.cdf',
+    '.zarr',
+    '.h5',
+    '.hdf5',
+    '.grib',
+    '.grib2',
+    ".grb",
+    '.tif',
+    '.tiff',
+    '.geotiff',
+    '.jp2',
+    '.jpeg2000',
+    // '.safe',
+];
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -862,7 +881,8 @@ function displayGlobalError(
     message,
     details = '',
     errorType = '',
-    formatInfo = null
+    formatInfo = null,
+    supportedFormats = SUPPORTED_EXTENSIONS_HARDOCDED.join(', ')
 ) {
     const errorDiv = document.getElementById('error');
 
@@ -876,7 +896,7 @@ function displayGlobalError(
             <li>Make sure Python is installed and accessible</li>
             <li>Use Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → "Python: Select Interpreter"</li>
             <li>Install required packages: <code>pip install xarray matplotlib</code></li>
-            <li>Check file format is supported (.nc, .netcdf, .zarr, .h5, .hdf5, .grib, .grib2, .grb, .tif, .tiff, .geotiff, .jp2, .jpeg2000, .safe, .nc4, .cdf)</li>
+            <li>Check file format is supported (${supportedFormats})</li>
             <li><a href="#" onclick="executeShowLogsCommand()">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
             <li>In doubt, close and reopen the file</li>

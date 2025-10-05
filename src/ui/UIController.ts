@@ -165,21 +165,21 @@ export class UIController {
                 await this.dataProcessor.pythonManagerInstance.waitForInitialization();
 
                 // Check Python environment
-                if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
+                if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
                     throw new Error(
                         'Python path not found. Please configure Python interpreter first.'
                     );
                 }
 
-                if (!this.dataProcessor.pythonManagerInstance.isReady()) {
+                if (!this.dataProcessor.pythonManagerInstance.ready) {
                     const xarrayAvailable =
                         await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                            this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
+                            this.dataProcessor.pythonManagerInstance.pythonPath!,
                             'xarray'
                         );
                     const matplotlibAvailable =
                         await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                            this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
+                            this.dataProcessor.pythonManagerInstance.pythonPath!,
                             'matplotlib'
                         );
                     if (!xarrayAvailable && !matplotlibAvailable) {
@@ -249,11 +249,11 @@ export class UIController {
                 this.stateManager.setLoading(false);
                 this.stateManager.setError(null);
                 this.stateManager.setPythonPath(
-                    this.dataProcessor.pythonManagerInstance.getCurrentPythonPath() ||
+                    this.dataProcessor.pythonManagerInstance.pythonPath ||
                         null
                 );
                 this.stateManager.setPythonReady(
-                    this.dataProcessor.pythonManagerInstance.isReady()
+                    this.dataProcessor.pythonManagerInstance.ready
                 );
                 this.stateManager.setExtension(
                     await this.handleGetExtensionConfig()
@@ -312,7 +312,7 @@ export class UIController {
 
             const canPlot =
                 await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                    this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
+                    this.dataProcessor.pythonManagerInstance.pythonPath!,
                     'matplotlib'
                 );
             if (!canPlot) {

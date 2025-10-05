@@ -97,6 +97,10 @@
             ],
             "commandPalette": [
                 {
+                    "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                    "when": "true"
+                },
+                {
                     "command": "scientificDataViewer.openViewer",
                     "when": "true"
                 },
@@ -123,10 +127,6 @@
                 {
                     "command": "scientificDataViewer.expandAll",
                     "when": "false"
-                },
-                {
-                    "command": "scientificDataViewer.manageExtensionOwnEnvironment",
-                    "when": "true"
                 }
             ],
             "view/title": [
@@ -409,7 +409,7 @@
                     "default": false,
                     "order": 1000,
                     "description": "Use the extension's own virtual environment (requires uv)",
-                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
+                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**, otherwise this setting will have no effect, and the extension will fall back to using the Python extension's interpreter. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
                 }
             }
         }

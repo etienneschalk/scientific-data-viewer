@@ -19,7 +19,7 @@ export class ExtensionVirtualEnvironmentManager {
     public readonly PYTHON_VERSION = '3.13';
     public readonly UV_INSTALLATION_URL =
         'https://docs.astral.sh/uv/getting-started/installation/';
-    private extensionEnv: ExtensionVirtualEnvironment | null = null;
+    private extensionEnv: ExtensionVirtualEnvironment;
     private readonly ENV_FOLDER_NAME = 'python-environment';
     private readonly REQUIRED_PACKAGES = [
         'xarray',
@@ -33,14 +33,132 @@ export class ExtensionVirtualEnvironmentManager {
         'rioxarray',
     ];
 
-    constructor(private context: vscode.ExtensionContext) {
-        this.initializeExtensionEnvironment();
+    /**
+     * Check if the extension virtual environment is ready to use
+     */
+    get ready(): boolean {
+        return (
+            this.extensionEnv !== null &&
+            this.extensionEnv.isCreated &&
+            this.extensionEnv.isInitialized &&
+            fs.existsSync(this.extensionEnv.pythonPath)
+        );
+    }
+
+    /**
+     * Get the Python path for the extension virtual environment
+     */
+    get pythonPath(): string | null {
+        if (this.ready) {
+            return this.extensionEnv!.pythonPath;
+        }
+        return null;
+    }
+
+    /**
+     * Create the extension's virtual environment
+     */
+    async create() {
+        Logger.info('🔧 Creating extension virtual environment...');
+
+        // Ensure the storage directory exists
+        await fs.promises.mkdir(this.context.globalStorageUri.fsPath, {
+            recursive: true,
+        });
+
+        // Check if uv is available
+        const uvAvailable = await this.uvCheckAvailability();
+
+        if (!uvAvailable) {
+            throw new Error('uv is not available');
+        }
+
+        // First, install python with uv to ensure Python is available
+        await this.uvInstallPython();
+
+        // Use uv to create the virtual environment with Python
+        await this.uvCreateVirtualEnvironment(this.extensionEnv!.path);
+        this.extensionEnv!.createdWithUv = true;
+
+        // Update the extension environment state
+        this.extensionEnv!.isCreated = true;
+        this.extensionEnv!.isInitialized = false;
+
+        // Install required packages
+        await this.uvInstallRequiredPackages();
+
+        this.extensionEnv!.isInitialized = true;
+        this.extensionEnv!.lastUpdated = new Date();
+
+        Logger.info('✅ Extension virtual environment created successfully');
+    }
+
+    /**
+     * Get the extension virtual environment
+     */
+    retrieve(): ExtensionVirtualEnvironment {
+        return this.extensionEnv;
+    }
+
+    /**
+     * Update packages in the extension virtual environment
+     */
+    async update(): Promise<boolean> {
+        if (!this.ready) {
+            Logger.warn(
+                'Extension virtual environment not ready for package updates'
+            );
+            return false;
+        }
+
+        try {
+            Logger.info(
+                '📦 Updating packages in extension virtual environment...'
+            );
+            await this.uvInstallRequiredPackages();
+            this.extensionEnv!.lastUpdated = new Date();
+            Logger.info('✅ Packages updated successfully');
+            return true;
+        } catch (error) {
+            Logger.error(`❌ Failed to update packages: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Delete the extension virtual environment
+     */
+    async delete(): Promise<boolean> {
+        try {
+            if (this.extensionEnv && this.extensionEnv.isCreated) {
+                Logger.info('🗑️ Deleting extension virtual environment...');
+                await fs.promises.rm(this.extensionEnv.path, {
+                    recursive: true,
+                    force: true,
+                });
+
+                this.extensionEnv.isCreated = false;
+                this.extensionEnv.isInitialized = false;
+                this.extensionEnv.packages = [];
+
+                Logger.info(
+                    '✅ Extension virtual environment deleted successfully'
+                );
+                return true;
+            }
+            return true;
+        } catch (error) {
+            Logger.error(
+                `❌ Failed to delete extension virtual environment: ${error}`
+            );
+            return false;
+        }
     }
 
     /**
      * Initialize the extension virtual environment
      */
-    private initializeExtensionEnvironment(): void {
+    constructor(private context: vscode.ExtensionContext) {
         const envPath = path.join(
             this.context.globalStorageUri.fsPath,
             this.ENV_FOLDER_NAME
@@ -73,46 +191,9 @@ export class ExtensionVirtualEnvironmentManager {
     }
 
     /**
-     * Create the extension's virtual environment
-     */
-    async createExtensionEnvironment() {
-        Logger.info('🔧 Creating extension virtual environment...');
-
-        // Ensure the storage directory exists
-        await fs.promises.mkdir(this.context.globalStorageUri.fsPath, {
-            recursive: true,
-        });
-
-        // Check if uv is available - if not, fall back to Python venv
-        const uvAvailable = await this.checkUvAvailability();
-
-        if (!uvAvailable) {
-            throw new Error('uv is not available');
-        }
-
-        // Use uv to create the virtual environment with Python
-        await this.installPythonAndCreateVirtualEnvironmentWithUv(
-            this.extensionEnv!.path
-        );
-        this.extensionEnv!.createdWithUv = true;
-
-        // Update the extension environment state
-        this.extensionEnv!.isCreated = true;
-        this.extensionEnv!.isInitialized = false;
-
-        // Install required packages
-        await this.installRequiredPackages();
-
-        this.extensionEnv!.isInitialized = true;
-        this.extensionEnv!.lastUpdated = new Date();
-
-        Logger.info('✅ Extension virtual environment created successfully');
-    }
-
-    /**
      * Check if uv is available and can be used to create virtual environments
      */
-    private async checkUvAvailability(): Promise<boolean> {
+    private async uvCheckAvailability(): Promise<boolean> {
         return new Promise((resolve) => {
             Logger.info('🔧 Checking if uv is available...');
             const process = spawn('uv', ['--version'], { shell: true });
@@ -128,15 +209,15 @@ export class ExtensionVirtualEnvironmentManager {
                     resolve(true);
                 } else {
                     Logger.info(
-                        `🔧 ℹ️ℹ️ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                        `🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
                     );
                     resolve(false);
                 }
             });
 
             process.on('error', () => {
-                Logger.info(
-                    `🔧 ℹ️ℹ️ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                Logger.error(
+                    `🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
                 );
                 resolve(false);
             });
@@ -146,7 +227,7 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Install Python using uv
      */
-    private async installPythonWithUv(): Promise<void> {
+    private async uvInstallPython(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info(
                 `🔧 Installing Python ${this.PYTHON_VERSION} with uv...`
@@ -206,12 +287,7 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Create a virtual environment using uv
      */
-    private async installPythonAndCreateVirtualEnvironmentWithUv(
-        envPath: string
-    ): Promise<void> {
-        // First, ensure Python is available via uv
-        await this.installPythonWithUv();
-
+    private async uvCreateVirtualEnvironment(envPath: string): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info(
                 `🔧 Creating virtual environment with uv at: ${envPath}`
@@ -274,25 +350,19 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Install required packages in the extension virtual environment
      */
-    private async installRequiredPackages(): Promise<void> {
+    private async uvInstallRequiredPackages(): Promise<void> {
         if (!this.extensionEnv || !this.extensionEnv.isCreated) {
             throw new Error('Extension virtual environment not created');
         }
 
         // Check if uv is available for package installation
-        const uvAvailable = await this.checkUvAvailability();
+        const uvAvailable = await this.uvCheckAvailability();
 
-        if (uvAvailable) {
-            await this.installPackagesWithUv();
-        } else {
+        if (!uvAvailable) {
             Logger.warn('🔧 uv is not available.');
+            return;
         }
-    }
 
-    /**
-     * Install packages using uv
-     */
-    private async installPackagesWithUv(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info(
                 '📦 Installing required packages in extension virtual environment with uv...'
@@ -352,125 +422,6 @@ export class ExtensionVirtualEnvironmentManager {
             });
         });
     }
-
-    /**
-     * Get the extension virtual environment
-     */
-    getExtensionEnvironment(): ExtensionVirtualEnvironment | null {
-        return this.extensionEnv;
-    }
-
-    /**
-     * Check if the extension virtual environment is ready to use
-     */
-    isReady(): boolean {
-        return (
-            this.extensionEnv !== null &&
-            this.extensionEnv.isCreated &&
-            this.extensionEnv.isInitialized &&
-            fs.existsSync(this.extensionEnv.pythonPath)
-        );
-    }
-
-    /**
-     * Get the Python path for the extension virtual environment
-     */
-    getPythonPath(): string | null {
-        if (this.isReady()) {
-            return this.extensionEnv!.pythonPath;
-        }
-        return null;
-    }
-
-    /**
-     * Update packages in the extension virtual environment
-     */
-    async updatePackages(): Promise<boolean> {
-        if (!this.isReady()) {
-            Logger.warn(
-                'Extension virtual environment not ready for package updates'
-            );
-            return false;
-        }
-
-        try {
-            Logger.info(
-                '📦 Updating packages in extension virtual environment...'
-            );
-            await this.installRequiredPackages();
-            this.extensionEnv!.lastUpdated = new Date();
-            Logger.info('✅ Packages updated successfully');
-            return true;
-        } catch (error) {
-            Logger.error(`❌ Failed to update packages: ${error}`);
-            return false;
-        }
-    }
-
-    /**
-     * Delete the extension virtual environment
-     */
-    async deleteExtensionEnvironment(): Promise<boolean> {
-        try {
-            if (this.extensionEnv && this.extensionEnv.isCreated) {
-                Logger.info('🗑️ Deleting extension virtual environment...');
-                await fs.promises.rm(this.extensionEnv.path, {
-                    recursive: true,
-                    force: true,
-                });
-
-                this.extensionEnv.isCreated = false;
-                this.extensionEnv.isInitialized = false;
-                this.extensionEnv.packages = [];
-
-                Logger.info(
-                    '✅ Extension virtual environment deleted successfully'
-                );
-                return true;
-            }
-            return true;
-        } catch (error) {
-            Logger.error(
-                `❌ Failed to delete extension virtual environment: ${error}`
-            );
-            return false;
-        }
-    }
-
-    /**
-     * Get information about the extension virtual environment
-     */
-    getEnvironmentInfo(): ExtensionVirtualEnvironment {
-        if (!this.extensionEnv) {
-            return {
-                isCreated: false,
-                isInitialized: false,
-                path: '',
-                pythonPath: '',
-                packages: [],
-                lastUpdated: new Date(),
-            };
-        }
-
-        const info = { ...this.extensionEnv };
-        info.packages = this.extensionEnv?.packages || [];
-        info.createdWithUv = this.extensionEnv!.createdWithUv;
-
-        return info;
-    }
-
-    /**
-     * Format bytes to human readable format
-     */
-    formatBytes(bytes: number): string {
-        if (bytes === 0) return '0 Bytes';
-
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
 }
 
 export class ExtensionVirtualEnvironmentManagerUI {
@@ -481,9 +432,9 @@ export class ExtensionVirtualEnvironmentManagerUI {
     /**
      * Manage the extension virtual environment
      */
-    public async manageExtensionOwnEnvironment(): Promise<void> {
+    async manage(): Promise<void> {
         try {
-            const envInfo = this.extensionEnvManager.getEnvironmentInfo();
+            const envInfo = this.extensionEnvManager.retrieve();
 
             if (!envInfo.isCreated) {
                 const createAction = await vscode.window.showQuickPick(
@@ -505,7 +456,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 );
 
                 if (createAction?.label === '$(plus) Create') {
-                    await this.createExtensionOwnEnvironment();
+                    await this.create();
                 }
                 return;
             }
@@ -543,13 +494,13 @@ export class ExtensionVirtualEnvironmentManagerUI {
 
             switch (action?.label) {
                 case '$(plus) Create':
-                    await this.createExtensionOwnEnvironment();
+                    await this.create();
                     break;
                 case '$(sync) Update Packages':
-                    await this.updateExtensionOwnEnvironmentPackages();
+                    await this.update();
                     break;
                 case '$(trash) Delete':
-                    await this.deleteExtensionOwnEnvironment();
+                    await this.delete();
                     break;
                 case '$(folder-opened) Open in Explorer':
                     vscode.commands.executeCommand(
@@ -558,7 +509,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                     );
                     break;
                 case '$(info) Information':
-                    await this.showEnvironmentInfoInEditor(envInfo);
+                    await this.showInfo(envInfo);
                     break;
             }
         } catch (error) {
@@ -574,9 +525,9 @@ export class ExtensionVirtualEnvironmentManagerUI {
     /**
      * Create the extension virtual environment
      */
-    private async createExtensionOwnEnvironment(): Promise<void> {
+    private async create(): Promise<void> {
         try {
-            await this.extensionEnvManager.createExtensionEnvironment();
+            await this.extensionEnvManager.create();
 
             // Update the configuration to use the extension environment
             const config = vscode.workspace.getConfiguration(
@@ -621,10 +572,10 @@ export class ExtensionVirtualEnvironmentManagerUI {
     /**
      * Update packages in the extension virtual environment
      */
-    private async updateExtensionOwnEnvironmentPackages(): Promise<void> {
+    private async update(): Promise<void> {
         try {
             Logger.info('📦 Updating extension environment packages...');
-            const updated = await this.extensionEnvManager.updatePackages();
+            const updated = await this.extensionEnvManager.update();
 
             if (updated) {
                 vscode.window.showInformationMessage(
@@ -646,7 +597,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
     /**
      * Delete the extension virtual environment
      */
-    private async deleteExtensionOwnEnvironment(): Promise<void> {
+    private async delete(): Promise<void> {
         try {
             const action = await vscode.window.showQuickPick(
                 [
@@ -669,8 +620,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
 
             if (action?.label === '$(trash) Delete Environment') {
                 Logger.info('🗑️ Deleting extension virtual environment...');
-                const deleted =
-                    await this.extensionEnvManager.deleteExtensionEnvironment();
+                const deleted = await this.extensionEnvManager.delete();
 
                 if (deleted) {
                     const config = vscode.workspace.getConfiguration(
@@ -703,7 +653,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
     /**
      * Show environment information in a new text editor tab
      */
-    private async showEnvironmentInfoInEditor(
+    private async showInfo(
         envInfo: ExtensionVirtualEnvironment
     ): Promise<void> {
         try {

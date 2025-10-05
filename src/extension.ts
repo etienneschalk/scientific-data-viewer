@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Set up configuration change listener for all Scientific Data Viewer settings
-    const configListener = vscode.workspace.onDidChangeConfiguration(
+    const workspaceConfigChangeListener = vscode.workspace.onDidChangeConfiguration(
         (event) => {
             if (event.affectsConfiguration('scientificDataViewer')) {
                 Logger.info('Scientific Data Viewer configuration changed');
@@ -118,15 +118,27 @@ export function activate(context: vscode.ExtensionContext) {
                             });
                     }
                 }
+            } else if (
+                event.affectsConfiguration('python.condaPath') ||
+                event.affectsConfiguration('python.venvPath') ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvironment'
+                ) ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvInCurrentTerminal'
+                )
+            ) {
+                Logger.info(
+                    '🐍 🔧 Configuration change that might affect the Python interpreter, refreshing Python environment...'
+                );
+                refreshPython(pythonManager, statusBarItem);
             }
         }
     );
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
-    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
-        context
-    );
+    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(context);
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
 
@@ -171,7 +183,9 @@ export function activate(context: vscode.ExtensionContext) {
         enableFindWidget: true,
         retainContextWhenHidden: true,
     };
-    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(context.extensionUri);
+    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(
+        context.extensionUri
+    );
     const iconPath = vscode.Uri.joinPath(
         context.extensionUri,
         'media',
@@ -399,6 +413,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const extensionVirtualEnvironmentManagerUI =
         new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
+
     // Extension Virtual Environment Command
     const manageExtensionOwnEnvironmentCommand =
         vscode.commands.registerCommand(
@@ -407,7 +422,7 @@ export function activate(context: vscode.ExtensionContext) {
                 Logger.info(
                     '🎮 🔧 Command: Manage Extension Virtual Environment'
                 );
-                await extensionVirtualEnvironmentManagerUI.manageExtensionOwnEnvironment();
+                await extensionVirtualEnvironmentManagerUI.manage();
             }
         );
 
@@ -466,87 +481,27 @@ export function activate(context: vscode.ExtensionContext) {
     refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
-    const handlePythonInterpreterChange = async () => {
+    const handleOnDidChangeActiveEnvironmentPath = async () => {
         Logger.info(
-            '🐍 🔧 Python interpreter configuration changed, re-validating environment...'
+            '🐍 🔧 Python interpreter configuration changed, refreshing Python environment...'
         );
-
-        // Get the current interpreter path for logging
-        const currentInterpreterPath =
-            await pythonManager.getCurrentInterpreterPath();
-
-        // Show immediate notification that interpreter change was detected with path
-        if (currentInterpreterPath) {
-            const interpreterName =
-                currentInterpreterPath.split('/').pop() ||
-                currentInterpreterPath.split('\\').pop() ||
-                'Unknown';
-            vscode.window.showInformationMessage(
-                `New interpreter is now considered by the extension: ${interpreterName} (${currentInterpreterPath})`
-            );
-        } else {
-            vscode.window.showInformationMessage(
-                'New interpreter is now considered by the extension'
-            );
-        }
-
         await refreshPython(pythonManager, statusBarItem);
     };
 
-    const handlePythonEnvironmentCreated = async (environment: any) => {
+    const handleOnDidEnvironmentsChanged = async (environment: any) => {
         Logger.info(
-            '🐍 🔧 Python environment created, refreshing environment...'
+            '🐍 🔧 Python environment created, refreshing Python environment...'
         );
-        // Don't do anything with env, delegate to the existing handler
-        await handlePythonInterpreterChange();
+        await refreshPython(pythonManager, statusBarItem);
     };
-
-    // Listen for Python interpreter changes - only listen to Python extension events
-    const pythonInterpreterChangeListener =
-        vscode.workspace.onDidChangeConfiguration(async (event) => {
-            // Only listen to Python extension configuration changes that might affect interpreter
-            if (
-                event.affectsConfiguration('python.condaPath') ||
-                event.affectsConfiguration('python.venvPath') ||
-                event.affectsConfiguration(
-                    'python.terminal.activateEnvironment'
-                ) ||
-                event.affectsConfiguration(
-                    'python.terminal.activateEnvInCurrentTerminal'
-                )
-            ) {
-                await handlePythonInterpreterChange();
-            }
-        });
-
-    // Also listen for workspace folder changes (when Python interpreter might change)
-    const workspaceChangeListener =
-        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-            // Check if Python interpreter changed when workspace changes using Python extension API
-            try {
-                const currentPythonPath =
-                    await pythonManager.getCurrentInterpreterPath();
-
-                if (
-                    currentPythonPath &&
-                    currentPythonPath !== pythonManager.getPythonPath()
-                ) {
-                    await handlePythonInterpreterChange();
-                }
-            } catch (error) {
-                Logger.error(
-                    `🔧 ❌ Error checking Python interpreter on workspace change: ${error}`
-                );
-            }
-        });
 
     Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
         pythonManager
-            .setupEnvironmentChangeListeners(
-                handlePythonInterpreterChange,
-                handlePythonEnvironmentCreated
+            .setupOfficialPythonExtensionChangeListeners(
+                handleOnDidChangeActiveEnvironmentPath,
+                handleOnDidEnvironmentsChanged
             )
             .then((listener) => {
                 immediateInterpreterListener = listener;
@@ -573,6 +528,15 @@ export function activate(context: vscode.ExtensionContext) {
         );
     }
 
+    // Also listen for workspace folder changes (when Python interpreter might change)
+    const workspaceChangeListener =
+        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+            Logger.info(
+                '🐍 🔧 Workspace folder changed, refreshing Python environment...'
+            );
+            await refreshPython(pythonManager, statusBarItem);
+        });
+
     context.subscriptions.push(
         openViewerCommand,
         openViewerFolderCommand,
@@ -583,20 +547,13 @@ export function activate(context: vscode.ExtensionContext) {
         scrollToHeaderCommand,
         expandAllCommand,
         manageExtensionOwnEnvironmentCommand,
-        outlineTreeView,
-        statusBarItem,
-        pythonInterpreterChangeListener,
         workspaceChangeListener,
+        workspaceConfigChangeListener,
         ...editorRegistrations,
-        configListener
     );
-
-    // Status bar will only be shown when an interpreter is actually selected
 }
 
-function getWebviewOptions(
-    extensionUri: vscode.Uri
-): vscode.WebviewOptions {
+function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
     return {
         enableScripts: true,
         localResourceRoots: [
@@ -614,7 +571,7 @@ async function refreshPython(
         await pythonManager.forceInitialize();
 
         // Show success notification with interpreter name and path
-        const pythonPath = pythonManager.getPythonPath();
+        const pythonPath = pythonManager.pythonPath;
         if (pythonPath) {
             // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
             // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
@@ -637,29 +594,24 @@ async function updateStatusBar(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
-    const pythonPath = pythonManager.getPythonPath();
-    if (pythonPath) {
-        // Only show status bar when interpreter is selected and ready
-        const interpreterName =
-            pythonPath.split('/').pop() ||
-            pythonPath.split('\\').pop() ||
-            'Unknown';
+    const pythonPath = pythonManager.pythonPath;
 
+    // Only show status bar when interpreter is set.
+    if (pythonPath) {
         // Get environment info to show virtual environment type
         try {
-            const readyString = pythonManager.isReady() ? 'Ready' : 'Not Ready';
-            const icon = pythonManager.isReady() ? '$(check)' : '$(x)';
+            const icon = pythonManager.ready ? '$(check)' : '$(x)';
             const envInfo = await pythonManager.getCurrentEnvironmentInfo();
             if (envInfo) {
-                statusBarItem.text = `${icon} SDV: ${readyString} (${envInfo.type})`;
+                statusBarItem.text = `${icon} SDV ${envInfo.type}`;
             } else {
-                statusBarItem.text = `${icon} SDV: ${readyString}`;
+                statusBarItem.text = `${icon} SDV`;
             }
         } catch (error) {
             Logger.debug(`Could not get environment info: ${error}`);
-            statusBarItem.text = `$(question) SDV: Unknown`;
+            statusBarItem.text = `$(question) SDV`;
         }
-        statusBarItem.tooltip = `Scientific Data Viewer: Current Python interpreter: ${interpreterName} (${pythonPath})`;
+        statusBarItem.tooltip = `Scientific Data Viewer: Current Python interpreter: ${pythonPath}`;
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
     }

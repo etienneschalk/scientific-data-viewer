@@ -59,8 +59,8 @@ suite('PythonManager Test Suite', () => {
 
     test('should create PythonManager instance', () => {
         assert.ok(pythonManager);
-        assert.strictEqual(pythonManager.getPythonPath(), null);
-        assert.strictEqual(pythonManager.isReady(), false);
+        assert.strictEqual(pythonManager.pythonPath, null);
+        assert.strictEqual(pythonManager.ready, false);
     });
 
     test('should initialize without Python extension', async () => {
@@ -69,7 +69,7 @@ suite('PythonManager Test Suite', () => {
         vscode.extensions.getExtension = () => undefined;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Should not throw an error even without Python extension
             assert.ok(true);
         } finally {
@@ -86,7 +86,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -103,7 +103,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -124,7 +124,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -145,7 +145,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Note: We can't easily test the actual path setting without mocking the validation process
             assert.ok(true);
         } finally {
@@ -162,7 +162,7 @@ suite('PythonManager Test Suite', () => {
         }) as any;
 
         try {
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
             // Should not throw an error
             assert.ok(true);
         } finally {
@@ -171,23 +171,23 @@ suite('PythonManager Test Suite', () => {
     });
 
     test('should get current Python path', () => {
-        const pythonPath = pythonManager.getPythonPath();
+        const pythonPath = pythonManager.pythonPath;
         assert.strictEqual(pythonPath, null);
     });
 
     test('should get current Python path alias', () => {
-        const pythonPath = pythonManager.getCurrentPythonPath();
+        const pythonPath = pythonManager.pythonPath;
         assert.strictEqual(pythonPath, null);
     });
 
     test('should check if ready', () => {
-        assert.strictEqual(pythonManager.isReady(), false);
+        assert.strictEqual(pythonManager.ready, false);
     });
 
     test('should handle force reinitialize', async () => {
         // Mock the initialize method to avoid actual Python validation
-        const originalInitialize = pythonManager._initialize;
-        pythonManager._initialize = async () => {
+        const originalInitialize = pythonManager.forceInitialize;
+        pythonManager.forceInitialize = async () => {
             // Mock successful initialization
             (pythonManager as any).isInitialized = true;
             (pythonManager as any).pythonPath = '/usr/bin/python3';
@@ -197,30 +197,7 @@ suite('PythonManager Test Suite', () => {
             await pythonManager.forceInitialize();
             assert.ok(true);
         } finally {
-            pythonManager._initialize = originalInitialize;
-        }
-    });
-
-    test('should get current interpreter path', async () => {
-        // Mock the getPythonInterpreterFromExtension method
-        const originalGetPythonInterpreterFromExtension = (pythonManager as any).getPythonInterpreterFromExtension;
-        (pythonManager as any).getPythonInterpreterFromExtension = async () => '/usr/bin/python3';
-
-        try {
-            const interpreterPath = await pythonManager.getCurrentInterpreterPath();
-            assert.strictEqual(interpreterPath, '/usr/bin/python3');
-        } finally {
-            (pythonManager as any).getPythonInterpreterFromExtension = originalGetPythonInterpreterFromExtension;
-        }
-    });
-
-    test('should handle executePythonScript when not ready', async () => {
-        try {
-            await pythonManager.executePythonScript('print("hello")');
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.ok(error.message.includes('Python environment not properly initialized'));
+            pythonManager.forceInitialize = originalInitialize;
         }
     });
 
@@ -256,7 +233,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.ok(listener);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -269,7 +246,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => undefined;
 
         try {
-            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -282,7 +259,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => ({});
 
         try {
-            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -297,7 +274,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -312,7 +289,7 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            const listener = await pythonManager.setupEnvironmentChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -430,9 +407,9 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            await pythonManager._initialize();
-            await pythonManager._initialize();
-            await pythonManager._initialize();
+            await pythonManager.forceInitialize();
+            await pythonManager.forceInitialize();
+            await pythonManager.forceInitialize();
             
             // Should have been called multiple times
             assert.ok(callCount > 0);
@@ -454,7 +431,7 @@ suite('PythonManager Test Suite', () => {
             // Create multiple concurrent initialization calls
             const promises = [];
             for (let i = 0; i < 5; i++) {
-                promises.push(pythonManager._initialize());
+                promises.push(pythonManager.forceInitialize());
             }
             
             await Promise.all(promises);
