@@ -46,6 +46,11 @@
     "contributes": {
         "commands": [
             {
+                "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                "title": "Manage Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
                 "command": "scientificDataViewer.openViewer",
                 "title": "Open Scientific Data Viewer",
                 "category": "Scientific Data Viewer"
@@ -80,11 +85,6 @@
                 "title": "Expand All",
                 "category": "Scientific Data Viewer",
                 "icon": "$(expand-all)"
-            },
-            {
-                "command": "scientificDataViewer.manageExtensionOwnEnvironment",
-                "title": "Manage Extension Virtual Environment",
-                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
