@@ -430,32 +430,17 @@
                     "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
                     "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
                 },
-                "scientificDataViewer.overridePythonInterpreter": {
+                "scientificDataViewer.python.overridePythonInterpreter": {
                     "type": "string",
                     "default": "",
                     "description": "Override Python interpreter path (takes precedence over all other options)",
                     "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `./venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods."
                 },
-                "scientificDataViewer.currentlyInUseInterpreter": {
+                "scientificDataViewer.python.currentlyInUseInterpreter": {
                     "type": "string",
                     "default": "",
                     "description": "Currently active Python interpreter path (read-only, updated automatically)",
                     "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**Note:** This is a read-only setting that reflects the current state. Do not modify this value manually."
-                },
-                "scientificDataViewer.autoDetectVirtualEnvironments": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Automatically detect and suggest virtual environments in the workspace (uv, venv, conda, etc.)",
-                    "markdownDescription": "Automatically detect virtual environments in the workspace and suggest them for use with the extension. Supports:\n\n- **uv** environments (`.venv` folder)\n- **venv** environments (`venv` folder)\n- **conda** environments\n- **pipenv** environments\n- **poetry** environments\n\nWhen enabled, the extension will scan the workspace for these environments and offer them as options when no Python interpreter is configured."
-                },
-                "scientificDataViewer.virtualEnvironmentPaths": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [],
-                    "description": "Additional paths to search for virtual environments",
-                    "markdownDescription": "Additional paths to search for virtual environments beyond the workspace root. Each path should be a directory that may contain virtual environment folders.\n\n**Examples:**\n- `[\"../shared-envs\", \"/opt/conda/envs\"]`\n- `[\"C:\\Users\\username\\Envs\"]`"
                 },
                 "scientificDataViewer.useExtensionEnvironment": {
                     "type": "boolean",

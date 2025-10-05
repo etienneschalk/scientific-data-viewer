@@ -32,14 +32,6 @@ export class VirtualEnvironmentManager {
             searchPaths.push(folder.uri.fsPath);
         }
 
-        // Add configured additional paths
-        const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        const additionalPaths = config.get<string[]>('virtualEnvironmentPaths', []);
-        for (const additionalPath of additionalPaths) {
-            if (fs.existsSync(additionalPath)) {
-                searchPaths.push(additionalPath);
-            }
-        }
 
         // Detect environments in each path
         for (const searchPath of searchPaths) {

@@ -263,8 +263,8 @@ The extension can be configured through VSCode settings:
 
 The extension includes specific settings for virtual environment management:
 
--   **`scientificDataViewer.overridePythonInterpreter`** (string, default: `""`): Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
--   **`scientificDataViewer.currentlyInUseInterpreter`** (string, default: `""`): Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
+-   **`scientificDataViewer.python.overridePythonInterpreter`** (string, default: `""`): Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
+-   **`scientificDataViewer.python.currentlyInUseInterpreter`** (string, default: `""`): Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
 -   **`scientificDataViewer.useExtensionEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
 
 **🚩 Feature Flags**
