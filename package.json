@@ -240,7 +240,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf"
+                    "when": "activeWebviewPanelId == 'scientificDataViewer' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 }
             ]
         },
