@@ -42,7 +42,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 ### Known Bugs
 
 - Data Structure TreeView is not shown for manually created Webviews in Cursor. See when clause of `scientificDataViewer.outline`.
-  - https://code.visualstudio.com/api/references/when-clause-contexts
+  - When VSCode doc: https://code.visualstudio.com/api/references/when-clause-contexts
+  - Related: https://forum.cursor.com/t/webview-panels-and-commands-not-supported-in-cursor-breaks-extensions/115748
 
 ### Fixed
 
