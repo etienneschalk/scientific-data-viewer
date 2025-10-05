@@ -86,7 +86,7 @@ export class ExtensionVirtualEnvironmentManager {
             if (!uvAvailable) {
                 throw new Error('uv is not available');
             }
-            
+
             // Use uv to create the virtual environment with Python 3.13
             await this.createVirtualEnvironmentWithUv(
                 this.extensionEnv!.path
@@ -619,7 +619,6 @@ export class ExtensionVirtualEnvironmentManager {
         pythonPath: string;
         packages: string[];
         lastUpdated: Date;
-        size?: number;
     } {
         if (!this.extensionEnv) {
             return {
@@ -634,47 +633,7 @@ export class ExtensionVirtualEnvironmentManager {
 
         const info = { ...this.extensionEnv };
 
-        // Try to get directory size
-        try {
-            if (
-                this.extensionEnv.isCreated &&
-                fs.existsSync(this.extensionEnv.path)
-            ) {
-                const stats = fs.statSync(this.extensionEnv.path);
-                // info.size = this.getDirectorySize(this.extensionEnv.path);
-            }
-        } catch (error) {
-            Logger.debug(`Could not get directory size: ${error}`);
-        }
-
         return info;
-    }
-
-    /**
-     * Calculate directory size recursively
-     */
-    private getDirectorySize(dirPath: string): number {
-        let totalSize = 0;
-
-        try {
-            const items = fs.readdirSync(dirPath);
-            for (const item of items) {
-                const itemPath = path.join(dirPath, item);
-                const stats = fs.statSync(itemPath);
-
-                if (stats.isDirectory()) {
-                    totalSize += this.getDirectorySize(itemPath);
-                } else {
-                    totalSize += stats.size;
-                }
-            }
-        } catch (error) {
-            Logger.debug(
-                `Error calculating directory size for ${dirPath}: ${error}`
-            );
-        }
-
-        return totalSize;
     }
 
     /**

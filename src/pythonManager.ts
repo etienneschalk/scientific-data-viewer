@@ -1212,9 +1212,6 @@ export class PythonManager {
                 return;
             }
 
-            const sizeText = envInfo.size
-                ? this.extensionEnvManager.formatBytes(envInfo.size)
-                : 'Unknown';
             const lastUpdated = envInfo.lastUpdated.toLocaleString();
 
             const toolUsed = (envInfo as any).createdWithUv
@@ -1225,7 +1222,6 @@ export class PythonManager {
 🐍 Python: ${envInfo.pythonPath}
 🔧 Created with: ${toolUsed}
 📦 Packages: ${envInfo.packages.length} installed
-💾 Size: ${sizeText}
 📅 Last Updated: ${lastUpdated}
 ✅ Status: ${envInfo.isInitialized ? 'Ready' : 'Not Initialized'}`;
 
@@ -1246,6 +1242,10 @@ export class PythonManager {
                     {
                         label: '$(folder-opened) Open in Explorer',
                         description: 'Open the environment folder in file explorer'
+                    },
+                    {
+                        label: '$(info) Information about the environment',
+                        detail: envStatusDescription
                     },
                     {
                         label: '$(close) Cancel',

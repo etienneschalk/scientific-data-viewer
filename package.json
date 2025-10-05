@@ -82,18 +82,8 @@
                 "icon": "$(expand-all)"
             },
             {
-                "command": "scientificDataViewer.uv.createExtensionEnvironment",
-                "title": "uv: Create Extension Virtual Environment",
-                "category": "Scientific Data Viewer"
-            },
-            {
                 "command": "scientificDataViewer.uv.manageExtensionEnvironment",
                 "title": "uv: Manage Extension Virtual Environment",
-                "category": "Scientific Data Viewer"
-            },
-            {
-                "command": "scientificDataViewer.uv.deleteExtensionEnvironment",
-                "title": "uv: Delete Extension Virtual Environment",
                 "category": "Scientific Data Viewer"
             }
         ],
@@ -135,15 +125,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "scientificDataViewer.uv.createExtensionEnvironment",
-                    "when": "true"
-                },
-                {
                     "command": "scientificDataViewer.uv.manageExtensionEnvironment",
-                    "when": "true"
-                },
-                {
-                    "command": "scientificDataViewer.uv.deleteExtensionEnvironment",
                     "when": "true"
                 }
             ],

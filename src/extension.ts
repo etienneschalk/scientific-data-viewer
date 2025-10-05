@@ -402,15 +402,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    // Extension Virtual Environment Commands
-    const createExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.uv.createExtensionEnvironment',
-        async () => {
-            Logger.info('🎮 🔧 Command: Create Extension Virtual Environment');
-            await pythonManager.createExtensionOwnEnvironment();
-        }
-    );
-
+    // Extension Virtual Environment Command
     const manageExtensionEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.uv.manageExtensionEnvironment',
         async () => {
@@ -419,13 +411,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    const deleteExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.uv.deleteExtensionEnvironment',
-        async () => {
-            Logger.info('🎮 🗑️ Command: Delete Extension Virtual Environment');
-            await pythonManager.deleteExtensionOwnEnvironment();
-        }
-    );
+
 
     // Register context menu for supported files
     const supportedExtensions = getAllSupportedExtensions(context);
@@ -598,9 +584,7 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
-        createExtensionEnvironmentCommand,
         manageExtensionEnvironmentCommand,
-        deleteExtensionEnvironmentCommand,
         outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,
