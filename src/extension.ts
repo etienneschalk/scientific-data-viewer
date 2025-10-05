@@ -483,6 +483,31 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // Extension Virtual Environment Commands
+    const createExtensionEnvironmentCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.createExtensionEnvironment',
+        async () => {
+            Logger.info('🎮 🔧 Command: Create Extension Virtual Environment');
+            await pythonManager.createExtensionEnvironment();
+        }
+    );
+
+    const manageExtensionEnvironmentCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.manageExtensionEnvironment',
+        async () => {
+            Logger.info('🎮 🔧 Command: Manage Extension Virtual Environment');
+            await pythonManager.manageExtensionEnvironment();
+        }
+    );
+
+    const deleteExtensionEnvironmentCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.deleteExtensionEnvironment',
+        async () => {
+            Logger.info('🎮 🗑️ Command: Delete Extension Virtual Environment');
+            await pythonManager.deleteExtensionEnvironment();
+        }
+    );
+
     // Register context menu for supported files
     const supportedExtensions = [
         '.nc',
@@ -670,6 +695,9 @@ export function activate(context: vscode.ExtensionContext) {
         selectPythonInterpreterCommand,
         detectVirtualEnvironmentsCommand,
         resetPythonInterpreterCommand,
+        createExtensionEnvironmentCommand,
+        manageExtensionEnvironmentCommand,
+        deleteExtensionEnvironmentCommand,
         outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,
@@ -735,6 +763,7 @@ async function updateStatusBar(
             const envInfo = await pythonManager.getCurrentEnvironmentInfo();
             if (envInfo) {
                 const envType = envInfo.type === 'system' ? 'System' : 
+                               envInfo.type === 'extension' ? 'Extension' :
                                envInfo.type === 'uv' ? 'UV' :
                                envInfo.type === 'venv' ? 'Venv' :
                                envInfo.type === 'conda' ? 'Conda' :

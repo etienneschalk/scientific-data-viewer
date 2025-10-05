@@ -95,6 +95,21 @@
                 "command": "scientificDataViewer.resetPythonInterpreter",
                 "title": "Reset to Default Python Interpreter",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.createExtensionEnvironment",
+                "title": "Create Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.manageExtensionEnvironment",
+                "title": "Manage Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.deleteExtensionEnvironment",
+                "title": "Delete Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -144,6 +159,18 @@
                 },
                 {
                     "command": "scientificDataViewer.resetPythonInterpreter",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.createExtensionEnvironment",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.manageExtensionEnvironment",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.deleteExtensionEnvironment",
                     "when": "true"
                 }
             ],
@@ -423,6 +450,12 @@
                     "default": [],
                     "description": "Additional paths to search for virtual environments",
                     "markdownDescription": "Additional paths to search for virtual environments beyond the workspace root. Each path should be a directory that may contain virtual environment folders.\n\n**Examples:**\n- `[\"../shared-envs\", \"/opt/conda/envs\"]`\n- `[\"C:\\Users\\username\\Envs\"]`"
+                },
+                "scientificDataViewer.useExtensionEnvironment": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use the extension's own virtual environment instead of system or workspace environments",
+                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. This ensures all required packages are available without requiring system-wide installations or workspace-specific environments.\n\n**Benefits:**\n- Self-contained: No external Python environment required\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Automatic: Creates and manages the environment automatically"
                 }
             }
         }

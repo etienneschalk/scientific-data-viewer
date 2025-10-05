@@ -22,6 +22,16 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     -   `scientificDataViewer.pythonInterpreter`: Set specific Python interpreter path
     -   `scientificDataViewer.autoDetectVirtualEnvironments`: Enable/disable automatic detection
     -   `scientificDataViewer.virtualEnvironmentPaths`: Additional paths to search for environments
+    -   `scientificDataViewer.useExtensionEnvironment`: Use extension's own virtual environment
+-   **Extension Virtual Environment**: Self-contained virtual environment stored in VSCode extension storage
+    -   **Automatic Creation**: Creates isolated environment with all required packages
+    -   **No Dependencies**: Works without external Python environment setup
+    -   **Isolated Storage**: Stored in VSCode's extension storage space
+    -   **uv Support**: Automatically uses uv (if available) for faster environment creation and package installation
+    -   **Python 3.13**: Uses uv to install and use Python 3.13 for latest features and performance
+    -   **Fallback Support**: Falls back to Python venv and pip if uv is not available
+    -   **Management Commands**: Create, manage, update, and delete extension environment
+    -   **Status Display**: Shows extension environment status and creation tool in status bar
 
 ### Enhanced
 
