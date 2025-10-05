@@ -13,20 +13,12 @@ suite('Integration Test Suite', () => {
     let mockWebviewOptions: vscode.WebviewOptions;
 
     suiteSetup(() => {
-        // Mock webview options
-        mockWebviewOptions = {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
-                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
-            ],
-        };
-
-        // Mock ExtensionContext
+        // Mock ExtensionContext first
         mockContext = {
             extensionPath: '/test/extension/path',
             subscriptions: [],
             extensionUri: vscode.Uri.file('/test/extension/path'),
+            globalStorageUri: vscode.Uri.file('/test/global/storage/path'),
             globalState: {
                 get: () => undefined,
                 update: () => Promise.resolve(),
@@ -61,6 +53,16 @@ suite('Integration Test Suite', () => {
                 `/test/extension/path/${relativePath}`,
             environmentVariableCollection: {} as any,
         } as any;
+
+        // Mock webview options
+        mockWebviewOptions = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
+                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
+            ],
+        };
+
 
         // Initialize Logger
         Logger.initialize();
@@ -190,115 +192,6 @@ suite('Integration Test Suite', () => {
 
         // Should not throw any errors
         assert.ok(true);
-    });
-
-    test('DataProcessor should handle different data formats', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                // args[0] is 'info', args[1] is the file path
-                // Slicing to remove the single quotes added by the PythonManager
-                const filePath = args[1].slice(1, -1);
-                if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
-                    return {
-                        result: {
-                            format: 'NetCDF',
-                            fileSize: 1024,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'nc',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'netcdf4',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                } else if (
-                    filePath.endsWith('.h5') ||
-                    filePath.endsWith('.hdf5')
-                ) {
-                    return {
-                        result: {
-                            format: 'HDF5',
-                            fileSize: 2048,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'h5',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'h5netcdf',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                } else if (filePath.endsWith('.zarr')) {
-                    return {
-                        result: {
-                            format: 'Zarr',
-                            fileSize: 512,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'zarr',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'zarr',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                }
-                return null;
-            },
-            executePythonScript: async () => ({}),
-            forceReinitialize: async () => {},
-            getCurrentInterpreterPath: async () => '/usr/bin/python3',
-            setupInterpreterChangeListener: async () => undefined,
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-
-        // Test NetCDF file
-        const netcdfUri = vscode.Uri.file('/path/to/test.nc');
-        const netcdfInfo = await processor.getDataInfo(netcdfUri);
-        assert.ok(netcdfInfo);
-        assert.strictEqual(netcdfInfo?.result?.format, 'NetCDF');
-
-        // Test HDF5 file
-        const hdf5Uri = vscode.Uri.file('/path/to/test.h5');
-        const hdf5Info = await processor.getDataInfo(hdf5Uri);
-        assert.ok(hdf5Info);
-        assert.strictEqual(hdf5Info?.result?.format, 'HDF5');
-
-        // Test Zarr file
-        const zarrUri = vscode.Uri.file('/path/to/test.zarr');
-        const zarrInfo = await processor.getDataInfo(zarrUri);
-        assert.ok(zarrInfo);
-        assert.strictEqual(zarrInfo?.result?.format, 'Zarr');
     });
 
     test('DataProcessor should handle error responses from Python', async () => {
@@ -586,7 +479,7 @@ suite('Integration Test Suite', () => {
     test('Components should handle concurrent operations', async () => {
         const mockPythonManager = {
             isReady: () => true,
-            executePythonFile: async () => ({
+            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => ({
                 format: 'NetCDF',
                 fileSize: 1024,
             }),

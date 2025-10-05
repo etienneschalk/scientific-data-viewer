@@ -100,6 +100,9 @@ suite('OutlineProvider Test Suite', () => {
             ]
         };
 
+        // Set up the provider with a current panel ID
+        outlineProvider.updateHeaders(0, [mockElement]);
+
         const treeItem = outlineProvider.getTreeItem(mockElement);
         
         assert.ok(treeItem);
@@ -139,7 +142,7 @@ suite('OutlineProvider Test Suite', () => {
 
         const currentFile = outlineProvider.getCurrentPanelId();
         
-        assert.ok(currentFile);
+        assert.ok(currentFile !== undefined);
         assert.strictEqual(currentFile, 0);
     });
 
@@ -238,6 +241,9 @@ suite('OutlineProvider Test Suite', () => {
             children: []
         };
 
+        // Set up the provider with a current panel ID
+        outlineProvider.updateHeaders(0, [mockElement]);
+
         const treeItem = outlineProvider.getTreeItem(mockElement);
         
         assert.ok(treeItem);
@@ -264,6 +270,9 @@ suite('OutlineProvider Test Suite', () => {
             id: 'level3',
             children: []
         };
+
+        // Set up the provider with a current panel ID
+        outlineProvider.updateHeaders(0, [mockElement1, mockElement2, mockElement3]);
 
         const treeItem1 = outlineProvider.getTreeItem(mockElement1);
         const treeItem2 = outlineProvider.getTreeItem(mockElement2);

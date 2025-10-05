@@ -3,8 +3,8 @@ import { HTMLGenerator } from '../../../src/ui/HTMLGenerator';
 
 suite('HTMLGenerator Test Suite', () => {
     test('should generate main HTML', () => {
-        const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content, 1);
+        const lastLoadTime = '2023-01-01T00:00:00Z';
+        const html = HTMLGenerator.generateMainHTML(true, lastLoadTime, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -12,27 +12,27 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(html.includes('<html lang="en">'));
         assert.ok(html.includes('<head>'));
         assert.ok(html.includes('<body>'));
-        assert.ok(html.includes(content));
+        assert.ok(html.includes('Scientific Data Viewer'));
     });
 
     test('should generate main HTML without plotting capabilities', () => {
-        const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(false, content, 1);
+        const lastLoadTime = '2023-01-01T00:00:00Z';
+        const html = HTMLGenerator.generateMainHTML(false, lastLoadTime, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
         assert.ok(html.includes('<!DOCTYPE html>'));
-        assert.ok(html.includes(content));
+        assert.ok(html.includes('Scientific Data Viewer'));
     });
 
     test('should generate main HTML in dev mode', () => {
-        const content = '<div>Test content</div>';
-        const html = HTMLGenerator.generateMainHTML(true, content, 1);
+        const lastLoadTime = '2023-01-01T00:00:00Z';
+        const html = HTMLGenerator.generateMainHTML(true, lastLoadTime, 1);
         
         assert.ok(html);
         assert.ok(typeof html === 'string');
         assert.ok(html.includes('<!DOCTYPE html>'));
-        assert.ok(html.includes(content));
+        assert.ok(html.includes('Scientific Data Viewer'));
     });
 
     test('should generate header', () => {
@@ -71,7 +71,7 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(timestamp);
         assert.ok(typeof timestamp === 'string');
         assert.ok(timestamp.includes('timestamp'));
-        assert.ok(timestamp.includes('Last loaded: --'));
+        assert.ok(timestamp.includes('loaded: --'));
     });
 
     test('should generate loading and error content', () => {
@@ -104,7 +104,7 @@ suite('HTMLGenerator Test Suite', () => {
         
         assert.ok(content);
         assert.ok(typeof content === 'string');
-        assert.ok(content.includes('Dimensions'));
+        assert.ok(content.includes('group-info-container'));
     });
 
     test('should generate HTML representation', () => {

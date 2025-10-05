@@ -13,26 +13,12 @@ suite('DataViewerPanel Test Suite', () => {
     let mockWebviewPanelOptions: vscode.WebviewPanelOptions;
 
     suiteSetup(() => {
-        // Mock webview options
-        mockWebviewOptions = {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
-                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
-            ],
-        };
-
-        // Mock webview panel options
-        mockWebviewPanelOptions = {
-            enableFindWidget: true,
-            retainContextWhenHidden: true,
-        };
-
-        // Mock ExtensionContext
+        // Mock ExtensionContext first
         mockContext = {
             extensionPath: '/test/extension/path',
             subscriptions: [],
             extensionUri: vscode.Uri.file('/test/extension/path'),
+            globalStorageUri: vscode.Uri.file('/test/global/storage/path'),
             globalState: {
                 get: () => undefined,
                 update: () => Promise.resolve(),
@@ -67,6 +53,22 @@ suite('DataViewerPanel Test Suite', () => {
                 `/test/extension/path/${relativePath}`,
             environmentVariableCollection: {} as any,
         } as any;
+
+        // Mock webview options
+        mockWebviewOptions = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
+                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
+            ],
+        };
+
+        // Mock webview panel options
+        mockWebviewPanelOptions = {
+            enableFindWidget: true,
+            retainContextWhenHidden: true,
+        };
+
 
         // Mock PythonManager
         mockPythonManager = {
