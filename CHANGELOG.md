@@ -19,7 +19,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     -   `Reset to Default Python Interpreter`: Use Python extension's default interpreter
 -   **Enhanced Status Bar**: Shows virtual environment type and interpreter information
 -   **Configuration Settings**:
-    -   `scientificDataViewer.pythonInterpreter`: Set specific Python interpreter path
+    -   `scientificDataViewer.overridePythonInterpreter`: Override Python interpreter path (takes precedence over all other options)
+    -   `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
     -   `scientificDataViewer.autoDetectVirtualEnvironments`: Enable/disable automatic detection
     -   `scientificDataViewer.virtualEnvironmentPaths`: Additional paths to search for environments
     -   `scientificDataViewer.useExtensionEnvironment`: Use extension's own virtual environment

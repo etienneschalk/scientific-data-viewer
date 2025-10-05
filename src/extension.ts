@@ -133,7 +133,6 @@ export function activate(context: vscode.ExtensionContext) {
                     const key = fullKey.replace('scientificDataViewer.', '');
 
                     if (event.affectsConfiguration(fullKey)) {
-                        // TODO eschalk Only show the notification for devMode as it is intrusive.
                         const value = config.get(key);
                         const formattedValue = formatConfigValue(key, value);
                         const description = getConfigDescription(key);
@@ -142,9 +141,18 @@ export function activate(context: vscode.ExtensionContext) {
                         changedSettings.push(
                             `${key} is now ${formattedValue}. (${description})`
                         );
+
+                        if (key == "overridePythonInterpreter") {
+                            // Show a notification that the overridePythonInterpreter has changed
+                            vscode.window.showInformationMessage(
+                                `The overridePythonInterpreter has changed to ${formattedValue}. (${description})`
+                            );
+                            refreshPython(pythonManager, statusBarItem);
+                        }
                     }
                 }
 
+                // TODO eschalk Only show the notification for devMode as it is intrusive.
                 if (changedSettings.length > 0) {
                     // Show specific notification for changed settings
                     const message =
@@ -490,7 +498,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Extension Virtual Environment Commands
     const createExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.createExtensionEnvironment',
+        'scientificDataViewer.uv.createExtensionEnvironment',
         async () => {
             Logger.info('🎮 🔧 Command: Create Extension Virtual Environment');
             await pythonManager.createExtensionEnvironment();
@@ -498,7 +506,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     const manageExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.manageExtensionEnvironment',
+        'scientificDataViewer.uv.manageExtensionEnvironment',
         async () => {
             Logger.info('🎮 🔧 Command: Manage Extension Virtual Environment');
             await pythonManager.manageExtensionEnvironment();
@@ -506,7 +514,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     const deleteExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.deleteExtensionEnvironment',
+        'scientificDataViewer.uv.deleteExtensionEnvironment',
         async () => {
             Logger.info('🎮 🗑️ Command: Delete Extension Virtual Environment');
             await pythonManager.deleteExtensionEnvironment();

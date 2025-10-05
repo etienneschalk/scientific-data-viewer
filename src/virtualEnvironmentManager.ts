@@ -266,7 +266,7 @@ export class VirtualEnvironmentManager {
      */
     getCurrentInterpreterFromSettings(): string | undefined {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        return config.get<string>('pythonInterpreter') || undefined;
+        return config.get<string>('overridePythonInterpreter') || undefined;
     }
 
     /**
@@ -274,7 +274,7 @@ export class VirtualEnvironmentManager {
      */
     async setPythonInterpreter(pythonPath: string): Promise<void> {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        await config.update('pythonInterpreter', pythonPath, vscode.ConfigurationTarget.Workspace);
+        await config.update('overridePythonInterpreter', pythonPath, vscode.ConfigurationTarget.Workspace);
         Logger.info(`🐍 Set Python interpreter to: ${pythonPath}`);
     }
 
@@ -283,7 +283,7 @@ export class VirtualEnvironmentManager {
      */
     async resetPythonInterpreter(): Promise<void> {
         const config = vscode.workspace.getConfiguration('scientificDataViewer');
-        await config.update('pythonInterpreter', '', vscode.ConfigurationTarget.Workspace);
+        await config.update('overridePythonInterpreter', '', vscode.ConfigurationTarget.Workspace);
         Logger.info('🐍 Reset Python interpreter to use Python extension default');
     }
 

@@ -32,6 +32,17 @@ export class PythonManager {
         try {
             const config = vscode.workspace.getConfiguration('scientificDataViewer');
             
+            // First, check if there's an override interpreter set
+            const overrideInterpreter = config.get<string>('overridePythonInterpreter', '');
+            if (overrideInterpreter) {
+                Logger.info(`🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`);
+                this.pythonPath = overrideInterpreter;
+                this.isInitialized = false;
+                await this.validatePythonEnvironment();
+                await this.updateCurrentlyUsedInterpreter(overrideInterpreter, 'override');
+                return;
+            }
+            
             // Check if extension environment is enabled
             const useExtensionEnv = config.get<boolean>('useExtensionEnvironment', false);
             if (useExtensionEnv) {
@@ -41,6 +52,7 @@ export class PythonManager {
                     this.pythonPath = this.extensionEnvManager.getPythonPath()!;
                     this.isInitialized = false;
                     await this.validatePythonEnvironment();
+                    await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'extension');
                     return;
                 } else {
                     // Try to create the extension environment
@@ -49,6 +61,7 @@ export class PythonManager {
                         this.pythonPath = this.extensionEnvManager.getPythonPath()!;
                         this.isInitialized = false;
                         await this.validatePythonEnvironment();
+                        await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'extension');
                         return;
                     } else {
                         Logger.warn('🐍 ⚠️ Failed to create extension environment, falling back to Python extension');
@@ -70,6 +83,7 @@ export class PythonManager {
 
             if (this.pythonPath) {
                 await this.validatePythonEnvironment();
+                await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'python-extension');
             } else {
                 await this.findPythonInterpreter();
             }
@@ -289,6 +303,7 @@ export class PythonManager {
             this.pythonPath = extensionPath;
             // Validate the found interpreter
             await this.validatePythonEnvironment();
+            await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'python-extension');
             return;
         }
 
@@ -307,6 +322,7 @@ export class PythonManager {
                     this.pythonPath = pythonPath;
                     // Validate the found interpreter
                     await this.validatePythonEnvironment();
+                    await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'system');
                     return;
                 }
             } catch (error) {
@@ -1062,6 +1078,30 @@ export class PythonManager {
     }
 
     /**
+     * Update the currently used interpreter in the configuration
+     */
+    private async updateCurrentlyUsedInterpreter(
+        interpreterPath: string,
+        source: 'override' | 'extension' | 'python-extension' | 'system'
+    ): Promise<void> {
+        try {
+            const config = vscode.workspace.getConfiguration('scientificDataViewer');
+            const currentValue = config.get<string>('currentlyInUseInterpreter', '');
+            
+            if (currentValue !== interpreterPath) {
+                await config.update(
+                    'currentlyInUseInterpreter',
+                    interpreterPath,
+                    vscode.ConfigurationTarget.Workspace
+                );
+                Logger.info(`🐍 📝 Updated currently used interpreter: ${interpreterPath} (source: ${source})`);
+            }
+        } catch (error) {
+            Logger.warn(`🐍 ⚠️ Failed to update currently used interpreter: ${error}`);
+        }
+    }
+
+    /**
      * Select a Python interpreter from detected virtual environments
      */
     async selectPythonInterpreter(): Promise<void> {
@@ -1205,6 +1245,7 @@ export class PythonManager {
                 this.pythonPath = this.extensionEnvManager.getPythonPath()!;
                 this.isInitialized = false;
                 await this.validatePythonEnvironment();
+                await this.updateCurrentlyUsedInterpreter(this.pythonPath, 'extension');
                 
                 vscode.window.showInformationMessage(
                     '✅ Extension virtual environment created successfully! The extension will now use its own isolated environment.'
@@ -1319,6 +1360,9 @@ What would you like to do?`;
                     // Reset to use other environments
                     const config = vscode.workspace.getConfiguration('scientificDataViewer');
                     await config.update('useExtensionEnvironment', false, vscode.ConfigurationTarget.Workspace);
+                    
+                    // Clear the currently used interpreter
+                    await config.update('currentlyInUseInterpreter', '', vscode.ConfigurationTarget.Workspace);
                     
                     // Reinitialize with other options
                     this.pythonPath = undefined;
