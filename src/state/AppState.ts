@@ -18,7 +18,7 @@ export interface UIState {
 }
 
 export interface PythonState {
-    isReady: boolean;
+    ready: boolean;
     pythonPath: string | null;
     availablePackages: string[];
     error: string | null;
@@ -74,7 +74,7 @@ export class StateManager {
                 activePanel: null,
             },
             python: {
-                isReady: false,
+                ready: false,
                 pythonPath: null,
                 availablePackages: [],
                 error: null,
@@ -188,7 +188,7 @@ export class StateManager {
             case 'SET_PYTHON_READY':
                 return {
                     ...state,
-                    python: { ...state.python, isReady: action.payload },
+                    python: { ...state.python, ready: action.payload },
                 };
 
             case 'SET_PYTHON_PATH':
@@ -237,7 +237,7 @@ export class StateManager {
                         activePanel: null,
                     },
                     python: {
-                        isReady: false,
+                        ready: false,
                         pythonPath: null,
                         availablePackages: [],
                         error: null,
@@ -306,7 +306,7 @@ export class StateManager {
             errors.push('Data is loading but dataInfo is already set');
         }
 
-        if (this.state.python.isReady && !this.state.python.pythonPath) {
+        if (this.state.python.ready && !this.state.python.pythonPath) {
             errors.push('Python is ready but no path is set');
         }
 

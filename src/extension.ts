@@ -5,66 +5,15 @@ import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
-
-class ScientificDataEditorProvider
-    implements vscode.CustomReadonlyEditorProvider
-{
-    constructor(
-        private readonly extensionContext: vscode.ExtensionContext,
-        private readonly dataProcessor: DataProcessor
-    ) {}
-
-    public async openCustomDocument(
-        uri: vscode.Uri,
-        openContext: vscode.CustomDocumentOpenContext,
-        _token: vscode.CancellationToken
-    ): Promise<vscode.CustomDocument> {
-        Logger.info(`🚚 📖 Opening custom document for: ${uri.fsPath}`);
-
-        // Create a custom document that represents the file
-        return {
-            uri: uri,
-            dispose: () => {
-                Logger.info(
-                    `🚚 📕 Disposed custom document for: ${uri.fsPath}`
-                );
-            },
-        };
-    }
-
-    public async resolveCustomEditor(
-        document: vscode.CustomDocument,
-        webviewPanel: vscode.WebviewPanel,
-        _token: vscode.CancellationToken
-    ): Promise<void> {
-        Logger.info(
-            `🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`
-        );
-
-        // Wait for Python initialization to complete before creating the panel
-        // This prevents the race condition where file opening happens before Python validation
-        try {
-            await this.dataProcessor.pythonManagerInstance.waitForInitialization();
-            Logger.info(
-                `🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`
-            );
-        } catch (error) {
-            Logger.warn(
-                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
-            );
-        }
-
-        // Reuse the provided webviewPanel instead of creating a new one
-        // This eliminates the flickering issue
-        // No need to createOrReveal since VSCode is handling itself the uniqueness
-        // of the opened tab.
-        DataViewerPanel.createFromWebviewPanel(
-            document.uri,
-            webviewPanel,
-            getWebviewOptions(this.extensionContext)
-        );
-    }
-}
+import {
+    ExtensionVirtualEnvironmentManager,
+    ExtensionVirtualEnvironmentManagerUI,
+} from './extensionVirtualEnvironmentManager';
+import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
+import {
+    showErrorMessage,
+    showErrorMessageAndProposeHelpToInstallUv,
+} from './utils';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -80,9 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Get configuration schema from extension manifest
-    const extension =
-        vscode.extensions.getExtension('eschalk0.scientific-data-viewer') ||
-        vscode.extensions.getExtension(context.extension.id);
+    const extension = vscode.extensions.getExtension(context.extension.id);
     const packageJson = extension?.packageJSON;
     const configSchema =
         packageJson?.contributes?.configuration?.properties || {};
@@ -115,14 +62,15 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Set up configuration change listener for all Scientific Data Viewer settings
-    const configListener = vscode.workspace.onDidChangeConfiguration(
-        (event) => {
+    const workspaceConfigChangeListener =
+        vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration('scientificDataViewer')) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
                 const config = vscode.workspace.getConfiguration(
                     'scientificDataViewer'
                 );
+                const devMode = config.get('devMode', false);
                 const changedSettings: string[] = [];
 
                 // Check each configuration property for changes
@@ -137,42 +85,91 @@ export function activate(context: vscode.ExtensionContext) {
 
                         Logger.info(`${key} is now: ${value}`);
                         changedSettings.push(
-                            `${description} is now ${formattedValue}`
+                            `${key} is now ${formattedValue}. (${description})`
                         );
+
+                        if (key == 'python.overridePythonInterpreter') {
+                            refreshPython(pythonManager, statusBarItem);
+                        } else if (key == 'python.useExtensionOwnEnvironment') {
+                            refreshPython(pythonManager, statusBarItem).then(
+                                () => {
+                                    if (value) {
+                                        pythonManager
+                                            .getCurrentEnvironmentInfo()
+                                            .then((envInfo) => {
+                                                if (
+                                                    envInfo?.type !==
+                                                    'own-uv-env'
+                                                ) {
+                                                    const uvInstallationUrl =
+                                                        extensionEnvManager.UV_INSTALLATION_URL;
+                                                    const error = `
+                                            You tried to activate the usage of the extension's own environment,
+                                            but it seems that uv is not installed.
+                                            Please install uv from ${uvInstallationUrl} and try again.`;
+                                                    showErrorMessageAndProposeHelpToInstallUv(
+                                                        error,
+                                                        uvInstallationUrl
+                                                    );
+                                                }
+                                            });
+                                    }
+                                }
+                            );
+                        }
+                    }
+
+                    // Only show the notification for devMode as it is intrusive.
+                    if (devMode && changedSettings.length > 0) {
+                        // Show specific notification for changed settings
+                        const message =
+                            changedSettings.length === 1
+                                ? `Configuration updated: ${changedSettings[0]}`
+                                : `Configuration updated:\n• ${changedSettings.join(
+                                      '\n• '
+                                  )}`;
+
+                        vscode.window
+                            .showInformationMessage(
+                                message,
+                                'OK',
+                                'Show Settings'
+                            )
+                            .then((selection) => {
+                                if (selection === 'Show Settings') {
+                                    vscode.commands.executeCommand(
+                                        'workbench.action.openSettings',
+                                        'scientificDataViewer'
+                                    );
+                                }
+                            });
                     }
                 }
-
-                if (changedSettings.length > 0) {
-                    // Show specific notification for changed settings
-                    const message =
-                        changedSettings.length === 1
-                            ? `Configuration updated: ${changedSettings[0]}`
-                            : `Configuration updated:\n• ${changedSettings.join(
-                                  '\n• '
-                              )}`;
-
-                    vscode.window
-                        .showInformationMessage(message, 'OK', 'Show Settings')
-                        .then((selection) => {
-                            if (selection === 'Show Settings') {
-                                vscode.commands.executeCommand(
-                                    'workbench.action.openSettings',
-                                    'scientificDataViewer'
-                                );
-                            }
-                        });
-                }
+            } else if (
+                event.affectsConfiguration('python.condaPath') ||
+                event.affectsConfiguration('python.venvPath') ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvironment'
+                ) ||
+                event.affectsConfiguration(
+                    'python.terminal.activateEnvInCurrentTerminal'
+                )
+            ) {
+                Logger.info(
+                    '🐍 🔧 Configuration change that might affect the Python interpreter, refreshing Python environment...'
+                );
+                refreshPython(pythonManager, statusBarItem);
             }
-        }
-    );
+        });
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
+    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(context);
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
 
     try {
-        pythonManager = new PythonManager();
+        pythonManager = new PythonManager(extensionEnvManager);
         dataProcessor = DataProcessor.createInstance(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
     } catch (error) {
@@ -212,7 +209,9 @@ export function activate(context: vscode.ExtensionContext) {
         enableFindWidget: true,
         retainContextWhenHidden: true,
     };
-    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(context);
+    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(
+        context.extensionUri
+    );
     const iconPath = vscode.Uri.joinPath(
         context.extensionUri,
         'media',
@@ -222,7 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register custom editor providers
     Logger.info('🔧 Registering custom editor providers...');
     const sciEditorProvider = new ScientificDataEditorProvider(
-        context,
+        webviewOptions,
         dataProcessor
     );
     const options = {
@@ -271,29 +270,13 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: true,
                     canSelectFolders: false,
                     canSelectMany: true,
-                    filters: {
-                        // Note: Update this list to match the supported file types in package.json
-                        'Scientific Data Files': [
-                            'nc',
-                            'netcdf',
-                            'nc4',
-                            'cdf',
-                            'h5',
-                            'hdf5',
-                            'grib',
-                            'grib2',
-                            'tif',
-                            'tiff',
-                            'geotiff',
-                            'jp2',
-                            'jpeg2000',
-                        ],
-                        NetCDF: ['nc', 'netcdf', 'nc4', 'cdf'],
-                        HDF5: ['h5', 'hdf5'],
-                        GRIB: ['grib', 'grib2', 'grb'],
-                        GeoTIFF: ['tif', 'tiff', 'geotiff'],
-                        'JPEG-2000': ['jp2', 'jpeg2000'],
-                    },
+                    filters: getShowDialogFilters(context, [
+                        'netcdf',
+                        'hdf5',
+                        'grib',
+                        'geotiff',
+                        'jp2',
+                    ]),
                 });
                 fileUriList?.forEach(async (uri) => {
                     Logger.info(
@@ -334,11 +317,7 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: false,
                     canSelectFolders: true,
                     canSelectMany: true,
-                    filters: {
-                        // Note: Update this list to match the supported file types in package.json
-                        'Scientific Data Folders': ['zarr'],
-                        Zarr: ['zarr'],
-                    },
+                    filters: getShowDialogFilters(context, ['zarr']),
                 });
                 folderUriList?.forEach(async (uri) => {
                     Logger.info(
@@ -458,24 +437,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const extensionVirtualEnvironmentManagerUI =
+        new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
+
+    // Extension Virtual Environment Command
+    const manageExtensionOwnEnvironmentCommand =
+        vscode.commands.registerCommand(
+            'scientificDataViewer.manageExtensionOwnEnvironment',
+            async () => {
+                Logger.info(
+                    '🎮 🔧 Command: Manage Extension Virtual Environment'
+                );
+                await extensionVirtualEnvironmentManagerUI.manage();
+            }
+        );
+
     // Register context menu for supported files
-    const supportedExtensions = [
-        '.nc',
-        '.netcdf',
-        '.zarr',
-        '.h5',
-        '.hdf5',
-        '.grib',
-        '.grib2',
-        '.tif',
-        '.tiff',
-        '.geotiff',
-        '.jp2',
-        '.jpeg2000',
-        '.safe',
-        '.nc4',
-        '.cdf',
-    ];
+    const supportedExtensions = getAllSupportedExtensions(context);
+    Logger.info(
+        `🔧 Detected supported extensions from package.json: ${supportedExtensions}`
+    );
     vscode.workspace.onDidOpenTextDocument(async (document) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
@@ -526,87 +507,27 @@ export function activate(context: vscode.ExtensionContext) {
     refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
-    const handlePythonInterpreterChange = async () => {
+    const handleOnDidChangeActiveEnvironmentPath = async () => {
         Logger.info(
-            '🐍 🔧 Python interpreter configuration changed, re-validating environment...'
+            '🐍 🔧 Python interpreter configuration changed, refreshing Python environment...'
         );
-
-        // Get the current interpreter path for logging
-        const currentInterpreterPath =
-            await pythonManager.getCurrentInterpreterPath();
-
-        // Show immediate notification that interpreter change was detected with path
-        if (currentInterpreterPath) {
-            const interpreterName =
-                currentInterpreterPath.split('/').pop() ||
-                currentInterpreterPath.split('\\').pop() ||
-                'Unknown';
-            vscode.window.showInformationMessage(
-                `New interpreter is now considered by the extension: ${interpreterName} (${currentInterpreterPath})`
-            );
-        } else {
-            vscode.window.showInformationMessage(
-                'New interpreter is now considered by the extension'
-            );
-        }
-
         await refreshPython(pythonManager, statusBarItem);
     };
 
-    const handlePythonEnvironmentCreated = async (environment: any) => {
+    const handleOnDidEnvironmentsChanged = async (environment: any) => {
         Logger.info(
-            '🐍 🔧 Python environment created, refreshing environment...'
+            '🐍 🔧 Python environment created, refreshing Python environment...'
         );
-        // Don't do anything with env, delegate to the existing handler
-        await handlePythonInterpreterChange();
+        await refreshPython(pythonManager, statusBarItem);
     };
-
-    // Listen for Python interpreter changes - only listen to Python extension events
-    const pythonInterpreterChangeListener =
-        vscode.workspace.onDidChangeConfiguration(async (event) => {
-            // Only listen to Python extension configuration changes that might affect interpreter
-            if (
-                event.affectsConfiguration('python.condaPath') ||
-                event.affectsConfiguration('python.venvPath') ||
-                event.affectsConfiguration(
-                    'python.terminal.activateEnvironment'
-                ) ||
-                event.affectsConfiguration(
-                    'python.terminal.activateEnvInCurrentTerminal'
-                )
-            ) {
-                await handlePythonInterpreterChange();
-            }
-        });
-
-    // Also listen for workspace folder changes (when Python interpreter might change)
-    const workspaceChangeListener =
-        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-            // Check if Python interpreter changed when workspace changes using Python extension API
-            try {
-                const currentPythonPath =
-                    await pythonManager.getCurrentInterpreterPath();
-
-                if (
-                    currentPythonPath &&
-                    currentPythonPath !== pythonManager.getPythonPath()
-                ) {
-                    await handlePythonInterpreterChange();
-                }
-            } catch (error) {
-                Logger.error(
-                    `🔧 ❌ Error checking Python interpreter on workspace change: ${error}`
-                );
-            }
-        });
 
     Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
         pythonManager
-            .setupEnvironmentChangeListeners(
-                handlePythonInterpreterChange,
-                handlePythonEnvironmentCreated
+            .setupOfficialPythonExtensionChangeListeners(
+                handleOnDidChangeActiveEnvironmentPath,
+                handleOnDidEnvironmentsChanged
             )
             .then((listener) => {
                 immediateInterpreterListener = listener;
@@ -633,6 +554,15 @@ export function activate(context: vscode.ExtensionContext) {
         );
     }
 
+    // Also listen for workspace folder changes (when Python interpreter might change)
+    const workspaceChangeListener =
+        vscode.workspace.onDidChangeWorkspaceFolders(async () => {
+            Logger.info(
+                '🐍 🔧 Workspace folder changed, refreshing Python environment...'
+            );
+            await refreshPython(pythonManager, statusBarItem);
+        });
+
     context.subscriptions.push(
         openViewerCommand,
         openViewerFolderCommand,
@@ -642,25 +572,19 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
-        outlineTreeView,
-        statusBarItem,
-        pythonInterpreterChangeListener,
+        manageExtensionOwnEnvironmentCommand,
         workspaceChangeListener,
-        ...editorRegistrations,
-        configListener
+        workspaceConfigChangeListener,
+        ...editorRegistrations
     );
-
-    // Status bar will only be shown when an interpreter is actually selected
 }
 
-function getWebviewOptions(
-    context: vscode.ExtensionContext
-): vscode.WebviewOptions {
+function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
     return {
         enableScripts: true,
         localResourceRoots: [
-            vscode.Uri.joinPath(context.extensionUri, 'media'),
-            vscode.Uri.joinPath(context.extensionUri, 'out'),
+            vscode.Uri.joinPath(extensionUri, 'media'),
+            vscode.Uri.joinPath(extensionUri, 'out'),
         ],
     };
 }
@@ -673,40 +597,49 @@ async function refreshPython(
         await pythonManager.forceInitialize();
 
         // Show success notification with interpreter name and path
-        const pythonPath = pythonManager.getPythonPath();
+        const pythonPath = pythonManager.pythonPath;
         if (pythonPath) {
             // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
             // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
-            updateStatusBar(pythonManager, statusBarItem);
+            await updateStatusBar(pythonManager, statusBarItem);
         }
 
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
-        vscode.window.showErrorMessage(
-            `❌ Failed to validate Python environment: ${error}`
+        showErrorMessage(
+            `❌ Failed to validate Python environment: ${error}`,
+            true,
+            true
         );
     }
 }
 
 // Function to update status bar with current Python interpreter
-function updateStatusBar(
+async function updateStatusBar(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
-    const pythonPath = pythonManager.getPythonPath();
-    if (pythonPath && pythonManager.isReady()) {
-        // Only show status bar when interpreter is selected and ready
-        const interpreterName =
-            pythonPath.split('/').pop() ||
-            pythonPath.split('\\').pop() ||
-            'Unknown';
-        statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
+    const pythonPath = pythonManager.pythonPath;
+
+    // Only show status bar when interpreter is set.
+    if (pythonPath) {
+        // Get environment info to show virtual environment type
+        try {
+            const icon = pythonManager.ready ? '$(check)' : '$(x)';
+            const envInfo = await pythonManager.getCurrentEnvironmentInfo();
+            if (envInfo) {
+                statusBarItem.text = `${icon} SDV ${envInfo.type}`;
+            } else {
+                statusBarItem.text = `${icon} SDV`;
+            }
+        } catch (error) {
+            Logger.debug(`Could not get environment info: ${error}`);
+            statusBarItem.text = `$(question) SDV`;
+        }
+        statusBarItem.tooltip = `Scientific Data Viewer: Current Python interpreter: ${pythonPath}`;
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
-    } else {
-        // Hide status bar when no interpreter or not ready
-        statusBarItem.hide();
     }
 }
 
@@ -760,4 +693,43 @@ export function deactivate() {
     Logger.info('Scientific Data Viewer extension is now deactivated!');
     Logger.info('Last word before disposing the Logger.');
     Logger.dispose();
+}
+
+function getAllSupportedExtensions(
+    context: vscode.ExtensionContext,
+    ids?: string[]
+): string[] {
+    const languages = vscode.extensions.getExtension(context.extension.id)
+        ?.packageJSON?.contributes?.languages;
+    const allSupportedExtensions =
+        languages
+            ?.filter((el: any) => !ids || ids.includes(el.id))
+            .flatMap((el: any) => el.extensions) || [];
+    return allSupportedExtensions;
+}
+
+function getShowDialogFilters(
+    context: vscode.ExtensionContext,
+    ids?: string[]
+): { [name: string]: string[] } {
+    const languages = vscode.extensions.getExtension(context.extension.id)
+        ?.packageJSON?.contributes?.languages;
+    const allSupportedExtensions =
+        languages
+            ?.filter((el: any) => !ids || ids.includes(el.id))
+            .flatMap((el: any) => el.extensions) || [];
+    const filters: { [name: string]: string[] } = {
+        'Scientific Data Files': allSupportedExtensions.map((ext: any) =>
+            ext.slice(1)
+        ),
+        ...Object.fromEntries(
+            languages
+                ?.filter((el: any) => !ids || ids.includes(el.id))
+                .map((el: any) => [
+                    el.aliases[0],
+                    el.extensions.map((ext: any) => ext.slice(1)),
+                ])
+        ),
+    };
+    return filters;
 }

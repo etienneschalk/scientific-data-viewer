@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './pythonManager';
 import { Logger } from './logger';
-import { DataViewerPanel } from './dataViewerPanel';
+import { quoteIfNeeded } from './utils';
 
 export interface DataInfo {
     result?: DataInfoResult;
@@ -115,14 +115,13 @@ export class DataProcessor {
 
     async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
         Logger.debug(`[getDataInfo] Getting data info for file: ${uri.fsPath}`);
-        if (!this.pythonManager.isReady()) {
+        if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = `'${uri.fsPath}'`;
-        const scriptPath = path.join(
-            this.pythonScriptsHomeDir,
-            'get_data_info.py'
+        const filePath = quoteIfNeeded(uri.fsPath);
+        const scriptPath = quoteIfNeeded(
+            path.join(this.pythonScriptsHomeDir, 'get_data_info.py')
         );
 
         try {
@@ -146,21 +145,27 @@ export class DataProcessor {
         variable: string,
         plotType: string = 'auto'
     ): Promise<string | null> {
-        if (!this.pythonManager.isReady()) {
+        if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = `'${uri.fsPath}'`;
-        const scriptPath = path.join(
-            this.pythonScriptsHomeDir,
-            'get_data_info.py'
+        const filePath = quoteIfNeeded(uri.fsPath);
+        const scriptPath = quoteIfNeeded(
+            path.join(this.pythonScriptsHomeDir, 'get_data_info.py')
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
         const style = this.getMatplotlibStyle();
 
         // Use the new merged CLI with 'plot' mode and style parameter
-        const args = ['plot', filePath, variable, plotType, '--style', style];
+        const args = [
+            'plot',
+            filePath,
+            quoteIfNeeded(variable),
+            plotType,
+            '--style',
+            quoteIfNeeded(style),
+        ];
 
         try {
             Logger.info(

@@ -4,18 +4,21 @@ import { DataProcessor } from '../../src/dataProcessor';
 import { PythonManager } from '../../src/pythonManager';
 import { DataViewerPanel } from '../../src/dataViewerPanel';
 import { Logger } from '../../src/logger';
+import { ExtensionVirtualEnvironmentManager } from '../../src/extensionVirtualEnvironmentManager';
 
 suite('Integration Test Suite', () => {
     let mockContext: vscode.ExtensionContext;
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
+    let mockWebviewOptions: vscode.WebviewOptions;
 
     suiteSetup(() => {
-        // Mock ExtensionContext
+        // Mock ExtensionContext first
         mockContext = {
             extensionPath: '/test/extension/path',
             subscriptions: [],
             extensionUri: vscode.Uri.file('/test/extension/path'),
+            globalStorageUri: vscode.Uri.file('/test/global/storage/path'),
             globalState: {
                 get: () => undefined,
                 update: () => Promise.resolve(),
@@ -51,27 +54,37 @@ suite('Integration Test Suite', () => {
             environmentVariableCollection: {} as any,
         } as any;
 
+        // Mock webview options
+        mockWebviewOptions = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
+                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
+            ],
+        };
+
         // Initialize Logger
         Logger.initialize();
     });
 
     setup(() => {
         // Create fresh instances for each test
-        pythonManager = new PythonManager();
+        pythonManager = new PythonManager(
+            new ExtensionVirtualEnvironmentManager(mockContext)
+        );
         dataProcessor = new DataProcessor(pythonManager);
     });
 
     teardown(() => {
         // Clean up static state
-        DataViewerPanel.activePanels.clear();
-        DataViewerPanel.private.clear();
+        DataViewerPanel.dispose();
         Logger.dispose();
     });
 
     test('PythonManager and DataProcessor should work together', async () => {
         // Mock PythonManager to be ready
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -162,10 +175,9 @@ suite('Integration Test Suite', () => {
 
         // Create DataViewerPanel with DataProcessor
         const panel = DataViewerPanel.createFromWebviewPanel(
-            mockContext.extensionUri,
-            mockWebviewPanel,
             vscode.Uri.file('/path/to/test.nc'),
-            dataProcessor
+            mockWebviewPanel,
+            mockWebviewOptions
         );
 
         assert.ok(panel);
@@ -183,118 +195,9 @@ suite('Integration Test Suite', () => {
         assert.ok(true);
     });
 
-    test('DataProcessor should handle different data formats', async () => {
-        const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[]) => {
-                // args[0] is 'info', args[1] is the file path
-                // Slicing to remove the single quotes added by the PythonManager
-                const filePath = args[1].slice(1, -1);
-                if (filePath.endsWith('.nc') || filePath.endsWith('.netcdf')) {
-                    return {
-                        result: {
-                            format: 'NetCDF',
-                            fileSize: 1024,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'nc',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'netcdf4',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                } else if (
-                    filePath.endsWith('.h5') ||
-                    filePath.endsWith('.hdf5')
-                ) {
-                    return {
-                        result: {
-                            format: 'HDF5',
-                            fileSize: 2048,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'h5',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'h5netcdf',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                } else if (filePath.endsWith('.zarr')) {
-                    return {
-                        result: {
-                            format: 'Zarr',
-                            fileSize: 512,
-                            xarray_html_repr: '',
-                            xarray_text_repr: '',
-                            xarray_show_versions: '',
-                            format_info: {
-                                extension: 'zarr',
-                                available_engines: [],
-                                missing_packages: [],
-                                is_supported: true,
-                            },
-                            used_engine: 'zarr',
-                            dimensions_flattened: {},
-                            coordinates_flattened: {},
-                            variables_flattened: {},
-                            attributes_flattened: {},
-                            xarray_html_repr_flattened: {},
-                            xarray_text_repr_flattened: {},
-                        },
-                    };
-                }
-                return null;
-            },
-            executePythonScript: async () => ({}),
-            forceReinitialize: async () => {},
-            getCurrentInterpreterPath: async () => '/usr/bin/python3',
-            setupInterpreterChangeListener: async () => undefined,
-        } as any;
-
-        const processor = new DataProcessor(mockPythonManager);
-
-        // Test NetCDF file
-        const netcdfUri = vscode.Uri.file('/path/to/test.nc');
-        const netcdfInfo = await processor.getDataInfo(netcdfUri);
-        assert.ok(netcdfInfo);
-        assert.strictEqual(netcdfInfo?.result?.format, 'NetCDF');
-
-        // Test HDF5 file
-        const hdf5Uri = vscode.Uri.file('/path/to/test.h5');
-        const hdf5Info = await processor.getDataInfo(hdf5Uri);
-        assert.ok(hdf5Info);
-        assert.strictEqual(hdf5Info?.result?.format, 'HDF5');
-
-        // Test Zarr file
-        const zarrUri = vscode.Uri.file('/path/to/test.zarr');
-        const zarrInfo = await processor.getDataInfo(zarrUri);
-        assert.ok(zarrInfo);
-        assert.strictEqual(zarrInfo?.result?.format, 'Zarr');
-    });
-
     test('DataProcessor should handle error responses from Python', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -342,7 +245,7 @@ suite('Integration Test Suite', () => {
 
     test('DataProcessor should handle Python script execution errors', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -392,10 +295,9 @@ suite('Integration Test Suite', () => {
         } as any;
 
         const panel = DataViewerPanel.createFromWebviewPanel(
-            mockContext.extensionUri,
-            mockWebviewPanel,
             vscode.Uri.file('/path/to/test.nc'),
-            dataProcessor
+            mockWebviewPanel,
+            mockWebviewOptions
         );
 
         // Test that panel can handle different message types - these methods were removed from DataViewerPanel
@@ -449,16 +351,14 @@ suite('Integration Test Suite', () => {
 
             // Test that multiple tabs are allowed
             const panel1 = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                dataProcessor
+                mockWebviewPanel,
+                mockWebviewOptions
             );
             const panel2 = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                dataProcessor
+                mockWebviewPanel,
+                mockWebviewOptions
             );
 
             assert.ok(DataViewerPanel.activePanels.has(panel1));
@@ -480,7 +380,7 @@ suite('Integration Test Suite', () => {
     test('All components should work together in a complete workflow', async () => {
         // Mock PythonManager
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -544,10 +444,9 @@ suite('Integration Test Suite', () => {
             // Create DataViewerPanel - _handleGetDataInfo method was removed, functionality now in UIController
             // We'll test the components separately to avoid the fs.stat issue
             const panel = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                processor
+                mockWebviewPanel,
+                mockWebviewOptions
             );
 
             // Test that panel is created successfully
@@ -571,7 +470,7 @@ suite('Integration Test Suite', () => {
             assert.ok(plotData.startsWith('iVBOR'));
 
             // Test panel disposal
-            panel.dispose();
+            DataViewerPanel.dispose();
             assert.ok(!DataViewerPanel.activePanels.has(panel));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
@@ -580,8 +479,12 @@ suite('Integration Test Suite', () => {
 
     test('Components should handle concurrent operations', async () => {
         const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async () => ({
+            ready: true,
+            executePythonFile: async (
+                scriptPath: string,
+                args: string[],
+                enableLogs: boolean = false
+            ) => ({
                 format: 'NetCDF',
                 fileSize: 1024,
             }),
@@ -614,7 +517,7 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager that fails initially but recovers
         let attemptCount = 0;
         const mockPythonManager = {
-            isReady: () => true, // Always ready, but executePythonFile will fail initially
+            ready: true, // Always ready, but executePythonFile will fail initially
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],

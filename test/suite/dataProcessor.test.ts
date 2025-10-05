@@ -10,7 +10,7 @@ suite('DataProcessor Test Suite', () => {
     suiteSetup(() => {
         // Mock PythonManager for testing
         pythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonScript: async (script: string) => {
                 // Mock response for testing
                 return {
@@ -66,7 +66,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should get data info with error handling', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 throw new Error('Python script failed');
             }
@@ -82,7 +82,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should create plot', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
             }
@@ -98,7 +98,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should create plot with auto type', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
             }
@@ -114,7 +114,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should handle plot creation error', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 throw new Error('Plot creation failed');
             }
@@ -135,7 +135,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should handle plot creation with error in result', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return { error: 'Plot creation failed' };
             }
@@ -190,7 +190,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should handle empty file', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 // Mock response for empty file
                 return {
@@ -213,7 +213,7 @@ suite('DataProcessor Test Suite', () => {
 
     test('should handle data info with error field', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => {
                 return {
                     format: 'NetCDF',

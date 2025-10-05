@@ -1,4 +1,18 @@
 {
-    "tabWidth": 4,
-    "singleQuote": true
+  "tabWidth": 2,
+  "singleQuote": true,
+  "overrides": [
+    {
+      "files": "**/*.{json,ts}",
+      "options": {
+        "tabWidth": 4
+      }
+    },
+    {
+      "files": "*.{md}",
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
 }

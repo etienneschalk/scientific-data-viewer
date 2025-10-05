@@ -10,6 +10,7 @@ import { ErrorBoundary, ErrorContext } from '../error/ErrorBoundary';
 import { DataProcessor } from '../dataProcessor';
 import { Logger } from '../logger';
 import { HTMLGenerator } from './HTMLGenerator';
+import { showErrorMessage } from '../utils';
 
 export class UIController {
     private id: number;
@@ -164,36 +165,16 @@ export class UIController {
                 await this.dataProcessor.pythonManagerInstance.waitForInitialization();
 
                 // Check Python environment
-                if (!this.dataProcessor.pythonManagerInstance.hasPythonPath()) {
+                if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
                     throw new Error(
                         'Python path not found. Please configure Python interpreter first.'
                     );
                 }
 
-                if (!this.dataProcessor.pythonManagerInstance.isReady()) {
-                    const xarrayAvailable =
-                        await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                            this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
-                            'xarray'
-                        );
-                    const matplotlibAvailable =
-                        await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                            this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
-                            'matplotlib'
-                        );
-                    if (!xarrayAvailable && !matplotlibAvailable) {
-                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
-                            ['xarray', 'matplotlib']
-                        );
-                    } else if (!xarrayAvailable) {
-                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
-                            ['xarray']
-                        );
-                    } else if (!matplotlibAvailable) {
-                        this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
-                            ['matplotlib']
-                        );
-                    }
+                if (!this.dataProcessor.pythonManagerInstance.ready) {
+                    this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
+                        ['xarray', 'matplotlib']
+                    );
                     throw new Error(
                         'Python environment not ready. Please install core dependencies first.'
                     );
@@ -248,11 +229,10 @@ export class UIController {
                 this.stateManager.setLoading(false);
                 this.stateManager.setError(null);
                 this.stateManager.setPythonPath(
-                    this.dataProcessor.pythonManagerInstance.getCurrentPythonPath() ||
-                        null
+                    this.dataProcessor.pythonManagerInstance.pythonPath || null
                 );
                 this.stateManager.setPythonReady(
-                    this.dataProcessor.pythonManagerInstance.isReady()
+                    this.dataProcessor.pythonManagerInstance.ready
                 );
                 this.stateManager.setExtension(
                     await this.handleGetExtensionConfig()
@@ -308,18 +288,6 @@ export class UIController {
             }
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
-
-            const canPlot =
-                await this.dataProcessor.pythonManagerInstance.checkPackageAvailability(
-                    this.dataProcessor.pythonManagerInstance.getCurrentPythonPath()!,
-                    'matplotlib'
-                );
-            if (!canPlot) {
-                this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
-                    ['matplotlib']
-                );
-                throw new Error('Missing dependencies for plotting');
-            }
 
             const plotData = await this.dataProcessor.createPlot(
                 fileUri,
@@ -643,7 +611,7 @@ export class UIController {
                     vscode.window.showWarningMessage(message);
                     break;
                 case 'error':
-                    vscode.window.showErrorMessage(message);
+                    showErrorMessage(message);
                     break;
             }
         }, context);

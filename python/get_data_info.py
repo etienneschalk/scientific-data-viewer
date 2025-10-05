@@ -60,7 +60,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger: Logger = logging.getLogger(__name__)
-
+logger.info("Python version: %s", sys.version)
 
 xr.set_options(display_expand_attrs=False, display_expand_data=False)
 np.set_printoptions(threshold=20, edgeitems=2)

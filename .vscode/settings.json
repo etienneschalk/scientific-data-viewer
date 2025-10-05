@@ -15,5 +15,6 @@
         "**/node_modules": true,
         "**/out": true,
         "**/.vscode-test": true
-    }
+    },
+    "prettier.configPath": ".prettierrc"
 }

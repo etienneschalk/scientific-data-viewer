@@ -46,6 +46,11 @@
     "contributes": {
         "commands": [
             {
+                "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                "title": "Manage Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
                 "command": "scientificDataViewer.openViewer",
                 "title": "Open Scientific Data Viewer",
                 "category": "Scientific Data Viewer"
@@ -91,6 +96,10 @@
                 }
             ],
             "commandPalette": [
+                {
+                    "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                    "when": "true"
+                },
                 {
                     "command": "scientificDataViewer.openViewer",
                     "when": "true"
@@ -231,7 +240,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf"
+                    "when": "activeWebviewPanelId == 'scientificDataViewer' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 }
             ]
         },
@@ -348,6 +357,7 @@
                 "scientificDataViewer.maxFileSize": {
                     "type": "number",
                     "default": 10000,
+                    "order": 1000,
                     "description": "Maximum file size in MB to load automatically"
                 },
                 "scientificDataViewer.defaultView": {
@@ -356,11 +366,13 @@
                         "default"
                     ],
                     "default": "default",
+                    "order": 1000,
                     "description": "Default view mode for data display"
                 },
                 "scientificDataViewer.allowMultipleTabsForSameFile": {
                     "type": "boolean",
                     "default": false,
+                    "order": 1000,
                     "description": "Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.",
                     "experimental": true,
                     "markdownDescription": "**Experimental Feature** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues."
@@ -368,13 +380,36 @@
                 "scientificDataViewer.devMode": {
                     "type": "boolean",
                     "default": false,
+                    "order": 8000,
                     "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
                 },
                 "scientificDataViewer.matplotlibStyle": {
                     "type": "string",
                     "default": "",
+                    "order": 1000,
                     "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
                     "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
+                },
+                "scientificDataViewer.python.overridePythonInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "order": 1000,
+                    "description": "Override Python interpreter path (takes precedence over all other options)",
+                    "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `.venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods."
+                },
+                "scientificDataViewer.python.currentlyInUseInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "order": 9000,
+                    "description": "Currently active Python interpreter path (read-only, updated automatically)",
+                    "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**IMPORTANT:** **This is a read-only setting that reflects the current state. Do not modify this value manually.**\n\n*(If you accidentally modified this value, run the 'Scientific Data Viewer: Refresh Python Environment' command to reset it.)*"
+                },
+                "scientificDataViewer.python.useExtensionOwnEnvironment": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 1000,
+                    "description": "Use the extension's own virtual environment (requires uv)",
+                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**, otherwise this setting will have no effect, and the extension will fall back to using the Python extension's interpreter. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
                 }
             }
         }
