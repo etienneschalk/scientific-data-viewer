@@ -39,6 +39,11 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 - Refactor zones of the code.
 
+### Known Bugs
+
+- Data Structure TreeView is not shown for manually created Webviews in Cursor. See when clause of `scientificDataViewer.outline`.
+  - https://code.visualstudio.com/api/references/when-clause-contexts
+
 ### Fixed
 
 ## [0.3.0] - 2025-10-03
