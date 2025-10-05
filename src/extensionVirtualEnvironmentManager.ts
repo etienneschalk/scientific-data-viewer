@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
-import { quoteIfNeeded } from './utils';
+import { quoteIfNeeded, showErrorMessage } from './utils';
 
 export interface ExtensionVirtualEnvironment {
     path: string;
@@ -17,6 +17,8 @@ export interface ExtensionVirtualEnvironment {
 
 export class ExtensionVirtualEnvironmentManager {
     public readonly PYTHON_VERSION = '3.13';
+    public readonly UV_INSTALLATION_URL =
+        'https://docs.astral.sh/uv/getting-started/installation/';
     private extensionEnv: ExtensionVirtualEnvironment | null = null;
     private readonly ENV_FOLDER_NAME = 'python-environment';
     private readonly REQUIRED_PACKAGES = [
@@ -73,48 +75,38 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Create the extension's virtual environment
      */
-    async createExtensionEnvironment(): Promise<boolean> {
-        try {
-            Logger.info('🔧 Creating extension virtual environment...');
+    async createExtensionEnvironment() {
+        Logger.info('🔧 Creating extension virtual environment...');
 
-            // Ensure the storage directory exists
-            await fs.promises.mkdir(this.context.globalStorageUri.fsPath, {
-                recursive: true,
-            });
+        // Ensure the storage directory exists
+        await fs.promises.mkdir(this.context.globalStorageUri.fsPath, {
+            recursive: true,
+        });
 
-            // Check if uv is available - if not, fall back to Python venv
-            const uvAvailable = await this.checkUvAvailability();
+        // Check if uv is available - if not, fall back to Python venv
+        const uvAvailable = await this.checkUvAvailability();
 
-            if (!uvAvailable) {
-                throw new Error('uv is not available');
-            }
-
-            // Use uv to create the virtual environment with Python
-            await this.installPythonAndCreateVirtualEnvironmentWithUv(
-                this.extensionEnv!.path
-            );
-            this.extensionEnv!.createdWithUv = true;
-
-            // Update the extension environment state
-            this.extensionEnv!.isCreated = true;
-            this.extensionEnv!.isInitialized = false;
-
-            // Install required packages
-            await this.installRequiredPackages();
-
-            this.extensionEnv!.isInitialized = true;
-            this.extensionEnv!.lastUpdated = new Date();
-
-            Logger.info(
-                '✅ Extension virtual environment created successfully'
-            );
-            return true;
-        } catch (error) {
-            Logger.error(
-                `❌ Failed to create extension virtual environment: ${error}`
-            );
-            return false;
+        if (!uvAvailable) {
+            throw new Error('uv is not available');
         }
+
+        // Use uv to create the virtual environment with Python
+        await this.installPythonAndCreateVirtualEnvironmentWithUv(
+            this.extensionEnv!.path
+        );
+        this.extensionEnv!.createdWithUv = true;
+
+        // Update the extension environment state
+        this.extensionEnv!.isCreated = true;
+        this.extensionEnv!.isInitialized = false;
+
+        // Install required packages
+        await this.installRequiredPackages();
+
+        this.extensionEnv!.isInitialized = true;
+        this.extensionEnv!.lastUpdated = new Date();
+
+        Logger.info('✅ Extension virtual environment created successfully');
     }
 
     /**
@@ -135,13 +127,17 @@ export class ExtensionVirtualEnvironmentManager {
                     Logger.info(`🔧 uv is available: ${output.trim()}`);
                     resolve(true);
                 } else {
-                    Logger.info('🔧 uv is not available, will use Python venv');
+                    Logger.info(
+                        `🔧 ℹ️ℹ️ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                    );
                     resolve(false);
                 }
             });
 
             process.on('error', () => {
-                Logger.info('🔧 uv is not available, will use Python venv');
+                Logger.info(
+                    `🔧 ℹ️ℹ️ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                );
                 resolve(false);
             });
         });
@@ -569,7 +565,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
             Logger.error(
                 `🔧 ❌ Failed to manage extension environment: ${error}`
             );
-            vscode.window.showErrorMessage(
+            showErrorMessage(
                 `Failed to manage extension environment: ${error}`
             );
         }
@@ -580,34 +576,45 @@ export class ExtensionVirtualEnvironmentManagerUI {
      */
     private async createExtensionOwnEnvironment(): Promise<void> {
         try {
-            const created =
-                await this.extensionEnvManager.createExtensionEnvironment();
+            await this.extensionEnvManager.createExtensionEnvironment();
 
-            if (created) {
-                // Update the configuration to use the extension environment
-                const config = vscode.workspace.getConfiguration(
-                    'scientificDataViewer.python'
-                );
-                await config.update(
-                    'useExtensionOwnEnvironment',
-                    true,
-                    vscode.ConfigurationTarget.Workspace
-                );
-                vscode.window.showInformationMessage(
-                    '✅ Extension virtual environment created successfully! The extension will now use its own isolated environment.'
-                );
-            } else {
-                vscode.window.showErrorMessage(
-                    '❌ Failed to create extension virtual environment. Please check the logs for details.'
-                );
-            }
+            // Update the configuration to use the extension environment
+            const config = vscode.workspace.getConfiguration(
+                'scientificDataViewer.python'
+            );
+            await config.update(
+                'useExtensionOwnEnvironment',
+                true,
+                vscode.ConfigurationTarget.Workspace
+            );
+            vscode.window.showInformationMessage(
+                'Extension virtual environment created successfully! The extension will now use its own isolated environment.'
+            );
         } catch (error) {
             Logger.error(
                 `🔧 ❌ Failed to create extension environment: ${error}`
             );
-            vscode.window.showErrorMessage(
-                `Failed to create extension environment: ${error}`
-            );
+            vscode.window
+                .showErrorMessage(
+                    `Failed to create extension environment: ${error}`,
+                    'OK',
+                    'Install uv',
+                    'Show Logs'
+                )
+                .then((selection) => {
+                    if (selection === 'Install uv') {
+                        vscode.env.openExternal(
+                            vscode.Uri.parse(
+                                this.extensionEnvManager.UV_INSTALLATION_URL
+                            )
+                        );
+                    }
+                    if (selection === 'Show Logs') {
+                        vscode.commands.executeCommand(
+                            'scientificDataViewer.showLogs'
+                        );
+                    }
+                });
         }
     }
 
@@ -621,20 +628,18 @@ export class ExtensionVirtualEnvironmentManagerUI {
 
             if (updated) {
                 vscode.window.showInformationMessage(
-                    '✅ Extension environment packages updated successfully!'
+                    'Extension environment packages updated successfully!'
                 );
             } else {
-                vscode.window.showErrorMessage(
-                    '❌ Failed to update extension environment packages.'
+                showErrorMessage(
+                    'Failed to update extension environment packages.'
                 );
             }
         } catch (error) {
             Logger.error(
                 `📦 ❌ Failed to update extension environment packages: ${error}`
             );
-            vscode.window.showErrorMessage(
-                `Failed to update packages: ${error}`
-            );
+            showErrorMessage(`Failed to update packages: ${error}`, true, true);
         }
     }
 
@@ -677,11 +682,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
                         vscode.ConfigurationTarget.Workspace
                     );
                     vscode.window.showInformationMessage(
-                        '✅ Extension virtual environment deleted successfully!'
+                        'Extension virtual environment deleted successfully!'
                     );
                 } else {
-                    vscode.window.showErrorMessage(
-                        '❌ Failed to delete extension virtual environment.'
+                    showErrorMessage(
+                        'Failed to delete extension virtual environment.'
                     );
                 }
             }
@@ -689,7 +694,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
             Logger.error(
                 `🗑️ ❌ Failed to delete extension environment: ${error}`
             );
-            vscode.window.showErrorMessage(
+            showErrorMessage(
                 `Failed to delete extension environment: ${error}`
             );
         }
@@ -752,7 +757,7 @@ _Report generated on: ${new Date().toLocaleString()}_
             Logger.error(
                 `📋 ❌ Failed to show environment info in editor: ${error}`
             );
-            vscode.window.showErrorMessage(
+            showErrorMessage(
                 `Failed to show environment information: ${error}`
             );
         }

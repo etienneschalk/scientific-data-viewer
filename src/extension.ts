@@ -10,6 +10,7 @@ import {
     ExtensionVirtualEnvironmentManagerUI,
 } from './extensionVirtualEnvironmentManager';
 import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
+import { showErrorMessage } from './utils';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -85,17 +86,8 @@ export function activate(context: vscode.ExtensionContext) {
                         );
 
                         if (key == 'python.overridePythonInterpreter') {
-                            // Show a notification that the overridePythonInterpreter has changed
-                            if (devMode)
-                                vscode.window.showInformationMessage(
-                                    `The overriden Python interpreter has changed to ${formattedValue}. (${description})`
-                                );
                             refreshPython(pythonManager, statusBarItem);
                         } else if (key == 'python.useExtensionOwnEnvironment') {
-                            if (devMode)
-                                vscode.window.showInformationMessage(
-                                    `The extension's usage of its own virtual environment has changed to ${formattedValue}. (${description})`
-                                );
                             refreshPython(pythonManager, statusBarItem);
                         }
                     }
@@ -632,8 +624,10 @@ async function refreshPython(
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
-        vscode.window.showErrorMessage(
-            `❌ Failed to validate Python environment: ${error}`
+        showErrorMessage(
+            `❌ Failed to validate Python environment: ${error}`,
+            true,
+            true
         );
     }
 }

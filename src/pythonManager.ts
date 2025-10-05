@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import { Logger } from './logger';
 import { DataViewerPanel } from './dataViewerPanel';
 import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
-import { quoteIfNeeded } from './utils';
+import { quoteIfNeeded, showErrorMessage } from './utils';
 export class PythonManager {
     private pythonPath: string | null = null;
     private isInitialized: boolean = false;
@@ -64,15 +64,17 @@ export class PythonManager {
                     return;
                 } else {
                     // Try to create the extension environment
-                    const created =
+
+                    try { 
                         await this.extensionEnvManager.createExtensionEnvironment();
-                    if (created && this.extensionEnvManager.isReady()) {
-                        await this.validatePythonEnvironment(
-                            this.extensionEnvManager.getPythonPath()
-                        );
-                        await this.updateCurrentlyUsedInterpreter('extension');
-                        return;
-                    } else {
+                        if (this.extensionEnvManager.isReady()) {
+                            await this.validatePythonEnvironment(
+                                this.extensionEnvManager.getPythonPath()
+                            );
+                            await this.updateCurrentlyUsedInterpreter('extension');
+                            return;
+                        }
+                    } catch (error) {
                         Logger.warn(
                             '🐍 ⚠️ Failed to create extension environment, falling back to Python extension'
                         );
@@ -503,7 +505,7 @@ export class PythonManager {
             Logger.error(
                 `🐍 📦 ❌ Python environment validation failed: ${error}`
             );
-            vscode.window.showErrorMessage(
+            showErrorMessage(
                 `Failed to validate Python environment: ${error}`
             );
         }
@@ -992,7 +994,7 @@ export class PythonManager {
                 // Show detailed error information
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
-                vscode.window.showErrorMessage(
+                showErrorMessage(
                     `Package installation failed: ${errorMessage}`
                 );
                 throw error;
@@ -1031,7 +1033,7 @@ export class PythonManager {
                 // Show detailed error information
                 const errorMessage =
                     error instanceof Error ? error.message : String(error);
-                vscode.window.showErrorMessage(
+                showErrorMessage(
                     `Package installation failed: ${errorMessage}`
                 );
                 throw error;

@@ -10,6 +10,7 @@ import { ErrorBoundary, ErrorContext } from '../error/ErrorBoundary';
 import { DataProcessor } from '../dataProcessor';
 import { Logger } from '../logger';
 import { HTMLGenerator } from './HTMLGenerator';
+import { showErrorMessage } from '../utils';
 
 export class UIController {
     private id: number;
@@ -643,7 +644,7 @@ export class UIController {
                     vscode.window.showWarningMessage(message);
                     break;
                 case 'error':
-                    vscode.window.showErrorMessage(message);
+                    showErrorMessage(message);
                     break;
             }
         }, context);
