@@ -21,7 +21,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 -   **Configuration Settings**:
     -   `scientificDataViewer.overridePythonInterpreter`: Override Python interpreter path (takes precedence over all other options)
     -   `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
-    -   `scientificDataViewer.useExtensionEnvironment`: Use extension's own virtual environment
+    -   `scientificDataViewer.python.useExtensionOwnEnvironment`: Use extension's own virtual environment
 -   **Extension Virtual Environment**: Semi-standalone virtual environment stored in VSCode extension storage
     -   **uv Required**: Only works if `uv` is installed on the system
     -   **Python 3.13**: Uses uv to install and use Python 3.13 for latest features and performance

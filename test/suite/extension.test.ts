@@ -37,7 +37,7 @@ suite('Extension Test Suite', () => {
                                 'scientificDataViewer.maxFileSize': { type: 'number', default: 500 },
                                 'scientificDataViewer.defaultView': { type: 'string', default: 'default' },
                                 'scientificDataViewer.allowMultipleTabsForSameFile': { type: 'boolean', default: false },
-                                'scientificDataViewer.devMode': { type: 'boolean', default: false }
+                                'scientificDataViewer.general.devMode': { type: 'boolean', default: false }
                             }
                         }
                     }

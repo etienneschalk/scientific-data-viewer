@@ -5,7 +5,6 @@ import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
-import { VirtualEnvironmentManager } from './virtualEnvironmentManager';
 import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
 
 class ScientificDataEditorProvider
@@ -82,9 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Get configuration schema from extension manifest
-    const extension =
-        vscode.extensions.getExtension('eschalk0.scientific-data-viewer') ||
-        vscode.extensions.getExtension(context.extension.id);
+    const extension = vscode.extensions.getExtension(context.extension.id);
     const packageJson = extension?.packageJSON;
     const configSchema =
         packageJson?.contributes?.configuration?.properties || {};
@@ -129,7 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Check each configuration property for changes
                 for (const [fullKey, schema] of Object.entries(configSchema)) {
-                    // Extract the property name from the full key (e.g., "scientificDataViewer.devMode" -> "devMode")
+                    // Extract the property name from the full key (e.g., "scientificDataViewer.general.devMode" -> "devMode")
                     const key = fullKey.replace('scientificDataViewer.', '');
 
                     if (event.affectsConfiguration(fullKey)) {
@@ -142,10 +139,10 @@ export function activate(context: vscode.ExtensionContext) {
                             `${key} is now ${formattedValue}. (${description})`
                         );
 
-                        if (key == "overridePythonInterpreter") {
+                        if (key == 'python.overridePythonInterpreter') {
                             // Show a notification that the overridePythonInterpreter has changed
                             vscode.window.showInformationMessage(
-                                `The overridePythonInterpreter has changed to ${formattedValue}. (${description})`
+                                `The overriden Python interpreter has changed to ${formattedValue}. (${description})`
                             );
                             refreshPython(pythonManager, statusBarItem);
                         }
@@ -183,9 +180,10 @@ export function activate(context: vscode.ExtensionContext) {
     let dataProcessor: DataProcessor;
 
     try {
-        const virtualEnvManager = new VirtualEnvironmentManager();
-        const extensionEnvManager = new ExtensionVirtualEnvironmentManager(context);
-        pythonManager = new PythonManager(virtualEnvManager, extensionEnvManager);
+        const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
+            context
+        );
+        pythonManager = new PythonManager(extensionEnvManager);
         dataProcessor = DataProcessor.createInstance(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
     } catch (error) {
@@ -284,29 +282,13 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: true,
                     canSelectFolders: false,
                     canSelectMany: true,
-                    filters: {
-                        // Note: Update this list to match the supported file types in package.json
-                        'Scientific Data Files': [
-                            'nc',
-                            'netcdf',
-                            'nc4',
-                            'cdf',
-                            'h5',
-                            'hdf5',
-                            'grib',
-                            'grib2',
-                            'tif',
-                            'tiff',
-                            'geotiff',
-                            'jp2',
-                            'jpeg2000',
-                        ],
-                        NetCDF: ['nc', 'netcdf', 'nc4', 'cdf'],
-                        HDF5: ['h5', 'hdf5'],
-                        GRIB: ['grib', 'grib2', 'grb'],
-                        GeoTIFF: ['tif', 'tiff', 'geotiff'],
-                        'JPEG-2000': ['jp2', 'jpeg2000'],
-                    },
+                    filters: getShowDialogFilters(context, [
+                        'netcdf',
+                        'hdf5',
+                        'grib',
+                        'geotiff',
+                        'jp2',
+                    ]),
                 });
                 fileUriList?.forEach(async (uri) => {
                     Logger.info(
@@ -347,11 +329,7 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: false,
                     canSelectFolders: true,
                     canSelectMany: true,
-                    filters: {
-                        // Note: Update this list to match the supported file types in package.json
-                        'Scientific Data Folders': ['zarr'],
-                        Zarr: ['zarr'],
-                    },
+                    filters: getShowDialogFilters(context, ['zarr']),
                 });
                 folderUriList?.forEach(async (uri) => {
                     Logger.info(
@@ -471,31 +449,6 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    // Virtual Environment Commands
-    const selectPythonInterpreterCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.selectPythonInterpreter',
-        async () => {
-            Logger.info('🎮 🐍 Command: Select Python Interpreter');
-            await pythonManager.selectPythonInterpreter();
-        }
-    );
-
-    const detectVirtualEnvironmentsCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.detectVirtualEnvironments',
-        async () => {
-            Logger.info('🎮 🔍 Command: Detect Virtual Environments');
-            await pythonManager.detectVirtualEnvironments();
-        }
-    );
-
-    const resetPythonInterpreterCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.resetPythonInterpreter',
-        async () => {
-            Logger.info('🎮 🔄 Command: Reset Python Interpreter');
-            await pythonManager.resetPythonInterpreter();
-        }
-    );
-
     // Extension Virtual Environment Commands
     const createExtensionEnvironmentCommand = vscode.commands.registerCommand(
         'scientificDataViewer.uv.createExtensionEnvironment',
@@ -522,23 +475,10 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Register context menu for supported files
-    const supportedExtensions = [
-        '.nc',
-        '.netcdf',
-        '.zarr',
-        '.h5',
-        '.hdf5',
-        '.grib',
-        '.grib2',
-        '.tif',
-        '.tiff',
-        '.geotiff',
-        '.jp2',
-        '.jpeg2000',
-        '.safe',
-        '.nc4',
-        '.cdf',
-    ];
+    const supportedExtensions = getAllSupportedExtensions(context);
+    Logger.info(
+        `🔧 Detected supported extensions from package.json: ${supportedExtensions}`
+    );
     vscode.workspace.onDidOpenTextDocument(async (document) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
@@ -705,9 +645,6 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
-        selectPythonInterpreterCommand,
-        detectVirtualEnvironmentsCommand,
-        resetPythonInterpreterCommand,
         createExtensionEnvironmentCommand,
         manageExtensionEnvironmentCommand,
         deleteExtensionEnvironmentCommand,
@@ -770,20 +707,28 @@ async function updateStatusBar(
             pythonPath.split('/').pop() ||
             pythonPath.split('\\').pop() ||
             'Unknown';
-        
+
         // Get environment info to show virtual environment type
         try {
             const envInfo = await pythonManager.getCurrentEnvironmentInfo();
             if (envInfo) {
-                const envType = envInfo.type === 'system' ? 'System' : 
-                               envInfo.type === 'extension' ? 'Extension' :
-                               envInfo.type === 'uv' ? 'UV' :
-                               envInfo.type === 'venv' ? 'Venv' :
-                               envInfo.type === 'conda' ? 'Conda' :
-                               envInfo.type === 'pipenv' ? 'Pipenv' :
-                               envInfo.type === 'poetry' ? 'Poetry' :
-                               envInfo.type;
-                
+                const envType =
+                    envInfo.type === 'system'
+                        ? 'System'
+                        : envInfo.type === 'extension'
+                        ? 'Extension'
+                        : envInfo.type === 'uv'
+                        ? 'UV'
+                        : envInfo.type === 'venv'
+                        ? 'Venv'
+                        : envInfo.type === 'conda'
+                        ? 'Conda'
+                        : envInfo.type === 'pipenv'
+                        ? 'Pipenv'
+                        : envInfo.type === 'poetry'
+                        ? 'Poetry'
+                        : envInfo.type;
+
                 statusBarItem.text = `$(check) SDV: Ready (${envType} - ${interpreterName})`;
                 statusBarItem.tooltip = `Current Python interpreter for Scientific Data Viewer: ${interpreterName} (${pythonPath})`;
             } else {
@@ -794,7 +739,7 @@ async function updateStatusBar(
             Logger.debug(`Could not get environment info: ${error}`);
             statusBarItem.text = `$(check) SDV: Ready (${interpreterName})`;
         }
-        
+
         statusBarItem.backgroundColor = undefined;
         statusBarItem.show();
     } else {
@@ -853,4 +798,43 @@ export function deactivate() {
     Logger.info('Scientific Data Viewer extension is now deactivated!');
     Logger.info('Last word before disposing the Logger.');
     Logger.dispose();
+}
+
+function getAllSupportedExtensions(
+    context: vscode.ExtensionContext,
+    ids?: string[]
+): string[] {
+    const languages = vscode.extensions.getExtension(context.extension.id)
+        ?.packageJSON?.contributes?.languages;
+    const allSupportedExtensions =
+        languages
+            ?.filter((el) => !ids || ids.includes(el.id))
+            .flatMap((el) => el.extensions) || [];
+    return allSupportedExtensions;
+}
+
+function getShowDialogFilters(
+    context: vscode.ExtensionContext,
+    ids?: string[]
+): { [name: string]: string[] } {
+    const languages = vscode.extensions.getExtension(context.extension.id)
+        ?.packageJSON?.contributes?.languages;
+    const allSupportedExtensions =
+        languages
+            ?.filter((el) => !ids || ids.includes(el.id))
+            .flatMap((el) => el.extensions) || [];
+    const filters: { [name: string]: string[] } = {
+        'Scientific Data Files': allSupportedExtensions.map((ext) =>
+            ext.slice(1)
+        ),
+        ...Object.fromEntries(
+            languages
+                ?.filter((el) => !ids || ids.includes(el.id))
+                .map((el) => [
+                    el.aliases[0],
+                    el.extensions.map((ext) => ext.slice(1)),
+                ])
+        ),
+    };
+    return filters;
 }

@@ -8,74 +8,74 @@ Version 0.3.0 represents a significant milestone in the Scientific Data Viewer e
 
 ### 🎨 Advanced Plotting System
 
-- **Per-Variable Plotting**: Each variable now has its own individual plot controls
-- **Multiple Simultaneous Plots**: Create and manage multiple plots at once
-- **Smart Plot Actions**: Reset, Save, Save As, and Open functionality for each plot
-- **Global Operations**: Plot All, Reset All Plots, and Save All Plots commands
-- **Export Capabilities**: Save plots as PNG
-- **VSCode Integration**: Native file dialogs and notifications for seamless workflow
+-   **Per-Variable Plotting**: Each variable now has its own individual plot controls
+-   **Multiple Simultaneous Plots**: Create and manage multiple plots at once
+-   **Smart Plot Actions**: Reset, Save, Save As, and Open functionality for each plot
+-   **Global Operations**: Plot All, Reset All Plots, and Save All Plots commands
+-   **Export Capabilities**: Save plots as PNG
+-   **VSCode Integration**: Native file dialogs and notifications for seamless workflow
 
 ### 🌳 Better DataTree Support
 
-- **Hierarchical Data Structures**: Full support for complex nested data organizations
-- **Group-Specific Sections**: Dedicated views for coordinates, variables, and attributes within each group
-- **Enhanced Navigation**: Click-to-navigate outline view with granular highlighting
-- **Flattened Dimensions**: Support for nested datatree groups with dimension flattening
-- **Backward Compatibility**: Seamless support for both regular datasets and DataTree structures
+-   **Hierarchical Data Structures**: Full support for complex nested data organizations
+-   **Group-Specific Sections**: Dedicated views for coordinates, variables, and attributes within each group
+-   **Enhanced Navigation**: Click-to-navigate outline view with granular highlighting
+-   **Flattened Dimensions**: Support for nested datatree groups with dimension flattening
+-   **Backward Compatibility**: Seamless support for both regular datasets and DataTree structures
 
 ### 🏗️ Modular Architecture Overhaul
 
-- **Component-Based Design**: Better separation of UI and business logic
-- **72% Code Reduction**: Main panel code reduced from 1,500+ to ~420 lines
-- **Type-Safe Communication**: New MessageBus system for reliable component interaction
-- **Error Boundaries**: Robust error handling with component isolation
-- **State Management**: Redux-like pattern for predictable state updates (underused at the moment)
+-   **Component-Based Design**: Better separation of UI and business logic
+-   **72% Code Reduction**: Main panel code reduced from 1,500+ to ~420 lines
+-   **Type-Safe Communication**: New MessageBus system for reliable component interaction
+-   **Error Boundaries**: Robust error handling with component isolation
+-   **State Management**: Redux-like pattern for predictable state updates (underused at the moment)
 
 ### 🎯 Enhanced User Experience
 
-- **Improved Navigation**: Better outline view with attributes display and precise highlighting
-- **Responsive Design**: Better handling of window resizing and dynamic content
-- **Parallelized Plot Generation**: Parallelized plot generation with progress tracking (experimental and not-optimized!)
-- **Developer Tools**: Built-in developer tools for debugging and development mode
-- **Testing Annoying Datasets**: Comprehensive testing for large datasets (many variables and attributes with long names)
+-   **Improved Navigation**: Better outline view with attributes display and precise highlighting
+-   **Responsive Design**: Better handling of window resizing and dynamic content
+-   **Parallelized Plot Generation**: Parallelized plot generation with progress tracking (experimental and not-optimized!)
+-   **Developer Tools**: Built-in developer tools for debugging and development mode
+-   **Testing Annoying Datasets**: Comprehensive testing for large datasets (many variables and attributes with long names)
 
 ## 🔧 Technical Improvements
 
 ### Code Quality
 
-- **Modular Architecture**: Split monolithic components into focused modules
-  - `HTMLGenerator`: Centralized HTML generation
-  - `CSSGenerator`: Modular styling system
-  - `JavaScriptGenerator`: Client-side code generation
-  - `UIController`: Separated UI logic
-  - `MessageBus`: Type-safe communication
+-   **Modular Architecture**: Split monolithic components into focused modules
+    -   `HTMLGenerator`: Centralized HTML generation
+    -   `CSSGenerator`: Modular styling system
+    -   `JavaScriptGenerator`: Client-side code generation
+    -   `UIController`: Separated UI logic
+    -   `MessageBus`: Type-safe communication
 
 ### Error Handling
 
-- **Graceful Degradation**: Better error recovery and user feedback
-- **VSCode Integration**: Native notifications
-- **Component Isolation**: Error boundaries prevent cascading failures
-- **User-Friendly Messages**: Clear, actionable error descriptions
+-   **Graceful Degradation**: Better error recovery and user feedback
+-   **VSCode Integration**: Native notifications
+-   **Component Isolation**: Error boundaries prevent cascading failures
+-   **User-Friendly Messages**: Clear, actionable error descriptions
 
 ## 🐛 Bug Fixes
 
-- **Tree View Issues**: Fixed data structure tree view loading problems
-- **Plot Controls**: Resolved grayed-out plot button issues
-- **Layout Problems**: Fixed broken variable display structures
-- **Event Handling**: Corrected dynamic content event listener setup
-- **Memory Leaks**: Fixed memory leak in DataViewerPanel tracking
-- **File Handling**: Improved support for files with spaces in names
+-   **Tree View Issues**: Fixed data structure tree view loading problems
+-   **Plot Controls**: Resolved grayed-out plot button issues
+-   **Layout Problems**: Fixed broken variable display structures
+-   **Event Handling**: Corrected dynamic content event listener setup
+-   **Memory Leaks**: Fixed memory leak in DataViewerPanel tracking
+-   **File Handling**: Improved support for files with spaces in names
 
 ## 📊 Supported Formats
 
 The extension continues to support all major scientific data formats:
 
-- **NetCDF**: .nc, .netcdf, .nc4, .cdf
-- **Zarr**: .zarr
-- **HDF5**: .h5, .hdf5
-- **GRIB/GRIB2**: .grib, .grib2, .grb
-- **GeoTIFF**: .tif, .tiff, .geotiff
-- **JPEG-2000**: .jp2, .jpeg2000
+-   **NetCDF**: .nc, .netcdf, .nc4, .cdf
+-   **Zarr**: .zarr
+-   **HDF5**: .h5, .hdf5
+-   **GRIB/GRIB2**: .grib, .grib2, .grb
+-   **GeoTIFF**: .tif, .tiff, .geotiff
+-   **JPEG-2000**: .jp2, .jpeg2000
 
 ## 🚀 Getting Started
 
@@ -93,8 +93,8 @@ The extension continues to support all major scientific data formats:
 
 New configuration options in v0.3.0:
 
-- `scientificDataViewer.devMode`: Enable development mode with automatic logging and developer tools
-- `scientificDataViewer.matplotlibStyle`: Customize matplotlib plot styles (auto-detects VSCode theme by default to set a dark or light background in plots)
+-   `scientificDataViewer.general.devMode`: Enable development mode with automatic logging and developer tools
+-   `scientificDataViewer.matplotlibStyle`: Customize matplotlib plot styles (auto-detects VSCode theme by default to set a dark or light background in plots)
 
 ## 🔮 What's Next
 
@@ -102,10 +102,10 @@ This release establishes a solid foundation for future enhancements. The modular
 
 ## 📈 Statistics
 
-- **83 files changed** with **15,919 additions** and **3,203 deletions**
-- **72% reduction** in main panel code complexity
-- **100+ new test cases** for better coverage
-- **Architectural overhaul** with modern patterns
+-   **83 files changed** with **15,919 additions** and **3,203 deletions**
+-   **72% reduction** in main panel code complexity
+-   **100+ new test cases** for better coverage
+-   **Architectural overhaul** with modern patterns
 
 ## 🙏 Acknowledgments
 

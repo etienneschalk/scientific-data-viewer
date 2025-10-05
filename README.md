@@ -159,7 +159,7 @@ The extension supports multiple ways to configure your Python environment:
 # or: pip install uv
 
 # Enable extension virtual environment in settings
-# Set scientificDataViewer.useExtensionEnvironment to true
+# Set scientificDataViewer.python.useExtensionOwnEnvironment to true
 
 # Or use the command palette:
 # Ctrl+Shift+P → "Create Extension Virtual Environment"
@@ -256,7 +256,7 @@ The extension can be configured through VSCode settings:
 | `scientificDataViewer.maxFileSize` <br> (type: `number`, default: `10000`)                   | Maximum file size in MB to load automatically                                                                                                                                                                                                                                                                                    |
 | `scientificDataViewer.defaultView` <br> (type: `string`, default: `"default"`)               | Default view mode for data display. **Options:** `default`                                                                                                                                                                                                                                                                       |
 | `scientificDataViewer.allowMultipleTabsForSameFile` <br> (type: `boolean`, default: `false`) | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
-| `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
+| `scientificDataViewer.general.devMode` <br> (type: `boolean`, default: `false`)              | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
 | `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
 **🐍 Virtual Environment Settings**
@@ -265,14 +265,14 @@ The extension includes specific settings for virtual environment management:
 
 -   **`scientificDataViewer.python.overridePythonInterpreter`** (string, default: `""`): Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
 -   **`scientificDataViewer.python.currentlyInUseInterpreter`** (string, default: `""`): Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
--   **`scientificDataViewer.useExtensionEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
+-   **`scientificDataViewer.python.useExtensionOwnEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
 
 **🚩 Feature Flags**
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
 -   **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
--   **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
+-   **`scientificDataViewer.general.devMode`** (Aimed at developers): Enable development mode
 
 ### 🎮 Available Commands
 
@@ -468,7 +468,7 @@ npm run lint
 Note: It is recommended to run the task `start-watch-mode` for hot reload with
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
 
-Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
+Note: It is recommended to enable the `scientificDataViewer.general.devMode` feature flag during development.
 
 **About debugging the error handling**
 

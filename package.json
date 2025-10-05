@@ -82,21 +82,6 @@
                 "icon": "$(expand-all)"
             },
             {
-                "command": "scientificDataViewer.selectPythonInterpreter",
-                "title": "Select Python Interpreter",
-                "category": "Scientific Data Viewer"
-            },
-            {
-                "command": "scientificDataViewer.detectVirtualEnvironments",
-                "title": "Detect Virtual Environments",
-                "category": "Scientific Data Viewer"
-            },
-            {
-                "command": "scientificDataViewer.resetPythonInterpreter",
-                "title": "Reset to Default Python Interpreter",
-                "category": "Scientific Data Viewer"
-            },
-            {
                 "command": "scientificDataViewer.uv.createExtensionEnvironment",
                 "title": "uv: Create Extension Virtual Environment",
                 "category": "Scientific Data Viewer"
@@ -148,18 +133,6 @@
                 {
                     "command": "scientificDataViewer.expandAll",
                     "when": "false"
-                },
-                {
-                    "command": "scientificDataViewer.selectPythonInterpreter",
-                    "when": "true"
-                },
-                {
-                    "command": "scientificDataViewer.detectVirtualEnvironments",
-                    "when": "true"
-                },
-                {
-                    "command": "scientificDataViewer.resetPythonInterpreter",
-                    "when": "true"
                 },
                 {
                     "command": "scientificDataViewer.uv.createExtensionEnvironment",
@@ -442,7 +415,7 @@
                     "description": "Currently active Python interpreter path (read-only, updated automatically)",
                     "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**Note:** This is a read-only setting that reflects the current state. Do not modify this value manually."
                 },
-                "scientificDataViewer.useExtensionEnvironment": {
+                "scientificDataViewer.python.useExtensionOwnEnvironment": {
                     "type": "boolean",
                     "default": false,
                     "description": "Use the extension's own virtual environment (requires uv)",

@@ -83,31 +83,16 @@ export class ExtensionVirtualEnvironmentManager {
             // Check if uv is available - if not, fall back to Python venv
             const uvAvailable = await this.checkUvAvailability();
 
-            if (uvAvailable) {
-                // Use uv to create the virtual environment with Python 3.13
-                await this.createVirtualEnvironmentWithUv(
-                    this.extensionEnv!.path
-                );
-                this.extensionEnv!.createdWithUv = true;
-            } else {
-                // Fall back to Python venv
-                const pythonInterpreter = await this.findPythonInterpreter();
-                if (!pythonInterpreter) {
-                    throw new Error(
-                        'No suitable Python interpreter found to create virtual environment'
-                    );
-                }
-
-                Logger.info(
-                    `🔧 Using Python interpreter: ${pythonInterpreter}`
-                );
-                await this.createVirtualEnvironment(
-                    pythonInterpreter,
-                    this.extensionEnv!.path
-                );
-                this.extensionEnv!.createdWithUv = false;
+            if (!uvAvailable) {
+                throw new Error('uv is not available');
             }
-
+            
+            // Use uv to create the virtual environment with Python 3.13
+            await this.createVirtualEnvironmentWithUv(
+                this.extensionEnv!.path
+            );
+            this.extensionEnv!.createdWithUv = true;
+            
             // Update the extension environment state
             this.extensionEnv!.isCreated = true;
             this.extensionEnv!.isInitialized = false;
@@ -157,82 +142,9 @@ export class ExtensionVirtualEnvironmentManager {
                 Logger.info('🔧 uv is not available, will use Python venv');
                 resolve(false);
             });
-
-            // Timeout after 5 seconds
-            setTimeout(() => {
-                process.kill();
-                Logger.info('🔧 uv check timed out, will use Python venv');
-                resolve(false);
-            }, 5000);
         });
     }
 
-
-    /**
-     * Find a suitable Python interpreter for creating the virtual environment
-     */
-    private async findPythonInterpreter(): Promise<string | null> {
-        const candidates = [
-            'python3',
-            'python',
-            '/usr/bin/python3',
-            '/usr/local/bin/python3',
-        ];
-
-        for (const candidate of candidates) {
-            try {
-                const isValid = await this.validatePythonInterpreter(candidate);
-                if (isValid) {
-                    return candidate;
-                }
-            } catch (error) {
-                // Continue to next candidate
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Validate that a Python interpreter is working and has venv module
-     */
-    private async validatePythonInterpreter(
-        pythonPath: string
-    ): Promise<boolean> {
-        return new Promise((resolve) => {
-            Logger.info(`🔧 Validating Python interpreter: ${pythonPath}`);
-            const process = spawn(
-                pythonPath,
-                ['-c', `'import venv; print("venv available")'`],
-                { shell: true }
-            );
-
-            let output = '';
-            process.stdout.on('data', (data) => {
-                output += data.toString();
-                Logger.debug(`🔧 venv stdout: ${output}`);
-            });
-
-            process.stderr.on('data', (data) => {
-                output += data.toString();
-                Logger.debug(`🔧 venv stderr: ${output}`);
-            });
-
-            process.on('close', (code) => {
-                resolve(code === 0 && output.includes('venv available'));
-            });
-
-            process.on('error', () => {
-                resolve(false);
-            });
-
-            // Timeout after 10 seconds
-            setTimeout(() => {
-                process.kill();
-                resolve(false);
-            }, 10000);
-        });
-    }
 
     /**
      * Install Python 3.13 using uv
@@ -285,15 +197,6 @@ export class ExtensionVirtualEnvironmentManager {
                 // Don't reject - continue with system Python
                 resolve();
             });
-
-            // Timeout after 2 minutes
-            setTimeout(() => {
-                process.kill();
-                Logger.warn(
-                    '⚠️ Python installation with uv timed out, continuing with system Python'
-                );
-                resolve();
-            }, 120000);
         });
     }
 
@@ -360,17 +263,6 @@ export class ExtensionVirtualEnvironmentManager {
                     .then(resolve)
                     .catch(reject);
             });
-
-            // Timeout after 30 seconds (uv is faster)
-            setTimeout(() => {
-                process.kill();
-                Logger.warn(
-                    '⚠️ Virtual environment creation with uv timed out, trying fallback'
-                );
-                this.createVirtualEnvironmentWithUvFallback(envPath)
-                    .then(resolve)
-                    .catch(reject);
-            }, 30000);
         });
     }
 
@@ -429,16 +321,6 @@ export class ExtensionVirtualEnvironmentManager {
                     )
                 );
             });
-
-            // Timeout after 30 seconds
-            setTimeout(() => {
-                process.kill();
-                reject(
-                    new Error(
-                        'Virtual environment creation with uv fallback timed out'
-                    )
-                );
-            }, 30000);
         });
     }
 
@@ -498,12 +380,6 @@ export class ExtensionVirtualEnvironmentManager {
                     )
                 );
             });
-
-            // Timeout after 60 seconds
-            setTimeout(() => {
-                process.kill();
-                reject(new Error('Virtual environment creation timed out'));
-            }, 60000);
         });
     }
 
@@ -590,12 +466,6 @@ export class ExtensionVirtualEnvironmentManager {
                     new Error(`Failed to execute uv pip: ${error.message}`)
                 );
             });
-
-            // Timeout after 3 minutes (uv is faster)
-            setTimeout(() => {
-                uvProcess.kill();
-                reject(new Error('Package installation with uv timed out'));
-            }, 180000);
         });
     }
 
@@ -652,12 +522,6 @@ export class ExtensionVirtualEnvironmentManager {
             pipProcess.on('error', (error) => {
                 reject(new Error(`Failed to execute pip: ${error.message}`));
             });
-
-            // Timeout after 5 minutes
-            setTimeout(() => {
-                pipProcess.kill();
-                reject(new Error('Package installation with pip timed out'));
-            }, 300000);
         });
     }
 
