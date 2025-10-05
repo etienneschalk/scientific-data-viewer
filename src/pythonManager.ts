@@ -963,7 +963,6 @@ export class PythonManager {
         }
 
         try {
-            // TODO eschalk CHECK VERSION to ensure the interpreter path is correct and not dsajdas !
             const packages = await this.checkRequiredPackages(this._pythonPath);
             const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
