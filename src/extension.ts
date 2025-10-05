@@ -5,7 +5,10 @@ import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
-import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
+import {
+    ExtensionVirtualEnvironmentManager,
+    ExtensionVirtualEnvironmentManagerUI,
+} from './extensionVirtualEnvironmentManager';
 import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -129,13 +132,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
+    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
+        context
+    );
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
 
     try {
-        const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
-            context
-        );
         pythonManager = new PythonManager(extensionEnvManager);
         dataProcessor = DataProcessor.createInstance(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
@@ -402,16 +405,19 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const extensionVirtualEnvironmentManagerUI =
+        new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
     // Extension Virtual Environment Command
-    const manageExtensionEnvironmentCommand = vscode.commands.registerCommand(
-        'scientificDataViewer.uv.manageExtensionEnvironment',
-        async () => {
-            Logger.info('🎮 🔧 Command: Manage Extension Virtual Environment');
-            await pythonManager.manageExtensionOwnEnvironment();
-        }
-    );
-
-
+    const manageExtensionOwnEnvironmentCommand =
+        vscode.commands.registerCommand(
+            'scientificDataViewer.manageExtensionOwnEnvironment',
+            async () => {
+                Logger.info(
+                    '🎮 🔧 Command: Manage Extension Virtual Environment'
+                );
+                await extensionVirtualEnvironmentManagerUI.manageExtensionOwnEnvironment();
+            }
+        );
 
     // Register context menu for supported files
     const supportedExtensions = getAllSupportedExtensions(context);
@@ -584,7 +590,7 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
-        manageExtensionEnvironmentCommand,
+        manageExtensionOwnEnvironmentCommand,
         outlineTreeView,
         statusBarItem,
         pythonInterpreterChangeListener,

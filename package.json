@@ -82,8 +82,8 @@
                 "icon": "$(expand-all)"
             },
             {
-                "command": "scientificDataViewer.uv.manageExtensionEnvironment",
-                "title": "uv: Manage Extension Virtual Environment",
+                "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                "title": "Manage Extension Virtual Environment",
                 "category": "Scientific Data Viewer"
             }
         ],
@@ -125,7 +125,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "scientificDataViewer.uv.manageExtensionEnvironment",
+                    "command": "scientificDataViewer.manageExtensionOwnEnvironment",
                     "when": "true"
                 }
             ],
@@ -380,7 +380,7 @@
                 "scientificDataViewer.devMode": {
                     "type": "boolean",
                     "default": false,
-                    "order": 1000,
+                    "order": 8000,
                     "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
                 },
                 "scientificDataViewer.matplotlibStyle": {
@@ -402,7 +402,7 @@
                     "default": "",
                     "order": 9000,
                     "description": "Currently active Python interpreter path (read-only, updated automatically)",
-                    "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**IMPORTANT:** **This is a read-only setting that reflects the current state. Do not modify this value manually.**"
+                    "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**IMPORTANT:** **This is a read-only setting that reflects the current state. Do not modify this value manually.**\n\n*(If you accidentally modified this value, run the 'Scientific Data Viewer: Refresh Python Environment' command to reset it.)*"
                 },
                 "scientificDataViewer.python.useExtensionOwnEnvironment": {
                     "type": "boolean",
