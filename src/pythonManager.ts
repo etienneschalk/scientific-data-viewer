@@ -1108,7 +1108,7 @@ export class PythonManager {
      * Get information about the current Python environment
      */
     async getCurrentEnvironmentInfo(): Promise<
-        { type: string; path: string; packages: string[] } | undefined
+        { type: string; path: string;  } | undefined
     > {
         if (!this.pythonPath) {
             return undefined;
@@ -1122,7 +1122,6 @@ export class PythonManager {
             return {
                 type: 'override',
                 path: this.pythonPath,
-                packages: [],
             };
         }
 
@@ -1132,7 +1131,6 @@ export class PythonManager {
             return {
                 type: 'own-uv-env',
                 path: this.pythonPath,
-                packages: extensionEnv.packages || [],
             };
         }
 
@@ -1143,7 +1141,6 @@ export class PythonManager {
             return {
                 type: 'python-extension',
                 path: this.pythonPath,
-                packages: [],
             };
         }
     }
@@ -1192,13 +1189,24 @@ export class PythonManager {
             const envInfo = this.extensionEnvManager.getEnvironmentInfo();
 
             if (!envInfo.isCreated) {
-                const action = await vscode.window.showInformationMessage(
-                    'Extension virtual environment not found. Would you like to create one?',
-                    'Create Environment',
-                    'Cancel'
+                const createAction = await vscode.window.showQuickPick(
+                    [
+                        {
+                            label: '$(plus) Create Environment',
+                            description: 'Create a new extension virtual environment'
+                        },
+                        {
+                            label: '$(close) Cancel',
+                            description: 'Cancel environment creation'
+                        }
+                    ],
+                    {
+                        placeHolder: 'Extension virtual environment not found. What would you like to do?',
+                        title: 'Extension Environment Setup'
+                    }
                 );
 
-                if (action === 'Create Environment') {
+                if (createAction?.label === '$(plus) Create Environment') {
                     await this.createExtensionOwnEnvironment();
                 }
                 return;
@@ -1212,34 +1220,58 @@ export class PythonManager {
             const toolUsed = (envInfo as any).createdWithUv
                 ? 'uv (Python 3.13)'
                 : 'Python venv';
-            const message = `Extension Virtual Environment Status:
 
-📁 Path: ${envInfo.path}
+            const envStatusDescription = `📁 Path: ${envInfo.path}
 🐍 Python: ${envInfo.pythonPath}
 🔧 Created with: ${toolUsed}
 📦 Packages: ${envInfo.packages.length} installed
 💾 Size: ${sizeText}
 📅 Last Updated: ${lastUpdated}
-✅ Status: ${envInfo.isInitialized ? 'Ready' : 'Not Initialized'}
+✅ Status: ${envInfo.isInitialized ? 'Ready' : 'Not Initialized'}`;
 
-What would you like to do?`;
-
-            const action = await vscode.window.showInformationMessage(
-                message,
-                'Update Packages',
-                'Delete Environment',
-                'Open in Explorer',
-                'Cancel'
+            const action = await vscode.window.showQuickPick(
+                [
+                    {
+                        label: '$(plus) Create Environment',
+                        description: 'Create a new extension virtual environment'
+                    },
+                    {
+                        label: '$(sync) Update Packages',
+                        description: 'Update all packages in the extension environment'
+                    },
+                    {
+                        label: '$(trash) Delete Environment',
+                        description: 'Remove the extension virtual environment'
+                    },
+                    {
+                        label: '$(folder-opened) Open in Explorer',
+                        description: 'Open the environment folder in file explorer'
+                    },
+                    {
+                        label: '$(close) Cancel',
+                        description: 'Close this menu'
+                    }
+                ],
+                {
+                    placeHolder: 'Extension Virtual Environment Management',
+                    title: 'Extension Environment Status'
+                }
             );
 
-            switch (action) {
-                case 'Update Packages':
+            // Show environment info in a separate information message
+            vscode.window.showInformationMessage(envStatusDescription);
+
+            switch (action?.label) {
+                case '$(plus) Create Environment':
+                    await this.createExtensionOwnEnvironment();
+                    break;
+                case '$(sync) Update Packages':
                     await this.updateExtensionOwnEnvironmentPackages();
                     break;
-                case 'Delete Environment':
+                case '$(trash) Delete Environment':
                     await this.deleteExtensionOwnEnvironment();
                     break;
-                case 'Open in Explorer':
+                case '$(folder-opened) Open in Explorer':
                     vscode.commands.executeCommand(
                         'revealFileInOS',
                         vscode.Uri.file(envInfo.path)
@@ -1288,13 +1320,24 @@ What would you like to do?`;
      */
     async deleteExtensionOwnEnvironment(): Promise<void> {
         try {
-            const action = await vscode.window.showWarningMessage(
-                'Are you sure you want to delete the extension virtual environment? This action cannot be undone.',
-                'Delete',
-                'Cancel'
+            const action = await vscode.window.showQuickPick(
+                [
+                    {
+                        label: '$(trash) Delete Environment',
+                        description: 'Permanently delete the extension virtual environment'
+                    },
+                    {
+                        label: '$(close) Cancel',
+                        description: 'Keep the environment and return to menu'
+                    }
+                ],
+                {
+                    placeHolder: 'Are you sure you want to delete the extension virtual environment?',
+                    title: 'Delete Environment Confirmation'
+                }
             );
 
-            if (action === 'Delete') {
+            if (action?.label === '$(trash) Delete Environment') {
                 Logger.info('🗑️ Deleting extension virtual environment...');
                 const deleted =
                     await this.extensionEnvManager.deleteExtensionEnvironment();
