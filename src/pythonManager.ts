@@ -4,19 +4,66 @@ import { Logger } from './logger';
 import { DataViewerPanel } from './dataViewerPanel';
 import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
 import { quoteIfNeeded, showErrorMessage } from './utils';
+
+/**
+ * Flag to control the creation of the extension own virtual environment
+ * Indeed, we might want the uv environment creation to be handled by the user (via command only)
+ * However, having an automatic installation attempt is useful to ensure that the extension works out of the box
+ * It is written in this way to be able to easily change it in the future
+ */
+const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = false;
+
+/**
+ * Enum to represent the source of the Python environment
+ * - override: The user has set an override Python interpreter
+ *   via 'scientificDataViewer.python.overridePythonInterpreter'
+ * - own-uv-env: The extension has created its own virtual environment with uv
+ *   via 'scientificDataViewer.python.useExtensionOwnEnvironment'
+ * - python-extension: The Python extension has created the environment
+ *   via 'scientificDataViewer.python.usePythonExtensionEnvironment'
+ * - system: The system Python interpreter is used
+ *   via 'scientificDataViewer.python.useSystemPython'
+ */
+type EnvironmentSource =
+    | 'override'
+    | 'own-uv-env'
+    | 'python-extension'
+    | 'system';
+
+/**
+ * Class to manage the Python environment
+ * It is responsible for:
+ * - Initializing the Python environment
+ * - Validating the Python environment
+ * - Installing required packages
+ * - Updating the currently used interpreter in the configuration
+ * - Getting the current environment info
+ * - Setting up event listeners for Python environment changes and creation
+ * - Prompting the user to install required packages
+ * - Prompting the user to install packages for a specific format
+ * - Executing Python files
+ * - Checking package availability
+ */
 export class PythonManager {
     private _pythonPath: string | null = null;
     private _initialized: boolean = false;
     private _initializationPromise: Promise<void> | null = null;
+    private _environmentSource: EnvironmentSource | null = null;
 
     constructor(
         private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager
     ) {}
 
+    /**
+     * Get the Python path
+     */
     get pythonPath(): string | null {
         return this._pythonPath;
     }
 
+    /**
+     * Check if the Python environment is ready
+     */
     get ready(): boolean {
         return this._initialized && this._pythonPath !== null;
     }
@@ -34,6 +81,9 @@ export class PythonManager {
         }
     }
 
+    /**
+     * Force initialize the Python environment
+     */
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
         this._initialized = false;
@@ -41,6 +91,13 @@ export class PythonManager {
         await this.initialize();
     }
 
+    /**
+     * Execute a Python file
+     * @param scriptPath    The path to the Python file
+     * @param args          The arguments to pass to the Python file
+     * @param enableLogs    Whether to enable logs
+     * @returns             The result of the Python file
+     */
     async executePythonFile(
         scriptPath: string,
         args: string[] = [],
@@ -171,6 +228,12 @@ export class PythonManager {
         });
     }
 
+    /**
+     * Check if a package is available
+     * @param pythonPath    The path to the Python interpreter
+     * @param packageName   The name of the package to check
+     * @returns             True if the package is available, False otherwise
+     */
     async checkPackageAvailability(
         pythonPath: string,
         packageName: string
@@ -196,44 +259,20 @@ export class PythonManager {
 
     /**
      * Get information about the current Python environment
+     * @returns             The current environment info
      */
-    async getCurrentEnvironmentInfo(): Promise<
-        { type: string; path: string } | undefined
-    > {
-        if (!this._pythonPath) {
-            return undefined;
+    async getCurrentEnvironmentInfo(): Promise<{
+        type: EnvironmentSource;
+        path: string;
+    } | null> {
+        if (!this._pythonPath || !this._environmentSource) {
+            return null;
         }
 
-        // Check if current interpreter is from override
-        const overrideInterpreter = vscode.workspace
-            .getConfiguration('scientificDataViewer.python')
-            .get<string>('overridePythonInterpreter', '');
-        if (overrideInterpreter && this._pythonPath === overrideInterpreter) {
-            return {
-                type: 'override',
-                path: this._pythonPath,
-            };
-        }
-
-        // Check if current interpreter is from the extension environment
-        const extensionEnv = this.extensionEnvManager.retrieve();
-        if (extensionEnv && this._pythonPath === extensionEnv.pythonPath) {
-            return {
-                type: 'own-uv-env',
-                path: this._pythonPath,
-            };
-        }
-
-        // Check if current interpreter is from the Python official extension
-        if (
-            this._pythonPath ===
-            (await this.getPythonInterpreterFromExtension())
-        ) {
-            return {
-                type: 'python-extension',
-                path: this._pythonPath,
-            };
-        }
+        return {
+            type: this._environmentSource,
+            path: this._pythonPath,
+        };
     }
 
     /**
@@ -372,6 +411,10 @@ export class PythonManager {
         }
     }
 
+    /**
+     * Prompt the user to install required packages
+     * @param missingPackages The list of missing packages
+     */
     async promptToInstallRequiredPackages(
         missingPackages: string[]
     ): Promise<void> {
@@ -410,6 +453,11 @@ export class PythonManager {
         }
     }
 
+    /**
+     * Prompt the user to install packages for a specific format
+     * @param format          The format to install packages for
+     * @param missingPackages The list of missing packages
+     */
     async promptToInstallPackagesForFormat(
         format: string,
         missingPackages: string[]
@@ -482,7 +530,7 @@ export class PythonManager {
                     `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`
                 );
                 await this.validatePythonEnvironment(overrideInterpreter);
-                await this.updateCurrentlyUsedInterpreter('override');
+                await this.updateCurrentlyUsedInterpreterInConfig('override');
                 return;
             }
 
@@ -492,33 +540,38 @@ export class PythonManager {
                 false
             );
             if (useExtensionEnv) {
-                Logger.info('🐍 🔧 Using extension virtual environment');
+                Logger.info('🐍 🔧 Using extension own virtual environment');
 
                 if (this.extensionEnvManager.ready) {
                     await this.validatePythonEnvironment(
                         this.extensionEnvManager.pythonPath
                     );
-                    await this.updateCurrentlyUsedInterpreter('extension');
+                    await this.updateCurrentlyUsedInterpreterInConfig(
+                        'own-uv-env'
+                    );
                     return;
-                } else {
+                } else if (ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT) {
                     // Try to create the extension environment
-
                     try {
                         await this.extensionEnvManager.create();
                         if (this.extensionEnvManager.ready) {
                             await this.validatePythonEnvironment(
                                 this.extensionEnvManager.pythonPath
                             );
-                            await this.updateCurrentlyUsedInterpreter(
-                                'extension'
+                            await this.updateCurrentlyUsedInterpreterInConfig(
+                                'own-uv-env'
                             );
                             return;
                         }
                     } catch (error) {
                         Logger.warn(
-                            '🐍 ⚠️ Failed to create extension environment, falling back to Python extension'
+                            '🐍 ⚠️ Failed to create extension own environment, falling back to Python extension'
                         );
                     }
+                } else {
+                    Logger.warn(
+                        '🐍 ⚠️ Extension own environment not ready, falling back to Python extension'
+                    );
                 }
             }
 
@@ -531,7 +584,9 @@ export class PythonManager {
                     `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`
                 );
                 await this.validatePythonEnvironment(newPythonPath);
-                await this.updateCurrentlyUsedInterpreter('python-extension');
+                await this.updateCurrentlyUsedInterpreterInConfig(
+                    'python-extension'
+                );
                 return;
             }
 
@@ -541,6 +596,9 @@ export class PythonManager {
                 'python',
                 '/usr/bin/python3',
                 '/usr/local/bin/python3',
+                'C:\\Python39\\python.exe',
+                'C:\\Python310\\python.exe',
+                'C:\\Python311\\python.exe',
             ];
 
             for (const pythonPath of commonPaths) {
@@ -548,7 +606,9 @@ export class PythonManager {
                     const version = await this.getPythonVersion(pythonPath);
                     if (version) {
                         await this.validatePythonEnvironment(pythonPath);
-                        await this.updateCurrentlyUsedInterpreter('system');
+                        await this.updateCurrentlyUsedInterpreterInConfig(
+                            'system'
+                        );
                         return;
                     }
                 } catch (error) {
@@ -1065,8 +1125,8 @@ export class PythonManager {
     /**
      * Update the currently used interpreter in the configuration
      */
-    private async updateCurrentlyUsedInterpreter(
-        source: 'override' | 'extension' | 'python-extension' | 'system'
+    private async updateCurrentlyUsedInterpreterInConfig(
+        source: EnvironmentSource
     ): Promise<void> {
         const interpreterPath = this._pythonPath;
         try {

@@ -63,14 +63,15 @@ suite('Integration Test Suite', () => {
             ],
         };
 
-
         // Initialize Logger
         Logger.initialize();
     });
 
     setup(() => {
         // Create fresh instances for each test
-        pythonManager = new PythonManager(new ExtensionVirtualEnvironmentManager(mockContext));
+        pythonManager = new PythonManager(
+            new ExtensionVirtualEnvironmentManager(mockContext)
+        );
         dataProcessor = new DataProcessor(pythonManager);
     });
 
@@ -83,7 +84,7 @@ suite('Integration Test Suite', () => {
     test('PythonManager and DataProcessor should work together', async () => {
         // Mock PythonManager to be ready
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -176,7 +177,7 @@ suite('Integration Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions,
+            mockWebviewOptions
         );
 
         assert.ok(panel);
@@ -196,7 +197,7 @@ suite('Integration Test Suite', () => {
 
     test('DataProcessor should handle error responses from Python', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -244,7 +245,7 @@ suite('Integration Test Suite', () => {
 
     test('DataProcessor should handle Python script execution errors', async () => {
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -296,7 +297,7 @@ suite('Integration Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions,
+            mockWebviewOptions
         );
 
         // Test that panel can handle different message types - these methods were removed from DataViewerPanel
@@ -352,12 +353,12 @@ suite('Integration Test Suite', () => {
             const panel1 = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions,
+                mockWebviewOptions
             );
             const panel2 = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions,
+                mockWebviewOptions
             );
 
             assert.ok(DataViewerPanel.activePanels.has(panel1));
@@ -379,7 +380,7 @@ suite('Integration Test Suite', () => {
     test('All components should work together in a complete workflow', async () => {
         // Mock PythonManager
         const mockPythonManager = {
-            isReady: () => true,
+            ready: true,
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
@@ -445,7 +446,7 @@ suite('Integration Test Suite', () => {
             const panel = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions,
+                mockWebviewOptions
             );
 
             // Test that panel is created successfully
@@ -478,8 +479,12 @@ suite('Integration Test Suite', () => {
 
     test('Components should handle concurrent operations', async () => {
         const mockPythonManager = {
-            isReady: () => true,
-            executePythonFile: async (scriptPath: string, args: string[], enableLogs: boolean = false) => ({
+            ready: true,
+            executePythonFile: async (
+                scriptPath: string,
+                args: string[],
+                enableLogs: boolean = false
+            ) => ({
                 format: 'NetCDF',
                 fileSize: 1024,
             }),
@@ -512,7 +517,7 @@ suite('Integration Test Suite', () => {
         // Mock PythonManager that fails initially but recovers
         let attemptCount = 0;
         const mockPythonManager = {
-            isReady: () => true, // Always ready, but executePythonFile will fail initially
+            ready: true, // Always ready, but executePythonFile will fail initially
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],

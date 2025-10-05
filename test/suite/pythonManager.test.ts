@@ -184,23 +184,6 @@ suite('PythonManager Test Suite', () => {
         assert.strictEqual(pythonManager.ready, false);
     });
 
-    test('should handle force reinitialize', async () => {
-        // Mock the initialize method to avoid actual Python validation
-        const originalInitialize = pythonManager.forceInitialize;
-        pythonManager.forceInitialize = async () => {
-            // Mock successful initialization
-            (pythonManager as any).isInitialized = true;
-            (pythonManager as any).pythonPath = '/usr/bin/python3';
-        };
-
-        try {
-            await pythonManager.forceInitialize();
-            assert.ok(true);
-        } finally {
-            pythonManager.forceInitialize = originalInitialize;
-        }
-    });
-
     test('should handle executePythonFile when not ready', async () => {
         try {
             await pythonManager.executePythonFile('/path/to/script.py');
