@@ -93,7 +93,7 @@ The extension continues to support all major scientific data formats:
 
 New configuration options in v0.3.0:
 
-- `scientificDataViewer.general.devMode`: Enable development mode with automatic logging and developer tools
+- `scientificDataViewer.devMode`: Enable development mode with automatic logging and developer tools
 - `scientificDataViewer.matplotlibStyle`: Customize matplotlib plot styles (auto-detects VSCode theme by default to set a dark or light background in plots)
 
 ## 🔮 What's Next

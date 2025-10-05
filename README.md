@@ -254,7 +254,7 @@ The extension can be configured through VSCode settings:
 | `scientificDataViewer.maxFileSize` <br> (type: `number`, default: `10000`)                   | Maximum file size in MB to load automatically                                                                                                                                                                                                                                                                                    |
 | `scientificDataViewer.defaultView` <br> (type: `string`, default: `"default"`)               | Default view mode for data display. **Options:** `default`                                                                                                                                                                                                                                                                       |
 | `scientificDataViewer.allowMultipleTabsForSameFile` <br> (type: `boolean`, default: `false`) | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
-| `scientificDataViewer.general.devMode` <br> (type: `boolean`, default: `false`)              | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
+| `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
 | `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
 
 **🐍 Virtual Environment Settings**
@@ -270,7 +270,7 @@ The extension includes specific settings for virtual environment management:
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
 - **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
-- **`scientificDataViewer.general.devMode`** (Aimed at developers): Enable development mode
+- **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
 
 ### 🎮 Available Commands
 
@@ -462,7 +462,7 @@ npm run lint
 Note: It is recommended to run the task `start-watch-mode` for hot reload with
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
 
-Note: It is recommended to enable the `scientificDataViewer.general.devMode` feature flag during development.
+Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
 
 **About debugging the error handling**
 

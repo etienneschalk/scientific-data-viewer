@@ -585,7 +585,7 @@ export class UIController {
                         config.get('defaultView'),
                     'scientificDataViewer.allowMultipleTabsForSameFile':
                         config.get('allowMultipleTabsForSameFile'),
-                    'scientificDataViewer.general.devMode': config.get('devMode'),
+                    'scientificDataViewer.devMode': config.get('devMode'),
                     'scientificDataViewer.matplotlibStyle':
                         config.get('matplotlibStyle'),
                 };
