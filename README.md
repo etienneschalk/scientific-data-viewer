@@ -276,16 +276,16 @@ The extension includes configuration options that act as feature flags to contro
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command                                                        | Description                                             |
-| -------------------------------------------------------------- | ------------------------------------------------------- |
-| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for the current file   |
-| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension  |
-| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging          |
-| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                            |
-| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview               |
-| `Scientific Data Viewer: Select Python Interpreter`            | Choose from detected virtual environments               |
-| `Scientific Data Viewer: Detect Virtual Environments`          | Scan workspace for virtual environments                 |
-| `Scientific Data Viewer: Reset to Default Python Interpreter`  | Use Python extension's default interpreter              |
+| Command                                                        | Description                                                                        |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for the current file                              |
+| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                             |
+| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                     |
+| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                       |
+| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                          |
+| `Scientific Data Viewer: Select Python Interpreter`            | Choose from detected virtual environments                                          |
+| `Scientific Data Viewer: Detect Virtual Environments`          | Scan workspace for virtual environments                                            |
+| `Scientific Data Viewer: Reset to Default Python Interpreter`  | Use Python extension's default interpreter                                         |
 | `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, explore) |
 
 ### 🖱️ Context Menu Commands
