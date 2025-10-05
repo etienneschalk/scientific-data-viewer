@@ -133,6 +133,7 @@ export function activate(context: vscode.ExtensionContext) {
                     const key = fullKey.replace('scientificDataViewer.', '');
 
                     if (event.affectsConfiguration(fullKey)) {
+                        // TODO eschalk Only show the notification for devMode as it is intrusive.
                         const value = config.get(key);
                         const formattedValue = formatConfigValue(key, value);
                         const description = getConfigDescription(key);

@@ -51,35 +51,8 @@ export class PythonManager {
                         await this.validatePythonEnvironment();
                         return;
                     } else {
-                        Logger.warn('🐍 ⚠️ Failed to create extension environment, falling back to other options');
+                        Logger.warn('🐍 ⚠️ Failed to create extension environment, falling back to Python extension');
                     }
-                }
-            }
-
-            // First, check if there's a configured Python interpreter in settings
-            const settingsInterpreter = this.virtualEnvManager.getCurrentInterpreterFromSettings();
-            if (settingsInterpreter) {
-                Logger.info(`🐍 🔧 Using configured Python interpreter: ${settingsInterpreter}`);
-                this.pythonPath = settingsInterpreter;
-                this.isInitialized = false;
-                await this.validatePythonEnvironment();
-                return;
-            }
-
-            // Check if auto-detection is enabled
-            const autoDetect = config.get<boolean>('autoDetectVirtualEnvironments', true);
-            
-            if (autoDetect) {
-                // Try to find and use a virtual environment
-                const virtualEnvs = await this.virtualEnvManager.detectVirtualEnvironments();
-                const bestEnv = this.virtualEnvManager.getBestEnvironment();
-                
-                if (bestEnv) {
-                    Logger.info(`🐍 🔍 Found virtual environment: ${bestEnv.name} (${bestEnv.type}) at ${bestEnv.pythonPath}`);
-                    this.pythonPath = bestEnv.pythonPath;
-                    this.isInitialized = false;
-                    await this.validatePythonEnvironment();
-                    return;
                 }
             }
 
@@ -325,9 +298,6 @@ export class PythonManager {
             'python',
             '/usr/bin/python3',
             '/usr/local/bin/python3',
-            'C:\\Python39\\python.exe',
-            'C:\\Python310\\python.exe',
-            'C:\\Python311\\python.exe',
         ];
 
         for (const pythonPath of commonPaths) {

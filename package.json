@@ -454,8 +454,8 @@
                 "scientificDataViewer.useExtensionEnvironment": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Use the extension's own virtual environment instead of system or workspace environments",
-                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. This ensures all required packages are available without requiring system-wide installations or workspace-specific environments.\n\n**Benefits:**\n- Self-contained: No external Python environment required\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Automatic: Creates and manages the environment automatically"
+                    "description": "Use the extension's own virtual environment (requires uv)",
+                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter.\n\n**Benefits:**\n- Semi-standalone: Only requires uv to be installed\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
                 }
             }
         }

@@ -127,47 +127,37 @@ Before using this extension, you need:
 
 The extension supports multiple ways to configure your Python environment:
 
-1. **Extension Virtual Environment** (Self-Contained):
+1. **Extension Virtual Environment** (Semi-Standalone):
 
-    - **Automatic Creation**: The extension can create its own isolated virtual environment
-    - **No Dependencies**: Works without any external Python environment setup
+    - **uv Required**: If `uv` is installed, the extension creates its own isolated environment
+    - **Python 3.13**: Uses uv to install and use Python 3.13 for optimal performance
+    - **Self-Contained**: Works without external Python environment setup
     - **Isolated**: Won't interfere with your other projects
-    - **Reliable**: Always has all required packages pre-installed
     - **Storage**: Stored in VSCode's extension storage space
+    - **Fallback**: If uv is not available, falls back to Python extension behavior
 
-2. **Virtual Environment Support** (Workspace):
-
-    - **Automatic Detection**: The extension automatically detects virtual environments in your workspace
-    - **Supported Types**: uv, venv, conda, pipenv, poetry
-    - **Priority Order**: uv > venv > conda > pipenv > poetry
-    - **Manual Selection**: Use "Select Python Interpreter" command to choose from detected environments
-
-3. **Python Extension Integration**:
+2. **Python Extension Integration** (Default):
 
     - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
     - Type "Python: Select Interpreter"
     - Choose your preferred Python environment
     - The extension will automatically detect it and use it
 
-4. **Manual Configuration**:
+3. **Environment Management Commands**:
 
-    - Set `scientificDataViewer.pythonInterpreter` in settings to a specific Python executable
-    - Example: `"./venv/bin/python"` or `"C:\\venv\\Scripts\\python.exe"`
-
-5. **Environment Management Commands**:
-
-    - **Select Python Interpreter**: Choose from detected virtual environments
-    - **Detect Virtual Environments**: Scan workspace for virtual environments
-    - **Reset to Default**: Use Python extension's default interpreter
-    - **Create Extension Environment**: Create the extension's own virtual environment
+    - **Create Extension Environment**: Create the extension's own virtual environment (requires uv)
     - **Manage Extension Environment**: View status and manage the extension environment
     - **Delete Extension Environment**: Remove the extension's virtual environment
 
 #### Virtual Environment Examples
 
-**Using Extension Virtual Environment (Self-Contained)**:
+**Using Extension Virtual Environment (Semi-Standalone)**:
 
 ```bash
+# Prerequisites: Install uv first
+# curl -LsSf https://astral.sh/uv/install.sh | sh
+# or: pip install uv
+
 # Enable extension virtual environment in settings
 # Set scientificDataViewer.useExtensionEnvironment to true
 
@@ -175,12 +165,11 @@ The extension supports multiple ways to configure your Python environment:
 # Ctrl+Shift+P → "Create Extension Virtual Environment"
 
 # The extension will automatically:
-# 1. Check if uv is available (faster, modern Python package manager)
-# 2. If uv is not available, offer to install it or use Python venv
-# 3. Install Python 3.13 using uv (if available) for latest features
-# 4. Create a virtual environment in its storage space with Python 3.13
-# 5. Install all required packages using uv (if available) or pip
-# 6. Use this environment for all operations
+# 1. Check if uv is available
+# 2. If uv is available: Install Python 3.13 and create environment
+# 3. If uv is not available: Fall back to Python extension behavior
+# 4. Install all required packages using uv (if available) or pip
+# 5. Use this environment for all operations
 ```
 
 **Using uv (recommended for modern Python projects)**:
@@ -274,10 +263,7 @@ The extension can be configured through VSCode settings:
 
 The extension includes specific settings for virtual environment management:
 
--   **`scientificDataViewer.pythonInterpreter`** (string, default: `""`): Python interpreter path for the extension. If empty, uses the Python extension's active interpreter. Can be set to a virtual environment Python executable. **Examples:** `"./venv/bin/python"`, `"C:\\venv\\Scripts\\python.exe"`
--   **`scientificDataViewer.autoDetectVirtualEnvironments`** (boolean, default: `true`): Automatically detect and suggest virtual environments in the workspace (uv, venv, conda, pipenv, poetry). When enabled, the extension will scan the workspace for these environments and offer them as options when no Python interpreter is configured.
--   **`scientificDataViewer.virtualEnvironmentPaths`** (array, default: `[]`): Additional paths to search for virtual environments beyond the workspace root. Each path should be a directory that may contain virtual environment folders. **Examples:** `["../shared-envs", "/opt/conda/envs"]`
--   **`scientificDataViewer.useExtensionEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of system or workspace environments. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. This ensures all required packages are available without requiring system-wide installations or workspace-specific environments. The extension will automatically use `uv` (if available) to install Python 3.13 and create the environment, or fall back to Python `venv` and `pip`.
+-   **`scientificDataViewer.useExtensionEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
 
 **🚩 Feature Flags**
 
@@ -324,9 +310,8 @@ Right-click on supported file types in the Explorer to access:
 
 2. **uv not available**:
 
-    - The extension will offer to install uv automatically when creating an extension environment
-    - You can also install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
-    - If uv installation fails, the extension will fall back to Python venv and pip
+    - Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
+    - If uv is not installed, the extension will fall back to using the Python extension's interpreter
     - When using uv, the extension automatically installs Python 3.13 for optimal performance
 
 3. **Missing packages**:

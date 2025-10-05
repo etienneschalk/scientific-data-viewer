@@ -80,20 +80,11 @@ export class ExtensionVirtualEnvironmentManager {
                 recursive: true,
             });
 
-            // Check if uv is available
+            // Check if uv is available - if not, fall back to Python venv
             const uvAvailable = await this.checkUvAvailability();
-            let useUv = uvAvailable;
 
-            if (!uvAvailable) {
-                // Ask user if they want to install uv
-                const installUv = await this.promptToInstallUv();
-                if (installUv) {
-                    useUv = true;
-                }
-            }
-
-            if (useUv) {
-                // Use uv to create the virtual environment
+            if (uvAvailable) {
+                // Use uv to create the virtual environment with Python 3.13
                 await this.createVirtualEnvironmentWithUv(
                     this.extensionEnv!.path
                 );
@@ -157,123 +148,25 @@ export class ExtensionVirtualEnvironmentManager {
                     Logger.info(`🔧 uv is available: ${output.trim()}`);
                     resolve(true);
                 } else {
-                    Logger.debug('🔧 uv is not available');
+                    Logger.info('🔧 uv is not available, will use Python venv');
                     resolve(false);
                 }
             });
 
             process.on('error', () => {
-                Logger.debug('🔧 uv is not available (error)');
+                Logger.info('🔧 uv is not available, will use Python venv');
                 resolve(false);
             });
 
             // Timeout after 5 seconds
             setTimeout(() => {
                 process.kill();
+                Logger.info('🔧 uv check timed out, will use Python venv');
                 resolve(false);
             }, 5000);
         });
     }
 
-    /**
-     * Prompt user to install uv
-     */
-    private async promptToInstallUv(): Promise<boolean> {
-        const action = await vscode.window.showWarningMessage(
-            'uv is not installed but is recommended for faster virtual environment creation. Would you like to install it?',
-            'Install uv',
-            'Use Python venv',
-            'Cancel'
-        );
-
-        if (action === 'Install uv') {
-            try {
-                // Try to install uv using pip
-                const installAction =
-                    await vscode.window.showInformationMessage(
-                        'Installing uv using pip... This may require administrator privileges.',
-                        'Continue',
-                        'Cancel'
-                    );
-
-                if (installAction === 'Continue') {
-                    return await this.installUv();
-                }
-            } catch (error) {
-                Logger.error(`Failed to install uv: ${error}`);
-                vscode.window.showErrorMessage(
-                    `Failed to install uv: ${error}`
-                );
-            }
-        } else if (action === 'Use Python venv') {
-            return false; // Use Python venv instead
-        }
-
-        return false;
-    }
-
-    /**
-     * Install uv using pip
-     */
-    private async installUv(): Promise<boolean> {
-        return new Promise((resolve) => {
-            Logger.info('🔧 Installing uv using pip...');
-            const process = spawn('python', ['-m', 'pip', 'install', 'uv'], {
-                // const process = spawn('pip', ['install', 'uv'], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe'],
-            });
-
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`🔧 pip install uv stdout: ${output}`);
-            });
-
-            process.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.debug(`🔧 pip install uv stderr: ${output}`);
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    Logger.info('✅ uv installed successfully');
-                    resolve(true);
-                } else {
-                    Logger.error(
-                        `Failed to install uv (exit code ${code}): ${
-                            stderr || stdout
-                        }`
-                    );
-                    vscode.window.showErrorMessage(
-                        `Failed to install uv: ${stderr || stdout}`
-                    );
-                    resolve(false);
-                }
-            });
-
-            process.on('error', (error) => {
-                Logger.error(
-                    `Failed to execute pip install uv: ${error.message}`
-                );
-                vscode.window.showErrorMessage(
-                    `Failed to install uv: ${error.message}`
-                );
-                resolve(false);
-            });
-
-            // Timeout after 2 minutes
-            setTimeout(() => {
-                process.kill();
-                Logger.error('uv installation timed out');
-                resolve(false);
-            }, 120000);
-        });
-    }
 
     /**
      * Find a suitable Python interpreter for creating the virtual environment
@@ -282,14 +175,8 @@ export class ExtensionVirtualEnvironmentManager {
         const candidates = [
             'python3',
             'python',
-            'python3.11',
-            'python3.10',
-            'python3.9',
             '/usr/bin/python3',
             '/usr/local/bin/python3',
-            'C:\\Python39\\python.exe',
-            'C:\\Python310\\python.exe',
-            'C:\\Python311\\python.exe',
         ];
 
         for (const candidate of candidates) {
@@ -424,7 +311,7 @@ export class ExtensionVirtualEnvironmentManager {
                 `🔧 Creating virtual environment with uv at: ${envPath}`
             );
 
-            // Try to use Python 3.13 specifically, fall back to system Python
+            // Try to use Python 3.13 specifically
             const process = spawn('uv', ['venv', '--python', '3.13', envPath], {
                 shell: true,
                 stdio: ['pipe', 'pipe', 'pipe'],
@@ -649,21 +536,14 @@ export class ExtensionVirtualEnvironmentManager {
         return new Promise((resolve, reject) => {
             Logger.info('📦 Installing packages with uv...');
 
-            // Try to use Python 3.13 first, fall back to the environment's Python path
-            const pythonArg = this.extensionEnv!.createdWithUv
-                ? '--python'
-                : '--python';
-            const pythonPath = this.extensionEnv!.createdWithUv
-                ? '3.13'
-                : this.extensionEnv!.pythonPath;
-
+            // Use the environment's Python path
             const uvProcess = spawn(
                 'uv',
                 [
                     'pip',
                     'install',
-                    pythonArg,
-                    pythonPath,
+                    '--python',
+                    this.extensionEnv!.pythonPath,
                     ...this.REQUIRED_PACKAGES,
                 ],
                 {
@@ -695,110 +575,9 @@ export class ExtensionVirtualEnvironmentManager {
                     this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
                     resolve();
                 } else {
-                    // If Python 3.13 failed, try with the environment's Python path
-                    if (this.extensionEnv!.createdWithUv) {
-                        Logger.warn(
-                            `⚠️ Failed to install packages with Python 3.13, trying with environment Python: ${
-                                stderr || stdout
-                            }`
-                        );
-                        this.installPackagesWithUvFallback()
-                            .then(resolve)
-                            .catch(reject);
-                    } else {
-                        reject(
-                            new Error(
-                                `Failed to install packages with uv (exit code ${code}): ${
-                                    stderr || stdout
-                                }`
-                            )
-                        );
-                    }
-                }
-            });
-
-            uvProcess.on('error', (error) => {
-                if (this.extensionEnv!.createdWithUv) {
-                    Logger.warn(
-                        `⚠️ Failed to execute uv pip with Python 3.13: ${error.message}`
-                    );
-                    this.installPackagesWithUvFallback()
-                        .then(resolve)
-                        .catch(reject);
-                } else {
-                    reject(
-                        new Error(`Failed to execute uv pip: ${error.message}`)
-                    );
-                }
-            });
-
-            // Timeout after 3 minutes (uv is faster)
-            setTimeout(() => {
-                uvProcess.kill();
-                if (this.extensionEnv!.createdWithUv) {
-                    Logger.warn(
-                        '⚠️ Package installation with uv timed out, trying fallback'
-                    );
-                    this.installPackagesWithUvFallback()
-                        .then(resolve)
-                        .catch(reject);
-                } else {
-                    reject(new Error('Package installation with uv timed out'));
-                }
-            }, 180000);
-        });
-    }
-
-    /**
-     * Fallback method to install packages with uv using environment Python
-     */
-    private async installPackagesWithUvFallback(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            Logger.info(
-                '📦 Installing packages with uv using environment Python...'
-            );
-
-            const uvProcess = spawn(
-                'uv',
-                [
-                    'pip',
-                    'install',
-                    '--python',
-                    this.extensionEnv!.pythonPath,
-                    ...this.REQUIRED_PACKAGES,
-                ],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                }
-            );
-
-            let stdout = '';
-            let stderr = '';
-
-            uvProcess.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`📦 uv pip fallback stdout: ${output}`);
-            });
-
-            uvProcess.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.debug(`📦 uv pip fallback stderr: ${output}`);
-            });
-
-            uvProcess.on('close', (code) => {
-                if (code === 0) {
-                    Logger.info(
-                        '✅ Required packages installed successfully with uv fallback'
-                    );
-                    this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
-                    resolve();
-                } else {
                     reject(
                         new Error(
-                            `Failed to install packages with uv fallback (exit code ${code}): ${
+                            `Failed to install packages with uv (exit code ${code}): ${
                                 stderr || stdout
                             }`
                         )
@@ -808,21 +587,18 @@ export class ExtensionVirtualEnvironmentManager {
 
             uvProcess.on('error', (error) => {
                 reject(
-                    new Error(
-                        `Failed to execute uv pip fallback: ${error.message}`
-                    )
+                    new Error(`Failed to execute uv pip: ${error.message}`)
                 );
             });
 
-            // Timeout after 3 minutes
+            // Timeout after 3 minutes (uv is faster)
             setTimeout(() => {
                 uvProcess.kill();
-                reject(
-                    new Error('Package installation with uv fallback timed out')
-                );
+                reject(new Error('Package installation with uv timed out'));
             }, 180000);
         });
     }
+
 
     /**
      * Install packages using pip
