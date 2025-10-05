@@ -3,7 +3,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
-import { quoteIfNeeded, showErrorMessage } from './utils';
+import {
+    quoteIfNeeded,
+    showErrorMessage,
+    showErrorMessageAndProposeHelpToInstallUv,
+} from './utils';
 
 export interface ExtensionVirtualEnvironment {
     path: string;
@@ -545,27 +549,9 @@ export class ExtensionVirtualEnvironmentManagerUI {
             Logger.error(
                 `🔧 ❌ Failed to create extension environment: ${error}`
             );
-            vscode.window
-                .showErrorMessage(
-                    `Failed to create extension environment: ${error}`,
-                    'OK',
-                    'Install uv',
-                    'Show Logs'
-                )
-                .then((selection) => {
-                    if (selection === 'Install uv') {
-                        vscode.env.openExternal(
-                            vscode.Uri.parse(
-                                this.extensionEnvManager.UV_INSTALLATION_URL
-                            )
-                        );
-                    }
-                    if (selection === 'Show Logs') {
-                        vscode.commands.executeCommand(
-                            'scientificDataViewer.showLogs'
-                        );
-                    }
-                });
+            const uvInstallationUrl =
+                this.extensionEnvManager.UV_INSTALLATION_URL;
+            showErrorMessageAndProposeHelpToInstallUv(error, uvInstallationUrl);
         }
     }
 
@@ -618,7 +604,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 }
             );
 
-            if (action?.label === '$(trash) Delete Environment') {
+            if (action?.label === '$(trash) Delete') {
                 Logger.info('🗑️ Deleting extension virtual environment...');
                 const deleted = await this.extensionEnvManager.delete();
 

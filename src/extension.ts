@@ -10,7 +10,10 @@ import {
     ExtensionVirtualEnvironmentManagerUI,
 } from './extensionVirtualEnvironmentManager';
 import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
-import { showErrorMessage } from './utils';
+import {
+    showErrorMessage,
+    showErrorMessageAndProposeHelpToInstallUv,
+} from './utils';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -59,8 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Set up configuration change listener for all Scientific Data Viewer settings
-    const workspaceConfigChangeListener = vscode.workspace.onDidChangeConfiguration(
-        (event) => {
+    const workspaceConfigChangeListener =
+        vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration('scientificDataViewer')) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
@@ -88,7 +91,31 @@ export function activate(context: vscode.ExtensionContext) {
                         if (key == 'python.overridePythonInterpreter') {
                             refreshPython(pythonManager, statusBarItem);
                         } else if (key == 'python.useExtensionOwnEnvironment') {
-                            refreshPython(pythonManager, statusBarItem);
+                            refreshPython(pythonManager, statusBarItem).then(
+                                () => {
+                                    if (value) {
+                                        pythonManager
+                                            .getCurrentEnvironmentInfo()
+                                            .then((envInfo) => {
+                                                if (
+                                                    envInfo?.type !==
+                                                    'own-uv-env'
+                                                ) {
+                                                    const uvInstallationUrl =
+                                                        extensionEnvManager.UV_INSTALLATION_URL;
+                                                    const error = `
+                                            You tried to activate the usage of the extension's own environment,
+                                            but it seems that uv is not installed.
+                                            Please install uv from ${uvInstallationUrl} and try again.`;
+                                                    showErrorMessageAndProposeHelpToInstallUv(
+                                                        error,
+                                                        uvInstallationUrl
+                                                    );
+                                                }
+                                            });
+                                    }
+                                }
+                            );
                         }
                     }
 
@@ -133,8 +160,7 @@ export function activate(context: vscode.ExtensionContext) {
                 );
                 refreshPython(pythonManager, statusBarItem);
             }
-        }
-    );
+        });
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
@@ -549,7 +575,7 @@ export function activate(context: vscode.ExtensionContext) {
         manageExtensionOwnEnvironmentCommand,
         workspaceChangeListener,
         workspaceConfigChangeListener,
-        ...editorRegistrations,
+        ...editorRegistrations
     );
 }
 

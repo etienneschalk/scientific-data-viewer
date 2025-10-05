@@ -22,7 +22,7 @@ export function quoteIfNeeded(value: string): string {
 export function showErrorMessage(
     message: string,
     showLogs: boolean = true,
-    showSettings: boolean = false,
+    showSettings: boolean = false
 ): void {
     vscode.window
         .showErrorMessage(
@@ -40,6 +40,32 @@ export function showErrorMessage(
                     'workbench.action.openSettings',
                     'scientificDataViewer'
                 );
+            }
+        });
+}
+
+/**
+ * Propose to install uv
+ * @param error The error to show
+ * @param uvInstallationUrl
+ */
+export function showErrorMessageAndProposeHelpToInstallUv(
+    error: any,
+    uvInstallationUrl: string
+) {
+    vscode.window
+        .showErrorMessage(
+            `Failed to create extension environment: ${error}`,
+            'OK',
+            'Install uv',
+            'Show Logs'
+        )
+        .then((selection) => {
+            if (selection === 'Install uv') {
+                vscode.env.openExternal(vscode.Uri.parse(uvInstallationUrl));
+            }
+            if (selection === 'Show Logs') {
+                vscode.commands.executeCommand('scientificDataViewer.showLogs');
             }
         });
 }

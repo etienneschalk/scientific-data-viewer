@@ -11,7 +11,7 @@ import { quoteIfNeeded, showErrorMessage } from './utils';
  * However, having an automatic installation attempt is useful to ensure that the extension works out of the box
  * It is written in this way to be able to easily change it in the future
  */
-const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = false;
+const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = true;
 
 /**
  * Enum to represent the source of the Python environment
@@ -1127,6 +1127,7 @@ export class PythonManager {
         source: EnvironmentSource
     ): Promise<void> {
         const interpreterPath = this._pythonPath;
+        this._environmentSource = source;
         try {
             const config = vscode.workspace.getConfiguration(
                 'scientificDataViewer.python'
