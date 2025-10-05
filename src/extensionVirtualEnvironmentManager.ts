@@ -612,14 +612,7 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Get information about the extension virtual environment
      */
-    getEnvironmentInfo(): {
-        isCreated: boolean;
-        isInitialized: boolean;
-        path: string;
-        pythonPath: string;
-        packages: string[];
-        lastUpdated: Date;
-    } {
+    getEnvironmentInfo(): ExtensionVirtualEnvironment {
         if (!this.extensionEnv) {
             return {
                 isCreated: false,
@@ -632,6 +625,8 @@ export class ExtensionVirtualEnvironmentManager {
         }
 
         const info = { ...this.extensionEnv };
+        info.packages = this.extensionEnv?.packages || [];
+        info.createdWithUv = this.extensionEnv!.createdWithUv;
 
         return info;
     }

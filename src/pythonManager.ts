@@ -3,7 +3,7 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { Logger } from './logger';
 import { DataViewerPanel } from './dataViewerPanel';
-import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
+import { ExtensionVirtualEnvironment, ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
 
 export class PythonManager {
     private pythonPath: string | null = null;
@@ -1192,8 +1192,8 @@ export class PythonManager {
                 const createAction = await vscode.window.showQuickPick(
                     [
                         {
-                            label: '$(plus) Create Environment',
-                            description: 'Create a new extension virtual environment'
+                            label: '$(plus) Create',
+                            description: 'Create a new environment'
                         },
                         {
                             label: '$(close) Cancel',
@@ -1206,46 +1206,30 @@ export class PythonManager {
                     }
                 );
 
-                if (createAction?.label === '$(plus) Create Environment') {
+                if (createAction?.label === '$(plus) Create') {
                     await this.createExtensionOwnEnvironment();
                 }
                 return;
             }
 
-            const lastUpdated = envInfo.lastUpdated.toLocaleString();
-
-            const toolUsed = (envInfo as any).createdWithUv
-                ? 'uv (Python 3.13)'
-                : 'Python venv';
-
-            const envStatusDescription = `📁 Path: ${envInfo.path}
-🐍 Python: ${envInfo.pythonPath}
-🔧 Created with: ${toolUsed}
-📦 Packages: ${envInfo.packages.length} installed
-📅 Last Updated: ${lastUpdated}
-✅ Status: ${envInfo.isInitialized ? 'Ready' : 'Not Initialized'}`;
 
             const action = await vscode.window.showQuickPick(
                 [
                     {
-                        label: '$(plus) Create Environment',
-                        description: 'Create a new extension virtual environment'
-                    },
-                    {
                         label: '$(sync) Update Packages',
-                        description: 'Update all packages in the extension environment'
+                        description: 'Update all packages in the environment'
                     },
                     {
-                        label: '$(trash) Delete Environment',
-                        description: 'Remove the extension virtual environment'
+                        label: '$(trash) Delete',
+                        description: 'Remove the environment'
                     },
                     {
                         label: '$(folder-opened) Open in Explorer',
                         description: 'Open the environment folder in file explorer'
                     },
                     {
-                        label: '$(info) Information about the environment',
-                        detail: envStatusDescription
+                        label: '$(info) Information',
+                        description: 'View detailed environment information in a new editor tab'
                     },
                     {
                         label: '$(close) Cancel',
@@ -1258,17 +1242,15 @@ export class PythonManager {
                 }
             );
 
-            // Show environment info in a separate information message
-            vscode.window.showInformationMessage(envStatusDescription);
 
             switch (action?.label) {
-                case '$(plus) Create Environment':
+                case '$(plus) Create':
                     await this.createExtensionOwnEnvironment();
                     break;
                 case '$(sync) Update Packages':
                     await this.updateExtensionOwnEnvironmentPackages();
                     break;
-                case '$(trash) Delete Environment':
+                case '$(trash) Delete':
                     await this.deleteExtensionOwnEnvironment();
                     break;
                 case '$(folder-opened) Open in Explorer':
@@ -1276,6 +1258,9 @@ export class PythonManager {
                         'revealFileInOS',
                         vscode.Uri.file(envInfo.path)
                     );
+                    break;
+                case '$(info) Information':
+                    await this.showEnvironmentInfoInEditor(envInfo);
                     break;
             }
         } catch (error) {
@@ -1323,8 +1308,8 @@ export class PythonManager {
             const action = await vscode.window.showQuickPick(
                 [
                     {
-                        label: '$(trash) Delete Environment',
-                        description: 'Permanently delete the extension virtual environment'
+                        label: '$(trash) Delete',
+                        description: 'Are you sure? Permanently delete the extension virtual environment'
                     },
                     {
                         label: '$(close) Cancel',
@@ -1366,6 +1351,58 @@ export class PythonManager {
             );
             vscode.window.showErrorMessage(
                 `Failed to delete extension environment: ${error}`
+            );
+        }
+    }
+
+    /**
+     * Show environment information in a new text editor tab
+     */
+    async showEnvironmentInfoInEditor(envInfo: ExtensionVirtualEnvironment): Promise<void> {
+        try {
+            const lastUpdated = envInfo.lastUpdated.toLocaleString();
+
+            const toolUsed = envInfo.createdWithUv
+                ? 'uv (Python 3.13)'
+                : 'Unknown';
+
+            const envInfoContent = `
+# Extension Virtual Environment Information
+
+- 📁 Path: ${envInfo.path}
+- 🐍 Python: ${envInfo.pythonPath}
+- 🔧 Created with: ${toolUsed}
+- 📦 Packages: ${envInfo.packages.length} installed
+- 📅 Last Updated: ${lastUpdated}
+- ${envInfo.isInitialized ? '✅ Status: Ready' : '❌ Status: Not Initialized'}
+
+- 📦 Installed Packages:
+${envInfo.packages.length > 0 ? envInfo.packages.map((pkg: any) => `  - ${pkg})`).join('\n') : '  No packages installed'}
+
+
+
+_Report generated on: ${new Date().toLocaleString()}_
+`;
+
+            // Create a new text document with the environment information
+            const doc = await vscode.workspace.openTextDocument({
+                content: envInfoContent,
+                language: 'markdown'
+            });
+
+            // Open the document in a new editor tab
+            await vscode.window.showTextDocument(doc, {
+                viewColumn: vscode.ViewColumn.Beside,
+                preserveFocus: true
+            });
+
+            Logger.info('📋 Environment information displayed in new editor tab');
+        } catch (error) {
+            Logger.error(
+                `📋 ❌ Failed to show environment info in editor: ${error}`
+            );
+            vscode.window.showErrorMessage(
+                `Failed to show environment information: ${error}`
             );
         }
     }
