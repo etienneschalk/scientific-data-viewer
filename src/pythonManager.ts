@@ -49,6 +49,19 @@ export class PythonManager {
     private _initialized: boolean = false;
     private _initializationPromise: Promise<void> | null = null;
     private _environmentSource: EnvironmentSource | null = null;
+    // Core packages required for basic functionality
+    private readonly corePackages = ['xarray', 'matplotlib'];
+    // Additional packages for extended format support
+    private readonly extendedPackages = [
+        'netCDF4',
+        'h5netcdf',
+        'zarr',
+        'h5py',
+        'scipy',
+        'cfgrib',
+        'rioxarray',
+        'xarray-sentinel',
+    ];
 
     constructor(
         private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager
@@ -224,35 +237,6 @@ export class PythonManager {
                         )
                     );
                 }
-            });
-        });
-    }
-
-    /**
-     * Check if a package is available
-     * @param pythonPath    The path to the Python interpreter
-     * @param packageName   The name of the package to check
-     * @returns             True if the package is available, False otherwise
-     */
-    async checkPackageAvailability(
-        pythonPath: string,
-        packageName: string
-    ): Promise<boolean> {
-        return new Promise((resolve) => {
-            const args = [
-                '-c',
-                `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`,
-            ];
-            const process = spawn(quoteIfNeeded(pythonPath), args, {
-                shell: true,
-            });
-
-            process.on('close', (code) => {
-                resolve(code === 0);
-            });
-
-            process.on('error', (error) => {
-                resolve(false);
             });
         });
     }
@@ -854,20 +838,7 @@ export class PythonManager {
     private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
-        // Core packages required for basic functionality
-        const corePackages = ['xarray', 'matplotlib'];
-        // Additional packages for extended format support
-        const extendedPackages = [
-            'netCDF4',
-            'h5netcdf',
-            'zarr',
-            'h5py',
-            'scipy',
-            'cfgrib',
-            'rioxarray',
-            'xarray-sentinel',
-        ];
-        const allPackages = [...corePackages, ...extendedPackages];
+        const allPackages = [...this.corePackages, ...this.extendedPackages];
         const availablePackages: string[] = [];
 
         for (const packageName of allPackages) {
@@ -948,6 +919,35 @@ export class PythonManager {
         });
     }
 
+    /**
+     * Check if a package is available
+     * @param pythonPath    The path to the Python interpreter
+     * @param packageName   The name of the package to check
+     * @returns             True if the package is available, False otherwise
+     */
+    private async checkPackageAvailability(
+        pythonPath: string,
+        packageName: string
+    ): Promise<boolean> {
+        return new Promise((resolve) => {
+            const args = [
+                '-c',
+                `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`,
+            ];
+            const process = spawn(quoteIfNeeded(pythonPath), args, {
+                shell: true,
+            });
+
+            process.on('close', (code) => {
+                resolve(code === 0);
+            });
+
+            process.on('error', (error) => {
+                resolve(false);
+            });
+        });
+    }
+
     private async validatePythonEnvironment(
         pythonPath: string | null
     ): Promise<void> {
@@ -965,8 +965,7 @@ export class PythonManager {
         try {
             // TODO eschalk CHECK VERSION to ensure the interpreter path is correct and not dsajdas !
             const packages = await this.checkRequiredPackages(this._pythonPath);
-            const corePackages = ['xarray', 'matplotlib'];
-            const missingCorePackages = corePackages.filter(
+            const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
             );
 
