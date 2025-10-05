@@ -145,9 +145,7 @@ The extension supports multiple ways to configure your Python environment:
 
 3. **Environment Management Commands**:
 
-    - **Create Extension Environment**: Create the extension's own virtual environment (requires uv)
-    - **Manage Extension Environment**: View status and manage the extension environment
-    - **Delete Extension Environment**: Remove the extension's virtual environment
+    - **Manage Extension Environment**: View status and manage the extension environment (create, update, delete, and explore)
 
 #### Virtual Environment Examples
 
@@ -162,7 +160,7 @@ The extension supports multiple ways to configure your Python environment:
 # Set scientificDataViewer.python.useExtensionOwnEnvironment to true
 
 # Or use the command palette:
-# Ctrl+Shift+P → "Create Extension Virtual Environment"
+# Ctrl+Shift+P → "Manage Extension Virtual Environment"
 
 # The extension will automatically:
 # 1. Check if uv is available
@@ -288,9 +286,7 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 | `Scientific Data Viewer: Select Python Interpreter`            | Choose from detected virtual environments               |
 | `Scientific Data Viewer: Detect Virtual Environments`          | Scan workspace for virtual environments                 |
 | `Scientific Data Viewer: Reset to Default Python Interpreter`  | Use Python extension's default interpreter              |
-| `Scientific Data Viewer: Create Extension Virtual Environment` | Create the extension's own isolated virtual environment |
-| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment        |
-| `Scientific Data Viewer: Delete Extension Virtual Environment` | Remove the extension's virtual environment              |
+| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, explore) |
 
 ### 🖱️ Context Menu Commands
 
