@@ -180,6 +180,7 @@ The extension supports multiple ways to configure your Python environment:
 
    - Drag and drop any supported file (or folder)
    - File (or folder) opens directly in the Scientific Data Viewer
+     - Multiple files (or folders) can be opened at once if they are selected
    - Command "View: Split Editor" is supported
 
 3. **Context menu from File Explorer**:
@@ -193,6 +194,7 @@ The extension supports multiple ways to configure your Python environment:
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
    - Type "Open Scientific Data Viewer" (or "Open Scientific Data Viewer (Folder)")
    - Select a file (or folder) from the file picker
+     - Multiple files (or folders) can be opened at once if they are selected
    - Command "View: Split Editor" is NOT supported
 
 Note: the only current way to get access to the split editor for Zarr folders is drag and drop.
@@ -234,34 +236,46 @@ Right-click on supported file types in the Explorer to access:
 
 - **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
 
-**Supported file formats:** `.nc`, `.netcdf`, `.zarr`, `.h5`, `.hdf5`, `.grib`, `.grib2`, `.grb`, `.tif`, `.tiff`, `.geotiff`, `.jp2`, `.jpeg2000`, `.safe`, `.nc4`, `.cdf`
-
 ## ⚙️ Settings
 
 The extension can be configured through VSCode settings:
 
-| Setting                                                                                      | Description                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scientificDataViewer.maxFileSize` <br> (type: `number`, default: `10000`)                   | Maximum file size in MB to load automatically                                                                                                                                                                                                                                                                                    |
-| `scientificDataViewer.defaultView` <br> (type: `string`, default: `"default"`)               | Default view mode for data display. **Options:** `default`                                                                                                                                                                                                                                                                       |
-| `scientificDataViewer.allowMultipleTabsForSameFile` <br> (type: `boolean`, default: `false`) | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
-| `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
-| `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
+**General Settings**
+
+- **`scientificDataViewer.maxFileSize`**
+  - (type: `number`, default: `10000`)
+  - Maximum file size in MB to load
+- **`scientificDataViewer.defaultView`**
+  - (type: `string`, default: `"default"`)
+  - Default view mode for data display.
+- **`scientificDataViewer.matplotlibStyle`**
+  - (type: `string`, default:`""` (empty string))
+  - Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name.
 
 **🐍 Virtual Environment Settings**
 
 The extension includes specific settings for virtual environment management:
 
-- **`scientificDataViewer.python.overridePythonInterpreter`** (string, default: `""`): Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
-- **`scientificDataViewer.python.currentlyInUseInterpreter`** (string, default: `""`): Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
-- **`scientificDataViewer.python.useExtensionOwnEnvironment`** (boolean, default: `false`): Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
+- **`scientificDataViewer.python.overridePythonInterpreter`**
+  - (string, default: `""`)
+  - Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
+- **`scientificDataViewer.python.currentlyInUseInterpreter`**
+  - (string, default: `""`)
+  - Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
+- **`scientificDataViewer.python.useExtensionOwnEnvironment`**
+  - (boolean, default: `false`)
+  - Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
 
 **🚩 Feature Flags**
 
 The extension includes configuration options that act as feature flags to control specific behaviors:
 
-- **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
-- **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
+- **`scientificDataViewer.allowMultipleTabsForSameFile`**
+  - (type: `boolean`, default: `false`)
+  - ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.
+- **`scientificDataViewer.devMode`**
+  - (type: `boolean`, default: `false`)
+  - Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.
 
 ## 🔧 Troubleshooting
 
