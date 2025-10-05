@@ -27,10 +27,9 @@ export class ExtensionVirtualEnvironmentManager {
         'scipy',
         'cfgrib',
         'rioxarray',
-        'xarray-sentinel'
     ];
 
-    constructor() {
+    constructor(private context: vscode.ExtensionContext) {
         this.initializeExtensionEnvironment();
     }
 
@@ -38,19 +37,24 @@ export class ExtensionVirtualEnvironmentManager {
      * Initialize the extension virtual environment
      */
     private initializeExtensionEnvironment(): void {
-        const envPath = path.join(this.context.globalStorageUri.fsPath, this.ENV_FOLDER_NAME);
+        const envPath = path.join(
+            this.context.globalStorageUri.fsPath,
+            this.ENV_FOLDER_NAME
+        );
         const pythonPath = this.getPythonExecutablePath(envPath);
-        
+
         this.extensionEnv = {
             path: envPath,
             pythonPath: pythonPath,
             isCreated: fs.existsSync(envPath),
             isInitialized: false,
             packages: [],
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
         };
 
-        Logger.info(`🔧 Extension virtual environment initialized at: ${envPath}`);
+        Logger.info(
+            `🔧 Extension virtual environment initialized at: ${envPath}`
+        );
     }
 
     /**
@@ -70,9 +74,11 @@ export class ExtensionVirtualEnvironmentManager {
     async createExtensionEnvironment(): Promise<boolean> {
         try {
             Logger.info('🔧 Creating extension virtual environment...');
-            
+
             // Ensure the storage directory exists
-            await fs.promises.mkdir(this.context.globalStorageUri.fsPath, { recursive: true });
+            await fs.promises.mkdir(this.context.globalStorageUri.fsPath, {
+                recursive: true,
+            });
 
             // Check if uv is available
             const uvAvailable = await this.checkUvAvailability();
@@ -88,17 +94,26 @@ export class ExtensionVirtualEnvironmentManager {
 
             if (useUv) {
                 // Use uv to create the virtual environment
-                await this.createVirtualEnvironmentWithUv(this.extensionEnv!.path);
+                await this.createVirtualEnvironmentWithUv(
+                    this.extensionEnv!.path
+                );
                 this.extensionEnv!.createdWithUv = true;
             } else {
                 // Fall back to Python venv
                 const pythonInterpreter = await this.findPythonInterpreter();
                 if (!pythonInterpreter) {
-                    throw new Error('No suitable Python interpreter found to create virtual environment');
+                    throw new Error(
+                        'No suitable Python interpreter found to create virtual environment'
+                    );
                 }
 
-                Logger.info(`🔧 Using Python interpreter: ${pythonInterpreter}`);
-                await this.createVirtualEnvironment(pythonInterpreter, this.extensionEnv!.path);
+                Logger.info(
+                    `🔧 Using Python interpreter: ${pythonInterpreter}`
+                );
+                await this.createVirtualEnvironment(
+                    pythonInterpreter,
+                    this.extensionEnv!.path
+                );
                 this.extensionEnv!.createdWithUv = false;
             }
 
@@ -112,11 +127,14 @@ export class ExtensionVirtualEnvironmentManager {
             this.extensionEnv!.isInitialized = true;
             this.extensionEnv!.lastUpdated = new Date();
 
-            Logger.info('✅ Extension virtual environment created successfully');
+            Logger.info(
+                '✅ Extension virtual environment created successfully'
+            );
             return true;
-
         } catch (error) {
-            Logger.error(`❌ Failed to create extension virtual environment: ${error}`);
+            Logger.error(
+                `❌ Failed to create extension virtual environment: ${error}`
+            );
             return false;
         }
     }
@@ -128,7 +146,7 @@ export class ExtensionVirtualEnvironmentManager {
         return new Promise((resolve) => {
             Logger.info('🔧 Checking if uv is available...');
             const process = spawn('uv', ['--version'], { shell: true });
-            
+
             let output = '';
             process.stdout.on('data', (data) => {
                 output += data.toString();
@@ -171,18 +189,21 @@ export class ExtensionVirtualEnvironmentManager {
         if (action === 'Install uv') {
             try {
                 // Try to install uv using pip
-                const installAction = await vscode.window.showInformationMessage(
-                    'Installing uv using pip... This may require administrator privileges.',
-                    'Continue',
-                    'Cancel'
-                );
+                const installAction =
+                    await vscode.window.showInformationMessage(
+                        'Installing uv using pip... This may require administrator privileges.',
+                        'Continue',
+                        'Cancel'
+                    );
 
                 if (installAction === 'Continue') {
                     return await this.installUv();
                 }
             } catch (error) {
                 Logger.error(`Failed to install uv: ${error}`);
-                vscode.window.showErrorMessage(`Failed to install uv: ${error}`);
+                vscode.window.showErrorMessage(
+                    `Failed to install uv: ${error}`
+                );
             }
         } else if (action === 'Use Python venv') {
             return false; // Use Python venv instead
@@ -197,10 +218,10 @@ export class ExtensionVirtualEnvironmentManager {
     private async installUv(): Promise<boolean> {
         return new Promise((resolve) => {
             Logger.info('🔧 Installing uv using pip...');
-            const process = spawn('python', ['-m', 'pip', 'install', 'uv'], { 
-                // const process = spawn('pip', ['install', 'uv'], { 
+            const process = spawn('python', ['-m', 'pip', 'install', 'uv'], {
+                // const process = spawn('pip', ['install', 'uv'], {
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
             });
 
             let stdout = '';
@@ -223,15 +244,25 @@ export class ExtensionVirtualEnvironmentManager {
                     Logger.info('✅ uv installed successfully');
                     resolve(true);
                 } else {
-                    Logger.error(`Failed to install uv (exit code ${code}): ${stderr || stdout}`);
-                    vscode.window.showErrorMessage(`Failed to install uv: ${stderr || stdout}`);
+                    Logger.error(
+                        `Failed to install uv (exit code ${code}): ${
+                            stderr || stdout
+                        }`
+                    );
+                    vscode.window.showErrorMessage(
+                        `Failed to install uv: ${stderr || stdout}`
+                    );
                     resolve(false);
                 }
             });
 
             process.on('error', (error) => {
-                Logger.error(`Failed to execute pip install uv: ${error.message}`);
-                vscode.window.showErrorMessage(`Failed to install uv: ${error.message}`);
+                Logger.error(
+                    `Failed to execute pip install uv: ${error.message}`
+                );
+                vscode.window.showErrorMessage(
+                    `Failed to install uv: ${error.message}`
+                );
                 resolve(false);
             });
 
@@ -258,7 +289,7 @@ export class ExtensionVirtualEnvironmentManager {
             '/usr/local/bin/python3',
             'C:\\Python39\\python.exe',
             'C:\\Python310\\python.exe',
-            'C:\\Python311\\python.exe'
+            'C:\\Python311\\python.exe',
         ];
 
         for (const candidate of candidates) {
@@ -278,11 +309,17 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Validate that a Python interpreter is working and has venv module
      */
-    private async validatePythonInterpreter(pythonPath: string): Promise<boolean> {
+    private async validatePythonInterpreter(
+        pythonPath: string
+    ): Promise<boolean> {
         return new Promise((resolve) => {
             Logger.info(`🔧 Validating Python interpreter: ${pythonPath}`);
-            const process = spawn(pythonPath, ['-c', `'import venv; print("venv available")'`], { shell: true });
-            
+            const process = spawn(
+                pythonPath,
+                ['-c', `'import venv; print("venv available")'`],
+                { shell: true }
+            );
+
             let output = '';
             process.stdout.on('data', (data) => {
                 output += data.toString();
@@ -316,10 +353,10 @@ export class ExtensionVirtualEnvironmentManager {
     private async installPythonWithUv(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info('🔧 Installing Python 3.13 with uv...');
-            
-            const process = spawn('uv', ['python', 'install', '3.13'], { 
+
+            const process = spawn('uv', ['python', 'install', '3.13'], {
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
             });
 
             let stdout = '';
@@ -339,17 +376,25 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Python 3.13 installed successfully with uv');
+                    Logger.info(
+                        '✅ Python 3.13 installed successfully with uv'
+                    );
                     resolve();
                 } else {
-                    Logger.warn(`⚠️ Failed to install Python 3.13 with uv (exit code ${code}): ${stderr || stdout}`);
+                    Logger.warn(
+                        `⚠️ Failed to install Python 3.13 with uv (exit code ${code}): ${
+                            stderr || stdout
+                        }`
+                    );
                     // Don't reject - continue with system Python
                     resolve();
                 }
             });
 
             process.on('error', (error) => {
-                Logger.warn(`⚠️ Failed to execute uv python install: ${error.message}`);
+                Logger.warn(
+                    `⚠️ Failed to execute uv python install: ${error.message}`
+                );
                 // Don't reject - continue with system Python
                 resolve();
             });
@@ -357,7 +402,9 @@ export class ExtensionVirtualEnvironmentManager {
             // Timeout after 2 minutes
             setTimeout(() => {
                 process.kill();
-                Logger.warn('⚠️ Python installation with uv timed out, continuing with system Python');
+                Logger.warn(
+                    '⚠️ Python installation with uv timed out, continuing with system Python'
+                );
                 resolve();
             }, 120000);
         });
@@ -366,17 +413,21 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Create a virtual environment using uv
      */
-    private async createVirtualEnvironmentWithUv(envPath: string): Promise<void> {
+    private async createVirtualEnvironmentWithUv(
+        envPath: string
+    ): Promise<void> {
         // First, ensure Python 3.13 is available via uv
         await this.installPythonWithUv();
 
         return new Promise((resolve, reject) => {
-            Logger.info(`🔧 Creating virtual environment with uv at: ${envPath}`);
-            
+            Logger.info(
+                `🔧 Creating virtual environment with uv at: ${envPath}`
+            );
+
             // Try to use Python 3.13 specifically, fall back to system Python
-            const process = spawn('uv', ['venv', '--python', '3.13', envPath], { 
+            const process = spawn('uv', ['venv', '--python', '3.13', envPath], {
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
             });
 
             let stdout = '';
@@ -396,26 +447,42 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Virtual environment created successfully with uv using Python 3.13');
+                    Logger.info(
+                        '✅ Virtual environment created successfully with uv using Python 3.13'
+                    );
                     resolve();
                 } else {
                     // If Python 3.13 failed, try with system Python
-                    Logger.warn(`⚠️ Failed to create environment with Python 3.13, trying with system Python: ${stderr || stdout}`);
-                    this.createVirtualEnvironmentWithUvFallback(envPath).then(resolve).catch(reject);
+                    Logger.warn(
+                        `⚠️ Failed to create environment with Python 3.13, trying with system Python: ${
+                            stderr || stdout
+                        }`
+                    );
+                    this.createVirtualEnvironmentWithUvFallback(envPath)
+                        .then(resolve)
+                        .catch(reject);
                 }
             });
 
             process.on('error', (error) => {
-                Logger.warn(`⚠️ Failed to execute uv venv with Python 3.13: ${error.message}`);
+                Logger.warn(
+                    `⚠️ Failed to execute uv venv with Python 3.13: ${error.message}`
+                );
                 // Try with system Python
-                this.createVirtualEnvironmentWithUvFallback(envPath).then(resolve).catch(reject);
+                this.createVirtualEnvironmentWithUvFallback(envPath)
+                    .then(resolve)
+                    .catch(reject);
             });
 
             // Timeout after 30 seconds (uv is faster)
             setTimeout(() => {
                 process.kill();
-                Logger.warn('⚠️ Virtual environment creation with uv timed out, trying fallback');
-                this.createVirtualEnvironmentWithUvFallback(envPath).then(resolve).catch(reject);
+                Logger.warn(
+                    '⚠️ Virtual environment creation with uv timed out, trying fallback'
+                );
+                this.createVirtualEnvironmentWithUvFallback(envPath)
+                    .then(resolve)
+                    .catch(reject);
             }, 30000);
         });
     }
@@ -423,13 +490,17 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Fallback method to create virtual environment with uv using system Python
      */
-    private async createVirtualEnvironmentWithUvFallback(envPath: string): Promise<void> {
+    private async createVirtualEnvironmentWithUvFallback(
+        envPath: string
+    ): Promise<void> {
         return new Promise((resolve, reject) => {
-            Logger.info(`🔧 Creating virtual environment with uv using system Python at: ${envPath}`);
-            
-            const process = spawn('uv', ['venv', envPath], { 
+            Logger.info(
+                `🔧 Creating virtual environment with uv using system Python at: ${envPath}`
+            );
+
+            const process = spawn('uv', ['venv', envPath], {
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
             });
 
             let stdout = '';
@@ -449,21 +520,37 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Virtual environment created successfully with uv using system Python');
+                    Logger.info(
+                        '✅ Virtual environment created successfully with uv using system Python'
+                    );
                     resolve();
                 } else {
-                    reject(new Error(`Failed to create virtual environment with uv fallback (exit code ${code}): ${stderr || stdout}`));
+                    reject(
+                        new Error(
+                            `Failed to create virtual environment with uv fallback (exit code ${code}): ${
+                                stderr || stdout
+                            }`
+                        )
+                    );
                 }
             });
 
             process.on('error', (error) => {
-                reject(new Error(`Failed to execute uv venv fallback command: ${error.message}`));
+                reject(
+                    new Error(
+                        `Failed to execute uv venv fallback command: ${error.message}`
+                    )
+                );
             });
 
             // Timeout after 30 seconds
             setTimeout(() => {
                 process.kill();
-                reject(new Error('Virtual environment creation with uv fallback timed out'));
+                reject(
+                    new Error(
+                        'Virtual environment creation with uv fallback timed out'
+                    )
+                );
             }, 30000);
         });
     }
@@ -471,13 +558,18 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Create a virtual environment using the specified Python interpreter
      */
-    private async createVirtualEnvironment(pythonPath: string, envPath: string): Promise<void> {
+    private async createVirtualEnvironment(
+        pythonPath: string,
+        envPath: string
+    ): Promise<void> {
         return new Promise((resolve, reject) => {
-            Logger.info(`🔧 Creating virtual environment with Python venv at: ${envPath}`);
-            
-            const process = spawn(pythonPath, ['-m', 'venv', envPath], { 
+            Logger.info(
+                `🔧 Creating virtual environment with Python venv at: ${envPath}`
+            );
+
+            const process = spawn(pythonPath, ['-m', 'venv', envPath], {
                 shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
             });
 
             let stdout = '';
@@ -497,15 +589,27 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Virtual environment created successfully with Python venv');
+                    Logger.info(
+                        '✅ Virtual environment created successfully with Python venv'
+                    );
                     resolve();
                 } else {
-                    reject(new Error(`Failed to create virtual environment (exit code ${code}): ${stderr || stdout}`));
+                    reject(
+                        new Error(
+                            `Failed to create virtual environment (exit code ${code}): ${
+                                stderr || stdout
+                            }`
+                        )
+                    );
                 }
             });
 
             process.on('error', (error) => {
-                reject(new Error(`Failed to execute venv command: ${error.message}`));
+                reject(
+                    new Error(
+                        `Failed to execute venv command: ${error.message}`
+                    )
+                );
             });
 
             // Timeout after 60 seconds
@@ -524,11 +628,13 @@ export class ExtensionVirtualEnvironmentManager {
             throw new Error('Extension virtual environment not created');
         }
 
-        Logger.info('📦 Installing required packages in extension virtual environment...');
+        Logger.info(
+            '📦 Installing required packages in extension virtual environment...'
+        );
 
         // Check if uv is available for package installation
         const uvAvailable = await this.checkUvAvailability();
-        
+
         if (uvAvailable) {
             await this.installPackagesWithUv();
         } else {
@@ -542,15 +648,29 @@ export class ExtensionVirtualEnvironmentManager {
     private async installPackagesWithUv(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info('📦 Installing packages with uv...');
-            
+
             // Try to use Python 3.13 first, fall back to the environment's Python path
-            const pythonArg = this.extensionEnv!.createdWithUv ? '--python' : '--python';
-            const pythonPath = this.extensionEnv!.createdWithUv ? '3.13' : this.extensionEnv!.pythonPath;
-            
-            const uvProcess = spawn('uv', ['pip', 'install', pythonArg, pythonPath, ...this.REQUIRED_PACKAGES], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
+            const pythonArg = this.extensionEnv!.createdWithUv
+                ? '--python'
+                : '--python';
+            const pythonPath = this.extensionEnv!.createdWithUv
+                ? '3.13'
+                : this.extensionEnv!.pythonPath;
+
+            const uvProcess = spawn(
+                'uv',
+                [
+                    'pip',
+                    'install',
+                    pythonArg,
+                    pythonPath,
+                    ...this.REQUIRED_PACKAGES,
+                ],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                }
+            );
 
             let stdout = '';
             let stderr = '';
@@ -569,26 +689,46 @@ export class ExtensionVirtualEnvironmentManager {
 
             uvProcess.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Required packages installed successfully with uv');
+                    Logger.info(
+                        '✅ Required packages installed successfully with uv'
+                    );
                     this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
                     resolve();
                 } else {
                     // If Python 3.13 failed, try with the environment's Python path
                     if (this.extensionEnv!.createdWithUv) {
-                        Logger.warn(`⚠️ Failed to install packages with Python 3.13, trying with environment Python: ${stderr || stdout}`);
-                        this.installPackagesWithUvFallback().then(resolve).catch(reject);
+                        Logger.warn(
+                            `⚠️ Failed to install packages with Python 3.13, trying with environment Python: ${
+                                stderr || stdout
+                            }`
+                        );
+                        this.installPackagesWithUvFallback()
+                            .then(resolve)
+                            .catch(reject);
                     } else {
-                        reject(new Error(`Failed to install packages with uv (exit code ${code}): ${stderr || stdout}`));
+                        reject(
+                            new Error(
+                                `Failed to install packages with uv (exit code ${code}): ${
+                                    stderr || stdout
+                                }`
+                            )
+                        );
                     }
                 }
             });
 
             uvProcess.on('error', (error) => {
                 if (this.extensionEnv!.createdWithUv) {
-                    Logger.warn(`⚠️ Failed to execute uv pip with Python 3.13: ${error.message}`);
-                    this.installPackagesWithUvFallback().then(resolve).catch(reject);
+                    Logger.warn(
+                        `⚠️ Failed to execute uv pip with Python 3.13: ${error.message}`
+                    );
+                    this.installPackagesWithUvFallback()
+                        .then(resolve)
+                        .catch(reject);
                 } else {
-                    reject(new Error(`Failed to execute uv pip: ${error.message}`));
+                    reject(
+                        new Error(`Failed to execute uv pip: ${error.message}`)
+                    );
                 }
             });
 
@@ -596,8 +736,12 @@ export class ExtensionVirtualEnvironmentManager {
             setTimeout(() => {
                 uvProcess.kill();
                 if (this.extensionEnv!.createdWithUv) {
-                    Logger.warn('⚠️ Package installation with uv timed out, trying fallback');
-                    this.installPackagesWithUvFallback().then(resolve).catch(reject);
+                    Logger.warn(
+                        '⚠️ Package installation with uv timed out, trying fallback'
+                    );
+                    this.installPackagesWithUvFallback()
+                        .then(resolve)
+                        .catch(reject);
                 } else {
                     reject(new Error('Package installation with uv timed out'));
                 }
@@ -610,12 +754,24 @@ export class ExtensionVirtualEnvironmentManager {
      */
     private async installPackagesWithUvFallback(): Promise<void> {
         return new Promise((resolve, reject) => {
-            Logger.info('📦 Installing packages with uv using environment Python...');
-            
-            const uvProcess = spawn('uv', ['pip', 'install', '--python', this.extensionEnv!.pythonPath, ...this.REQUIRED_PACKAGES], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
+            Logger.info(
+                '📦 Installing packages with uv using environment Python...'
+            );
+
+            const uvProcess = spawn(
+                'uv',
+                [
+                    'pip',
+                    'install',
+                    '--python',
+                    this.extensionEnv!.pythonPath,
+                    ...this.REQUIRED_PACKAGES,
+                ],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                }
+            );
 
             let stdout = '';
             let stderr = '';
@@ -634,22 +790,36 @@ export class ExtensionVirtualEnvironmentManager {
 
             uvProcess.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Required packages installed successfully with uv fallback');
+                    Logger.info(
+                        '✅ Required packages installed successfully with uv fallback'
+                    );
                     this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
                     resolve();
                 } else {
-                    reject(new Error(`Failed to install packages with uv fallback (exit code ${code}): ${stderr || stdout}`));
+                    reject(
+                        new Error(
+                            `Failed to install packages with uv fallback (exit code ${code}): ${
+                                stderr || stdout
+                            }`
+                        )
+                    );
                 }
             });
 
             uvProcess.on('error', (error) => {
-                reject(new Error(`Failed to execute uv pip fallback: ${error.message}`));
+                reject(
+                    new Error(
+                        `Failed to execute uv pip fallback: ${error.message}`
+                    )
+                );
             });
 
             // Timeout after 3 minutes
             setTimeout(() => {
                 uvProcess.kill();
-                reject(new Error('Package installation with uv fallback timed out'));
+                reject(
+                    new Error('Package installation with uv fallback timed out')
+                );
             }, 180000);
         });
     }
@@ -660,11 +830,15 @@ export class ExtensionVirtualEnvironmentManager {
     private async installPackagesWithPip(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info('📦 Installing packages with pip...');
-            
-            const pipProcess = spawn(this.extensionEnv!.pythonPath, ['-m', 'pip', 'install', ...this.REQUIRED_PACKAGES], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
+
+            const pipProcess = spawn(
+                this.extensionEnv!.pythonPath,
+                ['-m', 'pip', 'install', ...this.REQUIRED_PACKAGES],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                }
+            );
 
             let stdout = '';
             let stderr = '';
@@ -683,11 +857,19 @@ export class ExtensionVirtualEnvironmentManager {
 
             pipProcess.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info('✅ Required packages installed successfully with pip');
+                    Logger.info(
+                        '✅ Required packages installed successfully with pip'
+                    );
                     this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
                     resolve();
                 } else {
-                    reject(new Error(`Failed to install packages with pip (exit code ${code}): ${stderr || stdout}`));
+                    reject(
+                        new Error(
+                            `Failed to install packages with pip (exit code ${code}): ${
+                                stderr || stdout
+                            }`
+                        )
+                    );
                 }
             });
 
@@ -714,10 +896,12 @@ export class ExtensionVirtualEnvironmentManager {
      * Check if the extension virtual environment is ready to use
      */
     isReady(): boolean {
-        return this.extensionEnv !== null && 
-               this.extensionEnv.isCreated && 
-               this.extensionEnv.isInitialized &&
-               fs.existsSync(this.extensionEnv.pythonPath);
+        return (
+            this.extensionEnv !== null &&
+            this.extensionEnv.isCreated &&
+            this.extensionEnv.isInitialized &&
+            fs.existsSync(this.extensionEnv.pythonPath)
+        );
     }
 
     /**
@@ -735,12 +919,16 @@ export class ExtensionVirtualEnvironmentManager {
      */
     async updatePackages(): Promise<boolean> {
         if (!this.isReady()) {
-            Logger.warn('Extension virtual environment not ready for package updates');
+            Logger.warn(
+                'Extension virtual environment not ready for package updates'
+            );
             return false;
         }
 
         try {
-            Logger.info('📦 Updating packages in extension virtual environment...');
+            Logger.info(
+                '📦 Updating packages in extension virtual environment...'
+            );
             await this.installRequiredPackages();
             this.extensionEnv!.lastUpdated = new Date();
             Logger.info('✅ Packages updated successfully');
@@ -758,18 +946,25 @@ export class ExtensionVirtualEnvironmentManager {
         try {
             if (this.extensionEnv && this.extensionEnv.isCreated) {
                 Logger.info('🗑️ Deleting extension virtual environment...');
-                await fs.promises.rm(this.extensionEnv.path, { recursive: true, force: true });
-                
+                await fs.promises.rm(this.extensionEnv.path, {
+                    recursive: true,
+                    force: true,
+                });
+
                 this.extensionEnv.isCreated = false;
                 this.extensionEnv.isInitialized = false;
                 this.extensionEnv.packages = [];
-                
-                Logger.info('✅ Extension virtual environment deleted successfully');
+
+                Logger.info(
+                    '✅ Extension virtual environment deleted successfully'
+                );
                 return true;
             }
             return true;
         } catch (error) {
-            Logger.error(`❌ Failed to delete extension virtual environment: ${error}`);
+            Logger.error(
+                `❌ Failed to delete extension virtual environment: ${error}`
+            );
             return false;
         }
     }
@@ -777,12 +972,12 @@ export class ExtensionVirtualEnvironmentManager {
     /**
      * Get information about the extension virtual environment
      */
-    getEnvironmentInfo(): { 
-        isCreated: boolean; 
-        isInitialized: boolean; 
-        path: string; 
-        pythonPath: string; 
-        packages: string[]; 
+    getEnvironmentInfo(): {
+        isCreated: boolean;
+        isInitialized: boolean;
+        path: string;
+        pythonPath: string;
+        packages: string[];
         lastUpdated: Date;
         size?: number;
     } {
@@ -793,15 +988,18 @@ export class ExtensionVirtualEnvironmentManager {
                 path: '',
                 pythonPath: '',
                 packages: [],
-                lastUpdated: new Date()
+                lastUpdated: new Date(),
             };
         }
 
         const info = { ...this.extensionEnv };
-        
+
         // Try to get directory size
         try {
-            if (this.extensionEnv.isCreated && fs.existsSync(this.extensionEnv.path)) {
+            if (
+                this.extensionEnv.isCreated &&
+                fs.existsSync(this.extensionEnv.path)
+            ) {
                 const stats = fs.statSync(this.extensionEnv.path);
                 // info.size = this.getDirectorySize(this.extensionEnv.path);
             }
@@ -817,13 +1015,13 @@ export class ExtensionVirtualEnvironmentManager {
      */
     private getDirectorySize(dirPath: string): number {
         let totalSize = 0;
-        
+
         try {
             const items = fs.readdirSync(dirPath);
             for (const item of items) {
                 const itemPath = path.join(dirPath, item);
                 const stats = fs.statSync(itemPath);
-                
+
                 if (stats.isDirectory()) {
                     totalSize += this.getDirectorySize(itemPath);
                 } else {
@@ -831,9 +1029,11 @@ export class ExtensionVirtualEnvironmentManager {
                 }
             }
         } catch (error) {
-            Logger.debug(`Error calculating directory size for ${dirPath}: ${error}`);
+            Logger.debug(
+                `Error calculating directory size for ${dirPath}: ${error}`
+            );
         }
-        
+
         return totalSize;
     }
 
@@ -842,13 +1042,11 @@ export class ExtensionVirtualEnvironmentManager {
      */
     formatBytes(bytes: number): string {
         if (bytes === 0) return '0 Bytes';
-        
+
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
+
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 }
-
-

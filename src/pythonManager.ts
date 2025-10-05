@@ -10,12 +10,8 @@ export class PythonManager {
     private pythonPath: string | undefined = undefined;
     private isInitialized: boolean = false;
     private initializationPromise: Promise<void> | null = null;
-    private virtualEnvManager: VirtualEnvironmentManager;
-    private extensionEnvManager: ExtensionVirtualEnvironmentManager;
 
-    constructor() {
-        this.virtualEnvManager = new VirtualEnvironmentManager();
-        this.extensionEnvManager = new ExtensionVirtualEnvironmentManager();
+    constructor(private readonly virtualEnvManager: VirtualEnvironmentManager, private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager) {
     }
 
     async _initialize(): Promise<void> {

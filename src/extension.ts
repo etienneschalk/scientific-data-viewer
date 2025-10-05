@@ -5,6 +5,8 @@ import { DataProcessor } from './dataProcessor';
 import { Logger } from './logger';
 import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
+import { VirtualEnvironmentManager } from './virtualEnvironmentManager';
+import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
 
 class ScientificDataEditorProvider
     implements vscode.CustomReadonlyEditorProvider
@@ -172,7 +174,9 @@ export function activate(context: vscode.ExtensionContext) {
     let dataProcessor: DataProcessor;
 
     try {
-        pythonManager = new PythonManager();
+        const virtualEnvManager = new VirtualEnvironmentManager();
+        const extensionEnvManager = new ExtensionVirtualEnvironmentManager(context);
+        pythonManager = new PythonManager(virtualEnvManager, extensionEnvManager);
         dataProcessor = DataProcessor.createInstance(pythonManager);
         Logger.info('🚀 Extension managers initialized successfully');
     } catch (error) {
