@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
         enableFindWidget: true,
         retainContextWhenHidden: true,
     };
-    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(context);
+    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(context.extensionUri);
     const iconPath = vscode.Uri.joinPath(
         context.extensionUri,
         'media',
@@ -595,13 +595,13 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function getWebviewOptions(
-    context: vscode.ExtensionContext
+    extensionUri: vscode.Uri
 ): vscode.WebviewOptions {
     return {
         enableScripts: true,
         localResourceRoots: [
-            vscode.Uri.joinPath(context.extensionUri, 'media'),
-            vscode.Uri.joinPath(context.extensionUri, 'out'),
+            vscode.Uri.joinPath(extensionUri, 'media'),
+            vscode.Uri.joinPath(extensionUri, 'out'),
         ],
     };
 }
@@ -725,8 +725,8 @@ function getAllSupportedExtensions(
         ?.packageJSON?.contributes?.languages;
     const allSupportedExtensions =
         languages
-            ?.filter((el) => !ids || ids.includes(el.id))
-            .flatMap((el) => el.extensions) || [];
+            ?.filter((el: any) => !ids || ids.includes(el.id))
+            .flatMap((el: any) => el.extensions) || [];
     return allSupportedExtensions;
 }
 
@@ -738,18 +738,18 @@ function getShowDialogFilters(
         ?.packageJSON?.contributes?.languages;
     const allSupportedExtensions =
         languages
-            ?.filter((el) => !ids || ids.includes(el.id))
-            .flatMap((el) => el.extensions) || [];
+            ?.filter((el: any) => !ids || ids.includes(el.id))
+            .flatMap((el: any) => el.extensions) || [];
     const filters: { [name: string]: string[] } = {
-        'Scientific Data Files': allSupportedExtensions.map((ext) =>
+        'Scientific Data Files': allSupportedExtensions.map((ext: any) =>
             ext.slice(1)
         ),
         ...Object.fromEntries(
             languages
-                ?.filter((el) => !ids || ids.includes(el.id))
-                .map((el) => [
+                ?.filter((el: any) => !ids || ids.includes(el.id))
+                .map((el: any) => [
                     el.aliases[0],
-                    el.extensions.map((ext) => ext.slice(1)),
+                    el.extensions.map((ext: any) => ext.slice(1)),
                 ])
         ),
     };

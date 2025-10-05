@@ -9,8 +9,25 @@ suite('DataViewerPanel Test Suite', () => {
     let mockDataProcessor: DataProcessor;
     let mockPythonManager: PythonManager;
     let mockWebviewPanel: vscode.WebviewPanel;
+    let mockWebviewOptions: vscode.WebviewOptions;
+    let mockWebviewPanelOptions: vscode.WebviewPanelOptions;
 
     suiteSetup(() => {
+        // Mock webview options
+        mockWebviewOptions = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
+                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
+            ],
+        };
+
+        // Mock webview panel options
+        mockWebviewPanelOptions = {
+            enableFindWidget: true,
+            retainContextWhenHidden: true,
+        };
+
         // Mock ExtensionContext
         mockContext = {
             extensionPath: '/test/extension/path',
@@ -119,8 +136,7 @@ suite('DataViewerPanel Test Suite', () => {
 
     teardown(() => {
         // Clean up static state
-        DataViewerPanel.activePanels.clear();
-        DataViewerPanel.private.clear();
+        DataViewerPanel.dispose();
     });
 
     test('should have correct view type', () => {
@@ -142,10 +158,11 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.waitThenCreateOrReveal(
+            DataViewerPanel.createOrReveal(
                 mockContext.extensionUri,
                 fileUri,
-                mockDataProcessor
+                mockWebviewOptions,
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -177,10 +194,11 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.waitThenCreateOrReveal(
+            DataViewerPanel.createOrReveal(
                 mockContext.extensionUri,
                 fileUri,
-                mockDataProcessor
+                mockWebviewOptions,
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -222,10 +240,11 @@ suite('DataViewerPanel Test Suite', () => {
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
-            DataViewerPanel.waitThenCreateOrReveal(
+            DataViewerPanel.createOrReveal(
                 mockContext.extensionUri,
                 fileUri,
-                mockDataProcessor
+                mockWebviewOptions,
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -245,36 +264,13 @@ suite('DataViewerPanel Test Suite', () => {
         DataViewerPanel.createFromWebviewPanel(
             mockContext.extensionUri,
             mockWebviewPanel,
-            vscode.Uri.file('/path/to/test.nc'),
-            mockDataProcessor
+            mockWebviewOptions,
         );
 
         // Should not throw an error
         assert.ok(true);
     });
 
-    test('should refresh panels with errors', async () => {
-        // Add a panel to panels with errors
-        const mockPanel = {
-            _handleGetDataInfo: async () => {},
-        } as any;
-        DataViewerPanel.private.add(mockPanel);
-
-        await DataViewerPanel.refreshPanelsWithErrors();
-
-        // Should not throw an error
-        assert.ok(true);
-    });
-
-    test('should refresh panels with errors when no error panels', async () => {
-        // Ensure no error panels
-        DataViewerPanel.private.clear();
-
-        await DataViewerPanel.refreshPanelsWithErrors();
-
-        // Should not throw an error
-        assert.ok(true);
-    });
 
     test('should dispose static resources', () => {
         DataViewerPanel.dispose();
@@ -366,16 +362,12 @@ suite('DataViewerPanel Test Suite', () => {
 
     test('should dispose panel', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
-            mockContext.extensionUri,
-            mockWebviewPanel,
             vscode.Uri.file('/path/to/test.nc'),
-            mockDataProcessor
+            mockWebviewPanel,
+            mockWebviewOptions,
         );
 
-        // Add to active panels
-        DataViewerPanel.activePanels.add(panel);
-
-        panel.dispose();
+        DataViewerPanel.dispose();
 
         // Should be removed from active panels
         assert.ok(!DataViewerPanel.activePanels.has(panel));

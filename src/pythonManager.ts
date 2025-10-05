@@ -310,7 +310,7 @@ export class PythonManager {
         try {
             const vscodePythonPath = vscode.workspace
                 .getConfiguration('python')
-                .get('defaultInterpreterPath') as string | undefined;
+                .get('defaultInterpreterPath') as string | null;
             if (vscodePythonPath) {
                 Logger.debug(
                     `🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`
@@ -1047,13 +1047,6 @@ export class PythonManager {
                 )}.`
             );
         }
-    }
-
-    /**
-     * Get the virtual environment manager
-     */
-    getVirtualEnvironmentManager(): VirtualEnvironmentManager {
-        return this.virtualEnvManager;
     }
 
     /**

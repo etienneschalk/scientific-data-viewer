@@ -20,6 +20,14 @@ export class DataViewerPanel {
     private readonly _disposables: vscode.Disposable[] = [];
     private _isDisposed: boolean = false;
 
+
+    public static get activePanels(): Set<DataViewerPanel> {
+        return DataViewerPanel._activePanels;
+    }
+
+    public static get errorPanels(): Set<DataViewerPanel> {
+        return DataViewerPanel._errorPanels;
+    }
     public static setOutlineProvider(outlineProvider: OutlineProvider): void {
         DataViewerPanel._outlineProvider = outlineProvider;
     }

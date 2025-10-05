@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { PythonManager } from '../../src/pythonManager';
+import { ExtensionVirtualEnvironmentManager } from '../../src/extensionVirtualEnvironmentManager';
 
 suite('PythonManager Test Suite', () => {
     let pythonManager: PythonManager;
@@ -48,7 +49,7 @@ suite('PythonManager Test Suite', () => {
     });
 
     setup(() => {
-        pythonManager = new PythonManager();
+        pythonManager = new PythonManager(new ExtensionVirtualEnvironmentManager(mockContext));
     });
 
     teardown(() => {

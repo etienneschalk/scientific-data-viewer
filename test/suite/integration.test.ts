@@ -4,13 +4,24 @@ import { DataProcessor } from '../../src/dataProcessor';
 import { PythonManager } from '../../src/pythonManager';
 import { DataViewerPanel } from '../../src/dataViewerPanel';
 import { Logger } from '../../src/logger';
+import { ExtensionVirtualEnvironmentManager } from '../../src/extensionVirtualEnvironmentManager';
 
 suite('Integration Test Suite', () => {
     let mockContext: vscode.ExtensionContext;
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
+    let mockWebviewOptions: vscode.WebviewOptions;
 
     suiteSetup(() => {
+        // Mock webview options
+        mockWebviewOptions = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(mockContext.extensionUri, 'media'),
+                vscode.Uri.joinPath(mockContext.extensionUri, 'out'),
+            ],
+        };
+
         // Mock ExtensionContext
         mockContext = {
             extensionPath: '/test/extension/path',
@@ -57,14 +68,13 @@ suite('Integration Test Suite', () => {
 
     setup(() => {
         // Create fresh instances for each test
-        pythonManager = new PythonManager();
+        pythonManager = new PythonManager(new ExtensionVirtualEnvironmentManager(mockContext));
         dataProcessor = new DataProcessor(pythonManager);
     });
 
     teardown(() => {
         // Clean up static state
-        DataViewerPanel.activePanels.clear();
-        DataViewerPanel.private.clear();
+        DataViewerPanel.dispose();
         Logger.dispose();
     });
 
@@ -162,10 +172,9 @@ suite('Integration Test Suite', () => {
 
         // Create DataViewerPanel with DataProcessor
         const panel = DataViewerPanel.createFromWebviewPanel(
-            mockContext.extensionUri,
-            mockWebviewPanel,
             vscode.Uri.file('/path/to/test.nc'),
-            dataProcessor
+            mockWebviewPanel,
+            mockWebviewOptions,
         );
 
         assert.ok(panel);
@@ -392,10 +401,9 @@ suite('Integration Test Suite', () => {
         } as any;
 
         const panel = DataViewerPanel.createFromWebviewPanel(
-            mockContext.extensionUri,
-            mockWebviewPanel,
             vscode.Uri.file('/path/to/test.nc'),
-            dataProcessor
+            mockWebviewPanel,
+            mockWebviewOptions,
         );
 
         // Test that panel can handle different message types - these methods were removed from DataViewerPanel
@@ -449,16 +457,14 @@ suite('Integration Test Suite', () => {
 
             // Test that multiple tabs are allowed
             const panel1 = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                dataProcessor
+                mockWebviewPanel,
+                mockWebviewOptions,
             );
             const panel2 = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                dataProcessor
+                mockWebviewPanel,
+                mockWebviewOptions,
             );
 
             assert.ok(DataViewerPanel.activePanels.has(panel1));
@@ -544,10 +550,9 @@ suite('Integration Test Suite', () => {
             // Create DataViewerPanel - _handleGetDataInfo method was removed, functionality now in UIController
             // We'll test the components separately to avoid the fs.stat issue
             const panel = DataViewerPanel.createFromWebviewPanel(
-                mockContext.extensionUri,
-                mockWebviewPanel,
                 vscode.Uri.file('/path/to/test.nc'),
-                processor
+                mockWebviewPanel,
+                mockWebviewOptions,
             );
 
             // Test that panel is created successfully
@@ -571,7 +576,7 @@ suite('Integration Test Suite', () => {
             assert.ok(plotData.startsWith('iVBOR'));
 
             // Test panel disposal
-            panel.dispose();
+            DataViewerPanel.dispose();
             assert.ok(!DataViewerPanel.activePanels.has(panel));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;

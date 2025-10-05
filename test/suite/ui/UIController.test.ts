@@ -68,7 +68,6 @@ suite('UIController Test Suite', () => {
         uiController = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); },
             () => { console.log('Outline update'); }
@@ -134,14 +133,12 @@ suite('UIController Test Suite', () => {
         const controller1 = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
         const controller2 = new UIController(
             2,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
@@ -158,7 +155,6 @@ suite('UIController Test Suite', () => {
         const minimalController = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
@@ -172,7 +168,6 @@ suite('UIController Test Suite', () => {
         const errorController = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { errorCallbackCalled = true; },
             (success: string) => { console.log('Success:', success); }
         );
@@ -187,7 +182,6 @@ suite('UIController Test Suite', () => {
         const successController = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { successCallbackCalled = true; }
         );
@@ -202,7 +196,6 @@ suite('UIController Test Suite', () => {
         const outlineController = new UIController(
             1,
             mockWebview,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); },
             () => { outlineCallbackCalled = true; }
@@ -227,7 +220,6 @@ suite('UIController Test Suite', () => {
         const controller1 = new UIController(
             1,
             webview1,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
@@ -235,7 +227,6 @@ suite('UIController Test Suite', () => {
         const controller2 = new UIController(
             2,
             webview2,
-            mockDataProcessor,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
@@ -261,7 +252,6 @@ suite('UIController Test Suite', () => {
         const controller1 = new UIController(
             1,
             mockWebview,
-            dataProcessor1,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
@@ -269,7 +259,6 @@ suite('UIController Test Suite', () => {
         const controller2 = new UIController(
             2,
             mockWebview,
-            dataProcessor2,
             (error: Error) => { console.log('Error:', error.message); },
             (success: string) => { console.log('Success:', success); }
         );
