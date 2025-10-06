@@ -395,93 +395,6 @@ export class PythonManager {
         }
     }
 
-    /**
-     * Prompt the user to install required packages
-     * @param missingPackages The list of missing packages
-     */
-    async promptToInstallRequiredPackages(
-        missingPackages: string[]
-    ): Promise<void> {
-        const action = await vscode.window.showWarningMessage(
-            `You are using the Python interpreter at ${
-                this._pythonPath
-            }. Missing required packages: ${missingPackages.join(
-                ', '
-            )}. Install them?`,
-            'Install',
-            'Cancel'
-        );
-
-        if (action === 'Install') {
-            try {
-                await this.installPackages(missingPackages);
-                // TODO eschalk: This is a hack to refresh the panels with errors.
-                // We should find a better way to do this. XXX
-                await DataViewerPanel.refreshPanelsWithErrors();
-            } catch (error) {
-                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                // Show detailed error information
-                const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                showErrorMessage(
-                    `Package installation failed: ${errorMessage}`
-                );
-                throw error;
-            }
-        } else {
-            // User cancelled installation, but we still have a valid Python interpreter
-            // Set as initialized so the extension can work with what's available
-            Logger.info(
-                `🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this._pythonPath}`
-            );
-        }
-    }
-
-    /**
-     * Prompt the user to install packages for a specific format
-     * @param format          The format to install packages for
-     * @param missingPackages The list of missing packages
-     */
-    async promptToInstallPackagesForFormat(
-        format: string,
-        missingPackages: string[]
-    ): Promise<void> {
-        const action = await vscode.window.showWarningMessage(
-            `You are using the Python interpreter at ${
-                this._pythonPath
-            }. Missing packages for format ${format}: ${missingPackages.join(
-                ', '
-            )}. Install them?`,
-            'Install',
-            'Cancel'
-        );
-
-        if (action === 'Install') {
-            try {
-                await this.installPackages(missingPackages);
-                // TODO eschalk: This is a hack to refresh the panels with errors.
-                // We should find a better way to do this. XXX
-                await DataViewerPanel.refreshPanelsWithErrors();
-            } catch (error) {
-                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                // Show detailed error information
-                const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                showErrorMessage(
-                    `Package installation failed: ${errorMessage}`
-                );
-                throw error;
-            }
-        } else {
-            // User cancelled installation, but we still have a valid Python interpreter
-            // Set as initialized so the extension can work with what's available
-            Logger.info(
-                `🐍 📦 ⚠️ Installation cancelled for format ${format}: ${missingPackages.join(
-                    ', '
-                )}.`
-            );
-        }
-    }
 
     private async initialize(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
@@ -988,7 +901,7 @@ export class PythonManager {
         }
     }
 
-    private async installPackages(packages: string[]): Promise<void> {
+    public async installPackages(packages: string[], markAsInitializedIfSuccessfulInstalled: boolean): Promise<void> {
         if (!this._pythonPath) {
             throw new Error('No Python interpreter configured');
         }
@@ -1041,7 +954,11 @@ export class PythonManager {
                 Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
 
                 if (code === 0) {
-                    this._initialized = true;
+                    // Normally this function is called with the mising required packages
+                    // So if those missing required packages are installed, the environment is ready
+                    if (markAsInitializedIfSuccessfulInstalled) {
+                        this._initialized = true;
+                    }
                     vscode.window.showInformationMessage(
                         `Successfully installed packages: ${packages.join(
                             ', '
@@ -1150,6 +1067,102 @@ export class PythonManager {
         } catch (error) {
             Logger.warn(
                 `🐍 ⚠️ Failed to update currently used interpreter: ${error}`
+            );
+        }
+    }
+}
+
+export class PythonManagerUI {
+
+    constructor(
+        private pythonManager: PythonManager
+    ) {}
+    /**
+     * Prompt the user to install required packages
+     * @param missingPackages The list of missing packages
+     */
+    async promptToInstallRequiredPackages(
+        missingPackages: string[]
+    ): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${
+                this.pythonManager.pythonPath
+            }. Missing required packages: ${missingPackages.join(
+                ', '
+            )}. Install them?`,
+            'Install',
+            'Cancel'
+        );
+
+        if (action === 'Install') {
+            try {
+                await this.pythonManager.installPackages(missingPackages, true);
+                // Required packages are installed, so the environment is ready
+                // Note: a full python refresh should occur (at extension level)
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX
+                await DataViewerPanel.refreshPanelsWithErrors();
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage =
+                    error instanceof Error ? error.message : String(error);
+                showErrorMessage(
+                    `Package installation failed: ${errorMessage}`
+                );
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(
+                `🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this._pythonPath}`
+            );
+        }
+    }
+
+    /**
+     * Prompt the user to install packages for a specific format
+     * @param format          The format to install packages for
+     * @param missingPackages The list of missing packages
+     */
+    async promptToInstallPackagesForFormat(
+        format: string,
+        missingPackages: string[]
+    ): Promise<void> {
+        const action = await vscode.window.showWarningMessage(
+            `You are using the Python interpreter at ${
+                this.pythonManager.pythonPath
+            }. Missing packages for format ${format}: ${missingPackages.join(
+                ', '
+            )}. Install them?`,
+            'Install',
+            'Cancel'
+        );
+
+        if (action === 'Install') {
+            try {
+                await this.pythonManager.installPackages(missingPackages, false);
+                // TODO eschalk: This is a hack to refresh the panels with errors.
+                // We should find a better way to do this. XXX
+                await DataViewerPanel.refreshPanelsWithErrors();
+            } catch (error) {
+                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
+                // Show detailed error information
+                const errorMessage =
+                    error instanceof Error ? error.message : String(error);
+                showErrorMessage(
+                    `Package installation failed: ${errorMessage}`
+                );
+                throw error;
+            }
+        } else {
+            // User cancelled installation, but we still have a valid Python interpreter
+            // Set as initialized so the extension can work with what's available
+            Logger.info(
+                `🐍 📦 ⚠️ Installation cancelled for format ${format}: ${missingPackages.join(
+                    ', '
+                )}.`
             );
         }
     }
