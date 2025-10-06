@@ -21,6 +21,7 @@ import {
     getUseExtensionOwnEnvironment,
     getWorkspaceConfig,
 } from './common/config';
+import { SCIENTIFIC_DATA_VIEWER } from './constants';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -38,7 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Set up configuration change listener for all Scientific Data Viewer settings
     const workspaceConfigChangeListener =
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (event.affectsConfiguration('scientificDataViewer')) {
+            if (event.affectsConfiguration(SCIENTIFIC_DATA_VIEWER)) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
                 if (
@@ -311,7 +312,7 @@ export function activate(context: vscode.ExtensionContext) {
             );
             vscode.commands.executeCommand(
                 'workbench.action.openSettings',
-                'scientificDataViewer'
+                SCIENTIFIC_DATA_VIEWER
             );
         }
     );

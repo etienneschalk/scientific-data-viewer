@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { SCIENTIFIC_DATA_VIEWER } from '../constants';
 
 /**
  * Show an information message with options to show settings or logs
@@ -25,7 +26,7 @@ export function showInformationMessage(
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    'scientificDataViewer'
+                    SCIENTIFIC_DATA_VIEWER
                 );
             }
         });
@@ -56,7 +57,7 @@ export function showErrorMessage(
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    'scientificDataViewer'
+                    SCIENTIFIC_DATA_VIEWER
                 );
             }
         });

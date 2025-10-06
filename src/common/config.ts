@@ -1,14 +1,13 @@
 import * as vscode from 'vscode';
 import { detectVSCodeTheme } from './vscodeutils';
+import { SCIENTIFIC_DATA_VIEWER } from '../constants';
 
 export function getWorkspaceConfig() {
-    return vscode.workspace.getConfiguration('scientificDataViewer');
+    return vscode.workspace.getConfiguration(SCIENTIFIC_DATA_VIEWER);
 }
 
-export function getMaxSize() {
-    return vscode.workspace
-        .getConfiguration('scientificDataViewer')
-        .get('maxFileSize', 10000);
+export function getMaxSize(): number {
+    return getWorkspaceConfig().get<number>('maxFileSize', 10000);
 }
 
 export function getAllowMultipleTabsForSameFile(): boolean {
