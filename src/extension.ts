@@ -36,6 +36,25 @@ export function activate(context: vscode.ExtensionContext) {
             `Scientific Data Viewer Error: ${error.message}`
         );
     });
+    
+    const webviewPanelOptions: vscode.WebviewPanelOptions = {
+        enableFindWidget: true,
+        retainContextWhenHidden: true,
+    };
+    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(
+        context.extensionUri
+    );
+    const iconPath = vscode.Uri.joinPath(
+        context.extensionUri,
+        'media',
+        'icon.svg'
+    );
+
+    // Create status bar item for Python interpreter (hidden by default)
+    const statusBarItem = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Right,
+        100
+    );
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
@@ -75,28 +94,9 @@ export function activate(context: vscode.ExtensionContext) {
         );
     }
 
-    // Create status bar item for Python interpreter (hidden by default)
-    const statusBarItem = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Right,
-        100
-    );
-
     Logger.info('🔧 Refreshing Python environment...');
     refreshPython(pythonManager, statusBarItem);
     Logger.info('🚀 Python environment refreshed successfully');
-
-    const webviewPanelOptions: vscode.WebviewPanelOptions = {
-        enableFindWidget: true,
-        retainContextWhenHidden: true,
-    };
-    const webviewOptions: vscode.WebviewOptions = getWebviewOptions(
-        context.extensionUri
-    );
-    const iconPath = vscode.Uri.joinPath(
-        context.extensionUri,
-        'media',
-        'icon.svg'
-    );
 
     Logger.info('🔧 Registering custom editor providers...');
     context.subscriptions.push(
@@ -322,6 +322,7 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info(
         `🔧 Detected supported extensions from package.json: ${supportedExtensions}`
     );
+    Logger.info(`🔧 Set up workspace listeners...`);
     context.subscriptions.push(
         // Open devtools and logs when opening a file in devmode
         vscode.workspace.onDidOpenTextDocument(async (document) => {
@@ -366,7 +367,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
         // Set up configuration change listener for all Scientific Data Viewer settings
-        vscode.workspace.onDidChangeConfiguration((event) => {
+        vscode.workspace.onDidChangeConfiguration(async (event) => {
             if (event.affectsConfiguration(SCIENTIFIC_DATA_VIEWER)) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
@@ -441,6 +442,7 @@ export function activate(context: vscode.ExtensionContext) {
             await refreshPython(pythonManager, statusBarItem);
         })
     );
+    Logger.info(`🚀 Workspace listeners set up successfully`);
 
     Logger.info(
         '🔧 Set up immediate official Python extension interpreter change detection...'
@@ -451,7 +453,6 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await refreshPython(pythonManager, statusBarItem);
     };
-
     const handleOnDidEnvironmentsChanged = async (environment: any) => {
         Logger.info(
             '🐍 🔧 Python environment created, refreshing Python environment...'
