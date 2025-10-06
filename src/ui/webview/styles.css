@@ -1,4 +1,5 @@
 /* https://gist.github.com/estruyf/ba49203e1a7d6868e9320a4ea480c27a All VS Code theme variables */
+/* https://marketplace.visualstudio.com/items?itemName=phoenisx.cssvar */
 
 /* Base styles */
 body {
@@ -15,6 +16,7 @@ body {
     box-sizing: border-box;
     padding: 0;
     margin: 0;
+    text-decoration: none;
 }
 
 .hidden {
@@ -125,6 +127,15 @@ button:disabled {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     cursor: not-allowed;
+}
+
+.small-button-link {
+    padding: 0;
+    margin:0;
+    /* Add opacity to css variable (does not work) */
+    /* https://stackoverflow.com/questions/40010597/how-do-i-apply-opacity-to-a-css-color-variable */
+    border: 1px solid var(--vscode-textLink-foreground);
+    border-radius: 2px;
 }
 
 /* Copy button variant */

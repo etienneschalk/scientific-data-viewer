@@ -85,6 +85,11 @@
                 "title": "Expand All",
                 "category": "Scientific Data Viewer",
                 "icon": "$(expand-all)"
+            },
+            {
+                "command": "scientificDataViewer.python.installPackages",
+                "title": "Install Python Packages",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -126,6 +131,10 @@
                 },
                 {
                     "command": "scientificDataViewer.expandAll",
+                    "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.python.installPackages",
                     "when": "false"
                 }
             ],

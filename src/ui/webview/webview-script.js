@@ -13,7 +13,7 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
     '.hdf5',
     '.grib',
     '.grib2',
-    ".grb",
+    '.grb',
     '.tif',
     '.tiff',
     '.geotiff',
@@ -891,45 +891,54 @@ function displayGlobalError(
     const formattedDetails = details ? details.replace(/\n/g, '<br>') : '';
 
     let troubleshootingSteps = /*html*/ `
-        <h4>💡 Generic Troubleshooting Steps:</h4>
+        <h4>💡 General Troubleshooting Steps</h4>
         <ol>
             <li>Make sure Python is installed and accessible</li>
-            <li>Use Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) → "Python: Select Interpreter"</li>
-            <li>Install required packages: <code>pip install xarray matplotlib</code></li>
+            <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
+            <li>If the python environment is not ready, install required packages: 
+                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
+                    🎮 Install xarray and matplotlib</a>
+                or run <code>pip install xarray matplotlib</code></li>
             <li>Check file format is supported (${supportedFormats})</li>
-            <li><a href="#" onclick="executeShowLogsCommand()">Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
+            <li>Install additional packages for format
+                <ul style="margin-left: 20px;">
+                    <li>NetCDF: 
+                        <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['netCDF4', 'h5netcdf', 'scipy'])">
+                            🎮 Install netCDF4, h5netcdf and scipy</a> 
+                        or run <code>pip install netCDF4 h5netcdf scipy</code>
+                    </li>
+                    <li>Zarr: 
+                        <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['zarr'])">
+                            🎮 Install zarr</a> 
+                        or run <code>pip install zarr</code>
+                    </li>
+                    <li>GRIB: 
+                        <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['cfgrib'])">
+                            🎮 Install cfgrib</a> 
+                        or run <code>pip install cfgrib</code>
+                    </li>
+                    <li>GeoTIFF: 
+                        <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
+                            🎮 Install rioxarray</a> 
+                        or run <code>pip install rioxarray</code>
+                    </li>
+                    <li>JPEG-2000:
+                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
+                            🎮 Install rioxarray</a> 
+                        or run <code>pip install rioxarray</code>
+                    </li>
+                </ul>
+            </li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
-            <li>In doubt, close and reopen the file</li>
+            <li>Finally, try to close and reopen the file to reload the page</li>
+            <li><a href="#" class="small-button-link" onclick="executeShowLogsCommand()">🎮 Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
         </ol>
-        <p>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">Scientific Data Viewer GitHub repository</a>.</p>
+        <p>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">🔗 Scientific Data Viewer GitHub repository</a>.</p>
     `;
-
-    // Add specific troubleshooting for missing packages
-    if (
-        errorType === 'ImportError' &&
-        formatInfo &&
-        formatInfo.missing_packages
-    ) {
-        troubleshootingSteps = /*html*/ `
-            <h4>💡 Missing Dependencies:</h4>
-            <p>This file format requires additional packages that are not installed:</p>
-            <ul>
-                <li><strong>Missing packages:</strong> ${formatInfo.missing_packages.join(
-                    ', '
-                )}</li>
-                <li><strong>File format:</strong> ${formatInfo.display_name} (${
-            formatInfo.extension
-        })</li>
-            </ul>
-            <p><strong>Installation command:</strong></p>
-            <code>pip install ${formatInfo.missing_packages.join(' ')}</code>
-            <p style="margin-top: 10px;">After installation, refresh the data viewer to try again.</p>
-        `;
-    }
 
     errorDiv.innerHTML = /*html*/ `
         <h3>❌ Error</h3>
-        <p><strong>Message:</strong> ${formattedMessage}</p>
+        <p><strong>Message:</strong> <strong>${formattedMessage}</strong></p>
         ${
             formattedDetails
                 ? /*html*/ `<p><strong>Details:</strong> ${formattedDetails}</p>`
@@ -1645,6 +1654,24 @@ async function executeShowLogsCommand() {
         // Fallback: show a notification to the user
         displayGlobalError(
             'Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"'
+        );
+    }
+}
+
+// Function to execute the install packages command
+async function executeInstallPackagesCommand(packages) {
+    try {
+        console.log('🔧 Executing install packages command...', packages);
+        await messageBus.sendRequest('executeCommand', {
+            command: 'scientificDataViewer.python.installPackages',
+            args: [packages],
+        });
+        console.log('🔧 Install packages command executed successfully');
+    } catch (error) {
+        console.error('❌ Failed to execute install packages command:', error);
+        // Fallback: show a notification to the user
+        displayGlobalError(
+            `Failed to install packages: ${error.message}. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Install Python Packages"`
         );
     }
 }

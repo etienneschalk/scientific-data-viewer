@@ -171,15 +171,6 @@ export class UIController {
                     );
                 }
 
-                if (!this.dataProcessor.pythonManagerInstance.ready) {
-                    this.dataProcessor.pythonManagerInstance.promptToInstallRequiredPackages(
-                        ['xarray', 'matplotlib']
-                    );
-                    throw new Error(
-                        'Python environment not ready. Please install core dependencies first.'
-                    );
-                }
-
                 // Check file size
                 const fileUri = vscode.Uri.file(filePath);
                 const stat = await vscode.workspace.fs.stat(fileUri);
@@ -204,16 +195,6 @@ export class UIController {
                 if (!dataInfo) {
                     throw new Error(
                         'Failed to load data file. The file might be corrupted or in an unsupported format.'
-                    );
-                }
-
-                if (
-                    dataInfo.error &&
-                    dataInfo.error.format_info.missing_packages.length > 0
-                ) {
-                    this.dataProcessor.pythonManagerInstance.promptToInstallPackagesForFormat(
-                        dataInfo.error.format_info.display_name,
-                        dataInfo.error.format_info.missing_packages
                     );
                 }
 

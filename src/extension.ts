@@ -437,6 +437,31 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const installPackagesCommand = vscode.commands.registerCommand(
+        'scientificDataViewer.python.installPackages',
+        async (packages?: string[]) => {
+            Logger.info('🎮 📦 Command: Installing Python packages');
+            if (!packages || packages.length === 0) {
+                vscode.window.showErrorMessage('No packages specified for installation');
+                return;
+            }
+            try {
+                await pythonManager.installPackages(packages);
+                // The main point of using the command is to refresh the Python environment
+                // at extension level.
+                refreshPython(pythonManager, statusBarItem);
+                vscode.window.showInformationMessage(
+                    `Successfully installed packages: ${packages.join(', ')}`
+                );
+            } catch (error) {
+                Logger.error(`Failed to install packages: ${error}`);
+                vscode.window.showErrorMessage(
+                    `Failed to install packages: ${error}`
+                );
+            }
+        }
+    );
+
     const extensionVirtualEnvironmentManagerUI =
         new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
 
@@ -572,6 +597,7 @@ export function activate(context: vscode.ExtensionContext) {
         openDeveloperToolsCommand,
         scrollToHeaderCommand,
         expandAllCommand,
+        installPackagesCommand,
         manageExtensionOwnEnvironmentCommand,
         workspaceChangeListener,
         workspaceConfigChangeListener,

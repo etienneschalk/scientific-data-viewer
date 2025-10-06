@@ -3,7 +3,7 @@
   "singleQuote": true,
   "overrides": [
     {
-      "files": "**/*.{json,ts}",
+      "files": "**/*.{json,ts,js}",
       "options": {
         "tabWidth": 4
       }

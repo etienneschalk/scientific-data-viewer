@@ -988,7 +988,7 @@ export class PythonManager {
         }
     }
 
-    private async installPackages(packages: string[]): Promise<void> {
+    async installPackages(packages: string[]): Promise<void> {
         if (!this._pythonPath) {
             throw new Error('No Python interpreter configured');
         }
