@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { StateManager } from '../../../src/state/AppState';
+import { StateManager } from '../../../src/panel/state/AppState';
 
 suite('StateManager Tests', () => {
     let stateManager: StateManager;

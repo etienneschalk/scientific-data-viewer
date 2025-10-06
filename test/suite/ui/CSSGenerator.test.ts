@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { CSSGenerator } from '../../../src/ui/CSSGenerator';
+import { CSSGenerator } from '../../../src/panel/CSSGenerator';
 
 suite('CSSGenerator Test Suite', () => {
     test('should get CSS content in non-dev mode', () => {

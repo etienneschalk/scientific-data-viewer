@@ -1,19 +1,19 @@
 import * as vscode from 'vscode';
-import { DataViewerPanel } from './dataViewerPanel';
-import { PythonManager } from './pythonManager';
-import { DataProcessor } from './dataProcessor';
-import { Logger } from './logger';
-import { ErrorBoundary } from './error/ErrorBoundary';
+import { DataViewerPanel } from './DataViewerPanel';
+import { PythonManager } from './python/PythonManager';
+import { DataProcessor } from './python/DataProcessor';
+import { Logger } from './common/Logger';
+import { ErrorBoundary } from './common/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
-import {
-    ExtensionVirtualEnvironmentManager,
-    ExtensionVirtualEnvironmentManagerUI,
-} from './extensionVirtualEnvironmentManager';
+import { ExtensionVirtualEnvironmentManager } from './python/ExtensionVirtualEnvironmentManager';
 import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
 import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
-} from './utils';
+} from './common/vscodeutils';
+import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
+import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
+import { formatConfigValue } from './common/utils';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -33,26 +33,6 @@ export function activate(context: vscode.ExtensionContext) {
     const packageJson = extension?.packageJSON;
     const configSchema =
         packageJson?.contributes?.configuration?.properties || {};
-
-    // Helper function to format configuration value based on type
-    function formatConfigValue(key: string, value: any): string {
-        const fullKey = `scientificDataViewer.${key}`;
-        const schema = configSchema[fullKey];
-        if (!schema) {
-            return String(value);
-        }
-
-        switch (schema.type) {
-            case 'boolean':
-                return value ? 'enabled 🟢' : 'disabled 🔴';
-            case 'number':
-                return `${value}`;
-            case 'string':
-                return `"${value}"`;
-            default:
-                return String(value);
-        }
-    }
 
     // Helper function to get configuration description
     function getConfigDescription(key: string): string {
@@ -80,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                     if (event.affectsConfiguration(fullKey)) {
                         const value = config.get(key);
-                        const formattedValue = formatConfigValue(key, value);
+                        const formattedValue = formatConfigValue(schema as { type: string }, value);
                         const description = getConfigDescription(key);
 
                         Logger.info(`${key} is now: ${value}`);
@@ -160,7 +140,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize managers
     Logger.info('🔧 Initializing extension managers...');
-    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(context);
+    const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
+        context.globalStorageUri.fsPath
+    );
     let pythonManager: PythonManager;
     let dataProcessor: DataProcessor;
 
@@ -545,11 +527,10 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('🔧 Set up immediate Python interpreter change detection...');
     let immediateInterpreterListener: vscode.Disposable | undefined;
     try {
-        pythonManager
-            .setupOfficialPythonExtensionChangeListeners(
-                handleOnDidChangeActiveEnvironmentPath,
-                handleOnDidEnvironmentsChanged
-            )
+        setupOfficialPythonExtensionChangeListeners(
+            handleOnDidChangeActiveEnvironmentPath,
+            handleOnDidEnvironmentsChanged
+        )
             .then((listener) => {
                 immediateInterpreterListener = listener;
                 if (immediateInterpreterListener) {

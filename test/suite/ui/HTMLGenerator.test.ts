@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { HTMLGenerator } from '../../../src/ui/HTMLGenerator';
+import { HTMLGenerator } from '../../../src/panel/HTMLGenerator';
 
 suite('HTMLGenerator Test Suite', () => {
     test('should generate main HTML', () => {

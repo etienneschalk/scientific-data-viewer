@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { Logger } from './logger';
-import { UIController } from './ui/UIController';
+import { Logger } from './common/Logger';
+import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
 

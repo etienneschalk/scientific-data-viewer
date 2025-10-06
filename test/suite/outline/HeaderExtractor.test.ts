@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { HeaderExtractor } from '../../../src/outline/HeaderExtractor';
-import { DataInfoResult } from '../../../src/dataProcessor';
+import { DataInfoResult } from '../../../src/python/DataProcessor';
 
 // Mock DOMParser for Node.js test environment
 (global as any).DOMParser = class DOMParser {

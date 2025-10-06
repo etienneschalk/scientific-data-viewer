@@ -1,10 +1,10 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DataProcessor } from '../../src/dataProcessor';
-import { PythonManager } from '../../src/pythonManager';
-import { DataViewerPanel } from '../../src/dataViewerPanel';
-import { Logger } from '../../src/logger';
-import { ExtensionVirtualEnvironmentManager } from '../../src/extensionVirtualEnvironmentManager';
+import { DataProcessor } from '../../src/python/DataProcessor';
+import { PythonManager } from '../../src/python/PythonManager';
+import { DataViewerPanel } from '../../src/DataViewerPanel';
+import { Logger } from '../../src/common/Logger';
+import { ExtensionVirtualEnvironmentManager } from '../../src/python/ExtensionVirtualEnvironmentManager';
 
 suite('Integration Test Suite', () => {
     let mockContext: vscode.ExtensionContext;
@@ -70,7 +70,7 @@ suite('Integration Test Suite', () => {
     setup(() => {
         // Create fresh instances for each test
         pythonManager = new PythonManager(
-            new ExtensionVirtualEnvironmentManager(mockContext)
+            new ExtensionVirtualEnvironmentManager(mockContext.globalStorageUri.fsPath)
         );
         dataProcessor = new DataProcessor(pythonManager);
     });

@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DataProcessor, DataInfo } from '../../src/dataProcessor';
-import { PythonManager } from '../../src/pythonManager';
+import { DataProcessor, DataInfo } from '../../src/python/DataProcessor';
+import { PythonManager } from '../../src/python/PythonManager';
 
 suite('DataProcessor Test Suite', () => {
     let dataProcessor: DataProcessor;

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Logger } from '../logger';
+import { Logger } from '../common/Logger';
 
 export interface HeaderItem {
     label: string;

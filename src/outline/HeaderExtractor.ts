@@ -1,6 +1,6 @@
 import { HeaderItem } from './OutlineProvider';
-import { Logger } from '../logger';
-import { DataInfoResult } from '../dataProcessor';
+import { Logger } from '../common/Logger';
+import { DataInfoResult } from '../python/DataProcessor';
 
 export class HeaderExtractor {
     // JoinId is used to join parts of an id together with a separator

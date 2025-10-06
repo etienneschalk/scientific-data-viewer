@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { Logger } from './logger';
-import { DataProcessor } from './dataProcessor';
-import { DataViewerPanel } from './dataViewerPanel';
+import { Logger } from './common/Logger';
+import { DataProcessor } from './python/DataProcessor';
+import { DataViewerPanel } from './DataViewerPanel';
 
 export class ScientificDataEditorProvider
     implements vscode.CustomReadonlyEditorProvider

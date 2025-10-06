@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-class Logger {
+export class Logger {
     private static outputChannel: vscode.OutputChannel | undefined;
 
     public static initialize(): void {
@@ -91,4 +91,3 @@ class Logger {
     }
 }
 
-export { Logger };

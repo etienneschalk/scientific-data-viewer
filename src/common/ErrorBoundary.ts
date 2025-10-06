@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { Logger } from '../logger';
+import { Logger } from './Logger';
 
 export interface ErrorHandler {
     (error: Error, context?: any): void;

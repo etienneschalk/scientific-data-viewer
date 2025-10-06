@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { PythonManager } from './pythonManager';
-import { Logger } from './logger';
-import { quoteIfNeeded } from './utils';
+import { PythonManager } from './PythonManager';
+import { Logger } from '../common/Logger';
+import { quoteIfNeeded } from '../common/utils';
+import { detectVSCodeTheme } from '../common/vscodeutils';
 
 export interface DataInfo {
     result?: DataInfoResult;
@@ -77,21 +78,7 @@ export class DataProcessor {
         this.pythonScriptsHomeDir = path.join(__dirname, '../..', 'python');
     }
 
-    private detectVSCodeTheme(): string {
-        // Get the current VSCode theme
-        const currentTheme = vscode.window.activeColorTheme;
 
-        // Check if it's a dark theme
-        if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
-            Logger.info(
-                'Detected dark VSCode theme, using dark_background style'
-            );
-            return 'dark_background';
-        } else {
-            Logger.info('Detected light VSCode theme, using default style');
-            return 'default';
-        }
-    }
 
     private getMatplotlibStyle(): string {
         // Get the user setting
@@ -105,7 +92,7 @@ export class DataProcessor {
             return userStyle;
         } else {
             // Auto-detect based on VSCode theme
-            return this.detectVSCodeTheme();
+            return detectVSCodeTheme();
         }
     }
 

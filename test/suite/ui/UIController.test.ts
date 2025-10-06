@@ -1,9 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { UIController } from '../../../src/ui/UIController';
-import { DataProcessor } from '../../../src/dataProcessor';
-import { PythonManager } from '../../../src/pythonManager';
-import { MessageBus } from '../../../src/communication/MessageBus';
+import { UIController } from '../../../src/panel/UIController';
+import { DataProcessor } from '../../../src/python/DataProcessor';
+import { PythonManager } from '../../../src/python/PythonManager';
 
 suite('UIController Test Suite', () => {
     let uiController: UIController;

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { MessageBus } from '../../../src/communication/MessageBus';
+import { MessageBus } from '../../../src/panel/communication/MessageBus';
 
 suite('MessageBus Test Suite', () => {
     let messageBus: MessageBus;

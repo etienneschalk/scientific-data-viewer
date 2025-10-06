@@ -1,19 +1,6 @@
 import * as vscode from 'vscode';
 
 /**
- * Quote the value if it contains a space
- * Used to to avoid issues with spaces in the path
- * @param value The value to quote if needed
- * @returns The quoted value if needed, otherwise the original value
- */
-export function quoteIfNeeded(value: string): string {
-    if (value.includes(' ')) {
-        return `"${value}"`;
-    }
-    return value;
-}
-
-/**
  * Show an error message with options to show settings or logs
  * @param message The message to show
  * @param showSettings Whether to show the settings button
@@ -68,4 +55,20 @@ export function showErrorMessageAndProposeHelpToInstallUv(
                 vscode.commands.executeCommand('scientificDataViewer.showLogs');
             }
         });
+}
+
+/**
+ * Detect the VSCode theme
+ * @returns The theme name
+ */
+export function detectVSCodeTheme(): string {
+    // Get the current VSCode theme
+    const currentTheme = vscode.window.activeColorTheme;
+
+    // Check if it's a dark theme
+    if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
+        return 'dark_background';
+    } else {
+        return 'default';
+    }
 }

@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DataViewerPanel } from '../../src/dataViewerPanel';
-import { DataProcessor } from '../../src/dataProcessor';
-import { PythonManager } from '../../src/pythonManager';
+import { DataViewerPanel } from '../../src/DataViewerPanel';
+import { DataProcessor } from '../../src/python/DataProcessor';
+import { PythonManager } from '../../src/python/PythonManager';
 
 suite('DataViewerPanel Test Suite', () => {
     let mockContext: vscode.ExtensionContext;
