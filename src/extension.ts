@@ -197,7 +197,7 @@ export function activate(context: vscode.ExtensionContext) {
         100
     );
     // Initialize status bar to show unknown status
-    updateStatusBar(pythonManager, statusBarItem);
+    updateStatusBarItem(pythonManager, statusBarItem);
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
@@ -623,7 +623,7 @@ async function refreshPython(
         if (pythonPath) {
             // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
             // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
-            await updateStatusBar(pythonManager, statusBarItem);
+            await updateStatusBarItem(pythonManager, statusBarItem);
         }
 
         await DataViewerPanel.refreshPanelsWithErrors();
@@ -638,7 +638,7 @@ async function refreshPython(
 }
 
 // Function to update status bar with current Python interpreter
-function updateStatusBar(
+function updateStatusBarItem(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
@@ -668,10 +668,10 @@ function updateStatusBar(
 Status: 
 ${tooltipStatus} 
 
-Source:
+Environment Source:
 ${source}
 
-Current Python interpreter: 
+Environment Python interpreter path: 
 ${envInfo.path ?? 'Not set'}
 `;
 
