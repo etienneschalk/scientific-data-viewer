@@ -5,6 +5,12 @@ export function getWorkspaceConfig() {
     return vscode.workspace.getConfiguration('scientificDataViewer');
 }
 
+export function getMaxSize() {
+    return vscode.workspace
+        .getConfiguration('scientificDataViewer')
+        .get('maxFileSize', 10000);
+}
+
 export function getAllowMultipleTabsForSameFile(): boolean {
     return getWorkspaceConfig().get<boolean>(
         'allowMultipleTabsForSameFile',

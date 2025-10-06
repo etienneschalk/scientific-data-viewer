@@ -11,7 +11,7 @@ import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { showErrorMessage } from '../common/vscodeutils';
-import { getDevMode, getWorkspaceConfig } from '../common/config';
+import { getDevMode, getMaxSize, getWorkspaceConfig } from '../common/config';
 
 export class UIController {
     private id: number;
@@ -175,12 +175,7 @@ export class UIController {
                 // Check file size
                 const fileUri = vscode.Uri.file(filePath);
                 const stat = await vscode.workspace.fs.stat(fileUri);
-                const maxSize =
-                    vscode.workspace
-                        .getConfiguration('scientificDataViewer')
-                        .get('maxFileSize', 100) *
-                    1024 *
-                    1024;
+                const maxSize = getMaxSize() * 1024 * 1024;
 
                 if (stat.size > maxSize) {
                     throw new Error(
