@@ -37,7 +37,6 @@ suite('Extension Test Suite', () => {
                                 'scientificDataViewer.maxFileSize': { type: 'number', default: 500 },
                                 'scientificDataViewer.defaultView': { type: 'string', default: 'default' },
                                 'scientificDataViewer.allowMultipleTabsForSameFile': { type: 'boolean', default: false },
-                                'scientificDataViewer.plottingCapabilities': { type: 'boolean', default: false },
                                 'scientificDataViewer.devMode': { type: 'boolean', default: false }
                             }
                         }
@@ -81,6 +80,7 @@ suite('Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands(true);
         const expectedCommands = [
             'scientificDataViewer.openViewer',
+            'scientificDataViewer.openViewerFolder',
             'scientificDataViewer.refreshPythonEnvironment',
             'scientificDataViewer.showLogs',
             'scientificDataViewer.showSettings'
@@ -254,6 +254,7 @@ suite('Extension Test Suite', () => {
             
             const expectedCommands = [
                 'scientificDataViewer.openViewer',
+                'scientificDataViewer.openViewerFolder',
                 'scientificDataViewer.refreshPythonEnvironment',
                 'scientificDataViewer.showLogs',
                 'scientificDataViewer.showSettings'

@@ -8,10 +8,12 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.3.0** • [Release Notes](./docs/RELEASE_NOTES_0.3.0.md)
+**Current Version: v0.4.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
+
+[Getting Started](https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started)
 
 </div>
 
@@ -107,58 +109,97 @@ Available on:
 
 ## ⚙️ Prerequisites
 
-Before using this extension, you need:
+Before using this extension, you need either **Python 3.13** or **uv** installed on your system.
 
-1. **Python 3.13+** installed on your system
-   - Former versions may work, but it is not guaranteed nor supported.
-2. **Required Python packages**:
+---
+
+With **Python 3.13**:
+
+The extension will prompt you to install the following packages if they are not available:
+
+1. **Required Python packages**:
    - xarray
    - matplotlib
-3. **Optional Python packages**:
+2. **Optional Python packages**:
    - netCDF4
    - h5py
    - rioxarray
    - cfgrib
    - zarr
 
+Note: Former Python versions may work, but it is not guaranteed nor supported.
+
+---
+
+With **uv**, the extension will create and manage its own python environment,
+indluding the Python version 3.13.
+The environment wil be stored in the extension dedicated storage, provided
+by VSCode or Cursor.
+
 ## 🎯 Usage
 
 ### 🐍 Configuring Python Environment
 
-1. **Automatic Detection**:
+The extension supports multiple ways to configure your Python environment:
 
-   - The extension will automatically detect Python installations
-   - It will check for required packages and prompt to install missing ones
-   - When opening a file, it will check for optional packages and prompt to install missing ones
+1. **Python Extension Integration** (Default behaviour):
 
-2. **Configure Python via the Python Extension**:
-
-   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
    - The extension will automatically detect it and use it
+   - This mode delegates most of the work to the official [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python).
+
+2. **Extension Virtual Environment (Semi-Standalone)**:
+
+   - **Opt-in setting**:
+     - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
+     - Type "Scientific Data Viewer: Show Settings"
+     - Check "Scientific Data Viewer > Python > Use Extension Own Environment"
+   - **uv Required**:
+     - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/')
+     - If **uv** is installed and found: The extension creates its own isolated environment once the setting enabled, including Python 3.13 installation
+     - If uv is not available, falls back to Python extension default behavior
+   - **Manage Extension Environment**:
+     - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
+     - Type "Scientific Data Viewer: Manage Extension Virtual Environment"
+     - Choose a command: create, update, delete, view information
+   - **Benefits of this approach**:
+     - **Python 3.13**: Uses uv to install and use Python 3.13 for optimal performance
+     - **Self-Contained**: Works without external Python environment setup
+     - **Isolated**: Won't interfere with your other projects
+     - **Storage**: Stored in VSCode's extension storage space
 
 ### 📂 Opening Data Files
 
-1. **Direct File Opening**:
+1. **Click on file from File Explorer**:
 
-   - Double-click on any supported file
-   - Files open directly in the Scientific Data Viewer
+   - Click on any supported file in the File Explorer
+   - File opens directly in the Scientific Data Viewer
+   - Command "View: Split Editor" is supported
 
-2. **From File Explorer**:
+2. **Drag and drop from File Explorer**
 
-   - Right-click on any supported file
+   - Drag and drop any supported file (or folder)
+   - File (or folder) opens directly in the Scientific Data Viewer
+     - Multiple files (or folders) can be opened at once if they are selected
+   - Command "View: Split Editor" is supported
+
+3. **Context menu from File Explorer**:
+
+   - Right-click on any supported file (or folder)
    - Select "Open in Scientific Data Viewer"
+   - Command "View: Split Editor" is NOT supported
 
-3. **From Command Palette**:
+4. **From command palette**:
 
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
-   - Type "Open Scientific Data Viewer"
-   - Select a file from the file picker
+   - Type "Open Scientific Data Viewer" (or "Open Scientific Data Viewer (Folder)")
+   - Select a file (or folder) from the file picker
+     - Multiple files (or folders) can be opened at once if they are selected
+   - Command "View: Split Editor" is NOT supported
 
-4. **Auto-detection**:
-   - Open any supported file in VSCode
-   - The extension will detect it and offer to open it in the data viewer
+Note: the only current way to get access to the split editor for Zarr folders is drag and drop.
 
 ### 🔬 Exploring Data
 
@@ -177,38 +218,19 @@ The data viewer editor shows:
     - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
   - **Attributes**: Show group's attributes.
 
-## ⚙️ Settings
-
-The extension can be configured through VSCode settings:
-
-| Setting                                                                                      | Description                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scientificDataViewer.maxFileSize` <br> (type: `number`, default: `10000`)                   | Maximum file size in MB to load automatically                                                                                                                                                                                                                                                                                    |
-| `scientificDataViewer.defaultView` <br> (type: `string`, default: `"default"`)               | Default view mode for data display. **Options:** `default`                                                                                                                                                                                                                                                                       |
-| `scientificDataViewer.allowMultipleTabsForSameFile` <br> (type: `boolean`, default: `false`) | ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.                                                                                                                |
-| `scientificDataViewer.plottingCapabilities` <br> (type: `boolean`, default: `true`)          | ⚠️ **Experimental** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.                                                                                                                                                                                    |
-| `scientificDataViewer.devMode` <br> (type: `boolean`, default: `false`)                      | Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.                                                                                        |
-| `scientificDataViewer.matplotlibStyle` <br> (type: `string`, default:`""` (empty string))    | Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name. |
-
-**🚩 Feature Flags**
-
-The extension includes configuration options that act as feature flags to control specific behaviors:
-
-- **`scientificDataViewer.allowMultipleTabsForSameFile`** (Experimental): Allow opening multiple tabs for the same file
-- **`scientificDataViewer.plottingCapabilities`** (Experimental): Enable plotting capabilities
-- **`scientificDataViewer.devMode`** (Aimed at developers): Enable development mode
-
 ### 🎮 Available Commands
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command                                               | Description                                            |
-| ----------------------------------------------------- | ------------------------------------------------------ |
-| `Scientific Data Viewer: Open Scientific Data Viewer` | Opens the Scientific Data Viewer for the current file  |
-| `Scientific Data Viewer: Refresh Python Environment`  | Refreshes the Python environment used by the extension |
-| `Scientific Data Viewer: Show Extension Logs`         | Opens the extension's log output for debugging         |
-| `Scientific Data Viewer: Show Settings`               | Opens the extension settings                           |
-| `Scientific Data Viewer: Open Developer Tools`        | Opens the developer tools for the webview              |
+| Command                                                        | Description                                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                     |
+| `Scientific Data Viewer: Open Scientific Data Viewer (folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                     |
+| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                          |
+| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                  |
+| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
+| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
+| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
 
 ### 🖱️ Context Menu Commands
 
@@ -216,7 +238,46 @@ Right-click on supported file types in the Explorer to access:
 
 - **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
 
-**Supported file formats:** `.nc`, `.netcdf`, `.zarr`, `.h5`, `.hdf5`, `.grib`, `.grib2`, `.grb`, `.tif`, `.tiff`, `.geotiff`, `.jp2`, `.jpeg2000`, `.safe`, `.nc4`, `.cdf`
+## ⚙️ Settings
+
+The extension can be configured through VSCode settings:
+
+**General Settings**
+
+- **`scientificDataViewer.maxFileSize`**
+  - (type: `number`, default: `10000`)
+  - Maximum file size in MB to load
+- **`scientificDataViewer.defaultView`**
+  - (type: `string`, default: `"default"`)
+  - Default view mode for data display.
+- **`scientificDataViewer.matplotlibStyle`**
+  - (type: `string`, default:`""` (empty string))
+  - Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name.
+
+**🐍 Virtual Environment Settings**
+
+The extension includes specific settings for virtual environment management:
+
+- **`scientificDataViewer.python.overridePythonInterpreter`**
+  - (string, default: `""`)
+  - Override the Python interpreter path (takes precedence over all other options). If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
+- **`scientificDataViewer.python.currentlyInUseInterpreter`**
+  - (string, default: `""`)
+  - Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes and is read-only.
+- **`scientificDataViewer.python.useExtensionOwnEnvironment`**
+  - (boolean, default: `false`)
+  - Use the extension's own virtual environment instead of the Python extension's interpreter. When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. **Requires `uv` to be installed** - if uv is not available, the extension will fall back to using the Python extension's interpreter. The extension will automatically use `uv` to install Python 3.13 and create the environment with all required packages.
+
+**🚩 Feature Flags**
+
+The extension includes configuration options that act as feature flags to control specific behaviors:
+
+- **`scientificDataViewer.allowMultipleTabsForSameFile`**
+  - (type: `boolean`, default: `false`)
+  - ⚠️ **Experimental** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.
+- **`scientificDataViewer.devMode`**
+  - (type: `boolean`, default: `false`)
+  - Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.
 
 ## 🔧 Troubleshooting
 
@@ -226,25 +287,33 @@ Right-click on supported file types in the Explorer to access:
 
    - Ensure Python is installed and in your PATH
    - Use the "Python: Select Interpreter" command to manually set the path
+   - Consider using the extension's own virtual environment for a self-contained solution
 
-2. **Missing packages**:
+2. **uv not available**:
 
-   - Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
-   - Or let the extension install them automatically
+   - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/')
+   - Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
+   - If uv is not installed, the extension will fall back to using the Python extension's interpreter
 
-3. **Large files not loading**:
+3. **Missing packages**:
+
+   - Install required packages: `pip install xarray matplotlib`
+   - Install per-format packages: `pip install netCDF4 zarr h5py numpy rioxarray`
+   - Or let the extension install them automatically (prompt when opening a file)
+
+4. **Large files not loading**:
 
    - Increase the `maxFileSize` setting
    - Consider using data slicing for very large datasets
 
-4. **Permission errors**:
+5. **Permission errors**:
    - Ensure the extension has permission to read your data files
    - Check file permissions and VSCode workspace settings
 
 ### 💬 Getting Help
 
 - **Consult the Troubleshooting section**: Available at the end of the opened file. Copy buttons are present to help creating an issue.
-- **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) and "Scientific Data Viewer: Show Extension Logs"
+- **Check the logs**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Command Palette) then type "Scientific Data Viewer: Show Extension Logs"
 - **Report issues**: [Create an issue (🐛 Bug Report) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=bug_report.yml)
 - **Ask questions**: [Create an issue (❓ Question / Discussion) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=question.yml)
 - **I would like a specific feature**: [Create an issue (✨ Feature Request) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=feature_request.yml) to suggest a new feature or enhancement for the Scientific Data Viewer extension
@@ -272,6 +341,8 @@ Right-click on supported file types in the Explorer to access:
 3. **Run extension**:
    - Press `F5` to launch Extension Development Host
    - Test with sample data files
+
+Recommended VSCode extension: [es6-string-html](https://marketplace.visualstudio.com/items?itemName=Tobermory.es6-string-html)
 
 ### 🔧 Development Installation
 

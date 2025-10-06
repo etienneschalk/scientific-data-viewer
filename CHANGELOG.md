@@ -6,7 +6,48 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [0.3.0] - 2025-01-27
+## [0.4.0] - 2025-10-06
+
+### Added
+
+- **Extension Virtual Environment**: Semi-standalone virtual environment stored in VSCode extension storage
+  - **uv Required**: Only works if `uv` is installed on the system
+  - **Python 3.13**: Uses uv to install and use Python 3.13 for latest features and performance
+  - **Isolated Storage**: Stored in VSCode's extension storage space
+  - **Fallback Support**: Falls back to Python extension behavior if uv is not available
+  - **Management Commands**: Create, manage, update, and delete extension environment
+  - **Status Display**: Shows extension environment status and creation tool in status bar
+- **Virtual Environment Management Command**:
+  - `Manage Extension Virtual Environment`: Create, update, delete extension environment
+- **Configuration Settings**:
+  - `scientificDataViewer.overridePythonInterpreter`: Override Python interpreter path (takes precedence over all other options)
+  - `scientificDataViewer.python.useExtensionOwnEnvironment`: Activate the use extension's own virtual environment with `uv`
+  - `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
+- **Split View**:
+  - Works for files opened via the file explorer, because the webviewPanel is reused (`ScientificDataEditorProvider`)
+  - Does not work with files/dirs opened via command nor context menu, because the webviewPanel is created from scratch
+
+### Enhanced
+
+- **Enhanced Status Bar**: Shows virtual environment type and interpreter information
+
+### Removed
+
+- Plotting Capabilities extension feature flag (always on)
+
+### Technical Improvements
+
+- Refactor zones of the code.
+
+### Known Bugs
+
+- Data Structure TreeView is not shown for manually created Webviews in Cursor. See when clause of `scientificDataViewer.outline`.
+  - When VSCode doc: https://code.visualstudio.com/api/references/when-clause-contexts
+  - Related: https://forum.cursor.com/t/webview-panels-and-commands-not-supported-in-cursor-breaks-extensions/115748
+
+### Fixed
+
+## [0.3.0] - 2025-10-03
 
 ### Added
 
@@ -219,7 +260,6 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - `scientificDataViewer.maxFileSize`: Maximum file size (MB) to load automatically
 - `scientificDataViewer.defaultView`: Default view mode
 - `scientificDataViewer.allowMultipleTabsForSameFile`: Allow multiple tabs for same file **(Experimental)**
-- `scientificDataViewer.plottingCapabilities`: Enable plotting capabilities **(Experimental)**
 
 ### Available Commands
 

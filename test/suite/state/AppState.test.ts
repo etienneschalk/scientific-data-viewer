@@ -12,7 +12,6 @@ suite('StateManager Tests', () => {
         const state = stateManager.getState();
         assert.strictEqual(state.data.currentFile, null);
         assert.strictEqual(state.data.isLoading, false);
-        assert.strictEqual(state.ui.plottingCapabilities, false);
     });
 
     test('should update state through actions', () => {

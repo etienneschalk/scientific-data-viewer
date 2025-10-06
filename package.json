@@ -1,419 +1,462 @@
 {
-  "name": "scientific-data-viewer",
-  "displayName": "Scientific Data Viewer",
-  "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-  "version": "0.3.0",
-  "publisher": "eschalk0",
-  "icon": "media/icon.png",
-  "engines": {
-    "vscode": "^1.74.0",
-    "node": ">=22.0.0"
-  },
-  "extensionDependencies": [],
-  "categories": [
-    "Data Science",
-    "Visualization",
-    "Other"
-  ],
-  "keywords": [
-    "netcdf",
-    "zarr",
-    "hdf5",
-    "grib",
-    "geotiff",
-    "rasterio",
-    "scientific-data",
-    "xarray",
-    "data-visualization",
-    "climate-data",
-    "geospatial",
-    "cfgrib",
-    "sentinel"
-  ],
-  "activationEvents": [
-    "onLanguage:netcdf",
-    "onLanguage:hdf5",
-    "onLanguage:grib",
-    "onLanguage:geotiff",
-    "onLanguage:jp2",
-    "onCommand:scientificDataViewer.openViewer",
-    "onFileSystem:netcdf",
-    "onFileSystem:zarr",
-    "onFileSystem:grib",
-    "onFileSystem:geotiff",
-    "onFileSystem:jp2",
-    "onCustomEditor:netcdfEditor",
-    "onCustomEditor:hdf5Editor",
-    "onCustomEditor:zarrEditor",
-    "onCustomEditor:gribEditor",
-    "onCustomEditor:geotiffEditor",
-    "onCustomEditor:jp2Editor"
-  ],
-  "main": "./out/src/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "scientificDataViewer.openViewer",
-        "title": "Open Scientific Data Viewer",
-        "category": "Scientific Data Viewer"
-      },
-      {
-        "command": "scientificDataViewer.refreshPythonEnvironment",
-        "title": "Refresh Python Environment",
-        "category": "Scientific Data Viewer"
-      },
-      {
-        "command": "scientificDataViewer.showLogs",
-        "title": "Show Extension Logs",
-        "category": "Scientific Data Viewer"
-      },
-      {
-        "command": "scientificDataViewer.showSettings",
-        "title": "Show Settings",
-        "category": "Scientific Data Viewer"
-      },
-      {
-        "command": "scientificDataViewer.openDeveloperTools",
-        "title": "Open Developer Tools",
-        "category": "Scientific Data Viewer"
-      },
-      {
-        "command": "scientificDataViewer.expandAll",
-        "title": "Expand All",
-        "category": "Scientific Data Viewer",
-        "icon": "$(expand-all)"
-      }
-    ],
-    "menus": {
-      "explorer/context": [
-        {
-          "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
-          "command": "scientificDataViewer.openViewer",
-          "group": "navigation"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "scientificDataViewer.openViewer",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.refreshPythonEnvironment",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.showLogs",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.showSettings",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.openDeveloperTools",
-          "when": "true"
-        },
-        {
-          "command": "scientificDataViewer.expandAll",
-          "when": "false"
-        }
-      ],
-      "view/title": [
-        {
-          "command": "scientificDataViewer.expandAll",
-          "when": "view == scientificDataViewer.outline",
-          "group": "navigation@2"
-        }
-      ]
+    "name": "scientific-data-viewer",
+    "displayName": "Scientific Data Viewer",
+    "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
+    "version": "0.4.0",
+    "publisher": "eschalk0",
+    "icon": "media/icon.png",
+    "engines": {
+        "vscode": "^1.74.0",
+        "node": ">=22.0.0"
     },
-    "languages": [
-      {
-        "id": "netcdf",
-        "extensions": [
-          ".nc",
-          ".netcdf",
-          ".nc4",
-          ".cdf"
-        ],
-        "aliases": [
-          "NetCDF",
-          "netcdf"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "id": "hdf5",
-        "extensions": [
-          ".h5",
-          ".hdf5"
-        ],
-        "aliases": [
-          "HDF5",
-          "hdf5"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "id": "zarr",
-        "extensions": [
-          ".zarr"
-        ],
-        "aliases": [
-          "Zarr",
-          "zarr"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "id": "grib",
-        "extensions": [
-          ".grib",
-          ".grib2",
-          ".grb"
-        ],
-        "aliases": [
-          "GRIB",
-          "grib"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "id": "geotiff",
-        "extensions": [
-          ".tif",
-          ".tiff",
-          ".geotiff"
-        ],
-        "aliases": [
-          "GeoTIFF",
-          "geotiff"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "id": "jp2",
-        "extensions": [
-          ".jp2",
-          ".jpeg2000"
-        ],
-        "aliases": [
-          "JPEG-2000",
-          "jpeg2000"
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      }
+    "extensionDependencies": [],
+    "categories": [
+        "Data Science",
+        "Visualization",
+        "Other"
     ],
-    "views": {
-      "explorer": [
-        {
-          "id": "scientificDataViewer.outline",
-          "name": "Data Structure"
+    "keywords": [
+        "netcdf",
+        "zarr",
+        "hdf5",
+        "grib",
+        "geotiff",
+        "rasterio",
+        "scientific-data",
+        "xarray",
+        "data-visualization",
+        "climate-data",
+        "geospatial",
+        "cfgrib",
+        "sentinel"
+    ],
+    "activationEvents": [
+        "onLanguage:netcdf",
+        "onLanguage:hdf5",
+        "onLanguage:grib",
+        "onLanguage:geotiff",
+        "onLanguage:jp2",
+        "onFileSystem:netcdf",
+        "onFileSystem:zarr",
+        "onFileSystem:grib",
+        "onFileSystem:geotiff",
+        "onFileSystem:jp2"
+    ],
+    "main": "./out/src/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                "title": "Manage Extension Virtual Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.openViewer",
+                "title": "Open Scientific Data Viewer",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.openViewerFolder",
+                "title": "Open Scientific Data Viewer (Folder)",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.refreshPythonEnvironment",
+                "title": "Refresh Python Environment",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.showLogs",
+                "title": "Show Extension Logs",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.showSettings",
+                "title": "Show Settings",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.openDeveloperTools",
+                "title": "Open Developer Tools",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.expandAll",
+                "title": "Expand All",
+                "category": "Scientific Data Viewer",
+                "icon": "$(expand-all)"
+            },
+            {
+                "command": "scientificDataViewer.python.installPackages",
+                "title": "Install Python Packages",
+                "category": "Scientific Data Viewer"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "command": "scientificDataViewer.openViewer",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "scientificDataViewer.manageExtensionOwnEnvironment",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openViewer",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openViewerFolder",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.refreshPythonEnvironment",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.showLogs",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.showSettings",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openDeveloperTools",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.expandAll",
+                    "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.python.installPackages",
+                    "when": "false"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "scientificDataViewer.expandAll",
+                    "when": "view == scientificDataViewer.outline",
+                    "group": "navigation@2"
+                }
+            ]
+        },
+        "languages": [
+            {
+                "id": "netcdf",
+                "extensions": [
+                    ".nc",
+                    ".netcdf",
+                    ".nc4",
+                    ".cdf"
+                ],
+                "aliases": [
+                    "NetCDF",
+                    "netcdf"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "id": "hdf5",
+                "extensions": [
+                    ".h5",
+                    ".hdf5"
+                ],
+                "aliases": [
+                    "HDF5",
+                    "hdf5"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "id": "zarr",
+                "extensions": [
+                    ".zarr"
+                ],
+                "aliases": [
+                    "Zarr",
+                    "zarr"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "id": "grib",
+                "extensions": [
+                    ".grib",
+                    ".grib2",
+                    ".grb"
+                ],
+                "aliases": [
+                    "GRIB",
+                    "grib"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "id": "geotiff",
+                "extensions": [
+                    ".tif",
+                    ".tiff",
+                    ".geotiff"
+                ],
+                "aliases": [
+                    "GeoTIFF",
+                    "geotiff"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "id": "jp2",
+                "extensions": [
+                    ".jp2",
+                    ".jpeg2000"
+                ],
+                "aliases": [
+                    "JPEG-2000",
+                    "jpeg2000"
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            }
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "scientificDataViewer.outline",
+                    "name": "Data Structure",
+                    "type": "tree",
+                    "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
+                    "visibility": "visible",
+                    "when": "activeWebviewPanelId == 'scientificDataViewer' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                }
+            ]
+        },
+        "customEditors": [
+            {
+                "viewType": "netcdfEditor",
+                "displayName": "NetCDF Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.nc"
+                    },
+                    {
+                        "filenamePattern": "*.netcdf"
+                    },
+                    {
+                        "filenamePattern": "*.nc4"
+                    },
+                    {
+                        "filenamePattern": "*.cdf"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "viewType": "hdf5Editor",
+                "displayName": "HDF5 Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.h5"
+                    },
+                    {
+                        "filenamePattern": "*.hdf5"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "viewType": "zarrEditor",
+                "displayName": "Zarr Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.zarr"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "viewType": "gribEditor",
+                "displayName": "GRIB Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.grib"
+                    },
+                    {
+                        "filenamePattern": "*.grib2"
+                    },
+                    {
+                        "filenamePattern": "*.grb"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "viewType": "geotiffEditor",
+                "displayName": "GeoTIFF Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.tif"
+                    },
+                    {
+                        "filenamePattern": "*.tiff"
+                    },
+                    {
+                        "filenamePattern": "*.geotiff"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            },
+            {
+                "viewType": "jp2Editor",
+                "displayName": "JPEG-2000 Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.jp2"
+                    },
+                    {
+                        "filenamePattern": "*.jpeg2000"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon.svg",
+                    "dark": "./media/icon.svg"
+                }
+            }
+        ],
+        "configuration": {
+            "title": "Scientific Data Viewer",
+            "properties": {
+                "scientificDataViewer.maxFileSize": {
+                    "type": "number",
+                    "default": 10000,
+                    "order": 1000,
+                    "description": "Maximum file size in MB to load automatically"
+                },
+                "scientificDataViewer.defaultView": {
+                    "type": "string",
+                    "enum": [
+                        "default"
+                    ],
+                    "default": "default",
+                    "order": 1000,
+                    "description": "Default view mode for data display"
+                },
+                "scientificDataViewer.allowMultipleTabsForSameFile": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 1000,
+                    "description": "Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.",
+                    "experimental": true,
+                    "markdownDescription": "**Experimental Feature** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues."
+                },
+                "scientificDataViewer.devMode": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 8000,
+                    "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
+                },
+                "scientificDataViewer.matplotlibStyle": {
+                    "type": "string",
+                    "default": "",
+                    "order": 1000,
+                    "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
+                    "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
+                },
+                "scientificDataViewer.python.overridePythonInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "order": 1000,
+                    "description": "Override Python interpreter path (takes precedence over all other options)",
+                    "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `.venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods."
+                },
+                "scientificDataViewer.python.currentlyInUseInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "order": 9000,
+                    "description": "Currently active Python interpreter path (read-only, updated automatically)",
+                    "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**IMPORTANT:** **This is a read-only setting that reflects the current state. Do not modify this value manually.**\n\n*(If you accidentally modified this value, run the 'Scientific Data Viewer: Refresh Python Environment' command to reset it.)*"
+                },
+                "scientificDataViewer.python.useExtensionOwnEnvironment": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 1000,
+                    "description": "Use the extension's own virtual environment (requires uv)",
+                    "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**, otherwise this setting will have no effect, and the extension will fall back to using the Python extension's interpreter. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
+                }
+            }
         }
-      ]
     },
-    "customEditors": [
-      {
-        "viewType": "netcdfEditor",
-        "displayName": "NetCDF Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.nc"
-          },
-          {
-            "filenamePattern": "*.netcdf"
-          },
-          {
-            "filenamePattern": "*.nc4"
-          },
-          {
-            "filenamePattern": "*.cdf"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "viewType": "hdf5Editor",
-        "displayName": "HDF5 Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.h5"
-          },
-          {
-            "filenamePattern": "*.hdf5"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "viewType": "zarrEditor",
-        "displayName": "Zarr Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.zarr"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "viewType": "gribEditor",
-        "displayName": "GRIB Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.grib"
-          },
-          {
-            "filenamePattern": "*.grib2"
-          },
-          {
-            "filenamePattern": "*.grb"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "viewType": "geotiffEditor",
-        "displayName": "GeoTIFF Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.tif"
-          },
-          {
-            "filenamePattern": "*.tiff"
-          },
-          {
-            "filenamePattern": "*.geotiff"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      },
-      {
-        "viewType": "jp2Editor",
-        "displayName": "JPEG-2000 Data Viewer",
-        "selector": [
-          {
-            "filenamePattern": "*.jp2"
-          },
-          {
-            "filenamePattern": "*.jpeg2000"
-          }
-        ],
-        "icon": {
-          "light": "./media/icon.svg",
-          "dark": "./media/icon.svg"
-        }
-      }
-    ],
-    "configuration": {
-      "title": "Scientific Data Viewer",
-      "properties": {
-        "scientificDataViewer.maxFileSize": {
-          "type": "number",
-          "default": 10000,
-          "description": "Maximum file size in MB to load automatically"
-        },
-        "scientificDataViewer.defaultView": {
-          "type": "string",
-          "enum": [
-            "default"
-          ],
-          "default": "default",
-          "description": "Default view mode for data display"
-        },
-        "scientificDataViewer.allowMultipleTabsForSameFile": {
-          "type": "boolean",
-          "default": false,
-          "description": "Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.",
-          "experimental": true,
-          "markdownDescription": "**Experimental Feature** - Allow opening multiple tabs for the same file. When enabled, each 'Open in Data Viewer' action creates a new tab. When disabled (default), focuses on existing tab if file is already open.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues."
-        },
-        "scientificDataViewer.plottingCapabilities": {
-          "type": "boolean",
-          "default": true,
-          "experimental": true,
-          "markdownDescription": "**Experimental Feature** - Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer.\n\n⚠️ **Warning**: This feature is experimental and may cause unexpected behavior or performance issues.",
-          "description": "Enable plotting capabilities. When enabled, shows the 'Create Plot' button and 'Visualization' pane in the data viewer."
-        },
-        "scientificDataViewer.devMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also, reloads the webview script and CSS for faster development feedback loops."
-        },
-        "scientificDataViewer.matplotlibStyle": {
-          "type": "string",
-          "default": "",
-          "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
-          "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
-        }
-      }
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "lint": "eslint src --ext ts --fix",
+        "test": "node ./out/test/runTest.js",
+        "package": "vsce package",
+        "publish": "vsce publish",
+        "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.0",
+        "@types/node": "22.x",
+        "@types/vscode": "^1.74.0",
+        "@typescript-eslint/eslint-plugin": "^5.45.0",
+        "@typescript-eslint/parser": "^5.45.0",
+        "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^2.22.0",
+        "eslint": "^8.28.0",
+        "glob": "^10.3.0",
+        "mocha": "^10.2.0",
+        "typescript": "^4.9.4"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "jsdom": "^27.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/etienneschalk/scientific-data-viewer.git"
+    },
+    "homepage": "https://github.com/etienneschalk/scientific-data-viewer#readme",
+    "bugs": {
+        "url": "https://github.com/etienneschalk/scientific-data-viewer/issues"
     }
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts --fix",
-    "test": "node ./out/test/runTest.js",
-    "package": "vsce package",
-    "publish": "vsce publish",
-    "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
-  },
-  "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.0",
-    "@types/node": "22.x",
-    "@types/vscode": "^1.74.0",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
-    "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^2.22.0",
-    "eslint": "^8.28.0",
-    "glob": "^10.3.0",
-    "mocha": "^10.2.0",
-    "typescript": "^4.9.4"
-  },
-  "dependencies": {
-    "axios": "^1.6.0",
-    "jsdom": "^27.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/etienneschalk/scientific-data-viewer.git"
-  },
-  "homepage": "https://github.com/etienneschalk/scientific-data-viewer#readme",
-  "bugs": {
-    "url": "https://github.com/etienneschalk/scientific-data-viewer/issues"
-  }
 }

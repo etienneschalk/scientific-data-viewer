@@ -11,7 +11,6 @@ export interface DataState {
 }
 
 export interface UIState {
-    plottingCapabilities: boolean;
     selectedVariable: string | null;
     plotType: string;
     showTimestamp: boolean;
@@ -19,7 +18,7 @@ export interface UIState {
 }
 
 export interface PythonState {
-    isReady: boolean;
+    ready: boolean;
     pythonPath: string | null;
     availablePackages: string[];
     error: string | null;
@@ -36,13 +35,12 @@ export interface AppState {
     extension: ExtensionConfigState;
 }
 
-export type Action = 
+export type Action =
     | { type: 'SET_CURRENT_FILE'; payload: string | null }
     | { type: 'SET_DATA_INFO'; payload: any | null }
     | { type: 'SET_LOADING'; payload: boolean }
     | { type: 'SET_ERROR'; payload: string | null }
     | { type: 'SET_LAST_LOAD_TIME'; payload: Date | null }
-    | { type: 'SET_PLOTTING_CAPABILITIES'; payload: boolean }
     | { type: 'SET_SELECTED_VARIABLE'; payload: string | null }
     | { type: 'SET_PLOT_TYPE'; payload: string }
     | { type: 'SET_SHOW_TIMESTAMP'; payload: boolean }
@@ -67,25 +65,24 @@ export class StateManager {
                 dataInfo: null,
                 isLoading: false,
                 lastLoadTime: null,
-                error: null
+                error: null,
             },
             ui: {
-                plottingCapabilities: false,
                 selectedVariable: null,
                 plotType: 'auto',
                 showTimestamp: true,
-                activePanel: null
+                activePanel: null,
             },
             python: {
-                isReady: false,
+                ready: false,
                 pythonPath: null,
                 availablePackages: [],
                 error: null,
             },
             extension: {
-                extensionConfig: null
+                extensionConfig: null,
             },
-            ...initialState
+            ...initialState,
         };
     }
 
@@ -96,13 +93,13 @@ export class StateManager {
     dispatch(action: Action): void {
         const previousState = { ...this.state };
         this.state = this.reducer(this.state, action);
-        
+
         // Add to history for undo functionality
         this.history.push(previousState);
         if (this.history.length > this.maxHistorySize) {
             this.history.shift();
         }
-        
+
         this.notifySubscribers();
     }
 
@@ -119,7 +116,7 @@ export class StateManager {
     }
 
     private notifySubscribers(): void {
-        this.subscribers.forEach(callback => {
+        this.subscribers.forEach((callback) => {
             try {
                 callback(this.state);
             } catch (error) {
@@ -133,97 +130,97 @@ export class StateManager {
             case 'SET_CURRENT_FILE':
                 return {
                     ...state,
-                    data: { ...state.data, currentFile: action.payload }
+                    data: { ...state.data, currentFile: action.payload },
                 };
-            
+
             case 'SET_DATA_INFO':
                 return {
                     ...state,
-                    data: { 
-                        ...state.data, 
+                    data: {
+                        ...state.data,
                         dataInfo: action.payload,
-                        error: action.payload ? null : state.data.error
-                    }
+                        error: action.payload ? null : state.data.error,
+                    },
                 };
-            
+
             case 'SET_LOADING':
                 return {
                     ...state,
-                    data: { ...state.data, isLoading: action.payload }
+                    data: { ...state.data, isLoading: action.payload },
                 };
-            
+
             case 'SET_ERROR':
                 return {
                     ...state,
-                    data: { ...state.data, error: action.payload }
+                    data: { ...state.data, error: action.payload },
                 };
-            
+
             case 'SET_LAST_LOAD_TIME':
                 return {
                     ...state,
-                    data: { ...state.data, lastLoadTime: action.payload }
+                    data: { ...state.data, lastLoadTime: action.payload },
                 };
-            
-            case 'SET_PLOTTING_CAPABILITIES':
-                return {
-                    ...state,
-                    ui: { ...state.ui, plottingCapabilities: action.payload }
-                };
-            
+
             case 'SET_SELECTED_VARIABLE':
                 return {
                     ...state,
-                    ui: { ...state.ui, selectedVariable: action.payload }
+                    ui: { ...state.ui, selectedVariable: action.payload },
                 };
-            
+
             case 'SET_PLOT_TYPE':
                 return {
                     ...state,
-                    ui: { ...state.ui, plotType: action.payload }
+                    ui: { ...state.ui, plotType: action.payload },
                 };
-            
+
             case 'SET_SHOW_TIMESTAMP':
                 return {
                     ...state,
-                    ui: { ...state.ui, showTimestamp: action.payload }
+                    ui: { ...state.ui, showTimestamp: action.payload },
                 };
-            
+
             case 'SET_ACTIVE_PANEL':
                 return {
                     ...state,
-                    ui: { ...state.ui, activePanel: action.payload }
+                    ui: { ...state.ui, activePanel: action.payload },
                 };
-            
+
             case 'SET_PYTHON_READY':
                 return {
                     ...state,
-                    python: { ...state.python, isReady: action.payload }
+                    python: { ...state.python, ready: action.payload },
                 };
-            
+
             case 'SET_PYTHON_PATH':
                 return {
                     ...state,
-                    python: { ...state.python, pythonPath: action.payload }
+                    python: { ...state.python, pythonPath: action.payload },
                 };
-            
+
             case 'SET_AVAILABLE_PACKAGES':
                 return {
                     ...state,
-                    python: { ...state.python, availablePackages: action.payload }
+                    python: {
+                        ...state.python,
+                        availablePackages: action.payload,
+                    },
                 };
-            
+
             case 'SET_PYTHON_ERROR':
                 return {
                     ...state,
-                    python: { ...state.python, error: action.payload }
+                    python: { ...state.python, error: action.payload },
                 };
-            
+
             case 'SET_EXTENSION':
                 return {
                     ...state,
-                    extension: { ...state.extension, extensionConfig: action.payload }
+                    extension: {
+                        ...state.extension,
+                        extensionConfig: action.payload,
+                    },
                 };
-            
+
             case 'RESET_STATE':
                 return {
                     data: {
@@ -231,26 +228,25 @@ export class StateManager {
                         dataInfo: null,
                         isLoading: false,
                         lastLoadTime: null,
-                        error: null
+                        error: null,
                     },
                     ui: {
-                        plottingCapabilities: false,
                         selectedVariable: null,
                         plotType: 'auto',
                         showTimestamp: true,
-                        activePanel: null
+                        activePanel: null,
                     },
                     python: {
-                        isReady: false,
+                        ready: false,
                         pythonPath: null,
                         availablePackages: [],
                         error: null,
                     },
                     extension: {
-                        extensionConfig: null
-                    }
+                        extensionConfig: null,
+                    },
                 };
-            
+
             default:
                 return state;
         }
@@ -289,7 +285,6 @@ export class StateManager {
         this.dispatch({ type: 'SET_EXTENSION', payload: extensionConfig });
     }
 
-
     // History management
     canUndo(): boolean {
         return this.history.length > 0;
@@ -306,22 +301,22 @@ export class StateManager {
     // State validation
     validateState(): { isValid: boolean; errors: string[] } {
         const errors: string[] = [];
-        
+
         if (this.state.data.isLoading && this.state.data.dataInfo) {
             errors.push('Data is loading but dataInfo is already set');
         }
-        
-        if (this.state.python.isReady && !this.state.python.pythonPath) {
+
+        if (this.state.python.ready && !this.state.python.pythonPath) {
             errors.push('Python is ready but no path is set');
         }
-        
+
         if (this.state.ui.selectedVariable && !this.state.data.dataInfo) {
             errors.push('Variable selected but no data loaded');
         }
-        
+
         return {
             isValid: errors.length === 0,
-            errors
+            errors,
         };
     }
 }

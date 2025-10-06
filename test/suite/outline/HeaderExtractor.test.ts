@@ -138,14 +138,6 @@ suite('HeaderExtractor Test Suite', () => {
         // Should still return empty array rather than throwing
     });
 
-    test('should handle missing container', () => {
-        const headers = HeaderExtractor.extractHeadersFromContainer('nonexistent', '<div>content</div>');
-        
-        assert.ok(headers);
-        assert.ok(Array.isArray(headers));
-        assert.strictEqual(headers.length, 0);
-    });
-
     test('should handle null data info', () => {
         const headers = HeaderExtractor.createDynamicDataViewerHeaders(undefined);
         

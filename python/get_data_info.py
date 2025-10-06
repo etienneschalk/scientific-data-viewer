@@ -44,10 +44,10 @@ from typing import Any, Literal, cast, Union, List, Dict
 
 import xarray as xr
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 
 from importlib.util import find_spec
-import matplotlib.pyplot as plt
 from io import BytesIO
 
 DictOfDatasets = Dict[str, xr.Dataset]
@@ -60,15 +60,21 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger: Logger = logging.getLogger(__name__)
+logger.info("Python version: %s", sys.version)
 
-# Set globally for all plots: use scientific notation for large/small numbers
-mpl.rcParams["axes.formatter.limits"] = (-3, 3)
-mpl.rcParams["axes.formatter.use_mathtext"] = True
 xr.set_options(display_expand_attrs=False, display_expand_data=False)
 np.set_printoptions(threshold=20, edgeitems=2)
 
-XR_TEXT_OPTIONS: Dict[str, Any] = {"display_max_rows": 1000}
-XR_HTML_OPTIONS: Dict[str, Any] = {}
+# Set globally for all plots: use scientific notation for large/small numbers
+MATPLOTLIB_RC_CONTEXT = {
+    "interactive": False,
+    "axes.formatter.limits": (-3, 3),
+    "axes.formatter.use_mathtext": True,
+}
+
+XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
+XR_TEXT_OPTIONS: Dict[str, Any] = XR_OPTIONS | {"display_max_rows": 1000}
+XR_HTML_OPTIONS: Dict[str, Any] = XR_OPTIONS | {}
 
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
@@ -724,44 +730,45 @@ def create_plot(
         strategy = detect_plotting_strategy(var)
         logger.info(f"Using plotting strategy: {strategy}")
 
-        # Create plot using xarray's native plotting methods
-        if strategy == "2d_classic":
-            # 2D spatial data - plot directly with appropriate colormap
-            logger.info("Creating 2D spatial plot")
-            ax = var.plot.imshow(cmap="viridis")
-            plt.gca().set_aspect("equal")
-        elif strategy == "2d_classic_isel":
-            logger.info("Creating 2D spatial plot with isel")
-            first_dim = var.dims[0]
-            ax = var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
-            plt.gca().set_aspect("equal")
-        elif strategy == "3d_col":
-            # 3D data with spatial dimensions - use col parameter
-            logger.info("Creating 3D plot with col parameter")
-            first_dim = var.dims[0]
-            col_wrap = min(4, var.shape[0])
-            ax = var.plot.imshow(
-                col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=col_wrap
-            )
-        elif strategy == "4d_col_row":
-            # 4D data with spatial dimensions - use col and row parameters
-            logger.info("Creating 4D plot with col and row parameters")
-            first_dim = var.dims[0]
-            second_dim = var.dims[1]
-            ax = var.plot.imshow(
-                col=second_dim, row=first_dim, cmap="viridis", aspect=1, size=4
-            )
-        else:
-            # Default plotting behavior - let xarray decide the best method
-            logger.info("Creating default plot using xarray's native plotting")
-            var.plot()
+        with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
+            # Create plot using xarray's native plotting methods
+            if strategy == "2d_classic":
+                # 2D spatial data - plot directly with appropriate colormap
+                logger.info("Creating 2D spatial plot")
+                ax = var.plot.imshow(cmap="viridis")
+                plt.gca().set_aspect("equal")
+            elif strategy == "2d_classic_isel":
+                logger.info("Creating 2D spatial plot with isel")
+                first_dim = var.dims[0]
+                ax = var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
+                plt.gca().set_aspect("equal")
+            elif strategy == "3d_col":
+                # 3D data with spatial dimensions - use col parameter
+                logger.info("Creating 3D plot with col parameter")
+                first_dim = var.dims[0]
+                col_wrap = min(4, var.shape[0])
+                ax = var.plot.imshow(
+                    col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=col_wrap
+                )
+            elif strategy == "4d_col_row":
+                # 4D data with spatial dimensions - use col and row parameters
+                logger.info("Creating 4D plot with col and row parameters")
+                first_dim = var.dims[0]
+                second_dim = var.dims[1]
+                ax = var.plot.imshow(
+                    col=second_dim, row=first_dim, cmap="viridis", aspect=1, size=4
+                )
+            else:
+                # Default plotting behavior - let xarray decide the best method
+                logger.info("Creating default plot using xarray's native plotting")
+                var.plot()
 
-        # Convert to base64 string
-        buffer = BytesIO()
-        plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
-        buffer.seek(0)
-        image_base64 = base64.b64encode(buffer.getvalue()).decode()
-        plt.close()
+            # Convert to base64 string
+            buffer = BytesIO()
+            plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
+            buffer.seek(0)
+            image_base64 = base64.b64encode(buffer.getvalue()).decode()
+            plt.close()
 
         # Close Start
         if datatree_flag:

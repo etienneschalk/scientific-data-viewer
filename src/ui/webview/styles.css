@@ -1,4 +1,5 @@
 /* https://gist.github.com/estruyf/ba49203e1a7d6868e9320a4ea480c27a All VS Code theme variables */
+/* https://marketplace.visualstudio.com/items?itemName=phoenisx.cssvar */
 
 /* Base styles */
 body {
@@ -15,10 +16,15 @@ body {
     box-sizing: border-box;
     padding: 0;
     margin: 0;
+    text-decoration: none;
 }
 
 .hidden {
     display: none !important;
+}
+
+.highlighted {
+    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
 }
 
 .loading {
@@ -33,7 +39,6 @@ body {
     padding: 15px;
     margin: 15px 0;
     margin-left: 15px;
-    /* font-weight: 500; */
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
 }
 
@@ -56,7 +61,12 @@ body {
     color: var(--vscode-textPreformat-foreground);
     padding: 2px 6px;
     border-radius: 3px;
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
 }
 
 .error ol {
@@ -96,7 +106,6 @@ body {
     gap: 5px;
 }
 
-
 /* Button styles */
 button {
     background-color: var(--vscode-button-background);
@@ -120,8 +129,17 @@ button:disabled {
     cursor: not-allowed;
 }
 
+.small-button-link {
+    padding: 0;
+    margin:0;
+    /* Add opacity to css variable (does not work) */
+    /* https://stackoverflow.com/questions/40010597/how-do-i-apply-opacity-to-a-css-color-variable */
+    border: 1px solid var(--vscode-textLink-foreground);
+    border-radius: 2px;
+}
+
 /* Copy button variant */
-.copy-button, .text-copy-button, .troubleshooting-copy-button {
+.text-copy-button {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     padding: 4px;
@@ -135,11 +153,11 @@ button:disabled {
     transition: background-color 0.2s ease;
 }
 
-.copy-button:hover, .text-copy-button:hover, .troubleshooting-copy-button:hover {
+.text-copy-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-.copy-button.copied, .text-copy-button.copied, .troubleshooting-copy-button.copied {
+.text-copy-button.copied {
     background-color: var(--vscode-button-background);
 }
 
@@ -184,16 +202,11 @@ select:focus {
     color: var(--vscode-foreground);
 }
 
-.dimensions, .variables, .coordinates {
+.dimensions,
+.variables,
+.coordinates {
     display: grid;
     grid-template-columns: 1fr;
-    /* gap: -1px; */
-    /* gap: 8px; */
-    /* gap: 2px; */
-    /* margin: 0; */
-    /* margin-top: 10px; */
-    /* max-width: 800px */
-
 }
 
 .dimensions-compact {
@@ -201,7 +214,6 @@ select:focus {
     background-color: var(--vscode-list-hoverBackground);
     color: var(--vscode-foreground);
     border: 1px solid var(--vscode-panel-border);
-    /* max-width: 800px */
 }
 
 .dimensions-compact strong {
@@ -209,7 +221,8 @@ select:focus {
     font-weight: 600;
 }
 
-.dimension-item, .variable-item {
+.dimension-item,
+.variable-item {
     padding: 6px 8px;
     background-color: var(--vscode-list-hoverBackground);
     transition: background-color 0.2s ease;
@@ -226,7 +239,8 @@ select:focus {
     gap: 0;
 }
 
-.dimension-item:hover, .variable-item:hover {
+.dimension-item:hover,
+.variable-item:hover {
     background-color: var(--vscode-list-activeSelectionBackground);
 }
 
@@ -267,7 +281,6 @@ select:focus {
     max-width: 100px;
 }
 
-
 .variable-item .size {
     flex: 1;
     color: var(--vscode-descriptionForeground);
@@ -304,13 +317,13 @@ select:focus {
 }
 
 .variable-summary::before {
-    content: "📄";
+    content: '📄';
     margin-left: 8px;
     order: 999; /* Move to the right */
 }
 
 .variable-details[open] .variable-summary::before {
-    content: "📄";
+    content: '📄';
 }
 
 .variable-summary.not-clickable:active {
@@ -354,7 +367,7 @@ select:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: right;
-    max-width: 100px;
+    max-width: 120px;
 }
 
 .variable-summary .size {
@@ -362,7 +375,7 @@ select:focus {
     color: var(--vscode-descriptionForeground);
     white-space: nowrap;
     text-align: right;
-    max-width: 100px;
+    max-width: 80px;
 }
 
 /* Attributes details styling */
@@ -372,9 +385,9 @@ select:focus {
     margin: 0;
     border-top: 1px solid var(--vscode-panel-border);
 }
-.attributes {
+/* .attributes {
     padding-left: 10px;
-}
+} */
 /* .attribute-item {
     display: flex;
     align-items: flex-start;
@@ -394,6 +407,10 @@ select:focus {
     color: var(--vscode-descriptionForeground);
     word-break: break-word;
     flex: 1;
+}
+
+.muted-text {
+    color: var(--vscode-descriptionForeground);
 }
 
 /* Enhanced highlighting for individual attributes */
@@ -418,7 +435,7 @@ select:focus {
         gap: 1px;
         padding: 4px 8px;
     }
-    
+
     .variable-item .variable-name,
     .variable-item .dtype-shape,
     .variable-item .dims,
@@ -441,7 +458,12 @@ select:focus {
 .file-path-code {
     background-color: var(--vscode-textCodeBlock-background);
     color: var(--vscode-textPreformat-foreground);
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
     padding: 4px 8px;
     border-radius: 3px;
     border: 1px solid var(--vscode-panel-border);
@@ -465,7 +487,8 @@ select:focus {
     margin: 5px 0;
 }
 
-.html-representation th, .html-representation td {
+.html-representation th,
+.html-representation td {
     border: 1px solid var(--vscode-panel-border);
     padding: 4px 8px;
     text-align: left;
@@ -476,34 +499,26 @@ select:focus {
     font-weight: bold;
 }
 
-.text-representation {
+.text-representation-container {
+    position: relative;
+}
+
+pre {
+    /* white    -space: pre-wrap; */
+    /* word-wrap: break-word; */
     max-height: 400px;
     overflow: auto;
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
     padding: 10px;
-    background-color: var(--vscode-editor-background);
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.text-representation-container {
-    position: relative;
-}
-
-/* Troubleshooting styles */
-.troubleshooting-content {
-    font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    font-family: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
     background-color: var(--vscode-textCodeBlock-background);
     color: var(--vscode-textPreformat-foreground);
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid var(--vscode-panel-border);
-    max-height: 300px;
-    overflow: auto;
 }
 
 details summary {
@@ -549,8 +564,8 @@ details.sticky-group-details summary > * {
 }
 
 /* Plot image styles */
-.plot-container img, .plot-image-container img {
-    max-width: 100%;
+.plot-container img,
+.plot-image-container img {
     height: auto;
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
@@ -606,58 +621,13 @@ button:active {
 
 .plot-error {
     color: var(--vscode-errorForeground);
-    background-color: var(--vscode-textCodeBlock-background);
     border: 1px solid var(--vscode-errorForeground);
-    padding: 12px;
-    margin: 10px 0;
-    font-weight: 500;
-    max-width: 100%;
-    overflow: auto;
-    word-break: break-all;
-
+    max-width: 650px; /* XXX hardcoded value, hack to avoid overflow (layout issues)... */
 }
 
 .plot-error.success {
     color: #4caf50;
     border: 1px solid #4caf50;
-}
-
-.plot-error.hidden {
-    display: none;
-}
-
-.error-content {
-    display: flex;
-    align-items: flex-start;
-    padding: 0;
-    margin: 0;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.error-message {
-    flex: 1;
-    padding: 0;
-    margin: 0;
-}
-
-.error-copy-button {
-    background-color: transparent;
-    color: inherit;
-    border: 1px solid currentColor;
-    padding: 4px 8px;
-    border-radius: 3px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    margin: 0;
-    width: 80px;
-}
-
-.error-copy-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Per-variable plot controls */
@@ -682,7 +652,8 @@ button:active {
 }
 
 /* Plot action button variant */
-.create-plot-button, .plot-action-button {
+.create-plot-button,
+.plot-action-button {
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     padding: 6px 12px;
@@ -692,11 +663,13 @@ button:active {
     transition: background-color 0.2s ease;
 }
 
-.create-plot-button:hover:not(:disabled), .plot-action-button:hover:not(:disabled) {
+.create-plot-button:hover:not(:disabled),
+.plot-action-button:hover:not(:disabled) {
     background-color: var(--vscode-button-hoverBackground);
 }
 
-.create-plot-button:disabled, .plot-action-button:disabled {
+.create-plot-button:disabled,
+.plot-action-button:disabled {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     cursor: not-allowed;
@@ -722,11 +695,11 @@ button:active {
     flex-wrap: wrap;
 }
 
-.highlighted {
-    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
-    /* box-shadow: 0px 0px 0px 2px var(--vscode-button-background); */
-    /* box-shadow: 
-        +4px 0px 0px 0px var(--vscode-button-background),
-        -4px 0px 0px 0px var(--vscode-button-background); */
-
+.plot-progress {
+    margin-top: 10px;
+    padding: 8px;
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    font-size: 14px;
+    color: var(--vscode-foreground);
 }
