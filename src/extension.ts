@@ -7,7 +7,7 @@ import { ErrorBoundary } from './error/ErrorBoundary';
 import { OutlineProvider } from './outline/OutlineProvider';
 import {
     ExtensionVirtualEnvironmentManager,
-    ExtensionVirtualEnvironmentManagerUI,ck
+    ExtensionVirtualEnvironmentManagerUI,
 } from './extensionVirtualEnvironmentManager';
 import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
 import {
@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
     } catch (error) {
         Logger.error(`❌ Failed to initialize Python manager: ${error}`);
         // Create a mock PythonManager for testing or when Python extension is not available
-        const pythonManager = {
+        pythonManager = {
             isReady: () => false,
             executePythonScript: async () => {
                 throw new Error('Python environment not available');
@@ -713,9 +713,6 @@ export function deactivate() {
     // Dispose of data viewer panel static resources
     DataViewerPanel.dispose();
     ErrorBoundary.getInstance().dispose();
-    // Also disposes the PythonManager
-    DataProcessor.getInstance().dispose();
-
     // Has event listeners that needs to be disposed
     // Could be a singleton
     // Needs to access instance

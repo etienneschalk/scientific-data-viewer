@@ -41,7 +41,6 @@ type EnvironmentSource =
  * - Setting up event listeners for Python environment changes and creation
  * - Executing Python files
  * - Checking package availability
- * - Monitoring Python executable file system changes
  */
 export class PythonManager {
     private _pythonPath: string | null = null;
@@ -49,7 +48,6 @@ export class PythonManager {
     private _initializationPromise: Promise<void> | null = null;
     private _environmentSource: EnvironmentSource | null = null;
     private _corePackagesInstalled: boolean = false;
-    private _pythonPathWatcher: vscode.FileSystemWatcher | null = null;
 
     // Core packages required for basic functionality
     private readonly corePackages = ['xarray', 'matplotlib'];
@@ -260,92 +258,6 @@ export class PythonManager {
             source: this._environmentSource,
             path: this._pythonPath,
         };
-    }
-
-    /**
-     * Set up file system watcher for the Python executable
-     * This will detect when the Python file is deleted or modified
-     */
-    private setupPythonPathWatcher(): void {
-        // Dispose existing watcher if it exists
-        this.disposePythonPathWatcher();
-
-        if (!this._pythonPath) {
-            Logger.debug('🐍 👁️ No Python path set, skipping file system watcher setup');
-            return;
-        }
-
-        try {
-            // // Listen to the parent process of the Python executable
-            // const parentUri = vscode.Uri.joinPath(vscode.Uri.file(this._pythonPath), '..', '..');
-            // this._pythonPathWatcher = vscode.workspace.createFileSystemWatcher(
-            //     new vscode.RelativePattern(parentUri, 'bin/python*')
-            // );
-
-            // Listen to the Python executable itself
-            // Create a file system watcher for the Python executable
-            this._pythonPathWatcher = vscode.workspace.createFileSystemWatcher(
-                this._pythonPath,
-                // new vscode.RelativePattern(vscode.Uri.file(this._pythonPath), '**')
-            );
-
-            // Watch for file deletion, creation, and changes
-            this._pythonPathWatcher.onDidDelete(() => {
-                Logger.info(`🐍 👁️ Python executable deleted: ${this._pythonPath}`);
-                this.handlePythonPathFileSystemChange('deleted');
-            });
-
-            this._pythonPathWatcher.onDidChange(() => {
-                Logger.info(`🐍 👁️ Python executable modified: ${this._pythonPath}`);
-                this.handlePythonPathFileSystemChange('modified');
-            });
-
-            this._pythonPathWatcher.onDidCreate(() => {
-                Logger.info(`🐍 👁️ Python executable created: ${this._pythonPath}`);
-                this.handlePythonPathFileSystemChange('created');
-            });
-
-            Logger.info(`🐍 👁️ File system watcher set up for Python path: ${this._pythonPath}`);
-        } catch (error) {
-            Logger.warn(`🐍 ⚠️ Failed to set up file system watcher for Python path: ${error}`);
-        }
-    }
-
-    /**
-     * Dispose the Python path file system watcher
-     */
-    private disposePythonPathWatcher(): void {
-        if (this._pythonPathWatcher) {
-            this._pythonPathWatcher.dispose();
-            this._pythonPathWatcher = null;
-            Logger.debug('🐍 👁️ Python path file system watcher disposed');
-        }
-    }
-
-    /**
-     * Handle file system changes to the Python executable
-     * @param changeType The type of change (deleted, modified, created)
-     */
-    private handlePythonPathFileSystemChange(changeType: 'deleted' | 'modified' | 'created'): void {
-        Logger.info(`🐍 🔄 Python executable ${changeType}, triggering environment refresh...`);
-        
-        // Reset the initialization state to force a refresh
-        this._initialized = false;
-        this._corePackagesInstalled = false;
-        
-        // Trigger a refresh of the Python environment
-        this.forceInitialize().catch((error) => {
-            Logger.error(`🐍 ❌ Failed to refresh Python environment after file system change: ${error}`);
-        });
-    }
-
-    /**
-     * Dispose of the Python path file system watcher
-     * This should be called when the PythonManager is no longer needed
-     */
-    dispose(): void {
-        this.disposePythonPathWatcher();
-        Logger.debug('🐍 🗑️ PythonManager disposed');
     }
 
     /**
@@ -982,9 +894,6 @@ export class PythonManager {
                     )}`
                 );
             }
-
-            // Set up file system watcher for the Python executable
-            this.setupPythonPathWatcher();
         } catch (error) {
             Logger.error(
                 `🐍 📦 ❌ Python environment validation failed: ${error}`
