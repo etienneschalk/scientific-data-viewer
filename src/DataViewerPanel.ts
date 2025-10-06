@@ -7,7 +7,7 @@ import { HeaderExtractor } from './outline/HeaderExtractor';
 import { getAllowMultipleTabsForSameFile, getDevMode } from './common/config';
 
 export class DataViewerPanel {
-    public static readonly viewType = 'scientificDataViewer';
+    public static readonly viewType = 'scientificDataViewer.defaultWebviewPanel';
 
     private static readonly _activePanels: Set<DataViewerPanel> = new Set();
     private static readonly _errorPanels: Set<DataViewerPanel> = new Set();
