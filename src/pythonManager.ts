@@ -47,6 +47,8 @@ export class PythonManager {
     private _initialized: boolean = false;
     private _initializationPromise: Promise<void> | null = null;
     private _environmentSource: EnvironmentSource | null = null;
+    private _corePackagesInstalled: boolean = false;
+
     // Core packages required for basic functionality
     private readonly corePackages = ['xarray', 'matplotlib'];
     // Additional packages for extended format support
@@ -76,7 +78,7 @@ export class PythonManager {
      * Check if the Python environment is ready
      */
     get ready(): boolean {
-        return this._initialized && this._pythonPath !== null;
+        return this._initialized && this._pythonPath !== null && this._corePackagesInstalled;
     }
 
     /**
@@ -100,6 +102,7 @@ export class PythonManager {
         this._initialized = false;
         this._initializationPromise = null; // Reset any existing initialization
         await this.initialize();
+        this._initialized = true;
     }
 
     /**
@@ -243,16 +246,16 @@ export class PythonManager {
      * Get information about the current Python environment
      * @returns             The current environment info
      */
-    async getCurrentEnvironmentInfo(): Promise<{
-        type: EnvironmentSource;
-        path: string;
-    } | null> {
-        if (!this._pythonPath || !this._environmentSource) {
-            return null;
-        }
-
+    getCurrentEnvironmentInfo(): {
+        initialized: boolean;
+        ready: boolean;
+        source: EnvironmentSource | null;
+        path: string | null;
+    } {
         return {
-            type: this._environmentSource,
+            initialized: this._initialized,
+            ready: this.ready, // initialized and python path is set
+            source: this._environmentSource,
             path: this._pythonPath,
         };
     }
@@ -876,14 +879,15 @@ export class PythonManager {
             const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
             );
-
+            
             // Only require core packages for basic functionality
             if (missingCorePackages.length == 0) {
-                this._initialized = true;
+                this._corePackagesInstalled = true;
                 Logger.info(
                     `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`
                 );
             } else {
+                this._corePackagesInstalled = false;
                 Logger.info(
                     `🐍 📦 ⚠️ Python environment not ready! Missing core packages: ${missingCorePackages.join(
                         ', '

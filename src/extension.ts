@@ -93,26 +93,22 @@ export function activate(context: vscode.ExtensionContext) {
                         } else if (key == 'python.useExtensionOwnEnvironment') {
                             refreshPython(pythonManager, statusBarItem).then(
                                 () => {
-                                    if (value) {
-                                        pythonManager
-                                            .getCurrentEnvironmentInfo()
-                                            .then((envInfo) => {
-                                                if (
-                                                    envInfo?.type !==
-                                                    'own-uv-env'
-                                                ) {
-                                                    const uvInstallationUrl =
-                                                        extensionEnvManager.UV_INSTALLATION_URL;
-                                                    const error = `
-                                            You tried to activate the usage of the extension's own environment,
-                                            but it seems that uv is not installed.
-                                            Please install uv from ${uvInstallationUrl} and try again.`;
-                                                    showErrorMessageAndProposeHelpToInstallUv(
-                                                        error,
-                                                        uvInstallationUrl
-                                                    );
-                                                }
-                                            });
+                                    if (!value) {
+                                        return;
+                                    }
+                                    const envInfo =
+                                        pythonManager.getCurrentEnvironmentInfo();
+                                    if (envInfo?.source !== 'own-uv-env') {
+                                        const uvInstallationUrl =
+                                            extensionEnvManager.UV_INSTALLATION_URL;
+                                        const error = `
+                                You tried to activate the usage of the extension's own environment,
+                                but it seems that uv is not installed.
+                                Please install uv from ${uvInstallationUrl} and try again.`;
+                                        showErrorMessageAndProposeHelpToInstallUv(
+                                            error,
+                                            uvInstallationUrl
+                                        );
                                     }
                                 }
                             );
@@ -200,10 +196,12 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.StatusBarAlignment.Right,
         100
     );
-    statusBarItem.tooltip =
-        'Current Python interpreter for Scientific Data Viewer';
-    statusBarItem.text = '$(python) Python: Not Set';
-    // Don't show by default - only show when interpreter is selected
+    // Initialize status bar to show unknown status
+    updateStatusBar(pythonManager, statusBarItem);
+
+    // Initialize Python environment
+    Logger.info('🔧 Initializing Python environment...');
+    refreshPython(pythonManager, statusBarItem);
 
     const webviewPanelOptions: vscode.WebviewPanelOptions = {
         enableFindWidget: true,
@@ -442,7 +440,9 @@ export function activate(context: vscode.ExtensionContext) {
         async (packages?: string[]) => {
             Logger.info('🎮 📦 Command: Installing Python packages');
             if (!packages || packages.length === 0) {
-                vscode.window.showErrorMessage('No packages specified for installation');
+                vscode.window.showErrorMessage(
+                    'No packages specified for installation'
+                );
                 return;
             }
             try {
@@ -526,10 +526,6 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }
     });
-
-    // Initialize Python environment
-    Logger.info('🔧 Initializing Python environment...');
-    refreshPython(pythonManager, statusBarItem);
 
     // Function to handle Python interpreter changes
     const handleOnDidChangeActiveEnvironmentPath = async () => {
@@ -646,27 +642,40 @@ async function updateStatusBar(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
-    const pythonPath = pythonManager.pythonPath;
+    statusBarItem.backgroundColor = undefined;
 
-    // Only show status bar when interpreter is set.
-    if (pythonPath) {
-        // Get environment info to show virtual environment type
-        try {
-            const icon = pythonManager.ready ? '$(check)' : '$(x)';
-            const envInfo = await pythonManager.getCurrentEnvironmentInfo();
-            if (envInfo) {
-                statusBarItem.text = `${icon} SDV ${envInfo.type}`;
-            } else {
-                statusBarItem.text = `${icon} SDV`;
-            }
-        } catch (error) {
-            Logger.debug(`Could not get environment info: ${error}`);
-            statusBarItem.text = `$(question) SDV`;
-        }
-        statusBarItem.tooltip = `Scientific Data Viewer: Current Python interpreter: ${pythonPath}`;
-        statusBarItem.backgroundColor = undefined;
-        statusBarItem.show();
+    const envInfo = pythonManager.getCurrentEnvironmentInfo();
+    let icon;
+    let tooltipStatus;
+    if (!envInfo.initialized) {
+        // Not initialized yet: we do not know if it will work or not
+        tooltipStatus = 'Not initialized yet';
+        icon = '$(question)';
+    } else if (envInfo.ready) {
+        // Initialized and ready: we know it will work
+        tooltipStatus = 'Initialized and ready (all core packages installed)';
+        icon = '$(check)';
+    } else {
+        // Initialized but not ready: we know it will not work
+        tooltipStatus = 'Initialized but not ready (missing core packages)';
+        icon = '$(x)';
     }
+
+    const source = envInfo.source ?? 'unknown';
+    statusBarItem.text = `${icon} SDV ${source}`;
+    statusBarItem.tooltip = `Scientific Data Viewer - State
+
+Status: 
+${tooltipStatus} 
+
+Source:
+${source}
+
+Current Python interpreter: 
+${envInfo.path ?? 'Not set'}
+`;
+
+    statusBarItem.show();
 }
 
 async function waitThenCreateOrRevealPanel(
