@@ -847,7 +847,7 @@ def get_file_info(file_path: Path):
                 # Get text representation using xarray's built-in text representation
                 repr_html: str = xdt._repr_html_()
 
-            logger.info(f"{xdt=}")
+            # logger.info(f"{xdt=}")
 
             flat_dict_of_xds: DictOfDatasets = {
                 group: group_xdt
@@ -910,7 +910,7 @@ def get_file_info(file_path: Path):
 
         for group in flat_dict_of_xds.keys():
             logger.info(f"Processing group: {group}")
-            logger.info(f"{flat_dict_of_xds[group]=}")
+            # logger.info(f"{flat_dict_of_xds[group]=}")
             xds = flat_dict_of_xds[group]
 
             # Add attributes for group
