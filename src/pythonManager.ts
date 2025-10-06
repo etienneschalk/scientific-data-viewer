@@ -39,8 +39,6 @@ type EnvironmentSource =
  * - Updating the currently used interpreter in the configuration
  * - Getting the current environment info
  * - Setting up event listeners for Python environment changes and creation
- * - Prompting the user to install required packages
- * - Prompting the user to install packages for a specific format
  * - Executing Python files
  * - Checking package availability
  */
@@ -392,94 +390,6 @@ export class PythonManager {
                 `🐍 ❌ Failed to set up Python environment change listeners: ${error}`
             );
             return undefined;
-        }
-    }
-
-    /**
-     * Prompt the user to install required packages
-     * @param missingPackages The list of missing packages
-     */
-    async promptToInstallRequiredPackages(
-        missingPackages: string[]
-    ): Promise<void> {
-        const action = await vscode.window.showWarningMessage(
-            `You are using the Python interpreter at ${
-                this._pythonPath
-            }. Missing required packages: ${missingPackages.join(
-                ', '
-            )}. Install them?`,
-            'Install',
-            'Cancel'
-        );
-
-        if (action === 'Install') {
-            try {
-                await this.installPackages(missingPackages);
-                // TODO eschalk: This is a hack to refresh the panels with errors.
-                // We should find a better way to do this. XXX
-                await DataViewerPanel.refreshPanelsWithErrors();
-            } catch (error) {
-                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                // Show detailed error information
-                const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                showErrorMessage(
-                    `Package installation failed: ${errorMessage}`
-                );
-                throw error;
-            }
-        } else {
-            // User cancelled installation, but we still have a valid Python interpreter
-            // Set as initialized so the extension can work with what's available
-            Logger.info(
-                `🐍 📦 ⚠️ Python environment ready (with missing packages)! Using interpreter: ${this._pythonPath}`
-            );
-        }
-    }
-
-    /**
-     * Prompt the user to install packages for a specific format
-     * @param format          The format to install packages for
-     * @param missingPackages The list of missing packages
-     */
-    async promptToInstallPackagesForFormat(
-        format: string,
-        missingPackages: string[]
-    ): Promise<void> {
-        const action = await vscode.window.showWarningMessage(
-            `You are using the Python interpreter at ${
-                this._pythonPath
-            }. Missing packages for format ${format}: ${missingPackages.join(
-                ', '
-            )}. Install them?`,
-            'Install',
-            'Cancel'
-        );
-
-        if (action === 'Install') {
-            try {
-                await this.installPackages(missingPackages);
-                // TODO eschalk: This is a hack to refresh the panels with errors.
-                // We should find a better way to do this. XXX
-                await DataViewerPanel.refreshPanelsWithErrors();
-            } catch (error) {
-                Logger.error(`🐍 📦 ❌ Package installation failed: ${error}`);
-                // Show detailed error information
-                const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                showErrorMessage(
-                    `Package installation failed: ${errorMessage}`
-                );
-                throw error;
-            }
-        } else {
-            // User cancelled installation, but we still have a valid Python interpreter
-            // Set as initialized so the extension can work with what's available
-            Logger.info(
-                `🐍 📦 ⚠️ Installation cancelled for format ${format}: ${missingPackages.join(
-                    ', '
-                )}.`
-            );
         }
     }
 
@@ -951,7 +861,6 @@ export class PythonManager {
     private async validatePythonEnvironment(
         pythonPath: string | null
     ): Promise<void> {
-        this._initialized = false;
         this._pythonPath = pythonPath;
 
         Logger.info(
@@ -969,15 +878,16 @@ export class PythonManager {
             );
 
             // Only require core packages for basic functionality
-            const missingPackages = missingCorePackages;
-
-            if (missingPackages.length > 0) {
-                this.promptToInstallRequiredPackages(missingPackages);
-            } else {
+            if (missingCorePackages.length == 0) {
                 this._initialized = true;
-                // Don't show notification during initialization - only when interpreter changes
                 Logger.info(
                     `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`
+                );
+            } else {
+                Logger.info(
+                    `🐍 📦 ⚠️ Python environment not ready! Missing core packages: ${missingCorePackages.join(
+                        ', '
+                    )}`
                 );
             }
         } catch (error) {
@@ -1041,7 +951,6 @@ export class PythonManager {
                 Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
 
                 if (code === 0) {
-                    this._initialized = true;
                     vscode.window.showInformationMessage(
                         `Successfully installed packages: ${packages.join(
                             ', '
