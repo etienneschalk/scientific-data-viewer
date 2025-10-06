@@ -71,6 +71,11 @@ export class DataProcessor {
         return DataProcessor.instance;
     }
 
+    dispose(): void {
+        // PythonManager - dispose file system watcher
+        this.pythonManager.dispose();
+    }
+
     private readonly pythonScriptsHomeDir: string;
 
     constructor(private pythonManager: PythonManager) {
