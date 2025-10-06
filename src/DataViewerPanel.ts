@@ -4,6 +4,7 @@ import { Logger } from './common/Logger';
 import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
+import { getAllowMultipleTabsForSameFile, getDevMode } from './common/config';
 
 export class DataViewerPanel {
     public static readonly viewType = 'scientificDataViewer';
@@ -65,13 +66,8 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Get configuration directly from VSCode
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-
         // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
-        if (!config.get('allowMultipleTabsForSameFile', false)) {
+        if (!getAllowMultipleTabsForSameFile()) {
             for (const panel of DataViewerPanel._activePanels) {
                 Logger.debug(
                     `🚚 📋 Checking if file ${
@@ -366,10 +362,7 @@ export class DataViewerPanel {
     }
 
     private async handleDevMode(): Promise<void> {
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const devMode = config.get('devMode', false);
+        const devMode = getDevMode();
 
         if (devMode) {
             Logger.info(

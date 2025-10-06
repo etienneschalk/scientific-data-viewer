@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { PythonManager } from '../../src/python/PythonManager';
 import { ExtensionVirtualEnvironmentManager } from '../../src/python/ExtensionVirtualEnvironmentManager';
+import { setupOfficialPythonExtensionChangeListeners } from '../../src/python/officialPythonExtensionApiUtils';
 
 suite('PythonManager Test Suite', () => {
     let pythonManager: PythonManager;
@@ -216,7 +217,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.ok(listener);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -229,7 +230,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => undefined;
 
         try {
-            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -242,7 +243,7 @@ suite('PythonManager Test Suite', () => {
         (pythonManager as any).getPythonExtensionApi = async () => ({});
 
         try {
-            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -257,7 +258,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         try {
-            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
@@ -272,7 +273,7 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            const listener = await pythonManager.setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
             assert.strictEqual(listener, undefined);
         } finally {
             (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;

@@ -1,6 +1,37 @@
 import * as vscode from 'vscode';
 
 /**
+ * Show an information message with options to show settings or logs
+ * @param message The message to show
+ * @param showSettings Whether to show the settings button
+ * @param showLogs Whether to show the logs button
+ */
+export function showInformationMessage(
+    message: string,
+    showLogs: boolean = true,
+    showSettings: boolean = false
+): void {
+    vscode.window
+        .showInformationMessage(
+            message,
+            'OK',
+            showLogs ? 'Show Logs' : '',
+            showSettings ? 'Show Settings' : ''
+        )
+        .then((selection) => {
+            if (selection === 'Show Logs') {
+                vscode.commands.executeCommand('scientificDataViewer.showLogs');
+            }
+            if (selection === 'Show Settings') {
+                vscode.commands.executeCommand(
+                    'workbench.action.openSettings',
+                    'scientificDataViewer'
+                );
+            }
+        });
+}
+
+/**
  * Show an error message with options to show settings or logs
  * @param message The message to show
  * @param showSettings Whether to show the settings button

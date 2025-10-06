@@ -1,35 +1,68 @@
 import * as vscode from 'vscode';
+import { detectVSCodeTheme } from './vscodeutils';
 
-function getWorkspaceConfig() {
-    return vscode.workspace.getConfiguration('scientificDataViewer.python');
+export function getWorkspaceConfig() {
+    return vscode.workspace.getConfiguration('scientificDataViewer');
 }
 
-export function getOverridePythonInterpreter(): string {
-    return getWorkspaceConfig().get<string>('overridePythonInterpreter', '');
-}
-
-export function getUseExtensionOwnEnvironment(): boolean {
+export function getAllowMultipleTabsForSameFile(): boolean {
     return getWorkspaceConfig().get<boolean>(
-        'useExtensionOwnEnvironment',
+        'allowMultipleTabsForSameFile',
         false
     );
 }
 
-export function getCurrentlyInUseInterpreter(): string {
-    return getWorkspaceConfig().get<string>('currentlyInUseInterpreter', '');
+export function getDevMode(): boolean {
+    return getWorkspaceConfig().get<boolean>('devMode', false);
 }
 
-export async function updateCurrentlyInUseInterpreter(value: string | null): Promise<void> {
+export function getMatplotlibStyle(): string {
+    const userStyle = getWorkspaceConfig().get<string>('matplotlibStyle', '');
+    if (userStyle && userStyle.trim() !== '') {
+        // Return the user-specified style
+        return userStyle;
+    } else {
+        // Auto-detect based on VSCode theme
+        return detectVSCodeTheme();
+    }
+}
+
+export function getOverridePythonInterpreter(): string {
+    return getWorkspaceConfig().get<string>(
+        'python.overridePythonInterpreter',
+        ''
+    );
+}
+
+export function getUseExtensionOwnEnvironment(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        'python.useExtensionOwnEnvironment',
+        false
+    );
+}
+
+export async function updateUseExtensionOwnEnvironment(
+    value: boolean
+): Promise<void> {
     return await getWorkspaceConfig().update(
-        'currentlyInUseInterpreter',
+        'python.useExtensionOwnEnvironment',
         value,
         vscode.ConfigurationTarget.Workspace
     );
 }
 
-export async function updateUseExtensionOwnEnvironment(value: boolean): Promise<void> {
+export function getCurrentlyInUseInterpreter(): string {
+    return getWorkspaceConfig().get<string>(
+        'python.currentlyInUseInterpreter',
+        ''
+    );
+}
+
+export async function updateCurrentlyInUseInterpreter(
+    value: string | null
+): Promise<void> {
     return await getWorkspaceConfig().update(
-        'useExtensionOwnEnvironment',
+        'python.currentlyInUseInterpreter',
         value,
         vscode.ConfigurationTarget.Workspace
     );

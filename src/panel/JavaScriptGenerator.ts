@@ -7,7 +7,7 @@ import * as path from 'path';
 export class JavaScriptGenerator {
     private static readonly jsPath = path.join(
         __dirname,
-        '../../../src/ui/webview/webview-script.js'
+        '../../../src/panel/webview/webview-script.js'
     );
     private static content: string | null = null;
 

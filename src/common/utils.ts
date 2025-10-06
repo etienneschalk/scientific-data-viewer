@@ -13,19 +13,11 @@ export function quoteIfNeeded(value: string): string {
 
 /**
  * Format configuration value based on type
- * @param schema The configuration schema
- * @param value The value of the configuration
- * @returns The formatted value
- */
+*/
 export function formatConfigValue(
-    schema: { type: string },
     value: any
 ): string {
-    if (!schema) {
-        return String(value);
-    }
-
-    switch (schema.type) {
+    switch (typeof value) {
         case 'boolean':
             return value ? 'enabled 🟢' : 'disabled 🔴';
         case 'number':

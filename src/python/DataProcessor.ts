@@ -4,6 +4,7 @@ import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
 import { detectVSCodeTheme } from '../common/vscodeutils';
+import { getMatplotlibStyle } from '../common/config';
 
 export interface DataInfo {
     result?: DataInfoResult;
@@ -75,25 +76,7 @@ export class DataProcessor {
     private readonly pythonScriptsHomeDir: string;
 
     constructor(private pythonManager: PythonManager) {
-        this.pythonScriptsHomeDir = path.join(__dirname, '../..', 'python');
-    }
-
-
-
-    private getMatplotlibStyle(): string {
-        // Get the user setting
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const userStyle = config.get<string>('matplotlibStyle', '');
-
-        if (userStyle && userStyle.trim() !== '') {
-            Logger.info(`Using user-specified matplotlib style: ${userStyle}`);
-            return userStyle;
-        } else {
-            // Auto-detect based on VSCode theme
-            return detectVSCodeTheme();
-        }
+        this.pythonScriptsHomeDir = path.join(__dirname, '../../../python');
     }
 
     get pythonManagerInstance(): PythonManager {
@@ -142,7 +125,7 @@ export class DataProcessor {
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
-        const style = this.getMatplotlibStyle();
+        const style = getMatplotlibStyle();
 
         // Use the new merged CLI with 'plot' mode and style parameter
         const args = [

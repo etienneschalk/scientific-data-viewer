@@ -10,10 +10,17 @@ import { ScientificDataEditorProvider } from './ScientificDataEditorProvider';
 import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
+    showInformationMessage,
 } from './common/vscodeutils';
 import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
 import { formatConfigValue } from './common/utils';
+import {
+    getDevMode,
+    getOverridePythonInterpreter,
+    getUseExtensionOwnEnvironment,
+    getWorkspaceConfig,
+} from './common/config';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -28,98 +35,58 @@ export function activate(context: vscode.ExtensionContext) {
         );
     });
 
-    // Get configuration schema from extension manifest
-    const extension = vscode.extensions.getExtension(context.extension.id);
-    const packageJson = extension?.packageJSON;
-    const configSchema =
-        packageJson?.contributes?.configuration?.properties || {};
-
-    // Helper function to get configuration description
-    function getConfigDescription(key: string): string {
-        const fullKey = `scientificDataViewer.${key}`;
-        const schema = configSchema[fullKey];
-        return schema?.description || key;
-    }
-
     // Set up configuration change listener for all Scientific Data Viewer settings
     const workspaceConfigChangeListener =
         vscode.workspace.onDidChangeConfiguration((event) => {
             if (event.affectsConfiguration('scientificDataViewer')) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
-                const config = vscode.workspace.getConfiguration(
-                    'scientificDataViewer'
-                );
-                const devMode = config.get('devMode', false);
-                const changedSettings: string[] = [];
+                if (
+                    event.affectsConfiguration(
+                        'scientificDataViewer.python.overridePythonInterpreter'
+                    )
+                ) {
+                    const message = `SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
+                        getOverridePythonInterpreter()
+                    )}`;
+                    Logger.info(message);
+                    if (getDevMode()) {
+                        showInformationMessage(message, true, true);
+                    }
 
-                // Check each configuration property for changes
-                for (const [fullKey, schema] of Object.entries(configSchema)) {
-                    // Extract the property name from the full key (e.g., "scientificDataViewer.devMode" -> "devMode")
-                    const key = fullKey.replace('scientificDataViewer.', '');
+                    refreshPython(pythonManager, statusBarItem);
+                } else if (
+                    event.affectsConfiguration(
+                        'scientificDataViewer.python.useExtensionOwnEnvironment'
+                    )
+                ) {
+                    const message = `SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
+                        getUseExtensionOwnEnvironment()
+                    )}`;
+                    Logger.info(message);
+                    if (getDevMode()) {
+                        showInformationMessage(message, true, true);
+                    }
 
-                    if (event.affectsConfiguration(fullKey)) {
-                        const value = config.get(key);
-                        const formattedValue = formatConfigValue(schema as { type: string }, value);
-                        const description = getConfigDescription(key);
-
-                        Logger.info(`${key} is now: ${value}`);
-                        changedSettings.push(
-                            `${key} is now ${formattedValue}. (${description})`
-                        );
-
-                        if (key == 'python.overridePythonInterpreter') {
-                            refreshPython(pythonManager, statusBarItem);
-                        } else if (key == 'python.useExtensionOwnEnvironment') {
-                            refreshPython(pythonManager, statusBarItem).then(
-                                () => {
-                                    if (!value) {
-                                        return;
-                                    }
-                                    const envInfo =
-                                        pythonManager.getCurrentEnvironmentInfo();
-                                    if (envInfo?.source !== 'own-uv-env') {
-                                        const uvInstallationUrl =
-                                            extensionEnvManager.UV_INSTALLATION_URL;
-                                        const error = `
-                                You tried to activate the usage of the extension's own environment,
-                                but it seems that uv is not installed.
-                                Please install uv from ${uvInstallationUrl} and try again.`;
-                                        showErrorMessageAndProposeHelpToInstallUv(
-                                            error,
-                                            uvInstallationUrl
-                                        );
-                                    }
-                                }
+                    refreshPython(pythonManager, statusBarItem).then(() => {
+                        if (!getUseExtensionOwnEnvironment()) {
+                            return;
+                        }
+                        const envInfo =
+                            pythonManager.getCurrentEnvironmentInfo();
+                        if (envInfo?.source !== 'own-uv-env') {
+                            const uvInstallationUrl =
+                                extensionEnvManager.UV_INSTALLATION_URL;
+                            const error = `
+                            You tried to activate the usage of the extension's own environment,
+                            but it seems that uv is not installed.
+                            Please install uv from ${uvInstallationUrl} and try again.`;
+                            showErrorMessageAndProposeHelpToInstallUv(
+                                error,
+                                uvInstallationUrl
                             );
                         }
-                    }
-
-                    // Only show the notification for devMode as it is intrusive.
-                    if (devMode && changedSettings.length > 0) {
-                        // Show specific notification for changed settings
-                        const message =
-                            changedSettings.length === 1
-                                ? `Configuration updated: ${changedSettings[0]}`
-                                : `Configuration updated:\n• ${changedSettings.join(
-                                      '\n• '
-                                  )}`;
-
-                        vscode.window
-                            .showInformationMessage(
-                                message,
-                                'OK',
-                                'Show Settings'
-                            )
-                            .then((selection) => {
-                                if (selection === 'Show Settings') {
-                                    vscode.commands.executeCommand(
-                                        'workbench.action.openSettings',
-                                        'scientificDataViewer'
-                                    );
-                                }
-                            });
-                    }
+                    });
                 }
             } else if (
                 event.affectsConfiguration('python.condaPath') ||
@@ -468,10 +435,7 @@ export function activate(context: vscode.ExtensionContext) {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
         if (ext && supportedExtensions.includes(`.${ext}`)) {
             // Check if devMode is enabled
-            const config = vscode.workspace.getConfiguration(
-                'scientificDataViewer'
-            );
-            const devMode = config.get('devMode', false);
+            const devMode = getDevMode();
 
             if (devMode) {
                 Logger.info(

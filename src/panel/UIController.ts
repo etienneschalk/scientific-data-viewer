@@ -11,6 +11,7 @@ import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { showErrorMessage } from '../common/vscodeutils';
+import { getDevMode, getWorkspaceConfig } from '../common/config';
 
 export class UIController {
     private id: number;
@@ -523,20 +524,8 @@ export class UIController {
 
         return (
             this.errorBoundary.wrapAsync(async () => {
-                const config = vscode.workspace.getConfiguration(
-                    'scientificDataViewer'
-                );
-                return {
-                    'scientificDataViewer.maxFileSize':
-                        config.get('maxFileSize'),
-                    'scientificDataViewer.defaultView':
-                        config.get('defaultView'),
-                    'scientificDataViewer.allowMultipleTabsForSameFile':
-                        config.get('allowMultipleTabsForSameFile'),
-                    'scientificDataViewer.devMode': config.get('devMode'),
-                    'scientificDataViewer.matplotlibStyle':
-                        config.get('matplotlibStyle'),
-                };
+                const config = getWorkspaceConfig();
+                return config;
             }, context) || {}
         );
     }
@@ -685,10 +674,7 @@ export class UIController {
     }
 
     private getHtmlForWebview() {
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const devMode = config.get('devMode', false);
+        const devMode = getDevMode();
         const lastLoadTime =
             this.stateManager.getState().data.lastLoadTime?.toISOString() ||
             null;
