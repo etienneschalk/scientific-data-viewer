@@ -50,7 +50,7 @@ export class HTMLGenerator {
     ): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.3.0 ${
+        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.4.0 ${
             devMode ? `[${panelId}]` : ''
         }</small></div>
         <div class="controls" id="header-controls">

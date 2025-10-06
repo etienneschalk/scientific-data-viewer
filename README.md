@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.3.0** • [Release Notes](./docs/RELEASE_NOTES_0.3.0.md)
+**Current Version: v0.4.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
