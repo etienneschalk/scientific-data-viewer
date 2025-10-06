@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SCIENTIFIC_DATA_VIEWER } from '../constants';
+import { SCIENTIFIC_DATA_VIEWER } from '../common/config';
 
 /**
  * Show an information message with options to show settings or logs

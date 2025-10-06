@@ -376,7 +376,7 @@
                     ],
                     "default": "default",
                     "order": 1000,
-                    "description": "Default view mode for data display"
+                    "description": "Default view mode for data display (currently unused)"
                 },
                 "scientificDataViewer.allowMultipleTabsForSameFile": {
                     "type": "boolean",

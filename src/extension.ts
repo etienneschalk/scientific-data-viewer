@@ -16,12 +16,13 @@ import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualE
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
 import { formatConfigValue } from './common/utils';
 import {
+    SCIENTIFIC_DATA_VIEWER,
     getDevMode,
     getOverridePythonInterpreter,
+    getOverridePythonInterpreterConfigKey,
     getUseExtensionOwnEnvironment,
-    getWorkspaceConfig,
+    getUseExtensionOwnEnvironmentConfigKey,
 } from './common/config';
-import { SCIENTIFIC_DATA_VIEWER } from './constants';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -44,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                 if (
                     event.affectsConfiguration(
-                        'scientificDataViewer.python.overridePythonInterpreter'
+                        `${SCIENTIFIC_DATA_VIEWER}.${getOverridePythonInterpreterConfigKey()}`
                     )
                 ) {
                     const message = `SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
@@ -58,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
                     refreshPython(pythonManager, statusBarItem);
                 } else if (
                     event.affectsConfiguration(
-                        'scientificDataViewer.python.useExtensionOwnEnvironment'
+                        `${SCIENTIFIC_DATA_VIEWER}.${getUseExtensionOwnEnvironmentConfigKey()}`
                     )
                 ) {
                     const message = `SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
@@ -70,23 +71,23 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     refreshPython(pythonManager, statusBarItem).then(() => {
-                        if (!getUseExtensionOwnEnvironment()) {
+                        if (
+                            !getUseExtensionOwnEnvironment() ||
+                            pythonManager.getCurrentEnvironmentInfo()
+                                ?.source === 'own-uv-env'
+                        ) {
                             return;
                         }
-                        const envInfo =
-                            pythonManager.getCurrentEnvironmentInfo();
-                        if (envInfo?.source !== 'own-uv-env') {
-                            const uvInstallationUrl =
-                                extensionEnvManager.UV_INSTALLATION_URL;
-                            const error = `
+                        const uvInstallationUrl =
+                            extensionEnvManager.UV_INSTALLATION_URL;
+                        const error = `
                             You tried to activate the usage of the extension's own environment,
                             but it seems that uv is not installed.
                             Please install uv from ${uvInstallationUrl} and try again.`;
-                            showErrorMessageAndProposeHelpToInstallUv(
-                                error,
-                                uvInstallationUrl
-                            );
-                        }
+                        showErrorMessageAndProposeHelpToInstallUv(
+                            error,
+                            uvInstallationUrl
+                        );
                     });
                 }
             } else if (
@@ -146,8 +147,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.StatusBarAlignment.Right,
         100
     );
-    // Initialize status bar to show unknown status
-    updateStatusBarItem(pythonManager, statusBarItem);
 
     // Initialize Python environment
     Logger.info('🔧 Initializing Python environment...');
@@ -563,15 +562,7 @@ async function refreshPython(
 ) {
     try {
         await pythonManager.forceInitialize();
-
-        // Show success notification with interpreter name and path
-        const pythonPath = pythonManager.pythonPath;
-        if (pythonPath) {
-            // const interpreterName = pythonPath.split('/').pop() || pythonPath.split('\\').pop() || 'Unknown';
-            // vscode.window.showInformationMessage(`✅ Using Python interpreter: ${interpreterName} (${pythonPath})`);
-            await updateStatusBarItem(pythonManager, statusBarItem);
-        }
-
+        updateStatusBarItem(pythonManager, statusBarItem);
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);

@@ -108,10 +108,8 @@ export class PythonManager {
      */
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
-        this._initialized = false;
         this._initializationPromise = null; // Reset any existing initialization
-        await this.initialize();
-        this._initialized = true;
+        await this.initializeIfNotInitializing();
     }
 
     /**
@@ -269,7 +267,7 @@ export class PythonManager {
         };
     }
 
-    private async initialize(): Promise<void> {
+    private async initializeIfNotInitializing(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
         if (this._initializationPromise) {
             Logger.debug(
@@ -284,6 +282,7 @@ export class PythonManager {
     }
 
     private async doInitialize(): Promise<void> {
+        this._initialized = false;
         try {
             Logger.info('🐍 🔧 [INIT] Initializing Python manager');
             const overrideInterpreter = getOverridePythonInterpreter();
@@ -294,8 +293,10 @@ export class PythonManager {
                 Logger.info(
                     `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`
                 );
-                await this.validatePythonEnvironment(overrideInterpreter);
-                await this.updateCurrentlyUsedInterpreterInConfig('override');
+                await this.validatePythonEnvironment(
+                    overrideInterpreter,
+                    'override'
+                );
                 return;
             }
 
@@ -305,9 +306,7 @@ export class PythonManager {
 
                 if (this.extensionEnvManager.ready) {
                     await this.validatePythonEnvironment(
-                        this.extensionEnvManager.pythonPath
-                    );
-                    await this.updateCurrentlyUsedInterpreterInConfig(
+                        this.extensionEnvManager.pythonPath,
                         'own-uv-env'
                     );
                     return;
@@ -317,9 +316,7 @@ export class PythonManager {
                         await this.extensionEnvManager.create();
                         if (this.extensionEnvManager.ready) {
                             await this.validatePythonEnvironment(
-                                this.extensionEnvManager.pythonPath
-                            );
-                            await this.updateCurrentlyUsedInterpreterInConfig(
+                                this.extensionEnvManager.pythonPath,
                                 'own-uv-env'
                             );
                             return;
@@ -344,8 +341,8 @@ export class PythonManager {
                 Logger.info(
                     `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`
                 );
-                await this.validatePythonEnvironment(newPythonPath);
-                await this.updateCurrentlyUsedInterpreterInConfig(
+                await this.validatePythonEnvironment(
+                    newPythonPath,
                     'python-extension'
                 );
                 return;
@@ -366,8 +363,8 @@ export class PythonManager {
                 try {
                     const version = await this.getPythonVersion(pythonPath);
                     if (version) {
-                        await this.validatePythonEnvironment(pythonPath);
-                        await this.updateCurrentlyUsedInterpreterInConfig(
+                        await this.validatePythonEnvironment(
+                            pythonPath,
                             'system'
                         );
                         return;
@@ -383,6 +380,7 @@ export class PythonManager {
         } finally {
             // Clear the initialization promise when done
             this._initializationPromise = null;
+            this._initialized = true;
         }
     }
 
@@ -525,7 +523,8 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(
-        pythonPath: string | null
+        pythonPath: string | null,
+        source: EnvironmentSource
     ): Promise<void> {
         this._pythonPath = pythonPath;
 
@@ -563,6 +562,8 @@ export class PythonManager {
             );
             showErrorMessage(`Failed to validate Python environment: ${error}`);
         }
+
+        await this.updateCurrentlyUsedInterpreterInConfig(source);
     }
 
     async installPackages(packages: string[]): Promise<void> {
