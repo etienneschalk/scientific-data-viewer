@@ -13,6 +13,8 @@ An extension to explore the metadata of scientific data files within your IDE, i
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
 
+[Getting Started](https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started)
+
 </div>
 
 ## 🚀 Features
