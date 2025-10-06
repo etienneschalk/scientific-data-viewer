@@ -638,7 +638,7 @@ async function refreshPython(
 }
 
 // Function to update status bar with current Python interpreter
-async function updateStatusBar(
+function updateStatusBar(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem
 ) {
