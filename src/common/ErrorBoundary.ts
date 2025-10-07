@@ -4,17 +4,7 @@
 
 import * as vscode from 'vscode';
 import { Logger } from './Logger';
-
-export interface ErrorHandler {
-    (error: Error, context?: any): void;
-}
-
-export interface ErrorContext {
-    component: any;
-    operation: string;
-    data?: any;
-    userAction?: string;
-}
+import { ErrorContext, ErrorHandler } from '../types';
 
 export class ErrorBoundary {
     private static instance: ErrorBoundary;

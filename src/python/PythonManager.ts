@@ -9,6 +9,7 @@ import {
     getUseExtensionOwnEnvironment,
     updateCurrentlyInUseInterpreter,
 } from '../common/config';
+import { EnvironmentInfo, EnvironmentSource } from '../types';
 
 /**
  * Flag to control the creation of the extension own virtual environment
@@ -28,11 +29,6 @@ const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = true;
  *   when python section config: useExtensionOwnEnvironment = false
  * - system: The system Python interpreter is used (default behaviour)
  */
-type EnvironmentSource =
-    | 'override'
-    | 'own-uv-env'
-    | 'python-extension'
-    | 'system';
 
 /**
  * Class to manage the Python environment
@@ -252,12 +248,7 @@ export class PythonManager {
      * Get information about the current Python environment
      * @returns             The current environment info
      */
-    getCurrentEnvironmentInfo(): {
-        initialized: boolean;
-        ready: boolean;
-        source: EnvironmentSource | null;
-        path: string | null;
-    } {
+    getCurrentEnvironmentInfo(): EnvironmentInfo {
         return {
             initialized: this._initialized,
             ready: this.ready, // initialized and python path is set
@@ -542,7 +533,7 @@ export class PythonManager {
             );
 
             // Only require core packages for basic functionality
-            if (missingCorePackages.length == 0) {
+            if (missingCorePackages.length === 0) {
                 this._corePackagesInstalled = true;
                 Logger.info(
                     `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`

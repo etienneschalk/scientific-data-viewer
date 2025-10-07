@@ -5,11 +5,9 @@ import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
 } from '../common/vscodeutils';
-import {
-    ExtensionVirtualEnvironment,
-    ExtensionVirtualEnvironmentManager,
-} from './ExtensionVirtualEnvironmentManager';
+import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
 import { updateUseExtensionOwnEnvironment } from '../common/config';
+import { ExtensionVirtualEnvironment } from '../types';
 
 export class ExtensionVirtualEnvironmentManagerUI {
     constructor(
@@ -117,7 +115,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
             await this.extensionEnvManager.create();
 
             // Update the configuration to use the extension environment
-            await updateUseExtensionOwnEnvironment(true)
+            await updateUseExtensionOwnEnvironment(true);
             vscode.window.showInformationMessage(
                 'Extension virtual environment created successfully! The extension will now use its own isolated environment.'
             );
@@ -185,7 +183,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 const deleted = await this.extensionEnvManager.delete();
 
                 if (deleted) {
-                    await updateUseExtensionOwnEnvironment(false)
+                    await updateUseExtensionOwnEnvironment(false);
                     vscode.window.showInformationMessage(
                         'Extension virtual environment deleted successfully!'
                     );

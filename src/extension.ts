@@ -33,8 +33,8 @@ import {
     getOverridePythonInterpreterConfigFullKey,
     getUseExtensionOwnEnvironment,
     getUseExtensionOwnEnvironmentConfigFullKey,
-    
 } from './common/config';
+import { updateStatusBarItem } from './StatusBarItem';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
             `Scientific Data Viewer Error: ${error.message}`
         );
     });
-    
+
     const webviewPanelOptions: vscode.WebviewPanelOptions = {
         enableFindWidget: true,
         retainContextWhenHidden: true,
@@ -227,35 +227,28 @@ export function activate(context: vscode.ExtensionContext) {
                 );
             }
         ),
-        vscode.commands.registerCommand(
-            CMD_SHOW_LOGS, () => {
+        vscode.commands.registerCommand(CMD_SHOW_LOGS, () => {
             Logger.info('🎮 🗒️ Command: Showing logs...');
             Logger.show();
         }),
-        vscode.commands.registerCommand(
-            CMD_SHOW_SETTINGS,
-            () => {
-                Logger.info(
-                    '🎮 ⚙️ Command: Opening Scientific Data Viewer settings...'
-                );
-                vscode.commands.executeCommand(
-                    'workbench.action.openSettings',
-                    SDV_EXTENSION_ID
-                );
-            }
-        ),
-        vscode.commands.registerCommand(
-            CMD_OPEN_DEVELOPER_TOOLS,
-            () => {
-                Logger.info(
-                    '🎮 🔧 Command: Opening developer tools for WebView...'
-                );
-                // This will open the developer tools for the currently active WebView
-                vscode.commands.executeCommand(
-                    'workbench.action.webview.openDeveloperTools'
-                );
-            }
-        ),
+        vscode.commands.registerCommand(CMD_SHOW_SETTINGS, () => {
+            Logger.info(
+                '🎮 ⚙️ Command: Opening Scientific Data Viewer settings...'
+            );
+            vscode.commands.executeCommand(
+                'workbench.action.openSettings',
+                SDV_EXTENSION_ID
+            );
+        }),
+        vscode.commands.registerCommand(CMD_OPEN_DEVELOPER_TOOLS, () => {
+            Logger.info(
+                '🎮 🔧 Command: Opening developer tools for WebView...'
+            );
+            // This will open the developer tools for the currently active WebView
+            vscode.commands.executeCommand(
+                'workbench.action.webview.openDeveloperTools'
+            );
+        }),
         vscode.commands.registerCommand(
             CMD_SCROLL_TO_HEADER,
             async (headerId: string, headerLabel: string) => {
@@ -284,13 +277,10 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             }
         ),
-        vscode.commands.registerCommand(
-            CMD_EXPAND_ALL,
-            () => {
-                Logger.info('🎮 📋 Command: Expanding all outline items');
-                outlineProvider.expandAll();
-            }
-        ),
+        vscode.commands.registerCommand(CMD_EXPAND_ALL, () => {
+            Logger.info('🎮 📋 Command: Expanding all outline items');
+            outlineProvider.expandAll();
+        }),
         vscode.commands.registerCommand(
             CMD_PYTHON_INSTALL_PACKAGES,
             async (packages?: string[]) => {
@@ -351,9 +341,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                     // Run "Show Extension Logs" command immediately
                     try {
-                        await vscode.commands.executeCommand(
-                            CMD_SHOW_LOGS
-                        );
+                        await vscode.commands.executeCommand(CMD_SHOW_LOGS);
                         Logger.info(
                             '🔧 DevMode: Show Extension Logs command executed'
                         );
@@ -536,13 +524,10 @@ function registerCustomEditorProviders(
 
 function createOutlineProvider() {
     const outlineProvider = new OutlineProvider();
-    const outlineTreeView = vscode.window.createTreeView(
-        OUTLINE_TREE_VIEW_ID,
-        {
-            treeDataProvider: outlineProvider,
-            showCollapseAll: true,
-        }
-    );
+    const outlineTreeView = vscode.window.createTreeView(OUTLINE_TREE_VIEW_ID, {
+        treeDataProvider: outlineProvider,
+        showCollapseAll: true,
+    });
 
     // Set tree view reference for collapse/expand operations
     outlineProvider.setTreeView(outlineTreeView);
@@ -593,7 +578,10 @@ async function refreshPython(
 ) {
     try {
         await pythonManager.forceInitialize();
-        updateStatusBarItem(pythonManager, statusBarItem);
+        updateStatusBarItem(
+            pythonManager.getCurrentEnvironmentInfo(),
+            statusBarItem
+        );
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
         Logger.error(`Failed to validate Python environment: ${error}`);
@@ -603,47 +591,6 @@ async function refreshPython(
             true
         );
     }
-}
-
-// Function to update status bar with current Python interpreter
-function updateStatusBarItem(
-    pythonManager: PythonManager,
-    statusBarItem: vscode.StatusBarItem
-) {
-    statusBarItem.backgroundColor = undefined;
-
-    const envInfo = pythonManager.getCurrentEnvironmentInfo();
-    let icon;
-    let tooltipStatus;
-    if (!envInfo.initialized) {
-        // Not initialized yet: we do not know if it will work or not
-        tooltipStatus = 'Not initialized yet';
-        icon = '$(question)';
-    } else if (envInfo.ready) {
-        // Initialized and ready: we know it will work
-        tooltipStatus = 'Initialized and ready (all core packages installed)';
-        icon = '$(check)';
-    } else {
-        // Initialized but not ready: we know it will not work
-        tooltipStatus = 'Initialized but not ready (missing core packages)';
-        icon = '$(x)';
-    }
-
-    const source = envInfo.source ?? 'unknown';
-    statusBarItem.text = `${icon} SDV ${source}`;
-    statusBarItem.tooltip = `Scientific Data Viewer - State
-
-Status: 
-${tooltipStatus} 
-
-Environment Source:
-${source}
-
-Environment Python interpreter path: 
-${envInfo.path ?? 'Not set'}
-`;
-
-    statusBarItem.show();
 }
 
 async function waitThenCreateOrRevealPanel(

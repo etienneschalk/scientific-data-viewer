@@ -3,16 +3,7 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
-
-export interface ExtensionVirtualEnvironment {
-    path: string;
-    pythonPath: string;
-    isCreated: boolean;
-    isInitialized: boolean;
-    packages: string[];
-    lastUpdated: Date;
-    createdWithUv?: boolean;
-}
+import { ExtensionVirtualEnvironment } from '../types';
 
 export class ExtensionVirtualEnvironmentManager {
     public readonly PYTHON_VERSION = '3.13';

@@ -1,6 +1,5 @@
-import { HeaderItem } from './OutlineProvider';
 import { Logger } from '../common/Logger';
-import { DataInfoResult } from '../python/DataProcessor';
+import { DataInfoResult, HeaderItem } from '../types';
 import { SDV_EXTENSION_NAME } from '../common/config';
 
 export class HeaderExtractor {

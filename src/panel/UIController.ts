@@ -6,12 +6,13 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import { StateManager, AppState } from './state/AppState';
 import { MessageBus } from './communication/MessageBus';
-import { ErrorBoundary, ErrorContext } from '../common/ErrorBoundary';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { showErrorMessage } from '../common/vscodeutils';
 import { getDevMode, getMaxSize, getWorkspaceConfig } from '../common/config';
+import { ErrorContext } from '../types';
 
 export class UIController {
     private id: number;

@@ -1,14 +1,7 @@
 import * as vscode from 'vscode';
 import { Logger } from '../common/Logger';
 import { CMD_SCROLL_TO_HEADER } from '../common/config';
-
-export interface HeaderItem {
-    label: string;
-    level: number;
-    id: string;
-    line?: number;
-    children: HeaderItem[];
-}
+import { HeaderItem } from '../types';
 
 const VERBOSE_DEBUG_LOGS = false;
 

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { HeaderExtractor } from '../../../src/outline/HeaderExtractor';
-import { DataInfoResult } from '../../../src/python/DataProcessor';
+import { DataInfoResult } from '../../../src/types';
 
 // Mock DOMParser for Node.js test environment
 (global as any).DOMParser = class DOMParser {
@@ -10,26 +10,27 @@ import { DataInfoResult } from '../../../src/python/DataProcessor';
             querySelectorAll: (selector: string) => {
                 if (selector === 'h1, h2, h3, h4, h5, h6') {
                     const headers: any[] = [];
-                    const headerRegex = /<(h[1-6])(?:\s+id="([^"]*)")?[^>]*>([^<]*)<\/h[1-6]>/gi;
+                    const headerRegex =
+                        /<(h[1-6])(?:\s+id="([^"]*)")?[^>]*>([^<]*)<\/h[1-6]>/gi;
                     let match;
                     let index = 0;
-                    
+
                     while ((match = headerRegex.exec(html)) !== null) {
                         const level = parseInt(match[1].charAt(1));
                         const id = match[2] || `header-${index}`;
                         const text = match[3].trim();
-                        
+
                         headers.push({
                             tagName: match[1].toUpperCase(),
                             id: id,
-                            textContent: text
+                            textContent: text,
                         });
                         index++;
                     }
                     return headers;
                 }
                 return [];
-            }
+            },
         };
         return mockDoc;
     }
@@ -50,12 +51,12 @@ suite('HeaderExtractor Test Suite', () => {
         `;
 
         const headers = HeaderExtractor.extractHeaders(htmlContent);
-        
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         assert.strictEqual(headers.length, 1); // One top-level header (h1), h2s are children
-        
-        const mainTitle = headers.find(h => h.label === 'Main Title');
+
+        const mainTitle = headers.find((h) => h.label === 'Main Title');
         assert.ok(mainTitle);
         assert.strictEqual(mainTitle.level, 1);
         assert.strictEqual(mainTitle.children.length, 2); // Two h2 sections as children
@@ -63,12 +64,14 @@ suite('HeaderExtractor Test Suite', () => {
 
     test('should create data viewer headers', () => {
         const headers = HeaderExtractor.createDataViewerHeaders();
-        
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         assert.ok(headers.length > 0);
-        
-        const titleHeader = headers.find(h => h.label === 'Scientific Data Viewer');
+
+        const titleHeader = headers.find(
+            (h) => h.label === 'Scientific Data Viewer'
+        );
         assert.ok(titleHeader);
         assert.strictEqual(titleHeader.level, 1);
     });
@@ -80,67 +83,91 @@ suite('HeaderExtractor Test Suite', () => {
             xarray_html_repr: '<div>Test HTML</div>',
             xarray_text_repr: 'Test text representation',
             xarray_show_versions: 'Test versions',
-            format_info: { extension: 'nc', display_name: 'NetCDF', available_engines: [], missing_packages: [], is_supported: true },
+            format_info: {
+                extension: 'nc',
+                display_name: 'NetCDF',
+                available_engines: [],
+                missing_packages: [],
+                is_supported: true,
+            },
             used_engine: 'netcdf4',
             dimensions_flattened: {
-                'group1': {
-                    'time': 100
-                }
+                group1: {
+                    time: 100,
+                },
             },
             coordinates_flattened: {
-                'group1': [
-                    { name: 'time', dtype: 'float32', shape: [100], dimensions: ['time'], size_bytes: 400, attributes: {} }
-                ]
+                group1: [
+                    {
+                        name: 'time',
+                        dtype: 'float32',
+                        shape: [100],
+                        dimensions: ['time'],
+                        size_bytes: 400,
+                        attributes: {},
+                    },
+                ],
             },
             variables_flattened: {
-                'group1': [
-                    { name: 'temperature', dtype: 'float32', shape: [100], dimensions: ['time'], size_bytes: 400, attributes: {} }
-                ]
+                group1: [
+                    {
+                        name: 'temperature',
+                        dtype: 'float32',
+                        shape: [100],
+                        dimensions: ['time'],
+                        size_bytes: 400,
+                        attributes: {},
+                    },
+                ],
             },
             attributes_flattened: {
-                'group1': {
-                    'title': 'Test Dataset'
-                }
+                group1: {
+                    title: 'Test Dataset',
+                },
             },
             xarray_html_repr_flattened: {
-                'group1': '<div>Group 1 HTML</div>'
+                group1: '<div>Group 1 HTML</div>',
             },
             xarray_text_repr_flattened: {
-                'group1': 'Group 1 text'
-            }
+                group1: 'Group 1 text',
+            },
         };
 
-        const headers = HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
-        
+        const headers =
+            HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         assert.ok(headers.length > 0);
-        
+
         // Should have group information
-        const dataGroupsHeader = headers.find(h => h.label === 'Data Groups');
+        const dataGroupsHeader = headers.find((h) => h.label === 'Data Groups');
         assert.ok(dataGroupsHeader);
         assert.ok(dataGroupsHeader.children.length > 0);
     });
 
     test('should handle empty HTML content', () => {
         const headers = HeaderExtractor.extractHeaders('');
-        
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         assert.strictEqual(headers.length, 0);
     });
 
     test('should handle invalid HTML content', () => {
-        const headers = HeaderExtractor.extractHeaders('<invalid>html</invalid>');
-        
+        const headers = HeaderExtractor.extractHeaders(
+            '<invalid>html</invalid>'
+        );
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         // Should still return empty array rather than throwing
     });
 
     test('should handle null data info', () => {
-        const headers = HeaderExtractor.createDynamicDataViewerHeaders(undefined);
-        
+        const headers =
+            HeaderExtractor.createDynamicDataViewerHeaders(undefined);
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         // Should return base headers
@@ -148,8 +175,9 @@ suite('HeaderExtractor Test Suite', () => {
     });
 
     test('should handle undefined data info', () => {
-        const headers = HeaderExtractor.createDynamicDataViewerHeaders(undefined);
-        
+        const headers =
+            HeaderExtractor.createDynamicDataViewerHeaders(undefined);
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         // Should return base headers
@@ -167,19 +195,23 @@ suite('HeaderExtractor Test Suite', () => {
         `;
 
         const headers = HeaderExtractor.extractHeaders(htmlContent);
-        
+
         assert.ok(headers);
         assert.strictEqual(headers.length, 1); // One top-level header (h1)
-        
-        const mainTitle = headers.find(h => h.label === 'Main Title');
+
+        const mainTitle = headers.find((h) => h.label === 'Main Title');
         assert.ok(mainTitle);
         assert.strictEqual(mainTitle.children.length, 2); // Two h2 sections as children
-        
-        const section1 = mainTitle.children.find(h => h.label === 'Section 1');
+
+        const section1 = mainTitle.children.find(
+            (h) => h.label === 'Section 1'
+        );
         assert.ok(section1);
         assert.strictEqual(section1.children.length, 2); // Two h3 subsections
-        
-        const subsection11 = section1.children.find(h => h.label === 'Subsection 1.1');
+
+        const subsection11 = section1.children.find(
+            (h) => h.label === 'Subsection 1.1'
+        );
         assert.ok(subsection11);
         assert.strictEqual(subsection11.level, 3);
     });
@@ -187,10 +219,10 @@ suite('HeaderExtractor Test Suite', () => {
     test('should assign IDs to headers', () => {
         const htmlContent = '<h1>Test Header</h1>';
         const headers = HeaderExtractor.extractHeaders(htmlContent);
-        
+
         assert.ok(headers);
         assert.strictEqual(headers.length, 1);
-        
+
         const header = headers[0];
         assert.ok(header.id);
         assert.ok(header.id.includes('header-'));
@@ -199,10 +231,10 @@ suite('HeaderExtractor Test Suite', () => {
     test('should handle headers with existing IDs', () => {
         const htmlContent = '<h1 id="custom-id">Test Header</h1>';
         const headers = HeaderExtractor.extractHeaders(htmlContent);
-        
+
         assert.ok(headers);
         assert.strictEqual(headers.length, 1);
-        
+
         const header = headers[0];
         assert.strictEqual(header.id, 'custom-id');
     });
@@ -220,7 +252,7 @@ suite('HeaderExtractor Test Suite', () => {
         `;
 
         const headers = HeaderExtractor.extractHeaders(htmlContent);
-        
+
         assert.ok(headers);
         assert.strictEqual(headers.length, 1); // One top-level header
         assert.strictEqual(headers[0].children.length, 1); // One section
@@ -234,18 +266,25 @@ suite('HeaderExtractor Test Suite', () => {
             xarray_html_repr: '',
             xarray_text_repr: '',
             xarray_show_versions: '',
-            format_info: { extension: 'nc', display_name: 'NetCDF', available_engines: [], missing_packages: [], is_supported: true },
+            format_info: {
+                extension: 'nc',
+                display_name: 'NetCDF',
+                available_engines: [],
+                missing_packages: [],
+                is_supported: true,
+            },
             used_engine: 'netcdf4',
             dimensions_flattened: {},
             coordinates_flattened: {},
             variables_flattened: {},
             attributes_flattened: {},
             xarray_html_repr_flattened: {},
-            xarray_text_repr_flattened: {}
+            xarray_text_repr_flattened: {},
         };
 
-        const headers = HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
-        
+        const headers =
+            HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
+
         assert.ok(headers);
         assert.ok(Array.isArray(headers));
         // Should still return base headers even with empty data
