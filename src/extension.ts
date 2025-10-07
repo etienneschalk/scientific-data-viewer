@@ -16,12 +16,24 @@ import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualE
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
 import { formatConfigValue } from './common/utils';
 import {
-    SCIENTIFIC_DATA_VIEWER,
+    SDV_EXTENSION_ID,
+    CMD_OPEN_VIEWER,
+    CMD_OPEN_VIEWER_FOLDER,
+    CMD_REFRESH_PYTHON_ENVIRONMENT,
+    CMD_SHOW_LOGS,
+    CMD_SHOW_SETTINGS,
+    CMD_OPEN_DEVELOPER_TOOLS,
+    CMD_SCROLL_TO_HEADER,
+    CMD_EXPAND_ALL,
+    CMD_PYTHON_INSTALL_PACKAGES,
+    CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
+    OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
-    getOverridePythonInterpreterConfigKey,
+    getOverridePythonInterpreterConfigFullKey,
     getUseExtensionOwnEnvironment,
-    getUseExtensionOwnEnvironmentConfigKey,
+    getUseExtensionOwnEnvironmentConfigFullKey,
+    
 } from './common/config';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -118,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info(`🔧 Registering commands...`);
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'scientificDataViewer.openViewer',
+            CMD_OPEN_VIEWER,
             async (uri?: vscode.Uri) => {
                 Logger.info('🎮 👁️ Command: Open data viewer...');
                 if (uri) {
@@ -164,7 +176,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.openViewerFolder',
+            CMD_OPEN_VIEWER_FOLDER,
             async (uri?: vscode.Uri) => {
                 Logger.info('🎮 👁️ Command: Open data viewer (folder)...');
                 if (uri) {
@@ -204,7 +216,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.refreshPythonEnvironment',
+            CMD_REFRESH_PYTHON_ENVIRONMENT,
             async () => {
                 Logger.info(
                     '🎮 🔄 Command: Manually refreshing Python environment...'
@@ -215,24 +227,25 @@ export function activate(context: vscode.ExtensionContext) {
                 );
             }
         ),
-        vscode.commands.registerCommand('scientificDataViewer.showLogs', () => {
+        vscode.commands.registerCommand(
+            CMD_SHOW_LOGS, () => {
             Logger.info('🎮 🗒️ Command: Showing logs...');
             Logger.show();
         }),
         vscode.commands.registerCommand(
-            'scientificDataViewer.showSettings',
+            CMD_SHOW_SETTINGS,
             () => {
                 Logger.info(
                     '🎮 ⚙️ Command: Opening Scientific Data Viewer settings...'
                 );
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    SCIENTIFIC_DATA_VIEWER
+                    SDV_EXTENSION_ID
                 );
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.openDeveloperTools',
+            CMD_OPEN_DEVELOPER_TOOLS,
             () => {
                 Logger.info(
                     '🎮 🔧 Command: Opening developer tools for WebView...'
@@ -244,7 +257,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.scrollToHeader',
+            CMD_SCROLL_TO_HEADER,
             async (headerId: string, headerLabel: string) => {
                 // We can only manage one file at a time, so we need to get the current file from the outline provider
                 let currentPanelId = outlineProvider.getCurrentPanelId();
@@ -272,14 +285,14 @@ export function activate(context: vscode.ExtensionContext) {
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.expandAll',
+            CMD_EXPAND_ALL,
             () => {
                 Logger.info('🎮 📋 Command: Expanding all outline items');
                 outlineProvider.expandAll();
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.python.installPackages',
+            CMD_PYTHON_INSTALL_PACKAGES,
             async (packages?: string[]) => {
                 Logger.info('🎮 📦 Command: Installing Python packages');
                 if (!packages || packages.length === 0) {
@@ -307,7 +320,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         ),
         vscode.commands.registerCommand(
-            'scientificDataViewer.manageExtensionOwnEnvironment',
+            CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
             async () => {
                 Logger.info(
                     '🎮 🔧 Command: Manage Extension Virtual Environment'
@@ -339,7 +352,7 @@ export function activate(context: vscode.ExtensionContext) {
                     // Run "Show Extension Logs" command immediately
                     try {
                         await vscode.commands.executeCommand(
-                            'scientificDataViewer.showLogs'
+                            CMD_SHOW_LOGS
                         );
                         Logger.info(
                             '🔧 DevMode: Show Extension Logs command executed'
@@ -353,7 +366,7 @@ export function activate(context: vscode.ExtensionContext) {
                     // Run "Open Developer Tools" command immediately
                     try {
                         await vscode.commands.executeCommand(
-                            'scientificDataViewer.openDeveloperTools'
+                            CMD_OPEN_DEVELOPER_TOOLS
                         );
                         Logger.info(
                             '🔧 DevMode: Open Developer Tools command executed'
@@ -368,12 +381,12 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         // Set up configuration change listener for all Scientific Data Viewer settings
         vscode.workspace.onDidChangeConfiguration(async (event) => {
-            if (event.affectsConfiguration(SCIENTIFIC_DATA_VIEWER)) {
+            if (event.affectsConfiguration(SDV_EXTENSION_ID)) {
                 Logger.info('Scientific Data Viewer configuration changed');
 
                 if (
                     event.affectsConfiguration(
-                        `${SCIENTIFIC_DATA_VIEWER}.${getOverridePythonInterpreterConfigKey()}`
+                        getOverridePythonInterpreterConfigFullKey()
                     )
                 ) {
                     const message = `SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
@@ -387,7 +400,7 @@ export function activate(context: vscode.ExtensionContext) {
                     refreshPython(pythonManager, statusBarItem);
                 } else if (
                     event.affectsConfiguration(
-                        `${SCIENTIFIC_DATA_VIEWER}.${getUseExtensionOwnEnvironmentConfigKey()}`
+                        getUseExtensionOwnEnvironmentConfigFullKey()
                     )
                 ) {
                     const message = `SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
@@ -524,7 +537,7 @@ function registerCustomEditorProviders(
 function createOutlineProvider() {
     const outlineProvider = new OutlineProvider();
     const outlineTreeView = vscode.window.createTreeView(
-        'scientificDataViewer.outline',
+        OUTLINE_TREE_VIEW_ID,
         {
             treeDataProvider: outlineProvider,
             showCollapseAll: true,

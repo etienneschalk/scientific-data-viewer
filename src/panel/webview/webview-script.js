@@ -1646,6 +1646,8 @@ async function executeShowLogsCommand() {
     try {
         console.log('🔧 Executing show logs command...');
         await messageBus.sendRequest('executeCommand', {
+            // TODO dehardcode and use CMD_SHOW_LOGS
+            // Create sugar functions in the bus 
             command: 'scientificDataViewer.showLogs',
         });
         console.log('🔧 Show logs command executed successfully');
@@ -1663,6 +1665,8 @@ async function executeInstallPackagesCommand(packages) {
     try {
         console.log('🔧 Executing install packages command...', packages);
         await messageBus.sendRequest('executeCommand', {
+            // TODO dehardcode and use CMD_PYTHON_INSTALL_PACKAGES
+            // Create sugar functions in the bus 
             command: 'scientificDataViewer.python.installPackages',
             args: [packages],
         });

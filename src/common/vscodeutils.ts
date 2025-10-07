@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SCIENTIFIC_DATA_VIEWER } from '../common/config';
+import { CMD_SHOW_LOGS, SDV_EXTENSION_ID } from '../common/config';
 
 /**
  * Show an information message with options to show settings or logs
@@ -21,12 +21,12 @@ export function showInformationMessage(
         )
         .then((selection) => {
             if (selection === 'Show Logs') {
-                vscode.commands.executeCommand('scientificDataViewer.showLogs');
+                vscode.commands.executeCommand(CMD_SHOW_LOGS);
             }
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    SCIENTIFIC_DATA_VIEWER
+                    SDV_EXTENSION_ID
                 );
             }
         });
@@ -52,12 +52,12 @@ export function showErrorMessage(
         )
         .then((selection) => {
             if (selection === 'Show Logs') {
-                vscode.commands.executeCommand('scientificDataViewer.showLogs');
+                vscode.commands.executeCommand(CMD_SHOW_LOGS);
             }
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    SCIENTIFIC_DATA_VIEWER
+                    SDV_EXTENSION_ID
                 );
             }
         });
@@ -84,7 +84,7 @@ export function showErrorMessageAndProposeHelpToInstallUv(
                 vscode.env.openExternal(vscode.Uri.parse(uvInstallationUrl));
             }
             if (selection === 'Show Logs') {
-                vscode.commands.executeCommand('scientificDataViewer.showLogs');
+                vscode.commands.executeCommand(CMD_SHOW_LOGS);
             }
         });
 }

@@ -4,10 +4,10 @@ import { Logger } from './common/Logger';
 import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
-import { getAllowMultipleTabsForSameFile, getDevMode } from './common/config';
+import { CMD_OPEN_DEVELOPER_TOOLS, CMD_SHOW_LOGS, DEFAULT_DATA_VIEWER_PANEL_ID, getAllowMultipleTabsForSameFile, getDevMode } from './common/config';
 
 export class DataViewerPanel {
-    public static readonly viewType = 'scientificDataViewer.defaultWebviewPanel';
+    public static readonly viewType = DEFAULT_DATA_VIEWER_PANEL_ID;
 
     private static readonly _activePanels: Set<DataViewerPanel> = new Set();
     private static readonly _errorPanels: Set<DataViewerPanel> = new Set();
@@ -372,7 +372,7 @@ export class DataViewerPanel {
             // Run "Show Extension Logs" command immediately
             try {
                 await vscode.commands.executeCommand(
-                    'scientificDataViewer.showLogs'
+                    CMD_SHOW_LOGS
                 );
                 Logger.info('🔧 DevMode: Show Extension Logs command executed');
             } catch (error) {
@@ -385,7 +385,7 @@ export class DataViewerPanel {
             setTimeout(async () => {
                 try {
                     await vscode.commands.executeCommand(
-                        'scientificDataViewer.openDeveloperTools'
+                        CMD_OPEN_DEVELOPER_TOOLS
                     );
                     Logger.info(
                         '🔧 DevMode: Open Developer Tools command executed'

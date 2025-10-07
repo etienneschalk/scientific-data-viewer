@@ -20,14 +20,13 @@ const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = true;
 
 /**
  * Enum to represent the source of the Python environment
- * - override: The user has set an override Python interpreter
- *   via 'scientificDataViewer.python.overridePythonInterpreter'
+ * - override: The user has set an override Python interpreter when set
+ *   via python section config: overridePythonInterpreter
  * - own-uv-env: The extension has created its own virtual environment with uv
- *   via 'scientificDataViewer.python.useExtensionOwnEnvironment'
+ *   when python section config: useExtensionOwnEnvironment = true
  * - python-extension: The Python extension has created the environment
- *   via 'scientificDataViewer.python.usePythonExtensionEnvironment'
- * - system: The system Python interpreter is used
- *   via 'scientificDataViewer.python.useSystemPython'
+ *   when python section config: useExtensionOwnEnvironment = false
+ * - system: The system Python interpreter is used (default behaviour)
  */
 type EnvironmentSource =
     | 'override'

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Logger } from '../common/Logger';
+import { CMD_SCROLL_TO_HEADER } from '../common/config';
 
 export interface HeaderItem {
     label: string;
@@ -104,7 +105,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         // Add command to scroll to header in webview
         if (element.id) {
             treeItem.command = {
-                command: 'scientificDataViewer.scrollToHeader',
+                command: CMD_SCROLL_TO_HEADER,
                 title: 'Scroll to Header',
                 arguments: [element.id, element.label],
             };

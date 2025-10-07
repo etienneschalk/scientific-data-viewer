@@ -1,6 +1,7 @@
 import { HeaderItem } from './OutlineProvider';
 import { Logger } from '../common/Logger';
 import { DataInfoResult } from '../python/DataProcessor';
+import { SDV_EXTENSION_NAME } from '../common/config';
 
 export class HeaderExtractor {
     // JoinId is used to join parts of an id together with a separator
@@ -80,7 +81,7 @@ export class HeaderExtractor {
     static createDataViewerHeaders(): HeaderItem[] {
         return [
             {
-                label: 'Scientific Data Viewer',
+                label: SDV_EXTENSION_NAME,
                 level: 1,
                 id: 'top-level-title',
                 children: [],

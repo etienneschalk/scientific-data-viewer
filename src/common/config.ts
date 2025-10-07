@@ -1,8 +1,29 @@
 import * as vscode from 'vscode';
 import { detectVSCodeTheme } from './vscodeutils';
 
-export const SCIENTIFIC_DATA_VIEWER = 'scientificDataViewer';
+// Extension name
+export const SDV_EXTENSION_ID = 'scientificDataViewer';
+export const SDV_EXTENSION_NAME = 'Scientific Data Viewer'
 
+// Command names
+export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';
+export const CMD_OPEN_VIEWER_FOLDER = 'scientificDataViewer.openViewerFolder';
+export const CMD_REFRESH_PYTHON_ENVIRONMENT = 'scientificDataViewer.refreshPythonEnvironment';
+export const CMD_SHOW_LOGS = 'scientificDataViewer.showLogs';
+export const CMD_SHOW_SETTINGS = 'scientificDataViewer.showSettings';
+export const CMD_OPEN_DEVELOPER_TOOLS = 'scientificDataViewer.openDeveloperTools';
+export const CMD_SCROLL_TO_HEADER = 'scientificDataViewer.scrollToHeader';
+export const CMD_EXPAND_ALL = 'scientificDataViewer.expandAll';
+export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installPackages';
+export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
+
+// Tree view ID
+export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';
+
+// Default data viewer panel ID
+export const DEFAULT_DATA_VIEWER_PANEL_ID = 'scientificDataViewer.defaultWebviewPanel';
+
+// Configuration keys
 const MAX_FILE_SIZE = 'maxFileSize';
 const ALLOW_MULTIPLE_TABS_FOR_SAME_FILE = 'allowMultipleTabsForSameFile';
 const DEV_MODE = 'devMode';
@@ -11,6 +32,7 @@ const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CURRENTLY_IN_USE_INTERPRETER = 'python.currentlyInUseInterpreter';
 
+// Default values
 const DEFAULT_MAX_FILE_SIZE = 10000;
 const DEFAULT_ALLOW_MULTIPLE_TABS_FOR_SAME_FILE = false;
 const DEFAULT_DEV_MODE = false;
@@ -19,16 +41,17 @@ const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CURRENTLY_IN_USE_INTERPRETER = '';
 
-export function getUseExtensionOwnEnvironmentConfigKey(): string {
-    return USE_EXTENSION_OWN_ENVIRONMENT;
+// Configuration functions
+export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
+    return `${SDV_EXTENSION_ID}.${USE_EXTENSION_OWN_ENVIRONMENT}`;
 }
 
-export function getOverridePythonInterpreterConfigKey(): string {
-    return OVERRIDE_PYTHON_INTERPRETER;
+export function getOverridePythonInterpreterConfigFullKey(): string {
+    return `${SDV_EXTENSION_ID}.${OVERRIDE_PYTHON_INTERPRETER}`;
 }
 
 export function getWorkspaceConfig() {
-    return vscode.workspace.getConfiguration(SCIENTIFIC_DATA_VIEWER);
+    return vscode.workspace.getConfiguration(SDV_EXTENSION_ID);
 }
 
 export function getMaxSize(): number {
