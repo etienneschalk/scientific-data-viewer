@@ -20,7 +20,8 @@ export class HTMLGenerator {
     static generateMainHTML(
         devMode: boolean,
         lastLoadTime: string | null,
-        panelId: number
+        panelId: number,
+        version: string
     ): string {
         return /*html*/ `<!DOCTYPE html>
 <html lang="en">
@@ -33,7 +34,7 @@ export class HTMLGenerator {
     </style>
 </head>
 <body>
-    ${this.generateHeader(devMode, lastLoadTime, panelId)}
+    ${this.generateHeader(devMode, lastLoadTime, panelId, version)}
     ${this.generateLoadingAndError()}
     ${this.generateContent()}
     <script>
@@ -46,11 +47,12 @@ export class HTMLGenerator {
     static generateHeader(
         devMode: boolean,
         lastLoadTime: string | null,
-        panelId: number
+        panelId: number,
+        version: string
     ): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.4.0 ${
+        <div class="title" id="top-level-title">Scientific Data Viewer <small>v${version} ${
             devMode ? `[${panelId}]` : ''
         }</small></div>
         <div class="controls" id="header-controls">

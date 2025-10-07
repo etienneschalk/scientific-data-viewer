@@ -11,6 +11,8 @@ import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
     showInformationMessage,
+    setVersion,
+    getVersion,
 } from './common/vscodeutils';
 import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
@@ -39,6 +41,9 @@ import { updateStatusBarItem } from './StatusBarItem';
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
     Logger.info('⚛️ Scientific Data Viewer extension is now active!');
+
+    setVersion(getVersionFromPackageJSON(context));
+    Logger.info(`🏷️ Version: ${getVersion()}`);
 
     // Initialize error boundary
     const errorBoundary = ErrorBoundary.getInstance();
@@ -658,4 +663,12 @@ function getShowDialogFilters(
         ),
     };
     return filters;
+}
+
+// TODO Should use this function everywhere the version is printed
+// Eg in the HTML Generator
+// It should also be added to the Troubleshooting section
+function getVersionFromPackageJSON(context: vscode.ExtensionContext): string {
+    return vscode.extensions.getExtension(context.extension.id)?.packageJSON
+        ?.version;
 }

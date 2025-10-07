@@ -104,3 +104,15 @@ export function detectVSCodeTheme(): string {
         return 'default';
     }
 }
+
+let _version = '[version-unknown]';
+
+export function setVersion(version: string) {
+    _version = version;
+}
+
+// TODO Should use this function everywhere the version is printed
+// It should also be added to the Troubleshooting section
+export function getVersion(): string {
+    return _version;
+}
