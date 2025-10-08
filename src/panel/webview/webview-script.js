@@ -898,34 +898,28 @@ function displayGlobalError(
             <li>If the python environment is not ready, install required packages: 
                 <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
                     🎮 Install xarray and matplotlib</a>
-                or run <code>pip install xarray matplotlib</code></li>
             <li>Check file format is supported (${supportedFormats})</li>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
                     <li>NetCDF: 
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['netCDF4', 'h5netcdf', 'scipy'])">
                             🎮 Install netCDF4, h5netcdf and scipy</a> 
-                        or run <code>pip install netCDF4 h5netcdf scipy</code>
                     </li>
                     <li>Zarr: 
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['zarr'])">
                             🎮 Install zarr</a> 
-                        or run <code>pip install zarr</code>
                     </li>
                     <li>GRIB: 
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['cfgrib'])">
                             🎮 Install cfgrib</a> 
-                        or run <code>pip install cfgrib</code>
                     </li>
                     <li>GeoTIFF: 
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
                             🎮 Install rioxarray</a> 
-                        or run <code>pip install rioxarray</code>
                     </li>
                     <li>JPEG-2000:
                          <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
                             🎮 Install rioxarray</a> 
-                        or run <code>pip install rioxarray</code>
                     </li>
                 </ul>
             </li>
