@@ -10,3 +10,5 @@ sample-data/
 **/*.pyc
 .venv/
 venv/
+
+**/.env

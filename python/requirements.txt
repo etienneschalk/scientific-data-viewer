@@ -1,4 +1,0 @@
-# Requirements for RFC to GitHub Issues Converter
-requests>=2.25.0
-PyYAML>=5.4.0
-

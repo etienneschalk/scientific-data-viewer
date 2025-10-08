@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#     "python-dotenv",
+#     "requests<3",
+# ]
+# ///
 """
 RFC to GitHub Issues Converter
 
@@ -49,6 +56,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @dataclass
 class RFCData:
@@ -274,13 +284,13 @@ class RFCToGitHubConverter:
         if rfc_data.implementation:
             body_parts.append("Implementation details from RFC:")
             body_parts.append("")
-            body_parts.append("```")
+            # body_parts.append("```")
             body_parts.append(
-                rfc_data.implementation[:500] + "..."
-                if len(rfc_data.implementation) > 500
+                rfc_data.implementation[:5000000000] + "..."
+                if len(rfc_data.implementation) > 5000000000
                 else rfc_data.implementation
             )
-            body_parts.append("```")
+            # body_parts.append("```")
         else:
             body_parts.append("See original RFC for technical details.")
         body_parts.append("")
@@ -385,7 +395,7 @@ class RFCToGitHubConverter:
         self, rfc_file: str, rfc_dir: Path, full_body: bool = False
     ) -> Dict:
         """Process a specific RFC file"""
-        file_path = rfc_dir / rfc_file
+        file_path = rfc_dir / Path(rfc_file).name
         if not file_path.exists():
             raise FileNotFoundError(f"RFC file not found: {file_path}")
 
