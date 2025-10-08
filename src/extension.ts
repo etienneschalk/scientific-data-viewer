@@ -43,8 +43,9 @@ import { updateStatusBarItem } from './StatusBarItem';
 import { PackageJson } from './package-types';
 
 export function activate(context: vscode.ExtensionContext) {
-    Logger.initialize();
     setPackageJson(getPackageJSON(context));
+    
+    Logger.initialize();
 
     Logger.info(`⚛️ ${getDisplayName()} extension is now active!`);
     Logger.info(`🏷️ Version: ${getVersion()}`);
