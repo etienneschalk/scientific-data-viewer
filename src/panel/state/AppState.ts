@@ -1,5 +1,5 @@
 /**
- * Centralized state management for the Scientific Data Viewer extension
+ * Centralized state management for a single panel (via UI controller)
  */
 
 export interface DataState {

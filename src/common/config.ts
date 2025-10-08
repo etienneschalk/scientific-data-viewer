@@ -3,7 +3,6 @@ import { detectVSCodeTheme } from './vscodeutils';
 
 // Extension name
 export const SDV_EXTENSION_ID = 'scientificDataViewer';
-export const SDV_EXTENSION_NAME = 'Scientific Data Viewer';
 
 // Command names
 export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';

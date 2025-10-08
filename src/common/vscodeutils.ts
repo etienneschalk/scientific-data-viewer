@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { CMD_SHOW_LOGS, SDV_EXTENSION_ID } from '../common/config';
+import { CustomEditor, PackageJson } from '../package-types';
 
 /**
  * Show an information message with options to show settings or logs
@@ -105,14 +106,60 @@ export function detectVSCodeTheme(): string {
     }
 }
 
-let _version = '[version-unknown]';
+// Package JSON - Store it to access various information from the package.json file
+let _packageJson: PackageJson;
 
-export function setVersion(version: string) {
-    _version = version;
+export function setPackageJson(packageJson: PackageJson) {
+    _packageJson = packageJson;
+}
+
+export function getPackageJson(): PackageJson {
+    return _packageJson;
 }
 
 // TODO Should use this function everywhere the version is printed
 // It should also be added to the Troubleshooting section
 export function getVersion(): string {
-    return _version;
+    return getPackageJson().version;
+}
+
+export function getDisplayName(): string {
+    return getPackageJson().displayName;
+}
+
+function getCustomEditors(): CustomEditor[] {
+    return getPackageJson().contributes.customEditors;
+}
+
+export function getCustomEditorViewTypes(): string[] {
+    return getCustomEditors().map((editor) => editor.viewType);
+}
+
+export function getAllSupportedExtensions(ids?: string[]): string[] {
+    const languages = getPackageJson().contributes.languages;
+    const allSupportedExtensions =
+        languages
+            .filter((el) => !ids || ids.includes(el.id))
+            .flatMap((el) => el.extensions);
+    return allSupportedExtensions;
+}
+
+export function getShowDialogFilters(ids?: string[]): {
+    [name: string]: string[];
+} {
+    const languages = getPackageJson().contributes.languages;
+    const filters: { [name: string]: string[] } = {
+        'Scientific Data Files': getAllSupportedExtensions(ids).map((ext) =>
+            ext.slice(1)
+        ),
+        ...Object.fromEntries(
+            languages
+                .filter((el) => !ids || ids.includes(el.id))
+                .map((el) => [
+                    el.aliases[0],
+                    el.extensions.map((ext) => ext.slice(1)),
+                ])
+        ),
+    };
+    return filters;
 }

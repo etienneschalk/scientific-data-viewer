@@ -11,8 +11,11 @@ import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
     showInformationMessage,
-    setVersion,
     getVersion,
+    setPackageJson,
+    getDisplayName,
+    getAllSupportedExtensions,
+    getShowDialogFilters,
 } from './common/vscodeutils';
 import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
@@ -37,12 +40,13 @@ import {
     getUseExtensionOwnEnvironmentConfigFullKey,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
+import { PackageJson } from './package-types';
 
 export function activate(context: vscode.ExtensionContext) {
     Logger.initialize();
-    Logger.info('⚛️ Scientific Data Viewer extension is now active!');
+    setPackageJson(getPackageJSON(context));
 
-    setVersion(getVersionFromPackageJSON(context));
+    Logger.info(`⚛️ ${getDisplayName()} extension is now active!`);
     Logger.info(`🏷️ Version: ${getVersion()}`);
 
     // Initialize error boundary
@@ -50,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
     errorBoundary.registerGlobalHandler((error, context) => {
         Logger.error(`Global error: ${error.message}`);
         vscode.window.showErrorMessage(
-            `Scientific Data Viewer Error: ${error.message}`
+            `${getDisplayName()} Error: ${error.message}`
         );
     });
 
@@ -157,7 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
                         canSelectFiles: true,
                         canSelectFolders: false,
                         canSelectMany: true,
-                        filters: getShowDialogFilters(context, [
+                        filters: getShowDialogFilters([
                             'netcdf',
                             'hdf5',
                             'grib',
@@ -203,7 +207,7 @@ export function activate(context: vscode.ExtensionContext) {
                         canSelectFiles: false,
                         canSelectFolders: true,
                         canSelectMany: true,
-                        filters: getShowDialogFilters(context, ['zarr']),
+                        filters: getShowDialogFilters(['zarr']),
                     });
                     folderUriList?.forEach(async (uri) => {
                         Logger.info(
@@ -238,7 +242,7 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand(CMD_SHOW_SETTINGS, () => {
             Logger.info(
-                '🎮 ⚙️ Command: Opening Scientific Data Viewer settings...'
+                `🎮 ⚙️ Command: Opening ${getDisplayName()} settings...`
             );
             vscode.commands.executeCommand(
                 'workbench.action.openSettings',
@@ -326,7 +330,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
     Logger.info(`🚀 Commands registered successfully`);
 
-    const supportedExtensions = getAllSupportedExtensions(context);
+    const supportedExtensions = getAllSupportedExtensions();
     Logger.info(
         `🔧 Detected supported extensions from package.json: ${supportedExtensions}`
     );
@@ -372,10 +376,10 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             }
         }),
-        // Set up configuration change listener for all Scientific Data Viewer settings
+        // Set up configuration change listener for all ${getDisplayName()} settings
         vscode.workspace.onDidChangeConfiguration(async (event) => {
             if (event.affectsConfiguration(SDV_EXTENSION_ID)) {
-                Logger.info('Scientific Data Viewer configuration changed');
+                Logger.info(`${getDisplayName()} configuration changed`);
 
                 if (
                     event.affectsConfiguration(
@@ -562,7 +566,7 @@ export function deactivate() {
     // Panes-related data is disposed by panes themselves.
     // OutlineProvider
 
-    Logger.info('Scientific Data Viewer extension is now deactivated!');
+    Logger.info('${getDisplayName()} extension is now deactivated!');
     Logger.info('Last word before disposing the Logger.');
     Logger.dispose();
 }
@@ -626,49 +630,9 @@ async function waitThenCreateOrRevealPanel(
     );
 }
 
-function getAllSupportedExtensions(
-    context: vscode.ExtensionContext,
-    ids?: string[]
-): string[] {
-    const languages = vscode.extensions.getExtension(context.extension.id)
-        ?.packageJSON?.contributes?.languages;
-    const allSupportedExtensions =
-        languages
-            ?.filter((el: any) => !ids || ids.includes(el.id))
-            .flatMap((el: any) => el.extensions) || [];
-    return allSupportedExtensions;
-}
-
-function getShowDialogFilters(
-    context: vscode.ExtensionContext,
-    ids?: string[]
-): { [name: string]: string[] } {
-    const languages = vscode.extensions.getExtension(context.extension.id)
-        ?.packageJSON?.contributes?.languages;
-    const allSupportedExtensions =
-        languages
-            ?.filter((el: any) => !ids || ids.includes(el.id))
-            .flatMap((el: any) => el.extensions) || [];
-    const filters: { [name: string]: string[] } = {
-        'Scientific Data Files': allSupportedExtensions.map((ext: any) =>
-            ext.slice(1)
-        ),
-        ...Object.fromEntries(
-            languages
-                ?.filter((el: any) => !ids || ids.includes(el.id))
-                .map((el: any) => [
-                    el.aliases[0],
-                    el.extensions.map((ext: any) => ext.slice(1)),
-                ])
-        ),
-    };
-    return filters;
-}
-
-// TODO Should use this function everywhere the version is printed
-// Eg in the HTML Generator
-// It should also be added to the Troubleshooting section
-function getVersionFromPackageJSON(context: vscode.ExtensionContext): string {
-    return vscode.extensions.getExtension(context.extension.id)?.packageJSON
-        ?.version;
+function getPackageJSON(context: vscode.ExtensionContext): PackageJson {
+    // Important: We need to cast to PackageJson to avoid type errors
+    // when accessing the package.json file
+    // This means we trust the PackageJson interface to be correct.
+    return vscode.extensions.getExtension(context.extension.id)?.packageJSON as PackageJson;
 }

@@ -1,6 +1,6 @@
 import { Logger } from '../common/Logger';
+import { getDisplayName } from '../common/vscodeutils';
 import { DataInfoResult, HeaderItem } from '../types';
-import { SDV_EXTENSION_NAME } from '../common/config';
 
 export class HeaderExtractor {
     // JoinId is used to join parts of an id together with a separator
@@ -80,7 +80,7 @@ export class HeaderExtractor {
     static createDataViewerHeaders(): HeaderItem[] {
         return [
             {
-                label: SDV_EXTENSION_NAME,
+                label: getDisplayName(),
                 level: 1,
                 id: 'top-level-title',
                 children: [],

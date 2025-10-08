@@ -105,7 +105,7 @@ export class DataViewerPanel {
 
         // Set the icon for the panel
         // Only needed when creating a new panel from scratch, eg via
-        // Scientific Data Viewer: Open Scientific Data Viewer command.
+        // the command palette or the file selection dialog.
         // When clicking on a file in the explorer, the icon is set automatically,
         // as configured in package.json (section contributes -> languages -> icon)
         webviewPanel.iconPath = iconPath;

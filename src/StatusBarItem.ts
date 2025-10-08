@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { EnvironmentInfo } from './types';
+import { getDisplayName } from './common/vscodeutils';
 
 // Function to update status bar with current Python interpreter
 export function updateStatusBarItem(
@@ -26,7 +27,7 @@ export function updateStatusBarItem(
 
     const source = envInfo.source ?? 'unknown';
     statusBarItem.text = `${icon} SDV ${source}`;
-    statusBarItem.tooltip = `Scientific Data Viewer - State
+    statusBarItem.tooltip = `${getDisplayName()} - State
 
 Status: 
 ${tooltipStatus} 

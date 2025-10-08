@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SDV_EXTENSION_NAME } from './config';
+import { getDisplayName } from './vscodeutils';
 
 export class Logger {
     private static outputChannel: vscode.OutputChannel | undefined;
@@ -7,7 +7,7 @@ export class Logger {
     public static initialize(): void {
         if (!this.outputChannel) {
             this.outputChannel = vscode.window.createOutputChannel(
-                SDV_EXTENSION_NAME
+                getDisplayName()
             );
         }
     }
