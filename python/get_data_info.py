@@ -29,6 +29,7 @@ Examples:
 Author: Scientific Data Viewer Extension
 """
 
+import datetime
 from logging import Logger
 
 import argparse
@@ -843,6 +844,13 @@ def create_plot(
                 logger.info("Creating default plot using xarray's native plotting")
                 var.plot()
 
+            plt.suptitle(
+                f"Variable: {variable_name}\n"
+                "Creation date: "
+                f"{datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')}",
+                # f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                y=1.10,
+            )
             # Convert to base64 string
             buffer = BytesIO()
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")

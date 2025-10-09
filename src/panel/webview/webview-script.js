@@ -353,8 +353,8 @@ function displayTimestamp(isoString, isLoading = false) {
         timestampElement.classList.remove('hidden');
     } else if (isoString) {
         const date = new Date(isoString);
-        const timeString = date.toLocaleTimeString();
-        timestampText.textContent = `loaded: ${timeString}`;
+        const timeString = date.toISOString();
+        timestampText.textContent = `Loaded: ${timeString}`;
         timestampElement.classList.remove('hidden');
     } else {
         timestampElement.classList.add('hidden');
