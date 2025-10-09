@@ -4108,6 +4108,70 @@ def create_sample_netcdf_many_encoding():
     return output_file
 
 
+def create_sample_netcdf_no_attributes():
+    """Create a simple NetCDF file with variables having NO attributes."""
+    output_file = "sample_data_no_attributes.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌡️ Creating sample NetCDF file with no variable attributes...")
+
+    # Create simple dimensions
+    time = np.arange(0, 10, 1)  # 10 time steps
+    lat = np.linspace(-45, 45, 9)  # 9 latitude points
+    lon = np.linspace(-90, 90, 18)  # 18 longitude points
+
+    # Create sample data
+    np.random.seed(42)  # For reproducible data
+    temperature = (
+        20
+        + 10 * np.sin(2 * np.pi * time[:, np.newaxis, np.newaxis] / 10)
+        + np.random.normal(0, 2, (10, 9, 18))
+    )
+    pressure = (
+        1013.25
+        + 20 * np.cos(2 * np.pi * time[:, np.newaxis, np.newaxis] / 10)
+        + np.random.normal(0, 5, (10, 9, 18))
+    )
+    humidity = np.int32(
+        50
+        + 30 * np.sin(2 * np.pi * time[:, np.newaxis, np.newaxis] / 10)
+        + np.random.normal(0, 10, (10, 9, 18))
+    )
+
+    # Create dataset with NO attributes on variables or coordinates
+    ds = xr.Dataset(
+        {
+            "temperature": (["time", "lat", "lon"], temperature),
+            "pressure": (["time", "lat", "lon"], pressure),
+            "humidity": (["time", "lat", "lon"], humidity),
+        },
+        coords={
+            "time": (["time"], time),
+            "lat": (["lat"], lat),
+            "lon": (["lon"], lon),
+        },
+    )
+
+    # Add minimal global attributes only
+    ds.attrs = {
+        "title": "Sample Data with No Variable Attributes",
+        "description": "Simple NetCDF file for testing VSCode extension - variables have no attributes",
+    }
+
+    # Save to file
+    ds.to_netcdf(output_file)
+    print(f"✅ Created {output_file}")
+    print(f"   Variables: {list(ds.data_vars.keys())}")
+    print(f"   Coordinates: {list(ds.coords.keys())}")
+    print(f"   Variable attributes: None")
+    return output_file
+
+
 def main(do_create_disposable_files: bool = False):
     """Create all sample data files."""
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
@@ -4164,6 +4228,10 @@ def main(do_create_disposable_files: bool = False):
         many_encoding_netcdf_file = create_sample_netcdf_many_encoding()
         if many_encoding_netcdf_file:
             created_files.append((many_encoding_netcdf_file, "NetCDF (Many Encoding)"))
+
+        no_attrs_netcdf_file = create_sample_netcdf_no_attributes()
+        if no_attrs_netcdf_file:
+            created_files.append((no_attrs_netcdf_file, "NetCDF (No Attributes)"))
 
         print("\n📁 Creating HDF5 files...")
         hdf5_file = create_sample_hdf5()

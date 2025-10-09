@@ -331,10 +331,6 @@ select:focus {
     content: '📄';
 }
 
-.variable-summary.not-clickable:active {
-    pointer-events: none;
-}
-
 .variable-summary.not-clickable::before {
     opacity: 0.5;
 }

@@ -93,7 +93,7 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(timestamp);
         assert.ok(typeof timestamp === 'string');
         assert.ok(timestamp.includes('timestamp'));
-        assert.ok(timestamp.includes('loaded: --'));
+        assert.ok(timestamp.includes('Loaded: --'));
     });
 
     test('should generate loading and error content', () => {
