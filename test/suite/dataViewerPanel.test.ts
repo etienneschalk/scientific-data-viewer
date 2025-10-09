@@ -142,7 +142,7 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should have correct view type', () => {
-        assert.strictEqual(DataViewerPanel.viewType, 'scientificDataViewer');
+        assert.strictEqual(DataViewerPanel.viewType, 'scientificDataViewer.defaultWebviewPanel');
     });
 
     test('should create or show panel', () => {

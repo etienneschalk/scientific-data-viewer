@@ -29,7 +29,6 @@ const DEV_MODE = 'devMode';
 const MATPLOTLIB_STYLE = 'matplotlibStyle';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
-const CURRENTLY_IN_USE_INTERPRETER = 'python.currentlyInUseInterpreter';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 10000;
@@ -38,7 +37,6 @@ const DEFAULT_DEV_MODE = false;
 const DEFAULT_MATPLOTLIB_STYLE = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
-const DEFAULT_CURRENTLY_IN_USE_INTERPRETER = '';
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -104,23 +102,6 @@ export async function updateUseExtensionOwnEnvironment(
 ): Promise<void> {
     return await getWorkspaceConfig().update(
         USE_EXTENSION_OWN_ENVIRONMENT,
-        value,
-        vscode.ConfigurationTarget.Workspace
-    );
-}
-
-export function getCurrentlyInUseInterpreter(): string {
-    return getWorkspaceConfig().get<string>(
-        CURRENTLY_IN_USE_INTERPRETER,
-        DEFAULT_CURRENTLY_IN_USE_INTERPRETER
-    );
-}
-
-export async function updateCurrentlyInUseInterpreter(
-    value: string | null
-): Promise<void> {
-    return await getWorkspaceConfig().update(
-        CURRENTLY_IN_USE_INTERPRETER,
         value,
         vscode.ConfigurationTarget.Workspace
     );

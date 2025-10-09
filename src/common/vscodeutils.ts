@@ -137,10 +137,9 @@ export function getCustomEditorViewTypes(): string[] {
 
 export function getAllSupportedExtensions(ids?: string[]): string[] {
     const languages = getPackageJson().contributes.languages;
-    const allSupportedExtensions =
-        languages
-            .filter((el) => !ids || ids.includes(el.id))
-            .flatMap((el) => el.extensions);
+    const allSupportedExtensions = languages
+        .filter((el) => !ids || ids.includes(el.id))
+        .flatMap((el) => el.extensions);
     return allSupportedExtensions;
 }
 

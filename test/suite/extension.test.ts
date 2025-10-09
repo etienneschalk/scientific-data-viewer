@@ -304,7 +304,7 @@ suite('Extension Test Suite', () => {
         assert.doesNotThrow(() => {
             // Simulate configuration change
             const event = {
-                affectsConfiguration: (section: string) => section === 'scientificDataViewer'
+                affectsConfiguration: (section: string) => section === 'scientificDataViewer.defaultWebviewPanel'
             };
             // This would normally trigger configuration change listeners
         });

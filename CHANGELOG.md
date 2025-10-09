@@ -6,6 +6,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [UNRELEASED]
+
+### Removed
+
+- **Configuration Settings**:
+  - `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
+    - Reason: It was not actually used, nor necessary, as python interpreter resolution is performed live.
+
 ## [0.4.0] - 2025-10-06
 
 ### Added
