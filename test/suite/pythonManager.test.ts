@@ -22,6 +22,7 @@ suite('PythonManager Test Suite', () => {
         // Store original getExtension function
         originalGetExtension = vscode.extensions.getExtension;
 
+        // Create centralized mock for vscode.extensions.getExtension
         let mockGetExtension;
         configureMockGetExtension ({
             extensionExists: true,
@@ -40,32 +41,6 @@ suite('PythonManager Test Suite', () => {
                 },
             },
         });
-        // Create centralized mock for vscode.extensions.getExtension
-        // mockGetExtension = (extensionId: string) => {
-        // mockGetExtension = (extensionId: string) => {
-        //     if (extensionId === 'ms-python.python') {
-        //         return {
-        //             id: 'ms-python.python',
-        //             extensionPath: '/test/python/extension/path',
-        //             isActive: true,
-        //             packageJSON: {},
-        //             extensionKind: vscode.ExtensionKind.Workspace,
-        //             exports: {},
-        //             activate: async () => ({
-        //                 environments: {
-        //                     onDidChangeActiveEnvironmentPath: (
-        //                         callback: any
-        //                     ) => ({
-        //                         dispose: () => {},
-        //                     }),
-        //                 },
-        //             }),
-        //             extensionDependencies: [],
-        //             extensionPack: [],
-        //         } as any;
-        //     }
-        //     return undefined;
-        // };
 
         // Mock ExtensionContext
         mockContext = {
@@ -535,7 +510,7 @@ suite('PythonManager Test Suite', () => {
             await pythonManager.forceInitialize();
 
             // Should have been called multiple times
-            assert.ok(callCount > 0);
+            assert.ok(callCount == 3);
         } finally {
         }
     });
