@@ -22,31 +22,50 @@ suite('PythonManager Test Suite', () => {
         // Store original getExtension function
         originalGetExtension = vscode.extensions.getExtension;
 
-        // Create centralized mock for vscode.extensions.getExtension
-        mockGetExtension = (extensionId: string) => {
-            if (extensionId === 'ms-python.python') {
-                return {
-                    id: 'ms-python.python',
-                    extensionPath: '/test/python/extension/path',
-                    isActive: true,
-                    packageJSON: {},
-                    extensionKind: vscode.ExtensionKind.Workspace,
-                    exports: {},
-                    activate: async () => ({
-                        environments: {
-                            onDidChangeActiveEnvironmentPath: (
-                                callback: any
-                            ) => ({
-                                dispose: () => {},
-                            }),
-                        },
+        let mockGetExtension;
+        configureMockGetExtension ({
+            extensionExists: true,
+            isActive: false,
+            activateResult: {
+                test: 'api',
+                environments: {
+                    onDidChangeActiveEnvironmentPath: (
+                        callback: any
+                    ) => ({
+                        dispose: () => {},
                     }),
-                    extensionDependencies: [],
-                    extensionPack: [],
-                } as any;
-            }
-            return undefined;
-        };
+                    onDidEnvironmentsChanged: (callback: any) => ({
+                        dispose: () => {},
+                    }),
+                },
+            },
+        });
+        // Create centralized mock for vscode.extensions.getExtension
+        // mockGetExtension = (extensionId: string) => {
+        // mockGetExtension = (extensionId: string) => {
+        //     if (extensionId === 'ms-python.python') {
+        //         return {
+        //             id: 'ms-python.python',
+        //             extensionPath: '/test/python/extension/path',
+        //             isActive: true,
+        //             packageJSON: {},
+        //             extensionKind: vscode.ExtensionKind.Workspace,
+        //             exports: {},
+        //             activate: async () => ({
+        //                 environments: {
+        //                     onDidChangeActiveEnvironmentPath: (
+        //                         callback: any
+        //                     ) => ({
+        //                         dispose: () => {},
+        //                     }),
+        //                 },
+        //             }),
+        //             extensionDependencies: [],
+        //             extensionPack: [],
+        //         } as any;
+        //     }
+        //     return undefined;
+        // };
 
         // Mock ExtensionContext
         mockContext = {
@@ -487,16 +506,29 @@ suite('PythonManager Test Suite', () => {
         }
     });
 
-    test('should handle multiple initialization calls', async () => {
+    test('should handle multiple sequential initialization calls', async () => {
         // Mock the getPythonInterpreterFromExtension method
-        const originalGetPythonInterpreterFromExtension = (pythonManager as any)
-            .getPythonInterpreterFromExtension;
         let callCount = 0;
-        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
-            callCount++;
-            return undefined;
-        };
+        vscode.extensions.getExtension = (extensionId: string) => {
+            if (extensionId !== 'ms-python.python') {
+                return undefined;
+            }
 
+            return {
+                id: 'ms-python.python',
+                extensionPath: '/test/python/extension/path',
+                isActive: false,
+                packageJSON: {},
+                extensionKind: vscode.ExtensionKind.Workspace,
+                exports: {},
+                activate: async () => {
+                    callCount++;
+                    return undefined;
+                },
+                extensionDependencies: [],
+                extensionPack: [],
+            } as any;
+        };
         try {
             await pythonManager.forceInitialize();
             await pythonManager.forceInitialize();
@@ -505,20 +537,33 @@ suite('PythonManager Test Suite', () => {
             // Should have been called multiple times
             assert.ok(callCount > 0);
         } finally {
-            (pythonManager as any).getPythonInterpreterFromExtension =
-                originalGetPythonInterpreterFromExtension;
         }
     });
 
     test('should handle concurrent initialization calls', async () => {
         // Mock the getPythonInterpreterFromExtension method
-        const originalGetPythonInterpreterFromExtension = (pythonManager as any)
-            .getPythonInterpreterFromExtension;
         let callCount = 0;
-        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
-            callCount++;
-            return undefined;
+        vscode.extensions.getExtension = (extensionId: string) => {
+            if (extensionId !== 'ms-python.python') {
+                return undefined;
+            }
+
+            return {
+                id: 'ms-python.python',
+                extensionPath: '/test/python/extension/path',
+                isActive: false,
+                packageJSON: {},
+                extensionKind: vscode.ExtensionKind.Workspace,
+                exports: {},
+                activate: async () => {
+                    callCount++;
+                    return undefined;
+                },
+                extensionDependencies: [],
+                extensionPack: [],
+            } as any;
         };
+
 
         try {
             // Create multiple concurrent initialization calls
@@ -530,10 +575,8 @@ suite('PythonManager Test Suite', () => {
             await Promise.all(promises);
 
             // Should have been called multiple times
-            assert.ok(callCount > 0);
+            assert.ok(callCount == 5);
         } finally {
-            (pythonManager as any).getPythonInterpreterFromExtension =
-                originalGetPythonInterpreterFromExtension;
         }
     });
 });
