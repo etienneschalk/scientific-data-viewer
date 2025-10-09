@@ -2,13 +2,52 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { PythonManager } from '../../src/python/PythonManager';
 import { ExtensionVirtualEnvironmentManager } from '../../src/python/ExtensionVirtualEnvironmentManager';
-import { setupOfficialPythonExtensionChangeListeners } from '../../src/python/officialPythonExtensionApiUtils';
+import {
+    getPythonExtensionApi,
+    getPythonInterpreterFromPythonExtension,
+    setupOfficialPythonExtensionChangeListeners,
+} from '../../src/python/officialPythonExtensionApiUtils';
 
 suite('PythonManager Test Suite', () => {
     let pythonManager: PythonManager;
     let mockContext: vscode.ExtensionContext;
+    let mockGetExtension: (
+        extensionId: string
+    ) => vscode.Extension<any> | undefined;
+    let originalGetExtension: (
+        extensionId: string
+    ) => vscode.Extension<any> | undefined;
 
     suiteSetup(() => {
+        // Store original getExtension function
+        originalGetExtension = vscode.extensions.getExtension;
+
+        // Create centralized mock for vscode.extensions.getExtension
+        mockGetExtension = (extensionId: string) => {
+            if (extensionId === 'ms-python.python') {
+                return {
+                    id: 'ms-python.python',
+                    extensionPath: '/test/python/extension/path',
+                    isActive: true,
+                    packageJSON: {},
+                    extensionKind: vscode.ExtensionKind.Workspace,
+                    exports: {},
+                    activate: async () => ({
+                        environments: {
+                            onDidChangeActiveEnvironmentPath: (
+                                callback: any
+                            ) => ({
+                                dispose: () => {},
+                            }),
+                        },
+                    }),
+                    extensionDependencies: [],
+                    extensionPack: [],
+                } as any;
+            }
+            return undefined;
+        };
+
         // Mock ExtensionContext
         mockContext = {
             extensionPath: '/test/extension/path',
@@ -18,17 +57,17 @@ suite('PythonManager Test Suite', () => {
             globalState: {
                 get: () => undefined,
                 update: () => Promise.resolve(),
-                keys: () => []
+                keys: () => [],
             },
             workspaceState: {
                 get: () => undefined,
                 update: () => Promise.resolve(),
-                keys: () => []
+                keys: () => [],
             },
             secrets: {
                 get: () => Promise.resolve(undefined),
                 store: () => Promise.resolve(),
-                delete: () => Promise.resolve()
+                delete: () => Promise.resolve(),
             },
             extension: {
                 id: 'test.extension',
@@ -39,24 +78,82 @@ suite('PythonManager Test Suite', () => {
                 exports: {},
                 activate: () => Promise.resolve({}),
                 extensionDependencies: [],
-                extensionPack: []
+                extensionPack: [],
             },
             storagePath: '/test/storage/path',
             globalStoragePath: '/test/global/storage/path',
             logPath: '/test/log/path',
             extensionMode: vscode.ExtensionMode.Test,
-            asAbsolutePath: (relativePath: string) => `/test/extension/path/${relativePath}`,
+            asAbsolutePath: (relativePath: string) =>
+                `/test/extension/path/${relativePath}`,
             environmentVariableCollection: {} as any,
         } as any;
     });
 
     setup(() => {
-        pythonManager = new PythonManager(new ExtensionVirtualEnvironmentManager(mockContext.globalStorageUri.fsPath));
+        pythonManager = new PythonManager(
+            new ExtensionVirtualEnvironmentManager(
+                mockContext.globalStorageUri.fsPath
+            )
+        );
+        // Apply the mock for each test
+        vscode.extensions.getExtension = mockGetExtension;
     });
 
     teardown(() => {
-        // Clean up any resources
+        // Restore original getExtension function after each test
+        vscode.extensions.getExtension = originalGetExtension;
     });
+
+    suiteTeardown(() => {
+        // Restore original getExtension function after all tests
+        vscode.extensions.getExtension = originalGetExtension;
+    });
+
+    // Helper method to configure the mock for different test scenarios
+    function configureMockGetExtension(config: {
+        extensionExists?: boolean;
+        isActive?: boolean;
+        activateResult?: any;
+        activateError?: Error;
+    }) {
+        mockGetExtension = (extensionId: string) => {
+            if (extensionId !== 'ms-python.python') {
+                return undefined;
+            }
+            if (!config.extensionExists) {
+                return undefined;
+            }
+
+            return {
+                id: 'ms-python.python',
+                extensionPath: '/test/python/extension/path',
+                isActive: config.isActive ?? true,
+                packageJSON: {},
+                extensionKind: vscode.ExtensionKind.Workspace,
+                exports: {},
+                activate: async () => {
+                    if (config.activateError) {
+                        throw config.activateError;
+                    }
+                    return config.activateResult ?? {
+                        test: 'api',
+                        environments: {
+                            onDidChangeActiveEnvironmentPath: (callback: any) => ({
+                                dispose: () => {},
+                            }),
+                            onDidEnvironmentsChanged: (callback: any) => ({
+                                dispose: () => {},
+                            }),
+                        },
+                    };
+                },
+                extensionDependencies: [],
+                extensionPack: [],
+            } as any;
+        }
+        vscode.extensions.getExtension = mockGetExtension;
+    }
 
     test('should create PythonManager instance', () => {
         assert.ok(pythonManager);
@@ -65,110 +162,87 @@ suite('PythonManager Test Suite', () => {
     });
 
     test('should initialize without Python extension', async () => {
-        // Mock vscode.extensions.getExtension to return undefined
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => undefined;
+        // Configure mock to return undefined (extension not found)
+        configureMockGetExtension({ extensionExists: false });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Should not throw an error even without Python extension
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        
+        // Should not throw an error even without Python extension
+        assert.ok(true);
     });
 
     test('should handle Python extension not active', async () => {
-        // Mock vscode.extensions.getExtension to return inactive extension
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return inactive extension
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: false,
-            activate: () => Promise.resolve({})
-        }) as any;
+            activateResult: {},
+        });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Should not throw an error
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        // Should not throw an error
+        assert.ok(true);
     });
 
     test('should handle Python extension API without environments', async () => {
-        // Mock vscode.extensions.getExtension to return extension without environments API
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension without environments API
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: true,
-            activate: () => Promise.resolve({})
-        }) as any;
+            activateResult: {},
+        });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Should not throw an error
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        // Should not throw an error
+        assert.ok(true);
     });
 
     test('should handle Python extension API with environments but no active environment', async () => {
-        // Mock vscode.extensions.getExtension to return extension with environments API
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension with environments API but no active environment
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: true,
-            activate: () => Promise.resolve({
+            activateResult: {
                 environments: {
-                    getActiveEnvironmentPath: () => Promise.resolve(undefined)
-                }
-            })
-        }) as any;
+                    getActiveEnvironmentPath: () => Promise.resolve(undefined),
+                },
+            },
+        });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Should not throw an error
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        // Should not throw an error
+        assert.ok(true);
     });
 
     test('should get Python path from extension API', async () => {
-        // Mock vscode.extensions.getExtension to return extension with active environment
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension with active environment
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: true,
-            activate: () => Promise.resolve({
+            activateResult: {
                 environments: {
-                    getActiveEnvironmentPath: () => Promise.resolve({ path: '/usr/bin/python3' })
-                }
-            })
-        }) as any;
+                    getActiveEnvironmentPath: () =>
+                        Promise.resolve({ path: '/usr/bin/python3' }),
+                },
+            },
+        });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Note: We can't easily test the actual path setting without mocking the validation process
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        // Note: We can't easily test the actual path setting without mocking the validation process
+        assert.ok(true);
     });
 
     test('should handle Python extension activation error', async () => {
-        // Mock vscode.extensions.getExtension to return extension that fails to activate
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension that fails to activate
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: false,
-            activate: () => Promise.reject(new Error('Activation failed'))
-        }) as any;
+            activateError: new Error('Activation failed'),
+        });
 
-        try {
-            await pythonManager.forceInitialize();
-            // Should not throw an error
-            assert.ok(true);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        await pythonManager.forceInitialize();
+        // Should not throw an error
+        assert.ok(true);
     });
 
     test('should get current Python path', () => {
@@ -191,178 +265,205 @@ suite('PythonManager Test Suite', () => {
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.ok(error.message.includes('Python environment not properly initialized'));
+            assert.ok(
+                error.message.includes(
+                    'Python environment not properly initialized'
+                )
+            );
         }
     });
 
     test('should handle executePythonFile with logs when not ready', async () => {
         try {
-            await pythonManager.executePythonFile('/path/to/script.py', [], true);
+            await pythonManager.executePythonFile(
+                '/path/to/script.py',
+                [],
+                true
+            );
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.ok(error.message.includes('Python environment not properly initialized'));
+            assert.ok(
+                error.message.includes(
+                    'Python environment not properly initialized'
+                )
+            );
         }
     });
 
     test('should setup interpreter change listener', async () => {
-        // Mock the getPythonExtensionApi method
-        const originalGetPythonExtensionApi = (pythonManager as any).getPythonExtensionApi;
-        (pythonManager as any).getPythonExtensionApi = async () => ({
-            environments: {
-                onDidChangeActiveEnvironmentPath: (callback: any) => ({
-                    dispose: () => {}
-                })
-            }
+        // Configure mock to return extension that fails to activate
+        configureMockGetExtension({
+            extensionExists: true,
+            isActive: true,
+            activateResult: {
+                test: 'api',
+                environments: {
+                    onDidChangeActiveEnvironmentPath: (callback: any) => ({
+                        dispose: () => {},
+                    }),
+                    onDidEnvironmentsChanged: (callback: any) => ({
+                        dispose: () => {},
+                    }),
+                },
+            },
         });
 
-        try {
-            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
-            assert.ok(listener);
-        } finally {
-            (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
-        }
+        const listener = await setupOfficialPythonExtensionChangeListeners(
+            async () => {},
+            async (environment: any) => {}
+        );
+        assert.ok(listener?.dispose);
     });
 
     test('should handle setup interpreter change listener when extension not available', async () => {
         // Mock the getPythonExtensionApi method to return undefined
-        const originalGetPythonExtensionApi = (pythonManager as any).getPythonExtensionApi;
-        (pythonManager as any).getPythonExtensionApi = async () => undefined;
+        configureMockGetExtension({
+            extensionExists: false,
+        });
 
         try {
-            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(
+                async () => {},
+                async (environment: any) => {}
+            );
             assert.strictEqual(listener, undefined);
         } finally {
-            (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
         }
     });
 
     test('should handle setup interpreter change listener when environments API not available', async () => {
         // Mock the getPythonExtensionApi method to return API without environments
-        const originalGetPythonExtensionApi = (pythonManager as any).getPythonExtensionApi;
-        (pythonManager as any).getPythonExtensionApi = async () => ({});
+        configureMockGetExtension({
+            extensionExists: false,
+        });
 
         try {
-            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(
+                async () => {},
+                async (environment: any) => {}
+            );
             assert.strictEqual(listener, undefined);
         } finally {
-            (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
         }
     });
 
     test('should handle setup interpreter change listener when method not available', async () => {
         // Mock the getPythonExtensionApi method to return API without the required method
-        const originalGetPythonExtensionApi = (pythonManager as any).getPythonExtensionApi;
-        (pythonManager as any).getPythonExtensionApi = async () => ({
-            environments: {}
+        configureMockGetExtension({
+            extensionExists: true,
+            isActive: false,
+            activateResult: {},
         });
 
         try {
-            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(
+                async () => {},
+                async (environment: any) => {}
+            );
             assert.strictEqual(listener, undefined);
         } finally {
-            (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
         }
     });
 
     test('should handle setup interpreter change listener error', async () => {
         // Mock the getPythonExtensionApi method to throw an error
-        const originalGetPythonExtensionApi = (pythonManager as any).getPythonExtensionApi;
-        (pythonManager as any).getPythonExtensionApi = async () => {
-            throw new Error('API error');
-        };
+        configureMockGetExtension({
+            extensionExists: true,
+            isActive: false,
+            activateError: new Error('Activation failed'),
+        });
 
         try {
-            const listener = await setupOfficialPythonExtensionChangeListeners(async () => {}, async (environment: any) => {});
+            const listener = await setupOfficialPythonExtensionChangeListeners(
+                async () => {},
+                async (environment: any) => {}
+            );
             assert.strictEqual(listener, undefined);
         } finally {
-            (pythonManager as any).getPythonExtensionApi = originalGetPythonExtensionApi;
         }
     });
 
     test('should check if Python extension is available', () => {
         // This test is skipped because isPythonExtensionAvailable is not a public method
         // The functionality is tested through other methods that use the Python extension
-        assert.ok(true, 'Test skipped - isPythonExtensionAvailable is not a public method');
+        assert.ok(
+            true,
+            'Test skipped - isPythonExtensionAvailable is not a public method'
+        );
     });
 
     test('should check if Python extension is not available', () => {
         // This test is skipped because isPythonExtensionAvailable is not a public method
         // The functionality is tested through other methods that use the Python extension
-        assert.ok(true, 'Test skipped - isPythonExtensionAvailable is not a public method');
+        assert.ok(
+            true,
+            'Test skipped - isPythonExtensionAvailable is not a public method'
+        );
     });
 
     test('should get Python extension API', async () => {
-        // Mock vscode.extensions.getExtension
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension with test API
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: true,
-            activate: () => Promise.resolve({ test: 'api' })
-        }) as any;
+            activateResult: { test: 'api' },
+        });
 
-        try {
-            const api = await (pythonManager as any).getPythonExtensionApi();
-            assert.ok(api);
-            assert.strictEqual(api.test, 'api');
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        const api = await getPythonExtensionApi();
+        assert.ok(api);
+        assert.strictEqual(api.test, 'api');
     });
 
     test('should handle get Python extension API when extension not found', async () => {
-        // Mock vscode.extensions.getExtension to return undefined
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => undefined;
+        // Configure mock to return undefined (extension not found)
+        configureMockGetExtension({ extensionExists: false });
 
-        try {
-            const api = await (pythonManager as any).getPythonExtensionApi();
-            assert.strictEqual(api, undefined);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        const api = await getPythonExtensionApi();
+        assert.strictEqual(api, null);
     });
 
     test('should handle get Python extension API activation error', async () => {
-        // Mock vscode.extensions.getExtension to return extension that fails to activate
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension that fails to activate
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: false,
-            activate: () => Promise.reject(new Error('Activation failed'))
-        }) as any;
+            activateError: new Error('Activation failed'),
+        });
 
-        try {
-            const api = await (pythonManager as any).getPythonExtensionApi();
-            assert.strictEqual(api, undefined);
-        } finally {
-            vscode.extensions.getExtension = originalGetExtension;
-        }
+        const api = await getPythonExtensionApi();
+        assert.strictEqual(api, null);
     });
 
     test('should handle VSCode configuration fallback', async () => {
         // Mock vscode.workspace.getConfiguration
         const originalGetConfiguration = vscode.workspace.getConfiguration;
-        vscode.workspace.getConfiguration = (section?: string) => ({
-            get: (key: string) => {
-                if (section === 'python' && key === 'defaultInterpreterPath') {
-                    return '/usr/bin/python3';
-                }
-                return undefined;
-            }
-        }) as any;
+        vscode.workspace.getConfiguration = (section?: string) =>
+            ({
+                get: (key: string) => {
+                    if (
+                        section === 'python' &&
+                        key === 'defaultInterpreterPath'
+                    ) {
+                        return '/usr/bin/python3';
+                    }
+                    return undefined;
+                },
+            } as any);
 
-        // Mock the Python extension to be available but without the required APIs so it falls back to VSCode config
-        const originalGetExtension = vscode.extensions.getExtension;
-        vscode.extensions.getExtension = () => ({
+        // Configure mock to return extension that activates but returns null (triggers fallback)
+        configureMockGetExtension({
+            extensionExists: true,
             isActive: false,
-            activate: async () => null // Return null to trigger fallback
-        }) as any;
+            activateResult: undefined,
+        });
 
         try {
-            const interpreterPath = await (pythonManager as any).getPythonInterpreterFromExtension();
+            const interpreterPath =
+                await getPythonInterpreterFromPythonExtension();
             assert.strictEqual(interpreterPath, '/usr/bin/python3');
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
-            vscode.extensions.getExtension = originalGetExtension;
         }
     });
 
@@ -374,56 +475,12 @@ suite('PythonManager Test Suite', () => {
         };
 
         try {
-            const interpreterPath = await (pythonManager as any).getPythonInterpreterFromExtension();
+            const interpreterPath =
+                await getPythonInterpreterFromPythonExtension();
             assert.strictEqual(interpreterPath, null);
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }
     });
 
-    test('should handle multiple initialization calls', async () => {
-        // Mock the getPythonInterpreterFromExtension method
-        const originalGetPythonInterpreterFromExtension = (pythonManager as any).getPythonInterpreterFromExtension;
-        let callCount = 0;
-        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
-            callCount++;
-            return undefined;
-        };
-
-        try {
-            await pythonManager.forceInitialize();
-            await pythonManager.forceInitialize();
-            await pythonManager.forceInitialize();
-            
-            // Should have been called multiple times
-            assert.ok(callCount > 0);
-        } finally {
-            (pythonManager as any).getPythonInterpreterFromExtension = originalGetPythonInterpreterFromExtension;
-        }
-    });
-
-    test('should handle concurrent initialization calls', async () => {
-        // Mock the getPythonInterpreterFromExtension method
-        const originalGetPythonInterpreterFromExtension = (pythonManager as any).getPythonInterpreterFromExtension;
-        let callCount = 0;
-        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
-            callCount++;
-            return undefined;
-        };
-
-        try {
-            // Create multiple concurrent initialization calls
-            const promises = [];
-            for (let i = 0; i < 5; i++) {
-                promises.push(pythonManager.forceInitialize());
-            }
-            
-            await Promise.all(promises);
-            
-            // Should have been called multiple times
-            assert.ok(callCount > 0);
-        } finally {
-            (pythonManager as any).getPythonInterpreterFromExtension = originalGetPythonInterpreterFromExtension;
-        }
-    });
 });

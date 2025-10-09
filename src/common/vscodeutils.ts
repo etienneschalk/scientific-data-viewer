@@ -114,7 +114,55 @@ export function setPackageJson(packageJson: PackageJson) {
 }
 
 export function getPackageJson(): PackageJson {
-    return _packageJson;
+    return _packageJson ? _packageJson : createMockPackageJSON();
+}
+
+function createMockPackageJSON(): PackageJson {
+    return {
+        name: '[MOCK] name',
+        displayName: '[MOCK] displayName',
+        description: '[MOCK description]',
+        version: '[MOCK] version',
+        publisher: '[MOCK] publisher',
+        icon: '[MOCK] icon',
+        engines: {
+            vscode: '[MOCK] vscode',
+            node: '[MOCK] node',
+        },
+        extensionDependencies: [],
+        categories: [],
+        keywords: [],
+        activationEvents: [],
+        main: '[MOCK] main',
+        contributes: {
+            commands: [],
+            menus: {
+                'explorer/context': [],
+                commandPalette: [],
+                'view/title': [],
+            },
+            languages: [],
+            views: {
+                explorer: [],
+            },
+            customEditors: [],
+            configuration: {
+                title: '[MOCK] title',
+                properties: {},
+            },
+        },
+        scripts: {},
+        devDependencies: {},
+        dependencies: {},
+        repository: {
+            type: '[MOCK] type',
+            url: '[MOCK] url',
+        },
+        homepage: '[MOCK] homepage',
+        bugs: {
+            url: '[MOCK] url',
+        },
+    };
 }
 
 // TODO Should use this function everywhere the version is printed

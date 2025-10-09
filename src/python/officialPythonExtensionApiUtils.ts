@@ -4,7 +4,7 @@ import { Logger } from '../common/Logger';
 /**
  * Get Python extension API if available
  */
-async function getPythonExtensionApi(): Promise<any | null> {
+export async function getPythonExtensionApi(): Promise<any | null> {
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
 
     if (!pythonExtension) {
