@@ -4108,7 +4108,7 @@ def create_sample_netcdf_many_encoding():
     return output_file
 
 
-def main():
+def main(do_create_disposable_files: bool = False):
     """Create all sample data files."""
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
     print("=" * 80)
@@ -4274,18 +4274,21 @@ def main():
             for broken_file in broken_files:
                 created_files.append((broken_file, "Broken File"))
 
-        # print("\n🗑️ Creating disposable files for deletion testing...")
-        # cleanup_disposable_files()
+        if do_create_disposable_files:
+            print("\n🗑️ Creating disposable files for deletion testing...")
+            cleanup_disposable_files()
 
-        # disposable_netcdf_files = create_disposable_netcdf_files()
-        # if disposable_netcdf_files:
-        #     for disposable_file in disposable_netcdf_files:
-        #         created_files.append((disposable_file, "Disposable NetCDF"))
+            disposable_netcdf_files = create_disposable_netcdf_files()
+            if disposable_netcdf_files:
+                for disposable_file in disposable_netcdf_files:
+                    created_files.append((disposable_file, "Disposable NetCDF"))
 
-        # disposable_zarr_files = create_disposable_zarr_files()
-        # if disposable_zarr_files:
-        #     for disposable_file in disposable_zarr_files:
-        #         created_files.append((disposable_file, "Disposable Zarr"))
+            disposable_zarr_files = create_disposable_zarr_files()
+            if disposable_zarr_files:
+                for disposable_file in disposable_zarr_files:
+                    created_files.append((disposable_file, "Disposable Zarr"))
+        else:
+            print("\n🗑️ Skipping disposable files for deletion testing...")
 
         print("\n" + "=" * 80)
         print("✅ Sample data files created successfully!")
