@@ -895,12 +895,22 @@ function displayGlobalError(
         <ol>
             <li>If this is the first time you are using the extension, please consult the <a href="https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started" target="_blank">🔗 Getting Started</a> guide</li>
             <li>If the file is indicated as too large, you can increase the Max File Size in the <a href="#" class="small-button-link" onclick="executeShowSettingsCommand()">🎮 Extension Settings</a></li>
+            <li>Make sure that the file format is supported (${supportedFormats})</li>
             <li>Make sure Python is installed and accessible</li>
+            <li>
+                Make sure that the Python extension is installed and enabled. 
+                Please go to the Extensions pane and search for <code>ms-python.python</code> 
+                to verify that the official Python extension is both installed and enabled.
+                <ul style="margin-left: 20px;">
+                    <li>For VSCode users: <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python" target="_blank">🔗 Python extension (VSCode Marketplace)</a></li>
+                    <li>For Cursor users: <a href="https://open-vsx.org/extension/ms-python/python" target="_blank">🔗 Python extension (Open VSX Registry)</a></li>
+                </ul>
+            </li>
+
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
             <li>If the python environment is not ready, install required packages: 
                 <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
                     🎮 Install xarray and matplotlib</a>
-            <li>Check file format is supported (${supportedFormats})</li>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
                     <li>NetCDF: 

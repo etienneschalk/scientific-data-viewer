@@ -11,7 +11,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 **Current Version: v0.4.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
 
 Available on:
-[VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
+[VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
 
 [Getting Started](https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started)
 
@@ -144,11 +144,13 @@ The extension supports multiple ways to configure your Python environment:
 
 1. **Python Extension Integration** (Default behaviour):
 
+   - This mode delegates most of the work to the **Python extension**. Its installation is a requirement.
+     - For VSCode users: [🔗 Python extension (VSCode Marketplace)](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+     - For Cursor users: [🔗 Python extension (Open VSX Registry)](https://open-vsx.org/extension/ms-python/python)
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
    - Type "Python: Select Interpreter"
    - Choose your preferred Python environment
    - The extension will automatically detect it and use it
-   - This mode delegates most of the work to the official [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python).
 
 2. **Extension Virtual Environment (Semi-Standalone)**:
 
