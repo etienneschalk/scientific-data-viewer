@@ -1,6 +1,6 @@
-import { HeaderItem } from './OutlineProvider';
-import { Logger } from '../logger';
-import { DataInfoResult } from '../dataProcessor';
+import { Logger } from '../common/Logger';
+import { getDisplayName } from '../common/vscodeutils';
+import { DataInfoResult, HeaderItem } from '../types';
 
 export class HeaderExtractor {
     // JoinId is used to join parts of an id together with a separator
@@ -80,7 +80,7 @@ export class HeaderExtractor {
     static createDataViewerHeaders(): HeaderItem[] {
         return [
             {
-                label: 'Scientific Data Viewer',
+                label: getDisplayName(),
                 level: 1,
                 id: 'top-level-title',
                 children: [],

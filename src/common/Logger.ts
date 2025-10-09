@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
+import { getDisplayName } from './vscodeutils';
 
-class Logger {
+export class Logger {
     private static outputChannel: vscode.OutputChannel | undefined;
 
     public static initialize(): void {
         if (!this.outputChannel) {
             this.outputChannel = vscode.window.createOutputChannel(
-                'Scientific Data Viewer'
+                getDisplayName()
             );
         }
     }
@@ -91,4 +92,3 @@ class Logger {
     }
 }
 
-export { Logger };

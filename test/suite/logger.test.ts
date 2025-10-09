@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { Logger } from '../../src/logger';
+import { Logger } from '../../src/common/Logger';
 
 suite('Logger Test Suite', () => {
     let originalOutputChannel: vscode.OutputChannel | undefined;

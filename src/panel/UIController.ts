@@ -4,13 +4,15 @@
 
 import * as vscode from 'vscode';
 import * as os from 'os';
-import { StateManager, AppState } from '../state/AppState';
-import { MessageBus } from '../communication/MessageBus';
-import { ErrorBoundary, ErrorContext } from '../error/ErrorBoundary';
-import { DataProcessor } from '../dataProcessor';
-import { Logger } from '../logger';
+import { StateManager, AppState } from './state/AppState';
+import { MessageBus } from './communication/MessageBus';
+import { ErrorBoundary } from '../common/ErrorBoundary';
+import { DataProcessor } from '../python/DataProcessor';
+import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
-import { showErrorMessage } from '../utils';
+import { getVersion, showErrorMessage } from '../common/vscodeutils';
+import { getDevMode, getMaxSize, getWorkspaceConfig } from '../common/config';
+import { ErrorContext } from '../types';
 
 export class UIController {
     private id: number;
@@ -174,12 +176,7 @@ export class UIController {
                 // Check file size
                 const fileUri = vscode.Uri.file(filePath);
                 const stat = await vscode.workspace.fs.stat(fileUri);
-                const maxSize =
-                    vscode.workspace
-                        .getConfiguration('scientificDataViewer')
-                        .get('maxFileSize', 100) *
-                    1024 *
-                    1024;
+                const maxSize = getMaxSize() * 1024 * 1024;
 
                 if (stat.size > maxSize) {
                     throw new Error(
@@ -523,20 +520,8 @@ export class UIController {
 
         return (
             this.errorBoundary.wrapAsync(async () => {
-                const config = vscode.workspace.getConfiguration(
-                    'scientificDataViewer'
-                );
-                return {
-                    'scientificDataViewer.maxFileSize':
-                        config.get('maxFileSize'),
-                    'scientificDataViewer.defaultView':
-                        config.get('defaultView'),
-                    'scientificDataViewer.allowMultipleTabsForSameFile':
-                        config.get('allowMultipleTabsForSameFile'),
-                    'scientificDataViewer.devMode': config.get('devMode'),
-                    'scientificDataViewer.matplotlibStyle':
-                        config.get('matplotlibStyle'),
-                };
+                const config = getWorkspaceConfig();
+                return config;
             }, context) || {}
         );
     }
@@ -685,17 +670,14 @@ export class UIController {
     }
 
     private getHtmlForWebview() {
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const devMode = config.get('devMode', false);
+        const devMode = getDevMode();
         const lastLoadTime =
             this.stateManager.getState().data.lastLoadTime?.toISOString() ||
             null;
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
-            this.getId()
+            this.getId(),
         );
     }
 }

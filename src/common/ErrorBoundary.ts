@@ -3,18 +3,9 @@
  */
 
 import * as vscode from 'vscode';
-import { Logger } from '../logger';
-
-export interface ErrorHandler {
-    (error: Error, context?: any): void;
-}
-
-export interface ErrorContext {
-    component: any;
-    operation: string;
-    data?: any;
-    userAction?: string;
-}
+import { Logger } from './Logger';
+import { ErrorContext, ErrorHandler } from '../types';
+import { getDisplayName } from './vscodeutils';
 
 export class ErrorBoundary {
     private static instance: ErrorBoundary;
@@ -113,7 +104,7 @@ export class ErrorBoundary {
 
         vscode.window
             .showErrorMessage(
-                `Scientific Data Viewer Error: ${userMessage}`,
+                `${getDisplayName()} Error: ${userMessage}`,
                 'Show Details',
                 'Report Issue'
             )

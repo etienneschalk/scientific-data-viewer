@@ -1,63 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { PythonManager } from './pythonManager';
-import { Logger } from './logger';
-import { quoteIfNeeded } from './utils';
-
-export interface DataInfo {
-    result?: DataInfoResult;
-    error?: DataInfoError;
-}
-
-export interface DataInfoFormatInfo {
-    extension: string;
-    display_name: string;
-    available_engines: string[];
-    missing_packages: string[];
-    is_supported: boolean;
-}
-
-export interface DataInfoResult {
-    format: string;
-    format_info: DataInfoFormatInfo;
-    used_engine: string;
-    fileSize: number;
-    xarray_html_repr: string;
-    xarray_text_repr: string;
-    xarray_show_versions: string;
-    // New datatree fields
-    dimensions_flattened: { [groupName: string]: { [key: string]: number } };
-    coordinates_flattened: {
-        [groupName: string]: Array<{
-            name: string;
-            dtype: string;
-            shape: number[];
-            dimensions: string[];
-            size_bytes: number;
-            attributes?: { [key: string]: any };
-        }>;
-    };
-    variables_flattened: {
-        [groupName: string]: Array<{
-            name: string;
-            dtype: string;
-            shape: number[];
-            dimensions: string[];
-            size_bytes: number;
-            attributes?: { [key: string]: any };
-        }>;
-    };
-    attributes_flattened: { [groupName: string]: { [key: string]: any } };
-    xarray_html_repr_flattened: { [groupName: string]: string };
-    xarray_text_repr_flattened: { [groupName: string]: string };
-}
-export interface DataInfoError {
-    error: string;
-    error_type: string;
-    suggestion: string;
-    format_info: DataInfoFormatInfo;
-    xarray_show_versions: string;
-}
+import { PythonManager } from './PythonManager';
+import { Logger } from '../common/Logger';
+import { quoteIfNeeded } from '../common/utils';
+import { getMatplotlibStyle } from '../common/config';
+import { DataInfo } from '../types';
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -74,39 +21,7 @@ export class DataProcessor {
     private readonly pythonScriptsHomeDir: string;
 
     constructor(private pythonManager: PythonManager) {
-        this.pythonScriptsHomeDir = path.join(__dirname, '../..', 'python');
-    }
-
-    private detectVSCodeTheme(): string {
-        // Get the current VSCode theme
-        const currentTheme = vscode.window.activeColorTheme;
-
-        // Check if it's a dark theme
-        if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
-            Logger.info(
-                'Detected dark VSCode theme, using dark_background style'
-            );
-            return 'dark_background';
-        } else {
-            Logger.info('Detected light VSCode theme, using default style');
-            return 'default';
-        }
-    }
-
-    private getMatplotlibStyle(): string {
-        // Get the user setting
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const userStyle = config.get<string>('matplotlibStyle', '');
-
-        if (userStyle && userStyle.trim() !== '') {
-            Logger.info(`Using user-specified matplotlib style: ${userStyle}`);
-            return userStyle;
-        } else {
-            // Auto-detect based on VSCode theme
-            return this.detectVSCodeTheme();
-        }
+        this.pythonScriptsHomeDir = path.join(__dirname, '../../../python');
     }
 
     get pythonManagerInstance(): PythonManager {
@@ -155,7 +70,7 @@ export class DataProcessor {
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
-        const style = this.getMatplotlibStyle();
+        const style = getMatplotlibStyle();
 
         // Use the new merged CLI with 'plot' mode and style parameter
         const args = [

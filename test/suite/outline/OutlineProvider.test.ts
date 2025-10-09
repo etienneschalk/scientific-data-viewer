@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { OutlineProvider, HeaderItem } from '../../../src/outline/OutlineProvider';
+import { OutlineProvider } from '../../../src/outline/OutlineProvider';
+import { HeaderItem } from '../../../src/types';
 
 suite('OutlineProvider Test Suite', () => {
     let outlineProvider: OutlineProvider;
@@ -22,7 +23,7 @@ suite('OutlineProvider Test Suite', () => {
 
     test('should provide children for root', () => {
         const children = outlineProvider.getChildren();
-        
+
         assert.ok(children);
         assert.ok(Array.isArray(children));
         // Initially should be empty until headers are set
@@ -39,13 +40,13 @@ suite('OutlineProvider Test Suite', () => {
                     label: 'Child Header',
                     level: 2,
                     id: 'child-header',
-                    children: []
-                }
-            ]
+                    children: [],
+                },
+            ],
         };
 
         const children = outlineProvider.getChildren(mockElement);
-        
+
         assert.ok(children);
         assert.ok(Array.isArray(children));
         assert.strictEqual(children.length, 1);
@@ -58,13 +59,13 @@ suite('OutlineProvider Test Suite', () => {
                 label: 'Main Header',
                 level: 1,
                 id: 'main-header',
-                children: []
-            }
+                children: [],
+            },
         ];
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
         outlineProvider.updateHeaders(0, mockHeaders);
-        
+
         const children = outlineProvider.getChildren();
         assert.strictEqual(children.length, 1);
         assert.strictEqual(children[0].label, 'Main Header');
@@ -75,14 +76,17 @@ suite('OutlineProvider Test Suite', () => {
             label: 'Test Header',
             level: 1,
             id: 'test-header',
-            children: []
+            children: [],
         };
 
         const treeItem = outlineProvider.getTreeItem(mockElement);
-        
+
         assert.ok(treeItem);
         assert.strictEqual(treeItem.label, 'Test Header');
-        assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.None);
+        assert.strictEqual(
+            treeItem.collapsibleState,
+            vscode.TreeItemCollapsibleState.None
+        );
     });
 
     test('should get tree item for element with children', () => {
@@ -95,19 +99,22 @@ suite('OutlineProvider Test Suite', () => {
                     label: 'Child Header',
                     level: 2,
                     id: 'child-header',
-                    children: []
-                }
-            ]
+                    children: [],
+                },
+            ],
         };
 
         // Set up the provider with a current panel ID
         outlineProvider.updateHeaders(0, [mockElement]);
 
         const treeItem = outlineProvider.getTreeItem(mockElement);
-        
+
         assert.ok(treeItem);
         assert.strictEqual(treeItem.label, 'Test Header');
-        assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+        assert.strictEqual(
+            treeItem.collapsibleState,
+            vscode.TreeItemCollapsibleState.Collapsed
+        );
     });
 
     test('should get parent of element', () => {
@@ -115,13 +122,13 @@ suite('OutlineProvider Test Suite', () => {
             label: 'Child Header',
             level: 2,
             id: 'child-header',
-            children: []
+            children: [],
         };
         const parentElement: HeaderItem = {
             label: 'Parent Header',
             level: 1,
             id: 'parent-header',
-            children: [childElement]
+            children: [childElement],
         };
 
         // Set up the provider with the parent-child relationship
@@ -130,7 +137,7 @@ suite('OutlineProvider Test Suite', () => {
         outlineProvider.updateHeaders(0, mockHeaders);
 
         const parent = outlineProvider.getParent(childElement);
-        
+
         assert.ok(parent);
         assert.strictEqual(parent?.label, 'Parent Header');
     });
@@ -141,7 +148,7 @@ suite('OutlineProvider Test Suite', () => {
         outlineProvider.updateHeaders(0, mockHeaders);
 
         const currentFile = outlineProvider.getCurrentPanelId();
-        
+
         assert.ok(currentFile !== undefined);
         assert.strictEqual(currentFile, 0);
     });
@@ -150,17 +157,17 @@ suite('OutlineProvider Test Suite', () => {
         const mockUri1 = vscode.Uri.file('/path/to/test1.nc');
         const mockUri2 = vscode.Uri.file('/path/to/test2.nc');
         const mockHeaders1: HeaderItem[] = [
-            { label: 'Header 1', level: 1, id: 'header1', children: [] }
+            { label: 'Header 1', level: 1, id: 'header1', children: [] },
         ];
         const mockHeaders2: HeaderItem[] = [
-            { label: 'Header 2', level: 1, id: 'header2', children: [] }
+            { label: 'Header 2', level: 1, id: 'header2', children: [] },
         ];
 
         outlineProvider.updateHeaders(0, mockHeaders1);
         outlineProvider.updateHeaders(0, mockHeaders2);
 
         outlineProvider.switchToPanel(0);
-        
+
         const children = outlineProvider.getChildren();
         assert.strictEqual(children.length, 1);
         assert.strictEqual(children[0].label, 'Header 2');
@@ -169,13 +176,13 @@ suite('OutlineProvider Test Suite', () => {
     test('should get headers for specific file', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const mockHeaders: HeaderItem[] = [
-            { label: 'Test Header', level: 1, id: 'test-header', children: [] }
+            { label: 'Test Header', level: 1, id: 'test-header', children: [] },
         ];
 
         outlineProvider.updateHeaders(0, mockHeaders);
 
         const headers = outlineProvider.getHeadersForPanel(0);
-        
+
         assert.ok(headers);
         assert.strictEqual(headers?.length, 1);
         assert.strictEqual(headers?.[0].label, 'Test Header');
@@ -211,12 +218,12 @@ suite('OutlineProvider Test Suite', () => {
 
     test('should handle switch to non-existent file', () => {
         const mockUri = vscode.Uri.file('/path/to/nonexistent.nc');
-        
+
         // Should not throw an error
         assert.doesNotThrow(() => {
             outlineProvider.switchToPanel(0);
         });
-        
+
         const children = outlineProvider.getChildren();
         assert.strictEqual(children.length, 0);
     });
@@ -226,7 +233,7 @@ suite('OutlineProvider Test Suite', () => {
             label: 'Root Header',
             level: 1,
             id: 'root-header',
-            children: []
+            children: [],
         };
 
         const parent = outlineProvider.getParent(mockElement);
@@ -238,17 +245,20 @@ suite('OutlineProvider Test Suite', () => {
             label: 'Test Header',
             level: 1,
             id: 'test-header',
-            children: []
+            children: [],
         };
 
         // Set up the provider with a current panel ID
         outlineProvider.updateHeaders(0, [mockElement]);
 
         const treeItem = outlineProvider.getTreeItem(mockElement);
-        
+
         assert.ok(treeItem);
         assert.ok(treeItem.command);
-        assert.strictEqual(treeItem.command?.command, 'scientificDataViewer.scrollToHeader');
+        assert.strictEqual(
+            treeItem.command?.command,
+            'scientificDataViewer.scrollToHeader'
+        );
     });
 
     test('should handle different header levels', () => {
@@ -256,23 +266,27 @@ suite('OutlineProvider Test Suite', () => {
             label: 'Level 1',
             level: 1,
             id: 'level1',
-            children: []
+            children: [],
         };
         const mockElement2: HeaderItem = {
             label: 'Level 2',
             level: 2,
             id: 'level2',
-            children: []
+            children: [],
         };
         const mockElement3: HeaderItem = {
             label: 'Level 3',
             level: 3,
             id: 'level3',
-            children: []
+            children: [],
         };
 
         // Set up the provider with a current panel ID
-        outlineProvider.updateHeaders(0, [mockElement1, mockElement2, mockElement3]);
+        outlineProvider.updateHeaders(0, [
+            mockElement1,
+            mockElement2,
+            mockElement3,
+        ]);
 
         const treeItem1 = outlineProvider.getTreeItem(mockElement1);
         const treeItem2 = outlineProvider.getTreeItem(mockElement2);

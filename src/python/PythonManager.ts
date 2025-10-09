@@ -1,9 +1,14 @@
-import * as vscode from 'vscode';
 import { spawn } from 'child_process';
-import { Logger } from './logger';
-import { DataViewerPanel } from './dataViewerPanel';
-import { ExtensionVirtualEnvironmentManager } from './extensionVirtualEnvironmentManager';
-import { quoteIfNeeded, showErrorMessage } from './utils';
+import { Logger } from '../common/Logger';
+import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
+import { quoteIfNeeded } from '../common/utils';
+import { showErrorMessage } from '../common/vscodeutils';
+import { getPythonInterpreterFromPythonExtension } from './officialPythonExtensionApiUtils';
+import {
+    getOverridePythonInterpreter,
+    getUseExtensionOwnEnvironment,
+} from '../common/config';
+import { EnvironmentInfo, EnvironmentSource } from '../types';
 
 /**
  * Flag to control the creation of the extension own virtual environment
@@ -15,20 +20,14 @@ const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = true;
 
 /**
  * Enum to represent the source of the Python environment
- * - override: The user has set an override Python interpreter
- *   via 'scientificDataViewer.python.overridePythonInterpreter'
+ * - override: The user has set an override Python interpreter when set
+ *   via python section config: overridePythonInterpreter
  * - own-uv-env: The extension has created its own virtual environment with uv
- *   via 'scientificDataViewer.python.useExtensionOwnEnvironment'
+ *   when python section config: useExtensionOwnEnvironment = true
  * - python-extension: The Python extension has created the environment
- *   via 'scientificDataViewer.python.usePythonExtensionEnvironment'
- * - system: The system Python interpreter is used
- *   via 'scientificDataViewer.python.useSystemPython'
+ *   when python section config: useExtensionOwnEnvironment = false
+ * - system: The system Python interpreter is used (default behaviour)
  */
-type EnvironmentSource =
-    | 'override'
-    | 'own-uv-env'
-    | 'python-extension'
-    | 'system';
 
 /**
  * Class to manage the Python environment
@@ -78,7 +77,11 @@ export class PythonManager {
      * Check if the Python environment is ready
      */
     get ready(): boolean {
-        return this._initialized && this._pythonPath !== null && this._corePackagesInstalled;
+        return (
+            this._initialized &&
+            this._pythonPath !== null &&
+            this._corePackagesInstalled
+        );
     }
 
     /**
@@ -99,10 +102,8 @@ export class PythonManager {
      */
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
-        this._initialized = false;
         this._initializationPromise = null; // Reset any existing initialization
-        await this.initialize();
-        this._initialized = true;
+        await this.initializeIfNotInitializing();
     }
 
     /**
@@ -246,12 +247,7 @@ export class PythonManager {
      * Get information about the current Python environment
      * @returns             The current environment info
      */
-    getCurrentEnvironmentInfo(): {
-        initialized: boolean;
-        ready: boolean;
-        source: EnvironmentSource | null;
-        path: string | null;
-    } {
+    getCurrentEnvironmentInfo(): EnvironmentInfo {
         return {
             initialized: this._initialized,
             ready: this.ready, // initialized and python path is set
@@ -260,143 +256,7 @@ export class PythonManager {
         };
     }
 
-    /**
-     * Set up event listeners for Python environment changes and creation
-     * Returns a disposable that should be disposed when the extension is deactivated
-     */
-    async setupOfficialPythonExtensionChangeListeners(
-        onDidChangeActiveEnvironmentPath: () => Promise<void>,
-        onDidEnvironmentsChanged: (environment: any) => Promise<void>
-    ): Promise<vscode.Disposable | undefined> {
-        try {
-            const pythonApi = await this.getPythonExtensionApi();
-            if (!pythonApi || !pythonApi.environments) {
-                Logger.debug(
-                    '🐍 ⚠️ Python extension API or environments API not available for event listeners'
-                );
-                return undefined;
-            }
-
-            const disposables: vscode.Disposable[] = [];
-
-            // Listen for active interpreter changes (existing functionality)
-            if (
-                typeof pythonApi.environments
-                    .onDidChangeActiveEnvironmentPath === 'function'
-            ) {
-                Logger.info(
-                    '🐍 🔧 [Official Python Extension] Setting up Python interpreter change listener for onDidChangeActiveEnvironmentPath...'
-                );
-
-                const interpreterDisposable =
-                    pythonApi.environments.onDidChangeActiveEnvironmentPath(
-                        async (event: any) => {
-                            Logger.info(
-                                `🐍 🔔 [Official Python Extension] Python interpreter changed: ${
-                                    event?.path || 'undefined'
-                                }`
-                            );
-                            await onDidChangeActiveEnvironmentPath();
-                        }
-                    );
-
-                disposables.push(interpreterDisposable);
-            }
-
-            // Listen for environment creation/removal/updates (NEW functionality)
-            if (
-                typeof pythonApi.environments.onDidEnvironmentsChanged ===
-                'function'
-            ) {
-                Logger.info(
-                    '🐍 🔧 [Official Python Extension] Setting up Python environment change listener for onDidEnvironmentsChanged...'
-                );
-
-                const environmentDisposable =
-                    pythonApi.environments.onDidEnvironmentsChanged(
-                        async (event: any) => {
-                            // Add comprehensive debugging
-                            Logger.debug(
-                                `🐍 🔍 [Official Python Extension] Environment change event received: ${JSON.stringify(
-                                    event,
-                                    null,
-                                    2
-                                )}`
-                            );
-
-                            // Handle newly created environments
-                            if (event.added && event.added.length > 0) {
-                                Logger.info(
-                                    `🐍 🆕 [Official Python Extension] New Python environments created: ${event.added.length}`
-                                );
-                                for (const env of event.added) {
-                                    Logger.info(
-                                        `🐍 🆕 New environment: ${
-                                            env.path || env.id || 'unknown'
-                                        }`
-                                    );
-                                    await onDidEnvironmentsChanged(env);
-                                }
-                            }
-
-                            // Handle removed environments
-                            if (event.removed && event.removed.length > 0) {
-                                Logger.info(
-                                    `🐍 🗑️ [Official Python Extension] Python environments removed: ${event.removed.length}`
-                                );
-                                for (const env of event.removed) {
-                                    Logger.info(
-                                        `🐍 🗑️ Removed environment: ${
-                                            env.path || env.id || 'unknown'
-                                        }`
-                                    );
-                                    await onDidEnvironmentsChanged(env);
-                                }
-                            }
-
-                            // Handle updated environments
-                            if (event.updated && event.updated.length > 0) {
-                                Logger.info(
-                                    `🐍 🔄 [Official Python Extension] Python environments updated: ${event.updated.length}`
-                                );
-                                for (const env of event.updated) {
-                                    Logger.info(
-                                        `🐍 🔄 Updated environment: ${
-                                            env.path || env.id || 'unknown'
-                                        }`
-                                    );
-                                    await onDidEnvironmentsChanged(env);
-                                }
-                            }
-                        }
-                    );
-
-                disposables.push(environmentDisposable);
-            }
-
-            // If no listeners were set up, return undefined
-            if (disposables.length === 0) {
-                Logger.debug(
-                    '🐍 ⚠️ No compatible event listeners available in Python extension API'
-                );
-                return undefined;
-            }
-
-            // Return a combined disposable
-            return {
-                dispose: () => {
-                    disposables.forEach((d) => d.dispose());
-                },
-            };
-        } catch (error) {
-            Logger.warn(
-                `🐍 ❌ Failed to set up Python environment change listeners: ${error}`
-            );
-            return undefined;
-        }
-    }
-
-    private async initialize(): Promise<void> {
+    private async initializeIfNotInitializing(): Promise<void> {
         // If initialization is already in progress, wait for it to complete
         if (this._initializationPromise) {
             Logger.debug(
@@ -411,39 +271,31 @@ export class PythonManager {
     }
 
     private async doInitialize(): Promise<void> {
+        this._initialized = false;
         try {
             Logger.info('🐍 🔧 [INIT] Initializing Python manager');
-            const config = vscode.workspace.getConfiguration(
-                'scientificDataViewer.python'
-            );
+            const overrideInterpreter = getOverridePythonInterpreter();
+            const useExtensionEnv = getUseExtensionOwnEnvironment();
 
             // First, check if there's an override interpreter set
-            const overrideInterpreter = config.get<string>(
-                'overridePythonInterpreter',
-                ''
-            );
             if (overrideInterpreter) {
                 Logger.info(
                     `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`
                 );
-                await this.validatePythonEnvironment(overrideInterpreter);
-                await this.updateCurrentlyUsedInterpreterInConfig('override');
+                await this.validatePythonEnvironment(
+                    overrideInterpreter,
+                    'override'
+                );
                 return;
             }
 
             // Check if extension environment is enabled
-            const useExtensionEnv = config.get<boolean>(
-                'useExtensionOwnEnvironment',
-                false
-            );
             if (useExtensionEnv) {
                 Logger.info('🐍 🔧 Using extension own virtual environment');
 
                 if (this.extensionEnvManager.ready) {
                     await this.validatePythonEnvironment(
-                        this.extensionEnvManager.pythonPath
-                    );
-                    await this.updateCurrentlyUsedInterpreterInConfig(
+                        this.extensionEnvManager.pythonPath,
                         'own-uv-env'
                     );
                     return;
@@ -453,9 +305,7 @@ export class PythonManager {
                         await this.extensionEnvManager.create();
                         if (this.extensionEnvManager.ready) {
                             await this.validatePythonEnvironment(
-                                this.extensionEnvManager.pythonPath
-                            );
-                            await this.updateCurrentlyUsedInterpreterInConfig(
+                                this.extensionEnvManager.pythonPath,
                                 'own-uv-env'
                             );
                             return;
@@ -474,14 +324,14 @@ export class PythonManager {
 
             // Fallback: Use Python extension API (original behavior)
             const newPythonPath =
-                await this.getPythonInterpreterFromExtension();
+                await getPythonInterpreterFromPythonExtension();
 
             if (newPythonPath) {
                 Logger.info(
                     `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`
                 );
-                await this.validatePythonEnvironment(newPythonPath);
-                await this.updateCurrentlyUsedInterpreterInConfig(
+                await this.validatePythonEnvironment(
+                    newPythonPath,
                     'python-extension'
                 );
                 return;
@@ -502,8 +352,8 @@ export class PythonManager {
                 try {
                     const version = await this.getPythonVersion(pythonPath);
                     if (version) {
-                        await this.validatePythonEnvironment(pythonPath);
-                        await this.updateCurrentlyUsedInterpreterInConfig(
+                        await this.validatePythonEnvironment(
+                            pythonPath,
                             'system'
                         );
                         return;
@@ -513,214 +363,14 @@ export class PythonManager {
                 }
             }
 
-            vscode.window.showWarningMessage(
+            Logger.warn(
                 'No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.'
             );
         } finally {
             // Clear the initialization promise when done
             this._initializationPromise = null;
+            this._initialized = true;
         }
-    }
-
-    private async getPythonInterpreterFromExtension(): Promise<string | null> {
-        try {
-            const pythonExtension =
-                vscode.extensions.getExtension('ms-python.python');
-            if (!pythonExtension) {
-                Logger.error('🐍 ❌ Python extension not found');
-                return null;
-            }
-
-            if (!pythonExtension.isActive) {
-                Logger.debug(
-                    '🐍 💤 Python extension is not active, attempting to activate...'
-                );
-            }
-
-            // Ensure the extension is activated
-            const pythonApi = await pythonExtension.activate();
-
-            if (!pythonApi) {
-                Logger.warn(
-                    '🐍 ⚠️ Python extension API is not available after activation'
-                );
-                // Continue to VSCode configuration fallback
-            } else {
-                Logger.debug(
-                    '🐍 ✅ Python extension API is available after activation'
-                );
-                Logger.debug(
-                    `🐍 🔍 Python API structure: ${JSON.stringify(
-                        Object.keys(pythonApi)
-                    )}`
-                );
-                if (pythonApi.environments) {
-                    Logger.debug(
-                        `🐍 🔍 Environments API methods: ${JSON.stringify(
-                            Object.keys(pythonApi.environments)
-                        )}`
-                    );
-                }
-            }
-
-            // Try the new environments API with resolveEnvironment (recommended approach)
-            if (
-                pythonApi &&
-                pythonApi.environments &&
-                typeof pythonApi.environments.getActiveEnvironmentPath ===
-                    'function'
-            ) {
-                try {
-                    const activeEnvironmentPath =
-                        await pythonApi.environments.getActiveEnvironmentPath();
-                    Logger.debug(
-                        `🐍 🔍 Python extension API active environment path: ${JSON.stringify(
-                            activeEnvironmentPath
-                        )}`
-                    );
-
-                    if (activeEnvironmentPath && activeEnvironmentPath.path) {
-                        // Resolve the environment to get complete details and ensure it's valid
-                        if (
-                            typeof pythonApi.environments.resolveEnvironment ===
-                            'function'
-                        ) {
-                            try {
-                                const resolvedEnvironment =
-                                    await pythonApi.environments.resolveEnvironment(
-                                        activeEnvironmentPath
-                                    );
-                                Logger.debug(
-                                    `🐍 🔍 Resolved environment details: ${JSON.stringify(
-                                        resolvedEnvironment
-                                    )}`
-                                );
-
-                                if (resolvedEnvironment) {
-                                    // Use the resolved environment's path, which should be more reliable
-                                    const resolvedPath =
-                                        resolvedEnvironment.path ||
-                                        resolvedEnvironment.executable?.path ||
-                                        activeEnvironmentPath.path;
-                                    Logger.info(
-                                        `🐍 ✅ Using resolved Python environment: ${resolvedPath}`
-                                    );
-                                    return resolvedPath;
-                                } else {
-                                    Logger.warn(
-                                        '🐍 ⚠️ Environment resolution returned null, using original path'
-                                    );
-                                    return activeEnvironmentPath.path;
-                                }
-                            } catch (resolveError) {
-                                Logger.warn(
-                                    `🐍 ⚠️ Environment resolution failed: ${resolveError}, using original path`
-                                );
-                                return activeEnvironmentPath.path;
-                            }
-                        } else {
-                            Logger.debug(
-                                '🐍 ⚠️ resolveEnvironment not available, using original path'
-                            );
-                            return activeEnvironmentPath.path;
-                        }
-                    }
-                } catch (envError) {
-                    Logger.debug(`🐍 ⚠️ Environments API error: ${envError}`);
-                    // Continue to VSCode configuration fallback
-                }
-            }
-
-            // Try alternative environments API methods
-            if (pythonApi && pythonApi.environments) {
-                // Try getActiveInterpreter if available
-                if (
-                    typeof pythonApi.environments.getActiveInterpreter ===
-                    'function'
-                ) {
-                    try {
-                        const activeInterpreter =
-                            await pythonApi.environments.getActiveInterpreter();
-                        Logger.debug(
-                            `🐍 🔍 Python extension API active interpreter (alt): ${JSON.stringify(
-                                activeInterpreter
-                            )}`
-                        );
-                        return activeInterpreter?.path;
-                    } catch (altError) {
-                        Logger.debug(
-                            `🐍 ⚠️ Alternative environments API error: ${altError}`
-                        );
-                    }
-                }
-
-                // Try getActiveEnvironment if available
-                if (
-                    typeof pythonApi.environments.getActiveEnvironment ===
-                    'function'
-                ) {
-                    try {
-                        const activeEnv =
-                            await pythonApi.environments.getActiveEnvironment();
-                        Logger.debug(
-                            `🐍 🔍 Python extension API active environment (alt): ${JSON.stringify(
-                                activeEnv
-                            )}`
-                        );
-                        return activeEnv?.path;
-                    } catch (altError) {
-                        Logger.debug(
-                            `🐍 ⚠️ Alternative environments API error: ${altError}`
-                        );
-                    }
-                }
-            }
-
-            // Fallback to old settings API if available
-            if (
-                pythonApi &&
-                pythonApi.settings &&
-                typeof pythonApi.settings.getInterpreterDetails === 'function'
-            ) {
-                try {
-                    const interpreterDetails =
-                        await pythonApi.settings.getInterpreterDetails();
-                    Logger.debug(
-                        `🐍 🔍 Python extension API interpreter details (legacy): ${JSON.stringify(
-                            interpreterDetails
-                        )}`
-                    );
-                    return interpreterDetails?.path;
-                } catch (legacyError) {
-                    Logger.debug(`🐍 ⚠️ Legacy API error: ${legacyError}`);
-                }
-            }
-
-            Logger.warn('🐍 ⚠️ No compatible Python extension API found');
-        } catch (error) {
-            Logger.warn(
-                `🐍 ⚠️ Could not access Python extension API: ${error}`
-            );
-        }
-
-        // Fallback: try to get from VSCode configuration
-        try {
-            const vscodePythonPath = vscode.workspace
-                .getConfiguration('python')
-                .get('defaultInterpreterPath') as string | null;
-            if (vscodePythonPath) {
-                Logger.debug(
-                    `🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`
-                );
-            }
-            return vscodePythonPath;
-        } catch (error) {
-            Logger.warn(
-                `🐍 ⚠️ Could not access Python configuration: ${error}`
-            );
-        }
-
-        return null;
     }
 
     private async getPythonVersion(pythonPath: string): Promise<string | null> {
@@ -862,9 +512,11 @@ export class PythonManager {
     }
 
     private async validatePythonEnvironment(
-        pythonPath: string | null
+        pythonPath: string | null,
+        source: EnvironmentSource
     ): Promise<void> {
         this._pythonPath = pythonPath;
+        this._environmentSource = source;
 
         Logger.info(
             `🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this._initialized} | Python path: ${this._pythonPath}`
@@ -879,9 +531,9 @@ export class PythonManager {
             const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
             );
-            
+
             // Only require core packages for basic functionality
-            if (missingCorePackages.length == 0) {
+            if (missingCorePackages.length === 0) {
                 this._corePackagesInstalled = true;
                 Logger.info(
                     `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`
@@ -955,7 +607,7 @@ export class PythonManager {
                 Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
 
                 if (code === 0) {
-                    vscode.window.showInformationMessage(
+                    Logger.info(
                         `Successfully installed packages: ${packages.join(
                             ', '
                         )}`
@@ -1014,56 +666,5 @@ export class PythonManager {
                 reject(new Error(errorMessage));
             });
         });
-    }
-
-    /**
-     * Get Python extension API if available
-     */
-    private async getPythonExtensionApi(): Promise<any | undefined> {
-        try {
-            const pythonExtension =
-                vscode.extensions.getExtension('ms-python.python');
-            if (!pythonExtension) {
-                return undefined;
-            }
-            return await pythonExtension.activate();
-        } catch (error) {
-            Logger.debug(`🐍 ❌ Failed to activate Python extension: ${error}`);
-            return undefined;
-        }
-    }
-
-    /**
-     * Update the currently used interpreter in the configuration
-     */
-    private async updateCurrentlyUsedInterpreterInConfig(
-        source: EnvironmentSource
-    ): Promise<void> {
-        const interpreterPath = this._pythonPath;
-        this._environmentSource = source;
-        try {
-            const config = vscode.workspace.getConfiguration(
-                'scientificDataViewer.python'
-            );
-            const currentValue = config.get<string>(
-                'currentlyInUseInterpreter',
-                ''
-            );
-
-            if (currentValue !== interpreterPath) {
-                await config.update(
-                    'currentlyInUseInterpreter',
-                    interpreterPath,
-                    vscode.ConfigurationTarget.Workspace
-                );
-                Logger.info(
-                    `🐍 📝 Updated currently used interpreter: ${interpreterPath} (source: ${source})`
-                );
-            }
-        } catch (error) {
-            Logger.warn(
-                `🐍 ⚠️ Failed to update currently used interpreter: ${error}`
-            );
-        }
     }
 }

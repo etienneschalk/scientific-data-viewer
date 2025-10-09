@@ -49,14 +49,14 @@ npm install
 echo "🐍 Installing Python dependencies..."
 pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray xarray-sentinel
 
-# Compile TypeScript
-echo "🔨 Compiling TypeScript..."
-npm run compile
-
 # Create sample data
 echo "📊 Creating sample data files..."
 echo "   This will regenerate all sample files including disposable test files..."
 python3 python/create_sample_data.py
+
+# Compile TypeScript
+echo "🔨 Compiling TypeScript..."
+npm run compile
 
 # Run tests
 echo "🧪 Running tests..."

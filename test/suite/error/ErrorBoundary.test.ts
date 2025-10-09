@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { ErrorBoundary } from '../../../src/error/ErrorBoundary';
+import { ErrorBoundary } from '../../../src/common/ErrorBoundary';
 
 suite('ErrorBoundary Tests', () => {
     let errorBoundary: ErrorBoundary;

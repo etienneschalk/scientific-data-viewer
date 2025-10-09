@@ -40,7 +40,7 @@ import logging
 import os
 from pathlib import Path, PurePosixPath
 import sys
-from typing import Any, Literal, cast, Union, List, Dict
+from typing import Any, Callable, Literal, cast, Union, List, Dict
 
 import xarray as xr
 import matplotlib as mpl
@@ -49,6 +49,85 @@ import numpy as np
 
 from importlib.util import find_spec
 from io import BytesIO
+
+from dataclasses import is_dataclass
+from typing import Type
+
+
+# <JSON Serialization Section>
+
+
+def sanitize_nan(obj, default: Callable[[Any], str]):
+    if isinstance(obj, dict):
+        return {k: sanitize_nan(v, default) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_nan(v, default) for v in obj]
+    elif isinstance(obj, float) and np.isnan(obj):
+        # str gives 'nan', repr gives eg np.float64(nan)
+        return default(obj)
+    return obj
+
+
+class ComplexEncoder(json.JSONEncoder):
+    def encode(self, obj, *args, **kwargs):
+        return super().encode(sanitize_nan(obj, repr), *args, **kwargs)
+
+    def default(self, obj: Any) -> Any:
+        """
+        Best effort to try to convert non-native Python objects to strings when serialization to JSON,
+        with a fallback on calling ``str`` on the object to serialized
+
+        Parameters
+        ----------
+        obj
+            Object to convert to
+
+        Returns
+        -------
+            Serializable representation of the object
+        """
+        if is_dataclass(obj):
+            return asdict(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (xr.Dataset, xr.DataArray)):
+            return obj.to_dict()
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.integer):
+            return int(obj)
+        # Let the base class default method raise the TypeError
+        # The default=str kwarg can still be passed to json.dumps
+        # to catch all and convert to string.
+        return super().default(obj)
+
+
+def to_json_best_effort(
+    obj: Any,
+    *,
+    encoder: Type[json.JSONEncoder] = ComplexEncoder,
+    **kwargs: Any,
+) -> str:
+    """
+    Best effort to convert a complex object to JSON.
+
+    Parameters
+    ----------
+    obj
+        Object to convert
+    encoder, optional
+        JSONEncoder to use, by default ComplexEncoderDefaultStr
+        The default should be able to convert most common complex objects encountered in the project to JSON.
+    kwargs
+        Additional keyword arguments to pass to the ``json.dumps`` function, eg ``indent``
+    Returns
+    -------
+        JSON string
+    """
+    return json.dumps(obj, cls=encoder, allow_nan=False, default=str, **kwargs)
+
+
+# </JSON Serialization Section>
 
 DictOfDatasets = Dict[str, xr.Dataset]
 
@@ -456,6 +535,7 @@ def open_datatree_with_fallback(
             if can_use_datatree(engine):
                 xdt_or_xds = xr.open_datatree(
                     file_path,
+                    decode_cf=False,
                     engine=engine,
                     backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                 )
@@ -847,7 +927,7 @@ def get_file_info(file_path: Path):
                 # Get text representation using xarray's built-in text representation
                 repr_html: str = xdt._repr_html_()
 
-            logger.info(f"{xdt=}")
+            # logger.info(f"{xdt=}")
 
             flat_dict_of_xds: DictOfDatasets = {
                 group: group_xdt
@@ -910,7 +990,7 @@ def get_file_info(file_path: Path):
 
         for group in flat_dict_of_xds.keys():
             logger.info(f"Processing group: {group}")
-            logger.info(f"{flat_dict_of_xds[group]=}")
+            # logger.info(f"{flat_dict_of_xds[group]=}")
             xds = flat_dict_of_xds[group]
 
             # Add attributes for group
@@ -1067,7 +1147,7 @@ Examples:
 
     # Validate arguments based on mode
     if args.mode == "plot" and not args.variable_name:
-        print(json.dumps({"error": "Variable name is required for plot mode"}))
+        print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
         sys.exit(1)
 
     if args.mode == "info":
@@ -1075,9 +1155,9 @@ Examples:
         result = get_file_info(args.file_path)
         logger.info(f"Result: {result}")
         if isinstance(result, FileInfoError):
-            print(json.dumps({"error": asdict(result)}, default=str))
+            print(to_json_best_effort({"error": asdict(result)}))
         else:
-            print(json.dumps({"result": asdict(result)}, default=str))
+            print(to_json_best_effort({"result": asdict(result)}))
 
     elif args.mode == "plot":
         # Create plot
@@ -1085,9 +1165,9 @@ Examples:
             args.file_path, args.variable_name, args.plot_type, args.style
         )
         if result:
-            print(result)
+            print(result)  # TODO wrap me in {result: ...}
         else:
-            print(json.dumps({"error": "Failed to create plot"}))
+            print(to_json_best_effort({"error": "Failed to create plot"}))
 
 
 if __name__ == "__main__":

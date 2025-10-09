@@ -249,7 +249,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "activeWebviewPanelId == 'scientificDataViewer' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 }
             ]
         },
@@ -376,7 +376,7 @@
                     ],
                     "default": "default",
                     "order": 1000,
-                    "description": "Default view mode for data display"
+                    "description": "Default view mode for data display (currently unused)"
                 },
                 "scientificDataViewer.allowMultipleTabsForSameFile": {
                     "type": "boolean",
@@ -405,13 +405,6 @@
                     "order": 1000,
                     "description": "Override Python interpreter path (takes precedence over all other options)",
                     "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `.venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods."
-                },
-                "scientificDataViewer.python.currentlyInUseInterpreter": {
-                    "type": "string",
-                    "default": "",
-                    "order": 9000,
-                    "description": "Currently active Python interpreter path (read-only, updated automatically)",
-                    "markdownDescription": "Shows the currently active Python interpreter path being used by the extension. This is automatically updated when the interpreter changes (via extension environment, Python extension, or manual override).\n\n**IMPORTANT:** **This is a read-only setting that reflects the current state. Do not modify this value manually.**\n\n*(If you accidentally modified this value, run the 'Scientific Data Viewer: Refresh Python Environment' command to reset it.)*"
                 },
                 "scientificDataViewer.python.useExtensionOwnEnvironment": {
                     "type": "boolean",

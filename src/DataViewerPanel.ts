@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { Logger } from './logger';
-import { UIController } from './ui/UIController';
+import { Logger } from './common/Logger';
+import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
+import { CMD_OPEN_DEVELOPER_TOOLS, CMD_SHOW_LOGS, DEFAULT_DATA_VIEWER_PANEL_ID, getAllowMultipleTabsForSameFile, getDevMode } from './common/config';
 
 export class DataViewerPanel {
-    public static readonly viewType = 'scientificDataViewer';
+    public static readonly viewType = DEFAULT_DATA_VIEWER_PANEL_ID;
 
     private static readonly _activePanels: Set<DataViewerPanel> = new Set();
     private static readonly _errorPanels: Set<DataViewerPanel> = new Set();
@@ -65,13 +66,8 @@ export class DataViewerPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
-        // Get configuration directly from VSCode
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-
         // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
-        if (!config.get('allowMultipleTabsForSameFile', false)) {
+        if (!getAllowMultipleTabsForSameFile()) {
             for (const panel of DataViewerPanel._activePanels) {
                 Logger.debug(
                     `🚚 📋 Checking if file ${
@@ -109,7 +105,7 @@ export class DataViewerPanel {
 
         // Set the icon for the panel
         // Only needed when creating a new panel from scratch, eg via
-        // Scientific Data Viewer: Open Scientific Data Viewer command.
+        // the command palette or the file selection dialog.
         // When clicking on a file in the explorer, the icon is set automatically,
         // as configured in package.json (section contributes -> languages -> icon)
         webviewPanel.iconPath = iconPath;
@@ -366,10 +362,7 @@ export class DataViewerPanel {
     }
 
     private async handleDevMode(): Promise<void> {
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
-        );
-        const devMode = config.get('devMode', false);
+        const devMode = getDevMode();
 
         if (devMode) {
             Logger.info(
@@ -379,7 +372,7 @@ export class DataViewerPanel {
             // Run "Show Extension Logs" command immediately
             try {
                 await vscode.commands.executeCommand(
-                    'scientificDataViewer.showLogs'
+                    CMD_SHOW_LOGS
                 );
                 Logger.info('🔧 DevMode: Show Extension Logs command executed');
             } catch (error) {
@@ -392,7 +385,7 @@ export class DataViewerPanel {
             setTimeout(async () => {
                 try {
                     await vscode.commands.executeCommand(
-                        'scientificDataViewer.openDeveloperTools'
+                        CMD_OPEN_DEVELOPER_TOOLS
                     );
                     Logger.info(
                         '🔧 DevMode: Open Developer Tools command executed'

@@ -1,3 +1,4 @@
+import { getDisplayName, getVersion } from '../common/vscodeutils';
 import { CSSGenerator } from './CSSGenerator';
 import { JavaScriptGenerator } from './JavaScriptGenerator';
 
@@ -20,14 +21,14 @@ export class HTMLGenerator {
     static generateMainHTML(
         devMode: boolean,
         lastLoadTime: string | null,
-        panelId: number
+        panelId: number,
     ): string {
         return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Data Viewer</title>
+    <title>${getDisplayName()}</title>
     <style>
         ${this.getCSS(devMode)}
     </style>
@@ -46,11 +47,11 @@ export class HTMLGenerator {
     static generateHeader(
         devMode: boolean,
         lastLoadTime: string | null,
-        panelId: number
+        panelId: number,
     ): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">Scientific Data Viewer <small>v0.4.0 ${
+        <div class="title" id="top-level-title">${getDisplayName()} <small>v${getVersion()} ${
             devMode ? `[${panelId}]` : ''
         }</small></div>
         <div class="controls" id="header-controls">
