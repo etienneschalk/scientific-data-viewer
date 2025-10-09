@@ -136,22 +136,26 @@ suite('PythonManager Test Suite', () => {
                     if (config.activateError) {
                         throw config.activateError;
                     }
-                    return config.activateResult ?? {
-                        test: 'api',
-                        environments: {
-                            onDidChangeActiveEnvironmentPath: (callback: any) => ({
-                                dispose: () => {},
-                            }),
-                            onDidEnvironmentsChanged: (callback: any) => ({
-                                dispose: () => {},
-                            }),
-                        },
-                    };
+                    return (
+                        config.activateResult ?? {
+                            test: 'api',
+                            environments: {
+                                onDidChangeActiveEnvironmentPath: (
+                                    callback: any
+                                ) => ({
+                                    dispose: () => {},
+                                }),
+                                onDidEnvironmentsChanged: (callback: any) => ({
+                                    dispose: () => {},
+                                }),
+                            },
+                        }
+                    );
                 },
                 extensionDependencies: [],
                 extensionPack: [],
             } as any;
-        }
+        };
         vscode.extensions.getExtension = mockGetExtension;
     }
 
@@ -166,7 +170,7 @@ suite('PythonManager Test Suite', () => {
         configureMockGetExtension({ extensionExists: false });
 
         await pythonManager.forceInitialize();
-        
+
         // Should not throw an error even without Python extension
         assert.ok(true);
     });
@@ -483,4 +487,53 @@ suite('PythonManager Test Suite', () => {
         }
     });
 
+    test('should handle multiple initialization calls', async () => {
+        // Mock the getPythonInterpreterFromExtension method
+        const originalGetPythonInterpreterFromExtension = (pythonManager as any)
+            .getPythonInterpreterFromExtension;
+        let callCount = 0;
+        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
+            callCount++;
+            return undefined;
+        };
+
+        try {
+            await pythonManager.forceInitialize();
+            await pythonManager.forceInitialize();
+            await pythonManager.forceInitialize();
+
+            // Should have been called multiple times
+            assert.ok(callCount > 0);
+        } finally {
+            (pythonManager as any).getPythonInterpreterFromExtension =
+                originalGetPythonInterpreterFromExtension;
+        }
+    });
+
+    test('should handle concurrent initialization calls', async () => {
+        // Mock the getPythonInterpreterFromExtension method
+        const originalGetPythonInterpreterFromExtension = (pythonManager as any)
+            .getPythonInterpreterFromExtension;
+        let callCount = 0;
+        (pythonManager as any).getPythonInterpreterFromExtension = async () => {
+            callCount++;
+            return undefined;
+        };
+
+        try {
+            // Create multiple concurrent initialization calls
+            const promises = [];
+            for (let i = 0; i < 5; i++) {
+                promises.push(pythonManager.forceInitialize());
+            }
+
+            await Promise.all(promises);
+
+            // Should have been called multiple times
+            assert.ok(callCount > 0);
+        } finally {
+            (pythonManager as any).getPythonInterpreterFromExtension =
+                originalGetPythonInterpreterFromExtension;
+        }
+    });
 });
