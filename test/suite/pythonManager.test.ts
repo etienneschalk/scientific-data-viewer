@@ -23,7 +23,6 @@ suite('PythonManager Test Suite', () => {
         originalGetExtension = vscode.extensions.getExtension;
 
         // Create centralized mock for vscode.extensions.getExtension
-        let mockGetExtension;
         configureMockGetExtension ({
             extensionExists: true,
             isActive: false,
