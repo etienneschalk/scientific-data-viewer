@@ -7,7 +7,6 @@ import { getPythonInterpreterFromPythonExtension } from './officialPythonExtensi
 import {
     getOverridePythonInterpreter,
     getUseExtensionOwnEnvironment,
-    updateCurrentlyInUseInterpreter,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 
@@ -517,6 +516,7 @@ export class PythonManager {
         source: EnvironmentSource
     ): Promise<void> {
         this._pythonPath = pythonPath;
+        this._environmentSource = source;
 
         Logger.info(
             `🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this._initialized} | Python path: ${this._pythonPath}`
@@ -552,8 +552,6 @@ export class PythonManager {
             );
             showErrorMessage(`Failed to validate Python environment: ${error}`);
         }
-
-        await this.updateCurrentlyUsedInterpreterInConfig(source);
     }
 
     async installPackages(packages: string[]): Promise<void> {
@@ -668,26 +666,5 @@ export class PythonManager {
                 reject(new Error(errorMessage));
             });
         });
-    }
-
-    /**
-     * Update the currently used interpreter in the configuration
-     */
-    private async updateCurrentlyUsedInterpreterInConfig(
-        source: EnvironmentSource
-    ): Promise<void> {
-        const interpreterPath = this._pythonPath;
-        this._environmentSource = source;
-
-        try {
-            await updateCurrentlyInUseInterpreter(interpreterPath);
-            Logger.info(
-                `🐍 📝 Updated currently used interpreter: ${interpreterPath} (source: ${source})`
-            );
-        } catch (error) {
-            Logger.warn(
-                `🐍 ⚠️ Failed to update currently used interpreter: ${error}`
-            );
-        }
     }
 }
