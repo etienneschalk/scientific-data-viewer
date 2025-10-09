@@ -29,6 +29,7 @@ Examples:
 Author: Scientific Data Viewer Extension
 """
 
+import datetime
 from logging import Logger
 
 import argparse
@@ -155,8 +156,29 @@ XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
 XR_TEXT_OPTIONS: Dict[str, Any] = XR_OPTIONS | {"display_max_rows": 1000}
 XR_HTML_OPTIONS: Dict[str, Any] = XR_OPTIONS | {}
 
+SupportedExtensionType = Literal[
+    ".nc",
+    ".nc4",
+    ".netcdf",
+    ".cdf",
+    ".zarr",
+    ".h5",
+    ".hdf5",
+    ".grib",
+    ".grib2",
+    ".grb",
+    ".tif",
+    ".tiff",
+    ".geotiff",
+    ".jp2",
+    ".jpeg2000",
+    ".safe",
+]
+EngineType = Literal[
+    "netcdf4", "h5netcdf", "scipy", "zarr", "h5py", "cfgrib", "rasterio", "sentinel"
+]
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
+FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".nc4": ["netcdf4", "h5netcdf"],
@@ -183,7 +205,7 @@ FORMAT_ENGINE_MAP: Dict[str, List[str]] = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES: Dict[str, str] = {
+FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
     ".nc": "NetCDF",
     ".nc4": "NetCDF4",
     ".netcdf": "NetCDF",
@@ -209,7 +231,7 @@ FORMAT_DISPLAY_NAMES: Dict[str, str] = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES: Dict[str, str] = {
+ENGINE_PACKAGES: Dict[EngineType, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -219,14 +241,29 @@ ENGINE_PACKAGES: Dict[str, str] = {
     "rasterio": "rioxarray",
     "sentinel": "xarray-sentinel",
 }
-
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS: Dict[str, Union[Any, None]] = {
-    engine: None for engine in ENGINE_PACKAGES
+DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
+    "netcdf4": {"decode_cf": False},
+    "h5netcdf": {"decode_cf": False},
+    "scipy": {"decode_cf": False},
+    "zarr": {"decode_cf": False},
+    "h5py": {"decode_cf": False},
+    "cfgrib": {"decode_cf": False},
+    "rasterio": {},
+    "sentinel": {"decode_cf": False},
 }
-# Avoid intempestive .idx file creation
-DEFAULT_ENGINE_BACKEND_KWARGS["cfgrib"] = {"indexpath": ""}
-DEFAULT_ENGINE_BACKEND_KWARGS["rasterio"] = {"mask_and_scale": False}
+# Default backend kwargs for each engine
+DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
+    "netcdf4": None,
+    "h5netcdf": None,
+    "scipy": None,
+    "zarr": None,
+    "h5py": None,
+    "cfgrib": {"indexpath": ""},  # Avoid intempestive .idx file creation
+    "rasterio": {"mask_and_scale": False},
+    "sentinel": None,
+}
+
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = {
@@ -535,8 +572,8 @@ def open_datatree_with_fallback(
             if can_use_datatree(engine):
                 xdt_or_xds = xr.open_datatree(
                     file_path,
-                    decode_cf=False,
                     engine=engine,
+                    **DEFAULT_XR_OPEN_KWARGS[engine],
                     backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                 )
                 return xdt_or_xds, engine
@@ -564,12 +601,14 @@ def open_datatree_with_fallback(
                         xr.open_dataset(
                             file_path,
                             engine=engine,
+                            **DEFAULT_XR_OPEN_KWARGS[engine],
                             backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                         )
                         if group == "/"
                         else xr.open_dataset(
                             file_path,
                             engine=engine,
+                            **DEFAULT_XR_OPEN_KWARGS[engine],
                             backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
                             group=group,
                         )
@@ -586,6 +625,7 @@ def open_datatree_with_fallback(
             xds = xr.open_dataset(
                 file_path,
                 engine=engine,
+                **DEFAULT_XR_OPEN_KWARGS[engine],
                 backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
             )
             return xds, engine
@@ -843,6 +883,13 @@ def create_plot(
                 logger.info("Creating default plot using xarray's native plotting")
                 var.plot()
 
+            plt.suptitle(
+                f"Variable: {variable_name}\n"
+                "Creation date: "
+                f"{datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')}",
+                # f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                y=1.10,
+            )
             # Convert to base64 string
             buffer = BytesIO()
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")

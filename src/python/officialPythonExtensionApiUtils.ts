@@ -8,7 +8,7 @@ export async function getPythonExtensionApi(): Promise<any | null> {
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
 
     if (!pythonExtension) {
-        Logger.error('🐍 ❌ Python extension not found');
+        Logger.error('🐍 ❌ The official Python extension was not found. Is it installed and enabled? Go to the Extensions pane and search for ms-python.python to verify that the official Python extension is both installed and enabled.');
         return null;
     }
 
@@ -224,7 +224,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
 
         if (!pythonApi || !pythonApi.environments) {
             Logger.debug(
-                '🐍 ⚠️ Python extension API or environments API not available for event listeners'
+                '🐍 ⚠️ [Official Python Extension] Python extension API or environments API not available for event listeners'
             );
             return undefined;
         }

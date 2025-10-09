@@ -7,7 +7,7 @@ import { JavaScriptGenerator } from './JavaScriptGenerator';
  */
 export class HTMLGenerator {
     private static formatTimestamp(isoString: string): string {
-        return new Date(isoString).toLocaleTimeString();
+        return new Date(isoString).toISOString();
     }
 
     private static getCSS(devMode: boolean): string {
@@ -57,10 +57,10 @@ export class HTMLGenerator {
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
-                <button id="expandAllButton" class="tree-control-button" title="Expand all sections">📂 Expand All</button>
-                <button id="collapseAllButton" class="tree-control-button" title="Collapse all sections">📁 Collapse All</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
+                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
+                <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
             </div>
-            <button id="refreshButton">Refresh</button>
         </div>
     </div>`;
     }
@@ -68,10 +68,10 @@ export class HTMLGenerator {
     static generateTimestamp(lastLoadTime: string | null): string {
         return /*html*/ `
         <div id="timestamp" class="timestamp hidden">
-            <span class="timestamp-icon">🕒</span>
-            <span id="timestampText">loaded: ${
-                lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
-            }</span>
+        <span id="timestampText">Loaded: ${
+            lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
+        }</span>
+        <span class="timestamp-icon">🕒</span>
         </div>
         `;
     }

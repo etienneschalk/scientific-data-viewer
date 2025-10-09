@@ -83,7 +83,7 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(timestamp.includes('timestamp'));
         // The timestamp gets formatted to local time, so we check for the formatted version
         const date = new Date('2023-01-01T00:00:00Z');
-        const expectedFormattedTime = date.toLocaleTimeString();
+        const expectedFormattedTime = date.toISOString();
         assert.ok(timestamp.includes(expectedFormattedTime));
     });
 
@@ -93,7 +93,7 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(timestamp);
         assert.ok(typeof timestamp === 'string');
         assert.ok(timestamp.includes('timestamp'));
-        assert.ok(timestamp.includes('loaded: --'));
+        assert.ok(timestamp.includes('Loaded: --'));
     });
 
     test('should generate loading and error content', () => {

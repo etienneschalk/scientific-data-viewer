@@ -353,8 +353,8 @@ function displayTimestamp(isoString, isLoading = false) {
         timestampElement.classList.remove('hidden');
     } else if (isoString) {
         const date = new Date(isoString);
-        const timeString = date.toLocaleTimeString();
-        timestampText.textContent = `loaded: ${timeString}`;
+        const timeString = date.toISOString();
+        timestampText.textContent = `Loaded: ${timeString}`;
         timestampElement.classList.remove('hidden');
     } else {
         timestampElement.classList.add('hidden');
@@ -893,12 +893,24 @@ function displayGlobalError(
     let troubleshootingSteps = /*html*/ `
         <h4>💡 General Troubleshooting Steps</h4>
         <ol>
+            <li>If this is the first time you are using the extension, please consult the <a href="https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started" target="_blank">🔗 Getting Started</a> guide</li>
+            <li>If the file is indicated as too large, you can increase the Max File Size in the <a href="#" class="small-button-link" onclick="executeShowSettingsCommand()">🎮 Extension Settings</a></li>
+            <li>Make sure that the file format is supported (${supportedFormats})</li>
             <li>Make sure Python is installed and accessible</li>
+            <li>
+                Make sure that the Python extension is installed and enabled. 
+                Please go to the Extensions pane and search for <code>ms-python.python</code> 
+                to verify that the official Python extension is both installed and enabled.
+                <ul style="margin-left: 20px;">
+                    <li>For VSCode users: <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python" target="_blank">🔗 Python extension (VSCode Marketplace)</a></li>
+                    <li>For Cursor users: <a href="https://open-vsx.org/extension/ms-python/python" target="_blank">🔗 Python extension (Open VSX Registry)</a></li>
+                </ul>
+            </li>
+
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
             <li>If the python environment is not ready, install required packages: 
                 <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
                     🎮 Install xarray and matplotlib</a>
-            <li>Check file format is supported (${supportedFormats})</li>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
                     <li>NetCDF: 
@@ -926,8 +938,8 @@ function displayGlobalError(
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
             <li>Finally, try to close and reopen the file to reload the page</li>
             <li><a href="#" class="small-button-link" onclick="executeShowLogsCommand()">🎮 Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
+            <li>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">🔗 Scientific Data Viewer GitHub repository</a></li>
         </ol>
-        <p>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">🔗 Scientific Data Viewer GitHub repository</a>.</p>
     `;
 
     errorDiv.innerHTML = /*html*/ `
@@ -1670,6 +1682,23 @@ async function executeInstallPackagesCommand(packages) {
         // Fallback: show a notification to the user
         displayGlobalError(
             `Failed to install packages: ${error.message}. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Install Python Packages"`
+        );
+    }
+}
+
+async function executeShowSettingsCommand() {
+    try {
+        console.log('🔧 Executing show settings command...');
+        await messageBus.sendRequest('executeCommand', {
+            // TODO dehardcode and use CMD_SHOW_SETTINGS
+            // Create sugar functions in the bus 
+            command: 'scientificDataViewer.showSettings',
+        });
+        console.log('🔧 Show settings command executed successfully');
+    } catch (error) {
+        console.error('❌ Failed to execute show settings command:', error);
+        displayGlobalError(
+            'Failed to open extension settings. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Settings"'
         );
     }
 }

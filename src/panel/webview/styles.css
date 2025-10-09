@@ -8,7 +8,6 @@ body {
     font-weight: var(--vscode-font-weight);
     color: var(--vscode-foreground);
     background-color: var(--vscode-editor-background);
-    padding: 20px;
     max-width: 768px;
 }
 
@@ -80,12 +79,18 @@ body {
 
 /* Header styles */
 .header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    background-color: var(--vscode-editor-background);
+    
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
     padding-left: 15px;
-    /* border-bottom: 1px solid var(--vscode-panel-border); */
+    height: 30px; /* same as offset for sticky headers */
 }
 
 .title {
@@ -326,10 +331,6 @@ select:focus {
     content: '📄';
 }
 
-.variable-summary.not-clickable:active {
-    pointer-events: none;
-}
-
 .variable-summary.not-clickable::before {
     opacity: 0.5;
 }
@@ -543,6 +544,7 @@ details.sticky-group-details {
 
 details.sticky-group-details > summary {
     top: -1px; /* fix empirical one pixel gap observed in VS Code */
+    top: 30px; /* offset for the header */
     position: sticky;
     display: list-item;
     width: 100%;
@@ -605,17 +607,18 @@ button:active {
     transform: translateY(1px);
 }
 
-.tree-control-button {
+.header-control-button {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
     font-size: 0.9em;
+    padding: 6px;
 }
 
-.tree-control-button:hover {
+.header-control-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-.tree-control-button:active {
+.header-control-button:active {
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
