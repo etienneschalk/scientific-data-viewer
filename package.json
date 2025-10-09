@@ -365,7 +365,7 @@
             "properties": {
                 "scientificDataViewer.maxFileSize": {
                     "type": "number",
-                    "default": 10000,
+                    "default": 1000000000000,
                     "order": 1000,
                     "description": "Maximum file size in MB to load automatically"
                 },

@@ -31,7 +31,7 @@ const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 
 // Default values
-const DEFAULT_MAX_FILE_SIZE = 10000;
+const DEFAULT_MAX_FILE_SIZE = 1000000000000;
 const DEFAULT_ALLOW_MULTIPLE_TABS_FOR_SAME_FILE = false;
 const DEFAULT_DEV_MODE = false;
 const DEFAULT_MATPLOTLIB_STYLE = '';

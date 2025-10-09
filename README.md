@@ -245,7 +245,7 @@ The extension can be configured through VSCode settings:
 **General Settings**
 
 - **`scientificDataViewer.maxFileSize`**
-  - (type: `number`, default: `10000`)
+  - (type: `number`, default: `1000000000000`)
   - Maximum file size in MB to load
 - **`scientificDataViewer.defaultView`**
   - (type: `string`, default: `"default"`)
