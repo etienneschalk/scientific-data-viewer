@@ -678,7 +678,6 @@ export class UIController {
             devMode,
             lastLoadTime,
             this.getId(),
-            getVersion()
         );
     }
 }

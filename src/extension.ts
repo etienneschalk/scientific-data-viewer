@@ -83,38 +83,11 @@ export function activate(context: vscode.ExtensionContext) {
     const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
         context.globalStorageUri.fsPath
     );
-
     const extensionVirtualEnvironmentManagerUI =
         new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
-    let pythonManager: PythonManager;
-    let dataProcessor: DataProcessor;
-
-    try {
-        pythonManager = new PythonManager(extensionEnvManager);
-        dataProcessor = DataProcessor.createInstance(pythonManager);
-        Logger.info('🚀 Extension managers initialized successfully');
-    } catch (error) {
-        Logger.error(`❌ Failed to initialize Python manager: ${error}`);
-        // Create a mock PythonManager for testing or when Python extension is not available
-        pythonManager = {
-            isReady: () => false,
-            executePythonScript: async () => {
-                throw new Error('Python environment not available');
-            },
-            executePythonFile: async () => {
-                throw new Error('Python environment not available');
-            },
-            getPythonPath: () => undefined,
-            getCurrentPythonPath: () => undefined,
-            forceReinitialize: async () => {},
-            getCurrentInterpreterPath: async () => undefined,
-            setupInterpreterChangeListener: async () => undefined,
-        } as any;
-        dataProcessor = new DataProcessor(pythonManager);
-        Logger.warn(
-            '🚨 Extension initialized with mock Python manager (Python extension not available)'
-        );
-    }
+    const pythonManager = new PythonManager(extensionEnvManager);
+    const dataProcessor = DataProcessor.createInstance(pythonManager);
+    Logger.info('🚀 Extension managers initialized successfully');
 
     Logger.info('🔧 Refreshing Python environment...');
     refreshPython(pythonManager, statusBarItem);

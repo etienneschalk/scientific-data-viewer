@@ -8,7 +8,7 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             lastLoadTime,
             1,
-            'x.x.x'
+           
         );
 
         assert.ok(html);
@@ -26,7 +26,7 @@ suite('HTMLGenerator Test Suite', () => {
             false,
             lastLoadTime,
             1,
-            'x.x.x'
+           
         );
 
         assert.ok(html);
@@ -41,7 +41,7 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             lastLoadTime,
             1,
-            'x.x.x'
+           
         );
 
         assert.ok(html);
@@ -55,7 +55,7 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             '2023-01-01T00:00:00Z',
             1,
-            'x.x.x'
+           
         );
 
         assert.ok(header);
@@ -65,7 +65,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header without timestamp', () => {
-        const header = HTMLGenerator.generateHeader(true, null, 1, 'x.x.x');
+        const header = HTMLGenerator.generateHeader(true, null, 1,);
 
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -159,13 +159,13 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             '2023-01-01T00:00:00Z',
             1,
-            'x.x.x'
+           
         );
         const html = HTMLGenerator.generateMainHTML(
             true,
             '2023-01-01T00:00:00Z',
             1,
-            'x.x.x'
+           
         );
 
         assert.ok(html);
