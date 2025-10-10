@@ -26,6 +26,7 @@ class WebviewMessageBus {
         this.vscode = vscode;
         this.pendingRequests = new Map();
         this.eventListeners = new Map();
+        this.isDegradedMode = vscode === null;
         this.setupMessageListener();
     }
 
@@ -44,6 +45,12 @@ class WebviewMessageBus {
 
     // Send a request and wait for response
     async sendRequest(command, payload, timeout = 60000) {
+        // In degraded mode, reject VSCode-specific requests
+        if (this.isDegradedMode) {
+            console.warn(`⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`);
+            return Promise.reject(new Error(`Command '${command}' not available in degraded mode`));
+        }
+
         const request = this.createRequest(command, payload);
 
         return new Promise((resolve, reject) => {
@@ -206,8 +213,23 @@ class WebviewMessageBus {
 }
 
 // Do not use vscode directly ; communicate with vscode through messageBus
-const _vscode = acquireVsCodeApi();
-const messageBus = new WebviewMessageBus(_vscode);
+// Try to acquire VSCode API, but fail gracefully if not available (e.g., in browser)
+let _vscode = null;
+let messageBus = null;
+
+try {
+    if (typeof acquireVsCodeApi === 'function') {
+        _vscode = acquireVsCodeApi();
+        messageBus = new WebviewMessageBus(_vscode);
+        console.log('✅ VSCode API acquired successfully');
+    } else {
+        throw new Error('acquireVsCodeApi is not available');
+    }
+} catch (error) {
+    console.warn('⚠️ VSCode API not available, running in degraded mode:', error.message);
+    // Create a mock messageBus that handles missing VSCode API gracefully
+    messageBus = new WebviewMessageBus(null);
+}
 
 // Global state for file path
 const globalState = {
@@ -229,15 +251,19 @@ function initialize() {
     console.log('📍 Search:', window.location.search);
     console.log('📍 Hash:', window.location.hash);
 
-    // Set up message handlers - communication with vscode via messageBus
-    setupMessageHandlers();
-
-    // Set up event listeners - user actions via event delegation
+    // Set up non-VSCode event listeners first (copy buttons, expand/collapse, etc.)
     setupEventListeners();
 
-    console.log(
-        '🚀 WebView initialized - waiting for data to be loaded via message system...'
-    );
+    // Set up VSCode-specific message handlers only if not in degraded mode
+    if (!messageBus.isDegradedMode) {
+        setupMessageHandlers();
+        console.log('🚀 WebView initialized - VSCode mode enabled');
+    } else {
+        console.log('🚀 WebView initialized - Degraded mode (browser-only features)');
+        // In degraded mode, we can still display static content if it's already loaded
+        // but we won't be able to communicate with VSCode
+        showDegradedModeIndicator();
+    }
 }
 
 // Auto-initialize when DOM is ready
@@ -261,6 +287,54 @@ function escapeHtml(unsafe) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+}
+
+function showDegradedModeIndicator() {
+    // Add a visual indicator that we're in degraded mode
+    const indicator = document.createElement('div');
+    indicator.id = 'degraded-mode-indicator';
+    indicator.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #ffa500;
+        color: #000;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    `;
+    indicator.textContent = '🌐 Browser Mode';
+    indicator.title = 'Running in browser mode - VSCode features disabled';
+    
+    document.body.appendChild(indicator);
+    
+    // Hide VSCode-specific buttons in degraded mode
+    const vscodeButtons = [
+        'refreshButton',
+        'exportHtmlButton', 
+        'exportWebviewButton',
+        'createAllPlotsButton',
+        'resetAllPlotsButton',
+        'saveAllPlotsButton'
+    ];
+    
+    vscodeButtons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.style.display = 'none';
+        }
+    });
+    
+    // Hide plot controls for individual variables
+    const plotControls = document.querySelectorAll('.variable-plot-controls');
+    plotControls.forEach(control => {
+        control.style.display = 'none';
+    });
+    
+    console.log('🌐 Degraded mode indicator displayed');
 }
 
 // JoinId is used to join parts of an id together with a separator
@@ -1212,7 +1286,8 @@ function setupEventListeners() {
 }
 
 async function handleTextCopy(button) {
-    const text = document.getElementById(button.dataset.targetId)?.textContent;
+    const targetElement = document.getElementById(button.dataset.targetId);
+    const text = targetElement ? targetElement.textContent : '';
     try {
         await navigator.clipboard.writeText(text);
         button.textContent = '✓ Copied!';
@@ -1231,6 +1306,11 @@ async function handleTextCopy(button) {
 }
 
 async function handleRefresh() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Refresh not available in degraded mode');
+        return;
+    }
+    
     displayTimestamp(null, true);
     try {
         await messageBus.refresh();
@@ -1241,6 +1321,11 @@ async function handleRefresh() {
 }
 
 async function handleExportHtml() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Export HTML not available in degraded mode');
+        return;
+    }
+    
     console.log('📄 Exporting HTML report...');
     try {
         const result = await messageBus.exportHtml();
@@ -1260,6 +1345,11 @@ async function handleExportHtml() {
 }
 
 async function handleExportWebview() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Export webview not available in degraded mode');
+        return;
+    }
+    
     console.log('🖼️ Exporting webview content...');
     const htmlContent = captureWebviewContent();
     try {
@@ -1333,6 +1423,11 @@ function handleCollapseAllSections() {
 }
 
 async function handleCreateAllPlots() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Create plots not available in degraded mode');
+        return;
+    }
+    
     console.log('🔍 Plot All Variables - Debug Info:');
 
     // Check if operation is already running
@@ -1445,6 +1540,11 @@ function handleResetAllPlots() {
 }
 
 async function handleSaveAllPlots() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plots not available in degraded mode');
+        return;
+    }
+    
     const containers = document.querySelectorAll('.plot-container');
     const plotsToSave = [];
 
@@ -1499,6 +1599,11 @@ async function handleSaveAllPlots() {
 }
 
 async function handleCreateVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Create plot not available in degraded mode');
+        return;
+    }
+    
     const plotTypeSelect = document.querySelector(
         `.plot-type-select[data-variable="${variable}"]`
     );
@@ -1537,6 +1642,11 @@ async function handleResetVariablePlot(variable) {
 }
 
 async function handleSaveVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plot not available in degraded mode');
+        return;
+    }
+    
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1575,6 +1685,11 @@ async function handleSaveVariablePlot(variable) {
 }
 
 async function handleSaveVariablePlotAs(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plot as not available in degraded mode');
+        return;
+    }
+    
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1593,7 +1708,7 @@ async function handleSaveVariablePlotAs(variable) {
             displayVariablePlotSuccess(
                 variable,
                 `Plot saved as: ${
-                    result.filePath?.split('/').pop() || 'plot.png'
+                    result.filePath ? result.filePath.split('/').pop() : 'plot.png'
                 }`
             );
             console.log('Plot saved as:', result.filePath);
@@ -1615,6 +1730,11 @@ async function handleSaveVariablePlotAs(variable) {
 }
 
 async function handleOpenVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Open plot not available in degraded mode');
+        return;
+    }
+    
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1673,16 +1793,14 @@ function doScrollToHeader(
             if (parentDetails && !parentDetails.open) {
                 parentDetails.open = true;
                 openedCount++;
+                const summary = parentDetails.querySelector('summary');
+                const summaryText = summary ? summary.textContent.trim() : 'Unknown';
                 console.log(
-                    `📋 Opened parent details: ${
-                        parentDetails
-                            .querySelector('summary')
-                            ?.textContent?.trim() || 'Unknown'
-                    }`
+                    `📋 Opened parent details: ${summaryText}`
                 );
             }
             // Move up to the parent of the current details element to check for more nested details
-            currentElement = parentDetails?.parentElement;
+            currentElement = parentDetails ? parentDetails.parentElement : null;
         }
 
         if (openedCount > 0) {
@@ -1729,6 +1847,11 @@ function doScrollToHeader(
 
 // Function to execute the show logs command
 async function executeShowLogsCommand() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Show logs command not available in degraded mode');
+        return;
+    }
+    
     try {
         console.log('🔧 Executing show logs command...');
         await messageBus.sendRequest('executeCommand', {
@@ -1748,6 +1871,11 @@ async function executeShowLogsCommand() {
 
 // Function to execute the install packages command
 async function executeInstallPackagesCommand(packages) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Install packages command not available in degraded mode');
+        return;
+    }
+    
     try {
         console.log('🔧 Executing install packages command...', packages);
         await messageBus.sendRequest('executeCommand', {
@@ -1767,6 +1895,11 @@ async function executeInstallPackagesCommand(packages) {
 }
 
 async function executeShowSettingsCommand() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Show settings command not available in degraded mode');
+        return;
+    }
+    
     try {
         console.log('🔧 Executing show settings command...');
         await messageBus.sendRequest('executeCommand', {
