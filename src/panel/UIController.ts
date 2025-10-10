@@ -337,6 +337,7 @@ export class UIController {
                     .showInformationMessage(
                         `Plot saved successfully: ${fileName}`,
                         'Open File',
+                        'Open in Browser',
                         'Reveal in Explorer'
                     )
                     .then(async (action) => {
@@ -353,6 +354,9 @@ export class UIController {
                                 // If opening in VSCode fails, open with external application
                                 await vscode.env.openExternal(savePath);
                             }
+                        } else if (action === 'Open in Browser') {
+                            // Open the file in the default web browser
+                            await vscode.env.openExternal(savePath);
                         } else if (action === 'Reveal in Explorer') {
                             // Reveal the file in file explorer
                             await vscode.commands.executeCommand(
@@ -435,6 +439,7 @@ export class UIController {
                         .split('/')
                         .pop()}`,
                     'Open File',
+                    'Open in Browser',
                     'Reveal in Explorer'
                 );
 
@@ -449,6 +454,9 @@ export class UIController {
                     } catch (error) {
                         await vscode.env.openExternal(saveUri);
                     }
+                } else if (action === 'Open in Browser') {
+                    // Open the file in the default web browser
+                    await vscode.env.openExternal(saveUri);
                 } else if (action === 'Reveal in Explorer') {
                     await vscode.commands.executeCommand(
                         'revealFileInOS',
@@ -680,6 +688,7 @@ export class UIController {
                         .split('/')
                         .pop()}`,
                     'Open File',
+                    'Open in Browser',
                     'Reveal in Explorer'
                 );
 
@@ -694,6 +703,9 @@ export class UIController {
                     } catch (error) {
                         await vscode.env.openExternal(saveUri);
                     }
+                } else if (action === 'Open in Browser') {
+                    // Open the file in the default web browser
+                    await vscode.env.openExternal(saveUri);
                 } else if (action === 'Reveal in Explorer') {
                     await vscode.commands.executeCommand(
                         'revealFileInOS',
@@ -780,6 +792,7 @@ export class UIController {
                         .split('/')
                         .pop()}`,
                     'Open File',
+                    'Open in Browser',
                     'Reveal in Explorer'
                 );
 
@@ -794,6 +807,9 @@ export class UIController {
                     } catch (error) {
                         await vscode.env.openExternal(saveUri);
                     }
+                } else if (action === 'Open in Browser') {
+                    // Open the file in the default web browser
+                    await vscode.env.openExternal(saveUri);
                 } else if (action === 'Reveal in Explorer') {
                     await vscode.commands.executeCommand(
                         'revealFileInOS',
@@ -1487,6 +1503,7 @@ if (document.readyState === 'loading') {
                     .split('/')
                     .pop()}`,
                 'Open File',
+                'Open in Browser',
                 'Reveal in Explorer'
             );
 
@@ -1501,6 +1518,9 @@ if (document.readyState === 'loading') {
                 } catch (error) {
                     await vscode.env.openExternal(saveUri);
                 }
+            } else if (action === 'Open in Browser') {
+                // Open the file in the default web browser
+                await vscode.env.openExternal(saveUri);
             } else if (action === 'Reveal in Explorer') {
                 await vscode.commands.executeCommand('revealFileInOS', saveUri);
             }
