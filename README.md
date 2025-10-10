@@ -190,7 +190,8 @@ The extension supports multiple ways to configure your Python environment:
 3. **Context menu from File Explorer**:
 
    - Right-click on any supported file (or folder)
-   - Select "Open in Scientific Data Viewer"
+   - Select "Open Scientific Data Viewer" for single file or folder
+   - Select "Open Scientific Data Viewer for Selection" to open multiple selected multiple files or folders
    - Command "View: Split Editor" is NOT supported
 
 4. **From command palette**:

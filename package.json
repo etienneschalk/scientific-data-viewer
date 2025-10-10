@@ -56,6 +56,11 @@
                 "category": "Scientific Data Viewer"
             },
             {
+                "command": "scientificDataViewer.openViewerMultiple",
+                "title": "Open Scientific Data Viewer for Selection",
+                "category": "Scientific Data Viewer"
+            },
+            {
                 "command": "scientificDataViewer.openViewerFolder",
                 "title": "Open Scientific Data Viewer (Folder)",
                 "category": "Scientific Data Viewer"
@@ -98,6 +103,11 @@
                     "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewer",
                     "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "command": "scientificDataViewer.openViewerMultiple",
+                    "group": "navigation"
                 }
             ],
             "commandPalette": [
@@ -135,6 +145,10 @@
                 },
                 {
                     "command": "scientificDataViewer.python.installPackages",
+                    "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.openViewerMultiple",
                     "when": "false"
                 }
             ],

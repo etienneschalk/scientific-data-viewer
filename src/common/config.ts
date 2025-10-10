@@ -6,6 +6,7 @@ export const SDV_EXTENSION_ID = 'scientificDataViewer';
 
 // Command names
 export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';
+export const CMD_OPEN_VIEWER_MULTIPLE = 'scientificDataViewer.openViewerMultiple';
 export const CMD_OPEN_VIEWER_FOLDER = 'scientificDataViewer.openViewerFolder';
 export const CMD_REFRESH_PYTHON_ENVIRONMENT = 'scientificDataViewer.refreshPythonEnvironment';
 export const CMD_SHOW_LOGS = 'scientificDataViewer.showLogs';
