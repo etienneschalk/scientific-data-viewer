@@ -3,7 +3,7 @@ import { getDisplayName } from './vscodeutils';
 import { threadId } from 'worker_threads';
 
 export class Logger {
-    private static outputChannel: vscode.OutputChannel | undefined;
+    private static outputChannel?: vscode.OutputChannel;
 
     /**
      * Gets a unique identifier for the current thread or process.

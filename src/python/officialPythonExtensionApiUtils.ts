@@ -218,7 +218,7 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
 export async function setupOfficialPythonExtensionChangeListeners(
     onDidChangeActiveEnvironmentPath: () => Promise<void>,
     onDidEnvironmentsChanged: (environment: any) => Promise<void>
-): Promise<vscode.Disposable | undefined> {
+): Promise<vscode.Disposable | null> {
     try {
         const pythonApi = await getPythonExtensionApi();
 
@@ -226,7 +226,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
             Logger.debug(
                 '🐍 ⚠️ [Official Python Extension] Python extension API or environments API not available for event listeners'
             );
-            return undefined;
+            return null;
         }
 
         const disposables: vscode.Disposable[] = [];

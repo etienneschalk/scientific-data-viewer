@@ -221,7 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
         handleOnDidChangeActiveEnvironmentPath,
         handleOnDidEnvironmentsChanged
     )
-        .then((listener: vscode.Disposable | undefined) => {
+        .then((listener: vscode.Disposable | null) => {
             if (listener) {
                 Logger.info(
                     '🧩 🚀 Immediate official Python extension interpreter change detection enabled'

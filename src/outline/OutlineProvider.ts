@@ -16,7 +16,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private currentHeaders: HeaderItem[] = [];
     private currentPanelId: number | undefined;
     private headersToPanelId: Map<number, HeaderItem[]> = new Map();
-    private treeView: vscode.TreeView<HeaderItem> | undefined;
+    private treeView?: vscode.TreeView<HeaderItem>;
     private expandedStates: Map<number, Set<string>> = new Map(); // panelId -> Set of expanded item IDs
 
     constructor() {
