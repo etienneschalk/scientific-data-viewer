@@ -13,7 +13,7 @@ export async function getPythonExtensionApi(): Promise<any | null> {
     }
 
     if (!pythonExtension.isActive) {
-        Logger.debug(
+        Logger.info(
             '🐍 💤 Python extension is not active, attempting to activate...'
         );
     }

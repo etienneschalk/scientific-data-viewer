@@ -165,7 +165,7 @@ export class ExtensionVirtualEnvironmentManager {
         };
 
         Logger.info(
-            `🔧 Extension virtual environment initialized at: ${envPath}`
+            `🚀 Extension virtual environment initialized at: ${envPath}`
         );
     }
 
