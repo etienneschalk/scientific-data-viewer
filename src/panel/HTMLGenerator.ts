@@ -57,11 +57,11 @@ export class HTMLGenerator {
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
-                <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
-                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
-                <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
                 <button id="exportHtmlButton" class="header-control-button" title="Export HTML Report">📄</button>
                 <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content">🖼️</button>
+                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
+                <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
             </div>
         </div>
     </div>`;

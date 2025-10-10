@@ -566,8 +566,9 @@ details.sticky-group-details summary > * {
 }
 
 /* Plot image styles */
-.plot-container img,
 .plot-image-container img {
+    padding: 6px 8px;
+    padding-top: 0;
     height: auto;
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
@@ -635,12 +636,13 @@ button:active {
 
 /* Per-variable plot controls */
 .variable-plot-controls {
-    padding: 6px 8px;
+    padding: 0;
     margin: 0;
     background-color: var(--vscode-list-hoverBackground);
 }
 
 .plot-controls-row {
+    padding: 6px 8px;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -679,13 +681,14 @@ button:active {
 }
 
 .plot-image-container {
-    margin-top: 10px;
+    margin-top: 6px;
 }
 
 .plot-actions {
     display: flex;
     gap: 8px;
-    margin: 10px 0;
+    margin: 0;
+    padding: 0 8px;
     justify-content: left;
     flex-wrap: wrap;
 }
@@ -705,4 +708,16 @@ button:active {
     border: 1px solid var(--vscode-input-border);
     font-size: 14px;
     color: var(--vscode-foreground);
+}
+
+#degraded-mode-indicator {
+    margin-left: 10px;
+    background: #ffa500;
+    color: #000;
+    padding: 2px 3px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
