@@ -24,6 +24,7 @@ import { formatConfigValue } from './common/utils';
 import {
     SDV_EXTENSION_ID,
     CMD_OPEN_VIEWER,
+    CMD_OPEN_VIEWER_MULTIPLE,
     CMD_OPEN_VIEWER_FOLDER,
     CMD_REFRESH_PYTHON_ENVIRONMENT,
     CMD_SHOW_LOGS,
@@ -115,6 +116,15 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER,
             commandHandlerOpenViewer(
+                iconPath,
+                webviewOptions,
+                webviewPanelOptions,
+                pythonManager
+            )
+        ),
+        vscode.commands.registerCommand(
+            CMD_OPEN_VIEWER_MULTIPLE,
+            commandHandlerOpenViewerMultiple(
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
@@ -579,6 +589,42 @@ function commandHandlerOpenViewer(
                 );
             });
         }
+    };
+}
+
+function commandHandlerOpenViewerMultiple(
+    iconPath: vscode.Uri,
+    webviewOptions: vscode.WebviewOptions,
+    webviewPanelOptions: vscode.WebviewPanelOptions,
+    pythonManager: PythonManager
+): (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => void {
+    return async (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => {
+        Logger.info('🎮 👁️ 📄📄 Command: Open multiple data viewers...');
+        // Context selection is the clicked file or folder (ignored in this handler)
+        Logger.debug(`🎮 👁️ 📄📄 Command arguments: clickedUri: ${clickedUri}`);
+        // All selections is the list of all selected files or folders (we want it to be opened in data viewers)
+        Logger.debug(`🎮 👁️ 📄📄 Command arguments: allSelectedUriList: [${allSelectedUriList.join(" , ")}]`);
+        
+        // Try to use command arguments (if VSCode passes them)
+        if (!(allSelectedUriList && allSelectedUriList.length > 0)) {
+            Logger.info('🎮 👁️ 📄📄 No files to open, ignore this command.');
+            return;
+        }
+
+        Logger.info(`🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`);
+        for (const uri of allSelectedUriList) {
+            if (uri instanceof vscode.Uri) {
+                Logger.info(`🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`);
+                await waitThenCreateOrRevealPanel(
+                    uri,
+                    iconPath,
+                    webviewOptions,
+                    webviewPanelOptions,
+                    pythonManager
+                );
+            }
+        }
+        Logger.info(`🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`);
     };
 }
 
