@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.4.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
+**Current Version: v0.5.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -36,6 +36,7 @@ Available on:
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
 - **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
+- **HTML Report Export**: Export complete data viewer content as self-contained HTML reports for sharing and documentation
 - **Command Palette Integration**: Multiple commands for data viewer operations
 - **Status Bar Integration**: Shows current Python interpreter status
 - **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
@@ -240,6 +241,35 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 Right-click on supported file types in the Explorer to access:
 
 - **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
+
+### 📄 Exporting HTML Reports
+
+The extension allows you to export complete data viewer content as self-contained HTML reports:
+
+1. **Using the Export Button**:
+   - Open a scientific data file in the Scientific Data Viewer
+   - Click the export button (📄) in the header controls
+   - Choose a location and filename for the HTML report
+   - The report will be generated and you can choose to open it or reveal it in explorer
+
+2. **Using the Command Palette**:
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
+   - Type "Scientific Data Viewer: Export HTML Report"
+   - Choose a location and filename for the HTML report
+
+**Report Contents**:
+- Complete file information (path, size, format, engines)
+- Xarray HTML and text representations
+- Data structure (dimensions, coordinates, variables, attributes)
+- Technical information (Python path, extension configuration, versions)
+- All content is self-contained with embedded CSS and JavaScript
+- Professional layout with copy buttons for easy data extraction
+
+**Use Cases**:
+- Share data analysis results with colleagues
+- Create documentation for datasets
+- Archive data viewer sessions
+- Generate reports for presentations or publications
 
 ## ⚙️ Settings
 

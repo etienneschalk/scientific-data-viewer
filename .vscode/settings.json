@@ -21,5 +21,6 @@
         "datatree",
         "repr",
         "xarray"
-    ]
+    ],
+    "scientificDataViewer.python.currentlyInUseInterpreter": "/home/eschalk/work/scientific-data-viewer/.venv/bin/python"
 }

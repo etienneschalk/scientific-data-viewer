@@ -8,6 +8,35 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [UNRELEASED]
 
+## [0.5.0] - 2025-01-08
+
+### Added
+
+- **HTML Report Export**: Complete data viewer content export as self-contained HTML reports
+  - **Export Button**: Added export button (📄) to header controls in data viewer panel
+  - **Command Palette Integration**: "Scientific Data Viewer: Export HTML Report" command
+  - **Self-contained Reports**: Generated HTML includes embedded CSS and JavaScript for standalone viewing
+  - **Complete Data Export**: Includes all visualizations, data tables, metadata, and technical information
+  - **Professional Layout**: Clean, professional report layout with copy buttons for easy data extraction
+  - **File Management**: Proper file naming with timestamps and save dialog with options to open or reveal files
+  - **Report Contents**:
+    - File information (path, size, format, engines)
+    - Xarray HTML and text representations
+    - Data structure (dimensions, coordinates, variables, attributes)
+    - Technical information (Python path, extension configuration, versions)
+  - **Use Cases**: Share data analysis results, create documentation, archive sessions, generate reports
+
+### Enhanced
+
+- **User Experience**: Improved data sharing and documentation capabilities
+- **Professional Workflow**: Better integration with research and documentation workflows
+
+### Technical Improvements
+
+- **Code Organization**: Added export functionality to UIController with comprehensive HTML generation
+- **Error Handling**: Robust error handling for export operations with user-friendly feedback
+- **Testing**: Added test coverage for export functionality
+
 ### Removed
 
 - **Configuration Settings**:

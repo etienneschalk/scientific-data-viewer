@@ -95,6 +95,11 @@
                 "command": "scientificDataViewer.python.installPackages",
                 "title": "Install Python Packages",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.exportHtml",
+                "title": "Export HTML Report",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -146,6 +151,10 @@
                 {
                     "command": "scientificDataViewer.python.installPackages",
                     "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.exportHtml",
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 },
                 {
                     "command": "scientificDataViewer.openViewerMultiple",

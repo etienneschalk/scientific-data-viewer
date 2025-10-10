@@ -60,6 +60,7 @@ export class HTMLGenerator {
                 <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
                 <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
                 <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
+                <button id="exportHtmlButton" class="header-control-button" title="Export HTML Report">📄</button>
             </div>
         </div>
     </div>`;

@@ -167,6 +167,10 @@ class WebviewMessageBus {
         return this.sendRequest('refresh', {});
     }
 
+    async exportHtml() {
+        return this.sendRequest('exportHtml', {});
+    }
+
     async showNotification(message, type) {
         return this.sendRequest('showNotification', { message, type });
     }
@@ -1128,6 +1132,8 @@ function setupEventListeners() {
         // Tree control event listeners
         expandAllButton: handleExpandAllSections,
         collapseAllButton: handleCollapseAllSections,
+        // Export button
+        exportHtmlButton: handleExportHtml,
         // Global plot controls
         createAllPlotsButton: handleCreateAllPlots,
         resetAllPlotsButton: handleResetAllPlots,
@@ -1218,6 +1224,22 @@ async function handleRefresh() {
     } catch (error) {
         console.error('Failed to refresh data:', error);
         displayGlobalError('Failed to refresh data: ' + error.message);
+    }
+}
+
+async function handleExportHtml() {
+    console.log('📄 Exporting HTML report...');
+    try {
+        const result = await messageBus.exportHtml();
+        if (result.success) {
+            console.log('📄 HTML report exported successfully:', result.filePath);
+        } else {
+            console.error('📄 Failed to export HTML report:', result.error);
+            displayGlobalError('Failed to export HTML report: ' + result.error);
+        }
+    } catch (error) {
+        console.error('📄 Error exporting HTML report:', error);
+        displayGlobalError('Failed to export HTML report: ' + error.message);
     }
 }
 

@@ -141,6 +141,13 @@ export class UIController {
                 return this.handleUpdateHeaders(payload.headers);
             }
         );
+
+        this.messageBus.registerRequestHandler(
+            'exportHtml',
+            async () => {
+                return this.handleExportHtml();
+            }
+        );
     }
 
     private setupStateSubscription(): void {
@@ -596,6 +603,508 @@ export class UIController {
         }
     }
 
+    private async handleExportHtml(): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'exportHtml',
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            try {
+                const state = this.stateManager.getState();
+                if (!state.data.currentFile) {
+                    throw new Error('No current file available');
+                }
+
+                // Get the current file path to determine save location
+                const currentFileDir = vscode.Uri.file(state.data.currentFile)
+                    .fsPath.split('/')
+                    .slice(0, -1)
+                    .join('/');
+                const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+                const defaultFileName = `${fileName}_report_${new Date()
+                    .toISOString()
+                    .slice(0, 19)
+                    .replace(/:/g, '-')}.html`;
+
+                // Show save dialog
+                const saveUri = await vscode.window.showSaveDialog({
+                    defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                    filters: {
+                        'HTML Files': ['html'],
+                        'All Files': ['*'],
+                    },
+                    title: 'Export HTML Report',
+                });
+
+                if (!saveUri) {
+                    return { success: false, error: 'Export cancelled by user' };
+                }
+
+                // Generate the HTML report
+                const htmlReport = this.generateHtmlReport(state);
+
+                // Write the file
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(htmlReport, 'utf8'));
+
+                // Show success notification
+                const action = await vscode.window.showInformationMessage(
+                    `HTML report exported successfully: ${saveUri.fsPath
+                        .split('/')
+                        .pop()}`,
+                    'Open File',
+                    'Reveal in Explorer'
+                );
+
+                // Handle user action
+                if (action === 'Open File') {
+                    try {
+                        await vscode.commands.executeCommand(
+                            'vscode.open',
+                            saveUri,
+                            vscode.ViewColumn.Beside
+                        );
+                    } catch (error) {
+                        await vscode.env.openExternal(saveUri);
+                    }
+                } else if (action === 'Reveal in Explorer') {
+                    await vscode.commands.executeCommand(
+                        'revealFileInOS',
+                        saveUri
+                    );
+                }
+
+                Logger.info(`[UIController] HTML report exported: ${saveUri.fsPath}`);
+                return { success: true, filePath: saveUri.fsPath };
+            } catch (error) {
+                Logger.error(`[UIController] Error exporting HTML report: ${error}`);
+                return {
+                    success: false,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                };
+            }
+        }, context);
+
+        return result || { success: false, error: 'Unknown error' };
+    }
+
+    private generateHtmlReport(state: AppState): string {
+        const dataInfo = state.data.dataInfo;
+        const currentFile = state.data.currentFile;
+        const lastLoadTime = state.data.lastLoadTime;
+        const pythonPath = state.python.pythonPath;
+        const extensionConfig = state.extension.extensionConfig;
+
+        if (!dataInfo || !currentFile) {
+            throw new Error('No data available for export');
+        }
+
+        // Get the CSS and JavaScript from the generators
+        const css = this.getCSSForReport();
+        const js = this.getJavaScriptForReport();
+
+        // Generate the HTML report
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Data Viewer Report - ${currentFile.split('/').pop()}</title>
+    <style>
+        ${css}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Scientific Data Viewer Report <small>v${getVersion()}</small></div>
+        <div class="controls">
+            <div class="timestamp">
+                <span>Generated: ${new Date().toISOString()}</span>
+                <span class="timestamp-icon">🕒</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="content">
+        ${this.generateFileInfoForReport(dataInfo, currentFile)}
+        ${this.generateHtmlRepresentationForReport(dataInfo)}
+        ${this.generateTextRepresentationForReport(dataInfo)}
+        ${this.generateHtmlRepresentationForGroupsForReport(dataInfo)}
+        ${this.generateTextRepresentationForGroupsForReport(dataInfo)}
+        ${this.generateDimensionsAndVariablesForReport(dataInfo)}
+        ${this.generateTroubleshootingForReport(pythonPath || '', extensionConfig, dataInfo)}
+    </div>
+    
+    <script>
+        ${js}
+    </script>
+</body>
+</html>`;
+    }
+
+    private getCSSForReport(): string {
+        // Get the CSS from CSSGenerator but modify it for standalone use
+        const { CSSGenerator } = require('./CSSGenerator');
+        return CSSGenerator.get(false); // Use non-dev mode CSS
+    }
+
+    private getJavaScriptForReport(): string {
+        // Return minimal JavaScript for the report (no VSCode API calls)
+        return `
+// Minimal JavaScript for HTML report
+function initializeReport() {
+    console.log('Scientific Data Viewer Report loaded');
+    
+    // Set up copy buttons
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('text-copy-button')) {
+            const button = e.target;
+            const text = document.getElementById(button.dataset.targetId)?.textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                button.textContent = '✓ Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = '📋 Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text:', err);
+                button.textContent = '❌ Failed';
+                setTimeout(() => {
+                    button.textContent = '📋 Copy';
+                }, 2000);
+            }
+        }
+    });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeReport);
+} else {
+    initializeReport();
+}
+        `;
+    }
+
+    private generateFileInfoForReport(dataInfo: any, currentFile: string): string {
+        const formatFileSize = (bytes: number): string => {
+            const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
+            if (bytes === 0) return '0 B';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+        };
+
+        let formatInfo = '<p>';
+        if (dataInfo.fileSize) {
+            formatInfo += `<strong>Size:</strong> ${formatFileSize(dataInfo.fileSize)} · `;
+        }
+        formatInfo += `<strong>Format:</strong> ${dataInfo.format || 'Unknown'} · `;
+        if (dataInfo.format_info) {
+            formatInfo += `<strong>Available Engines:</strong> ${dataInfo.format_info.available_engines.join(', ') || 'None'} · `;
+            if (dataInfo.used_engine) {
+                formatInfo += `<strong>Used Engine:</strong> ${dataInfo.used_engine}`;
+            }
+        }
+        formatInfo += '</p>';
+
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details" open>
+                <summary><h3>File Information</h3></summary>
+                <div class="file-path-container">
+                    <p><strong>File Path:</strong></p>
+                    <button data-target-id="filePathCode" class="text-copy-button">📋 Copy</button>
+                    <code id="filePathCode" class="file-path-code">${currentFile}</code>
+                </div>
+                <div>${formatInfo}</div>
+            </details>
+        </div>`;
+    }
+
+    private generateHtmlRepresentationForReport(dataInfo: any): string {
+        if (!dataInfo.xarray_html_repr) {
+            return '';
+        }
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details" open>
+                <summary><h3>Xarray HTML Representation</h3></summary>
+                <div class="html-representation">${dataInfo.xarray_html_repr}</div>
+            </details>
+        </div>`;
+    }
+
+    private generateTextRepresentationForReport(dataInfo: any): string {
+        if (!dataInfo.xarray_text_repr) {
+            return '';
+        }
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details">
+                <summary><h3>Xarray Text Representation</h3></summary>
+                <div class="text-representation-container">
+                    <button data-target-id="textRepresentation" class="text-copy-button">📋 Copy</button>
+                        <pre id="textRepresentation" class="text-representation">${this.escapeHtml(dataInfo.xarray_text_repr || '')}</pre>
+                </div>
+            </details>
+        </div>`;
+    }
+
+    private generateHtmlRepresentationForGroupsForReport(dataInfo: any): string {
+        if (!dataInfo.xarray_html_repr_flattened) {
+            return '';
+        }
+        const groups = Object.entries(dataInfo.xarray_html_repr_flattened)
+            .map(([name, value]) => `
+                <div class="info-section">
+                    <details>
+                        <summary>${name}</summary>
+                        <div class="html-representation">${value || '<p>No HTML representation available</p>'}</div>
+                    </details>
+                </div>
+            `).join('');
+        
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details">
+                <summary><h3>Xarray HTML Representation (for each group)</h3></summary>
+                <div class="html-representation-for-groups">${groups}</div>
+            </details>
+        </div>`;
+    }
+
+    private generateTextRepresentationForGroupsForReport(dataInfo: any): string {
+        if (!dataInfo.xarray_text_repr_flattened) {
+            return '';
+        }
+        const groups = Object.entries(dataInfo.xarray_text_repr_flattened)
+            .map(([name, value]) => `
+                <div class="info-section">
+                    <details>
+                        <summary>${name}</summary>
+                        <div class="text-representation-container">
+                            <button data-target-id="groupTextRepresentation_${name}" class="text-copy-button">📋 Copy</button>
+                            <pre id="groupTextRepresentation_${name}">${this.escapeHtml(String(value))}</pre>
+                        </div>
+                    </details>
+                </div>
+            `).join('');
+        
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details">
+                <summary><h3>Xarray Text Representation (for each group)</h3></summary>
+                <div class="text-representation-for-groups">${groups}</div>
+            </details>
+        </div>`;
+    }
+
+    private generateDimensionsAndVariablesForReport(dataInfo: any): string {
+        if (!dataInfo.dimensions_flattened || !dataInfo.coordinates_flattened || !dataInfo.variables_flattened) {
+            return '';
+        }
+
+        const groups = Object.keys(dataInfo.dimensions_flattened);
+        const groupHtml = groups.map(groupName => this.renderGroupForReport(dataInfo, groupName)).join('');
+
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details" open>
+                <summary><h3>Data Structure</h3></summary>
+                <div class="group-info-container">${groupHtml}</div>
+            </details>
+        </div>`;
+    }
+
+    private generateTroubleshootingForReport(pythonPath: string, extensionConfig: any, dataInfo: any): string {
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details">
+                <summary><h3>Technical Information</h3></summary>
+                <div class="info-section">
+                    <details open>
+                        <summary>Python Interpreter Path</summary>
+                        <button data-target-id="pythonPath" class="text-copy-button">📋 Copy</button>
+                        <pre id="pythonPath">${pythonPath || 'No Python interpreter configured'}</pre>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
+                        <summary>Extension Configuration</summary>
+                        <button data-target-id="extensionConfig" class="text-copy-button">📋 Copy</button>
+                        <pre id="extensionConfig">${JSON.stringify(extensionConfig, null, 2)}</pre>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
+                        <summary>Xarray Version Information</summary>
+                        <button data-target-id="showVersions" class="text-copy-button">📋 Copy</button>
+                        <pre id="showVersions">${dataInfo.xarray_show_versions || 'Version information not available'}</pre>
+                    </details>
+                </div>
+            </details>
+        </div>`;
+    }
+
+    private renderGroupForReport(dataInfo: any, groupName: string): string {
+        const dimensions = dataInfo.dimensions_flattened[groupName];
+        const coordinates = dataInfo.coordinates_flattened[groupName];
+        const variables = dataInfo.variables_flattened[groupName];
+        const attributes = dataInfo.attributes_flattened[groupName];
+
+        const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0
+            ? this.renderGroupDimensionsForReport(dimensions, groupName)
+            : '<p class="muted-text">No dimensions found in this group.</p>';
+
+        const coordinatesHtml = coordinates && coordinates.length > 0
+            ? coordinates.map((variable: any) => this.renderCoordinateVariableForReport(variable, groupName)).join('')
+            : '<p class="muted-text">No coordinates found in this group.</p>';
+
+        const variablesHtml = variables && variables.length > 0
+            ? variables.map((variable: any) => this.renderDataVariableForReport(variable, groupName)).join('')
+            : '<p class="muted-text">No variables found in this group.</p>';
+
+        const attributesHtml = attributes && Object.keys(attributes).length > 0
+            ? Object.entries(attributes).map(([attrName, value]) => this.renderGroupAttributeForReport(groupName, attrName, value)).join('')
+            : '<p class="muted-text">No attributes found in this group.</p>';
+
+        return `
+        <div class="info-section">
+            <details class="sticky-group-details">
+                <summary><h3>Group: ${groupName}</h3></summary>
+                <div class="info-section">
+                    <details open>
+                        <summary><h4>Dimensions</h4></summary>
+                        <div class="dimensions">${dimensionsHtml}</div>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
+                        <summary><h4>Coordinates</h4></summary>
+                        <div class="coordinates">${coordinatesHtml}</div>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
+                        <summary><h4>Variables</h4></summary>
+                        <div class="variables">${variablesHtml}</div>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
+                        <summary><h4>Attributes</h4></summary>
+                        <div class="attributes">${attributesHtml}</div>
+                    </details>
+                </div>
+            </details>
+        </div>`;
+    }
+
+    private renderGroupDimensionsForReport(dimensions: any, groupName: string): string {
+        return `
+        <div class="dimensions-compact">
+            (${Object.entries(dimensions)
+                .map(([name, size]) => `<strong>${name}</strong>: ${size}`)
+                .join(', ')})
+        </div>`;
+    }
+
+    private renderCoordinateVariableForReport(variable: any, groupName: string): string {
+        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+        const sizeStr = variable.size_bytes ? this.formatFileSize(variable.size_bytes) : '';
+        const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
+
+        const attributesContent = hasAttributes
+            ? this.renderVariableAttributesForReport(variable.attributes)
+            : '';
+
+        return `
+        <details class="variable-details">
+            <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+                <span class="variable-name">${variable.name}</span>
+                <span class="dims">${dimsStr}</span>
+                <span class="dtype-shape"><code>${this.escapeHtml(variable.dtype)}</code></span>
+                <span class="dtype-shape">${shapeStr}</span>
+                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+            </summary>
+            <div>${attributesContent}</div>
+        </details>`;
+    }
+
+    private renderDataVariableForReport(variable: any, groupName: string): string {
+        const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
+        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
+        const sizeStr = variable.size_bytes ? this.formatFileSize(variable.size_bytes) : '';
+        const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
+
+        const attributesContent = hasAttributes
+            ? this.renderVariableAttributesForReport(variable.attributes)
+            : '';
+
+        return `
+        <details class="variable-details">
+            <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+                <span class="variable-name">${variable.name}</span>
+                <span class="dims">${dimsStr}</span>
+                <span class="dtype-shape"><code>${this.escapeHtml(variable.dtype)}</code></span>
+                <span class="dtype-shape">${shapeStr}</span>
+                ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
+            </summary>
+            <div>${attributesContent}</div>
+        </details>`;
+    }
+
+    private renderGroupAttributeForReport(groupName: string, attrName: string, value: any): string {
+        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+        return `
+        <div class="attribute-item">
+            <span class="attribute-name">${attrName} : </span>
+            <span class="attribute-value">${this.escapeHtml(valueStr)}</span>
+        </div>`;
+    }
+
+    private renderVariableAttributesForReport(attributes: any): string {
+        if (!attributes || Object.keys(attributes).length === 0) {
+            return '';
+        }
+
+        const attributesList = Object.entries(attributes)
+            .map(([attrName, value]) => {
+                const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+                return `
+                <div class="attribute-item">
+                    <span class="attribute-name">${attrName} : </span>
+                    <span class="attribute-value">${this.escapeHtml(valueStr)}</span>
+                </div>`;
+            })
+            .join('');
+
+        return `
+        <div class="attributes-container">
+            ${attributesList}
+        </div>`;
+    }
+
+    private formatFileSize(bytes: number): string {
+        const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
+        if (bytes === 0) return '0 B';
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    private escapeHtml(unsafe: string): string {
+        return unsafe
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     private updateUI(state: AppState): void {
         // Always emit state change event for content updates
         this.messageBus.emitUIStateChanged(state);
@@ -634,6 +1143,83 @@ export class UIController {
      */
     public getDataInfo(): any | null {
         return this.stateManager.getState().data.dataInfo;
+    }
+
+    /**
+     * Export HTML report
+     */
+    public async exportHtml(): Promise<void> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'exportHtml',
+        };
+
+        await this.errorBoundary.wrapAsync(async () => {
+            const state = this.stateManager.getState();
+            if (!state.data.currentFile) {
+                throw new Error('No current file available');
+            }
+
+            // Get the current file path to determine save location
+            const currentFileDir = vscode.Uri.file(state.data.currentFile)
+                .fsPath.split('/')
+                .slice(0, -1)
+                .join('/');
+            const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+            const defaultFileName = `${fileName}_report_${new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/:/g, '-')}.html`;
+
+            // Show save dialog
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                filters: {
+                    'HTML Files': ['html'],
+                    'All Files': ['*'],
+                },
+                title: 'Export HTML Report',
+            });
+
+            if (!saveUri) {
+                throw new Error('Export cancelled by user');
+            }
+
+            // Generate the HTML report
+            const htmlReport = this.generateHtmlReport(state);
+
+            // Write the file
+            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(htmlReport, 'utf8'));
+
+            // Show success notification
+            const action = await vscode.window.showInformationMessage(
+                `HTML report exported successfully: ${saveUri.fsPath
+                    .split('/')
+                    .pop()}`,
+                'Open File',
+                'Reveal in Explorer'
+            );
+
+            // Handle user action
+            if (action === 'Open File') {
+                try {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        saveUri,
+                        vscode.ViewColumn.Beside
+                    );
+                } catch (error) {
+                    await vscode.env.openExternal(saveUri);
+                }
+            } else if (action === 'Reveal in Explorer') {
+                await vscode.commands.executeCommand(
+                    'revealFileInOS',
+                    saveUri
+                );
+            }
+
+            Logger.info(`[UIController] HTML report exported: ${saveUri.fsPath}`);
+        }, context);
     }
 
     private async handleExecuteCommand(

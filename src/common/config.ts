@@ -16,6 +16,7 @@ export const CMD_SCROLL_TO_HEADER = 'scientificDataViewer.scrollToHeader';
 export const CMD_EXPAND_ALL = 'scientificDataViewer.expandAll';
 export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installPackages';
 export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
+export const CMD_EXPORT_HTML = 'scientificDataViewer.exportHtml';
 
 // Tree view ID
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';

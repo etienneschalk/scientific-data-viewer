@@ -44,6 +44,19 @@ export class DataViewerPanel {
         return panel;
     }
 
+    public static getActivePanel(): DataViewerPanel | undefined {
+        Logger.debug(`🚚 🗂️ Getting active panel`);
+        // Find the panel that is currently visible
+        const activePanel = Array.from(DataViewerPanel._panels.values())
+            .find(panel => panel._webviewPanel.visible);
+        if (activePanel) {
+            Logger.debug(`🚚 🗂️ Found active panel: ${activePanel.getId()}`);
+        } else {
+            Logger.debug(`🚚 🗂️ No active panel found`);
+        }
+        return activePanel;
+    }
+
     public static async createOrReveal(
         fileUri: vscode.Uri,
         iconPath: vscode.Uri,
@@ -385,5 +398,12 @@ export class DataViewerPanel {
      */
     public getFileUri(): vscode.Uri {
         return this._fileUri;
+    }
+
+    /**
+     * Export HTML report for this panel
+     */
+    public async exportHtml(): Promise<void> {
+        return this._uiController.exportHtml();
     }
 }

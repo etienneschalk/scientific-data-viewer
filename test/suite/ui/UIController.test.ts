@@ -268,4 +268,47 @@ suite('UIController Test Suite', () => {
         controller1.dispose();
         controller2.dispose();
     });
+
+    test('should export HTML report', async () => {
+        // Mock file system operations
+        const mockWriteFile = async (uri: vscode.Uri, data: Uint8Array) => {
+            console.log('Mock write file:', uri.fsPath, 'Size:', data.length);
+        };
+
+        const mockShowSaveDialog = async (options: any) => {
+            return vscode.Uri.file('/tmp/test_report.html');
+        };
+
+        const mockShowInformationMessage = async (message: string, ...actions: string[]) => {
+            console.log('Mock show info message:', message);
+            return 'Open File';
+        };
+
+        // Mock vscode APIs
+        const originalWriteFile = vscode.workspace.fs.writeFile;
+        const originalShowSaveDialog = vscode.window.showSaveDialog;
+        const originalShowInformationMessage = vscode.window.showInformationMessage;
+
+        vscode.workspace.fs.writeFile = mockWriteFile as any;
+        vscode.window.showSaveDialog = mockShowSaveDialog as any;
+        vscode.window.showInformationMessage = mockShowInformationMessage as any;
+
+        try {
+            // Load some test data first
+            await uiController.loadFile('/tmp/test.nc');
+
+            // Test export functionality
+            await uiController.exportHtml();
+
+            // If we get here without throwing, the test passes
+            assert.ok(true, 'Export HTML completed successfully');
+        } catch (error) {
+            assert.fail(`Export HTML failed: ${error}`);
+        } finally {
+            // Restore original functions
+            vscode.workspace.fs.writeFile = originalWriteFile;
+            vscode.window.showSaveDialog = originalShowSaveDialog;
+            vscode.window.showInformationMessage = originalShowInformationMessage;
+        }
+    });
 });
