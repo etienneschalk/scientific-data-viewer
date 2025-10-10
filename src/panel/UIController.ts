@@ -142,25 +142,23 @@ export class UIController {
             }
         );
 
-        this.messageBus.registerRequestHandler(
-            'exportHtml',
-            async () => {
-                return this.handleExportHtml();
-            }
-        );
+        this.messageBus.registerRequestHandler('exportHtml', async () => {
+            return this.handleExportHtml();
+        });
 
         this.messageBus.registerRequestHandler(
             'exportWebview',
-            async () => {
-                return this.handleExportWebview();
+            async (payload) => {
+                return this.handleExportWebview(payload.htmlContent);
             }
         );
-
     }
 
     private setupStateSubscription(): void {
         this.unsubscribeState = this.stateManager.subscribe((state) => {
-            Logger.debug(`[UIController] [setupStateSubscription] State changed`);
+            Logger.debug(
+                `[UIController] [setupStateSubscription] State changed`
+            );
             this.updateUI(state);
         });
     }
@@ -364,7 +362,9 @@ export class UIController {
                         }
                     });
 
-                Logger.info(`[UIController] Plot saved successfully: ${savePath.fsPath}`);
+                Logger.info(
+                    `[UIController] Plot saved successfully: ${savePath.fsPath}`
+                );
                 return { success: true, filePath: savePath.fsPath };
             } catch (error) {
                 Logger.error(`[UIController] Error saving plot: ${error}`);
@@ -500,7 +500,9 @@ export class UIController {
                     tempFile,
                     vscode.ViewColumn.Beside
                 );
-                Logger.info(`[UIController] Plot opened in VSCode: ${tempFile.fsPath}`);
+                Logger.info(
+                    `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`
+                );
             } catch (vscodeError) {
                 // If opening in VSCode fails, open with external application
                 try {
@@ -606,12 +608,18 @@ export class UIController {
             );
             // The actual outline update will be handled by the DataViewerPanel
         } catch (error) {
-            Logger.error(`[UIController] ❌ Error handling header update: ${error}`);
+            Logger.error(
+                `[UIController] ❌ Error handling header update: ${error}`
+            );
             throw error;
         }
     }
 
-    private async handleExportHtml(): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    private async handleExportHtml(): Promise<{
+        success: boolean;
+        filePath?: string;
+        error?: string;
+    }> {
         const context: ErrorContext = {
             component: `ui-${this.id}`,
             operation: 'exportHtml',
@@ -629,7 +637,10 @@ export class UIController {
                     .fsPath.split('/')
                     .slice(0, -1)
                     .join('/');
-                const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+                const fileName =
+                    vscode.Uri.file(state.data.currentFile)
+                        .fsPath.split('/')
+                        .pop() || 'data';
                 const defaultFileName = `${fileName}_report_${new Date()
                     .toISOString()
                     .slice(0, 19)
@@ -637,7 +648,9 @@ export class UIController {
 
                 // Show save dialog
                 const saveUri = await vscode.window.showSaveDialog({
-                    defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                    defaultUri: vscode.Uri.file(
+                        `${currentFileDir}/${defaultFileName}`
+                    ),
                     filters: {
                         'HTML Files': ['html'],
                         'All Files': ['*'],
@@ -646,14 +659,20 @@ export class UIController {
                 });
 
                 if (!saveUri) {
-                    return { success: false, error: 'Export cancelled by user' };
+                    return {
+                        success: false,
+                        error: 'Export cancelled by user',
+                    };
                 }
 
                 // Generate the HTML report
                 const htmlReport = this.generateHtmlReport(state);
 
                 // Write the file
-                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(htmlReport, 'utf8'));
+                await vscode.workspace.fs.writeFile(
+                    saveUri,
+                    Buffer.from(htmlReport, 'utf8')
+                );
 
                 // Show success notification
                 const action = await vscode.window.showInformationMessage(
@@ -682,10 +701,14 @@ export class UIController {
                     );
                 }
 
-                Logger.info(`[UIController] HTML report exported: ${saveUri.fsPath}`);
+                Logger.info(
+                    `[UIController] HTML report exported: ${saveUri.fsPath}`
+                );
                 return { success: true, filePath: saveUri.fsPath };
             } catch (error) {
-                Logger.error(`[UIController] Error exporting HTML report: ${error}`);
+                Logger.error(
+                    `[UIController] Error exporting HTML report: ${error}`
+                );
                 return {
                     success: false,
                     error:
@@ -697,7 +720,9 @@ export class UIController {
         return result || { success: false, error: 'Unknown error' };
     }
 
-    private async handleExportWebview(): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    private async handleExportWebview(
+        htmlContent: string
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
             component: `ui-${this.id}`,
             operation: 'exportWebview',
@@ -715,7 +740,10 @@ export class UIController {
                     .fsPath.split('/')
                     .slice(0, -1)
                     .join('/');
-                const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+                const fileName =
+                    vscode.Uri.file(state.data.currentFile)
+                        .fsPath.split('/')
+                        .pop() || 'data';
                 const defaultFileName = `${fileName}_webview_${new Date()
                     .toISOString()
                     .slice(0, 19)
@@ -723,7 +751,9 @@ export class UIController {
 
                 // Show save dialog
                 const saveUri = await vscode.window.showSaveDialog({
-                    defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                    defaultUri: vscode.Uri.file(
+                        `${currentFileDir}/${defaultFileName}`
+                    ),
                     filters: {
                         'HTML Files': ['html'],
                         'All Files': ['*'],
@@ -732,14 +762,17 @@ export class UIController {
                 });
 
                 if (!saveUri) {
-                    return { success: false, error: 'Export cancelled by user' };
+                    return {
+                        success: false,
+                        error: 'Export cancelled by user',
+                    };
                 }
 
-                // Request the webview to capture its current content
-                const webviewContent = await this.captureWebviewContent();
-
                 // Write the file
-                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(webviewContent, 'utf8'));
+                await vscode.workspace.fs.writeFile(
+                    saveUri,
+                    Buffer.from(htmlContent, 'utf8')
+                );
 
                 // Show success notification
                 const action = await vscode.window.showInformationMessage(
@@ -768,10 +801,14 @@ export class UIController {
                     );
                 }
 
-                Logger.info(`[UIController] Webview content exported: ${saveUri.fsPath}`);
+                Logger.info(
+                    `[UIController] Webview content exported: ${saveUri.fsPath}`
+                );
                 return { success: true, filePath: saveUri.fsPath };
             } catch (error) {
-                Logger.error(`[UIController] Error exporting webview content: ${error}`);
+                Logger.error(
+                    `[UIController] Error exporting webview content: ${error}`
+                );
                 return {
                     success: false,
                     error:
@@ -783,36 +820,35 @@ export class UIController {
         return result || { success: false, error: 'Unknown error' };
     }
 
+    // private async captureWebviewContent(): Promise<string> {
+    //     return new Promise((resolve, reject) => {
+    //         // Generate a unique ID for this request
+    //         const requestId = Date.now().toString();
 
-    private async captureWebviewContent(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            // Generate a unique ID for this request
-            const requestId = Date.now().toString();
-            
-            // Set up a timeout
-            const timeout = setTimeout(() => {
-                reject(new Error('Webview content capture timeout'));
-            }, 10000); // 10 second timeout
+    //         // Set up a timeout
+    //         const timeout = setTimeout(() => {
+    //             reject(new Error('Webview content capture timeout'));
+    //         }, 10000); // 10 second timeout
 
-            // Listen for the response
-            const messageListener = (message: any) => {
-                if (message.command === 'captureContentResponse' && message.id === requestId) {
-                    clearTimeout(timeout);
-                    this.webview.onDidReceiveMessage(messageListener).dispose();
-                    resolve(message.content || '');
-                }
-            };
+    //         // Listen for the response
+    //         const messageListener = (message: any) => {
+    //             if (message.command === 'captureContentResponse' && message.id === requestId) {
+    //                 clearTimeout(timeout);
+    //                 this.webview.onDidReceiveMessage(messageListener).dispose();
+    //                 resolve(message.content || '');
+    //             }
+    //         };
 
-            // Set up the listener
-            this.webview.onDidReceiveMessage(messageListener);
+    //         // Set up the listener
+    //         this.webview.onDidReceiveMessage(messageListener);
 
-            // Send message to webview to capture its content
-            this.webview.postMessage({
-                command: 'captureContent',
-                id: requestId
-            });
-        });
-    }
+    //         // Send message to webview to capture its content
+    //         this.webview.postMessage({
+    //             command: 'captureContent',
+    //             id: requestId
+    //         });
+    //     });
+    // }
 
     private generateHtmlReport(state: AppState): string {
         const dataInfo = state.data.dataInfo;
@@ -835,7 +871,9 @@ export class UIController {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Data Viewer Report - ${currentFile.split('/').pop()}</title>
+    <title>Scientific Data Viewer Report - ${currentFile
+        .split('/')
+        .pop()}</title>
     <style>
         ${css}
     </style>
@@ -858,7 +896,11 @@ export class UIController {
         ${this.generateHtmlRepresentationForGroupsForReport(dataInfo)}
         ${this.generateTextRepresentationForGroupsForReport(dataInfo)}
         ${this.generateDimensionsAndVariablesForReport(dataInfo)}
-        ${this.generateTroubleshootingForReport(pythonPath || '', extensionConfig, dataInfo)}
+        ${this.generateTroubleshootingForReport(
+            pythonPath || '',
+            extensionConfig,
+            dataInfo
+        )}
     </div>
     
     <script>
@@ -914,21 +956,34 @@ if (document.readyState === 'loading') {
         `;
     }
 
-    private generateFileInfoForReport(dataInfo: any, currentFile: string): string {
+    private generateFileInfoForReport(
+        dataInfo: any,
+        currentFile: string
+    ): string {
         const formatFileSize = (bytes: number): string => {
             const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
             if (bytes === 0) return '0 B';
             const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+            return (
+                Math.round((bytes / Math.pow(1024, i)) * 100) / 100 +
+                ' ' +
+                sizes[i]
+            );
         };
 
         let formatInfo = '<p>';
         if (dataInfo.fileSize) {
-            formatInfo += `<strong>Size:</strong> ${formatFileSize(dataInfo.fileSize)} · `;
+            formatInfo += `<strong>Size:</strong> ${formatFileSize(
+                dataInfo.fileSize
+            )} · `;
         }
-        formatInfo += `<strong>Format:</strong> ${dataInfo.format || 'Unknown'} · `;
+        formatInfo += `<strong>Format:</strong> ${
+            dataInfo.format || 'Unknown'
+        } · `;
         if (dataInfo.format_info) {
-            formatInfo += `<strong>Available Engines:</strong> ${dataInfo.format_info.available_engines.join(', ') || 'None'} · `;
+            formatInfo += `<strong>Available Engines:</strong> ${
+                dataInfo.format_info.available_engines.join(', ') || 'None'
+            } · `;
             if (dataInfo.used_engine) {
                 formatInfo += `<strong>Used Engine:</strong> ${dataInfo.used_engine}`;
             }
@@ -972,26 +1027,35 @@ if (document.readyState === 'loading') {
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button data-target-id="textRepresentation" class="text-copy-button">📋 Copy</button>
-                        <pre id="textRepresentation" class="text-representation">${this.escapeHtml(dataInfo.xarray_text_repr || '')}</pre>
+                        <pre id="textRepresentation" class="text-representation">${this.escapeHtml(
+                            dataInfo.xarray_text_repr || ''
+                        )}</pre>
                 </div>
             </details>
         </div>`;
     }
 
-    private generateHtmlRepresentationForGroupsForReport(dataInfo: any): string {
+    private generateHtmlRepresentationForGroupsForReport(
+        dataInfo: any
+    ): string {
         if (!dataInfo.xarray_html_repr_flattened) {
             return '';
         }
         const groups = Object.entries(dataInfo.xarray_html_repr_flattened)
-            .map(([name, value]) => `
+            .map(
+                ([name, value]) => `
                 <div class="info-section">
                     <details>
                         <summary>${name}</summary>
-                        <div class="html-representation">${value || '<p>No HTML representation available</p>'}</div>
+                        <div class="html-representation">${
+                            value || '<p>No HTML representation available</p>'
+                        }</div>
                     </details>
                 </div>
-            `).join('');
-        
+            `
+            )
+            .join('');
+
         return `
         <div class="info-section">
             <details class="sticky-group-details">
@@ -1001,23 +1065,30 @@ if (document.readyState === 'loading') {
         </div>`;
     }
 
-    private generateTextRepresentationForGroupsForReport(dataInfo: any): string {
+    private generateTextRepresentationForGroupsForReport(
+        dataInfo: any
+    ): string {
         if (!dataInfo.xarray_text_repr_flattened) {
             return '';
         }
         const groups = Object.entries(dataInfo.xarray_text_repr_flattened)
-            .map(([name, value]) => `
+            .map(
+                ([name, value]) => `
                 <div class="info-section">
                     <details>
                         <summary>${name}</summary>
                         <div class="text-representation-container">
                             <button data-target-id="groupTextRepresentation_${name}" class="text-copy-button">📋 Copy</button>
-                            <pre id="groupTextRepresentation_${name}">${this.escapeHtml(String(value))}</pre>
+                            <pre id="groupTextRepresentation_${name}">${this.escapeHtml(
+                    String(value)
+                )}</pre>
                         </div>
                     </details>
                 </div>
-            `).join('');
-        
+            `
+            )
+            .join('');
+
         return `
         <div class="info-section">
             <details class="sticky-group-details">
@@ -1028,12 +1099,18 @@ if (document.readyState === 'loading') {
     }
 
     private generateDimensionsAndVariablesForReport(dataInfo: any): string {
-        if (!dataInfo.dimensions_flattened || !dataInfo.coordinates_flattened || !dataInfo.variables_flattened) {
+        if (
+            !dataInfo.dimensions_flattened ||
+            !dataInfo.coordinates_flattened ||
+            !dataInfo.variables_flattened
+        ) {
             return '';
         }
 
         const groups = Object.keys(dataInfo.dimensions_flattened);
-        const groupHtml = groups.map(groupName => this.renderGroupForReport(dataInfo, groupName)).join('');
+        const groupHtml = groups
+            .map((groupName) => this.renderGroupForReport(dataInfo, groupName))
+            .join('');
 
         return `
         <div class="info-section">
@@ -1044,7 +1121,11 @@ if (document.readyState === 'loading') {
         </div>`;
     }
 
-    private generateTroubleshootingForReport(pythonPath: string, extensionConfig: any, dataInfo: any): string {
+    private generateTroubleshootingForReport(
+        pythonPath: string,
+        extensionConfig: any,
+        dataInfo: any
+    ): string {
         return `
         <div class="info-section">
             <details class="sticky-group-details">
@@ -1053,21 +1134,30 @@ if (document.readyState === 'loading') {
                     <details open>
                         <summary>Python Interpreter Path</summary>
                         <button data-target-id="pythonPath" class="text-copy-button">📋 Copy</button>
-                        <pre id="pythonPath">${pythonPath || 'No Python interpreter configured'}</pre>
+                        <pre id="pythonPath">${
+                            pythonPath || 'No Python interpreter configured'
+                        }</pre>
                     </details>
                 </div>
                 <div class="info-section">
                     <details open>
                         <summary>Extension Configuration</summary>
                         <button data-target-id="extensionConfig" class="text-copy-button">📋 Copy</button>
-                        <pre id="extensionConfig">${JSON.stringify(extensionConfig, null, 2)}</pre>
+                        <pre id="extensionConfig">${JSON.stringify(
+                            extensionConfig,
+                            null,
+                            2
+                        )}</pre>
                     </details>
                 </div>
                 <div class="info-section">
                     <details open>
                         <summary>Xarray Version Information</summary>
                         <button data-target-id="showVersions" class="text-copy-button">📋 Copy</button>
-                        <pre id="showVersions">${dataInfo.xarray_show_versions || 'Version information not available'}</pre>
+                        <pre id="showVersions">${
+                            dataInfo.xarray_show_versions ||
+                            'Version information not available'
+                        }</pre>
                     </details>
                 </div>
             </details>
@@ -1080,21 +1170,44 @@ if (document.readyState === 'loading') {
         const variables = dataInfo.variables_flattened[groupName];
         const attributes = dataInfo.attributes_flattened[groupName];
 
-        const dimensionsHtml = dimensions && Object.keys(dimensions).length > 0
-            ? this.renderGroupDimensionsForReport(dimensions, groupName)
-            : '<p class="muted-text">No dimensions found in this group.</p>';
+        const dimensionsHtml =
+            dimensions && Object.keys(dimensions).length > 0
+                ? this.renderGroupDimensionsForReport(dimensions, groupName)
+                : '<p class="muted-text">No dimensions found in this group.</p>';
 
-        const coordinatesHtml = coordinates && coordinates.length > 0
-            ? coordinates.map((variable: any) => this.renderCoordinateVariableForReport(variable, groupName)).join('')
-            : '<p class="muted-text">No coordinates found in this group.</p>';
+        const coordinatesHtml =
+            coordinates && coordinates.length > 0
+                ? coordinates
+                      .map((variable: any) =>
+                          this.renderCoordinateVariableForReport(
+                              variable,
+                              groupName
+                          )
+                      )
+                      .join('')
+                : '<p class="muted-text">No coordinates found in this group.</p>';
 
-        const variablesHtml = variables && variables.length > 0
-            ? variables.map((variable: any) => this.renderDataVariableForReport(variable, groupName)).join('')
-            : '<p class="muted-text">No variables found in this group.</p>';
+        const variablesHtml =
+            variables && variables.length > 0
+                ? variables
+                      .map((variable: any) =>
+                          this.renderDataVariableForReport(variable, groupName)
+                      )
+                      .join('')
+                : '<p class="muted-text">No variables found in this group.</p>';
 
-        const attributesHtml = attributes && Object.keys(attributes).length > 0
-            ? Object.entries(attributes).map(([attrName, value]) => this.renderGroupAttributeForReport(groupName, attrName, value)).join('')
-            : '<p class="muted-text">No attributes found in this group.</p>';
+        const attributesHtml =
+            attributes && Object.keys(attributes).length > 0
+                ? Object.entries(attributes)
+                      .map(([attrName, value]) =>
+                          this.renderGroupAttributeForReport(
+                              groupName,
+                              attrName,
+                              value
+                          )
+                      )
+                      .join('')
+                : '<p class="muted-text">No attributes found in this group.</p>';
 
         return `
         <div class="info-section">
@@ -1128,7 +1241,10 @@ if (document.readyState === 'loading') {
         </div>`;
     }
 
-    private renderGroupDimensionsForReport(dimensions: any, groupName: string): string {
+    private renderGroupDimensionsForReport(
+        dimensions: any,
+        groupName: string
+    ): string {
         return `
         <div class="dimensions-compact">
             (${Object.entries(dimensions)
@@ -1137,11 +1253,19 @@ if (document.readyState === 'loading') {
         </div>`;
     }
 
-    private renderCoordinateVariableForReport(variable: any, groupName: string): string {
+    private renderCoordinateVariableForReport(
+        variable: any,
+        groupName: string
+    ): string {
         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
-        const sizeStr = variable.size_bytes ? this.formatFileSize(variable.size_bytes) : '';
-        const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
+        const dimsStr = variable.dimensions
+            ? `(${variable.dimensions.join(', ')})`
+            : '';
+        const sizeStr = variable.size_bytes
+            ? this.formatFileSize(variable.size_bytes)
+            : '';
+        const hasAttributes =
+            variable.attributes && Object.keys(variable.attributes).length > 0;
 
         const attributesContent = hasAttributes
             ? this.renderVariableAttributesForReport(variable.attributes)
@@ -1149,10 +1273,14 @@ if (document.readyState === 'loading') {
 
         return `
         <details class="variable-details">
-            <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+            <summary class="variable-summary ${
+                hasAttributes ? '' : 'not-clickable'
+            }">
                 <span class="variable-name">${variable.name}</span>
                 <span class="dims">${dimsStr}</span>
-                <span class="dtype-shape"><code>${this.escapeHtml(variable.dtype)}</code></span>
+                <span class="dtype-shape"><code>${this.escapeHtml(
+                    variable.dtype
+                )}</code></span>
                 <span class="dtype-shape">${shapeStr}</span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
@@ -1160,11 +1288,19 @@ if (document.readyState === 'loading') {
         </details>`;
     }
 
-    private renderDataVariableForReport(variable: any, groupName: string): string {
+    private renderDataVariableForReport(
+        variable: any,
+        groupName: string
+    ): string {
         const shapeStr = variable.shape ? `(${variable.shape.join(', ')})` : '';
-        const dimsStr = variable.dimensions ? `(${variable.dimensions.join(', ')})` : '';
-        const sizeStr = variable.size_bytes ? this.formatFileSize(variable.size_bytes) : '';
-        const hasAttributes = variable.attributes && Object.keys(variable.attributes).length > 0;
+        const dimsStr = variable.dimensions
+            ? `(${variable.dimensions.join(', ')})`
+            : '';
+        const sizeStr = variable.size_bytes
+            ? this.formatFileSize(variable.size_bytes)
+            : '';
+        const hasAttributes =
+            variable.attributes && Object.keys(variable.attributes).length > 0;
 
         const attributesContent = hasAttributes
             ? this.renderVariableAttributesForReport(variable.attributes)
@@ -1172,10 +1308,14 @@ if (document.readyState === 'loading') {
 
         return `
         <details class="variable-details">
-            <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+            <summary class="variable-summary ${
+                hasAttributes ? '' : 'not-clickable'
+            }">
                 <span class="variable-name">${variable.name}</span>
                 <span class="dims">${dimsStr}</span>
-                <span class="dtype-shape"><code>${this.escapeHtml(variable.dtype)}</code></span>
+                <span class="dtype-shape"><code>${this.escapeHtml(
+                    variable.dtype
+                )}</code></span>
                 <span class="dtype-shape">${shapeStr}</span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
@@ -1183,8 +1323,13 @@ if (document.readyState === 'loading') {
         </details>`;
     }
 
-    private renderGroupAttributeForReport(groupName: string, attrName: string, value: any): string {
-        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+    private renderGroupAttributeForReport(
+        groupName: string,
+        attrName: string,
+        value: any
+    ): string {
+        const valueStr =
+            typeof value === 'string' ? value : JSON.stringify(value);
         return `
         <div class="attribute-item">
             <span class="attribute-name">${attrName} : </span>
@@ -1199,11 +1344,14 @@ if (document.readyState === 'loading') {
 
         const attributesList = Object.entries(attributes)
             .map(([attrName, value]) => {
-                const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+                const valueStr =
+                    typeof value === 'string' ? value : JSON.stringify(value);
                 return `
                 <div class="attribute-item">
                     <span class="attribute-name">${attrName} : </span>
-                    <span class="attribute-value">${this.escapeHtml(valueStr)}</span>
+                    <span class="attribute-value">${this.escapeHtml(
+                        valueStr
+                    )}</span>
                 </div>`;
             })
             .join('');
@@ -1218,7 +1366,9 @@ if (document.readyState === 'loading') {
         const sizes = ['B', 'kB', 'MB', 'GB', 'TB'];
         if (bytes === 0) return '0 B';
         const i = Math.floor(Math.log(bytes) / Math.log(1024));
-        return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
+        return (
+            Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i]
+        );
     }
 
     private escapeHtml(unsafe: string): string {
@@ -1235,8 +1385,15 @@ if (document.readyState === 'loading') {
         this.messageBus.emitUIStateChanged(state);
     }
 
-    public scrollToHeader(headerId: string, headerLabel: string): void {
+    public emitScrollToHeader(headerId: string, headerLabel: string): void {
         this.messageBus.emitScrollToHeader(headerId, headerLabel);
+    }
+
+    /**
+     * Export webview content (what the user currently sees)
+     */
+    public emitExportWebview(): void {
+        this.messageBus.emitExportWebviewCommand();
     }
 
     // Public methods for external control
@@ -1273,7 +1430,7 @@ if (document.readyState === 'loading') {
     /**
      * Export HTML report
      */
-    public async exportHtml(): Promise<void> {
+    public async emitExportHtml(): Promise<void> {
         const context: ErrorContext = {
             component: `ui-${this.id}`,
             operation: 'exportHtml',
@@ -1290,7 +1447,10 @@ if (document.readyState === 'loading') {
                 .fsPath.split('/')
                 .slice(0, -1)
                 .join('/');
-            const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+            const fileName =
+                vscode.Uri.file(state.data.currentFile)
+                    .fsPath.split('/')
+                    .pop() || 'data';
             const defaultFileName = `${fileName}_report_${new Date()
                 .toISOString()
                 .slice(0, 19)
@@ -1298,7 +1458,9 @@ if (document.readyState === 'loading') {
 
             // Show save dialog
             const saveUri = await vscode.window.showSaveDialog({
-                defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                defaultUri: vscode.Uri.file(
+                    `${currentFileDir}/${defaultFileName}`
+                ),
                 filters: {
                     'HTML Files': ['html'],
                     'All Files': ['*'],
@@ -1314,7 +1476,10 @@ if (document.readyState === 'loading') {
             const htmlReport = this.generateHtmlReport(state);
 
             // Write the file
-            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(htmlReport, 'utf8'));
+            await vscode.workspace.fs.writeFile(
+                saveUri,
+                Buffer.from(htmlReport, 'utf8')
+            );
 
             // Show success notification
             const action = await vscode.window.showInformationMessage(
@@ -1337,90 +1502,12 @@ if (document.readyState === 'loading') {
                     await vscode.env.openExternal(saveUri);
                 }
             } else if (action === 'Reveal in Explorer') {
-                await vscode.commands.executeCommand(
-                    'revealFileInOS',
-                    saveUri
-                );
+                await vscode.commands.executeCommand('revealFileInOS', saveUri);
             }
 
-            Logger.info(`[UIController] HTML report exported: ${saveUri.fsPath}`);
-        }, context);
-    }
-
-    /**
-     * Export webview content (what the user currently sees)
-     */
-    public async exportWebview(): Promise<void> {
-        const context: ErrorContext = {
-            component: `ui-${this.id}`,
-            operation: 'exportWebview',
-        };
-
-        await this.errorBoundary.wrapAsync(async () => {
-            const state = this.stateManager.getState();
-            if (!state.data.currentFile) {
-                throw new Error('No current file available');
-            }
-
-            // Get the current file path to determine save location
-            const currentFileDir = vscode.Uri.file(state.data.currentFile)
-                .fsPath.split('/')
-                .slice(0, -1)
-                .join('/');
-            const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
-            const defaultFileName = `${fileName}_webview_${new Date()
-                .toISOString()
-                .slice(0, 19)
-                .replace(/:/g, '-')}.html`;
-
-            // Show save dialog
-            const saveUri = await vscode.window.showSaveDialog({
-                defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
-                filters: {
-                    'HTML Files': ['html'],
-                    'All Files': ['*'],
-                },
-                title: 'Export Webview Content',
-            });
-
-            if (!saveUri) {
-                throw new Error('Export cancelled by user');
-            }
-
-            // Request the webview to capture its current content
-            const webviewContent = await this.captureWebviewContent();
-
-            // Write the file
-            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(webviewContent, 'utf8'));
-
-            // Show success notification
-            const action = await vscode.window.showInformationMessage(
-                `Webview content exported successfully: ${saveUri.fsPath
-                    .split('/')
-                    .pop()}`,
-                'Open File',
-                'Reveal in Explorer'
+            Logger.info(
+                `[UIController] HTML report exported: ${saveUri.fsPath}`
             );
-
-            // Handle user action
-            if (action === 'Open File') {
-                try {
-                    await vscode.commands.executeCommand(
-                        'vscode.open',
-                        saveUri,
-                        vscode.ViewColumn.Beside
-                    );
-                } catch (error) {
-                    await vscode.env.openExternal(saveUri);
-                }
-            } else if (action === 'Reveal in Explorer') {
-                await vscode.commands.executeCommand(
-                    'revealFileInOS',
-                    saveUri
-                );
-            }
-
-            Logger.info(`[UIController] Webview content exported: ${saveUri.fsPath}`);
         }, context);
     }
 
@@ -1440,7 +1527,9 @@ if (document.readyState === 'loading') {
                 command,
                 ...(args || [])
             );
-            Logger.info(`[UIController] 🔧 Command executed successfully: ${command}`);
+            Logger.info(
+                `[UIController] 🔧 Command executed successfully: ${command}`
+            );
             return result;
         }, context);
     }
@@ -1465,7 +1554,7 @@ if (document.readyState === 'loading') {
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
-            this.getId(),
+            this.getId()
         );
     }
 }

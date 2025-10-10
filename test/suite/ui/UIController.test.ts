@@ -298,7 +298,7 @@ suite('UIController Test Suite', () => {
             await uiController.loadFile('/tmp/test.nc');
 
             // Test export functionality
-            await uiController.exportHtml();
+            await uiController.emitExportHtml();
 
             // If we get here without throwing, the test passes
             assert.ok(true, 'Export HTML completed successfully');

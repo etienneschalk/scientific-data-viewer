@@ -413,10 +413,10 @@ function commandHandlerManageExtensionOwnEnvironment(
 function commandHandlerExportHtml(): () => void {
     return async () => {
         Logger.info('🎮 📄 Command: Export HTML Report');
-        
+
         // Find the currently active DataViewerPanel
         const activePanel = DataViewerPanel.getActivePanel();
-        
+
         if (!activePanel) {
             vscode.window.showErrorMessage(
                 'No active data viewer panel found. Please open a scientific data file first.'
@@ -426,11 +426,13 @@ function commandHandlerExportHtml(): () => void {
 
         // Export HTML report
         try {
-            await activePanel.exportHtml();
+            await activePanel.emitExportHtml();
         } catch (error) {
             Logger.error(`🎮 📄 ❌ Failed to export HTML: ${error}`);
             vscode.window.showErrorMessage(
-                `Failed to export HTML report: ${error instanceof Error ? error.message : String(error)}`
+                `Failed to export HTML report: ${
+                    error instanceof Error ? error.message : String(error)
+                }`
             );
         }
     };
@@ -439,10 +441,10 @@ function commandHandlerExportHtml(): () => void {
 function commandHandlerExportWebview(): () => void {
     return async () => {
         Logger.info('🎮 🖼️ Command: Export Webview Content');
-        
+
         // Find the currently active DataViewerPanel
         const activePanel = DataViewerPanel.getActivePanel();
-        
+
         if (!activePanel) {
             vscode.window.showErrorMessage(
                 'No active data viewer panel found. Please open a scientific data file first.'
@@ -452,11 +454,13 @@ function commandHandlerExportWebview(): () => void {
 
         // Export webview content
         try {
-            await activePanel.exportWebview();
+            await activePanel.emitExportWebview();
         } catch (error) {
             Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
             vscode.window.showErrorMessage(
-                `Failed to export webview content: ${error instanceof Error ? error.message : String(error)}`
+                `Failed to export webview content: ${
+                    error instanceof Error ? error.message : String(error)
+                }`
             );
         }
     };
@@ -541,7 +545,7 @@ function commandHandlerPythonInstallPackages(
 function commandHandlerScrollToHeader(
     outlineProvider: OutlineProvider
 ): (headerId: string, headerLabel: string) => void {
-    return async (headerId: string, headerLabel: string) => {
+    return (headerId: string, headerLabel: string) => {
         // We can only manage one file at a time, so we need to get the current file from the outline provider
         let currentPanelId = outlineProvider.getCurrentPanelId();
 
@@ -559,7 +563,7 @@ function commandHandlerScrollToHeader(
         // Find the active DataViewerPanel and scroll to the header
         const activePanel = DataViewerPanel.getPanel(currentPanelId);
         if (activePanel) {
-            await activePanel.scrollToHeader(headerId, headerLabel);
+            activePanel.emitScrollToHeader(headerId, headerLabel);
         } else {
             Logger.warn('↕️ ⚠️ No active DataViewerPanel found for scrolling');
         }

@@ -47,8 +47,9 @@ export class DataViewerPanel {
     public static getActivePanel(): DataViewerPanel | undefined {
         Logger.debug(`🚚 🗂️ Getting active panel`);
         // Find the panel that is currently visible
-        const activePanel = Array.from(DataViewerPanel._panels.values())
-            .find(panel => panel._webviewPanel.visible);
+        const activePanel = Array.from(DataViewerPanel._panels.values()).find(
+            (panel) => panel._webviewPanel.visible
+        );
         if (activePanel) {
             Logger.debug(`🚚 🗂️ Found active panel: ${activePanel.getId()}`);
         } else {
@@ -379,11 +380,27 @@ export class DataViewerPanel {
         }
     }
 
-    public async scrollToHeader(
-        headerId: string,
-        headerLabel: string
-    ): Promise<void> {
-        this._uiController.scrollToHeader(headerId, headerLabel);
+    /**
+     * Scroll to a header in the data viewer panel
+     * @param headerId
+     * @param headerLabel
+     */
+    public emitScrollToHeader(headerId: string, headerLabel: string): void {
+        this._uiController.emitScrollToHeader(headerId, headerLabel);
+    }
+
+    /**
+     * Export HTML report for this panel
+     */
+    public async emitExportHtml(): Promise<void> {
+        return this._uiController.emitExportHtml();
+    }
+
+    /**
+     * Export webview content for this panel
+     */
+    public async emitExportWebview(): Promise<void> {
+        return this._uiController.emitExportWebview();
     }
 
     /**
@@ -398,19 +415,5 @@ export class DataViewerPanel {
      */
     public getFileUri(): vscode.Uri {
         return this._fileUri;
-    }
-
-    /**
-     * Export HTML report for this panel
-     */
-    public async exportHtml(): Promise<void> {
-        return this._uiController.exportHtml();
-    }
-
-    /**
-     * Export webview content for this panel
-     */
-    public async exportWebview(): Promise<void> {
-        return this._uiController.exportWebview();
     }
 }

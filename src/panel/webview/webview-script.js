@@ -171,8 +171,8 @@ class WebviewMessageBus {
         return this.sendRequest('exportHtml', {});
     }
 
-    async exportWebview() {
-        return this.sendRequest('exportWebview', {});
+    async exportWebview(htmlContent) {
+        return this.sendRequest('exportWebview', { htmlContent });
     }
 
     async showNotification(message, type) {
@@ -198,6 +198,10 @@ class WebviewMessageBus {
 
     onScrollToHeader(callback) {
         return this.onEvent('scrollToHeader', callback);
+    }
+
+    onExportWebviewCommand(callback) {
+        return this.onEvent('exportWebviewCommand', callback);
     }
 }
 
@@ -319,13 +323,8 @@ function setupMessageHandlers() {
         doScrollToHeader(headerId, headerLabel);
     });
 
-    // Listen for content capture requests
-    window.addEventListener('message', (event) => {
-        const message = event.data;
-        if (message && message.command === 'captureContent') {
-            console.log('🖼️ Content capture requested, ID:', message.id);
-            captureWebviewContent(message.id);
-        }
+    messageBus.onExportWebviewCommand(() => {
+        handleExportWebview();
     });
 
     // Add debugging for all message bus communications
@@ -1246,7 +1245,10 @@ async function handleExportHtml() {
     try {
         const result = await messageBus.exportHtml();
         if (result.success) {
-            console.log('📄 HTML report exported successfully:', result.filePath);
+            console.log(
+                '📄 HTML report exported successfully:',
+                result.filePath
+            );
         } else {
             console.error('📄 Failed to export HTML report:', result.error);
             displayGlobalError('Failed to export HTML report: ' + result.error);
@@ -1259,46 +1261,43 @@ async function handleExportHtml() {
 
 async function handleExportWebview() {
     console.log('🖼️ Exporting webview content...');
+    const htmlContent = captureWebviewContent();
     try {
-        const result = await messageBus.exportWebview();
+        const result = await messageBus.exportWebview(htmlContent);
         if (result.success) {
-            console.log('🖼️ Webview content exported successfully:', result.filePath);
+            console.log(
+                '🖼️ Webview content exported successfully:',
+                result.filePath
+            );
         } else {
             console.error('🖼️ Failed to export webview content:', result.error);
-            displayGlobalError('Failed to export webview content: ' + result.error);
+            displayGlobalError(
+                'Failed to export webview content: ' + result.error
+            );
         }
     } catch (error) {
         console.error('🖼️ Error exporting webview content:', error);
-        displayGlobalError('Failed to export webview content: ' + error.message);
+        displayGlobalError(
+            'Failed to export webview content: ' + error.message
+        );
     }
 }
 
-function captureWebviewContent(requestId) {
+function captureWebviewContent() {
     console.log('🖼️ Capturing webview content...');
-    
+
     try {
         // Get the current document HTML
         const htmlContent = document.documentElement.outerHTML;
-        
-        console.log('🖼️ Content captured, size:', htmlContent.length, 'characters');
-        
-        // Send the captured content back to the extension
-        _vscode.postMessage({
-            command: 'captureContentResponse',
-            id: requestId,
-            content: htmlContent
-        });
-        
-        console.log('🖼️ Webview content captured and sent successfully');
+        console.log(
+            '🖼️ Content captured, size:',
+            htmlContent.length,
+            'characters'
+        );
+        return htmlContent;
     } catch (error) {
         console.error('🖼️ Error capturing webview content:', error);
-        
-        // Send error response
-        _vscode.postMessage({
-            command: 'captureContentResponse',
-            id: requestId,
-            content: `<html><body><h1>Error capturing content</h1><p>${error.message}</p></body></html>`
-        });
+        return null;
     }
 }
 
@@ -1734,7 +1733,7 @@ async function executeShowLogsCommand() {
         console.log('🔧 Executing show logs command...');
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_SHOW_LOGS
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.showLogs',
         });
         console.log('🔧 Show logs command executed successfully');
@@ -1753,7 +1752,7 @@ async function executeInstallPackagesCommand(packages) {
         console.log('🔧 Executing install packages command...', packages);
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_PYTHON_INSTALL_PACKAGES
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.python.installPackages',
             args: [packages],
         });
@@ -1772,7 +1771,7 @@ async function executeShowSettingsCommand() {
         console.log('🔧 Executing show settings command...');
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_SHOW_SETTINGS
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.showSettings',
         });
         console.log('🔧 Show settings command executed successfully');
