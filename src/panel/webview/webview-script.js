@@ -307,7 +307,7 @@ function showDegradedModeIndicator() {
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     `;
     indicator.textContent = '🌐 Browser Mode';
-    indicator.title = 'Running in browser mode - VSCode features disabled';
+    indicator.title = 'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
     
     document.body.appendChild(indicator);
     
@@ -328,10 +328,20 @@ function showDegradedModeIndicator() {
         }
     });
     
-    // Hide plot controls for individual variables
+    // Hide plot controls for individual variables but keep plot containers visible
     const plotControls = document.querySelectorAll('.variable-plot-controls');
     plotControls.forEach(control => {
-        control.style.display = 'none';
+        // Hide the control buttons but keep the plot container visible
+        const plotButtons = control.querySelectorAll('.plot-controls-row, .plot-actions');
+        plotButtons.forEach(button => {
+            button.style.display = 'none';
+        });
+        
+        // Keep the plot container visible so existing plots can be displayed
+        const plotContainer = control.querySelector('.plot-container');
+        if (plotContainer) {
+            plotContainer.style.display = 'block';
+        }
     });
     
     console.log('🌐 Degraded mode indicator displayed');
