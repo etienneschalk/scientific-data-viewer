@@ -1384,12 +1384,8 @@ if (document.readyState === 'loading') {
     /**
      * Export HTML report
      */
-    public async emitExportHtml(): Promise<{
-        success: boolean;
-        filePath?: string;
-        error?: string;
-    }> {
-        return await this.handleExportHtml();
+    public async emitExportHtml(): Promise<void> {
+        await this.handleExportHtml();
     }
 
     private async handleExecuteCommand(
