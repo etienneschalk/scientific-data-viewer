@@ -406,4 +406,11 @@ export class DataViewerPanel {
     public async exportHtml(): Promise<void> {
         return this._uiController.exportHtml();
     }
+
+    /**
+     * Export webview content for this panel
+     */
+    public async exportWebview(): Promise<void> {
+        return this._uiController.exportWebview();
+    }
 }

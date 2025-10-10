@@ -35,6 +35,7 @@ import {
     CMD_PYTHON_INSTALL_PACKAGES,
     CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
     CMD_EXPORT_HTML,
+    CMD_EXPORT_WEBVIEW,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
@@ -178,6 +179,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             CMD_EXPORT_HTML,
             commandHandlerExportHtml()
+        ),
+        vscode.commands.registerCommand(
+            CMD_EXPORT_WEBVIEW,
+            commandHandlerExportWebview()
         )
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -426,6 +431,32 @@ function commandHandlerExportHtml(): () => void {
             Logger.error(`🎮 📄 ❌ Failed to export HTML: ${error}`);
             vscode.window.showErrorMessage(
                 `Failed to export HTML report: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
+    };
+}
+
+function commandHandlerExportWebview(): () => void {
+    return async () => {
+        Logger.info('🎮 🖼️ Command: Export Webview Content');
+        
+        // Find the currently active DataViewerPanel
+        const activePanel = DataViewerPanel.getActivePanel();
+        
+        if (!activePanel) {
+            vscode.window.showErrorMessage(
+                'No active data viewer panel found. Please open a scientific data file first.'
+            );
+            return;
+        }
+
+        // Export webview content
+        try {
+            await activePanel.exportWebview();
+        } catch (error) {
+            Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
+            vscode.window.showErrorMessage(
+                `Failed to export webview content: ${error instanceof Error ? error.message : String(error)}`
             );
         }
     };

@@ -171,6 +171,10 @@ class WebviewMessageBus {
         return this.sendRequest('exportHtml', {});
     }
 
+    async exportWebview() {
+        return this.sendRequest('exportWebview', {});
+    }
+
     async showNotification(message, type) {
         return this.sendRequest('showNotification', { message, type });
     }
@@ -313,6 +317,15 @@ function setupMessageHandlers() {
 
     messageBus.onScrollToHeader(({ headerId, headerLabel }) => {
         doScrollToHeader(headerId, headerLabel);
+    });
+
+    // Listen for content capture requests
+    window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (message && message.command === 'captureContent') {
+            console.log('🖼️ Content capture requested, ID:', message.id);
+            captureWebviewContent(message.id);
+        }
     });
 
     // Add debugging for all message bus communications
@@ -1132,8 +1145,9 @@ function setupEventListeners() {
         // Tree control event listeners
         expandAllButton: handleExpandAllSections,
         collapseAllButton: handleCollapseAllSections,
-        // Export button
+        // Export buttons
         exportHtmlButton: handleExportHtml,
+        exportWebviewButton: handleExportWebview,
         // Global plot controls
         createAllPlotsButton: handleCreateAllPlots,
         resetAllPlotsButton: handleResetAllPlots,
@@ -1240,6 +1254,51 @@ async function handleExportHtml() {
     } catch (error) {
         console.error('📄 Error exporting HTML report:', error);
         displayGlobalError('Failed to export HTML report: ' + error.message);
+    }
+}
+
+async function handleExportWebview() {
+    console.log('🖼️ Exporting webview content...');
+    try {
+        const result = await messageBus.exportWebview();
+        if (result.success) {
+            console.log('🖼️ Webview content exported successfully:', result.filePath);
+        } else {
+            console.error('🖼️ Failed to export webview content:', result.error);
+            displayGlobalError('Failed to export webview content: ' + result.error);
+        }
+    } catch (error) {
+        console.error('🖼️ Error exporting webview content:', error);
+        displayGlobalError('Failed to export webview content: ' + error.message);
+    }
+}
+
+function captureWebviewContent(requestId) {
+    console.log('🖼️ Capturing webview content...');
+    
+    try {
+        // Get the current document HTML
+        const htmlContent = document.documentElement.outerHTML;
+        
+        console.log('🖼️ Content captured, size:', htmlContent.length, 'characters');
+        
+        // Send the captured content back to the extension
+        _vscode.postMessage({
+            command: 'captureContentResponse',
+            id: requestId,
+            content: htmlContent
+        });
+        
+        console.log('🖼️ Webview content captured and sent successfully');
+    } catch (error) {
+        console.error('🖼️ Error capturing webview content:', error);
+        
+        // Send error response
+        _vscode.postMessage({
+            command: 'captureContentResponse',
+            id: requestId,
+            content: `<html><body><h1>Error capturing content</h1><p>${error.message}</p></body></html>`
+        });
     }
 }
 

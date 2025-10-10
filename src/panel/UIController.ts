@@ -148,6 +148,14 @@ export class UIController {
                 return this.handleExportHtml();
             }
         );
+
+        this.messageBus.registerRequestHandler(
+            'exportWebview',
+            async () => {
+                return this.handleExportWebview();
+            }
+        );
+
     }
 
     private setupStateSubscription(): void {
@@ -689,6 +697,123 @@ export class UIController {
         return result || { success: false, error: 'Unknown error' };
     }
 
+    private async handleExportWebview(): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'exportWebview',
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            try {
+                const state = this.stateManager.getState();
+                if (!state.data.currentFile) {
+                    throw new Error('No current file available');
+                }
+
+                // Get the current file path to determine save location
+                const currentFileDir = vscode.Uri.file(state.data.currentFile)
+                    .fsPath.split('/')
+                    .slice(0, -1)
+                    .join('/');
+                const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+                const defaultFileName = `${fileName}_webview_${new Date()
+                    .toISOString()
+                    .slice(0, 19)
+                    .replace(/:/g, '-')}.html`;
+
+                // Show save dialog
+                const saveUri = await vscode.window.showSaveDialog({
+                    defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                    filters: {
+                        'HTML Files': ['html'],
+                        'All Files': ['*'],
+                    },
+                    title: 'Export Webview Content',
+                });
+
+                if (!saveUri) {
+                    return { success: false, error: 'Export cancelled by user' };
+                }
+
+                // Request the webview to capture its current content
+                const webviewContent = await this.captureWebviewContent();
+
+                // Write the file
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(webviewContent, 'utf8'));
+
+                // Show success notification
+                const action = await vscode.window.showInformationMessage(
+                    `Webview content exported successfully: ${saveUri.fsPath
+                        .split('/')
+                        .pop()}`,
+                    'Open File',
+                    'Reveal in Explorer'
+                );
+
+                // Handle user action
+                if (action === 'Open File') {
+                    try {
+                        await vscode.commands.executeCommand(
+                            'vscode.open',
+                            saveUri,
+                            vscode.ViewColumn.Beside
+                        );
+                    } catch (error) {
+                        await vscode.env.openExternal(saveUri);
+                    }
+                } else if (action === 'Reveal in Explorer') {
+                    await vscode.commands.executeCommand(
+                        'revealFileInOS',
+                        saveUri
+                    );
+                }
+
+                Logger.info(`[UIController] Webview content exported: ${saveUri.fsPath}`);
+                return { success: true, filePath: saveUri.fsPath };
+            } catch (error) {
+                Logger.error(`[UIController] Error exporting webview content: ${error}`);
+                return {
+                    success: false,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                };
+            }
+        }, context);
+
+        return result || { success: false, error: 'Unknown error' };
+    }
+
+
+    private async captureWebviewContent(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            // Generate a unique ID for this request
+            const requestId = Date.now().toString();
+            
+            // Set up a timeout
+            const timeout = setTimeout(() => {
+                reject(new Error('Webview content capture timeout'));
+            }, 10000); // 10 second timeout
+
+            // Listen for the response
+            const messageListener = (message: any) => {
+                if (message.command === 'captureContentResponse' && message.id === requestId) {
+                    clearTimeout(timeout);
+                    this.webview.onDidReceiveMessage(messageListener).dispose();
+                    resolve(message.content || '');
+                }
+            };
+
+            // Set up the listener
+            this.webview.onDidReceiveMessage(messageListener);
+
+            // Send message to webview to capture its content
+            this.webview.postMessage({
+                command: 'captureContent',
+                id: requestId
+            });
+        });
+    }
+
     private generateHtmlReport(state: AppState): string {
         const dataInfo = state.data.dataInfo;
         const currentFile = state.data.currentFile;
@@ -1219,6 +1344,83 @@ if (document.readyState === 'loading') {
             }
 
             Logger.info(`[UIController] HTML report exported: ${saveUri.fsPath}`);
+        }, context);
+    }
+
+    /**
+     * Export webview content (what the user currently sees)
+     */
+    public async exportWebview(): Promise<void> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'exportWebview',
+        };
+
+        await this.errorBoundary.wrapAsync(async () => {
+            const state = this.stateManager.getState();
+            if (!state.data.currentFile) {
+                throw new Error('No current file available');
+            }
+
+            // Get the current file path to determine save location
+            const currentFileDir = vscode.Uri.file(state.data.currentFile)
+                .fsPath.split('/')
+                .slice(0, -1)
+                .join('/');
+            const fileName = vscode.Uri.file(state.data.currentFile).fsPath.split('/').pop() || 'data';
+            const defaultFileName = `${fileName}_webview_${new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/:/g, '-')}.html`;
+
+            // Show save dialog
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(`${currentFileDir}/${defaultFileName}`),
+                filters: {
+                    'HTML Files': ['html'],
+                    'All Files': ['*'],
+                },
+                title: 'Export Webview Content',
+            });
+
+            if (!saveUri) {
+                throw new Error('Export cancelled by user');
+            }
+
+            // Request the webview to capture its current content
+            const webviewContent = await this.captureWebviewContent();
+
+            // Write the file
+            await vscode.workspace.fs.writeFile(saveUri, Buffer.from(webviewContent, 'utf8'));
+
+            // Show success notification
+            const action = await vscode.window.showInformationMessage(
+                `Webview content exported successfully: ${saveUri.fsPath
+                    .split('/')
+                    .pop()}`,
+                'Open File',
+                'Reveal in Explorer'
+            );
+
+            // Handle user action
+            if (action === 'Open File') {
+                try {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        saveUri,
+                        vscode.ViewColumn.Beside
+                    );
+                } catch (error) {
+                    await vscode.env.openExternal(saveUri);
+                }
+            } else if (action === 'Reveal in Explorer') {
+                await vscode.commands.executeCommand(
+                    'revealFileInOS',
+                    saveUri
+                );
+            }
+
+            Logger.info(`[UIController] Webview content exported: ${saveUri.fsPath}`);
         }, context);
     }
 
