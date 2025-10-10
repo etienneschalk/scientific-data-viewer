@@ -181,7 +181,7 @@ suite('Integration Test Suite', () => {
         );
 
         assert.ok(panel);
-        assert.ok(DataViewerPanel.activePanels.has(panel));
+        assert.ok(DataViewerPanel.okPanels.has(panel));
     });
 
     test('Logger should work with all components', () => {
@@ -361,8 +361,8 @@ suite('Integration Test Suite', () => {
                 mockWebviewOptions
             );
 
-            assert.ok(DataViewerPanel.activePanels.has(panel1));
-            assert.ok(DataViewerPanel.activePanels.has(panel2));
+            assert.ok(DataViewerPanel.okPanels.has(panel1));
+            assert.ok(DataViewerPanel.okPanels.has(panel2));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }
@@ -451,7 +451,7 @@ suite('Integration Test Suite', () => {
 
             // Test that panel is created successfully
             assert.ok(panel);
-            assert.ok(DataViewerPanel.activePanels.has(panel));
+            assert.ok(DataViewerPanel.okPanels.has(panel));
 
             // Test data processing (without triggering the panel's _handleGetDataInfo)
             const dataInfo = await processor.getDataInfo(
@@ -471,7 +471,7 @@ suite('Integration Test Suite', () => {
 
             // Test panel disposal
             DataViewerPanel.dispose();
-            assert.ok(!DataViewerPanel.activePanels.has(panel));
+            assert.ok(!DataViewerPanel.okPanels.has(panel));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }

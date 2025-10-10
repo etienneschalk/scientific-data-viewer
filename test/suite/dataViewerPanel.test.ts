@@ -372,7 +372,7 @@ suite('DataViewerPanel Test Suite', () => {
         DataViewerPanel.dispose();
 
         // Should be removed from active panels
-        assert.ok(!DataViewerPanel.activePanels.has(panel));
+        assert.ok(!DataViewerPanel.okPanels.has(panel));
     });
 
     test('should generate HTML for webview', () => {
