@@ -145,7 +145,7 @@ export class DataViewerPanel {
 
     public static async refreshPanelsWithErrors() {
         Logger.debug(
-            `[refreshPanelsWithErrors] Refreshing ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing ${DataViewerPanel._errorPanels.size} panels with errors`
         );
         const errorPanelCount = DataViewerPanel._errorPanels.size;
         if (errorPanelCount > 0) {
@@ -153,7 +153,7 @@ export class DataViewerPanel {
                 // Use UI controller to refresh data
                 if (panel._uiController && panel.getFileUri()) {
                     Logger.debug(
-                        `[refreshPanelsWithErrors] Refreshing panel: ${
+                        `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panel: ${
                             panel.getFileUri().fsPath
                         }`
                     );
@@ -171,21 +171,21 @@ export class DataViewerPanel {
 
     private static addPanelWithError(panel: DataViewerPanel) {
         Logger.debug(
-            `[addPanelWithError]    (before add) ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.addPanelWithError]    (before add) ${DataViewerPanel._errorPanels.size} panels with errors`
         );
         DataViewerPanel._errorPanels.add(panel);
         Logger.debug(
-            `[addPanelWithError]    (after add) ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.addPanelWithError]    (after add) ${DataViewerPanel._errorPanels.size} panels with errors`
         );
     }
 
     private static removePanelWithError(panel: DataViewerPanel) {
         Logger.debug(
-            `[removePanelWithError] (before remove) ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.removePanelWithError] (before remove) ${DataViewerPanel._errorPanels.size} panels with errors`
         );
         DataViewerPanel._errorPanels.delete(panel);
         Logger.debug(
-            `[removePanelWithError] (after remove) ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.removePanelWithError] (after remove) ${DataViewerPanel._errorPanels.size} panels with errors`
         );
     }
 
@@ -208,7 +208,7 @@ export class DataViewerPanel {
 
         // Set the webview's initial html content
         Logger.info(
-            `🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`
+            `[DataViewerPanel] 🚚 📖 Initializing data viewer panel for: ${fileUri.fsPath}`
         );
 
         // Initialize state management and UI controller
@@ -241,7 +241,7 @@ export class DataViewerPanel {
         // Listen for when the panel becomes visible to update outline
         this._webviewPanel.onDidChangeViewState(
             (e) => {
-                Logger.debug(`[onDidChangeViewState] ${e}`);
+                Logger.debug(`WebView Panel Event: [onDidChangeViewState] ${e}`);
                 if (e.webviewPanel.visible) {
                     this.notifyPanelActive();
                 }
@@ -261,7 +261,7 @@ export class DataViewerPanel {
     private notifyPanelActive(): void {
         if (DataViewerPanel._outlineProvider && this.getId()) {
             Logger.info(
-                `🗂️ Panel became active for panel with ID: ${this.getId()}`
+                `[DataViewerPanel] 🗂️ Panel became active for panel with ID: ${this.getId()}`
             );
 
             // Check if we have headers cached for this file

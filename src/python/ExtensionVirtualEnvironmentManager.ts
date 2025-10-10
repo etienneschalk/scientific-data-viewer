@@ -49,7 +49,7 @@ export class ExtensionVirtualEnvironmentManager {
      * Create the extension's virtual environment
      */
     async create() {
-        Logger.info('[uv] 🐍 🔧 Creating extension virtual environment...');
+        Logger.info('[ExtensionVirtualEnvironmentManager] 🐍 🔧 Creating extension virtual environment...');
 
         // Ensure the storage directory exists
         await fs.promises.mkdir(this.globalStorageUriFsPath, {
@@ -80,7 +80,7 @@ export class ExtensionVirtualEnvironmentManager {
         this.extensionEnv!.isInitialized = true;
         this.extensionEnv!.lastUpdated = new Date();
 
-        Logger.info('[uv] ✅ Extension virtual environment created successfully');
+        Logger.info('[ExtensionVirtualEnvironmentManager] ✅ Extension virtual environment created successfully');
     }
 
     /**
@@ -96,21 +96,21 @@ export class ExtensionVirtualEnvironmentManager {
     async update(): Promise<boolean> {
         if (!this.ready) {
             Logger.warn(
-                '[uv] Extension virtual environment not ready for package updates'
+                '[ExtensionVirtualEnvironmentManager] Extension virtual environment not ready for package updates'
             );
             return false;
         }
 
         try {
             Logger.info(
-                '[uv] 📦 Updating packages in extension virtual environment...'
+                '[ExtensionVirtualEnvironmentManager] 📦 Updating packages in extension virtual environment...'
             );
             await this.uvInstallRequiredPackages();
             this.extensionEnv!.lastUpdated = new Date();
-            Logger.info('[uv] ✅ Packages updated successfully');
+            Logger.info('[ExtensionVirtualEnvironmentManager] ✅ Packages updated successfully');
             return true;
         } catch (error) {
-            Logger.error(`[uv] ❌ Failed to update packages: ${error}`);
+            Logger.error(`[ExtensionVirtualEnvironmentManager] ❌ Failed to update packages: ${error}`);
             return false;
         }
     }
@@ -121,7 +121,7 @@ export class ExtensionVirtualEnvironmentManager {
     async delete(): Promise<boolean> {
         try {
             if (this.extensionEnv && this.extensionEnv.isCreated) {
-                Logger.info('[uv] 🗑️ Deleting extension virtual environment...');
+                Logger.info('[ExtensionVirtualEnvironmentManager] 🗑️ Deleting extension virtual environment...');
                 await fs.promises.rm(this.extensionEnv.path, {
                     recursive: true,
                     force: true,
@@ -132,14 +132,14 @@ export class ExtensionVirtualEnvironmentManager {
                 this.extensionEnv.packages = [];
 
                 Logger.info(
-                    '[uv] ✅ Extension virtual environment deleted successfully'
+                    '[ExtensionVirtualEnvironmentManager] ✅ Extension virtual environment deleted successfully'
                 );
                 return true;
             }
             return true;
         } catch (error) {
             Logger.error(
-                `[uv] ❌ Failed to delete extension virtual environment: ${error}`
+                `[ExtensionVirtualEnvironmentManager] ❌ Failed to delete extension virtual environment: ${error}`
             );
             return false;
         }
@@ -165,7 +165,7 @@ export class ExtensionVirtualEnvironmentManager {
         };
 
         Logger.info(
-            `[uv] 🚀 Extension virtual environment initialized at: ${envPath}`
+            `[ExtensionVirtualEnvironmentManager] 🚀 Extension virtual environment initialized at: ${envPath}`
         );
     }
 
@@ -185,7 +185,7 @@ export class ExtensionVirtualEnvironmentManager {
      */
     private async uvCheckAvailability(): Promise<boolean> {
         return new Promise((resolve) => {
-            Logger.info('[uv] 🔧 Checking if uv is available...');
+            Logger.info('[ExtensionVirtualEnvironmentManager] 🔧 Checking if uv is available...');
             const process = spawn('uv', ['--version'], { shell: true });
 
             let output = '';
@@ -195,11 +195,11 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('close', (code) => {
                 if (code === 0) {
-                    Logger.info(`[uv] 🔧 uv is available: ${output.trim()}`);
+                    Logger.info(`[ExtensionVirtualEnvironmentManager] 🔧 uv is available: ${output.trim()}`);
                     resolve(true);
                 } else {
                     Logger.info(
-                        `[uv] 🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                        `[ExtensionVirtualEnvironmentManager] 🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
                     );
                     resolve(false);
                 }
@@ -207,7 +207,7 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('error', () => {
                 Logger.error(
-                    `[uv] 🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
+                    `[ExtensionVirtualEnvironmentManager] 🔧 ℹ️ uv is not available, you can install it from 🔗 ${this.UV_INSTALLATION_URL}`
                 );
                 resolve(false);
             });
@@ -220,7 +220,7 @@ export class ExtensionVirtualEnvironmentManager {
     private async uvInstallPython(): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info(
-                `[uv] 🔧 Installing Python ${this.PYTHON_VERSION} with uv...`
+                `[ExtensionVirtualEnvironmentManager] 🔧 Installing Python ${this.PYTHON_VERSION} with uv...`
             );
 
             const process = spawn(
@@ -238,24 +238,24 @@ export class ExtensionVirtualEnvironmentManager {
             process.stdout.on('data', (data) => {
                 const output = data.toString();
                 stdout += output;
-                Logger.debug(`[uv] 🔧 uv python install stdout: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 🔧 uv python install stdout: ${output}`);
             });
 
             process.stderr.on('data', (data) => {
                 const output = data.toString();
                 stderr += output;
-                Logger.debug(`[uv] 🔧 uv python install stderr: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 🔧 uv python install stderr: ${output}`);
             });
 
             process.on('close', (code) => {
                 if (code === 0) {
                     Logger.info(
-                        `[uv] ✅ Python ${this.PYTHON_VERSION} installed successfully with uv`
+                        `[ExtensionVirtualEnvironmentManager] ✅ Python ${this.PYTHON_VERSION} installed successfully with uv`
                     );
                     resolve();
                 } else {
                     Logger.warn(
-                        `[uv] ⚠️ Failed to install Python ${
+                        `[ExtensionVirtualEnvironmentManager] ⚠️ Failed to install Python ${
                             this.PYTHON_VERSION
                         } with uv (exit code ${code}): ${stderr || stdout}`
                     );
@@ -266,7 +266,7 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('error', (error) => {
                 Logger.warn(
-                    `[uv] ⚠️ Failed to execute uv python install: ${error.message}`
+                    `[ExtensionVirtualEnvironmentManager] ⚠️ Failed to execute uv python install: ${error.message}`
                 );
                 // Don't reject - continue with system Python
                 resolve();
@@ -280,7 +280,7 @@ export class ExtensionVirtualEnvironmentManager {
     private async uvCreateVirtualEnvironment(envPath: string): Promise<void> {
         return new Promise((resolve, reject) => {
             Logger.info(
-                `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`
+                `[ExtensionVirtualEnvironmentManager] 🔧 Creating virtual environment with uv at: ${envPath}`
             );
 
             // Try to use Python specifically
@@ -304,25 +304,25 @@ export class ExtensionVirtualEnvironmentManager {
             process.stdout.on('data', (data) => {
                 const output = data.toString();
                 stdout += output;
-                Logger.debug(`[uv] 🔧 uv venv stdout: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 🔧 uv venv stdout: ${output}`);
             });
 
             process.stderr.on('data', (data) => {
                 const output = data.toString();
                 stderr += output;
-                Logger.debug(`[uv] 🔧 uv venv stderr: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 🔧 uv venv stderr: ${output}`);
             });
 
             process.on('close', (code) => {
                 if (code === 0) {
                     Logger.info(
-                        `[uv] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`
+                        `[ExtensionVirtualEnvironmentManager] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`
                     );
                     resolve();
                 } else {
                     // If Python failed, try with system Python
                     Logger.warn(
-                        `[uv] ⚠️ Failed to create environment with Python ${
+                        `[ExtensionVirtualEnvironmentManager] ⚠️ Failed to create environment with Python ${
                             this.PYTHON_VERSION
                         }: code: ${code}: ${stderr || stdout}`
                     );
@@ -331,7 +331,7 @@ export class ExtensionVirtualEnvironmentManager {
 
             process.on('error', (error) => {
                 Logger.warn(
-                    `[uv] ⚠️ Failed to execute uv venv with Python ${this.PYTHON_VERSION}: ${error.message}`
+                    `[ExtensionVirtualEnvironmentManager] ⚠️ Failed to execute uv venv with Python ${this.PYTHON_VERSION}: ${error.message}`
                 );
             });
         });
@@ -349,13 +349,13 @@ export class ExtensionVirtualEnvironmentManager {
         const uvAvailable = await this.uvCheckAvailability();
 
         if (!uvAvailable) {
-            Logger.warn('[uv] 🔧 uv is not available.');
+            Logger.warn('[ExtensionVirtualEnvironmentManager] 🔧 uv is not available.');
             return;
         }
 
         return new Promise((resolve, reject) => {
             Logger.info(
-                '[uv] 📦 Installing required packages in extension virtual environment with uv...'
+                '[ExtensionVirtualEnvironmentManager] 📦 Installing required packages in extension virtual environment with uv...'
             );
 
             // Use the environment's Python path
@@ -380,26 +380,26 @@ export class ExtensionVirtualEnvironmentManager {
             uvProcess.stdout.on('data', (data) => {
                 const output = data.toString();
                 stdout += output;
-                Logger.debug(`[uv] 📦 uv pip stdout: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 📦 uv pip stdout: ${output}`);
             });
 
             uvProcess.stderr.on('data', (data) => {
                 const output = data.toString();
                 stderr += output;
-                Logger.debug(`[uv] 📦 uv pip stderr: ${output}`);
+                Logger.debug(`[ExtensionVirtualEnvironmentManager] 📦 uv pip stderr: ${output}`);
             });
 
             uvProcess.on('close', (code) => {
                 if (code === 0) {
                     Logger.info(
-                        '[uv] ✅ Required packages installed successfully with uv'
+                        '[ExtensionVirtualEnvironmentManager] ✅ Required packages installed successfully with uv'
                     );
                     this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
                     resolve();
                 } else {
                     reject(
                         new Error(
-                            `[uv] Failed to install packages with uv (exit code ${code}): ${
+                            `[ExtensionVirtualEnvironmentManager] Failed to install packages with uv (exit code ${code}): ${
                                 stderr || stdout
                             }`
                         )
@@ -408,7 +408,7 @@ export class ExtensionVirtualEnvironmentManager {
             });
 
             uvProcess.on('error', (error) => {
-                reject(new Error(`[uv] Failed to execute uv pip: ${error.message}`));
+                reject(new Error(`[ExtensionVirtualEnvironmentManager] Failed to execute uv pip: ${error.message}`));
             });
         });
     }
