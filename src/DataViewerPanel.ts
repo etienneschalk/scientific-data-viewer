@@ -15,10 +15,10 @@ import {
 export class DataViewerPanel {
     public static readonly viewType = DEFAULT_DATA_VIEWER_PANEL_ID;
 
-    private static readonly _okPanels: Map<number, DataViewerPanel> = new Map();
-    private static readonly _errorPanels: Map<number, DataViewerPanel> = new Map();
+    // Map of id to panel
     private static _outlineProvider?: OutlineProvider;
-    private static _createdCount = 0;
+    private static readonly _panels: Map<number, DataViewerPanel> = new Map();
+    private static _createdCount = 0; // Used for identifying the panel
 
     private readonly _uiController: UIController;
     private readonly _webviewPanel: vscode.WebviewPanel;
@@ -28,31 +28,17 @@ export class DataViewerPanel {
     private _isDisposed: boolean = false;
     private _hasError: boolean = false;
 
-    public static get okPanels(): Map<number, DataViewerPanel> {
-        return DataViewerPanel._okPanels;
-    }
-
-    public static get errorPanels(): Map<number, DataViewerPanel> {
-        return DataViewerPanel._errorPanels;
-    }
-
     public static setOutlineProvider(outlineProvider: OutlineProvider): void {
         DataViewerPanel._outlineProvider = outlineProvider;
     }
 
     public static getPanel(panelId: number): DataViewerPanel | undefined {
-        // It should be optimized, eg having a maps of paneid to pane instead
-        // of the current search through the okPanels set...
-
-        Logger.debug(
-            `🚚 🗂️ Getting panel for panel with ID: ${panelId}`
-        );
+        Logger.debug(`🚚 🗂️ Getting panel for panel with ID: ${panelId}`);
         // Find and return the first panel that matches the given file path
-        const panel = DataViewerPanel._okPanels.get(panelId);
+        const panel = DataViewerPanel._panels.get(panelId);
         if (panel) {
             Logger.debug(`🚚 🗂️ Found panel for file: ${panelId}`);
-        }
-        else{
+        } else {
             Logger.debug(`🚚 🗂️ No panel found for file: ${panelId}`);
         }
         return panel;
@@ -66,7 +52,7 @@ export class DataViewerPanel {
     ) {
         // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
         if (!getAllowMultipleTabsForSameFile()) {
-            for (const panel of DataViewerPanel._okPanels.values()) {
+            for (const panel of DataViewerPanel._panels.values()) {
                 Logger.debug(
                     `🚚 🗂️ Checking if file ${
                         fileUri.fsPath
@@ -78,7 +64,9 @@ export class DataViewerPanel {
                     Logger.info(
                         `File ${fileUri.fsPath} is already open, focusing existing panel (allowMultipleTabsForSameFile: false)`
                     );
-                    panel._webviewPanel.reveal(vscode.window.activeTextEditor?.viewColumn);
+                    panel._webviewPanel.reveal(
+                        vscode.window.activeTextEditor?.viewColumn
+                    );
                     return;
                 }
             }
@@ -132,7 +120,7 @@ export class DataViewerPanel {
         // Add the data viewer panel to the active panels set
         DataViewerPanel.addPanelOk(dataViewerPanel);
         Logger.debug(
-            `[create] Added panel to activePanels - total: ${DataViewerPanel._okPanels.size}`
+            `[create] Added panel to activePanels - total: ${DataViewerPanel._panels.size}`
         );
         // Return the data viewer panel
         return dataViewerPanel;
@@ -140,22 +128,13 @@ export class DataViewerPanel {
 
     public static async refreshPanelsWithErrors() {
         Logger.debug(
-            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing ${DataViewerPanel.errorPanels.size} panels with errors`
+            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panels with errors`
         );
-        const errorPanelCount = DataViewerPanel.errorPanels.size;
-        if (errorPanelCount > 0) {
-            for (const panel of DataViewerPanel.errorPanels.values()) {
-                // Use UI controller to refresh data
-                Logger.debug(
-                    `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panel: ${
-                        panel.getFileUri().fsPath
-                    }`
-                );
-                await panel._uiController.loadFile(
-                    panel.getFileUri().fsPath
-                );
-            }
-        }
+        Array.from(DataViewerPanel._panels.values())
+            .filter((panel) => panel._hasError)
+            .forEach(async (panel) => {
+                await panel.refresh();
+            });
     }
 
     private static increaseCreatedCount() {
@@ -164,41 +143,21 @@ export class DataViewerPanel {
 
     private static addPanelOk(panel: DataViewerPanel) {
         Logger.debug(
-            `[DataViewerPanel.addPanelOk]    (before add) ${DataViewerPanel._okPanels.size} panels ok`
+            `[DataViewerPanel.addPanelOk]    (before add) ${DataViewerPanel._panels.size} panels ok`
         );
-        DataViewerPanel._okPanels.set(panel.getId(), panel);
+        DataViewerPanel._panels.set(panel.getId(), panel);
         Logger.debug(
-            `[DataViewerPanel.addPanelOk]    (after add) ${DataViewerPanel._okPanels.size} panels ok`
+            `[DataViewerPanel.addPanelOk]    (after add) ${DataViewerPanel._panels.size} panels ok`
         );
     }
 
     private static removePanelOk(panel: DataViewerPanel) {
         Logger.debug(
-            `[DataViewerPanel.removePanelOk]    (before remove) ${DataViewerPanel._okPanels.size} panels ok`
+            `[DataViewerPanel.removePanelOk]    (before remove) ${DataViewerPanel._panels.size} panels ok`
         );
-        DataViewerPanel._okPanels.delete(panel.getId());
+        DataViewerPanel._panels.delete(panel.getId());
         Logger.debug(
-            `[DataViewerPanel.removePanelOk]    (after remove) ${DataViewerPanel._okPanels.size} panels ok`
-        );
-    }
-
-    private static addPanelWithError(panel: DataViewerPanel) {
-        Logger.debug(
-            `[DataViewerPanel.addPanelWithError]    (before add) ${DataViewerPanel._errorPanels.size} panels with errors`
-        );
-        DataViewerPanel._errorPanels.set(panel.getId(), panel);
-        Logger.debug(
-            `[DataViewerPanel.addPanelWithError]    (after add) ${DataViewerPanel._errorPanels.size} panels with errors`
-        );
-    }
-
-    private static removePanelWithError(panel: DataViewerPanel) {
-        Logger.debug(
-            `[DataViewerPanel.removePanelWithError] (before remove) ${DataViewerPanel._errorPanels.size} panels with errors`
-        );
-        DataViewerPanel._errorPanels.delete(panel.getId());
-        Logger.debug(
-            `[DataViewerPanel.removePanelWithError] (after remove) ${DataViewerPanel._errorPanels.size} panels with errors`
+            `[DataViewerPanel.removePanelOk]    (after remove) ${DataViewerPanel._panels.size} panels ok`
         );
     }
 
@@ -206,8 +165,7 @@ export class DataViewerPanel {
      * Dispose of static resources
      */
     public static dispose(): void {
-        DataViewerPanel._okPanels.clear();
-        DataViewerPanel._errorPanels.clear();
+        DataViewerPanel._panels.clear();
     }
 
     private constructor(
@@ -230,11 +188,11 @@ export class DataViewerPanel {
             webviewPanel.webview,
             (error) => {
                 Logger.error(`[UIController] Error: ${error.message}`);
-                DataViewerPanel.addPanelWithError(this);
+                this._hasError = true;
             },
             (success) => {
                 Logger.info(`[UIController] Success: ${success}`);
-                DataViewerPanel.removePanelWithError(this);
+                this._hasError = false;
             },
             () => {
                 // Also notify that the panel is active to ensure proper outline display
@@ -311,6 +269,16 @@ export class DataViewerPanel {
         DataViewerPanel._outlineProvider.updateHeaders(this.getId(), headers);
     }
 
+    private async refresh() {
+        // Use UI controller to refresh data
+        Logger.debug(
+            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panel: ${
+                this.getFileUri().fsPath
+            }`
+        );
+        await this._uiController.loadFile(this.getFileUri().fsPath);
+    }
+
     private disposePanel() {
         // Prevent multiple disposal calls
         if (this._isDisposed) {
@@ -330,9 +298,6 @@ export class DataViewerPanel {
 
         // Remove this panel from the active panels set
         DataViewerPanel.removePanelOk(this);
-
-        // Remove this panel from the error tracking set
-        DataViewerPanel.removePanelWithError(this);
 
         // Clear outline when panel is disposed
         if (DataViewerPanel._outlineProvider) {

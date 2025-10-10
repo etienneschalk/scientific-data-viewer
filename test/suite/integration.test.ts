@@ -70,7 +70,9 @@ suite('Integration Test Suite', () => {
     setup(() => {
         // Create fresh instances for each test
         pythonManager = new PythonManager(
-            new ExtensionVirtualEnvironmentManager(mockContext.globalStorageUri.fsPath)
+            new ExtensionVirtualEnvironmentManager(
+                mockContext.globalStorageUri.fsPath
+            )
         );
         dataProcessor = new DataProcessor(pythonManager);
     });
@@ -181,7 +183,7 @@ suite('Integration Test Suite', () => {
         );
 
         assert.ok(panel);
-        assert.ok(DataViewerPanel.okPanels.has(panel));
+        assert.ok(DataViewerPanel.getPanel(panel.getId()));
     });
 
     test('Logger should work with all components', () => {
@@ -361,8 +363,8 @@ suite('Integration Test Suite', () => {
                 mockWebviewOptions
             );
 
-            assert.ok(DataViewerPanel.okPanels.has(panel1));
-            assert.ok(DataViewerPanel.okPanels.has(panel2));
+            assert.ok(DataViewerPanel.getPanel(panel1.getId()));
+            assert.ok(DataViewerPanel.getPanel(panel2.getId()));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }
@@ -451,7 +453,7 @@ suite('Integration Test Suite', () => {
 
             // Test that panel is created successfully
             assert.ok(panel);
-            assert.ok(DataViewerPanel.okPanels.has(panel));
+            assert.ok(DataViewerPanel.getPanel(panel.getId()));
 
             // Test data processing (without triggering the panel's _handleGetDataInfo)
             const dataInfo = await processor.getDataInfo(
@@ -471,7 +473,7 @@ suite('Integration Test Suite', () => {
 
             // Test panel disposal
             DataViewerPanel.dispose();
-            assert.ok(!DataViewerPanel.okPanels.has(panel));
+            assert.ok(!DataViewerPanel.getPanel(panel.getId()));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }

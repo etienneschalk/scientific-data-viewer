@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
             `${getDisplayName()} Error: ${error.message}`
         );
     });
-    
+
     const webviewPanelOptions: vscode.WebviewPanelOptions = {
         enableFindWidget: true,
         retainContextWhenHidden: true,
@@ -221,7 +221,7 @@ export function activate(context: vscode.ExtensionContext) {
         handleOnDidChangeActiveEnvironmentPath,
         handleOnDidEnvironmentsChanged
     )
-        .then((listener: vscode.Disposable | null) => {
+        .then((listener: vscode.Disposable | undefined) => {
             if (listener) {
                 Logger.info(
                     '🧩 🚀 Immediate official Python extension interpreter change detection enabled'
@@ -439,7 +439,9 @@ function commandHandlerRefreshPythonEnvironment(
     statusBarItem: vscode.StatusBarItem
 ): () => void {
     return async () => {
-        Logger.info('🎮 🐍 🔄 Command: Manually refreshing Python environment...');
+        Logger.info(
+            '🎮 🐍 🔄 Command: Manually refreshing Python environment...'
+        );
         await refreshPython(pythonManager, statusBarItem);
         vscode.window.showInformationMessage('Python environment refreshed!');
     };
@@ -511,7 +513,9 @@ function commandHandlerOpenViewerFolder(
     return async (uri?: vscode.Uri) => {
         Logger.info('🎮 👁️ 📁 Command: Open data viewer (folder)...');
         if (uri) {
-            Logger.info(`🎮 👁️ 📁 Opening data viewer for folder: ${uri.fsPath}`);
+            Logger.info(
+                `🎮 👁️ 📁 Opening data viewer for folder: ${uri.fsPath}`
+            );
             await waitThenCreateOrRevealPanel(
                 uri,
                 iconPath,
@@ -563,7 +567,9 @@ function commandHandlerOpenViewer(
                 pythonManager
             );
         } else {
-            Logger.info('🎮 👁️ 📄 Opening file selection dialog for data viewer');
+            Logger.info(
+                '🎮 👁️ 📄 Opening file selection dialog for data viewer'
+            );
             const fileUriList = await vscode.window.showOpenDialog({
                 canSelectFiles: true,
                 canSelectFolders: false,
@@ -603,18 +609,26 @@ function commandHandlerOpenViewerMultiple(
         // Context selection is the clicked file or folder (ignored in this handler)
         Logger.debug(`🎮 👁️ 📄📄 Command arguments: clickedUri: ${clickedUri}`);
         // All selections is the list of all selected files or folders (we want it to be opened in data viewers)
-        Logger.debug(`🎮 👁️ 📄📄 Command arguments: allSelectedUriList: [${allSelectedUriList.join(" , ")}]`);
-        
+        Logger.debug(
+            `🎮 👁️ 📄📄 Command arguments: allSelectedUriList: [${allSelectedUriList.join(
+                ' , '
+            )}]`
+        );
+
         // Try to use command arguments (if VSCode passes them)
         if (!(allSelectedUriList && allSelectedUriList.length > 0)) {
             Logger.info('🎮 👁️ 📄📄 No files to open, ignore this command.');
             return;
         }
 
-        Logger.info(`🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`);
+        Logger.info(
+            `🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`
+        );
         for (const uri of allSelectedUriList) {
             if (uri instanceof vscode.Uri) {
-                Logger.info(`🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`);
+                Logger.info(
+                    `🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`
+                );
                 await waitThenCreateOrRevealPanel(
                     uri,
                     iconPath,
@@ -624,7 +638,9 @@ function commandHandlerOpenViewerMultiple(
                 );
             }
         }
-        Logger.info(`🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`);
+        Logger.info(
+            `🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`
+        );
     };
 }
 
@@ -733,5 +749,3 @@ async function waitThenCreateOrRevealPanel(
         webviewPanelOptions
     );
 }
-
-

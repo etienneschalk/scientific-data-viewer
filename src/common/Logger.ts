@@ -7,11 +7,11 @@ export class Logger {
 
     /**
      * Gets a unique identifier for the current thread or process.
-     * 
+     *
      * @returns A string identifier prefixed with:
      *   - "T" + thread ID if running in a worker thread
      *   - "P" + process ID if running in the main thread
-     * 
+     *
      * @example
      * // In main thread: "P12345"
      * // In worker thread: "T2"
@@ -26,7 +26,7 @@ export class Logger {
         } catch (error) {
             // threadId is not available in main thread
         }
-        
+
         // Fall back to process ID
         return `P${process.pid}`;
     }
@@ -119,4 +119,3 @@ export class Logger {
         this.outputChannel = undefined;
     }
 }
-
