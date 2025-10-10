@@ -37,22 +37,22 @@ export class DataViewerPanel {
         // It should be optimized, eg having a maps of paneid to pane instead
         // of the current search through the activePanels set...
         if (!panelId) {
-            Logger.warn(`🚚 📋 Invalid panelId provided to getActivePanel`);
+            Logger.warn(`🚚 🗂️ Invalid panelId provided to getActivePanel`);
             return undefined;
         }
 
         Logger.debug(
-            `🚚 📋 Getting active panel for panel with ID: ${panelId}`
+            `🚚 🗂️ Getting active panel for panel with ID: ${panelId}`
         );
         // Find and return the first panel that matches the given file path
         const panel = Array.from(DataViewerPanel._activePanels).find(
             (panel) => panel.getId() === panelId
         );
         if (panel) {
-            Logger.debug(`🚚 📋 Found active panel for file: ${panelId}`);
+            Logger.debug(`🚚 🗂️ Found active panel for file: ${panelId}`);
             return panel;
         }
-        Logger.debug(`🚚 📋 No active panel found for file: ${panelId}`);
+        Logger.debug(`🚚 🗂️ No active panel found for file: ${panelId}`);
         return undefined;
     }
 
@@ -70,7 +70,7 @@ export class DataViewerPanel {
         if (!getAllowMultipleTabsForSameFile()) {
             for (const panel of DataViewerPanel._activePanels) {
                 Logger.debug(
-                    `🚚 📋 Checking if file ${
+                    `🚚 🗂️ Checking if file ${
                         fileUri.fsPath
                     } is already open in panel ${panel.getId()} (${
                         panel.getFileUri().fsPath
@@ -261,7 +261,7 @@ export class DataViewerPanel {
     private notifyPanelActive(): void {
         if (DataViewerPanel._outlineProvider && this.getId()) {
             Logger.info(
-                `📋 Panel became active for panel with ID: ${this.getId()}`
+                `🗂️ Panel became active for panel with ID: ${this.getId()}`
             );
 
             // Check if we have headers cached for this file

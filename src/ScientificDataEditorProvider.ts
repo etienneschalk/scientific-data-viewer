@@ -35,9 +35,9 @@ export class ScientificDataEditorProvider
         _token: vscode.CancellationToken
     ): Promise<void> {
         Logger.info(
-            `🚚 🧩 Resolving custom editor for: ${document.uri.fsPath}`
+            `🚚 🎯 Resolving custom editor for: ${document.uri.fsPath}`
         );
-
+        
         // Wait for Python initialization to complete before creating the panel
         // This prevents the race condition where file opening happens before Python validation
         try {
