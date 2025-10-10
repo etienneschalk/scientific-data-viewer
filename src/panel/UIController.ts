@@ -163,6 +163,38 @@ export class UIController {
         });
     }
 
+    /**
+     * Shows a file action dialog with options to open file, open in browser, or reveal in explorer
+     * @param message The success message to display
+     * @param fileUri The URI of the file to perform actions on
+     */
+    private async showFileActionDialog(message: string, fileUri: vscode.Uri): Promise<void> {
+        const action = await vscode.window.showInformationMessage(
+            message,
+            'Open File',
+            'Open in Browser',
+            'Reveal in Explorer'
+        );
+
+        // Handle user action
+        if (action === 'Open File') {
+            try {
+                await vscode.commands.executeCommand(
+                    'vscode.open',
+                    fileUri,
+                    vscode.ViewColumn.Beside
+                );
+            } catch (error) {
+                await vscode.env.openExternal(fileUri);
+            }
+        } else if (action === 'Open in Browser') {
+            // Open the file in the default web browser
+            await vscode.env.openExternal(fileUri);
+        } else if (action === 'Reveal in Explorer') {
+            await vscode.commands.executeCommand('revealFileInOS', fileUri);
+        }
+    }
+
     private async handleGetDataInfo(filePath: string): Promise<any> {
         const context: ErrorContext = {
             component: `ui-${this.id}`,
@@ -333,38 +365,10 @@ export class UIController {
                 await vscode.workspace.fs.writeFile(savePath, buffer);
 
                 // Show success notification
-                const action = vscode.window
-                    .showInformationMessage(
-                        `Plot saved successfully: ${fileName}`,
-                        'Open File',
-                        'Open in Browser',
-                        'Reveal in Explorer'
-                    )
-                    .then(async (action) => {
-                        // Handle user action
-                        if (action === 'Open File') {
-                            // Open the file in VSCode (this will work for images in newer VSCode versions)
-                            try {
-                                await vscode.commands.executeCommand(
-                                    'vscode.open',
-                                    savePath,
-                                    vscode.ViewColumn.Beside
-                                );
-                            } catch (error) {
-                                // If opening in VSCode fails, open with external application
-                                await vscode.env.openExternal(savePath);
-                            }
-                        } else if (action === 'Open in Browser') {
-                            // Open the file in the default web browser
-                            await vscode.env.openExternal(savePath);
-                        } else if (action === 'Reveal in Explorer') {
-                            // Reveal the file in file explorer
-                            await vscode.commands.executeCommand(
-                                'revealFileInOS',
-                                savePath
-                            );
-                        }
-                    });
+                await this.showFileActionDialog(
+                    `Plot saved successfully: ${fileName}`,
+                    savePath
+                );
 
                 Logger.info(
                     `[UIController] Plot saved successfully: ${savePath.fsPath}`
@@ -434,35 +438,12 @@ export class UIController {
                 await vscode.workspace.fs.writeFile(saveUri, buffer);
 
                 // Show success notification
-                const action = await vscode.window.showInformationMessage(
+                await this.showFileActionDialog(
                     `Plot saved successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    'Open File',
-                    'Open in Browser',
-                    'Reveal in Explorer'
+                    saveUri
                 );
-
-                // Handle user action
-                if (action === 'Open File') {
-                    try {
-                        await vscode.commands.executeCommand(
-                            'vscode.open',
-                            saveUri,
-                            vscode.ViewColumn.Beside
-                        );
-                    } catch (error) {
-                        await vscode.env.openExternal(saveUri);
-                    }
-                } else if (action === 'Open in Browser') {
-                    // Open the file in the default web browser
-                    await vscode.env.openExternal(saveUri);
-                } else if (action === 'Reveal in Explorer') {
-                    await vscode.commands.executeCommand(
-                        'revealFileInOS',
-                        saveUri
-                    );
-                }
 
                 Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
                 return { success: true, filePath: saveUri.fsPath };
@@ -683,35 +664,12 @@ export class UIController {
                 );
 
                 // Show success notification
-                const action = await vscode.window.showInformationMessage(
+                await this.showFileActionDialog(
                     `HTML report exported successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    'Open File',
-                    'Open in Browser',
-                    'Reveal in Explorer'
+                    saveUri
                 );
-
-                // Handle user action
-                if (action === 'Open File') {
-                    try {
-                        await vscode.commands.executeCommand(
-                            'vscode.open',
-                            saveUri,
-                            vscode.ViewColumn.Beside
-                        );
-                    } catch (error) {
-                        await vscode.env.openExternal(saveUri);
-                    }
-                } else if (action === 'Open in Browser') {
-                    // Open the file in the default web browser
-                    await vscode.env.openExternal(saveUri);
-                } else if (action === 'Reveal in Explorer') {
-                    await vscode.commands.executeCommand(
-                        'revealFileInOS',
-                        saveUri
-                    );
-                }
 
                 Logger.info(
                     `[UIController] HTML report exported: ${saveUri.fsPath}`
@@ -787,35 +745,12 @@ export class UIController {
                 );
 
                 // Show success notification
-                const action = await vscode.window.showInformationMessage(
+                await this.showFileActionDialog(
                     `Webview content exported successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    'Open File',
-                    'Open in Browser',
-                    'Reveal in Explorer'
+                    saveUri
                 );
-
-                // Handle user action
-                if (action === 'Open File') {
-                    try {
-                        await vscode.commands.executeCommand(
-                            'vscode.open',
-                            saveUri,
-                            vscode.ViewColumn.Beside
-                        );
-                    } catch (error) {
-                        await vscode.env.openExternal(saveUri);
-                    }
-                } else if (action === 'Open in Browser') {
-                    // Open the file in the default web browser
-                    await vscode.env.openExternal(saveUri);
-                } else if (action === 'Reveal in Explorer') {
-                    await vscode.commands.executeCommand(
-                        'revealFileInOS',
-                        saveUri
-                    );
-                }
 
                 Logger.info(
                     `[UIController] Webview content exported: ${saveUri.fsPath}`
@@ -1498,32 +1433,12 @@ if (document.readyState === 'loading') {
             );
 
             // Show success notification
-            const action = await vscode.window.showInformationMessage(
+            await this.showFileActionDialog(
                 `HTML report exported successfully: ${saveUri.fsPath
                     .split('/')
                     .pop()}`,
-                'Open File',
-                'Open in Browser',
-                'Reveal in Explorer'
+                saveUri
             );
-
-            // Handle user action
-            if (action === 'Open File') {
-                try {
-                    await vscode.commands.executeCommand(
-                        'vscode.open',
-                        saveUri,
-                        vscode.ViewColumn.Beside
-                    );
-                } catch (error) {
-                    await vscode.env.openExternal(saveUri);
-                }
-            } else if (action === 'Open in Browser') {
-                // Open the file in the default web browser
-                await vscode.env.openExternal(saveUri);
-            } else if (action === 'Reveal in Explorer') {
-                await vscode.commands.executeCommand('revealFileInOS', saveUri);
-            }
 
             Logger.info(
                 `[UIController] HTML report exported: ${saveUri.fsPath}`
