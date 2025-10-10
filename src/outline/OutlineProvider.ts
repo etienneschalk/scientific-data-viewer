@@ -20,7 +20,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private expandedStates: Map<number, Set<string>> = new Map(); // panelId -> Set of expanded item IDs
 
     constructor() {
-        Logger.info('📋 OutlineProvider initialized');
+        Logger.info('📋 🚀 OutlineProvider instantiated');
     }
 
     /**

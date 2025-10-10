@@ -29,7 +29,7 @@ export class DataProcessor {
     }
 
     async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
-        Logger.debug(`[getDataInfo] Getting data info for file: ${uri.fsPath}`);
+        Logger.debug(`[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`);
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -50,7 +50,7 @@ export class DataProcessor {
             // The caller can check for result.error to handle errors
             return result;
         } catch (error) {
-            Logger.error(`🐍 ❌ Error processing data file: ${error}`);
+            Logger.error(`[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`);
             return null;
         }
     }
@@ -84,7 +84,7 @@ export class DataProcessor {
 
         try {
             Logger.info(
-                `Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
+                `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
             );
 
             // Execute Python script and capture both stdout and stderr
@@ -96,7 +96,7 @@ export class DataProcessor {
 
             if (typeof result === 'string' && result.startsWith('iVBOR')) {
                 Logger.info(
-                    `Plot created successfully for variable '${variable}'`
+                    `[DataProcessor] [createPlot] Plot created successfully for variable '${variable}'`
                 );
                 return result; // Base64 image data
             } else if (result.error) {
@@ -104,7 +104,7 @@ export class DataProcessor {
             }
             return null;
         } catch (error) {
-            Logger.error(`Error creating plot: ${error}`);
+            Logger.error(`[DataProcessor] [createPlot] Error creating plot: ${error}`);
             throw error;
         }
     }

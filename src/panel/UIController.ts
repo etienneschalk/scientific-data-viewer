@@ -145,7 +145,7 @@ export class UIController {
 
     private setupStateSubscription(): void {
         this.unsubscribeState = this.stateManager.subscribe((state) => {
-            Logger.debug(`[setupStateSubscription] State changed`);
+            Logger.debug(`[UIController] [setupStateSubscription] State changed`);
             this.updateUI(state);
         });
     }
@@ -349,10 +349,10 @@ export class UIController {
                         }
                     });
 
-                Logger.info(`Plot saved successfully: ${savePath.fsPath}`);
+                Logger.info(`[UIController] Plot saved successfully: ${savePath.fsPath}`);
                 return { success: true, filePath: savePath.fsPath };
             } catch (error) {
-                Logger.error(`Error saving plot: ${error}`);
+                Logger.error(`[UIController] Error saving plot: ${error}`);
                 return {
                     success: false,
                     error:
@@ -441,10 +441,10 @@ export class UIController {
                     );
                 }
 
-                Logger.info(`Plot saved as: ${saveUri.fsPath}`);
+                Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
                 return { success: true, filePath: saveUri.fsPath };
             } catch (error) {
-                Logger.error(`Error saving plot as: ${error}`);
+                Logger.error(`[UIController] Error saving plot as: ${error}`);
                 return {
                     success: false,
                     error:
@@ -485,17 +485,17 @@ export class UIController {
                     tempFile,
                     vscode.ViewColumn.Beside
                 );
-                Logger.info(`Plot opened in VSCode: ${tempFile.fsPath}`);
+                Logger.info(`[UIController] Plot opened in VSCode: ${tempFile.fsPath}`);
             } catch (vscodeError) {
                 // If opening in VSCode fails, open with external application
                 try {
                     await vscode.env.openExternal(tempFile);
                     Logger.info(
-                        `Plot opened with external app: ${tempFile.fsPath}`
+                        `[UIController] Plot opened with external app: ${tempFile.fsPath}`
                     );
                 } catch (externalError) {
                     Logger.error(
-                        `Failed to open plot with both VSCode and external app: ${externalError}`
+                        `[UIController] Failed to open plot with both VSCode and external app: ${externalError}`
                     );
                     throw new Error(
                         `Failed to open plot: ${
@@ -587,11 +587,11 @@ export class UIController {
         try {
             // This will be handled by the outline provider when we register it
             Logger.info(
-                `📋 Received header update with ${headers.length} headers`
+                `[UIController] 📋 Received header update with ${headers.length} headers`
             );
             // The actual outline update will be handled by the DataViewerPanel
         } catch (error) {
-            Logger.error(`❌ Error handling header update: ${error}`);
+            Logger.error(`[UIController] ❌ Error handling header update: ${error}`);
             throw error;
         }
     }
@@ -647,12 +647,12 @@ export class UIController {
         };
 
         return this.errorBoundary.wrapAsync(async () => {
-            Logger.info(`🔧 Executing command: ${command}`);
+            Logger.info(`[UIController] 🔧 Executing command: ${command}`);
             const result = await vscode.commands.executeCommand(
                 command,
                 ...(args || [])
             );
-            Logger.info(`🔧 Command executed successfully: ${command}`);
+            Logger.info(`[UIController] 🔧 Command executed successfully: ${command}`);
             return result;
         }, context);
     }

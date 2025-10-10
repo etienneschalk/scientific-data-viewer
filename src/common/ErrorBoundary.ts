@@ -77,7 +77,7 @@ export class ErrorBoundary {
                 this.globalErrorHandler(error, context);
                 return;
             } catch (globalHandlerError) {
-                Logger.error(`Error in global handler: ${globalHandlerError}`);
+                Logger.error(`🩹 Error in global handler: ${globalHandlerError}`);
             }
         }
 
