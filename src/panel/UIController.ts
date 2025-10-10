@@ -168,7 +168,10 @@ export class UIController {
      * @param message The success message to display
      * @param fileUri The URI of the file to perform actions on
      */
-    private async showFileActionDialog(message: string, fileUri: vscode.Uri): Promise<void> {
+    private async showFileActionDialog(
+        message: string,
+        fileUri: vscode.Uri
+    ): Promise<void> {
         const action = await vscode.window.showInformationMessage(
             message,
             'Open File',
@@ -1381,69 +1384,12 @@ if (document.readyState === 'loading') {
     /**
      * Export HTML report
      */
-    public async emitExportHtml(): Promise<void> {
-        const context: ErrorContext = {
-            component: `ui-${this.id}`,
-            operation: 'exportHtml',
-        };
-
-        await this.errorBoundary.wrapAsync(async () => {
-            const state = this.stateManager.getState();
-            if (!state.data.currentFile) {
-                throw new Error('No current file available');
-            }
-
-            // Get the current file path to determine save location
-            const currentFileDir = vscode.Uri.file(state.data.currentFile)
-                .fsPath.split('/')
-                .slice(0, -1)
-                .join('/');
-            const fileName =
-                vscode.Uri.file(state.data.currentFile)
-                    .fsPath.split('/')
-                    .pop() || 'data';
-            const defaultFileName = `${fileName}_report_${new Date()
-                .toISOString()
-                .slice(0, 19)
-                .replace(/:/g, '-')}.html`;
-
-            // Show save dialog
-            const saveUri = await vscode.window.showSaveDialog({
-                defaultUri: vscode.Uri.file(
-                    `${currentFileDir}/${defaultFileName}`
-                ),
-                filters: {
-                    'HTML Files': ['html'],
-                    'All Files': ['*'],
-                },
-                title: 'Export HTML Report',
-            });
-
-            if (!saveUri) {
-                throw new Error('Export cancelled by user');
-            }
-
-            // Generate the HTML report
-            const htmlReport = this.generateHtmlReport(state);
-
-            // Write the file
-            await vscode.workspace.fs.writeFile(
-                saveUri,
-                Buffer.from(htmlReport, 'utf8')
-            );
-
-            // Show success notification
-            await this.showFileActionDialog(
-                `HTML report exported successfully: ${saveUri.fsPath
-                    .split('/')
-                    .pop()}`,
-                saveUri
-            );
-
-            Logger.info(
-                `[UIController] HTML report exported: ${saveUri.fsPath}`
-            );
-        }, context);
+    public async emitExportHtml(): Promise<{
+        success: boolean;
+        filePath?: string;
+        error?: string;
+    }> {
+        return await this.handleExportHtml();
     }
 
     private async handleExecuteCommand(
