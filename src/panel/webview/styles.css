@@ -565,13 +565,18 @@ details.sticky-group-details summary > * {
     padding: 0;
 }
 
-/* Plot image styles */
-.plot-image-container img {
+.plot-image-container {
+    height: auto;
+    margin: auto;
+    width: 100%;
+    text-align: center;
     padding: 6px 8px;
     padding-top: 0;
+}
+/* Plot image styles */
+.plot-image-container img {
     height: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+    margin: auto;
 }
 
 /* Plot control button variant */

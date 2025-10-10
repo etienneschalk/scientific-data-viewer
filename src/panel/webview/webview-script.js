@@ -1718,12 +1718,12 @@ async function handleSaveVariablePlotAs(variable) {
     try {
         const result = await messageBus.savePlotAs(plotData, variable);
         if (result.success) {
-            displayVariablePlotSuccess(
-                variable,
-                `Plot saved as: ${
-                    result.filePath ? result.filePath.split('/').pop() : 'plot.png'
-                }`
-            );
+            // displayVariablePlotSuccess(
+            //     variable,
+            //     `Plot saved as: ${
+            //         result.filePath ? result.filePath.split('/').pop() : 'plot.png'
+            //     }`
+            // );
             console.log('Plot saved as:', result.filePath);
         } else {
             if (result.error !== 'Save cancelled by user') {

@@ -434,7 +434,7 @@ export class UIController {
                 });
 
                 if (!saveUri) {
-                    return { success: false, error: 'Save cancelled by user' };
+                    return { success: true, error: 'Save cancelled by user' };
                 }
 
                 // Write the file
@@ -652,7 +652,7 @@ export class UIController {
 
                 if (!saveUri) {
                     return {
-                        success: false,
+                        success: true,
                         error: 'Export cancelled by user',
                     };
                 }
@@ -736,7 +736,7 @@ export class UIController {
 
                 if (!saveUri) {
                     return {
-                        success: false,
+                        success: true,
                         error: 'Export cancelled by user',
                     };
                 }
