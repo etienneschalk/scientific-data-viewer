@@ -545,6 +545,7 @@ details.sticky-group-details {
 details.sticky-group-details > summary {
     top: -1px; /* fix empirical one pixel gap observed in VS Code */
     top: 30px; /* offset for the header */
+    top: 29px; /* fix empirical one pixel gap observed in VS Code */
     position: sticky;
     display: list-item;
     width: 100%;
