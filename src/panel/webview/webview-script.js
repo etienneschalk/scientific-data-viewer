@@ -291,25 +291,18 @@ function escapeHtml(unsafe) {
 
 function showDegradedModeIndicator() {
     // Add a visual indicator that we're in degraded mode
-    const indicator = document.createElement('div');
+    const indicator = document.createElement('span');
     indicator.id = 'degraded-mode-indicator';
-    indicator.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #ffa500;
-        color: #000;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
-        z-index: 1000;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    `;
     indicator.textContent = '🌐 Browser Mode';
     indicator.title = 'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
     
-    document.body.appendChild(indicator);
+    // Try to append to top-level-title first, fallback to body
+    const topLevelTitle = document.getElementById('top-level-title');
+    if (topLevelTitle) {
+        topLevelTitle.appendChild(indicator);
+    } else {
+        document.body.appendChild(indicator);
+    }
     
     // Hide VSCode-specific buttons in degraded mode
     const vscodeButtons = [
@@ -328,19 +321,29 @@ function showDegradedModeIndicator() {
         }
     });
     
-    // Hide plot controls for individual variables but keep plot containers visible
+    // Hide plot controls for individual variables - be smart about it
     const plotControls = document.querySelectorAll('.variable-plot-controls');
     plotControls.forEach(control => {
-        // Hide the control buttons but keep the plot container visible
-        const plotButtons = control.querySelectorAll('.plot-controls-row, .plot-actions');
-        plotButtons.forEach(button => {
-            button.style.display = 'none';
-        });
+        const plotError = control.querySelector('.plot-error');
+        const plotImageContainer = control.querySelector('.plot-image-container');
+        const hasPlotError = plotError && !plotError.classList.contains('hidden');
+        const hasPlotImage = plotImageContainer && plotImageContainer.querySelector('img');
         
-        // Keep the plot container visible so existing plots can be displayed
-        const plotContainer = control.querySelector('.plot-container');
-        if (plotContainer) {
-            plotContainer.style.display = 'block';
+        // Only hide the entire control if there's no plot content (no error, no image)
+        if (!hasPlotError && !hasPlotImage) {
+            control.style.display = 'none';
+        } else {
+            // If there's existing plot content, hide only the control buttons but keep containers visible
+            const plotButtons = control.querySelectorAll('.plot-controls-row, .plot-actions');
+            plotButtons.forEach(button => {
+                button.style.display = 'none';
+            });
+            
+            // Ensure the plot container is visible for existing content
+            const plotContainer = control.querySelector('.plot-container');
+            if (plotContainer) {
+                plotContainer.style.display = 'block';
+            }
         }
     });
     
