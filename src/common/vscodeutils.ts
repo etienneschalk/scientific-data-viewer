@@ -117,6 +117,15 @@ export function getPackageJson(): PackageJson {
     return _packageJson;
 }
 
+export function getPackageJsonFromExtensionContext(
+    context: vscode.ExtensionContext
+): PackageJson {
+    // Important: We need to cast to PackageJson to avoid type errors
+    // when accessing the package.json file
+    // This means we trust the PackageJson interface to be correct.
+    return context.extension.packageJSON as PackageJson;
+}
+
 // TODO Should use this function everywhere the version is printed
 // It should also be added to the Troubleshooting section
 export function getVersion(): string {

@@ -13,6 +13,7 @@ import {
     showInformationMessage,
     getVersion,
     setPackageJson,
+    getPackageJsonFromExtensionContext,
     getDisplayName,
     getAllSupportedExtensions,
     getShowDialogFilters,
@@ -40,10 +41,9 @@ import {
     getUseExtensionOwnEnvironmentConfigFullKey,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
-import { PackageJson } from './package-types';
 
 export function activate(context: vscode.ExtensionContext) {
-    setPackageJson(getPackageJSON(context));
+    setPackageJson(getPackageJsonFromExtensionContext(context));
 
     Logger.initialize();
 
@@ -691,10 +691,4 @@ async function waitThenCreateOrRevealPanel(
     );
 }
 
-function getPackageJSON(context: vscode.ExtensionContext): PackageJson {
-    // Important: We need to cast to PackageJson to avoid type errors
-    // when accessing the package.json file
-    // This means we trust the PackageJson interface to be correct.
-    return context.extension.packageJSON as PackageJson
-}
 
