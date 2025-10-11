@@ -47,8 +47,12 @@ class WebviewMessageBus {
     async sendRequest(command, payload, timeout = 60000) {
         // In degraded mode, reject VSCode-specific requests
         if (this.isDegradedMode) {
-            console.warn(`⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`);
-            return Promise.reject(new Error(`Command '${command}' not available in degraded mode`));
+            console.warn(
+                `⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`
+            );
+            return Promise.reject(
+                new Error(`Command '${command}' not available in degraded mode`)
+            );
         }
 
         const request = this.createRequest(command, payload);
@@ -222,7 +226,10 @@ try {
         throw new Error('acquireVsCodeApi is not available');
     }
 } catch (error) {
-    console.warn('⚠️ VSCode API not available, running in degraded mode:', error.message);
+    console.warn(
+        '⚠️ VSCode API not available, running in degraded mode:',
+        error.message
+    );
     // Create a mock messageBus that handles missing VSCode API gracefully
     messageBus = new WebviewMessageBus(null);
 }
@@ -255,7 +262,9 @@ function initialize() {
         setupMessageHandlers();
         console.log('🚀 WebView initialized - VSCode mode enabled');
     } else {
-        console.log('🚀 WebView initialized - Degraded mode (browser-only features)');
+        console.log(
+            '🚀 WebView initialized - Degraded mode (browser-only features)'
+        );
         // In degraded mode, we can still display static content if it's already loaded
         // but we won't be able to communicate with VSCode
         showDegradedModeIndicator();
@@ -290,8 +299,9 @@ function showDegradedModeIndicator() {
     const indicator = document.createElement('span');
     indicator.id = 'degraded-mode-indicator';
     indicator.textContent = '🌐 Browser Mode';
-    indicator.title = 'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
-    
+    indicator.title =
+        'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
+
     // Try to append to top-level-title first, fallback to body
     const topLevelTitle = document.getElementById('top-level-title');
     if (topLevelTitle) {
@@ -299,42 +309,48 @@ function showDegradedModeIndicator() {
     } else {
         document.body.appendChild(indicator);
     }
-    
+
     // Hide VSCode-specific buttons in degraded mode
     const vscodeButtons = [
         'refreshButton',
-        'exportHtmlButton', 
+        'exportHtmlButton',
         'exportWebviewButton',
         'createAllPlotsButton',
         'resetAllPlotsButton',
-        'saveAllPlotsButton'
+        'saveAllPlotsButton',
     ];
-    
-    vscodeButtons.forEach(buttonId => {
+
+    vscodeButtons.forEach((buttonId) => {
         const button = document.getElementById(buttonId);
         if (button) {
             button.style.display = 'none';
         }
     });
-    
+
     // Hide plot controls for individual variables - be smart about it
     const plotControls = document.querySelectorAll('.variable-plot-controls');
-    plotControls.forEach(control => {
+    plotControls.forEach((control) => {
         const plotError = control.querySelector('.plot-error');
-        const plotImageContainer = control.querySelector('.plot-image-container');
-        const hasPlotError = plotError && !plotError.classList.contains('hidden');
-        const hasPlotImage = plotImageContainer && plotImageContainer.querySelector('img');
-        
+        const plotImageContainer = control.querySelector(
+            '.plot-image-container'
+        );
+        const hasPlotError =
+            plotError && !plotError.classList.contains('hidden');
+        const hasPlotImage =
+            plotImageContainer && plotImageContainer.querySelector('img');
+
         // Only hide the entire control if there's no plot content (no error, no image)
         if (!hasPlotError && !hasPlotImage) {
             control.style.display = 'none';
         } else {
             // If there's existing plot content, hide only the control buttons but keep containers visible
-            const plotButtons = control.querySelectorAll('.plot-controls-row, .plot-actions');
-            plotButtons.forEach(button => {
+            const plotButtons = control.querySelectorAll(
+                '.plot-controls-row, .plot-actions'
+            );
+            plotButtons.forEach((button) => {
                 button.style.display = 'none';
             });
-            
+
             // Ensure the plot container is visible for existing content
             const plotContainer = control.querySelector('.plot-container');
             if (plotContainer) {
@@ -342,7 +358,7 @@ function showDegradedModeIndicator() {
             }
         }
     });
-    
+
     console.log('🌐 Degraded mode indicator displayed');
 }
 
@@ -1112,7 +1128,6 @@ function displayVariablePlot(variable, plotData) {
         `.plot-container[data-variable="${variable}"]`
     );
     const imageContainer = container.querySelector('.plot-image-container');
-    const plotError = container.querySelector('.plot-error');
 
     // Hide any previous errors
     hideVariablePlotError(variable);
@@ -1136,9 +1151,24 @@ function displayVariablePlotError(variable, message) {
         `.plot-error[data-variable="${variable}"]`
     );
     const errorMessageId = generateUUID();
+    const matplotlibInstallButton = message.includes(
+        'Matplotlib is not installed'
+    )
+        ? /*html*/ `
+                <button 
+                    class="plot-action-button" 
+                    data-target-id="${errorMessageId}" 
+                    title="Copy error message"
+                    onclick="executeInstallPackagesCommand(['matplotlib'])"
+                    style="margin-bottom: 6px;"
+                >
+                    🎮 Install matplotlib
+                </button>`
+        : '';
     if (plotError) {
         plotError.innerHTML = /*html*/ `
             <div>
+                ${matplotlibInstallButton}
                 <button 
                     class="text-copy-button" 
                     data-target-id="${errorMessageId}" 
@@ -1323,7 +1353,7 @@ async function handleRefresh() {
         console.warn('⚠️ Refresh not available in degraded mode');
         return;
     }
-    
+
     displayTimestamp(null, true);
     try {
         await messageBus.refresh();
@@ -1338,7 +1368,7 @@ async function handleExportWebview() {
         console.warn('⚠️ Export webview not available in degraded mode');
         return;
     }
-    
+
     console.log('🖼️ Exporting webview content...');
     const htmlContent = captureWebviewContent();
     try {
@@ -1416,7 +1446,7 @@ async function handleCreateAllPlots() {
         console.warn('⚠️ Create plots not available in degraded mode');
         return;
     }
-    
+
     console.log('🔍 Plot All Variables - Debug Info:');
 
     // Check if operation is already running
@@ -1533,7 +1563,7 @@ async function handleSaveAllPlots() {
         console.warn('⚠️ Save plots not available in degraded mode');
         return;
     }
-    
+
     const containers = document.querySelectorAll('.plot-container');
     const plotsToSave = [];
 
@@ -1592,7 +1622,7 @@ async function handleCreateVariablePlot(variable) {
         console.warn('⚠️ Create plot not available in degraded mode');
         return;
     }
-    
+
     const plotTypeSelect = document.querySelector(
         `.plot-type-select[data-variable="${variable}"]`
     );
@@ -1635,7 +1665,7 @@ async function handleSaveVariablePlot(variable) {
         console.warn('⚠️ Save plot not available in degraded mode');
         return;
     }
-    
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1678,7 +1708,7 @@ async function handleSaveVariablePlotAs(variable) {
         console.warn('⚠️ Save plot as not available in degraded mode');
         return;
     }
-    
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1717,7 +1747,7 @@ async function handleOpenVariablePlot(variable) {
         console.warn('⚠️ Open plot not available in degraded mode');
         return;
     }
-    
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1777,10 +1807,10 @@ function doScrollToHeader(
                 parentDetails.open = true;
                 openedCount++;
                 const summary = parentDetails.querySelector('summary');
-                const summaryText = summary ? summary.textContent.trim() : 'Unknown';
-                console.log(
-                    `📋 Opened parent details: ${summaryText}`
-                );
+                const summaryText = summary
+                    ? summary.textContent.trim()
+                    : 'Unknown';
+                console.log(`📋 Opened parent details: ${summaryText}`);
             }
             // Move up to the parent of the current details element to check for more nested details
             currentElement = parentDetails ? parentDetails.parentElement : null;
@@ -1834,7 +1864,7 @@ async function executeShowLogsCommand() {
         console.warn('⚠️ Show logs command not available in degraded mode');
         return;
     }
-    
+
     try {
         console.log('🔧 Executing show logs command...');
         await messageBus.sendRequest('executeCommand', {
@@ -1855,10 +1885,12 @@ async function executeShowLogsCommand() {
 // Function to execute the install packages command
 async function executeInstallPackagesCommand(packages) {
     if (messageBus.isDegradedMode) {
-        console.warn('⚠️ Install packages command not available in degraded mode');
+        console.warn(
+            '⚠️ Install packages command not available in degraded mode'
+        );
         return;
     }
-    
+
     try {
         console.log('🔧 Executing install packages command...', packages);
         await messageBus.sendRequest('executeCommand', {
@@ -1882,7 +1914,7 @@ async function executeShowSettingsCommand() {
         console.warn('⚠️ Show settings command not available in degraded mode');
         return;
     }
-    
+
     try {
         console.log('🔧 Executing show settings command...');
         await messageBus.sendRequest('executeCommand', {

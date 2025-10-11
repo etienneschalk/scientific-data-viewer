@@ -822,7 +822,7 @@ def create_plot(
         if not check_package_availability("matplotlib"):
             logger.error("Matplotlib is not installed")
             return CreatePlotError(
-                error="Matplotlib is not installed",
+                error="Matplotlib is not installed. Install it and retry.",
                 format_info=file_format_info,
             )
 

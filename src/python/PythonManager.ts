@@ -50,7 +50,8 @@ export class PythonManager {
     private _corePackagesInstalled: boolean = false;
 
     // Core packages required for basic functionality
-    private readonly corePackages = ['xarray', 'matplotlib'];
+    private readonly corePackages = ['xarray'];
+    private readonly plotPackages = ['matplotlib']
     // Additional packages for extended format support
     private readonly extendedPackages = [
         'netCDF4',
@@ -436,7 +437,7 @@ export class PythonManager {
     ): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
-        const allPackages = [...this.corePackages, ...this.extendedPackages];
+        const allPackages = [...this.corePackages, ...this.plotPackages,  ...this.extendedPackages];
 
         try {
             const availability = await this.checkPackagesAvailability(
