@@ -1158,9 +1158,9 @@ function displayVariablePlotError(variable, message) {
                 <button 
                     class="plot-action-button" 
                     data-target-id="${errorMessageId}" 
-                    title="Copy error message"
                     onclick="executeInstallPackagesCommand(['matplotlib'])"
                     style="margin-bottom: 6px;"
+                    title="Once installed (a notification should appear), retry 'Create Plot' again."
                 >
                     🎮 Install matplotlib
                 </button>`
