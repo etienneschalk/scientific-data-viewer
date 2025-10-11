@@ -28,8 +28,13 @@ export class DataProcessor {
         return this.pythonManager;
     }
 
-    async getDataInfo(uri: vscode.Uri, convertBandsToVariables: boolean = false): Promise<DataInfoPythonResponse | null> {
-        Logger.debug(`[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`);
+    async getDataInfo(
+        uri: vscode.Uri,
+        convertBandsToVariables: boolean = false
+    ): Promise<DataInfoPythonResponse | null> {
+        Logger.debug(
+            `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`
+        );
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -45,7 +50,7 @@ export class DataProcessor {
             if (convertBandsToVariables) {
                 args.push('--convert-bands-to-variables');
             }
-            
+
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
@@ -55,7 +60,9 @@ export class DataProcessor {
             // The caller can check for result.error to handle errors
             return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
-            Logger.error(`[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`);
+            Logger.error(
+                `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`
+            );
             return null;
         }
     }
@@ -87,7 +94,7 @@ export class DataProcessor {
             '--style',
             quoteIfNeeded(style),
         ];
-        
+
         if (convertBandsToVariables) {
             args.push('--convert-bands-to-variables');
         }
@@ -105,9 +112,11 @@ export class DataProcessor {
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
-            return pythonResponse as CreatePlotPythonResponse; 
+            return pythonResponse as CreatePlotPythonResponse;
         } catch (error) {
-            Logger.error(`[DataProcessor] [createPlot] Error creating plot: ${error}`);
+            Logger.error(
+                `[DataProcessor] [createPlot] Error creating plot: ${error}`
+            );
             throw error;
         }
     }

@@ -238,8 +238,12 @@ export class UIController {
                 }
 
                 // Get data info with band conversion configuration
-                const convertBandsToVariables = this.shouldConvertBandsToVariables(filePath);
-                const dataInfo = await this.dataProcessor.getDataInfo(fileUri, convertBandsToVariables);
+                const convertBandsToVariables =
+                    this.shouldConvertBandsToVariables(filePath);
+                const dataInfo = await this.dataProcessor.getDataInfo(
+                    fileUri,
+                    convertBandsToVariables
+                );
 
                 if (!dataInfo) {
                     throw new Error(
@@ -319,7 +323,9 @@ export class UIController {
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
 
-            const convertBandsToVariables = this.shouldConvertBandsToVariables(state.data.currentFile);
+            const convertBandsToVariables = this.shouldConvertBandsToVariables(
+                state.data.currentFile
+            );
             const plotData = await this.dataProcessor.createPlot(
                 fileUri,
                 variable,
@@ -803,7 +809,9 @@ export class UIController {
 
     private shouldConvertBandsToVariables(filePath: string): boolean {
         const config = getConvertBandsToVariables();
-        const extension = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
+        const extension = filePath
+            .toLowerCase()
+            .substring(filePath.lastIndexOf('.'));
         // Only apply to GeoTIFF formats
         const geotiffExtensions = ['.tif', '.tiff', '.geotiff'];
         return config && geotiffExtensions.includes(extension);

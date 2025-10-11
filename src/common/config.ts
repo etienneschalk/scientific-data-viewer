@@ -6,16 +6,21 @@ export const SDV_EXTENSION_ID = 'scientificDataViewer';
 
 // Command names
 export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';
-export const CMD_OPEN_VIEWER_MULTIPLE = 'scientificDataViewer.openViewerMultiple';
+export const CMD_OPEN_VIEWER_MULTIPLE =
+    'scientificDataViewer.openViewerMultiple';
 export const CMD_OPEN_VIEWER_FOLDER = 'scientificDataViewer.openViewerFolder';
-export const CMD_REFRESH_PYTHON_ENVIRONMENT = 'scientificDataViewer.refreshPythonEnvironment';
+export const CMD_REFRESH_PYTHON_ENVIRONMENT =
+    'scientificDataViewer.refreshPythonEnvironment';
 export const CMD_SHOW_LOGS = 'scientificDataViewer.showLogs';
 export const CMD_SHOW_SETTINGS = 'scientificDataViewer.showSettings';
-export const CMD_OPEN_DEVELOPER_TOOLS = 'scientificDataViewer.openDeveloperTools';
+export const CMD_OPEN_DEVELOPER_TOOLS =
+    'scientificDataViewer.openDeveloperTools';
 export const CMD_SCROLL_TO_HEADER = 'scientificDataViewer.scrollToHeader';
 export const CMD_EXPAND_ALL = 'scientificDataViewer.expandAll';
-export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installPackages';
-export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
+export const CMD_PYTHON_INSTALL_PACKAGES =
+    'scientificDataViewer.python.installPackages';
+export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT =
+    'scientificDataViewer.manageExtensionOwnEnvironment';
 export const CMD_EXPORT_WEBVIEW = 'scientificDataViewer.exportWebview';
 export const CMD_TOGGLE_DEV_MODE = 'scientificDataViewer.toggleDevMode';
 export const CMD_HEALTHCHECK = 'scientificDataViewer.healthcheck';
@@ -24,7 +29,8 @@ export const CMD_HEALTHCHECK = 'scientificDataViewer.healthcheck';
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';
 
 // Default data viewer panel ID
-export const DEFAULT_DATA_VIEWER_PANEL_ID = 'scientificDataViewer.defaultWebviewPanel';
+export const DEFAULT_DATA_VIEWER_PANEL_ID =
+    'scientificDataViewer.defaultWebviewPanel';
 
 // Configuration keys
 const MAX_FILE_SIZE = 'maxFileSize';
