@@ -31,104 +31,66 @@ interface ThemeColors {
  */
 export class ThemeManager {
     /**
-     * Get all available VS Code themes
-     */
-    static async getAvailableThemes(): Promise<vscode.ColorTheme[]> {
-        try {
-            // Get all installed extensions that contribute themes
-            const extensions = vscode.extensions.all;
-            const themes: vscode.ColorTheme[] = [];
-
-            // Get the current theme
-            const currentTheme = vscode.window.activeColorTheme;
-            themes.push(currentTheme);
-
-            // Note: VS Code doesn't provide a direct API to list all themes
-            // We can only access the current theme and its properties
-            Logger.debug(`Current theme kind: ${currentTheme.kind}`);
-
-            return themes;
-        } catch (error) {
-            Logger.error(`Failed to get available themes: ${error}`);
-            return [];
-        }
-    }
-
-    /**
-     * Check if a theme exists by name
-     */
-    static async isThemeValid(themeName: string): Promise<boolean> {
-        if (!themeName || themeName.trim() === '') {
-            return false;
-        }
-
-        try {
-            // VS Code doesn't provide a direct way to validate theme names
-            // We'll return true for now and let the CSS generation handle invalid themes
-            return true;
-        } catch (error) {
-            Logger.error(`Failed to validate theme: ${error}`);
-            return false;
-        }
-    }
-
-    /**
      * Generate CSS variables for a specific theme
      * Uses predefined color sets for common VS Code themes
      */
-    static generateThemeCSSVariables(themeName?: string): string {
+    static generateThemeCSSVariables(themeName: string): string {
         if (!themeName || themeName.trim() === '') {
             // Return empty string to use default VS Code variables
+            return '';
+        }
+        const themeColors = this.getThemeColorSet(themeName);
+        if (!themeColors) {
+            Logger.warn(
+                `Unknown theme: ${themeName}, return empty string to use default VS Code variables`
+            );
             return '';
         }
 
         Logger.debug(`Generating CSS variables for theme: ${themeName}`);
 
-        // Predefined theme color sets
-        const themeColors = this.getThemeColorSet(themeName);
-        if (!themeColors) {
-            Logger.warn(
-                `Unknown theme: ${themeName}, using default dark theme`
-            );
-            return this.generateThemeCSSVariables('Default Dark+');
-        }
-
         return `
-/* Theme override for: ${themeName} */
-:root {
-    --vscode-foreground: ${themeColors.foreground};
-    --vscode-editor-background: ${themeColors.editorBackground};
-    --vscode-editor-foreground: ${themeColors.editorForeground};
-    --vscode-panel-background: ${themeColors.panelBackground};
-    --vscode-panel-border: ${themeColors.panelBorder};
-    --vscode-button-background: ${themeColors.buttonBackground};
-    --vscode-button-foreground: ${themeColors.buttonForeground};
-    --vscode-input-background: ${themeColors.inputBackground};
-    --vscode-input-foreground: ${themeColors.inputForeground};
-    --vscode-input-border: ${themeColors.inputBorder};
-    --vscode-list-hoverBackground: ${themeColors.listHoverBackground};
-    --vscode-list-activeSelectionBackground: ${themeColors.listActiveSelectionBackground};
-    --vscode-list-activeSelectionForeground: ${themeColors.listActiveSelectionForeground};
-    --vscode-list-inactiveSelectionBackground: ${themeColors.listInactiveSelectionBackground};
-    --vscode-list-inactiveSelectionForeground: ${themeColors.listInactiveSelectionForeground};
-    --vscode-errorForeground: ${themeColors.errorForeground};
-    --vscode-descriptionForeground: ${themeColors.descriptionForeground};
-    --vscode-textCodeBlock-background: ${themeColors.textCodeBlockBackground};
-    --vscode-textPreformat-foreground: ${themeColors.textPreformatForeground};
-    --vscode-editor-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    --vscode-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    --vscode-font-size: 13px;
-    --vscode-font-weight: normal;
-}
-`;
+    /* Theme override for: ${themeName} */
+    :root {
+        --vscode-foreground: ${themeColors.foreground};
+        --vscode-editor-background: ${themeColors.editorBackground};
+        --vscode-editor-foreground: ${themeColors.editorForeground};
+        --vscode-panel-background: ${themeColors.panelBackground};
+        --vscode-panel-border: ${themeColors.panelBorder};
+        --vscode-button-background: ${themeColors.buttonBackground};
+        --vscode-button-foreground: ${themeColors.buttonForeground};
+        --vscode-input-background: ${themeColors.inputBackground};
+        --vscode-input-foreground: ${themeColors.inputForeground};
+        --vscode-input-border: ${themeColors.inputBorder};
+        --vscode-list-hoverBackground: ${themeColors.listHoverBackground};
+        --vscode-list-activeSelectionBackground: ${themeColors.listActiveSelectionBackground};
+        --vscode-list-activeSelectionForeground: ${themeColors.listActiveSelectionForeground};
+        --vscode-list-inactiveSelectionBackground: ${themeColors.listInactiveSelectionBackground};
+        --vscode-list-inactiveSelectionForeground: ${themeColors.listInactiveSelectionForeground};
+        --vscode-errorForeground: ${themeColors.errorForeground};
+        --vscode-descriptionForeground: ${themeColors.descriptionForeground};
+        --vscode-textCodeBlock-background: ${themeColors.textCodeBlockBackground};
+        --vscode-textPreformat-foreground: ${themeColors.textPreformatForeground};
+        --vscode-editor-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        --vscode-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        --vscode-font-size: 13px;
+        --vscode-font-weight: normal;
+    }
+    `;
+    }
+
+    static getThemeMode(themeName: string): 'dark' | 'light' {
+        // Empirical observation.
+        // Relies on the fact that all theme names include 'Dark or 'Light'.
+        return ThemeManager.normalizeThemeName(themeName).includes('dark')
+            ? 'dark'
+            : 'light';
     }
 
     /**
      * Get color set for a specific theme
      */
     private static getThemeColorSet(themeName: string): ThemeColors | null {
-        const normalizedName = themeName.toLowerCase().trim();
-
         // Common VS Code themes
         const themes: { [key: string]: ThemeColors } = {
             'default dark+': {
@@ -259,40 +221,10 @@ export class ThemeManager {
             },
         };
 
-        return themes[normalizedName] || null;
+        return themes[ThemeManager.normalizeThemeName(themeName)] || null;
     }
 
-    public static getThemeMode(themeName: string): 'dark' | 'light' {
-        // Empirical observation. Must add explicitly "Dark" or "Light" to the theme name.
-        return themeName.toLowerCase().trim().includes('dark')
-            ? 'dark'
-            : 'light';
-    }
-
-    /**
-     * Get the current theme's CSS variables as a string
-     */
-    static getCurrentThemeCSSVariables(): string {
-        const currentTheme = vscode.window.activeColorTheme;
-        Logger.debug(
-            `Getting CSS variables for current theme kind: ${currentTheme.kind}`
-        );
-
-        // For now, return empty string to use the default VS Code CSS variables
-        // In a real implementation, you would extract the actual color values from the theme
-        return '';
-    }
-
-    /**
-     * Generate CSS for theme override in exported HTML
-     */
-    static generateExportThemeCSS(themeName?: string): string {
-        if (!themeName || themeName.trim() === '') {
-            // Use current theme variables
-            return this.getCurrentThemeCSSVariables();
-        }
-
-        // Generate CSS variables for the specified theme
-        return this.generateThemeCSSVariables(themeName);
+    private static normalizeThemeName(themeName: string) {
+        return themeName.toLowerCase().trim();
     }
 }
