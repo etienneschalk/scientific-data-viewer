@@ -478,6 +478,13 @@
                     "order": 1000,
                     "description": "Use the extension's own virtual environment (requires uv)",
                     "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**, otherwise this setting will have no effect, and the extension will fall back to using the Python extension's interpreter. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
+                },
+                "scientificDataViewer.convertBandsToVariables": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1000,
+                    "description": "Convert bands of GeoTIFF rasters to variables for better readability",
+                    "markdownDescription": "When enabled, multi-band GeoTIFF files will have their bands converted to separate variables instead of a single 3D DataArray. This improves readability and plotting capabilities by treating each band as an individual variable.\n\n**Supported formats:** GeoTIFF (.tif, .tiff, .geotiff)\n\n**Benefits:**\n- Better color scale readability for different bands\n- Individual band plotting and analysis\n- Improved data structure visualization\n- Each band treated as a separate variable"
                 }
             }
         }

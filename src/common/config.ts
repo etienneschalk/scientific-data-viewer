@@ -34,6 +34,7 @@ const MATPLOTLIB_STYLE = 'matplotlibStyle';
 const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
+const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -43,6 +44,7 @@ const DEFAULT_MATPLOTLIB_STYLE = '';
 const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
+const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -107,6 +109,13 @@ export function getUseExtensionOwnEnvironment(): boolean {
     return getWorkspaceConfig().get<boolean>(
         USE_EXTENSION_OWN_ENVIRONMENT,
         DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT
+    );
+}
+
+export function getConvertBandsToVariables(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        CONVERT_BANDS_TO_VARIABLES,
+        DEFAULT_CONVERT_BANDS_TO_VARIABLES
     );
 }
 

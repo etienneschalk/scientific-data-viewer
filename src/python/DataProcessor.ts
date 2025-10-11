@@ -28,7 +28,7 @@ export class DataProcessor {
         return this.pythonManager;
     }
 
-    async getDataInfo(uri: vscode.Uri): Promise<DataInfoPythonResponse | null> {
+    async getDataInfo(uri: vscode.Uri, convertBandsToVariables: boolean = false): Promise<DataInfoPythonResponse | null> {
         Logger.debug(`[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`);
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -41,9 +41,14 @@ export class DataProcessor {
 
         try {
             // Use the new merged CLI with 'info' mode
+            const args = ['info', filePath];
+            if (convertBandsToVariables) {
+                args.push('--convert-bands-to-variables');
+            }
+            
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
-                ['info', filePath],
+                args,
                 true
             );
             // Return the result even if it contains an error field
@@ -58,7 +63,8 @@ export class DataProcessor {
     async createPlot(
         uri: vscode.Uri,
         variable: string,
-        plotType: string = 'auto'
+        plotType: string = 'auto',
+        convertBandsToVariables: boolean = false
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -81,6 +87,10 @@ export class DataProcessor {
             '--style',
             quoteIfNeeded(style),
         ];
+        
+        if (convertBandsToVariables) {
+            args.push('--convert-bands-to-variables');
+        }
 
         try {
             Logger.info(

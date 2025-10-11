@@ -151,8 +151,8 @@ MATPLOTLIB_RC_CONTEXT = {
 }
 
 XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
-XR_TEXT_OPTIONS: Dict[str, Any] = XR_OPTIONS | {"display_max_rows": 1000}
-XR_HTML_OPTIONS: Dict[str, Any] = XR_OPTIONS | {}
+XR_TEXT_OPTIONS: Dict[str, Any] = {**XR_OPTIONS, "display_max_rows": 1000}
+XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
 
 SupportedExtensionType = Literal[
     ".nc",
@@ -553,7 +553,9 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
 
 
 def open_datatree_with_fallback(
-    file_path: Path, file_format_info: FileFormatInfo
+    file_path: Path,
+    file_format_info: FileFormatInfo,
+    convert_bands_to_variables: bool = False,
 ) -> "tuple[Union[xr.DataTree, DictOfDatasets], str]":
     """Open datatree or dataset with fallback to different engines.
 
@@ -591,12 +593,26 @@ def open_datatree_with_fallback(
 
     for engine in file_format_info.available_engines:
         try:
+            # Prepare backend kwargs based on configuration
+            backend_kwargs = (
+                DEFAULT_ENGINE_BACKEND_KWARGS[engine].copy()
+                if DEFAULT_ENGINE_BACKEND_KWARGS[engine]
+                else {}
+            )
+
+            # Apply band_as_variable for rasterio if configuration is enabled
+            if engine == "rasterio" and convert_bands_to_variables:
+                backend_kwargs["band_as_variable"] = True
+                logger.info(
+                    f"Using band_as_variable=True for {file_format_info.extension} file"
+                )
+
             if can_use_datatree(engine):
                 xdt_or_xds = xr.open_datatree(
                     file_path,
                     engine=engine,
                     **DEFAULT_XR_OPEN_KWARGS[engine],
-                    backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+                    backend_kwargs=backend_kwargs,
                 )
                 return xdt_or_xds, engine
             else:
@@ -624,14 +640,14 @@ def open_datatree_with_fallback(
                             file_path,
                             engine=engine,
                             **DEFAULT_XR_OPEN_KWARGS[engine],
-                            backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+                            backend_kwargs=backend_kwargs,
                         )
                         if group == "/"
                         else xr.open_dataset(
                             file_path,
                             engine=engine,
                             **DEFAULT_XR_OPEN_KWARGS[engine],
-                            backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+                            backend_kwargs=backend_kwargs,
                             group=group,
                         )
                     )
@@ -776,7 +792,11 @@ def detect_plotting_strategy(
 
 
 def create_plot(
-    file_path: Path, variable_path: str, plot_type: str = "auto", style: str = "auto"
+    file_path: Path,
+    variable_path: str,
+    plot_type: str = "auto",
+    style: str = "auto",
+    convert_bands_to_variables: bool = False,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -844,7 +864,7 @@ def create_plot(
 
         # Open dataset with fallback
         xds_or_xdt, used_engine = open_datatree_with_fallback(
-            file_path, file_format_info
+            file_path, file_format_info, convert_bands_to_variables
         )
 
         datatree_flag: bool = can_use_datatree(used_engine) and isinstance(
@@ -895,19 +915,19 @@ def create_plot(
             if strategy == "2d_classic":
                 # 2D spatial data - plot directly with appropriate colormap
                 logger.info("Creating 2D spatial plot")
-                ax = var.plot.imshow(cmap="viridis")
+                var.plot.imshow(cmap="viridis")
                 plt.gca().set_aspect("equal")
             elif strategy == "2d_classic_isel":
                 logger.info("Creating 2D spatial plot with isel")
                 first_dim = var.dims[0]
-                ax = var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
+                var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
                 plt.gca().set_aspect("equal")
             elif strategy == "3d_col":
                 # 3D data with spatial dimensions - use col parameter
                 logger.info("Creating 3D plot with col parameter")
                 first_dim = var.dims[0]
                 col_wrap = min(4, var.shape[0])
-                ax = var.plot.imshow(
+                var.plot.imshow(
                     col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=col_wrap
                 )
             elif strategy == "4d_col_row":
@@ -915,7 +935,7 @@ def create_plot(
                 logger.info("Creating 4D plot with col and row parameters")
                 first_dim = var.dims[0]
                 second_dim = var.dims[1]
-                ax = var.plot.imshow(
+                var.plot.imshow(
                     col=second_dim, row=first_dim, cmap="viridis", aspect=1, size=4
                 )
             else:
@@ -964,7 +984,9 @@ def create_plot(
         )
 
 
-def get_file_info(file_path: Path) -> Union[FileInfoResult, FileInfoError]:
+def get_file_info(
+    file_path: Path, convert_bands_to_variables: bool = False
+) -> Union[FileInfoResult, FileInfoError]:
     """Extract comprehensive information from a data file.
 
     Analyzes a data file and extracts metadata including format information,
@@ -993,7 +1015,7 @@ def get_file_info(file_path: Path) -> Union[FileInfoResult, FileInfoError]:
     try:
         # Open dataset with fallback
         xds_or_xdt, used_engine = open_datatree_with_fallback(
-            file_path, file_format_info
+            file_path, file_format_info, convert_bands_to_variables
         )
     except ImportError:
         # Handle missing dependencies
@@ -1237,6 +1259,12 @@ Examples:
         help="Matplotlib plot style. Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)",
     )
 
+    parser.add_argument(
+        "--convert-bands-to-variables",
+        action="store_true",
+        help="Convert bands of GeoTIFF rasters to variables for better readability",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1251,13 +1279,17 @@ Examples:
     # Dispatch based on mode
     if args.mode == "info":
         # Get file information
-        result = get_file_info(args.file_path)
+        result = get_file_info(args.file_path, args.convert_bands_to_variables)
         ok = isinstance(result, FileInfoResult)
 
     elif args.mode == "plot":
         # Create plot
         result = create_plot(
-            args.file_path, args.variable_name, args.plot_type, args.style
+            args.file_path,
+            args.variable_name,
+            args.plot_type,
+            args.style,
+            args.convert_bands_to_variables,
         )
         ok = isinstance(result, CreatePlotResult)
 

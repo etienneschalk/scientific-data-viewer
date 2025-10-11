@@ -16,6 +16,7 @@ import {
     getMaxSize,
     getWorkspaceConfig,
     getWebviewExportTheme,
+    getConvertBandsToVariables,
 } from '../common/config';
 import { DataInfoPythonResponse, ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
@@ -236,8 +237,9 @@ export class UIController {
                     );
                 }
 
-                // Get data info
-                const dataInfo = await this.dataProcessor.getDataInfo(fileUri);
+                // Get data info with band conversion configuration
+                const convertBandsToVariables = this.shouldConvertBandsToVariables(filePath);
+                const dataInfo = await this.dataProcessor.getDataInfo(fileUri, convertBandsToVariables);
 
                 if (!dataInfo) {
                     throw new Error(
@@ -317,10 +319,12 @@ export class UIController {
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
 
+            const convertBandsToVariables = this.shouldConvertBandsToVariables(state.data.currentFile);
             const plotData = await this.dataProcessor.createPlot(
                 fileUri,
                 variable,
-                plotType
+                plotType,
+                convertBandsToVariables
             );
 
             if (!plotData) {
@@ -795,5 +799,13 @@ export class UIController {
             lastLoadTime,
             this.getId()
         );
+    }
+
+    private shouldConvertBandsToVariables(filePath: string): boolean {
+        const config = getConvertBandsToVariables();
+        const extension = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
+        // Only apply to GeoTIFF formats
+        const geotiffExtensions = ['.tif', '.tiff', '.geotiff'];
+        return config && geotiffExtensions.includes(extension);
     }
 }
