@@ -126,6 +126,7 @@ button {
 
 button:hover {
     background-color: var(--vscode-button-hoverBackground);
+    color: var(--vscode-button-foreground);
 }
 
 button:disabled {
@@ -160,10 +161,12 @@ button:disabled {
 
 .text-copy-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
+    color: var(--vscode-button-secondaryForeground);
 }
 
 .text-copy-button.copied {
     background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
 }
 
 /* Form styles */
@@ -242,11 +245,6 @@ select:focus {
     display: flex;
     flex-direction: column;
     gap: 0;
-}
-
-.dimension-item:hover,
-.variable-item:hover {
-    background-color: var(--vscode-list-activeSelectionBackground);
 }
 
 .variable-item.selected {
@@ -335,10 +333,6 @@ select:focus {
     opacity: 0.5;
 }
 
-.variable-summary:hover {
-    background-color: var(--vscode-list-activeSelectionBackground);
-}
-
 .variable-summary.not-clickable {
     cursor: default;
 }
@@ -386,17 +380,6 @@ select:focus {
     margin: 0;
     border-top: 1px solid var(--vscode-panel-border);
 }
-/* .attributes {
-    padding-left: 10px;
-} */
-/* .attribute-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-} */
-.attribute-item:hover {
-    background-color: var(--vscode-list-activeSelectionBackground);
-}
 
 .attribute-name {
     font-weight: bold;
@@ -405,7 +388,6 @@ select:focus {
 }
 
 .attribute-value {
-    color: var(--vscode-descriptionForeground);
     word-break: break-word;
     flex: 1;
 }
@@ -475,6 +457,7 @@ select:focus {
 /* Representation styles */
 .html-representation {
     /* max-height: 500px; */
+    margin-top: 2px;
     overflow: auto;
     border: 1px solid var(--vscode-panel-border);
     border-radius: 4px;
@@ -529,10 +512,6 @@ details summary {
     color: var(--vscode-foreground);
 }
 
-details summary:hover {
-    color: var(--vscode-button-hoverBackground);
-}
-
 details.sticky-group-details {
     margin-top: 0;
     color: var(--vscode-foreground);
@@ -545,6 +524,7 @@ details.sticky-group-details {
 details.sticky-group-details > summary {
     top: -1px; /* fix empirical one pixel gap observed in VS Code */
     top: 30px; /* offset for the header */
+    top: 29px; /* fix empirical one pixel gap observed in VS Code */
     position: sticky;
     display: list-item;
     width: 100%;
@@ -565,12 +545,18 @@ details.sticky-group-details summary > * {
     padding: 0;
 }
 
+.plot-image-container {
+    height: auto;
+    margin: auto;
+    width: 100%;
+    text-align: center;
+    padding: 6px 8px;
+    padding-top: 0;
+}
 /* Plot image styles */
-.plot-container img,
 .plot-image-container img {
     height: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+    margin: auto;
 }
 
 /* Plot control button variant */
@@ -589,6 +575,7 @@ details.sticky-group-details summary > * {
 
 .plot-control-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
+    color: var(--vscode-button-secondaryForeground);
 }
 
 .plot-control-button:disabled {
@@ -616,6 +603,7 @@ button:active {
 
 .header-control-button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground);
+    color: var(--vscode-button-secondaryForeground);
 }
 
 .header-control-button:active {
@@ -635,12 +623,13 @@ button:active {
 
 /* Per-variable plot controls */
 .variable-plot-controls {
-    padding: 6px 8px;
+    padding: 0;
     margin: 0;
     background-color: var(--vscode-list-hoverBackground);
 }
 
 .plot-controls-row {
+    padding: 6px 8px;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -669,6 +658,7 @@ button:active {
 .create-plot-button:hover:not(:disabled),
 .plot-action-button:hover:not(:disabled) {
     background-color: var(--vscode-button-hoverBackground);
+    color: var(--vscode-button-foreground);
 }
 
 .create-plot-button:disabled,
@@ -679,13 +669,14 @@ button:active {
 }
 
 .plot-image-container {
-    margin-top: 10px;
+    margin-top: 6px;
 }
 
 .plot-actions {
     display: flex;
     gap: 8px;
-    margin: 10px 0;
+    margin: 0;
+    padding: 0 8px;
     justify-content: left;
     flex-wrap: wrap;
 }
@@ -705,4 +696,16 @@ button:active {
     border: 1px solid var(--vscode-input-border);
     font-size: 14px;
     color: var(--vscode-foreground);
+}
+
+#degraded-mode-indicator {
+    margin-left: 10px;
+    background: #ffa500;
+    color: #000;
+    padding: 2px 3px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }

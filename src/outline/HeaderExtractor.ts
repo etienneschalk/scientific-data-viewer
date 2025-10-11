@@ -69,7 +69,7 @@ export class HeaderExtractor {
             );
             return headers;
         } catch (error) {
-            Logger.error(`❌ Error extracting headers from HTML: ${error}`);
+            Logger.error(`📋 ❌ Error extracting headers from HTML: ${error}`);
             return [];
         }
     }

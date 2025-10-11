@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.4.0** • [Release Notes](./docs/RELEASE_NOTES_0.4.0.md)
+**Current Version: v0.5.0** • [Release Notes](./docs/RELEASE_NOTES_0.5.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -36,6 +36,8 @@ Available on:
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
 - **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
+- **Enhanced GeoTIFF Support**: Multi-band GeoTIFF files automatically convert bands to separate variables for improved readability and plotting
+- **HTML Report Export**: Export complete data viewer content as self-contained HTML reports for sharing and documentation
 - **Command Palette Integration**: Multiple commands for data viewer operations
 - **Status Bar Integration**: Shows current Python interpreter status
 - **Human-readable File Sizes**: Display file and variable sizes in appropriate units (B, kB, MB, GB, TB)
@@ -190,7 +192,8 @@ The extension supports multiple ways to configure your Python environment:
 3. **Context menu from File Explorer**:
 
    - Right-click on any supported file (or folder)
-   - Select "Open in Scientific Data Viewer"
+   - Select "Open Scientific Data Viewer" for single file or folder
+   - Select "Open Scientific Data Viewer for Selection" to open multiple selected multiple files or folders
    - Command "View: Split Editor" is NOT supported
 
 4. **From command palette**:
@@ -233,12 +236,47 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 | `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
 | `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
 | `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
+| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
+| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                     |
 
 ### 🖱️ Context Menu Commands
 
 Right-click on supported file types in the Explorer to access:
 
 - **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
+
+### 🖼️ Export Webview Content
+
+The extension allows you to export complete data viewer content as self-contained HTML reports:
+
+1. **Using the Export Button**:
+
+   - Open a scientific data file in the Scientific Data Viewer
+   - Click the export button (🖼️) in the header controls
+   - Choose a location and filename for the HTML report
+   - The report will be generated and you can choose to open it or reveal it in explorer
+
+2. **Using the Command Palette**:
+
+   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
+   - Type "Scientific Data Viewer: Export Webview Content"
+   - Choose a location and filename for the HTML report
+
+**Report Contents**:
+
+- Complete file information (path, size, format, engines)
+- Xarray HTML and text representations
+- Data structure (dimensions, coordinates, variables, attributes)
+- Technical information (Python path, extension configuration, versions)
+- All content is self-contained with embedded CSS and JavaScript
+- Professional layout with copy buttons for easy data extraction
+
+**Use Cases**:
+
+- Share data analysis results with colleagues
+- Create documentation for datasets
+- Archive data viewer sessions
+- Generate reports for presentations or publications
 
 ## ⚙️ Settings
 
@@ -277,6 +315,9 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.devMode`**
   - (type: `boolean`, default: `false`)
   - Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.
+- **`scientificDataViewer.convertBandsToVariables`**
+  - (type: `boolean`, default: `true`)
+  - Convert bands of GeoTIFF rasters to variables for better readability. When enabled, multi-band GeoTIFF files (.tif, .tiff, .geotiff) will have their bands converted to separate variables instead of a single 3D DataArray. This improves plotting capabilities and data structure visualization by treating each band as an individual variable.
 
 ## 🔧 Troubleshooting
 
@@ -317,153 +358,6 @@ The extension includes configuration options that act as feature flags to contro
 - **Ask questions**: [Create an issue (❓ Question / Discussion) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=question.yml)
 - **I would like a specific feature**: [Create an issue (✨ Feature Request) on the GitHub repository](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=feature_request.yml) to suggest a new feature or enhancement for the Scientific Data Viewer extension
 
----
-
-## 🛠️ Development
-
-### ⚡ Quick Start for Developers
-
-1. **Clone and setup**:
-
-   ```bash
-   git clone https://github.com/etienneschalk/scientific-data-viewer.git
-   cd scientific-data-viewer
-   ./setup.sh
-   ```
-
-2. **Open in VSCode**:
-
-   ```bash
-   code .
-   ```
-
-3. **Run extension**:
-   - Press `F5` to launch Extension Development Host
-   - Test with sample data files
-
-Recommended VSCode extension: [es6-string-html](https://marketplace.visualstudio.com/items?itemName=Tobermory.es6-string-html)
-
-### 🔧 Development Installation
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/etienneschalk/scientific-data-viewer.git
-   cd scientific-data-viewer
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-3. **Compile the extension**:
-
-   ```bash
-   npm run compile
-   ```
-
-4. **Install Python dependencies** (if not already installed):
-
-   ```bash
-   pip install xarray matplotlib
-   ```
-
-5. **Open in VSCode**:
-
-   ```bash
-   code .
-   ```
-
-6. **Run the extension**:
-   - Press `F5` to open a new Extension Development Host window
-   - Or use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and run "Developer: Reload Window"
-
-### 📦 Production Installation
-
-1. **Package the extension**:
-
-   ```bash
-   npm run package
-   ```
-
-2. **Install the .vsix file**:
-   - Open VSCode
-   - Go to Extensions view (`Ctrl+Shift+X`)
-   - Click the "..." menu and select "Install from VSIX..."
-   - Select the generated `.vsix` file
-
-### 📜 Python Scripts
-
-The extension uses several Python scripts for data processing:
-
-- **`get_data_info.py`**:
-  - Extracts file metadata, dimensions, variables, and their properties,
-  - Creates HTML representation of xarray datasets
-  - Creates text representation of datasets
-  - Generates visualizations using matplotlib
-  - Shows Python package versions for debugging
-- **`create_sample_data.py`**:
-  - Generates sample data files for testing
-
-Disclaimer: most visualization scripts are experimental and can produce unusable plots!
-
-### 🏗️ Building
-
-```bash
-# Compile TypeScript
-npm run compile
-
-# Watch for changes
-npm run watch
-
-# Run tests
-npm test
-
-# Lint code
-npm run lint
-```
-
-### 🧪 Testing
-
-1. **Unit Tests**:
-
-   ```bash
-   npm test
-   ```
-
-2. **Integration Tests**:
-   - Open the extension in development mode
-   - Test with sample data files
-   - Verify Python integration works correctly
-
-### 🐛 Debugging
-
-1. **Set breakpoints** in your TypeScript code
-2. **Press F5** to launch the Extension Development Host
-3. **Use the debug console** to inspect variables and step through code
-
-Note: It is recommended to run the task `start-watch-mode` for hot reload with
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
-
-Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
-
-**About debugging the error handling**
-
-To get a clean state in the development VSCode instance, uninstall dependencies
-to test the full error handling scenarios
-
-```
-python -m pip uninstall xarray matplotlib numpy netCDF4 h5py rioxarray cfgrib zarr
-```
-
-Then reload the development VSCode instance window: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Developer: Reload Window
-
-**See the Webview console logs**
-
-<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>: Open Webview Developer Tools
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
@@ -475,6 +369,10 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+## 🛠️ Development
+
+See the [Development Guide](docs/DEVELOPMENT.md)
 
 ## 📄 License
 

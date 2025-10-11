@@ -9,6 +9,7 @@ import {
     getUseExtensionOwnEnvironment,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
+import path from 'path';
 
 /**
  * Flag to control the creation of the extension own virtual environment
@@ -49,7 +50,8 @@ export class PythonManager {
     private _corePackagesInstalled: boolean = false;
 
     // Core packages required for basic functionality
-    private readonly corePackages = ['xarray', 'matplotlib'];
+    private readonly corePackages = ['xarray'];
+    private readonly plotPackages = ['matplotlib'];
     // Additional packages for extended format support
     private readonly extendedPackages = [
         'netCDF4',
@@ -59,7 +61,6 @@ export class PythonManager {
         'scipy',
         'cfgrib',
         'rioxarray',
-        'xarray-sentinel',
     ];
 
     constructor(
@@ -118,22 +119,49 @@ export class PythonManager {
         args: string[] = [],
         enableLogs: boolean = false
     ): Promise<any> {
-        if (!this._pythonPath || !this._initialized) {
+        if (!this._initialized) {
             throw new Error(
                 'Python environment not properly initialized. Please run "Python: Select Interpreter" command first.'
             );
         }
 
-        const methodName = enableLogs
-            ? 'executePythonFileWithLogs'
-            : 'executePythonFile';
-        Logger.log(
-            `🐍 📜 ${methodName}: Executing Python file ${scriptPath} with args: ${args} | Python path: ${this._pythonPath} | Is initialized: ${this._initialized}`
+        if (this._pythonPath === null) {
+            throw new Error(
+                'Python path is not set. Please run "Python: Select Interpreter" command first.'
+            );
+        }
+
+        return await this.executePythonFileUnchecked(
+            this._pythonPath,
+            scriptPath,
+            args,
+            enableLogs
         );
+    }
+
+    private async executePythonFileUnchecked(
+        pythonPath: string,
+        scriptPath: string,
+        args: string[],
+        enableLogs: boolean
+    ) {
+        const quotedPythonPath = quoteIfNeeded(pythonPath);
+        Logger.log(
+            `🐍 📜 Executing Python file ${scriptPath} with args: [${args.join(' ')}]`
+        );
+        Logger.info(
+            `🐍 📜 - ${
+                enableLogs ? 'With logs handover' : 'Without logs handover'
+            }`
+        );
+        Logger.info(
+            `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`
+        );
+        Logger.info(`🐍 📜 - Is initialized: ${this._initialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(
-                quoteIfNeeded(this._pythonPath!),
+                quotedPythonPath,
                 [scriptPath, ...args],
                 {
                     shell: true,
@@ -162,22 +190,28 @@ export class PythonManager {
                         if (line.includes(' - INFO - ')) {
                             const message = line.split(' - INFO - ')[1];
                             if (message) {
-                                Logger.info(`🐍 📜 [Python] ${message}`);
+                                Logger.info(`🐍 📜 [Python] [INFO] ${message}`);
                             }
                         } else if (line.includes(' - ERROR - ')) {
                             const message = line.split(' - ERROR - ')[1];
                             if (message) {
-                                Logger.error(`🐍 📜 [Python] ${message}`);
+                                Logger.error(
+                                    `🐍 📜 [Python] [ERROR] ${message}`
+                                );
                             }
                         } else if (line.includes(' - WARNING - ')) {
                             const message = line.split(' - WARNING - ')[1];
                             if (message) {
-                                Logger.warn(`🐍 📜 [Python] ${message}`);
+                                Logger.warn(
+                                    `🐍 📜 [Python] [WARNING] ${message}`
+                                );
                             }
                         } else if (line.includes(' - DEBUG - ')) {
                             const message = line.split(' - DEBUG - ')[1];
                             if (message) {
-                                Logger.debug(`🐍 📜 [Python] ${message}`);
+                                Logger.debug(
+                                    `🐍 📜 [Python] [DEBUG] ${message}`
+                                );
                             }
                         } else if (line.trim()) {
                             // Any other stderr output that doesn't match the log format
@@ -229,7 +263,7 @@ export class PythonManager {
                 if (error.message.includes('ENOENT')) {
                     reject(
                         new Error(
-                            `Python interpreter not found at: ${this._pythonPath}. Please check your Python installation.`
+                            `Python interpreter not found at: ${pythonPath}. Please check your Python installation.`
                         )
                     );
                 } else {
@@ -398,18 +432,23 @@ export class PythonManager {
         });
     }
 
-    private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
+    private async checkAvailablePackages(
+        pythonPath: string
+    ): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
-        const allPackages = [...this.corePackages, ...this.extendedPackages];
-        const availablePackages: string[] = [];
+        const allPackages = [...this.corePackages, ...this.plotPackages,  ...this.extendedPackages];
 
-        for (const packageName of allPackages) {
-            try {
-                const isAvailable = await this.checkPackageAvailability(
-                    pythonPath,
-                    packageName
-                );
+        try {
+            const availability = await this.checkPackagesAvailability(
+                pythonPath,
+                allPackages
+            );
+
+            const availablePackages: string[] = [];
+            for (const [packageName, isAvailable] of Object.entries(
+                availability
+            )) {
                 if (isAvailable) {
                     availablePackages.push(packageName);
                     Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
@@ -418,17 +457,57 @@ export class PythonManager {
                         `🐍 📦 ⚠️ Package not available: ${packageName}`
                     );
                 }
-            } catch (error) {
-                Logger.debug(
-                    `🐍 📦 ⚠️ Package not available: ${packageName}: error: ${error}`
+            }
+
+            Logger.debug(
+                `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`
+            );
+            return availablePackages;
+        } catch (error) {
+            Logger.debug(`🐍 📦 ⚠️ Error checking packages: ${error}`);
+            return [];
+        }
+    }
+
+    /**
+     * Check if packages are available using the Python script
+     * @param pythonPath    The path to the Python interpreter
+     * @param packageNames  The names of the packages to check
+     * @returns             Dictionary mapping package names to boolean availability status
+     */
+    public async checkPackagesAvailability(
+        pythonPath: string,
+        packageNames: string[]
+    ): Promise<Record<string, boolean>> {
+        const scriptPath = path.join(
+            __dirname,
+            '../../../python/check_package_availability.py'
+        );
+
+        try {
+            Logger.debug(
+                `🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`
+            );
+
+            const result = await this.executePythonFileUnchecked(
+                pythonPath,
+                scriptPath,
+                packageNames,
+                false // Don't enable logs for package checking
+            );
+
+            // The result should be a JSON object with package availability
+            if (typeof result === 'object' && result !== null) {
+                return result as Record<string, boolean>;
+            } else {
+                throw new Error(
+                    'Invalid response format from package availability check'
                 );
             }
+        } catch (error) {
+            Logger.error(`🐍 📦 ❌ Error checking packages: ${error}`);
+            throw new Error(`Failed to check package availability: ${error}`);
         }
-
-        Logger.debug(
-            `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`
-        );
-        return availablePackages;
     }
 
     private async checkPipAvailability(): Promise<void> {
@@ -482,35 +561,6 @@ export class PythonManager {
         });
     }
 
-    /**
-     * Check if a package is available
-     * @param pythonPath    The path to the Python interpreter
-     * @param packageName   The name of the package to check
-     * @returns             True if the package is available, False otherwise
-     */
-    private async checkPackageAvailability(
-        pythonPath: string,
-        packageName: string
-    ): Promise<boolean> {
-        return new Promise((resolve) => {
-            const args = [
-                '-c',
-                `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`,
-            ];
-            const process = spawn(quoteIfNeeded(pythonPath), args, {
-                shell: true,
-            });
-
-            process.on('close', (code) => {
-                resolve(code === 0);
-            });
-
-            process.on('error', (error) => {
-                resolve(false);
-            });
-        });
-    }
-
     private async validatePythonEnvironment(
         pythonPath: string | null,
         source: EnvironmentSource
@@ -527,7 +577,9 @@ export class PythonManager {
         }
 
         try {
-            const packages = await this.checkRequiredPackages(this._pythonPath);
+            const packages = await this.checkAvailablePackages(
+                this._pythonPath
+            );
             const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
             );
@@ -667,4 +719,5 @@ export class PythonManager {
             });
         });
     }
+
 }

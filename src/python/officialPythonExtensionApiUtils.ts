@@ -4,16 +4,16 @@ import { Logger } from '../common/Logger';
 /**
  * Get Python extension API if available
  */
-export async function getPythonExtensionApi(): Promise<any | null> {
+export async function getPythonExtensionApi(): Promise<any | undefined> {
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
 
     if (!pythonExtension) {
         Logger.error('🐍 ❌ The official Python extension was not found. Is it installed and enabled? Go to the Extensions pane and search for ms-python.python to verify that the official Python extension is both installed and enabled.');
-        return null;
+        return undefined;
     }
 
     if (!pythonExtension.isActive) {
-        Logger.debug(
+        Logger.info(
             '🐍 💤 Python extension is not active, attempting to activate...'
         );
     }
@@ -22,12 +22,12 @@ export async function getPythonExtensionApi(): Promise<any | null> {
         return await pythonExtension.activate();
     } catch (error) {
         Logger.error(`🐍 ❌ Failed to activate Python extension: ${error}`);
-        return null;
+        return undefined;
     }
 }
 
 export async function getPythonInterpreterFromPythonExtension(): Promise<
-    string | null
+    string | undefined
 > {
     try {
         const pythonApi = await getPythonExtensionApi();
@@ -100,7 +100,7 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                                 return resolvedPath;
                             } else {
                                 Logger.warn(
-                                    '🐍 ⚠️ Environment resolution returned null, using original path'
+                                    '🐍 ⚠️ Environment resolution returned undefined, using original path'
                                 );
                                 return activeEnvironmentPath.path;
                             }
@@ -197,7 +197,7 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
     try {
         const vscodePythonPath = vscode.workspace
             .getConfiguration('python')
-            .get('defaultInterpreterPath') as string | null;
+            .get('defaultInterpreterPath') as string | undefined;
         if (vscodePythonPath) {
             Logger.debug(
                 `🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`
@@ -208,7 +208,7 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
         Logger.warn(`🐍 ⚠️ Could not access Python configuration: ${error}`);
     }
 
-    return null;
+    return undefined;
 }
 
 /**
@@ -271,7 +271,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
                         Logger.debug(
                             `🐍 🔍 [Official Python Extension] Environment change event received: ${JSON.stringify(
                                 event,
-                                null,
+                                undefined,
                                 2
                             )}`
                         );

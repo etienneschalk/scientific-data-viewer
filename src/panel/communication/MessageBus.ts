@@ -266,6 +266,10 @@ export class MessageBus {
         this.sendEvent(EVENTS.SCROLL_TO_HEADER, { headerId, headerLabel });
     }
 
+    emitExportWebviewCommand(): void {
+        this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND, {});
+    }
+
     // Cleanup
     dispose(): void {
         this.pendingRequests.clear();

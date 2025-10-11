@@ -303,7 +303,7 @@ suite('MessageBus Test Suite', () => {
         
         messageBus.onEvent('dataLoaded', async (data) => {
             // Simulate async processing
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise<void>(resolve => setTimeout(resolve, 10));
             asyncListenerCalled = true;
             done();
         });

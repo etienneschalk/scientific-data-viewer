@@ -69,7 +69,6 @@ suite('DataViewerPanel Test Suite', () => {
             retainContextWhenHidden: true,
         };
 
-
         // Mock PythonManager
         mockPythonManager = {
             isReady: () => true,
@@ -142,7 +141,10 @@ suite('DataViewerPanel Test Suite', () => {
     });
 
     test('should have correct view type', () => {
-        assert.strictEqual(DataViewerPanel.viewType, 'scientificDataViewer.defaultWebviewPanel');
+        assert.strictEqual(
+            DataViewerPanel.viewType,
+            'scientificDataViewer.defaultWebviewPanel'
+        );
     });
 
     test('should create or show panel', () => {
@@ -164,7 +166,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions,
+                mockWebviewPanelOptions
             );
 
             // Should not throw an error
@@ -200,7 +202,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions,
+                mockWebviewPanelOptions
             );
 
             // Should not throw an error
@@ -246,7 +248,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions,
+                mockWebviewPanelOptions
             );
 
             // Should not throw an error
@@ -266,13 +268,12 @@ suite('DataViewerPanel Test Suite', () => {
         DataViewerPanel.createFromWebviewPanel(
             mockContext.extensionUri,
             mockWebviewPanel,
-            mockWebviewOptions,
+            mockWebviewOptions
         );
 
         // Should not throw an error
         assert.ok(true);
     });
-
 
     test('should dispose static resources', () => {
         DataViewerPanel.dispose();
@@ -366,13 +367,13 @@ suite('DataViewerPanel Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions,
+            mockWebviewOptions
         );
 
         DataViewerPanel.dispose();
 
         // Should be removed from active panels
-        assert.ok(!DataViewerPanel.activePanels.has(panel));
+        assert.ok(!DataViewerPanel.getPanel(panel.getId()));
     });
 
     test('should generate HTML for webview', () => {

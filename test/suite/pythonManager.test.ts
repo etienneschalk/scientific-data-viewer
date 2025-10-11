@@ -23,15 +23,13 @@ suite('PythonManager Test Suite', () => {
         originalGetExtension = vscode.extensions.getExtension;
 
         // Create centralized mock for vscode.extensions.getExtension
-        configureMockGetExtension ({
+        configureMockGetExtension({
             extensionExists: true,
             isActive: false,
             activateResult: {
                 test: 'api',
                 environments: {
-                    onDidChangeActiveEnvironmentPath: (
-                        callback: any
-                    ) => ({
+                    onDidChangeActiveEnvironmentPath: (callback: any) => ({
                         dispose: () => {},
                     }),
                     onDidEnvironmentsChanged: (callback: any) => ({
@@ -417,7 +415,7 @@ suite('PythonManager Test Suite', () => {
         configureMockGetExtension({ extensionExists: false });
 
         const api = await getPythonExtensionApi();
-        assert.strictEqual(api, null);
+        assert.strictEqual(api, undefined);
     });
 
     test('should handle get Python extension API activation error', async () => {
@@ -429,7 +427,7 @@ suite('PythonManager Test Suite', () => {
         });
 
         const api = await getPythonExtensionApi();
-        assert.strictEqual(api, null);
+        assert.strictEqual(api, undefined);
     });
 
     test('should handle VSCode configuration fallback', async () => {
@@ -474,7 +472,7 @@ suite('PythonManager Test Suite', () => {
         try {
             const interpreterPath =
                 await getPythonInterpreterFromPythonExtension();
-            assert.strictEqual(interpreterPath, null);
+            assert.strictEqual(interpreterPath, undefined);
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }
@@ -537,7 +535,6 @@ suite('PythonManager Test Suite', () => {
                 extensionPack: [],
             } as any;
         };
-
 
         try {
             // Create multiple concurrent initialization calls

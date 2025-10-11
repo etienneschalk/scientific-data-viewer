@@ -41,12 +41,12 @@ export class ErrorBoundary {
 
     registerHandler(component: any, handler: ErrorHandler): void {
         this.errorHandlers.set(component, handler);
-        Logger.debug(`🩹 Error handler registered for component: ${component}`);
+        Logger.info(`🩹 Error handler registered for component: ${component}`);
     }
 
     registerGlobalHandler(handler: ErrorHandler): void {
         this.globalErrorHandler = handler;
-        Logger.debug('🩹 Global error handler registered');
+        Logger.info('🩹 Global error handler registered');
     }
 
     handleError(error: Error, context: ErrorContext): void {
@@ -77,7 +77,7 @@ export class ErrorBoundary {
                 this.globalErrorHandler(error, context);
                 return;
             } catch (globalHandlerError) {
-                Logger.error(`Error in global handler: ${globalHandlerError}`);
+                Logger.error(`🩹 Error in global handler: ${globalHandlerError}`);
             }
         }
 

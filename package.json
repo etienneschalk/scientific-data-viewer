@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.4.2",
+    "version": "0.5.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -56,6 +56,11 @@
                 "category": "Scientific Data Viewer"
             },
             {
+                "command": "scientificDataViewer.openViewerMultiple",
+                "title": "Open Scientific Data Viewer for Selection",
+                "category": "Scientific Data Viewer"
+            },
+            {
                 "command": "scientificDataViewer.openViewerFolder",
                 "title": "Open Scientific Data Viewer (Folder)",
                 "category": "Scientific Data Viewer"
@@ -90,6 +95,21 @@
                 "command": "scientificDataViewer.python.installPackages",
                 "title": "Install Python Packages",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.exportWebview",
+                "title": "Export Webview Content",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.toggleDevMode",
+                "title": "Toggle Dev Mode",
+                "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.healthcheck",
+                "title": "Run Healthcheck",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -97,6 +117,11 @@
                 {
                     "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewer",
+                    "group": "navigation"
+                },
+                {
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "command": "scientificDataViewer.openViewerMultiple",
                     "group": "navigation"
                 }
             ],
@@ -136,6 +161,22 @@
                 {
                     "command": "scientificDataViewer.python.installPackages",
                     "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.exportWebview",
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                },
+                {
+                    "command": "scientificDataViewer.openViewerMultiple",
+                    "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.toggleDevMode",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.healthcheck",
+                    "when": "true"
                 }
             ],
             "view/title": [
@@ -160,8 +201,8 @@
                     "netcdf"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -175,8 +216,8 @@
                     "hdf5"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -189,8 +230,8 @@
                     "zarr"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -205,8 +246,8 @@
                     "grib"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -221,8 +262,8 @@
                     "geotiff"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -236,8 +277,8 @@
                     "jpeg2000"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             }
         ],
@@ -272,8 +313,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -288,8 +329,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -301,8 +342,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -320,8 +361,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -339,8 +380,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -355,8 +396,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             }
         ],
@@ -399,6 +440,31 @@
                     "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
                     "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
                 },
+                "scientificDataViewer.webviewExportTheme": {
+                    "type": "string",
+                    "default": "",
+                    "order": 1001,
+                    "enum": [
+                        "",
+                        "Default Dark+",
+                        "Default Light+",
+                        "Solarized Dark",
+                        "Solarized Light",
+                        "High Contrast Dark",
+                        "High Contrast Light"
+                    ],
+                    "enumDescriptions": [
+                        "Use the current VS Code theme",
+                        "Default Dark+ theme",
+                        "Default Light+ theme",
+                        "Solarized Dark theme",
+                        "Solarized Light theme",
+                        "High Contrast Dark theme",
+                        "High Contrast Light theme"
+                    ],
+                    "description": "Theme to use when exporting webview content. If empty, uses the current VS Code theme. If set, overrides with the specified theme for exports.",
+                    "markdownDescription": "Theme to use when exporting webview content to HTML files. If empty, uses the current VS Code theme variables. If set, overrides with the specified theme for exports.\n\n**Note:** Only affects exported HTML files, not the live webview display."
+                },
                 "scientificDataViewer.python.overridePythonInterpreter": {
                     "type": "string",
                     "default": "",
@@ -412,6 +478,13 @@
                     "order": 1000,
                     "description": "Use the extension's own virtual environment (requires uv)",
                     "markdownDescription": "When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage. \n\n**Requires `uv` to be installed**, otherwise this setting will have no effect, and the extension will fall back to using the Python extension's interpreter. \n\n**Benefits:**\n- Semi-standalone: Only requires `uv` to be installed (responsability of the user)\n- Isolated: Won't interfere with other projects\n- Reliable: Always has the required packages\n- Python 3.13: Uses latest Python version for optimal performance"
+                },
+                "scientificDataViewer.convertBandsToVariables": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1000,
+                    "description": "Convert bands of GeoTIFF rasters to variables for better readability",
+                    "markdownDescription": "When enabled, multi-band GeoTIFF files will have their bands converted to separate variables instead of a single 3D DataArray. This improves readability and plotting capabilities by treating each band as an individual variable.\n\n**Supported formats:** GeoTIFF (.tif, .tiff, .geotiff)\n\n**Benefits:**\n- Better color scale readability for different bands\n- Individual band plotting and analysis\n- Improved data structure visualization\n- Each band treated as a separate variable"
                 }
             }
         }
@@ -434,7 +507,7 @@
         "@typescript-eslint/eslint-plugin": "^5.45.0",
         "@typescript-eslint/parser": "^5.45.0",
         "@vscode/test-electron": "^2.5.2",
-        "@vscode/vsce": "^2.22.0",
+        "@vscode/vsce": "^3.6.2",
         "eslint": "^8.28.0",
         "glob": "^10.3.0",
         "mocha": "^10.2.0",

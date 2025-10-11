@@ -50,7 +50,18 @@ suite('DataProcessor Test Suite', () => {
                         },
                     };
                 } else if (args[0] === 'plot') {
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    return {
+                        result: {
+                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -100,7 +111,18 @@ suite('DataProcessor Test Suite', () => {
                 args: string[],
                 enableLogs: boolean = false
             ) => {
-                return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                return {
+                    result: {
+                        plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                        format_info: {
+                            extension: 'nc',
+                            display_name: 'NetCDF',
+                            available_engines: ['netcdf4'],
+                            missing_packages: [],
+                            is_supported: true
+                        }
+                    }
+                };
             },
         } as any;
 
@@ -113,7 +135,7 @@ suite('DataProcessor Test Suite', () => {
             'line'
         );
         assert.ok(plotData);
-        assert.ok(plotData.startsWith('iVBOR'));
+        assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
 
     test('should create plot with auto type', async () => {
@@ -124,7 +146,18 @@ suite('DataProcessor Test Suite', () => {
                 args: string[],
                 enableLogs: boolean = false
             ) => {
-                return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                return {
+                    result: {
+                        plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                        format_info: {
+                            extension: 'nc',
+                            display_name: 'NetCDF',
+                            available_engines: ['netcdf4'],
+                            missing_packages: [],
+                            is_supported: true
+                        }
+                    }
+                };
             },
         } as any;
 
@@ -133,7 +166,7 @@ suite('DataProcessor Test Suite', () => {
 
         const plotData = await processor.createPlot(mockUri, 'temperature');
         assert.ok(plotData);
-        assert.ok(plotData.startsWith('iVBOR'));
+        assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
 
     test('should handle plot creation error', async () => {
@@ -169,21 +202,29 @@ suite('DataProcessor Test Suite', () => {
                 args: string[],
                 enableLogs: boolean = false
             ) => {
-                return { error: 'Plot creation failed' };
+                return { 
+                    error: {
+                        error: 'Plot creation failed',
+                        format_info: {
+                            extension: 'nc',
+                            display_name: 'NetCDF',
+                            available_engines: ['netcdf4'],
+                            missing_packages: [],
+                            is_supported: true
+                        }
+                    }
+                };
             },
         } as any;
 
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        // createPlot throws errors instead of returning null
-        try {
-            await processor.createPlot(mockUri, 'temperature', 'line');
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Plot creation failed');
-        }
+        // createPlot returns error in response instead of throwing
+        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
+        assert.ok(plotData);
+        assert.ok(plotData?.error);
+        assert.strictEqual(plotData.error?.error, 'Plot creation failed');
     });
 
     test('should handle Python environment not ready', async () => {

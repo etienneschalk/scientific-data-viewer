@@ -26,6 +26,7 @@ class WebviewMessageBus {
         this.vscode = vscode;
         this.pendingRequests = new Map();
         this.eventListeners = new Map();
+        this.isDegradedMode = vscode === null;
         this.setupMessageListener();
     }
 
@@ -44,6 +45,16 @@ class WebviewMessageBus {
 
     // Send a request and wait for response
     async sendRequest(command, payload, timeout = 60000) {
+        // In degraded mode, reject VSCode-specific requests
+        if (this.isDegradedMode) {
+            console.warn(
+                `⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`
+            );
+            return Promise.reject(
+                new Error(`Command '${command}' not available in degraded mode`)
+            );
+        }
+
         const request = this.createRequest(command, payload);
 
         return new Promise((resolve, reject) => {
@@ -167,6 +178,10 @@ class WebviewMessageBus {
         return this.sendRequest('refresh', {});
     }
 
+    async exportWebview(htmlContent) {
+        return this.sendRequest('exportWebview', { htmlContent });
+    }
+
     async showNotification(message, type) {
         return this.sendRequest('showNotification', { message, type });
     }
@@ -191,11 +206,33 @@ class WebviewMessageBus {
     onScrollToHeader(callback) {
         return this.onEvent('scrollToHeader', callback);
     }
+
+    onExportWebviewCommand(callback) {
+        return this.onEvent('exportWebviewCommand', callback);
+    }
 }
 
 // Do not use vscode directly ; communicate with vscode through messageBus
-const _vscode = acquireVsCodeApi();
-const messageBus = new WebviewMessageBus(_vscode);
+// Try to acquire VSCode API, but fail gracefully if not available (e.g., in browser)
+let _vscode = null;
+let messageBus = null;
+
+try {
+    if (typeof acquireVsCodeApi === 'function') {
+        _vscode = acquireVsCodeApi();
+        messageBus = new WebviewMessageBus(_vscode);
+        console.log('✅ VSCode API acquired successfully');
+    } else {
+        throw new Error('acquireVsCodeApi is not available');
+    }
+} catch (error) {
+    console.warn(
+        '⚠️ VSCode API not available, running in degraded mode:',
+        error.message
+    );
+    // Create a mock messageBus that handles missing VSCode API gracefully
+    messageBus = new WebviewMessageBus(null);
+}
 
 // Global state for file path
 const globalState = {
@@ -217,15 +254,21 @@ function initialize() {
     console.log('📍 Search:', window.location.search);
     console.log('📍 Hash:', window.location.hash);
 
-    // Set up message handlers - communication with vscode via messageBus
-    setupMessageHandlers();
-
-    // Set up event listeners - user actions via event delegation
+    // Set up non-VSCode event listeners first (copy buttons, expand/collapse, etc.)
     setupEventListeners();
 
-    console.log(
-        '🚀 WebView initialized - waiting for data to be loaded via message system...'
-    );
+    // Set up VSCode-specific message handlers only if not in degraded mode
+    if (!messageBus.isDegradedMode) {
+        setupMessageHandlers();
+        console.log('🚀 WebView initialized - VSCode mode enabled');
+    } else {
+        console.log(
+            '🚀 WebView initialized - Degraded mode (browser-only features)'
+        );
+        // In degraded mode, we can still display static content if it's already loaded
+        // but we won't be able to communicate with VSCode
+        showDegradedModeIndicator();
+    }
 }
 
 // Auto-initialize when DOM is ready
@@ -249,6 +292,74 @@ function escapeHtml(unsafe) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+}
+
+function showDegradedModeIndicator() {
+    // Add a visual indicator that we're in degraded mode
+    const indicator = document.createElement('span');
+    indicator.id = 'degraded-mode-indicator';
+    indicator.textContent = '🌐 Browser Mode';
+    indicator.title =
+        'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
+
+    // Try to append to top-level-title first, fallback to body
+    const topLevelTitle = document.getElementById('top-level-title');
+    if (topLevelTitle) {
+        topLevelTitle.appendChild(indicator);
+    } else {
+        document.body.appendChild(indicator);
+    }
+
+    // Hide VSCode-specific buttons in degraded mode
+    const vscodeButtons = [
+        'refreshButton',
+        'exportHtmlButton',
+        'exportWebviewButton',
+        'createAllPlotsButton',
+        'resetAllPlotsButton',
+        'saveAllPlotsButton',
+    ];
+
+    vscodeButtons.forEach((buttonId) => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.style.display = 'none';
+        }
+    });
+
+    // Hide plot controls for individual variables - be smart about it
+    const plotControls = document.querySelectorAll('.variable-plot-controls');
+    plotControls.forEach((control) => {
+        const plotError = control.querySelector('.plot-error');
+        const plotImageContainer = control.querySelector(
+            '.plot-image-container'
+        );
+        const hasPlotError =
+            plotError && !plotError.classList.contains('hidden');
+        const hasPlotImage =
+            plotImageContainer && plotImageContainer.querySelector('img');
+
+        // Only hide the entire control if there's no plot content (no error, no image)
+        if (!hasPlotError && !hasPlotImage) {
+            control.style.display = 'none';
+        } else {
+            // If there's existing plot content, hide only the control buttons but keep containers visible
+            const plotButtons = control.querySelectorAll(
+                '.plot-controls-row, .plot-actions'
+            );
+            plotButtons.forEach((button) => {
+                button.style.display = 'none';
+            });
+
+            // Ensure the plot container is visible for existing content
+            const plotContainer = control.querySelector('.plot-container');
+            if (plotContainer) {
+                plotContainer.style.display = 'block';
+            }
+        }
+    });
+
+    console.log('🌐 Degraded mode indicator displayed');
 }
 
 // JoinId is used to join parts of an id together with a separator
@@ -307,8 +418,14 @@ function setupMessageHandlers() {
         console.log('🔄 UI state changed:', state);
     });
 
+    // When the user clicks on a TreeItem from the Data Structure TreeView
     messageBus.onScrollToHeader(({ headerId, headerLabel }) => {
         doScrollToHeader(headerId, headerLabel);
+    });
+
+    // When the user trigger the 'Export Wevbiew Content' command
+    messageBus.onExportWebviewCommand(() => {
+        handleExportWebview();
     });
 
     // Add debugging for all message bus communications
@@ -577,7 +694,7 @@ function renderGroupAttributes(groupName, attrName, value) {
     return /*html*/ `
         <div class="attribute-item" id="${attrId}">
             <span class="attribute-name" title="${attrName}">${attrName} : </span>
-            <span class="attribute-value" title="${valueStr}">${valueStr}</span>
+            <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
         </div>
     `;
 }
@@ -722,7 +839,7 @@ function renderVariableAttributes(attributes, parentId) {
                 attrName,
             ])}">
                 <span class="attribute-name" title="${attrName}">${attrName} : </span>
-                <span class="attribute-value" title="${valueStr}">${valueStr}</span>
+                <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
             </div>
         `;
         })
@@ -908,9 +1025,12 @@ function displayGlobalError(
             </li>
 
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
-            <li>If the python environment is not ready, install required packages: 
-                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
-                    🎮 Install xarray and matplotlib</a>
+            <li>If the python environment is not ready, install required package: 
+                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray'])">
+                    🎮 Install xarray</a>
+            <li>If you cannot create plots, install required package: 
+                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['matplotlib'])">
+                    🎮 Install matplotlib</a>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
                     <li>NetCDF: 
@@ -1008,7 +1128,6 @@ function displayVariablePlot(variable, plotData) {
         `.plot-container[data-variable="${variable}"]`
     );
     const imageContainer = container.querySelector('.plot-image-container');
-    const plotError = container.querySelector('.plot-error');
 
     // Hide any previous errors
     hideVariablePlotError(variable);
@@ -1032,9 +1151,24 @@ function displayVariablePlotError(variable, message) {
         `.plot-error[data-variable="${variable}"]`
     );
     const errorMessageId = generateUUID();
+    const matplotlibInstallButton = message.includes(
+        'Matplotlib is not installed'
+    )
+        ? /*html*/ `
+                <button 
+                    class="plot-action-button" 
+                    data-target-id="${errorMessageId}" 
+                    onclick="executeInstallPackagesCommand(['matplotlib'])"
+                    style="margin-bottom: 6px;"
+                    title="Once installed (a notification should appear), retry 'Create Plot' again."
+                >
+                    🎮 Install matplotlib
+                </button>`
+        : '';
     if (plotError) {
         plotError.innerHTML = /*html*/ `
             <div>
+                ${matplotlibInstallButton}
                 <button 
                     class="text-copy-button" 
                     data-target-id="${errorMessageId}" 
@@ -1128,6 +1262,8 @@ function setupEventListeners() {
         // Tree control event listeners
         expandAllButton: handleExpandAllSections,
         collapseAllButton: handleCollapseAllSections,
+        // Export buttons
+        exportWebviewButton: handleExportWebview,
         // Global plot controls
         createAllPlotsButton: handleCreateAllPlots,
         resetAllPlotsButton: handleResetAllPlots,
@@ -1193,7 +1329,8 @@ function setupEventListeners() {
 }
 
 async function handleTextCopy(button) {
-    const text = document.getElementById(button.dataset.targetId)?.textContent;
+    const targetElement = document.getElementById(button.dataset.targetId);
+    const text = targetElement ? targetElement.textContent : '';
     try {
         await navigator.clipboard.writeText(text);
         button.textContent = '✓ Copied!';
@@ -1212,12 +1349,64 @@ async function handleTextCopy(button) {
 }
 
 async function handleRefresh() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Refresh not available in degraded mode');
+        return;
+    }
+
     displayTimestamp(null, true);
     try {
         await messageBus.refresh();
     } catch (error) {
         console.error('Failed to refresh data:', error);
         displayGlobalError('Failed to refresh data: ' + error.message);
+    }
+}
+
+async function handleExportWebview() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Export webview not available in degraded mode');
+        return;
+    }
+
+    console.log('🖼️ Exporting webview content...');
+    const htmlContent = captureWebviewContent();
+    try {
+        const result = await messageBus.exportWebview(htmlContent);
+        if (result.success) {
+            console.log(
+                '🖼️ Webview content exported successfully:',
+                result.filePath
+            );
+        } else {
+            console.error('🖼️ Failed to export webview content:', result.error);
+            displayGlobalError(
+                'Failed to export webview content: ' + result.error
+            );
+        }
+    } catch (error) {
+        console.error('🖼️ Error exporting webview content:', error);
+        displayGlobalError(
+            'Failed to export webview content: ' + error.message
+        );
+    }
+}
+
+function captureWebviewContent() {
+    console.log('🖼️ Capturing webview content...');
+
+    try {
+        // Get the current document HTML
+        const htmlContent = document.documentElement.outerHTML;
+        console.log(
+            '🖼️ Content captured, size:',
+            htmlContent.length,
+            'characters'
+        );
+        return htmlContent;
+    } catch (error) {
+        console.error('🖼️ Error capturing webview content:', error);
+        return null;
     }
 }
 
@@ -1253,6 +1442,11 @@ function handleCollapseAllSections() {
 }
 
 async function handleCreateAllPlots() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Create plots not available in degraded mode');
+        return;
+    }
+
     console.log('🔍 Plot All Variables - Debug Info:');
 
     // Check if operation is already running
@@ -1365,6 +1559,11 @@ function handleResetAllPlots() {
 }
 
 async function handleSaveAllPlots() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plots not available in degraded mode');
+        return;
+    }
+
     const containers = document.querySelectorAll('.plot-container');
     const plotsToSave = [];
 
@@ -1419,6 +1618,11 @@ async function handleSaveAllPlots() {
 }
 
 async function handleCreateVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Create plot not available in degraded mode');
+        return;
+    }
+
     const plotTypeSelect = document.querySelector(
         `.plot-type-select[data-variable="${variable}"]`
     );
@@ -1457,6 +1661,11 @@ async function handleResetVariablePlot(variable) {
 }
 
 async function handleSaveVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plot not available in degraded mode');
+        return;
+    }
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1495,6 +1704,11 @@ async function handleSaveVariablePlot(variable) {
 }
 
 async function handleSaveVariablePlotAs(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Save plot as not available in degraded mode');
+        return;
+    }
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1510,12 +1724,6 @@ async function handleSaveVariablePlotAs(variable) {
     try {
         const result = await messageBus.savePlotAs(plotData, variable);
         if (result.success) {
-            displayVariablePlotSuccess(
-                variable,
-                `Plot saved as: ${
-                    result.filePath?.split('/').pop() || 'plot.png'
-                }`
-            );
             console.log('Plot saved as:', result.filePath);
         } else {
             if (result.error !== 'Save cancelled by user') {
@@ -1535,6 +1743,11 @@ async function handleSaveVariablePlotAs(variable) {
 }
 
 async function handleOpenVariablePlot(variable) {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Open plot not available in degraded mode');
+        return;
+    }
+
     const container = document.querySelector(
         `.plot-container[data-variable="${variable}"]`
     );
@@ -1593,16 +1806,14 @@ function doScrollToHeader(
             if (parentDetails && !parentDetails.open) {
                 parentDetails.open = true;
                 openedCount++;
-                console.log(
-                    `📋 Opened parent details: ${
-                        parentDetails
-                            .querySelector('summary')
-                            ?.textContent?.trim() || 'Unknown'
-                    }`
-                );
+                const summary = parentDetails.querySelector('summary');
+                const summaryText = summary
+                    ? summary.textContent.trim()
+                    : 'Unknown';
+                console.log(`📋 Opened parent details: ${summaryText}`);
             }
             // Move up to the parent of the current details element to check for more nested details
-            currentElement = parentDetails?.parentElement;
+            currentElement = parentDetails ? parentDetails.parentElement : null;
         }
 
         if (openedCount > 0) {
@@ -1649,11 +1860,16 @@ function doScrollToHeader(
 
 // Function to execute the show logs command
 async function executeShowLogsCommand() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Show logs command not available in degraded mode');
+        return;
+    }
+
     try {
         console.log('🔧 Executing show logs command...');
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_SHOW_LOGS
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.showLogs',
         });
         console.log('🔧 Show logs command executed successfully');
@@ -1668,11 +1884,18 @@ async function executeShowLogsCommand() {
 
 // Function to execute the install packages command
 async function executeInstallPackagesCommand(packages) {
+    if (messageBus.isDegradedMode) {
+        console.warn(
+            '⚠️ Install packages command not available in degraded mode'
+        );
+        return;
+    }
+
     try {
         console.log('🔧 Executing install packages command...', packages);
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_PYTHON_INSTALL_PACKAGES
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.python.installPackages',
             args: [packages],
         });
@@ -1687,11 +1910,16 @@ async function executeInstallPackagesCommand(packages) {
 }
 
 async function executeShowSettingsCommand() {
+    if (messageBus.isDegradedMode) {
+        console.warn('⚠️ Show settings command not available in degraded mode');
+        return;
+    }
+
     try {
         console.log('🔧 Executing show settings command...');
         await messageBus.sendRequest('executeCommand', {
             // TODO dehardcode and use CMD_SHOW_SETTINGS
-            // Create sugar functions in the bus 
+            // Create sugar functions in the bus
             command: 'scientificDataViewer.showSettings',
         });
         console.log('🔧 Show settings command executed successfully');

@@ -3,7 +3,7 @@ import Mocha from 'mocha';
 import { glob } from 'glob';
 import { setPackageJson } from '../../src/common/vscodeutils';
 
-export function run(): Promise<void> {
+export async function run(): Promise<void> {
     // Create the mocha test
     const mocha = new Mocha({
         ui: 'tdd',
@@ -16,28 +16,28 @@ export function run(): Promise<void> {
     // Set mock package.json
     setPackageJson(createMockPackageJSON());
 
-    return new Promise(async (c, e) => {
-        try {
-            const files = await glob('**/**.test.js', { cwd: testsRoot });
+    try {
+        const files = await glob('**/**.test.js', { cwd: testsRoot });
 
-            // Add files to the test suite
-            files.forEach((f: string) =>
-                mocha.addFile(path.resolve(testsRoot, f))
-            );
+        // Add files to the test suite
+        files.forEach((f: string) =>
+            mocha.addFile(path.resolve(testsRoot, f))
+        );
 
-            // Run the mocha test
+        // Run the mocha test
+        return new Promise<void>((resolve, reject) => {
             mocha.run((failures: number) => {
                 if (failures > 0) {
-                    e(new Error(`${failures} tests failed.`));
+                    reject(new Error(`${failures} tests failed.`));
                 } else {
-                    c();
+                    resolve();
                 }
             });
-        } catch (err) {
-            console.error(err);
-            e(err);
-        }
-    });
+        });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
 }
 
 function createMockPackageJSON() {

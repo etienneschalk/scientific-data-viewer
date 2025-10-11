@@ -4,7 +4,7 @@ import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
 import { getMatplotlibStyle } from '../common/config';
-import { DataInfo } from '../types';
+import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -28,8 +28,13 @@ export class DataProcessor {
         return this.pythonManager;
     }
 
-    async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
-        Logger.debug(`[getDataInfo] Getting data info for file: ${uri.fsPath}`);
+    async getDataInfo(
+        uri: vscode.Uri,
+        convertBandsToVariables: boolean = false
+    ): Promise<DataInfoPythonResponse | null> {
+        Logger.debug(
+            `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`
+        );
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -41,16 +46,23 @@ export class DataProcessor {
 
         try {
             // Use the new merged CLI with 'info' mode
-            const result = await this.pythonManager.executePythonFile(
+            const args = ['info', filePath];
+            if (convertBandsToVariables) {
+                args.push('--convert-bands-to-variables');
+            }
+
+            const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
-                ['info', filePath],
+                args,
                 true
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
-            return result;
+            return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
-            Logger.error(`🐍 ❌ Error processing data file: ${error}`);
+            Logger.error(
+                `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`
+            );
             return null;
         }
     }
@@ -58,8 +70,9 @@ export class DataProcessor {
     async createPlot(
         uri: vscode.Uri,
         variable: string,
-        plotType: string = 'auto'
-    ): Promise<string | null> {
+        plotType: string = 'auto',
+        convertBandsToVariables: boolean = false
+    ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -82,29 +95,28 @@ export class DataProcessor {
             quoteIfNeeded(style),
         ];
 
+        if (convertBandsToVariables) {
+            args.push('--convert-bands-to-variables');
+        }
+
         try {
             Logger.info(
-                `Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
+                `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
             );
 
             // Execute Python script and capture both stdout and stderr
-            const result = await this.pythonManager.executePythonFile(
+            const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true
             );
-
-            if (typeof result === 'string' && result.startsWith('iVBOR')) {
-                Logger.info(
-                    `Plot created successfully for variable '${variable}'`
-                );
-                return result; // Base64 image data
-            } else if (result.error) {
-                throw new Error(result.error);
-            }
-            return null;
+            // Return the result even if it contains an error field
+            // The caller can check for result.error to handle errors
+            return pythonResponse as CreatePlotPythonResponse;
         } catch (error) {
-            Logger.error(`Error creating plot: ${error}`);
+            Logger.error(
+                `[DataProcessor] [createPlot] Error creating plot: ${error}`
+            );
             throw error;
         }
     }

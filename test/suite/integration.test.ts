@@ -70,7 +70,9 @@ suite('Integration Test Suite', () => {
     setup(() => {
         // Create fresh instances for each test
         pythonManager = new PythonManager(
-            new ExtensionVirtualEnvironmentManager(mockContext.globalStorageUri.fsPath)
+            new ExtensionVirtualEnvironmentManager(
+                mockContext.globalStorageUri.fsPath
+            )
         );
         dataProcessor = new DataProcessor(pythonManager);
     });
@@ -100,7 +102,18 @@ suite('Integration Test Suite', () => {
                     };
                 } else if (args[0] === 'plot') {
                     // Return base64 image data for plot creation
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    return {
+                        result: {
+                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -125,7 +138,7 @@ suite('Integration Test Suite', () => {
             'line'
         );
         assert.ok(plotData);
-        assert.ok(plotData.startsWith('iVBOR'));
+        assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
 
     test('DataProcessor should handle Python environment not ready', async () => {
@@ -181,7 +194,7 @@ suite('Integration Test Suite', () => {
         );
 
         assert.ok(panel);
-        assert.ok(DataViewerPanel.activePanels.has(panel));
+        assert.ok(DataViewerPanel.getPanel(panel.getId()));
     });
 
     test('Logger should work with all components', () => {
@@ -212,7 +225,18 @@ suite('Integration Test Suite', () => {
                         error: 'File corrupted or unsupported format',
                     };
                 } else if (args[0] === 'plot') {
-                    return { error: 'File corrupted or unsupported format' };
+                    return { 
+                        error: {
+                            error: 'File corrupted or unsupported format',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -230,17 +254,14 @@ suite('Integration Test Suite', () => {
         assert.ok(dataInfo);
         assert.ok(dataInfo?.error);
 
-        // Test plot creation with error - should throw because createPlot throws on error
-        try {
-            await processor.createPlot(mockUri, 'temperature', 'line');
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.strictEqual(
-                error.message,
-                'File corrupted or unsupported format'
-            );
-        }
+        // Test plot creation with error - should return error in response
+        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
+        assert.ok(plotData);
+        assert.ok(plotData?.error);
+        assert.strictEqual(
+            plotData.error?.error,
+            'File corrupted or unsupported format'
+        );
     });
 
     test('DataProcessor should handle Python script execution errors', async () => {
@@ -361,8 +382,8 @@ suite('Integration Test Suite', () => {
                 mockWebviewOptions
             );
 
-            assert.ok(DataViewerPanel.activePanels.has(panel1));
-            assert.ok(DataViewerPanel.activePanels.has(panel2));
+            assert.ok(DataViewerPanel.getPanel(panel1.getId()));
+            assert.ok(DataViewerPanel.getPanel(panel2.getId()));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }
@@ -394,7 +415,18 @@ suite('Integration Test Suite', () => {
                         },
                     };
                 } else if (args[0] === 'plot') {
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    return {
+                        result: {
+                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -451,7 +483,7 @@ suite('Integration Test Suite', () => {
 
             // Test that panel is created successfully
             assert.ok(panel);
-            assert.ok(DataViewerPanel.activePanels.has(panel));
+            assert.ok(DataViewerPanel.getPanel(panel.getId()));
 
             // Test data processing (without triggering the panel's _handleGetDataInfo)
             const dataInfo = await processor.getDataInfo(
@@ -467,11 +499,11 @@ suite('Integration Test Suite', () => {
                 'line'
             );
             assert.ok(plotData);
-            assert.ok(plotData.startsWith('iVBOR'));
+            assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
 
             // Test panel disposal
             DataViewerPanel.dispose();
-            assert.ok(!DataViewerPanel.activePanels.has(panel));
+            assert.ok(!DataViewerPanel.getPanel(panel.getId()));
         } finally {
             vscode.workspace.getConfiguration = originalGetConfiguration;
         }

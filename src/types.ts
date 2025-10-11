@@ -21,11 +21,67 @@ export interface ExtensionVirtualEnvironment {
     createdWithUv?: boolean;
 }
 
-export interface DataInfo {
+export interface CreatePlotPythonResponse {
+    result?: CreatePlotResult;
+    error?: CreatePlotError;
+}
+
+export interface CreatePlotResult {
+    plot_data: string;
+    format_info: DataInfoFormatInfo;
+}
+
+export interface CreatePlotError {
+    error: string;
+    format_info: DataInfoFormatInfo;
+}
+export interface DataInfoResult {
+    format: string;
+    format_info: DataInfoFormatInfo;
+    used_engine: string;
+    fileSize: number;
+    xarray_html_repr: string;
+    xarray_text_repr: string;
+    xarray_show_versions: string;
+    // New datatree fields
+    dimensions_flattened: { [groupName: string]: { [key: string]: number } };
+    coordinates_flattened: {
+        [groupName: string]: Array<{
+            name: string;
+            dtype: string;
+            shape: number[];
+            dimensions: string[];
+            size_bytes: number;
+            attributes?: { [key: string]: any };
+        }>;
+    };
+    variables_flattened: {
+        [groupName: string]: Array<{
+            name: string;
+            dtype: string;
+            shape: number[];
+            dimensions: string[];
+            size_bytes: number;
+            attributes?: { [key: string]: any };
+        }>;
+    };
+    attributes_flattened: { [groupName: string]: { [key: string]: any } };
+    xarray_html_repr_flattened: { [groupName: string]: string };
+    xarray_text_repr_flattened: { [groupName: string]: string };
+}
+
+export interface DataInfoError {
+    error: string;
+    error_type: string;
+    suggestion: string;
+    format_info: DataInfoFormatInfo;
+    xarray_show_versions: string;
+}
+
+export interface DataInfoPythonResponse {
     result?: DataInfoResult;
     error?: DataInfoError;
 }
-
 export interface DataInfoFormatInfo {
     extension: string;
     display_name: string;

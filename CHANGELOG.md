@@ -6,13 +6,86 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [UNRELEASED]
+## [0.5.0] - 2025-01-08
+
+### Added
+
+- **Export Webview Content**: Complete data viewer content export as self-contained HTML reports
+  - **Export Button**: Added export button (🖼️) to header controls in data viewer panel
+  - **Command Palette Integration**: "Scientific Data Viewer: Export Webview Content" command
+  - **Self-contained Reports**: Generated HTML includes embedded CSS and JavaScript for standalone viewing: "Browser Mode". Copy, Expand All and Collapse All buttons works in this mode.
+  - **Complete Data Export**: Includes all visualizations, data tables, metadata, and technical information
+  - **Professional Layout**: Clean, professional report layout with copy buttons for easy data extraction
+  - **File Management**: Proper file naming with timestamps and save dialog with options to open or reveal files
+  - **Use Cases**: Share data analysis results, create documentation, archive sessions, generate reports
+  - **Files Modified**:
+    - src/common/config.ts - Added CMD_EXPORT_WEBVIEW constant
+    - package.json - Added command definition and menu integration
+    - src/panel/HTMLGenerator.ts - Added webview export button (🖼️)
+    - src/panel/UIController.ts - Added webview export functionality and content capture
+    - src/DataViewerPanel.ts - Added exportWebview() method
+    - src/extension.ts - Added command handler
+    - src/panel/webview/webview-script.js - Added content capture functionality
+- **Dev Mode Toggle Command**: Quick access to enable/disable dev mode without navigating settings
+  - **Command Palette Integration**: "Scientific Data Viewer: Toggle Dev Mode" command
+  - **Global Setting Update**: Updates user's global dev mode setting
+  - **User Feedback**: Clear messages about dev mode state changes
+  - **Developer Experience**: Significantly improves workflow when switching between development and usage
+  - **Files Modified**:
+    - src/common/config.ts - Added updateDevMode function and CMD_TOGGLE_DEV_MODE constant
+    - package.json - Added command definition and menu integration
+    - src/extension.ts - Added command handler with proper error handling
+- **Package Availability Detection**: New Python script for efficient package checking
+  - **Dedicated Script**: `python/check_package_availability.py` for checking multiple packages at once
+  - **JSON Output**: Returns structured availability data for better integration
+  - **Performance**: Optimized package detection with single Python process execution (instead of calling N times a script for N dependencies)
+  - **Error Handling**: Robust error handling for package availability checks
+- **GeoTIFF Band-to-Variables Conversion**: Improved multi-band GeoTIFF file handling
+  - **Configuration Option**: `scientificDataViewer.convertBandsToVariables` boolean setting (enabled by default)
+  - **Better Readability**: Converts 3D DataArrays with band dimension to separate 2D variables
+  - **Improved Plotting**: Each band treated as individual variable with appropriate color scales
+  - **Supported Formats**: Works with .tif, .tiff, and .geotiff files
+  - **Clean Implementation**: Uses rioxarray's built-in [`band_as_variable`](https://corteva.github.io/rioxarray/html/rioxarray.html#rioxarray.open_rasterio) parameter
+  - **User-Friendly**: Simple on/off configuration for all GeoTIFF formats
+  - **Backward Compatible**: Existing functionality preserved when disabled
+  - **Files Modified**:
+    - package.json - Added configuration option
+    - src/common/config.ts - Added getter function
+    - src/python/DataProcessor.ts - Updated to pass configuration
+    - src/panel/UIController.ts - Added configuration logic
+    - python/get_data_info.py - Implemented band conversion
+    - python/create_sample_data.py - Added test data creation
+
+### Enhanced
+
+- **User Experience**: Improved data sharing and documentation capabilities
+- **Professional Workflow**: Better integration with research and documentation workflows
+- **Package Management**: Improved package detection and installation workflow
+  - **Fine-grained Control**: Differentiate between core packages (xarray) and optional packages (matplotlib)
+  - **Better Error Messages**: More specific error messages for missing packages
+  - **Help Buttons**: Added install buttons for missing packages directly in error messages
+  - **More Command Quoting**: Improved command quoting for better avoidance of space-related issues when calling commands in package installation
+
+### Technical Improvements
+
+- **Code Organization**: Added export functionality to UIController with comprehensive HTML generation
+- **Error Handling**: Robust error handling for export operations with user-friendly feedback
+- **Testing**: Added test coverage for export functionality
+- **Python Script Optimization**: Enhanced Python script structure and error handling
+  - **Structured Responses**: Better structured response format for plot creation and data info
+  - **Error Wrapping**: Improved error message wrapping and handling
+  - **Type Safety**: Enhanced type definitions for better TypeScript integration
+  - **Test Updates**: Updated test mocks to match new response structures
 
 ### Removed
 
 - **Configuration Settings**:
   - `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
     - Reason: It was not actually used, nor necessary, as python interpreter resolution is performed live.
+- **Sentinel-1 SAFE Support**: Removed untested Sentinel-1 SAFE (.safe) format support
+  - **Reason**: Was never tested and implementing it would be a nice-to-have for later
+  - **Cleanup**: Removed related dependencies and sample data generation
+  - **Documentation**: Updated RFCs to reflect removal
 
 ## [0.4.0] - 2025-10-06
 

@@ -49,7 +49,7 @@ export interface CreatePlotRequest {
 }
 
 export interface CreatePlotResponse {
-    plotData: string; // Base64 encoded image
+    data: any;
 }
 
 export interface SavePlotRequest {
@@ -206,6 +206,7 @@ export const EVENTS = {
     PYTHON_ENVIRONMENT_CHANGED: 'pythonEnvironmentChanged',
     UI_STATE_CHANGED: 'uiStateChanged',
     SCROLL_TO_HEADER: 'scrollToHeader',
+    EXPORT_WEBVIEW_COMMAND: 'exportWebviewCommand',
 } as const;
 
 export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];

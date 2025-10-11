@@ -10,9 +10,16 @@ import { ErrorBoundary } from '../common/ErrorBoundary';
 import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
-import { getVersion, showErrorMessage } from '../common/vscodeutils';
-import { getDevMode, getMaxSize, getWorkspaceConfig } from '../common/config';
-import { ErrorContext } from '../types';
+import { showErrorMessage } from '../common/vscodeutils';
+import {
+    getDevMode,
+    getMaxSize,
+    getWorkspaceConfig,
+    getWebviewExportTheme,
+    getConvertBandsToVariables,
+} from '../common/config';
+import { DataInfoPythonResponse, ErrorContext } from '../types';
+import { ThemeManager } from './ThemeManager';
 
 export class UIController {
     private id: number;
@@ -141,13 +148,57 @@ export class UIController {
                 return this.handleUpdateHeaders(payload.headers);
             }
         );
+
+        this.messageBus.registerRequestHandler(
+            'exportWebview',
+            async (payload) => {
+                return this.handleExportWebview(payload.htmlContent);
+            }
+        );
     }
 
     private setupStateSubscription(): void {
         this.unsubscribeState = this.stateManager.subscribe((state) => {
-            Logger.debug(`[setupStateSubscription] State changed`);
+            Logger.debug(
+                `[UIController] [setupStateSubscription] State changed`
+            );
             this.updateUI(state);
         });
+    }
+
+    /**
+     * Shows a file action dialog with options to open file, open in browser, or reveal in explorer
+     * @param message The success message to display
+     * @param fileUri The URI of the file to perform actions on
+     */
+    private async showFileActionDialog(
+        message: string,
+        fileUri: vscode.Uri
+    ): Promise<void> {
+        const action = await vscode.window.showInformationMessage(
+            message,
+            'Open File',
+            'Open in Browser',
+            'Reveal in Explorer'
+        );
+
+        // Handle user action
+        if (action === 'Open File') {
+            try {
+                await vscode.commands.executeCommand(
+                    'vscode.open',
+                    fileUri,
+                    vscode.ViewColumn.Beside
+                );
+            } catch (error) {
+                await vscode.env.openExternal(fileUri);
+            }
+        } else if (action === 'Open in Browser') {
+            // Open the file in the default web browser
+            await vscode.env.openExternal(fileUri);
+        } else if (action === 'Reveal in Explorer') {
+            await vscode.commands.executeCommand('revealFileInOS', fileUri);
+        }
     }
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
@@ -186,8 +237,13 @@ export class UIController {
                     );
                 }
 
-                // Get data info
-                const dataInfo = await this.dataProcessor.getDataInfo(fileUri);
+                // Get data info with band conversion configuration
+                const convertBandsToVariables =
+                    this.shouldConvertBandsToVariables(filePath);
+                const dataInfo = await this.dataProcessor.getDataInfo(
+                    fileUri,
+                    convertBandsToVariables
+                );
 
                 if (!dataInfo) {
                     throw new Error(
@@ -257,7 +313,7 @@ export class UIController {
     private async handleCreatePlot(
         variable: string,
         plotType: string
-    ): Promise<string | null> {
+    ): Promise<string | undefined> {
         try {
             const state = this.stateManager.getState();
 
@@ -267,17 +323,27 @@ export class UIController {
 
             const fileUri = vscode.Uri.file(state.data.currentFile);
 
+            const convertBandsToVariables = this.shouldConvertBandsToVariables(
+                state.data.currentFile
+            );
             const plotData = await this.dataProcessor.createPlot(
                 fileUri,
                 variable,
-                plotType
+                plotType,
+                convertBandsToVariables
             );
 
             if (!plotData) {
                 throw new Error('Failed to create plot');
             }
 
-            return plotData;
+            if (plotData.error) {
+                throw new Error(
+                    `Data processing error: ${plotData.error.error}`
+                );
+            }
+
+            return plotData?.result?.plot_data;
         } catch (error) {
             // For plot creation errors, we want to let the webview handle them locally
             // instead of sending a global error. We'll re-throw the error so the MessageBus
@@ -320,39 +386,17 @@ export class UIController {
                 await vscode.workspace.fs.writeFile(savePath, buffer);
 
                 // Show success notification
-                const action = vscode.window
-                    .showInformationMessage(
-                        `Plot saved successfully: ${fileName}`,
-                        'Open File',
-                        'Reveal in Explorer'
-                    )
-                    .then(async (action) => {
-                        // Handle user action
-                        if (action === 'Open File') {
-                            // Open the file in VSCode (this will work for images in newer VSCode versions)
-                            try {
-                                await vscode.commands.executeCommand(
-                                    'vscode.open',
-                                    savePath,
-                                    vscode.ViewColumn.Beside
-                                );
-                            } catch (error) {
-                                // If opening in VSCode fails, open with external application
-                                await vscode.env.openExternal(savePath);
-                            }
-                        } else if (action === 'Reveal in Explorer') {
-                            // Reveal the file in file explorer
-                            await vscode.commands.executeCommand(
-                                'revealFileInOS',
-                                savePath
-                            );
-                        }
-                    });
+                await this.showFileActionDialog(
+                    `Plot saved successfully: ${fileName}`,
+                    savePath
+                );
 
-                Logger.info(`Plot saved successfully: ${savePath.fsPath}`);
+                Logger.info(
+                    `[UIController] Plot saved successfully: ${savePath.fsPath}`
+                );
                 return { success: true, filePath: savePath.fsPath };
             } catch (error) {
-                Logger.error(`Error saving plot: ${error}`);
+                Logger.error(`[UIController] Error saving plot: ${error}`);
                 return {
                     success: false,
                     error:
@@ -408,43 +452,24 @@ export class UIController {
                 });
 
                 if (!saveUri) {
-                    return { success: false, error: 'Save cancelled by user' };
+                    return { success: true, error: 'Save cancelled by user' };
                 }
 
                 // Write the file
                 await vscode.workspace.fs.writeFile(saveUri, buffer);
 
                 // Show success notification
-                const action = await vscode.window.showInformationMessage(
+                await this.showFileActionDialog(
                     `Plot saved successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    'Open File',
-                    'Reveal in Explorer'
+                    saveUri
                 );
 
-                // Handle user action
-                if (action === 'Open File') {
-                    try {
-                        await vscode.commands.executeCommand(
-                            'vscode.open',
-                            saveUri,
-                            vscode.ViewColumn.Beside
-                        );
-                    } catch (error) {
-                        await vscode.env.openExternal(saveUri);
-                    }
-                } else if (action === 'Reveal in Explorer') {
-                    await vscode.commands.executeCommand(
-                        'revealFileInOS',
-                        saveUri
-                    );
-                }
-
-                Logger.info(`Plot saved as: ${saveUri.fsPath}`);
+                Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
                 return { success: true, filePath: saveUri.fsPath };
             } catch (error) {
-                Logger.error(`Error saving plot as: ${error}`);
+                Logger.error(`[UIController] Error saving plot as: ${error}`);
                 return {
                     success: false,
                     error:
@@ -485,17 +510,19 @@ export class UIController {
                     tempFile,
                     vscode.ViewColumn.Beside
                 );
-                Logger.info(`Plot opened in VSCode: ${tempFile.fsPath}`);
+                Logger.info(
+                    `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`
+                );
             } catch (vscodeError) {
                 // If opening in VSCode fails, open with external application
                 try {
                     await vscode.env.openExternal(tempFile);
                     Logger.info(
-                        `Plot opened with external app: ${tempFile.fsPath}`
+                        `[UIController] Plot opened with external app: ${tempFile.fsPath}`
                     );
                 } catch (externalError) {
                     Logger.error(
-                        `Failed to open plot with both VSCode and external app: ${externalError}`
+                        `[UIController] Failed to open plot with both VSCode and external app: ${externalError}`
                     );
                     throw new Error(
                         `Failed to open plot: ${
@@ -587,13 +614,103 @@ export class UIController {
         try {
             // This will be handled by the outline provider when we register it
             Logger.info(
-                `📋 Received header update with ${headers.length} headers`
+                `[UIController] 📋 Received header update with ${headers.length} headers`
             );
             // The actual outline update will be handled by the DataViewerPanel
         } catch (error) {
-            Logger.error(`❌ Error handling header update: ${error}`);
+            Logger.error(
+                `[UIController] ❌ Error handling header update: ${error}`
+            );
             throw error;
         }
+    }
+
+    private async handleExportWebview(
+        htmlContent: string
+    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+        const context: ErrorContext = {
+            component: `ui-${this.id}`,
+            operation: 'exportWebview',
+        };
+
+        const result = await this.errorBoundary.wrapAsync(async () => {
+            try {
+                const state = this.stateManager.getState();
+                if (!state.data.currentFile) {
+                    throw new Error('No current file available');
+                }
+
+                // Get the current file path to determine save location
+                const currentFileDir = vscode.Uri.file(state.data.currentFile)
+                    .fsPath.split('/')
+                    .slice(0, -1)
+                    .join('/');
+                const fileName =
+                    vscode.Uri.file(state.data.currentFile)
+                        .fsPath.split('/')
+                        .pop() || 'data';
+                const defaultFileName = `${fileName}_webview_${new Date()
+                    .toISOString()
+                    .slice(0, 19)
+                    .replace(/:/g, '-')}.html`;
+
+                // Show save dialog
+                const saveUri = await vscode.window.showSaveDialog({
+                    defaultUri: vscode.Uri.file(
+                        `${currentFileDir}/${defaultFileName}`
+                    ),
+                    filters: {
+                        'HTML Files': ['html'],
+                        'All Files': ['*'],
+                    },
+                    title: 'Export Webview Content',
+                });
+
+                if (!saveUri) {
+                    return {
+                        success: true,
+                        error: 'Export cancelled by user',
+                    };
+                }
+
+                // Apply theme overrides to the HTML content if configured
+                const processedHtmlContent =
+                    ThemeManager.applyThemeToWebviewContent(
+                        htmlContent,
+                        getWebviewExportTheme()
+                    );
+
+                // Write the file
+                await vscode.workspace.fs.writeFile(
+                    saveUri,
+                    Buffer.from(processedHtmlContent, 'utf8')
+                );
+
+                // Show success notification
+                await this.showFileActionDialog(
+                    `Webview content exported successfully: ${saveUri.fsPath
+                        .split('/')
+                        .pop()}`,
+                    saveUri
+                );
+
+                Logger.info(
+                    `[UIController] Webview content exported: ${saveUri.fsPath}`
+                );
+                return { success: true, filePath: saveUri.fsPath };
+            } catch (error) {
+                Logger.error(
+                    `[UIController] Error exporting webview content: ${error}`
+                );
+                return {
+                    success: false,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                };
+            }
+        }, context);
+
+        return result || { success: false, error: 'Unknown error' };
     }
 
     private updateUI(state: AppState): void {
@@ -601,8 +718,15 @@ export class UIController {
         this.messageBus.emitUIStateChanged(state);
     }
 
-    public scrollToHeader(headerId: string, headerLabel: string): void {
+    public emitScrollToHeader(headerId: string, headerLabel: string): void {
         this.messageBus.emitScrollToHeader(headerId, headerLabel);
+    }
+
+    /**
+     * Export webview content (what the user currently sees)
+     */
+    public emitExportWebview(): void {
+        this.messageBus.emitExportWebviewCommand();
     }
 
     // Public methods for external control
@@ -647,12 +771,14 @@ export class UIController {
         };
 
         return this.errorBoundary.wrapAsync(async () => {
-            Logger.info(`🔧 Executing command: ${command}`);
+            Logger.info(`[UIController] 🔧 Executing command: ${command}`);
             const result = await vscode.commands.executeCommand(
                 command,
                 ...(args || [])
             );
-            Logger.info(`🔧 Command executed successfully: ${command}`);
+            Logger.info(
+                `[UIController] 🔧 Command executed successfully: ${command}`
+            );
             return result;
         }, context);
     }
@@ -677,7 +803,17 @@ export class UIController {
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
-            this.getId(),
+            this.getId()
         );
+    }
+
+    private shouldConvertBandsToVariables(filePath: string): boolean {
+        const config = getConvertBandsToVariables();
+        const extension = filePath
+            .toLowerCase()
+            .substring(filePath.lastIndexOf('.'));
+        // Only apply to GeoTIFF formats
+        const geotiffExtensions = ['.tif', '.tiff', '.geotiff'];
+        return config && geotiffExtensions.includes(extension);
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to create sample scientific data files for testing the VSCode extension.
-This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000, and Sentinel-1 SAFE.
+This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000.
 """
 
 import numpy as np
@@ -1086,102 +1086,6 @@ def create_sample_jp2():
     return output_file
 
 
-def create_sample_sentinel():
-    """Create a sample Sentinel-1 SAFE directory structure."""
-    output_file = "sample_data.safe"
-
-    # Check if directory already exists
-    if os.path.exists(output_file):
-        print(
-            f"🛰️ Sentinel-1 SAFE file {output_file} already exists. Skipping creation."
-        )
-        print("  🔄 To regenerate, please delete the existing directory first.")
-        return output_file
-
-    print("🛰️ Creating sample Sentinel-1 SAFE file...")
-
-    try:
-        import xarray_sentinel
-    except ImportError:
-        print(
-            "  ❌ xarray-sentinel not available, skipping Sentinel-1 SAFE file creation."
-        )
-        return None
-
-    # Create SAFE directory structure
-    os.makedirs(output_file, exist_ok=True)
-
-    # Create manifest.safe file
-    manifest_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<xfdu:XFDU xmlns:xfdu="urn:ccsds:schema:xfdu:1" xmlns:gml="http://www.opengis.net/gml" xmlns:s1="http://www.esa.int/safe/sentinel-1.0" xmlns:s1sar="http://www.esa.int/safe/sentinel-1.0/sar" xmlns:s1sarl1="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:s1sarl2="http://www.esa.int/safe/sentinel-1.0/sar/level-2" xmlns:gx="http://www.google.com/kml/ext/2.2" version="esa/safe/sentinel-1.0/sentinel-1/sar/level-1">
-  <informationPackageMap>
-    <contentUnit>
-      <dataObject ID="s1Level1ProductSchema">
-        <byteStream MIMEType="text/xml" size="1234">
-          <fileLocation href="./annotation/s1Level1ProductSchema.xsd"/>
-        </byteStream>
-      </dataObject>
-    </contentUnit>
-  </informationPackageMap>
-  <metadataSection>
-    <metadataObject ID="platform" category="DMD">
-      <metadataWrap>
-        <xmlData>
-          <s1:platform>
-            <s1:nssdcIdentifier>48284</s1:nssdcIdentifier>
-            <s1:familyName>SENTINEL-1</s1:familyName>
-            <s1:number>1</s1:number>
-            <s1:instrument>
-              <s1:familyName>C-SAR</s1:familyName>
-              <s1:number>1</s1:number>
-            </s1:instrument>
-          </s1:platform>
-        </xmlData>
-      </metadataWrap>
-    </metadataObject>
-  </metadataSection>
-</xfdu:XFDU>"""
-
-    with open(os.path.join(output_file, "manifest.safe"), "w") as f:
-        f.write(manifest_content)
-
-    # Create annotation directory and files
-    os.makedirs(os.path.join(output_file, "annotation"), exist_ok=True)
-
-    # Create a simple annotation file
-    annotation_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<product xmlns="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <adsHeader>
-    <missionId>S1</missionId>
-    <productType>GRD</productType>
-    <polarisation>VV</polarisation>
-    <mode>IW</mode>
-    <swath>IW1</swath>
-    <startTime>{datetime.now().isoformat()}</startTime>
-    <stopTime>{(datetime.now() + timedelta(minutes=10)).isoformat()}</stopTime>
-    <absoluteOrbitNumber>12345</absoluteOrbitNumber>
-    <missionDataTakeId>67890</missionDataTakeId>
-    <productClass>S</productClass>
-  </adsHeader>
-  <productInfo>
-    <productName>S1A_IW_GRDH_1SDV_20200101T120000_20200101T120010_030123_037234_5A1A</productName>
-    <productType>GRD</productType>
-    <productClass>S</productClass>
-    <acquisitionMode>IW</acquisitionMode>
-    <polarisation>VV</polarisation>
-    <antennaPointing>right</antennaPointing>
-  </productInfo>
-</product>"""
-
-    with open(
-        os.path.join(output_file, "annotation", "s1Level1ProductSchema.xsd"), "w"
-    ) as f:
-        f.write(annotation_content)
-
-    print(f"✅ Created {output_file}")
-    return output_file
-
-
 def create_sample_netcdf4():
     """Create a sample NetCDF4 file with advanced features."""
     output_file = "sample_data.nc4"
@@ -1833,16 +1737,135 @@ def create_sample_geotiff_geotiff():
 
     # Add global attributes
     ds.attrs = {
-        "title": "Sample GeoTIFF GEOTIFF Data",
-        "description": "Sample GeoTIFF file with .geotiff extension for testing VSCode extension",
-        "institution": "Satellite Test Center",
+        "title": "Sample GeoTIFF GEOTIFF",
+        "description": "Sample GeoTIFF file for testing VSCode extension",
+        "institution": "Test Center",
         "source": "Generated for testing",
         "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "spatial_resolution": "0.1 degrees",
+        "temporal_coverage": "2020-01-01",
     }
 
     # Save to GeoTIFF
-    ds.rio.to_raster(output_file, driver="GTiff")
-    print(f"✅ Created {output_file}")
+    try:
+        ds.rio.to_raster(output_file, compress="lzw")
+        print(f"✅ Created {output_file} (compressed GeoTIFF)")
+    except Exception as e:
+        # Fallback to uncompressed if compression fails
+        ds.rio.to_raster(output_file)
+        print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
+
+    return output_file
+
+
+def create_sample_multiband_geotiff():
+    """Create a sample multi-band GeoTIFF file that will be loaded as 3D DataArray."""
+    output_file = "sample_multiband.tif"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"🛰️ Multi-band GeoTIFF file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🛰️ Creating sample multi-band GeoTIFF file...")
+
+    try:
+        import rioxarray
+
+        print("  ✅ rioxarray available, creating multi-band GeoTIFF file")
+    except ImportError:
+        print(
+            "  ❌ rioxarray not available, skipping multi-band GeoTIFF file creation."
+        )
+        return None
+
+    # Create spatial dimensions
+    height = 100
+    width = 100
+    n_bands = 4
+
+    # Create sample multi-band satellite imagery data
+    np.random.seed(42)
+
+    # Create 3D data array (band, y, x) - this simulates what rioxarray loads
+    data = np.random.randint(0, 255, (n_bands, height, width), dtype=np.uint8)
+
+    # Add different patterns for each band
+    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+
+    for i in range(n_bands):
+        # Create different patterns for each band
+        pattern = np.clip(
+            100
+            + 50 * np.sin((i + 1) * 2 * np.pi * x) * np.cos((i + 1) * 2 * np.pi * y)
+            + 30 * np.sin((i + 1) * 4 * np.pi * x) * np.cos((i + 1) * 4 * np.pi * y)
+            + np.random.normal(0, 15, (height, width)),
+            0,
+            255,
+        ).astype(np.uint8)
+        data[i] = pattern
+
+    # Create separate band variables for saving as GeoTIFF
+    band_vars = {}
+    for i in range(n_bands):
+        band_name = f"band_{i + 1}"
+        band_data = data[i]  # 2D data for each band
+        band_vars[band_name] = (
+            ["y", "x"],
+            band_data,
+            {
+                "long_name": f"Band {i + 1}",
+                "units": "DN",
+                "description": f"Satellite band {i + 1} data",
+            },
+        )
+
+    # Create dataset with separate band variables
+    ds = xr.Dataset(
+        band_vars,
+        coords={
+            "x": (
+                ["x"],
+                np.linspace(-10, 10, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(10, -10, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
+        },
+    )
+
+    # Add CRS information
+    ds = ds.rio.write_crs("EPSG:3857")  # Web Mercator
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample Multi-band GeoTIFF",
+        "description": "Sample multi-band GeoTIFF file for testing band-to-variables conversion",
+        "institution": "Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "spatial_resolution": "0.2 degrees",
+        "temporal_coverage": "2020-01-01",
+        "number_of_bands": n_bands,
+    }
+
+    # Save to GeoTIFF
+    try:
+        ds.rio.to_raster(output_file, compress="lzw")
+        print(f"✅ Created {output_file} (compressed multi-band GeoTIFF)")
+    except Exception as e:
+        # Fallback to uncompressed if compression fails
+        ds.rio.to_raster(output_file)
+        print(f"✅ Created {output_file} (uncompressed multi-band GeoTIFF)")
+
     return output_file
 
 
@@ -4280,6 +4303,12 @@ def main(do_create_disposable_files: bool = False):
         else:
             skipped_files.append("GeoTIFF GEOTIFF (rioxarray not available)")
 
+        multiband_geotiff_file = create_sample_multiband_geotiff()
+        if multiband_geotiff_file:
+            created_files.append((multiband_geotiff_file, "Multi-band GeoTIFF"))
+        else:
+            skipped_files.append("Multi-band GeoTIFF (rioxarray not available)")
+
         print("\n📁 Creating JPEG-2000 files...")
         jp2_file = create_sample_jp2()
         if jp2_file:
@@ -4323,13 +4352,6 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((inherited_coords_zarr_file, "Zarr Inherited Coords"))
         else:
             skipped_files.append("Zarr Inherited Coords (zarr or xarray not available)")
-
-        print("\n📁 Creating Sentinel-1 SAFE files...")
-        sentinel_file = create_sample_sentinel()
-        if sentinel_file:
-            created_files.append((sentinel_file, "Sentinel-1 SAFE"))
-        else:
-            skipped_files.append("Sentinel-1 SAFE (xarray-sentinel not available)")
 
         print("\n📄 Creating file with spaces in name...")
         spaces_file = create_sample_file_with_spaces()
