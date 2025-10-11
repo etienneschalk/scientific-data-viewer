@@ -1009,9 +1009,12 @@ function displayGlobalError(
             </li>
 
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
-            <li>If the python environment is not ready, install required packages: 
-                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray', 'matplotlib'])">
-                    🎮 Install xarray and matplotlib</a>
+            <li>If the python environment is not ready, install required package: 
+                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray'])">
+                    🎮 Install xarray</a>
+            <li>If you cannot create plots, install required package: 
+                <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['matplotlib'])">
+                    🎮 Install matplotlib</a>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
                     <li>NetCDF: 
