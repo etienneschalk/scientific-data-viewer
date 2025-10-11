@@ -100,6 +100,11 @@
                 "command": "scientificDataViewer.exportWebview",
                 "title": "Export Webview Content",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.toggleDevMode",
+                "title": "Toggle Dev Mode",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -159,6 +164,10 @@
                 {
                     "command": "scientificDataViewer.openViewerMultiple",
                     "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.toggleDevMode",
+                    "when": "true"
                 }
             ],
             "view/title": [

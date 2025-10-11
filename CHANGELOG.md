@@ -28,6 +28,15 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/DataViewerPanel.ts - Added exportWebview() method
     - src/extension.ts - Added command handler
     - src/panel/webview/webview-script.js - Added content capture functionality
+- **Dev Mode Toggle Command**: Quick access to enable/disable dev mode without navigating settings
+  - **Command Palette Integration**: "Scientific Data Viewer: Toggle Dev Mode" command
+  - **Global Setting Update**: Updates user's global dev mode setting
+  - **User Feedback**: Clear messages about dev mode state changes
+  - **Developer Experience**: Significantly improves workflow when switching between development and usage
+  - **Files Modified**:
+    - src/common/config.ts - Added updateDevMode function and CMD_TOGGLE_DEV_MODE constant
+    - package.json - Added command definition and menu integration
+    - src/extension.ts - Added command handler with proper error handling
 
 ### Enhanced
 

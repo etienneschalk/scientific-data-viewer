@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 echo "🔬 Scientific Data Viewer - Development Setup"
-echo "=============================================="
+echo "---------------------------------------------"
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then

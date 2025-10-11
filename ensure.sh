@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 echo "🔬 Scientific Data Viewer - Ensure Script"
-echo "=============================================="
+echo "-----------------------------------------"
 
 # Use Node.js 22
 source ~/.nvm/nvm.sh && nvm use 22

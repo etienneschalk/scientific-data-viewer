@@ -35,12 +35,14 @@ import {
     CMD_PYTHON_INSTALL_PACKAGES,
     CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
     CMD_EXPORT_WEBVIEW,
+    CMD_TOGGLE_DEV_MODE,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
     getOverridePythonInterpreterConfigFullKey,
     getUseExtensionOwnEnvironment,
     getUseExtensionOwnEnvironmentConfigFullKey,
+    updateDevMode,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
 
@@ -178,6 +180,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             CMD_EXPORT_WEBVIEW,
             commandHandlerExportWebview()
+        ),
+        vscode.commands.registerCommand(
+            CMD_TOGGLE_DEV_MODE,
+            commandHandlerToggleDevMode()
         )
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -428,6 +434,28 @@ function commandHandlerExportWebview(): () => void {
                 `Failed to export webview content: ${
                     error instanceof Error ? error.message : String(error)
                 }`
+            );
+        }
+    };
+}
+
+function commandHandlerToggleDevMode(): () => void {
+    return async () => {
+        Logger.info('🎮 🔧 Command: Toggle Dev Mode');
+        const currentDevMode = getDevMode();
+        const newDevMode = !currentDevMode;
+        
+        try {
+            await updateDevMode(newDevMode);
+            const status = newDevMode ? 'enabled' : 'disabled';
+            Logger.info(`🔧 Dev Mode ${status}`);
+            vscode.window.showInformationMessage(
+                `Dev Mode ${status}. ${newDevMode ? 'Extension logs and developer tools will open automatically when opening scientific data files.' : 'Automatic opening of logs and developer tools is disabled.'}`
+            );
+        } catch (error) {
+            Logger.error(`Failed to toggle dev mode: ${error}`);
+            vscode.window.showErrorMessage(
+                `Failed to toggle dev mode: ${error}`
             );
         }
     };
