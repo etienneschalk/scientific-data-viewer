@@ -36,6 +36,7 @@ import {
     CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
     CMD_EXPORT_WEBVIEW,
     CMD_TOGGLE_DEV_MODE,
+    CMD_HEALTHCHECK,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
@@ -45,6 +46,7 @@ import {
     updateDevMode,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
+import { HealthcheckManager } from './common/HealthcheckManager';
 
 export function activate(context: vscode.ExtensionContext) {
     setPackageJson(getPackageJsonFromExtensionContext(context));
@@ -184,6 +186,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             CMD_TOGGLE_DEV_MODE,
             commandHandlerToggleDevMode()
+        ),
+        vscode.commands.registerCommand(
+            CMD_HEALTHCHECK,
+            commandHandlerHealthcheck(pythonManager, extensionEnvManager)
         )
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -456,6 +462,32 @@ function commandHandlerToggleDevMode(): () => void {
             Logger.error(`Failed to toggle dev mode: ${error}`);
             vscode.window.showErrorMessage(
                 `Failed to toggle dev mode: ${error}`
+            );
+        }
+    };
+}
+
+function commandHandlerHealthcheck(
+    pythonManager: PythonManager,
+    extensionEnvManager: ExtensionVirtualEnvironmentManager
+): () => void {
+    return async () => {
+        Logger.info('🎮 🏥 Command: Run Healthcheck');
+        
+        try {
+            const healthcheckManager = HealthcheckManager.getInstance();
+            const report = await healthcheckManager.runHealthcheck(pythonManager, extensionEnvManager);
+            await healthcheckManager.openHealthcheckReport(report, pythonManager);
+            
+            const statusMessage = report.overallStatus === 'healthy' 
+                ? 'Healthcheck completed - All systems healthy! ✅'
+                : `Healthcheck completed - Found ${report.issues.length} issue(s). See report for details.`;
+            
+            vscode.window.showInformationMessage(statusMessage);
+        } catch (error) {
+            Logger.error(`🏥 ❌ Failed to run healthcheck: ${error}`);
+            vscode.window.showErrorMessage(
+                `Failed to run healthcheck: ${error instanceof Error ? error.message : String(error)}`
             );
         }
     };

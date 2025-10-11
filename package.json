@@ -105,6 +105,11 @@
                 "command": "scientificDataViewer.toggleDevMode",
                 "title": "Toggle Dev Mode",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.healthcheck",
+                "title": "Run Healthcheck",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -167,6 +172,10 @@
                 },
                 {
                     "command": "scientificDataViewer.toggleDevMode",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.healthcheck",
                     "when": "true"
                 }
             ],

@@ -176,6 +176,40 @@ export class DataViewerPanel {
     }
 
     /**
+     * Get the total number of panels
+     */
+    public static getPanelCount(): number {
+        return DataViewerPanel._panels.size;
+    }
+
+    /**
+     * Get the number of active panels
+     */
+    public static getActivePanelCount(): number {
+        return Array.from(DataViewerPanel._panels.values()).filter(
+            (panel) => panel._webviewPanel.visible
+        ).length;
+    }
+
+    /**
+     * Get the number of panels with errors
+     */
+    public static getPanelsWithErrorsCount(): number {
+        return Array.from(DataViewerPanel._panels.values()).filter(
+            (panel) => panel._hasError
+        ).length;
+    }
+
+    /**
+     * Get all panels with errors
+     */
+    public static getPanelsWithErrors(): DataViewerPanel[] {
+        return Array.from(DataViewerPanel._panels.values()).filter(
+            (panel) => panel._hasError
+        );
+    }
+
+    /**
      * Dispose of static resources
      */
     public static dispose(): void {

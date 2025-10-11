@@ -18,6 +18,7 @@ export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installP
 export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
 export const CMD_EXPORT_WEBVIEW = 'scientificDataViewer.exportWebview';
 export const CMD_TOGGLE_DEV_MODE = 'scientificDataViewer.toggleDevMode';
+export const CMD_HEALTHCHECK = 'scientificDataViewer.healthcheck';
 
 // Tree view ID
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';

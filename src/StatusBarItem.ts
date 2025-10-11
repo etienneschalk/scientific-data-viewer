@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { EnvironmentInfo } from './types';
 import { getDisplayName } from './common/vscodeutils';
+import { CMD_HEALTHCHECK } from './common/config';
 
 // Function to update status bar with current Python interpreter
 export function updateStatusBarItem(
@@ -37,7 +38,10 @@ ${source}
 
 Environment Python interpreter path: 
 ${envInfo.path ?? 'Not set'}
+
+Click to run healthcheck
 `;
 
+    statusBarItem.command = CMD_HEALTHCHECK;
     statusBarItem.show();
 }
