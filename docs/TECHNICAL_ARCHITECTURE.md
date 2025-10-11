@@ -39,8 +39,8 @@ interface AppState {
 
 ```typescript
 const stateManager = new StateManager();
-stateManager.dispatch({ type: "SET_CURRENT_FILE", payload: filePath });
-stateManager.subscribe((state) => console.log("State updated:", state));
+stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: filePath });
+stateManager.subscribe((state) => console.log('State updated:', state));
 ```
 
 ### 2. Type-Safe Communication System
@@ -62,7 +62,7 @@ stateManager.subscribe((state) => console.log("State updated:", state));
 interface RequestMessage<T> {
   id: string;
   timestamp: number;
-  type: "request";
+  type: 'request';
   command: string;
   payload: T;
 }
@@ -83,8 +83,8 @@ interface RequestMessage<T> {
 
 ```typescript
 const messageBus = new MessageBus(webview);
-await messageBus.sendRequest("getDataInfo", { filePath });
-messageBus.onEvent("dataLoaded", (data) => console.log("Data loaded:", data));
+await messageBus.sendRequest('getDataInfo', { filePath });
+messageBus.onEvent('dataLoaded', (data) => console.log('Data loaded:', data));
 ```
 
 ### 3. Error Boundary System (`src/error/ErrorBoundary.ts`)
@@ -114,10 +114,10 @@ interface ErrorContext {
 
 ```typescript
 const errorBoundary = ErrorBoundary.getInstance();
-errorBoundary.registerHandler("ui", (error, context) => {
+errorBoundary.registerHandler('ui', (error, context) => {
   // Handle UI-specific errors
 });
-errorBoundary.handleError(error, { component: "ui", operation: "render" });
+errorBoundary.handleError(error, { component: 'ui', operation: 'render' });
 ```
 
 ### 4. Component-Based UI System
@@ -241,7 +241,7 @@ src/
 ```json
 {
   "compilerOptions": {
-    "lib": ["ES2020", "DOM"] // Added DOM types for webview components
+    "lib": ["ES2021", "DOM"] // Added DOM types for webview components
   }
 }
 ```

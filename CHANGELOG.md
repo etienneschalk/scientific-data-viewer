@@ -8,6 +8,38 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [UNRELEASED]
 
+## [0.5.0] - 2025-01-08
+
+### Added
+
+- **Export Webview Content**: Complete data viewer content export as self-contained HTML reports
+  - **Export Button**: Added export button (🖼️) to header controls in data viewer panel
+  - **Command Palette Integration**: "Scientific Data Viewer: Export Webview Content" command
+  - **Self-contained Reports**: Generated HTML includes embedded CSS and JavaScript for standalone viewing: "Browser Mode". Copy, Expand All and Collapse All buttons works in this mode.
+  - **Complete Data Export**: Includes all visualizations, data tables, metadata, and technical information
+  - **Professional Layout**: Clean, professional report layout with copy buttons for easy data extraction
+  - **File Management**: Proper file naming with timestamps and save dialog with options to open or reveal files
+  - **Use Cases**: Share data analysis results, create documentation, archive sessions, generate reports
+  - **Files Modified**:
+    - src/common/config.ts - Added CMD_EXPORT_WEBVIEW constant
+    - package.json - Added command definition and menu integration
+    - src/panel/HTMLGenerator.ts - Added webview export button (🖼️)
+    - src/panel/UIController.ts - Added webview export functionality and content capture
+    - src/DataViewerPanel.ts - Added exportWebview() method
+    - src/extension.ts - Added command handler
+    - src/panel/webview/webview-script.js - Added content capture functionality
+
+### Enhanced
+
+- **User Experience**: Improved data sharing and documentation capabilities
+- **Professional Workflow**: Better integration with research and documentation workflows
+
+### Technical Improvements
+
+- **Code Organization**: Added export functionality to UIController with comprehensive HTML generation
+- **Error Handling**: Robust error handling for export operations with user-friendly feedback
+- **Testing**: Added test coverage for export functionality
+
 ### Removed
 
 - **Configuration Settings**:

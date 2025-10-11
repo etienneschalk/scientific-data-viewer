@@ -16,6 +16,7 @@ export const CMD_SCROLL_TO_HEADER = 'scientificDataViewer.scrollToHeader';
 export const CMD_EXPAND_ALL = 'scientificDataViewer.expandAll';
 export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installPackages';
 export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
+export const CMD_EXPORT_WEBVIEW = 'scientificDataViewer.exportWebview';
 
 // Tree view ID
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';
@@ -28,6 +29,7 @@ const MAX_FILE_SIZE = 'maxFileSize';
 const ALLOW_MULTIPLE_TABS_FOR_SAME_FILE = 'allowMultipleTabsForSameFile';
 const DEV_MODE = 'devMode';
 const MATPLOTLIB_STYLE = 'matplotlibStyle';
+const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 
@@ -36,6 +38,7 @@ const DEFAULT_MAX_FILE_SIZE = 1000000000000;
 const DEFAULT_ALLOW_MULTIPLE_TABS_FOR_SAME_FILE = false;
 const DEFAULT_DEV_MODE = false;
 const DEFAULT_MATPLOTLIB_STYLE = '';
+const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 
@@ -82,6 +85,13 @@ export function getMatplotlibStyle(): string {
         // Auto-detect based on VSCode theme
         return detectVSCodeTheme();
     }
+}
+
+export function getWebviewExportTheme(): string {
+    return getWorkspaceConfig().get<string>(
+        WEBVIEW_EXPORT_THEME,
+        DEFAULT_WEBVIEW_EXPORT_THEME
+    );
 }
 
 export function getOverridePythonInterpreter(): string {

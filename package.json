@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.4.2",
+    "version": "0.5.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -95,6 +95,11 @@
                 "command": "scientificDataViewer.python.installPackages",
                 "title": "Install Python Packages",
                 "category": "Scientific Data Viewer"
+            },
+            {
+                "command": "scientificDataViewer.exportWebview",
+                "title": "Export Webview Content",
+                "category": "Scientific Data Viewer"
             }
         ],
         "menus": {
@@ -146,6 +151,10 @@
                 {
                     "command": "scientificDataViewer.python.installPackages",
                     "when": "false"
+                },
+                {
+                    "command": "scientificDataViewer.exportWebview",
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 },
                 {
                     "command": "scientificDataViewer.openViewerMultiple",
@@ -412,6 +421,31 @@
                     "order": 1000,
                     "description": "Matplotlib plot style. If empty, automatically detects VSCode theme and applies appropriate style. If set, overrides automatic detection. Examples: 'default', 'dark_background'.",
                     "markdownDescription": "Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → 'default', dark theme → 'dark_background'). If set, overrides automatic detection.\n\n**Examples:**\n- `default` - Light theme with white background\n- `dark_background` - Dark theme with black background\n\n**Available styles:** Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)"
+                },
+                "scientificDataViewer.webviewExportTheme": {
+                    "type": "string",
+                    "default": "",
+                    "order": 1001,
+                    "enum": [
+                        "",
+                        "Default Dark+",
+                        "Default Light+",
+                        "Solarized Dark",
+                        "Solarized Light",
+                        "High Contrast Dark",
+                        "High Contrast Light"
+                    ],
+                    "enumDescriptions": [
+                        "Use the current VS Code theme",
+                        "Default Dark+ theme",
+                        "Default Light+ theme",
+                        "Solarized Dark theme",
+                        "Solarized Light theme",
+                        "High Contrast Dark theme",
+                        "High Contrast Light theme"
+                    ],
+                    "description": "Theme to use when exporting webview content. If empty, uses the current VS Code theme. If set, overrides with the specified theme for exports.",
+                    "markdownDescription": "Theme to use when exporting webview content to HTML files. If empty, uses the current VS Code theme variables. If set, overrides with the specified theme for exports.\n\n**Note:** Only affects exported HTML files, not the live webview display."
                 },
                 "scientificDataViewer.python.overridePythonInterpreter": {
                     "type": "string",

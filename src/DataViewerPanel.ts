@@ -44,6 +44,20 @@ export class DataViewerPanel {
         return panel;
     }
 
+    public static getActivePanel(): DataViewerPanel | undefined {
+        Logger.debug(`🚚 🗂️ Getting active panel`);
+        // Find the panel that is currently visible
+        const activePanel = Array.from(DataViewerPanel._panels.values()).find(
+            (panel) => panel._webviewPanel.visible
+        );
+        if (activePanel) {
+            Logger.debug(`🚚 🗂️ Found active panel: ${activePanel.getId()}`);
+        } else {
+            Logger.debug(`🚚 🗂️ No active panel found`);
+        }
+        return activePanel;
+    }
+
     public static async createOrReveal(
         fileUri: vscode.Uri,
         iconPath: vscode.Uri,
@@ -366,11 +380,20 @@ export class DataViewerPanel {
         }
     }
 
-    public async scrollToHeader(
-        headerId: string,
-        headerLabel: string
-    ): Promise<void> {
-        this._uiController.scrollToHeader(headerId, headerLabel);
+    /**
+     * Scroll to a header in the data viewer panel
+     * @param headerId
+     * @param headerLabel
+     */
+    public emitScrollToHeader(headerId: string, headerLabel: string): void {
+        this._uiController.emitScrollToHeader(headerId, headerLabel);
+    }
+
+    /**
+     * Export webview content for this panel
+     */
+    public async emitExportWebview(): Promise<void> {
+        return this._uiController.emitExportWebview();
     }
 
     /**

@@ -34,6 +34,7 @@ import {
     CMD_EXPAND_ALL,
     CMD_PYTHON_INSTALL_PACKAGES,
     CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
+    CMD_EXPORT_WEBVIEW,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
@@ -173,6 +174,10 @@ export function activate(context: vscode.ExtensionContext) {
             commandHandlerManageExtensionOwnEnvironment(
                 extensionVirtualEnvironmentManagerUI
             )
+        ),
+        vscode.commands.registerCommand(
+            CMD_EXPORT_WEBVIEW,
+            commandHandlerExportWebview()
         )
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -400,6 +405,34 @@ function commandHandlerManageExtensionOwnEnvironment(
     };
 }
 
+function commandHandlerExportWebview(): () => void {
+    return async () => {
+        Logger.info('🎮 🖼️ Command: Export Webview Content');
+
+        // Find the currently active DataViewerPanel
+        const activePanel = DataViewerPanel.getActivePanel();
+
+        if (!activePanel) {
+            vscode.window.showErrorMessage(
+                'No active data viewer panel found. Please open a scientific data file first.'
+            );
+            return;
+        }
+
+        // Export webview content
+        try {
+            await activePanel.emitExportWebview();
+        } catch (error) {
+            Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
+            vscode.window.showErrorMessage(
+                `Failed to export webview content: ${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+        }
+    };
+}
+
 function commandHandlerExpandAll(outlineProvider: OutlineProvider): () => void {
     return () => {
         Logger.info('🎮 📋 Command: Expanding all outline items');
@@ -479,7 +512,7 @@ function commandHandlerPythonInstallPackages(
 function commandHandlerScrollToHeader(
     outlineProvider: OutlineProvider
 ): (headerId: string, headerLabel: string) => void {
-    return async (headerId: string, headerLabel: string) => {
+    return (headerId: string, headerLabel: string) => {
         // We can only manage one file at a time, so we need to get the current file from the outline provider
         let currentPanelId = outlineProvider.getCurrentPanelId();
 
@@ -497,7 +530,7 @@ function commandHandlerScrollToHeader(
         // Find the active DataViewerPanel and scroll to the header
         const activePanel = DataViewerPanel.getPanel(currentPanelId);
         if (activePanel) {
-            await activePanel.scrollToHeader(headerId, headerLabel);
+            activePanel.emitScrollToHeader(headerId, headerLabel);
         } else {
             Logger.warn('↕️ ⚠️ No active DataViewerPanel found for scrolling');
         }
