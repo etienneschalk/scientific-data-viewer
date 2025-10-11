@@ -29,7 +29,7 @@ export class HTMLGenerator {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${getDisplayName()}</title>
-    <style>
+    <style id="scientific-data-viewer-style">
         ${this.getCSS(devMode)}
     </style>
 </head>

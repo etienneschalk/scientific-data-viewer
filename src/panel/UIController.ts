@@ -11,7 +11,12 @@ import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { getVersion, showErrorMessage } from '../common/vscodeutils';
-import { getDevMode, getMaxSize, getWorkspaceConfig, getWebviewExportTheme } from '../common/config';
+import {
+    getDevMode,
+    getMaxSize,
+    getWorkspaceConfig,
+    getWebviewExportTheme,
+} from '../common/config';
 import { ThemeManager } from '../common/ThemeManager';
 import { ErrorContext } from '../types';
 
@@ -659,6 +664,8 @@ export class UIController {
                 }
 
                 // Generate the HTML report
+                // XXX Replace by a true webview export by creating one from scratch
+                // and not revealin
                 const htmlReport = this.generateHtmlReport(state);
 
                 // Write the file
@@ -743,7 +750,8 @@ export class UIController {
                 }
 
                 // Apply theme overrides to the HTML content if configured
-                const processedHtmlContent = this.applyThemeToWebviewContent(htmlContent);
+                const processedHtmlContent =
+                    this.applyThemeToWebviewContent(htmlContent);
 
                 // Write the file
                 await vscode.workspace.fs.writeFile(
@@ -872,13 +880,13 @@ export class UIController {
         // Get the CSS from CSSGenerator but modify it for standalone use
         const { CSSGenerator } = require('./CSSGenerator');
         const baseCSS = CSSGenerator.get(false); // Use non-dev mode CSS
-        
+
         // Get the webview export theme configuration
         const exportTheme = getWebviewExportTheme();
-        
+
         // Generate theme-specific CSS variables if a theme is specified
         const themeCSS = ThemeManager.generateExportThemeCSS(exportTheme);
-        
+
         // Combine base CSS with theme overrides
         return themeCSS + baseCSS;
     }
@@ -887,36 +895,49 @@ export class UIController {
      * Apply theme overrides to webview HTML content
      */
     private applyThemeToWebviewContent(htmlContent: string): string {
+        // I am not really proud of this function, but it works for now
+        // String replacement do the job to fix the HTML theme.
+
+        // Maybe in the future we will have a true webview export by creating one from scratch
+        // and not revealing the webview panel
+
         // Get the webview export theme configuration
         const exportTheme = getWebviewExportTheme();
-        
+
         // If no theme is specified, return the original content
         if (!exportTheme || exportTheme.trim() === '') {
             return htmlContent;
         }
 
+        // - Remove existing stlye in the html tag
+        // - Insert the theme CSS at the beginning of the SDV's style tag
+        // The SDV CSS code does not use the vscode-dark or vscode-light indicators.
+        // However xarray does:
+        // >   body.vscode-dark -> overrides xarray CSS variables to use dark mode
+        // So, we must artificially set the class to the actual theme being exported.
+        // > <body role="document" class="vscode-light" data-vscode-theme-kind="vscode-light" data-vscode-theme-name="Solarized Light" data-vscode-theme-id="Solarized Light">
+        // > <body role="document" class="vscode-dark" data-vscode-theme-kind="vscode-dark" data-vscode-theme-name="Monokai" data-vscode-theme-id="Monokai">
+        // We can ignore data-vscode-theme-name and data-vscode-theme-id when replacing the body tag.
+        // They will be irrelevant. They can be removed at some point if this causes issues.
+        
         // Generate theme-specific CSS variables
         const themeCSS = ThemeManager.generateExportThemeCSS(exportTheme);
-        
-        // Insert the theme CSS at the beginning of the <style> tag
-        // or create a new <style> tag if none exists
-        if (htmlContent.includes('<style>')) {
-            // Insert theme CSS after the opening <style> tag
-            return htmlContent.replace('<style>', `<style>\n${themeCSS}`);
-        } else {
-            // Insert theme CSS in the <head> section
-            if (htmlContent.includes('</head>')) {
-                return htmlContent.replace('</head>', `<style>\n${themeCSS}</style>\n</head>`);
-            } else {
-                // If no head section, add it before the body
-                if (htmlContent.includes('<body>')) {
-                    return htmlContent.replace('<body>', `<head>\n<style>\n${themeCSS}</style>\n</head>\n<body>`);
-                } else {
-                    // Fallback: add at the beginning
-                    return `<head>\n<style>\n${themeCSS}</style>\n</head>\n${htmlContent}`;
-                }
-            }
-        }
+        const newHtmlOpeningTagWithoutStyleAttr = '<!DOCTYPE html><html lang="en">';
+        const sdvStyleTag = '<style id="scientific-data-viewer-style">';
+        return (
+            newHtmlOpeningTagWithoutStyleAttr +
+            htmlContent
+                .substring(htmlContent.indexOf('<head>')) // just after the html tag
+                .replace(sdvStyleTag, sdvStyleTag + '\n' + themeCSS)
+                .replaceAll(
+                    '"vscode-dark"', // quotes are needed to not overwrite the xarray body.vscode-dark section
+                    `"vscode-${ThemeManager.getThemeMode(exportTheme)}"`
+                )
+                .replaceAll(
+                    '"vscode-light"', // quotes are needed to not overwrite the xarray body.vscode-dark section
+                    `"vscode-${ThemeManager.getThemeMode(exportTheme)}"`
+                )
+        );
     }
 
     private getJavaScriptForReport(): string {

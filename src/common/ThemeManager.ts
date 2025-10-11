@@ -171,7 +171,7 @@ export class ThemeManager {
                 textCodeBlockBackground: '#f8f8f8',
                 textPreformatForeground: '#333333'
             },
-            'monokai': {
+            'monokai dark': {
                 foreground: '#f8f8f2',
                 editorBackground: '#272822',
                 editorForeground: '#f8f8f2',
@@ -234,7 +234,7 @@ export class ThemeManager {
                 textCodeBlockBackground: '#fdf6e3',
                 textPreformatForeground: '#586e75'
             },
-            'high contrast': {
+            'high contrast dark': {
                 foreground: '#ffffff',
                 editorBackground: '#000000',
                 editorForeground: '#ffffff',
@@ -258,6 +258,11 @@ export class ThemeManager {
         };
 
         return themes[normalizedName] || null;
+    }
+
+    public static getThemeMode(themeName: string): 'dark' | 'light' {
+        // Empirical observation. Must add explicitly "Dark" or "Light" to the theme name.
+        return themeName.toLowerCase().trim().includes('dark') ? 'dark' : 'light';
     }
 
     /**

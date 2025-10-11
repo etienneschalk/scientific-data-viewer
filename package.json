@@ -439,19 +439,19 @@
                         "",
                         "Default Dark+",
                         "Default Light+",
-                        "Monokai",
+                        "Monokai Dark",
                         "Solarized Dark",
                         "Solarized Light",
-                        "High Contrast"
+                        "High Contrast Dark"
                     ],
                     "enumDescriptions": [
                         "Use the current VS Code theme",
                         "Default Dark+ theme",
                         "Default Light+ theme",
-                        "Monokai theme",
+                        "Monokai Dark theme",
                         "Solarized Dark theme",
                         "Solarized Light theme",
-                        "High Contrast theme"
+                        "High Contrast Dark theme"
                     ],
                     "description": "Theme to use when exporting webview content. If empty, uses the current VS Code theme. If set, overrides with the specified theme for exports.",
                     "markdownDescription": "Theme to use when exporting webview content to HTML files. If empty, uses the current VS Code theme variables. If set, overrides with the specified theme for exports.\n\n**Examples:**\n- `Default Dark+` - Use the Default Dark+ theme\n- `Default Light+` - Use the Default Light+ theme\n- `Monokai` - Use the Monokai theme\n\n**Note:** Only affects exported HTML files, not the live webview display."
