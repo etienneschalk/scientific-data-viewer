@@ -38,15 +38,15 @@ export class ThemeManager {
             // Get all installed extensions that contribute themes
             const extensions = vscode.extensions.all;
             const themes: vscode.ColorTheme[] = [];
-            
+
             // Get the current theme
             const currentTheme = vscode.window.activeColorTheme;
             themes.push(currentTheme);
-            
+
             // Note: VS Code doesn't provide a direct API to list all themes
             // We can only access the current theme and its properties
             Logger.debug(`Current theme kind: ${currentTheme.kind}`);
-            
+
             return themes;
         } catch (error) {
             Logger.error(`Failed to get available themes: ${error}`);
@@ -61,7 +61,7 @@ export class ThemeManager {
         if (!themeName || themeName.trim() === '') {
             return false;
         }
-        
+
         try {
             // VS Code doesn't provide a direct way to validate theme names
             // We'll return true for now and let the CSS generation handle invalid themes
@@ -83,11 +83,13 @@ export class ThemeManager {
         }
 
         Logger.debug(`Generating CSS variables for theme: ${themeName}`);
-        
+
         // Predefined theme color sets
         const themeColors = this.getThemeColorSet(themeName);
         if (!themeColors) {
-            Logger.warn(`Unknown theme: ${themeName}, using default dark theme`);
+            Logger.warn(
+                `Unknown theme: ${themeName}, using default dark theme`
+            );
             return this.generateThemeCSSVariables('Default Dark+');
         }
 
@@ -126,7 +128,7 @@ export class ThemeManager {
      */
     private static getThemeColorSet(themeName: string): ThemeColors | null {
         const normalizedName = themeName.toLowerCase().trim();
-        
+
         // Common VS Code themes
         const themes: { [key: string]: ThemeColors } = {
             'default dark+': {
@@ -148,7 +150,7 @@ export class ThemeManager {
                 errorForeground: '#f48771',
                 descriptionForeground: '#cccccc',
                 textCodeBlockBackground: '#1e1e1e',
-                textPreformatForeground: '#d4d4d4'
+                textPreformatForeground: '#d4d4d4',
             },
             'default light+': {
                 foreground: '#333333',
@@ -169,28 +171,7 @@ export class ThemeManager {
                 errorForeground: '#a1260d',
                 descriptionForeground: '#666666',
                 textCodeBlockBackground: '#f8f8f8',
-                textPreformatForeground: '#333333'
-            },
-            'monokai dark': {
-                foreground: '#f8f8f2',
-                editorBackground: '#272822',
-                editorForeground: '#f8f8f2',
-                panelBackground: '#2f3129',
-                panelBorder: '#3e3d32',
-                buttonBackground: '#a6e22e',
-                buttonForeground: '#272822',
-                inputBackground: '#3e3d32',
-                inputForeground: '#f8f8f2',
-                inputBorder: '#3e3d32',
-                listHoverBackground: '#3e3d32',
-                listActiveSelectionBackground: '#a6e22e',
-                listActiveSelectionForeground: '#272822',
-                listInactiveSelectionBackground: '#3e3d32',
-                listInactiveSelectionForeground: '#f8f8f2',
-                errorForeground: '#f92672',
-                descriptionForeground: '#75715e',
-                textCodeBlockBackground: '#272822',
-                textPreformatForeground: '#f8f8f2'
+                textPreformatForeground: '#333333',
             },
             'solarized dark': {
                 foreground: '#839496',
@@ -211,7 +192,7 @@ export class ThemeManager {
                 errorForeground: '#dc322f',
                 descriptionForeground: '#93a1a1',
                 textCodeBlockBackground: '#002b36',
-                textPreformatForeground: '#839496'
+                textPreformatForeground: '#839496',
             },
             'solarized light': {
                 foreground: '#586e75',
@@ -232,7 +213,7 @@ export class ThemeManager {
                 errorForeground: '#dc322f',
                 descriptionForeground: '#93a1a1',
                 textCodeBlockBackground: '#fdf6e3',
-                textPreformatForeground: '#586e75'
+                textPreformatForeground: '#586e75',
             },
             'high contrast dark': {
                 foreground: '#ffffff',
@@ -253,8 +234,29 @@ export class ThemeManager {
                 errorForeground: '#ff6b6b',
                 descriptionForeground: '#ffffff',
                 textCodeBlockBackground: '#000000',
-                textPreformatForeground: '#ffffff'
-            }
+                textPreformatForeground: '#ffffff',
+            },
+            'high contrast light': {
+                foreground: '#000000',
+                editorBackground: '#ffffff',
+                editorForeground: '#000000',
+                panelBackground: '#ffffff',
+                panelBorder: '#000000',
+                buttonBackground: '#000000',
+                buttonForeground: '#ffffff',
+                inputBackground: '#ffffff',
+                inputForeground: '#000000',
+                inputBorder: '#000000',
+                listHoverBackground: '#ffffff',
+                listActiveSelectionBackground: '#000000',
+                listActiveSelectionForeground: '#ffffff',
+                listInactiveSelectionBackground: '#ffffff',
+                listInactiveSelectionForeground: '#000000',
+                errorForeground: '#ff6b6b',
+                descriptionForeground: '#000000',
+                textCodeBlockBackground: '#ffffff',
+                textPreformatForeground: '#000000',
+            },
         };
 
         return themes[normalizedName] || null;
@@ -262,7 +264,9 @@ export class ThemeManager {
 
     public static getThemeMode(themeName: string): 'dark' | 'light' {
         // Empirical observation. Must add explicitly "Dark" or "Light" to the theme name.
-        return themeName.toLowerCase().trim().includes('dark') ? 'dark' : 'light';
+        return themeName.toLowerCase().trim().includes('dark')
+            ? 'dark'
+            : 'light';
     }
 
     /**
@@ -270,8 +274,10 @@ export class ThemeManager {
      */
     static getCurrentThemeCSSVariables(): string {
         const currentTheme = vscode.window.activeColorTheme;
-        Logger.debug(`Getting CSS variables for current theme kind: ${currentTheme.kind}`);
-        
+        Logger.debug(
+            `Getting CSS variables for current theme kind: ${currentTheme.kind}`
+        );
+
         // For now, return empty string to use the default VS Code CSS variables
         // In a real implementation, you would extract the actual color values from the theme
         return '';

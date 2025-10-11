@@ -17,10 +17,10 @@ The `webviewExportTheme` setting allows you to choose a specific theme for expor
 - **Empty string** - Uses the current VS Code theme (default behavior)
 - **Default Dark+** - VS Code's default dark theme
 - **Default Light+** - VS Code's default light theme
-- **Monokai Dark** - Monokai color scheme
 - **Solarized Dark** - Solarized dark theme
 - **Solarized Light** - Solarized light theme
-- **High Contrast Dark** - High contrast theme for accessibility
+- **High Contrast Dark** - High contrast dark theme for accessibility
+- **High Contrast Dark** - High contrast light theme for accessibility
 
 ## How to Configure
 

@@ -1357,7 +1357,7 @@ if (document.readyState === 'loading') {
         return `
         <div class="attribute-item">
             <span class="attribute-name">${attrName} : </span>
-            <span class="attribute-value">${this.escapeHtml(valueStr)}</span>
+            <span class="attribute-value muted-text">${this.escapeHtml(valueStr)}</span>
         </div>`;
     }
 
@@ -1373,7 +1373,7 @@ if (document.readyState === 'loading') {
                 return `
                 <div class="attribute-item">
                     <span class="attribute-name">${attrName} : </span>
-                    <span class="attribute-value">${this.escapeHtml(
+                    <span class="attribute-value muted-text">${this.escapeHtml(
                         valueStr
                     )}</span>
                 </div>`;

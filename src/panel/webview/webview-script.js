@@ -680,7 +680,7 @@ function renderGroupAttributes(groupName, attrName, value) {
     return /*html*/ `
         <div class="attribute-item" id="${attrId}">
             <span class="attribute-name" title="${attrName}">${attrName} : </span>
-            <span class="attribute-value" title="${valueStr}">${valueStr}</span>
+            <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
         </div>
     `;
 }
@@ -825,7 +825,7 @@ function renderVariableAttributes(attributes, parentId) {
                 attrName,
             ])}">
                 <span class="attribute-name" title="${attrName}">${attrName} : </span>
-                <span class="attribute-value" title="${valueStr}">${valueStr}</span>
+                <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
             </div>
         `;
         })
