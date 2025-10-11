@@ -173,7 +173,13 @@ SupportedExtensionType = Literal[
     ".safe",
 ]
 EngineType = Literal[
-    "netcdf4", "h5netcdf", "scipy", "zarr", "h5py", "cfgrib", "rasterio", "sentinel"
+    "netcdf4",
+    "h5netcdf",
+    "scipy",
+    "zarr",
+    "h5py",
+    "cfgrib",
+    "rasterio",
 ]
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
@@ -198,8 +204,6 @@ FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
     #
     ".jp2": ["rasterio"],
     ".jpeg2000": ["rasterio"],
-    #
-    ".safe": ["sentinel"],
 }
 
 # Format display names
@@ -224,8 +228,6 @@ FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
     #
     ".jp2": "JPEG-2000",
     ".jpeg2000": "JPEG-2000",
-    #
-    ".safe": "Sentinel-1 SAFE",
 }
 
 # Required packages for each engine
@@ -237,7 +239,6 @@ ENGINE_PACKAGES: Dict[EngineType, str] = {
     "h5py": "h5py",
     "cfgrib": "cfgrib",
     "rasterio": "rioxarray",
-    "sentinel": "xarray-sentinel",
 }
 # Default backend kwargs for each engine
 DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
@@ -248,7 +249,6 @@ DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
     "h5py": {"decode_cf": False},
     "cfgrib": {"decode_cf": False},
     "rasterio": {},
-    "sentinel": {"decode_cf": False},
 }
 # Default backend kwargs for each engine
 DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
@@ -259,7 +259,6 @@ DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
     "h5py": None,
     "cfgrib": {"indexpath": ""},  # Avoid intempestive .idx file creation
     "rasterio": {"mask_and_scale": False},
-    "sentinel": None,
 }
 
 

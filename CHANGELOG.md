@@ -6,6 +6,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+- **Sentinel-1 SAFE**: Support for .safe files (UNTESTED).
+  - Removed because was never tested, implementing it would be a nice-to-have for later.
+-
+
 ## [UNRELEASED]
 
 ## [0.5.0] - 2025-01-08

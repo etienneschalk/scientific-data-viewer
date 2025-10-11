@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to create sample scientific data files for testing the VSCode extension.
-This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000, and Sentinel-1 SAFE.
+This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000.
 """
 
 import numpy as np
@@ -1082,102 +1082,6 @@ def create_sample_jp2():
 
     # Save to JPEG-2000
     ds.rio.to_raster(output_file)
-    print(f"✅ Created {output_file}")
-    return output_file
-
-
-def create_sample_sentinel():
-    """Create a sample Sentinel-1 SAFE directory structure."""
-    output_file = "sample_data.safe"
-
-    # Check if directory already exists
-    if os.path.exists(output_file):
-        print(
-            f"🛰️ Sentinel-1 SAFE file {output_file} already exists. Skipping creation."
-        )
-        print("  🔄 To regenerate, please delete the existing directory first.")
-        return output_file
-
-    print("🛰️ Creating sample Sentinel-1 SAFE file...")
-
-    try:
-        import xarray_sentinel
-    except ImportError:
-        print(
-            "  ❌ xarray-sentinel not available, skipping Sentinel-1 SAFE file creation."
-        )
-        return None
-
-    # Create SAFE directory structure
-    os.makedirs(output_file, exist_ok=True)
-
-    # Create manifest.safe file
-    manifest_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<xfdu:XFDU xmlns:xfdu="urn:ccsds:schema:xfdu:1" xmlns:gml="http://www.opengis.net/gml" xmlns:s1="http://www.esa.int/safe/sentinel-1.0" xmlns:s1sar="http://www.esa.int/safe/sentinel-1.0/sar" xmlns:s1sarl1="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:s1sarl2="http://www.esa.int/safe/sentinel-1.0/sar/level-2" xmlns:gx="http://www.google.com/kml/ext/2.2" version="esa/safe/sentinel-1.0/sentinel-1/sar/level-1">
-  <informationPackageMap>
-    <contentUnit>
-      <dataObject ID="s1Level1ProductSchema">
-        <byteStream MIMEType="text/xml" size="1234">
-          <fileLocation href="./annotation/s1Level1ProductSchema.xsd"/>
-        </byteStream>
-      </dataObject>
-    </contentUnit>
-  </informationPackageMap>
-  <metadataSection>
-    <metadataObject ID="platform" category="DMD">
-      <metadataWrap>
-        <xmlData>
-          <s1:platform>
-            <s1:nssdcIdentifier>48284</s1:nssdcIdentifier>
-            <s1:familyName>SENTINEL-1</s1:familyName>
-            <s1:number>1</s1:number>
-            <s1:instrument>
-              <s1:familyName>C-SAR</s1:familyName>
-              <s1:number>1</s1:number>
-            </s1:instrument>
-          </s1:platform>
-        </xmlData>
-      </metadataWrap>
-    </metadataObject>
-  </metadataSection>
-</xfdu:XFDU>"""
-
-    with open(os.path.join(output_file, "manifest.safe"), "w") as f:
-        f.write(manifest_content)
-
-    # Create annotation directory and files
-    os.makedirs(os.path.join(output_file, "annotation"), exist_ok=True)
-
-    # Create a simple annotation file
-    annotation_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<product xmlns="http://www.esa.int/safe/sentinel-1.0/sar/level-1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <adsHeader>
-    <missionId>S1</missionId>
-    <productType>GRD</productType>
-    <polarisation>VV</polarisation>
-    <mode>IW</mode>
-    <swath>IW1</swath>
-    <startTime>{datetime.now().isoformat()}</startTime>
-    <stopTime>{(datetime.now() + timedelta(minutes=10)).isoformat()}</stopTime>
-    <absoluteOrbitNumber>12345</absoluteOrbitNumber>
-    <missionDataTakeId>67890</missionDataTakeId>
-    <productClass>S</productClass>
-  </adsHeader>
-  <productInfo>
-    <productName>S1A_IW_GRDH_1SDV_20200101T120000_20200101T120010_030123_037234_5A1A</productName>
-    <productType>GRD</productType>
-    <productClass>S</productClass>
-    <acquisitionMode>IW</acquisitionMode>
-    <polarisation>VV</polarisation>
-    <antennaPointing>right</antennaPointing>
-  </productInfo>
-</product>"""
-
-    with open(
-        os.path.join(output_file, "annotation", "s1Level1ProductSchema.xsd"), "w"
-    ) as f:
-        f.write(annotation_content)
-
     print(f"✅ Created {output_file}")
     return output_file
 
@@ -4323,13 +4227,6 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((inherited_coords_zarr_file, "Zarr Inherited Coords"))
         else:
             skipped_files.append("Zarr Inherited Coords (zarr or xarray not available)")
-
-        print("\n📁 Creating Sentinel-1 SAFE files...")
-        sentinel_file = create_sample_sentinel()
-        if sentinel_file:
-            created_files.append((sentinel_file, "Sentinel-1 SAFE"))
-        else:
-            skipped_files.append("Sentinel-1 SAFE (xarray-sentinel not available)")
 
         print("\n📄 Creating file with spaces in name...")
         spaces_file = create_sample_file_with_spaces()

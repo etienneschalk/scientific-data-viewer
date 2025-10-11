@@ -59,7 +59,6 @@ export class PythonManager {
         'scipy',
         'cfgrib',
         'rioxarray',
-        'xarray-sentinel',
     ];
 
     constructor(

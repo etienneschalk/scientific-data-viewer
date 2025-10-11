@@ -68,10 +68,10 @@ enhancement, format-support, dependencies
 
 #### **Sentinel-1 SAFE Format**
 
-- ⚠️ **Not yet tested** with real Sentinel-1 SAFE files
-- ✅ **Sample data generation** includes Sentinel-1 SAFE structure
-- ✅ **Dependency handling** for xarray-sentinel package
-- 📝 **Next step**: Test with actual Sentinel-1 SAFE data files
+- ~~⚠️ **Not yet tested** with real Sentinel-1 SAFE files~~
+- ~~✅ **Sample data generation** includes Sentinel-1 SAFE structure~~
+- ~~✅ **Dependency handling** for xarray-sentinel package~~
+- ~~📝 **Next step**: Test with actual Sentinel-1 SAFE data files~~
 
 #### **Other Formats**
 

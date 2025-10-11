@@ -18,7 +18,7 @@ Add support for Sentinel-2 SAFE format with proper tiling grid handling. This re
 - [ ] Tiling grid is properly displayed and navigable
 - [ ] Support for both L1C and L2A product levels
 - [ ] Proper metadata extraction from Sentinel-2 products
-- [ ] Integration with existing xarray-sentinel dependency
+- [ ] ~~Integration with existing xarray-sentinel dependency~~
 - [ ] Performance optimization for large Sentinel-2 datasets
 
 ## Priority
@@ -55,7 +55,7 @@ Sentinel-2 uses a specific tiling grid system:
 
 ### Implementation Considerations
 
-1. **Dependency Management**: Ensure xarray-sentinel is properly integrated
+1. ~~**Dependency Management**: Ensure xarray-sentinel is properly integrated~~
 2. **Memory Management**: Handle large datasets efficiently
 3. **UI Integration**: Display tiling information in the data viewer
 4. **Performance**: Optimize loading for large Sentinel-2 products
