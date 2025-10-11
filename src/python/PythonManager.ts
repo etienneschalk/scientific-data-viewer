@@ -475,7 +475,7 @@ export class PythonManager {
      * @param packageNames  The names of the packages to check
      * @returns             Dictionary mapping package names to boolean availability status
      */
-    private async checkPackagesAvailability(
+    public async checkPackagesAvailability(
         pythonPath: string,
         packageNames: string[]
     ): Promise<Record<string, boolean>> {
@@ -719,4 +719,5 @@ export class PythonManager {
             });
         });
     }
+
 }
