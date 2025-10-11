@@ -51,7 +51,7 @@ export class PythonManager {
 
     // Core packages required for basic functionality
     private readonly corePackages = ['xarray'];
-    private readonly plotPackages = ['matplotlib']
+    private readonly plotPackages = ['matplotlib'];
     // Additional packages for extended format support
     private readonly extendedPackages = [
         'netCDF4',
@@ -125,7 +125,7 @@ export class PythonManager {
             );
         }
 
-        if (this._pythonPath == null) {
+        if (this._pythonPath === null) {
             throw new Error(
                 'Python path is not set. Please run "Python: Select Interpreter" command first.'
             );
