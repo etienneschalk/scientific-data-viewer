@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Logger } from './Logger';
+import { Logger } from '../common/Logger';
 
 /**
  * Interface for theme color definitions

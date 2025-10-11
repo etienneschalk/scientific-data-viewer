@@ -17,7 +17,7 @@ import {
     getWorkspaceConfig,
     getWebviewExportTheme,
 } from '../common/config';
-import { ThemeManager } from '../common/ThemeManager';
+import { ThemeManager } from './ThemeManager';
 import { ErrorContext } from '../types';
 
 export class UIController {
