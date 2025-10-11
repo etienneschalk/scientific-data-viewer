@@ -189,7 +189,7 @@ export function activate(context: vscode.ExtensionContext) {
         ),
         vscode.commands.registerCommand(
             CMD_HEALTHCHECK,
-            commandHandlerHealthcheck(pythonManager, extensionEnvManager)
+            commandHandlerHealthcheck(pythonManager)
         )
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -469,14 +469,13 @@ function commandHandlerToggleDevMode(): () => void {
 
 function commandHandlerHealthcheck(
     pythonManager: PythonManager,
-    extensionEnvManager: ExtensionVirtualEnvironmentManager
 ): () => void {
     return async () => {
         Logger.info('🎮 🏥 Command: Run Healthcheck');
         
         try {
             const healthcheckManager = HealthcheckManager.getInstance();
-            const report = await healthcheckManager.runHealthcheck(pythonManager, extensionEnvManager);
+            const report = await healthcheckManager.runHealthcheck(pythonManager);
             await healthcheckManager.openHealthcheckReport(report, pythonManager);
             
             const statusMessage = report.overallStatus === 'healthy' 

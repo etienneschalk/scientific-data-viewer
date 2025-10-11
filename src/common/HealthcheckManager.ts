@@ -58,7 +58,6 @@ export class HealthcheckManager {
      */
     public async runHealthcheck(
         pythonManager: PythonManager,
-        extensionEnvManager: ExtensionVirtualEnvironmentManager
     ): Promise<HealthcheckReport> {
         Logger.info('🏥 Running comprehensive healthcheck...');
 
