@@ -36,6 +36,7 @@ Available on:
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
 - **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
+- **Enhanced GeoTIFF Support**: Multi-band GeoTIFF files automatically convert bands to separate variables for improved readability and plotting
 - **HTML Report Export**: Export complete data viewer content as self-contained HTML reports for sharing and documentation
 - **Command Palette Integration**: Multiple commands for data viewer operations
 - **Status Bar Integration**: Shows current Python interpreter status
@@ -314,6 +315,9 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.devMode`**
   - (type: `boolean`, default: `false`)
   - Enable development mode. When enabled, automatically runs 'Show Extension Logs' and 'Open Developer Tools' commands when a scientific data file is opened. Also reloads the webview script and CSS for faster development feedback loops.
+- **`scientificDataViewer.convertBandsToVariables`**
+  - (type: `boolean`, default: `true`)
+  - Convert bands of GeoTIFF rasters to variables for better readability. When enabled, multi-band GeoTIFF files (.tif, .tiff, .geotiff) will have their bands converted to separate variables instead of a single 3D DataArray. This improves plotting capabilities and data structure visualization by treating each band as an individual variable.
 
 ## 🔧 Troubleshooting
 
