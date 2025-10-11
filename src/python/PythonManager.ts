@@ -144,8 +144,9 @@ export class PythonManager {
         args: string[],
         enableLogs: boolean
     ) {
+        const quotedPythonPath = quoteIfNeeded(pythonPath);
         Logger.log(
-            `🐍 📜 Executing Python file ${scriptPath} with args: ${args}`
+            `🐍 📜 Executing Python file ${scriptPath} with args: [${args.join(' ')}]`
         );
         Logger.info(
             `🐍 📜 - ${
@@ -153,13 +154,13 @@ export class PythonManager {
             }`
         );
         Logger.info(
-            `🐍 📜 - Provided Python path for script execution: ${pythonPath}`
+            `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`
         );
         Logger.info(`🐍 📜 - Is initialized: ${this._initialized}`);
 
         return new Promise((resolve, reject) => {
             const process = spawn(
-                quoteIfNeeded(pythonPath),
+                quotedPythonPath,
                 [scriptPath, ...args],
                 {
                     shell: true,
