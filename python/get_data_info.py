@@ -44,8 +44,6 @@ import sys
 from typing import Any, Callable, Literal, cast, Union, List, Dict
 
 import xarray as xr
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 
 from importlib.util import find_spec
@@ -782,6 +780,10 @@ def create_plot(
     try:
         if plot_type != "auto":
             raise ValueError(f"Invalid plot type: {plot_type}")
+
+        # Inline imports of matplotlib as it is only used in this function.
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
 
         # Apply matplotlib style provided by VSCode extension
         if style and style.strip():

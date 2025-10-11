@@ -398,18 +398,19 @@ export class PythonManager {
         });
     }
 
-    private async checkRequiredPackages(pythonPath: string): Promise<string[]> {
+    private async checkAvailablePackages(pythonPath: string): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
         const allPackages = [...this.corePackages, ...this.extendedPackages];
-        const availablePackages: string[] = [];
-
-        for (const packageName of allPackages) {
-            try {
-                const isAvailable = await this.checkPackageAvailability(
-                    pythonPath,
-                    packageName
-                );
+        
+        try {
+            const availability = await this.checkPackagesAvailability(
+                pythonPath,
+                allPackages
+            );
+            
+            const availablePackages: string[] = [];
+            for (const [packageName, isAvailable] of Object.entries(availability)) {
                 if (isAvailable) {
                     availablePackages.push(packageName);
                     Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
@@ -418,17 +419,18 @@ export class PythonManager {
                         `🐍 📦 ⚠️ Package not available: ${packageName}`
                     );
                 }
-            } catch (error) {
-                Logger.debug(
-                    `🐍 📦 ⚠️ Package not available: ${packageName}: error: ${error}`
-                );
             }
-        }
 
-        Logger.debug(
-            `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`
-        );
-        return availablePackages;
+            Logger.debug(
+                `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`
+            );
+            return availablePackages;
+        } catch (error) {
+            Logger.debug(
+                `🐍 📦 ⚠️ Error checking packages: ${error}`
+            );
+            return [];
+        }
     }
 
     private async checkPipAvailability(): Promise<void> {
@@ -483,30 +485,53 @@ export class PythonManager {
     }
 
     /**
-     * Check if a package is available
+     * Check if packages are available using the Python script
      * @param pythonPath    The path to the Python interpreter
-     * @param packageName   The name of the package to check
-     * @returns             True if the package is available, False otherwise
+     * @param packageNames  The names of the packages to check
+     * @returns             Dictionary mapping package names to boolean availability status
      */
-    private async checkPackageAvailability(
+    private async checkPackagesAvailability(
         pythonPath: string,
-        packageName: string
-    ): Promise<boolean> {
-        return new Promise((resolve) => {
-            const args = [
-                '-c',
-                `"from importlib.util import find_spec; exit(1 if find_spec('${packageName}') is None else 0)"`,
-            ];
-            const process = spawn(quoteIfNeeded(pythonPath), args, {
-                shell: true,
+        packageNames: string[]
+    ): Promise<Record<string, boolean>> {
+        const scriptPath = require('path').join(__dirname, '../../../python/check_package_availability.py');
+        
+        return new Promise((resolve, reject) => {
+            const process = spawn(
+                quoteIfNeeded(pythonPath),
+                [scriptPath, ...packageNames],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                }
+            );
+
+            let stdout = '';
+            let stderr = '';
+
+            process.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+
+            process.stderr.on('data', (data) => {
+                stderr += data.toString();
             });
 
             process.on('close', (code) => {
-                resolve(code === 0);
+                if (code === 0) {
+                    try {
+                        const result = JSON.parse(stdout);
+                        resolve(result);
+                    } catch (error) {
+                        reject(new Error(`Failed to parse package availability result: ${error}`));
+                    }
+                } else {
+                    reject(new Error(`Package availability check failed (exit code ${code}): ${stderr || stdout}`));
+                }
             });
 
             process.on('error', (error) => {
-                resolve(false);
+                reject(new Error(`Failed to execute package availability check: ${error.message}`));
             });
         });
     }
@@ -527,7 +552,7 @@ export class PythonManager {
         }
 
         try {
-            const packages = await this.checkRequiredPackages(this._pythonPath);
+            const packages = await this.checkAvailablePackages(this._pythonPath);
             const missingCorePackages = this.corePackages.filter(
                 (pkg) => !packages.includes(pkg)
             );
