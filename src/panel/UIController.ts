@@ -10,15 +10,15 @@ import { ErrorBoundary } from '../common/ErrorBoundary';
 import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
-import { getVersion, showErrorMessage } from '../common/vscodeutils';
+import { showErrorMessage } from '../common/vscodeutils';
 import {
     getDevMode,
     getMaxSize,
     getWorkspaceConfig,
     getWebviewExportTheme,
 } from '../common/config';
-import { ThemeManager } from './ThemeManager';
 import { ErrorContext } from '../types';
+import { ThemeManager } from './ThemeManager';
 
 export class UIController {
     private id: number;
@@ -659,7 +659,10 @@ export class UIController {
 
                 // Apply theme overrides to the HTML content if configured
                 const processedHtmlContent =
-                    this.applyThemeToWebviewContent(htmlContent);
+                    ThemeManager.applyThemeToWebviewContent(
+                        htmlContent,
+                        getWebviewExportTheme()
+                    );
 
                 // Write the file
                 await vscode.workspace.fs.writeFile(
@@ -692,56 +695,6 @@ export class UIController {
         }, context);
 
         return result || { success: false, error: 'Unknown error' };
-    }
-
-    /**
-     * Apply theme overrides to webview HTML content
-     */
-    private applyThemeToWebviewContent(htmlContent: string): string {
-        // Get the webview export theme configuration
-        const exportTheme = getWebviewExportTheme();
-
-        // If no theme is specified, return the original content
-        if (!exportTheme || exportTheme.trim() === '') {
-            return htmlContent;
-        }
-
-        // I am not really proud of this part, but it works for now
-        // String replacement does the job to fix the HTML theme.
-
-        // Maybe in the future we will have a true webview export by creating one from scratch
-        // and not revealing the webview panel
-
-        // Implementations notes
-        // - Remove existing style in the html tag
-        // - Insert the theme CSS at the beginning of the SDV's style tag
-        // The SDV CSS code does not use the vscode-dark or vscode-light indicators.
-        // However xarray does:
-        // >   body.vscode-dark -> overrides xarray CSS variables to use dark mode
-        // So, we must artificially set the class to the actual theme being exported.
-        // > <body role="document" class="vscode-light" data-vscode-theme-kind="vscode-light" data-vscode-theme-name="Solarized Light" data-vscode-theme-id="Solarized Light">
-        // > <body role="document" class="vscode-dark" data-vscode-theme-kind="vscode-dark" data-vscode-theme-name="Monokai" data-vscode-theme-id="Monokai">
-        // We can ignore data-vscode-theme-name and data-vscode-theme-id when replacing the body tag.
-        // They will be irrelevant. They can be removed at some point if this causes issues.
-
-        // Generate theme-specific CSS variables
-        const themeCSS = ThemeManager.generateThemeCSSVariables(exportTheme);
-        const themeMode = ThemeManager.getThemeMode(exportTheme);
-        const sdvStyleTag = '<style id="scientific-data-viewer-style">';
-        return (
-            '<!DOCTYPE html><html lang="en">' +
-            htmlContent
-                .substring(htmlContent.indexOf('<head>')) // just after the html tag
-                .replace(sdvStyleTag, sdvStyleTag + '\n' + themeCSS)
-                .replaceAll(
-                    '"vscode-dark"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`
-                )
-                .replaceAll(
-                    '"vscode-light"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`
-                )
-        );
     }
 
     private updateUI(state: AppState): void {
