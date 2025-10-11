@@ -47,7 +47,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Better Readability**: Converts 3D DataArrays with band dimension to separate 2D variables
   - **Improved Plotting**: Each band treated as individual variable with appropriate color scales
   - **Supported Formats**: Works with .tif, .tiff, and .geotiff files
-  - **Clean Implementation**: Uses rioxarray's built-in `band_as_variable` parameter
+  - **Clean Implementation**: Uses rioxarray's built-in [`band_as_variable`](https://corteva.github.io/rioxarray/html/rioxarray.html#rioxarray.open_rasterio) parameter
   - **User-Friendly**: Simple on/off configuration for all GeoTIFF formats
   - **Backward Compatible**: Existing functionality preserved when disabled
   - **Files Modified**:
