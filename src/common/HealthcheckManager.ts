@@ -657,12 +657,12 @@ export class HealthcheckManager {
 
             if (devMode) {
                 warnings.push(
-                    'Development mode is enabled (this is normal for development)'
+                    '- Development mode is enabled (this is normal for development)'
                 );
             }
 
             if (overridePython && !overridePython.trim()) {
-                issues.push('Python interpreter override is set but empty');
+                issues.push('- Python interpreter override is set but empty');
             }
 
             if (useExtensionOwnEnv && !overridePython) {
@@ -670,11 +670,7 @@ export class HealthcheckManager {
                 const uvAvailable = await this.checkUvAvailability();
                 if (!uvAvailable) {
                     issues.push(
-                        'Using extension own environment but uv is not available'
-                    );
-                } else {
-                    warnings.push(
-                        'Using extension own environment (uv is available)'
+                        '- Using extension own environment but uv is not available'
                     );
                 }
             }
@@ -694,7 +690,7 @@ export class HealthcheckManager {
                     message: 'Configuration has errors',
                     details: `Errors: ${issues.join('; ')}${
                         warnings.length > 0
-                            ? ` Warnings: ${warnings.join('; ')}`
+                            ? ` Warnings: \n\n${warnings.join('\n')}`
                             : ''
                     }`,
                     timestamp: new Date(),
@@ -703,7 +699,7 @@ export class HealthcheckManager {
                 return {
                     status: 'warning',
                     message: 'Configuration has warnings',
-                    details: `Warnings: ${warnings.join('; ')}`,
+                    details: `Warnings: \n\n${warnings.join('\n')}`,
                     timestamp: new Date(),
                 };
             }
