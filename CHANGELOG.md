@@ -12,19 +12,22 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Added
 
-- **HTML Report Export**: Complete data viewer content export as self-contained HTML reports
-  - **Export Button**: Added export button (📄) to header controls in data viewer panel
-  - **Command Palette Integration**: "Scientific Data Viewer: Export HTML Report" command
-  - **Self-contained Reports**: Generated HTML includes embedded CSS and JavaScript for standalone viewing
+- **Export Webview Content**: Complete data viewer content export as self-contained HTML reports
+  - **Export Button**: Added export button (🖼️) to header controls in data viewer panel
+  - **Command Palette Integration**: "Scientific Data Viewer: Export Webview Content" command
+  - **Self-contained Reports**: Generated HTML includes embedded CSS and JavaScript for standalone viewing: "Browser Mode". Copy, Expand All and Collapse All buttons works in this mode.
   - **Complete Data Export**: Includes all visualizations, data tables, metadata, and technical information
   - **Professional Layout**: Clean, professional report layout with copy buttons for easy data extraction
   - **File Management**: Proper file naming with timestamps and save dialog with options to open or reveal files
-  - **Report Contents**:
-    - File information (path, size, format, engines)
-    - Xarray HTML and text representations
-    - Data structure (dimensions, coordinates, variables, attributes)
-    - Technical information (Python path, extension configuration, versions)
   - **Use Cases**: Share data analysis results, create documentation, archive sessions, generate reports
+  - **Files Modified**:
+    - src/common/config.ts - Added CMD_EXPORT_WEBVIEW constant
+    - package.json - Added command definition and menu integration
+    - src/panel/HTMLGenerator.ts - Added webview export button (🖼️)
+    - src/panel/UIController.ts - Added webview export functionality and content capture
+    - src/DataViewerPanel.ts - Added exportWebview() method
+    - src/extension.ts - Added command handler
+    - src/panel/webview/webview-script.js - Added content capture functionality
 
 ### Enhanced
 

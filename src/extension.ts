@@ -34,7 +34,6 @@ import {
     CMD_EXPAND_ALL,
     CMD_PYTHON_INSTALL_PACKAGES,
     CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
-    CMD_EXPORT_HTML,
     CMD_EXPORT_WEBVIEW,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
@@ -175,10 +174,6 @@ export function activate(context: vscode.ExtensionContext) {
             commandHandlerManageExtensionOwnEnvironment(
                 extensionVirtualEnvironmentManagerUI
             )
-        ),
-        vscode.commands.registerCommand(
-            CMD_EXPORT_HTML,
-            commandHandlerExportHtml()
         ),
         vscode.commands.registerCommand(
             CMD_EXPORT_WEBVIEW,
@@ -407,34 +402,6 @@ function commandHandlerManageExtensionOwnEnvironment(
     return async () => {
         Logger.info('🎮 🐍 🔧 Command: Manage Extension Virtual Environment');
         await extensionVirtualEnvironmentManagerUI.manage();
-    };
-}
-
-function commandHandlerExportHtml(): () => void {
-    return async () => {
-        Logger.info('🎮 📄 Command: Export HTML Report');
-
-        // Find the currently active DataViewerPanel
-        const activePanel = DataViewerPanel.getActivePanel();
-
-        if (!activePanel) {
-            vscode.window.showErrorMessage(
-                'No active data viewer panel found. Please open a scientific data file first.'
-            );
-            return;
-        }
-
-        // Export HTML report
-        try {
-            await activePanel.emitExportHtml();
-        } catch (error) {
-            Logger.error(`🎮 📄 ❌ Failed to export HTML: ${error}`);
-            vscode.window.showErrorMessage(
-                `Failed to export HTML report: ${
-                    error instanceof Error ? error.message : String(error)
-                }`
-            );
-        }
     };
 }
 

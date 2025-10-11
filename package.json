@@ -97,11 +97,6 @@
                 "category": "Scientific Data Viewer"
             },
             {
-                "command": "scientificDataViewer.exportHtml",
-                "title": "Export HTML Report",
-                "category": "Scientific Data Viewer"
-            },
-            {
                 "command": "scientificDataViewer.exportWebview",
                 "title": "Export Webview Content",
                 "category": "Scientific Data Viewer"
@@ -156,10 +151,6 @@
                 {
                     "command": "scientificDataViewer.python.installPackages",
                     "when": "false"
-                },
-                {
-                    "command": "scientificDataViewer.exportHtml",
-                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 },
                 {
                     "command": "scientificDataViewer.exportWebview",

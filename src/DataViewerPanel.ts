@@ -390,13 +390,6 @@ export class DataViewerPanel {
     }
 
     /**
-     * Export HTML report for this panel
-     */
-    public async emitExportHtml(): Promise<void> {
-        return this._uiController.emitExportHtml();
-    }
-
-    /**
      * Export webview content for this panel
      */
     public async emitExportWebview(): Promise<void> {

@@ -235,6 +235,7 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 | `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
 | `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
 | `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
+| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
 
 ### 🖱️ Context Menu Commands
 
@@ -242,22 +243,25 @@ Right-click on supported file types in the Explorer to access:
 
 - **Open in Data Viewer** - Opens the file in the Scientific Data Viewer
 
-### 📄 Exporting HTML Reports
+### 🖼️ Export Webview Content
 
 The extension allows you to export complete data viewer content as self-contained HTML reports:
 
 1. **Using the Export Button**:
+
    - Open a scientific data file in the Scientific Data Viewer
-   - Click the export button (📄) in the header controls
+   - Click the export button (🖼️) in the header controls
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 
 2. **Using the Command Palette**:
+
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
-   - Type "Scientific Data Viewer: Export HTML Report"
+   - Type "Scientific Data Viewer: Export Webview Content"
    - Choose a location and filename for the HTML report
 
 **Report Contents**:
+
 - Complete file information (path, size, format, engines)
 - Xarray HTML and text representations
 - Data structure (dimensions, coordinates, variables, attributes)
@@ -266,6 +270,7 @@ The extension allows you to export complete data viewer content as self-containe
 - Professional layout with copy buttons for easy data extraction
 
 **Use Cases**:
+
 - Share data analysis results with colleagues
 - Create documentation for datasets
 - Archive data viewer sessions

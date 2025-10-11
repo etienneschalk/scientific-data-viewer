@@ -1232,7 +1232,6 @@ function setupEventListeners() {
         expandAllButton: handleExpandAllSections,
         collapseAllButton: handleCollapseAllSections,
         // Export buttons
-        exportHtmlButton: handleExportHtml,
         exportWebviewButton: handleExportWebview,
         // Global plot controls
         createAllPlotsButton: handleCreateAllPlots,
@@ -1330,30 +1329,6 @@ async function handleRefresh() {
     } catch (error) {
         console.error('Failed to refresh data:', error);
         displayGlobalError('Failed to refresh data: ' + error.message);
-    }
-}
-
-async function handleExportHtml() {
-    if (messageBus.isDegradedMode) {
-        console.warn('⚠️ Export HTML not available in degraded mode');
-        return;
-    }
-    
-    console.log('📄 Exporting HTML report...');
-    try {
-        const result = await messageBus.exportHtml();
-        if (result.success) {
-            console.log(
-                '📄 HTML report exported successfully:',
-                result.filePath
-            );
-        } else {
-            console.error('📄 Failed to export HTML report:', result.error);
-            displayGlobalError('Failed to export HTML report: ' + result.error);
-        }
-    } catch (error) {
-        console.error('📄 Error exporting HTML report:', error);
-        displayGlobalError('Failed to export HTML report: ' + error.message);
     }
 }
 
