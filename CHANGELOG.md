@@ -37,23 +37,42 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/common/config.ts - Added updateDevMode function and CMD_TOGGLE_DEV_MODE constant
     - package.json - Added command definition and menu integration
     - src/extension.ts - Added command handler with proper error handling
+- **Package Availability Detection**: New Python script for efficient package checking
+  - **Dedicated Script**: `python/check_package_availability.py` for checking multiple packages at once
+  - **JSON Output**: Returns structured availability data for better integration
+  - **Performance**: Optimized package detection with single Python process execution (instead of calling N times a script for N dependencies)
+  - **Error Handling**: Robust error handling for package availability checks
 
 ### Enhanced
 
 - **User Experience**: Improved data sharing and documentation capabilities
 - **Professional Workflow**: Better integration with research and documentation workflows
+- **Package Management**: Improved package detection and installation workflow
+  - **Fine-grained Control**: Differentiate between core packages (xarray) and optional packages (matplotlib)
+  - **Better Error Messages**: More specific error messages for missing packages
+  - **Help Buttons**: Added install buttons for missing packages directly in error messages
+  - **More Command Quoting**: Improved command quoting for better avoidance of space-related issues when calling commands in package installation
 
 ### Technical Improvements
 
 - **Code Organization**: Added export functionality to UIController with comprehensive HTML generation
 - **Error Handling**: Robust error handling for export operations with user-friendly feedback
 - **Testing**: Added test coverage for export functionality
+- **Python Script Optimization**: Enhanced Python script structure and error handling
+  - **Structured Responses**: Better structured response format for plot creation and data info
+  - **Error Wrapping**: Improved error message wrapping and handling
+  - **Type Safety**: Enhanced type definitions for better TypeScript integration
+  - **Test Updates**: Updated test mocks to match new response structures
 
 ### Removed
 
 - **Configuration Settings**:
   - `scientificDataViewer.currentlyInUseInterpreter`: Currently active Python interpreter path (read-only, updated automatically)
     - Reason: It was not actually used, nor necessary, as python interpreter resolution is performed live.
+- **Sentinel-1 SAFE Support**: Removed untested Sentinel-1 SAFE (.safe) format support
+  - **Reason**: Was never tested and implementing it would be a nice-to-have for later
+  - **Cleanup**: Removed related dependencies and sample data generation
+  - **Documentation**: Updated RFCs to reflect removal
 
 ## [0.4.0] - 2025-10-06
 

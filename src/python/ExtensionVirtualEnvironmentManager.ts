@@ -11,7 +11,9 @@ export class ExtensionVirtualEnvironmentManager {
         'https://docs.astral.sh/uv/getting-started/installation/';
     private extensionEnv: ExtensionVirtualEnvironment;
     private readonly ENV_FOLDER_NAME = 'python-environment';
-    private readonly REQUIRED_PACKAGES = [
+    // TODO: more fine grain control over uv-envs packages
+    // current approach is to install everything in one go
+    private readonly ALL_PACKAGES = [
         'xarray',
         'matplotlib',
         'netCDF4',
@@ -366,7 +368,7 @@ export class ExtensionVirtualEnvironmentManager {
                     'install',
                     '--python',
                     quoteIfNeeded(this.extensionEnv!.pythonPath),
-                    ...this.REQUIRED_PACKAGES,
+                    ...this.ALL_PACKAGES,
                 ],
                 {
                     shell: true,
@@ -394,7 +396,7 @@ export class ExtensionVirtualEnvironmentManager {
                     Logger.info(
                         '[uv] ✅ Required packages installed successfully with uv'
                     );
-                    this.extensionEnv!.packages = [...this.REQUIRED_PACKAGES];
+                    this.extensionEnv!.packages = [...this.ALL_PACKAGES];
                     resolve();
                 } else {
                     reject(

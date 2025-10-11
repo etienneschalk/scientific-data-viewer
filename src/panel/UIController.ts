@@ -17,7 +17,7 @@ import {
     getWorkspaceConfig,
     getWebviewExportTheme,
 } from '../common/config';
-import { ErrorContext } from '../types';
+import { DataInfoPythonResponse, ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
 
 export class UIController {
@@ -307,7 +307,7 @@ export class UIController {
     private async handleCreatePlot(
         variable: string,
         plotType: string
-    ): Promise<string | null> {
+    ): Promise<string | undefined> {
         try {
             const state = this.stateManager.getState();
 
@@ -327,7 +327,13 @@ export class UIController {
                 throw new Error('Failed to create plot');
             }
 
-            return plotData;
+            if (plotData.error) {
+                throw new Error(
+                    `Data processing error: ${plotData.error.error}`
+                );
+            }
+
+            return plotData?.result?.plot_data;
         } catch (error) {
             // For plot creation errors, we want to let the webview handle them locally
             // instead of sending a global error. We'll re-throw the error so the MessageBus

@@ -47,7 +47,7 @@ npm install
 
 # Install Python dependencies
 echo "🐍 Installing Python dependencies..."
-pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray xarray-sentinel
+pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray
 
 # Create sample data
 echo "📊 Creating sample data files..."

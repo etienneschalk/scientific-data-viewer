@@ -102,7 +102,18 @@ suite('Integration Test Suite', () => {
                     };
                 } else if (args[0] === 'plot') {
                     // Return base64 image data for plot creation
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    return {
+                        result: {
+                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -127,7 +138,7 @@ suite('Integration Test Suite', () => {
             'line'
         );
         assert.ok(plotData);
-        assert.ok(plotData.startsWith('iVBOR'));
+        assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
 
     test('DataProcessor should handle Python environment not ready', async () => {
@@ -214,7 +225,18 @@ suite('Integration Test Suite', () => {
                         error: 'File corrupted or unsupported format',
                     };
                 } else if (args[0] === 'plot') {
-                    return { error: 'File corrupted or unsupported format' };
+                    return { 
+                        error: {
+                            error: 'File corrupted or unsupported format',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -232,17 +254,14 @@ suite('Integration Test Suite', () => {
         assert.ok(dataInfo);
         assert.ok(dataInfo?.error);
 
-        // Test plot creation with error - should throw because createPlot throws on error
-        try {
-            await processor.createPlot(mockUri, 'temperature', 'line');
-            assert.fail('Should have thrown an error');
-        } catch (error) {
-            assert.ok(error instanceof Error);
-            assert.strictEqual(
-                error.message,
-                'File corrupted or unsupported format'
-            );
-        }
+        // Test plot creation with error - should return error in response
+        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
+        assert.ok(plotData);
+        assert.ok(plotData?.error);
+        assert.strictEqual(
+            plotData.error?.error,
+            'File corrupted or unsupported format'
+        );
     });
 
     test('DataProcessor should handle Python script execution errors', async () => {
@@ -396,7 +415,18 @@ suite('Integration Test Suite', () => {
                         },
                     };
                 } else if (args[0] === 'plot') {
-                    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                    return {
+                        result: {
+                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            format_info: {
+                                extension: 'nc',
+                                display_name: 'NetCDF',
+                                available_engines: ['netcdf4'],
+                                missing_packages: [],
+                                is_supported: true
+                            }
+                        }
+                    };
                 }
                 return {};
             },
@@ -469,7 +499,7 @@ suite('Integration Test Suite', () => {
                 'line'
             );
             assert.ok(plotData);
-            assert.ok(plotData.startsWith('iVBOR'));
+            assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
 
             // Test panel disposal
             DataViewerPanel.dispose();
