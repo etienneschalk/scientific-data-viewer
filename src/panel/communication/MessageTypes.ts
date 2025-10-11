@@ -49,7 +49,7 @@ export interface CreatePlotRequest {
 }
 
 export interface CreatePlotResponse {
-    plotData: string; // Base64 encoded image
+    data: any;
 }
 
 export interface SavePlotRequest {

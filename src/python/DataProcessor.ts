@@ -4,7 +4,7 @@ import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
 import { getMatplotlibStyle } from '../common/config';
-import { DataInfo } from '../types';
+import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -28,7 +28,7 @@ export class DataProcessor {
         return this.pythonManager;
     }
 
-    async getDataInfo(uri: vscode.Uri): Promise<DataInfo | null> {
+    async getDataInfo(uri: vscode.Uri): Promise<DataInfoPythonResponse | null> {
         Logger.debug(`[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`);
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -41,14 +41,14 @@ export class DataProcessor {
 
         try {
             // Use the new merged CLI with 'info' mode
-            const result = await this.pythonManager.executePythonFile(
+            const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 ['info', filePath],
                 true
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
-            return result;
+            return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
             Logger.error(`[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`);
             return null;
@@ -59,7 +59,7 @@ export class DataProcessor {
         uri: vscode.Uri,
         variable: string,
         plotType: string = 'auto'
-    ): Promise<string | null> {
+    ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -88,21 +88,14 @@ export class DataProcessor {
             );
 
             // Execute Python script and capture both stdout and stderr
-            const result = await this.pythonManager.executePythonFile(
+            const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true
             );
-
-            if (typeof result === 'string' && result.startsWith('iVBOR')) {
-                Logger.info(
-                    `[DataProcessor] [createPlot] Plot created successfully for variable '${variable}'`
-                );
-                return result; // Base64 image data
-            } else if (result.error) {
-                throw new Error(result.error);
-            }
-            return null;
+            // Return the result even if it contains an error field
+            // The caller can check for result.error to handle errors
+            return pythonResponse as CreatePlotPythonResponse; 
         } catch (error) {
             Logger.error(`[DataProcessor] [createPlot] Error creating plot: ${error}`);
             throw error;
