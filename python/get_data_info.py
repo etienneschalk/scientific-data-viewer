@@ -365,8 +365,6 @@ class FileInfoResult:
 
     Attributes
     ----------
-    format : str
-        Human-readable format name
     format_info : FileFormatInfo
         Detailed format information
     used_engine : str
@@ -393,7 +391,6 @@ class FileInfoResult:
         Text representation for each group
     """
 
-    format: str
     format_info: FileFormatInfo
     used_engine: str
     fileSize: int
@@ -432,6 +429,34 @@ class FileInfoError:
     suggestion: str
     format_info: FileFormatInfo
     xarray_show_versions: str
+
+
+@dataclass(frozen=True)
+class CreatePlotResult:
+    """Result of creating a plot.
+
+    Attributes
+    ----------
+    plot_data : str
+        Base64-encoded PNG image data
+    """
+
+    plot_data: str = field(repr=False)
+    format_info: FileFormatInfo
+
+
+@dataclass(frozen=True)
+class CreatePlotError:
+    """Error when creating a plot.
+
+    Attributes
+    ----------
+    error : str
+        Error message describing what went wrong
+    """
+
+    error: str
+    format_info: FileFormatInfo
 
 
 def check_package_availability(package_name: str) -> bool:
@@ -752,7 +777,7 @@ def detect_plotting_strategy(
 
 def create_plot(
     file_path: Path, variable_path: str, plot_type: str = "auto", style: str = "auto"
-):
+) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
     Opens a data file, extracts the specified variable, and creates a
@@ -772,13 +797,34 @@ def create_plot(
 
     Returns
     -------
-    str or None
-        Base64-encoded PNG image data if successful, None if failed
+    CreatePlotResult or CreatePlotError
+        CreatePlotResult with Base64-encoded PNG image data if successful, CreatePlotError if failed
     """
 
     try:
         if plot_type != "auto":
             raise ValueError(f"Invalid plot type: {plot_type}")
+
+        # Detect file format and available engines
+        file_format_info = detect_file_format(file_path)
+
+        if not file_format_info.is_supported:
+            logger.error(
+                f"No engines available for {file_format_info.extension} files. "
+                f"Missing packages: {', '.join(file_format_info.missing_packages)}"
+            )
+            return CreatePlotError(
+                error=f"No engines available for {file_format_info.extension} files. "
+                f"Missing packages: {', '.join(file_format_info.missing_packages)}",
+                format_info=file_format_info,
+            )
+
+        if not check_package_availability("matplotlib"):
+            logger.error("Matplotlib is not installed")
+            return CreatePlotError(
+                error="Matplotlib is not installed",
+                format_info=file_format_info,
+            )
 
         # Inline imports of matplotlib as it is only used in this function.
         import matplotlib as mpl
@@ -795,16 +841,6 @@ def create_plot(
         else:
             logger.info("No style specified, using default")
             plt.style.use("default")
-
-        # Detect file format and available engines
-        file_format_info = detect_file_format(file_path)
-
-        if not file_format_info.is_supported:
-            logger.error(
-                f"No engines available for {file_format_info.extension} files. "
-                f"Missing packages: {', '.join(file_format_info.missing_packages)}"
-            )
-            return None
 
         # Open dataset with fallback
         xds_or_xdt, used_engine = open_datatree_with_fallback(
@@ -845,7 +881,10 @@ def create_plot(
                     logger.info(f"Close {group=}")
                     xds.close()
             # Close End
-            return None
+            return CreatePlotError(
+                error=f"Variable '{variable_name}' not found in dataset",
+                format_info=file_format_info,
+            )
 
         # Detect plotting strategy
         strategy = detect_plotting_strategy(var)
@@ -910,16 +949,22 @@ def create_plot(
         # Close End
 
         logger.info("Plot created successfully")
-        return image_base64
+        return CreatePlotResult(
+            plot_data=image_base64,
+            format_info=file_format_info,
+        )
 
     except Exception as exc:
         logger.error(
             f"Error creating plot: {exc!r} ({file_path=} {variable_path=} {plot_type=})"
         )
-        return None
+        return CreatePlotError(
+            error=f"Error creating plot: {exc!r} ({file_path=} {variable_path=} {plot_type=})",
+            format_info=file_format_info,
+        )
 
 
-def get_file_info(file_path: Path):
+def get_file_info(file_path: Path) -> Union[FileInfoResult, FileInfoError]:
     """Extract comprehensive information from a data file.
 
     Analyzes a data file and extracts metadata including format information,
@@ -1021,7 +1066,6 @@ def get_file_info(file_path: Path):
             )
 
         info = FileInfoResult(
-            format=file_format_info.display_name,
             format_info=file_format_info,
             used_engine=used_engine,
             fileSize=os.path.getsize(file_path),
@@ -1144,7 +1188,7 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
     )
 
 
-def main() -> None:
+def main() -> int:
     """Main entry point for the script.
 
     Parses command line arguments and executes the appropriate mode
@@ -1164,9 +1208,11 @@ Examples:
         """,
     )
 
+    mode_choices = ["info", "plot"]
+
     parser.add_argument(
         "mode",
-        choices=["info", "plot"],
+        choices=mode_choices,
         help="Mode: 'info' to get file information, 'plot' to create plots",
     )
 
@@ -1194,29 +1240,32 @@ Examples:
     args = parser.parse_args()
 
     # Validate arguments based on mode
+    if args.mode not in mode_choices:
+        print(to_json_best_effort({"error": f"Invalid mode: {args.mode}"}))
+        return 1
+
     if args.mode == "plot" and not args.variable_name:
         print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
-        sys.exit(1)
+        return 1
 
+    # Dispatch based on mode
     if args.mode == "info":
         # Get file information
         result = get_file_info(args.file_path)
-        logger.info(f"Result: {result}")
-        if isinstance(result, FileInfoError):
-            print(to_json_best_effort({"error": asdict(result)}))
-        else:
-            print(to_json_best_effort({"result": asdict(result)}))
+        ok = isinstance(result, FileInfoResult)
 
     elif args.mode == "plot":
         # Create plot
         result = create_plot(
             args.file_path, args.variable_name, args.plot_type, args.style
         )
-        if result:
-            print(result)  # TODO wrap me in {result: ...}
-        else:
-            print(to_json_best_effort({"error": "Failed to create plot"}))
+        ok = isinstance(result, CreatePlotResult)
+
+    # Log and print result
+    logger.info(f"{args.mode} Result: {result}")
+    print(to_json_best_effort({"result" if ok else "error": asdict(result)}))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
