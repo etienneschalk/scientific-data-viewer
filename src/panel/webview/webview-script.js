@@ -406,10 +406,12 @@ function setupMessageHandlers() {
         console.log('🔄 UI state changed:', state);
     });
 
+    // When the user clicks on a TreeItem from the Data Structure TreeView
     messageBus.onScrollToHeader(({ headerId, headerLabel }) => {
         doScrollToHeader(headerId, headerLabel);
     });
 
+    // When the user trigger the 'Export Wevbiew Content' command
     messageBus.onExportWebviewCommand(() => {
         handleExportWebview();
     });
