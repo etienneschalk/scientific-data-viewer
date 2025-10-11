@@ -326,7 +326,7 @@ export class HealthcheckManager {
         const config = vscode.workspace.getConfiguration(
             'scientificDataViewer'
         );
-        markdown += `\n\n\`\`\`json\n${JSON.stringify(
+        markdown += `\`\`\`json\n${JSON.stringify(
             config,
             null,
             2
@@ -343,9 +343,24 @@ export class HealthcheckManager {
         pythonManager: PythonManager
     ): Promise<void> {
         const markdown = this.generateMarkdownReport(report, pythonManager);
-        const doc = await vscode.workspace.openTextDocument({
-            content: markdown,
-            language: 'markdown',
+        
+        // Create an untitled document with a custom name
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const untitledUri = vscode.Uri.parse(`untitled:SDV-Healthcheck-${timestamp}.md`);
+        
+        // Open the untitled document
+        const doc = await vscode.workspace.openTextDocument(untitledUri);
+        
+        // Set the content
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(untitledUri, new vscode.Position(0, 0), markdown);
+        await vscode.workspace.applyEdit(edit);
+        
+        // Show the document
+        await vscode.window.showTextDocument(doc, {
+            preview: false,
+            preserveFocus: false,
+            viewColumn: vscode.ViewColumn.One,
         });
         await vscode.window.showTextDocument(doc);
     }
