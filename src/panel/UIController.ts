@@ -11,7 +11,8 @@ import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { getVersion, showErrorMessage } from '../common/vscodeutils';
-import { getDevMode, getMaxSize, getWorkspaceConfig } from '../common/config';
+import { getDevMode, getMaxSize, getWorkspaceConfig, getWebviewExportTheme } from '../common/config';
+import { ThemeManager } from '../common/ThemeManager';
 import { ErrorContext } from '../types';
 
 export class UIController {
@@ -741,10 +742,13 @@ export class UIController {
                     };
                 }
 
+                // Apply theme overrides to the HTML content if configured
+                const processedHtmlContent = this.applyThemeToWebviewContent(htmlContent);
+
                 // Write the file
                 await vscode.workspace.fs.writeFile(
                     saveUri,
-                    Buffer.from(htmlContent, 'utf8')
+                    Buffer.from(processedHtmlContent, 'utf8')
                 );
 
                 // Show success notification
@@ -867,7 +871,52 @@ export class UIController {
     private getCSSForReport(): string {
         // Get the CSS from CSSGenerator but modify it for standalone use
         const { CSSGenerator } = require('./CSSGenerator');
-        return CSSGenerator.get(false); // Use non-dev mode CSS
+        const baseCSS = CSSGenerator.get(false); // Use non-dev mode CSS
+        
+        // Get the webview export theme configuration
+        const exportTheme = getWebviewExportTheme();
+        
+        // Generate theme-specific CSS variables if a theme is specified
+        const themeCSS = ThemeManager.generateExportThemeCSS(exportTheme);
+        
+        // Combine base CSS with theme overrides
+        return themeCSS + baseCSS;
+    }
+
+    /**
+     * Apply theme overrides to webview HTML content
+     */
+    private applyThemeToWebviewContent(htmlContent: string): string {
+        // Get the webview export theme configuration
+        const exportTheme = getWebviewExportTheme();
+        
+        // If no theme is specified, return the original content
+        if (!exportTheme || exportTheme.trim() === '') {
+            return htmlContent;
+        }
+
+        // Generate theme-specific CSS variables
+        const themeCSS = ThemeManager.generateExportThemeCSS(exportTheme);
+        
+        // Insert the theme CSS at the beginning of the <style> tag
+        // or create a new <style> tag if none exists
+        if (htmlContent.includes('<style>')) {
+            // Insert theme CSS after the opening <style> tag
+            return htmlContent.replace('<style>', `<style>\n${themeCSS}`);
+        } else {
+            // Insert theme CSS in the <head> section
+            if (htmlContent.includes('</head>')) {
+                return htmlContent.replace('</head>', `<style>\n${themeCSS}</style>\n</head>`);
+            } else {
+                // If no head section, add it before the body
+                if (htmlContent.includes('<body>')) {
+                    return htmlContent.replace('<body>', `<head>\n<style>\n${themeCSS}</style>\n</head>\n<body>`);
+                } else {
+                    // Fallback: add at the beginning
+                    return `<head>\n<style>\n${themeCSS}</style>\n</head>\n${htmlContent}`;
+                }
+            }
+        }
     }
 
     private getJavaScriptForReport(): string {
