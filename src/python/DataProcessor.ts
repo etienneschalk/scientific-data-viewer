@@ -28,8 +28,13 @@ export class DataProcessor {
         return this.pythonManager;
     }
 
-    async getDataInfo(uri: vscode.Uri): Promise<DataInfoPythonResponse | null> {
-        Logger.debug(`[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`);
+    async getDataInfo(
+        uri: vscode.Uri,
+        convertBandsToVariables: boolean = false
+    ): Promise<DataInfoPythonResponse | null> {
+        Logger.debug(
+            `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`
+        );
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
@@ -41,16 +46,23 @@ export class DataProcessor {
 
         try {
             // Use the new merged CLI with 'info' mode
+            const args = ['info', filePath];
+            if (convertBandsToVariables) {
+                args.push('--convert-bands-to-variables');
+            }
+
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
-                ['info', filePath],
+                args,
                 true
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
-            Logger.error(`[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`);
+            Logger.error(
+                `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`
+            );
             return null;
         }
     }
@@ -58,7 +70,8 @@ export class DataProcessor {
     async createPlot(
         uri: vscode.Uri,
         variable: string,
-        plotType: string = 'auto'
+        plotType: string = 'auto',
+        convertBandsToVariables: boolean = false
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -82,6 +95,10 @@ export class DataProcessor {
             quoteIfNeeded(style),
         ];
 
+        if (convertBandsToVariables) {
+            args.push('--convert-bands-to-variables');
+        }
+
         try {
             Logger.info(
                 `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
@@ -95,9 +112,11 @@ export class DataProcessor {
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
-            return pythonResponse as CreatePlotPythonResponse; 
+            return pythonResponse as CreatePlotPythonResponse;
         } catch (error) {
-            Logger.error(`[DataProcessor] [createPlot] Error creating plot: ${error}`);
+            Logger.error(
+                `[DataProcessor] [createPlot] Error creating plot: ${error}`
+            );
             throw error;
         }
     }

@@ -1737,16 +1737,135 @@ def create_sample_geotiff_geotiff():
 
     # Add global attributes
     ds.attrs = {
-        "title": "Sample GeoTIFF GEOTIFF Data",
-        "description": "Sample GeoTIFF file with .geotiff extension for testing VSCode extension",
-        "institution": "Satellite Test Center",
+        "title": "Sample GeoTIFF GEOTIFF",
+        "description": "Sample GeoTIFF file for testing VSCode extension",
+        "institution": "Test Center",
         "source": "Generated for testing",
         "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "spatial_resolution": "0.1 degrees",
+        "temporal_coverage": "2020-01-01",
     }
 
     # Save to GeoTIFF
-    ds.rio.to_raster(output_file, driver="GTiff")
-    print(f"✅ Created {output_file}")
+    try:
+        ds.rio.to_raster(output_file, compress="lzw")
+        print(f"✅ Created {output_file} (compressed GeoTIFF)")
+    except Exception as e:
+        # Fallback to uncompressed if compression fails
+        ds.rio.to_raster(output_file)
+        print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
+
+    return output_file
+
+
+def create_sample_multiband_geotiff():
+    """Create a sample multi-band GeoTIFF file that will be loaded as 3D DataArray."""
+    output_file = "sample_multiband.tif"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"🛰️ Multi-band GeoTIFF file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🛰️ Creating sample multi-band GeoTIFF file...")
+
+    try:
+        import rioxarray
+
+        print("  ✅ rioxarray available, creating multi-band GeoTIFF file")
+    except ImportError:
+        print(
+            "  ❌ rioxarray not available, skipping multi-band GeoTIFF file creation."
+        )
+        return None
+
+    # Create spatial dimensions
+    height = 100
+    width = 100
+    n_bands = 4
+
+    # Create sample multi-band satellite imagery data
+    np.random.seed(42)
+
+    # Create 3D data array (band, y, x) - this simulates what rioxarray loads
+    data = np.random.randint(0, 255, (n_bands, height, width), dtype=np.uint8)
+
+    # Add different patterns for each band
+    x, y = np.meshgrid(np.linspace(0, 1, width), np.linspace(0, 1, height))
+
+    for i in range(n_bands):
+        # Create different patterns for each band
+        pattern = np.clip(
+            100
+            + 50 * np.sin((i + 1) * 2 * np.pi * x) * np.cos((i + 1) * 2 * np.pi * y)
+            + 30 * np.sin((i + 1) * 4 * np.pi * x) * np.cos((i + 1) * 4 * np.pi * y)
+            + np.random.normal(0, 15, (height, width)),
+            0,
+            255,
+        ).astype(np.uint8)
+        data[i] = pattern
+
+    # Create separate band variables for saving as GeoTIFF
+    band_vars = {}
+    for i in range(n_bands):
+        band_name = f"band_{i + 1}"
+        band_data = data[i]  # 2D data for each band
+        band_vars[band_name] = (
+            ["y", "x"],
+            band_data,
+            {
+                "long_name": f"Band {i + 1}",
+                "units": "DN",
+                "description": f"Satellite band {i + 1} data",
+            },
+        )
+
+    # Create dataset with separate band variables
+    ds = xr.Dataset(
+        band_vars,
+        coords={
+            "x": (
+                ["x"],
+                np.linspace(-10, 10, width),
+                {"long_name": "X coordinate", "units": "m"},
+            ),
+            "y": (
+                ["y"],
+                np.linspace(10, -10, height),
+                {"long_name": "Y coordinate", "units": "m"},
+            ),
+        },
+    )
+
+    # Add CRS information
+    ds = ds.rio.write_crs("EPSG:3857")  # Web Mercator
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample Multi-band GeoTIFF",
+        "description": "Sample multi-band GeoTIFF file for testing band-to-variables conversion",
+        "institution": "Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+        "spatial_resolution": "0.2 degrees",
+        "temporal_coverage": "2020-01-01",
+        "number_of_bands": n_bands,
+    }
+
+    # Save to GeoTIFF
+    try:
+        ds.rio.to_raster(output_file, compress="lzw")
+        print(f"✅ Created {output_file} (compressed multi-band GeoTIFF)")
+    except Exception as e:
+        # Fallback to uncompressed if compression fails
+        ds.rio.to_raster(output_file)
+        print(f"✅ Created {output_file} (uncompressed multi-band GeoTIFF)")
+
     return output_file
 
 
@@ -4183,6 +4302,12 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((geotiff_geotiff_file, "GeoTIFF GEOTIFF"))
         else:
             skipped_files.append("GeoTIFF GEOTIFF (rioxarray not available)")
+
+        multiband_geotiff_file = create_sample_multiband_geotiff()
+        if multiband_geotiff_file:
+            created_files.append((multiband_geotiff_file, "Multi-band GeoTIFF"))
+        else:
+            skipped_files.append("Multi-band GeoTIFF (rioxarray not available)")
 
         print("\n📁 Creating JPEG-2000 files...")
         jp2_file = create_sample_jp2()

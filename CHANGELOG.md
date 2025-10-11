@@ -42,6 +42,21 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **JSON Output**: Returns structured availability data for better integration
   - **Performance**: Optimized package detection with single Python process execution (instead of calling N times a script for N dependencies)
   - **Error Handling**: Robust error handling for package availability checks
+- **GeoTIFF Band-to-Variables Conversion**: Improved multi-band GeoTIFF file handling
+  - **Configuration Option**: `scientificDataViewer.convertBandsToVariables` boolean setting (enabled by default)
+  - **Better Readability**: Converts 3D DataArrays with band dimension to separate 2D variables
+  - **Improved Plotting**: Each band treated as individual variable with appropriate color scales
+  - **Supported Formats**: Works with .tif, .tiff, and .geotiff files
+  - **Clean Implementation**: Uses rioxarray's built-in [`band_as_variable`](https://corteva.github.io/rioxarray/html/rioxarray.html#rioxarray.open_rasterio) parameter
+  - **User-Friendly**: Simple on/off configuration for all GeoTIFF formats
+  - **Backward Compatible**: Existing functionality preserved when disabled
+  - **Files Modified**:
+    - package.json - Added configuration option
+    - src/common/config.ts - Added getter function
+    - src/python/DataProcessor.ts - Updated to pass configuration
+    - src/panel/UIController.ts - Added configuration logic
+    - python/get_data_info.py - Implemented band conversion
+    - python/create_sample_data.py - Added test data creation
 
 ### Enhanced
 
