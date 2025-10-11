@@ -17,6 +17,7 @@ export const CMD_EXPAND_ALL = 'scientificDataViewer.expandAll';
 export const CMD_PYTHON_INSTALL_PACKAGES = 'scientificDataViewer.python.installPackages';
 export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT = 'scientificDataViewer.manageExtensionOwnEnvironment';
 export const CMD_EXPORT_WEBVIEW = 'scientificDataViewer.exportWebview';
+export const CMD_TOGGLE_DEV_MODE = 'scientificDataViewer.toggleDevMode';
 
 // Tree view ID
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';
@@ -115,5 +116,13 @@ export async function updateUseExtensionOwnEnvironment(
         USE_EXTENSION_OWN_ENVIRONMENT,
         value,
         vscode.ConfigurationTarget.Workspace
+    );
+}
+
+export async function updateDevMode(value: boolean): Promise<void> {
+    return await getWorkspaceConfig().update(
+        DEV_MODE,
+        value,
+        vscode.ConfigurationTarget.Global
     );
 }

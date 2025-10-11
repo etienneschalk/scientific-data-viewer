@@ -236,6 +236,7 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 | `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
 | `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
 | `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
+| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                      |
 
 ### 🖱️ Context Menu Commands
 
@@ -483,7 +484,7 @@ npm run lint
 Note: It is recommended to run the task `start-watch-mode` for hot reload with
 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> Tasks: Run Task then `start-watch-mode`.
 
-Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development.
+Note: It is recommended to enable the `scientificDataViewer.devMode` feature flag during development. You can quickly toggle dev mode using the "Scientific Data Viewer: Toggle Dev Mode" command.
 
 **About debugging the error handling**
 
