@@ -62,11 +62,6 @@ export class ExtensionVirtualEnvironmentManagerUI {
                             'Open the environment folder in file explorer',
                     },
                     {
-                        label: '$(browser) Open in Browser',
-                        description:
-                            'Open the environment folder in the default web browser',
-                    },
-                    {
                         label: '$(info) Information',
                         description:
                             'View detailed environment information in a new editor tab',
@@ -97,10 +92,6 @@ export class ExtensionVirtualEnvironmentManagerUI {
                         'revealFileInOS',
                         vscode.Uri.file(envInfo.path)
                     );
-                    break;
-                case '$(browser) Open in Browser':
-                    // Open the environment folder in the default web browser
-                    await vscode.env.openExternal(vscode.Uri.file(envInfo.path));
                     break;
                 case '$(info) Information':
                     await this.showInfo(envInfo);
