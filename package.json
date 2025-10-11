@@ -201,8 +201,8 @@
                     "netcdf"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -216,8 +216,8 @@
                     "hdf5"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -230,8 +230,8 @@
                     "zarr"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -246,8 +246,8 @@
                     "grib"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -262,8 +262,8 @@
                     "geotiff"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -277,8 +277,8 @@
                     "jpeg2000"
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             }
         ],
@@ -313,8 +313,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -329,8 +329,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -342,8 +342,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -361,8 +361,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -380,8 +380,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             },
             {
@@ -396,8 +396,8 @@
                     }
                 ],
                 "icon": {
-                    "light": "./media/icon.svg",
-                    "dark": "./media/icon.svg"
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
             }
         ],

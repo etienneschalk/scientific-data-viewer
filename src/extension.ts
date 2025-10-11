@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
     const iconPath = vscode.Uri.joinPath(
         context.extensionUri,
         'media',
-        'icon.svg'
+        'icon_viridis_bold_monochromatic.svg'
     );
 
     // Create status bar item for Python interpreter (hidden by default)
