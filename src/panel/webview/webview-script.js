@@ -204,11 +204,11 @@ class WebviewMessageBus {
     }
 
     onScrollToHeader(callback) {
-        return this.onEvent('scrollToHeader', callback);
+        return this.onEvent('scrollToHeaderCommandEvent', callback);
     }
 
     onExportWebviewCommand(callback) {
-        return this.onEvent('exportWebviewCommand', callback);
+        return this.onEvent('exportWebviewCommandEvent', callback);
     }
 }
 

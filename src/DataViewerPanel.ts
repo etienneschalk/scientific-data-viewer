@@ -132,7 +132,7 @@ export class DataViewerPanel {
             webviewPanel
         );
         // Add the data viewer panel to the active panels set
-        DataViewerPanel.addPanelOk(dataViewerPanel);
+        DataViewerPanel.addPanel(dataViewerPanel);
         Logger.debug(
             `[create] Added panel to activePanels - total: ${DataViewerPanel._panels.size}`
         );
@@ -155,23 +155,23 @@ export class DataViewerPanel {
         DataViewerPanel._createdCount++;
     }
 
-    private static addPanelOk(panel: DataViewerPanel) {
+    private static addPanel(panel: DataViewerPanel) {
         Logger.debug(
-            `[DataViewerPanel.addPanelOk]    (before add) ${DataViewerPanel._panels.size} panels ok`
+            `[DataViewerPanel.addPanel]    (before add) ${DataViewerPanel._panels.size} panels ok`
         );
         DataViewerPanel._panels.set(panel.getId(), panel);
         Logger.debug(
-            `[DataViewerPanel.addPanelOk]    (after add) ${DataViewerPanel._panels.size} panels ok`
+            `[DataViewerPanel.addPanel]    (after add) ${DataViewerPanel._panels.size} panels ok`
         );
     }
 
-    private static removePanelOk(panel: DataViewerPanel) {
+    private static removePanel(panel: DataViewerPanel) {
         Logger.debug(
-            `[DataViewerPanel.removePanelOk]    (before remove) ${DataViewerPanel._panels.size} panels ok`
+            `[DataViewerPanel.removePanel]    (before remove) ${DataViewerPanel._panels.size} panels ok`
         );
         DataViewerPanel._panels.delete(panel.getId());
         Logger.debug(
-            `[DataViewerPanel.removePanelOk]    (after remove) ${DataViewerPanel._panels.size} panels ok`
+            `[DataViewerPanel.removePanel]    (after remove) ${DataViewerPanel._panels.size} panels ok`
         );
     }
 
@@ -345,7 +345,7 @@ export class DataViewerPanel {
         );
 
         // Remove this panel from the active panels set
-        DataViewerPanel.removePanelOk(this);
+        DataViewerPanel.removePanel(this);
 
         // Clear outline when panel is disposed
         if (DataViewerPanel._outlineProvider) {
@@ -419,15 +419,15 @@ export class DataViewerPanel {
      * @param headerId
      * @param headerLabel
      */
-    public emitScrollToHeader(headerId: string, headerLabel: string): void {
-        this._uiController.emitScrollToHeader(headerId, headerLabel);
+    public emitCommandScrollToHeader(headerId: string, headerLabel: string): void {
+        this._uiController.emitCommandScrollToHeader(headerId, headerLabel);
     }
 
     /**
      * Export webview content for this panel
      */
-    public async emitExportWebview(): Promise<void> {
-        return this._uiController.emitExportWebview();
+    public async emitCommandExportWebview(): Promise<void> {
+        return this._uiController.emitCommandExportWebview();
     }
 
     /**

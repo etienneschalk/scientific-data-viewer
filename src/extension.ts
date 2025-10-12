@@ -433,7 +433,7 @@ function commandHandlerExportWebview(): () => void {
 
         // Export webview content
         try {
-            await activePanel.emitExportWebview();
+            await activePanel.emitCommandExportWebview();
         } catch (error) {
             Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
             vscode.window.showErrorMessage(
@@ -589,7 +589,7 @@ function commandHandlerScrollToHeader(
         // Find the active DataViewerPanel and scroll to the header
         const activePanel = DataViewerPanel.getPanel(currentPanelId);
         if (activePanel) {
-            activePanel.emitScrollToHeader(headerId, headerLabel);
+            activePanel.emitCommandScrollToHeader(headerId, headerLabel);
         } else {
             Logger.warn('↕️ ⚠️ No active DataViewerPanel found for scrolling');
         }

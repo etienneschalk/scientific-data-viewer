@@ -262,12 +262,12 @@ export class MessageBus {
         this.sendEvent(EVENTS.UI_STATE_CHANGED, state);
     }
 
-    emitScrollToHeader(headerId: string, headerLabel: string): void {
-        this.sendEvent(EVENTS.SCROLL_TO_HEADER, { headerId, headerLabel });
+    emitCommandScrollToHeader(headerId: string, headerLabel: string): void {
+        this.sendEvent(EVENTS.SCROLL_TO_HEADER_EVENT_COMMAND, { headerId, headerLabel });
     }
 
-    emitExportWebviewCommand(): void {
-        this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND, {});
+    emitCommandExportWebview(): void {
+        this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND_EVENT, {});
     }
 
     // Cleanup

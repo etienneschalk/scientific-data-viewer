@@ -718,15 +718,15 @@ export class UIController {
         this.messageBus.emitUIStateChanged(state);
     }
 
-    public emitScrollToHeader(headerId: string, headerLabel: string): void {
-        this.messageBus.emitScrollToHeader(headerId, headerLabel);
+    public emitCommandScrollToHeader(headerId: string, headerLabel: string): void {
+        this.messageBus.emitCommandScrollToHeader(headerId, headerLabel);
     }
 
     /**
      * Export webview content (what the user currently sees)
      */
-    public emitExportWebview(): void {
-        this.messageBus.emitExportWebviewCommand();
+    public emitCommandExportWebview(): void {
+        this.messageBus.emitCommandExportWebview();
     }
 
     // Public methods for external control
