@@ -213,7 +213,7 @@ You can explore the data via the editor itself, or via the _Data Structure_ tree
 The data viewer editor shows:
 
 - **File Information**: Path, size, format, and basic metadata
-- **Xarray HTML and Text Representations**: Users that are habituated to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
+- **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
 - **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened (using a sorted [`DataTree.to_dict()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dict.html)). Dataset representations are always used for groups.
 - **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
 - **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
