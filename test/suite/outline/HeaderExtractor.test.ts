@@ -70,7 +70,7 @@ suite('HeaderExtractor Test Suite', () => {
         assert.ok(headers.length > 0);
 
         const titleHeader = headers.find(
-            (h) => h.label === 'Scientific Data Viewer'
+            (h) => h.label === 'Scientific Data Viewer',
         );
         assert.ok(titleHeader);
         assert.strictEqual(titleHeader.level, 1);
@@ -156,7 +156,7 @@ suite('HeaderExtractor Test Suite', () => {
 
     test('should handle invalid HTML content', () => {
         const headers = HeaderExtractor.extractHeaders(
-            '<invalid>html</invalid>'
+            '<invalid>html</invalid>',
         );
 
         assert.ok(headers);
@@ -204,13 +204,13 @@ suite('HeaderExtractor Test Suite', () => {
         assert.strictEqual(mainTitle.children.length, 2); // Two h2 sections as children
 
         const section1 = mainTitle.children.find(
-            (h) => h.label === 'Section 1'
+            (h) => h.label === 'Section 1',
         );
         assert.ok(section1);
         assert.strictEqual(section1.children.length, 2); // Two h3 subsections
 
         const subsection11 = section1.children.find(
-            (h) => h.label === 'Subsection 1.1'
+            (h) => h.label === 'Subsection 1.1',
         );
         assert.ok(subsection11);
         assert.strictEqual(subsection11.level, 3);

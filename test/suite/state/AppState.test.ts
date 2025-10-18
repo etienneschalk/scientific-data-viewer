@@ -15,7 +15,10 @@ suite('StateManager Tests', () => {
     });
 
     test('should update state through actions', () => {
-        stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: '/test/file.nc' });
+        stateManager.dispatch({
+            type: 'SET_CURRENT_FILE',
+            payload: '/test/file.nc',
+        });
         stateManager.dispatch({ type: 'SET_LOADING', payload: true });
 
         const state = stateManager.getState();
@@ -29,8 +32,11 @@ suite('StateManager Tests', () => {
             notifiedState = state;
         });
 
-        stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: '/test/file.nc' });
-        
+        stateManager.dispatch({
+            type: 'SET_CURRENT_FILE',
+            payload: '/test/file.nc',
+        });
+
         assert.notStrictEqual(notifiedState, null);
         assert.strictEqual(notifiedState.data.currentFile, '/test/file.nc');
 
@@ -44,27 +50,40 @@ suite('StateManager Tests', () => {
         assert.strictEqual(validation.errors.length, 0);
 
         // Invalid state - loading but data already set
-        stateManager.dispatch({ type: 'SET_DATA_INFO', payload: { test: 'data' } });
+        stateManager.dispatch({
+            type: 'SET_DATA_INFO',
+            payload: { test: 'data' },
+        });
         stateManager.dispatch({ type: 'SET_LOADING', payload: true });
-        
+
         validation = stateManager.validateState();
         assert.strictEqual(validation.isValid, false);
         assert.strictEqual(validation.errors.length, 1);
-        assert.ok(validation.errors[0].includes('Data is loading but dataInfo is already set'));
+        assert.ok(
+            validation.errors[0].includes(
+                'Data is loading but dataInfo is already set',
+            ),
+        );
     });
 
     test('should support undo functionality', () => {
-        stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: '/test/file1.nc' });
+        stateManager.dispatch({
+            type: 'SET_CURRENT_FILE',
+            payload: '/test/file1.nc',
+        });
         const state1 = stateManager.getState();
-        
-        stateManager.dispatch({ type: 'SET_CURRENT_FILE', payload: '/test/file2.nc' });
+
+        stateManager.dispatch({
+            type: 'SET_CURRENT_FILE',
+            payload: '/test/file2.nc',
+        });
         const state2 = stateManager.getState();
-        
+
         assert.strictEqual(state2.data.currentFile, '/test/file2.nc');
-        
+
         stateManager.undo();
         const state3 = stateManager.getState();
-        
+
         assert.strictEqual(state3.data.currentFile, '/test/file1.nc');
     });
 

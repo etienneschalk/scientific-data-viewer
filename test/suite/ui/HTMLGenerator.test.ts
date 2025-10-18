@@ -4,12 +4,7 @@ import { HTMLGenerator } from '../../../src/panel/HTMLGenerator';
 suite('HTMLGenerator Test Suite', () => {
     test('should generate main HTML', () => {
         const lastLoadTime = '2023-01-01T00:00:00Z';
-        const html = HTMLGenerator.generateMainHTML(
-            true,
-            lastLoadTime,
-            1,
-           
-        );
+        const html = HTMLGenerator.generateMainHTML(true, lastLoadTime, 1);
 
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -22,12 +17,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML without plotting capabilities', () => {
         const lastLoadTime = '2023-01-01T00:00:00Z';
-        const html = HTMLGenerator.generateMainHTML(
-            false,
-            lastLoadTime,
-            1,
-           
-        );
+        const html = HTMLGenerator.generateMainHTML(false, lastLoadTime, 1);
 
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -37,12 +27,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate main HTML in dev mode', () => {
         const lastLoadTime = '2023-01-01T00:00:00Z';
-        const html = HTMLGenerator.generateMainHTML(
-            true,
-            lastLoadTime,
-            1,
-           
-        );
+        const html = HTMLGenerator.generateMainHTML(true, lastLoadTime, 1);
 
         assert.ok(html);
         assert.ok(typeof html === 'string');
@@ -55,7 +40,6 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             '2023-01-01T00:00:00Z',
             1,
-           
         );
 
         assert.ok(header);
@@ -65,7 +49,7 @@ suite('HTMLGenerator Test Suite', () => {
     });
 
     test('should generate header without timestamp', () => {
-        const header = HTMLGenerator.generateHeader(true, null, 1,);
+        const header = HTMLGenerator.generateHeader(true, null, 1);
 
         assert.ok(header);
         assert.ok(typeof header === 'string');
@@ -75,7 +59,7 @@ suite('HTMLGenerator Test Suite', () => {
 
     test('should generate timestamp', () => {
         const timestamp = HTMLGenerator.generateTimestamp(
-            '2023-01-01T00:00:00Z'
+            '2023-01-01T00:00:00Z',
         );
 
         assert.ok(timestamp);
@@ -159,13 +143,11 @@ suite('HTMLGenerator Test Suite', () => {
             true,
             '2023-01-01T00:00:00Z',
             1,
-           
         );
         const html = HTMLGenerator.generateMainHTML(
             true,
             '2023-01-01T00:00:00Z',
             1,
-           
         );
 
         assert.ok(html);

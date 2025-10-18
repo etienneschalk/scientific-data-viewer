@@ -30,10 +30,10 @@ export class DataProcessor {
 
     async getDataInfo(
         uri: vscode.Uri,
-        convertBandsToVariables: boolean = false
+        convertBandsToVariables: boolean = false,
     ): Promise<DataInfoPythonResponse | null> {
         Logger.debug(
-            `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`
+            `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`,
         );
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -41,7 +41,7 @@ export class DataProcessor {
 
         const filePath = quoteIfNeeded(uri.fsPath);
         const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py')
+            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
         );
 
         try {
@@ -54,14 +54,14 @@ export class DataProcessor {
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
-                true
+                true,
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
             Logger.error(
-                `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`
+                `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`,
             );
             return null;
         }
@@ -71,7 +71,7 @@ export class DataProcessor {
         uri: vscode.Uri,
         variable: string,
         plotType: string = 'auto',
-        convertBandsToVariables: boolean = false
+        convertBandsToVariables: boolean = false,
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -79,7 +79,7 @@ export class DataProcessor {
 
         const filePath = quoteIfNeeded(uri.fsPath);
         const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py')
+            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
@@ -101,21 +101,21 @@ export class DataProcessor {
 
         try {
             Logger.info(
-                `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`
+                `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`,
             );
 
             // Execute Python script and capture both stdout and stderr
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
-                true
+                true,
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
             return pythonResponse as CreatePlotPythonResponse;
         } catch (error) {
             Logger.error(
-                `[DataProcessor] [createPlot] Error creating plot: ${error}`
+                `[DataProcessor] [createPlot] Error creating plot: ${error}`,
             );
             throw error;
         }

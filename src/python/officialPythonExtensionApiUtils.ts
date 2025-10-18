@@ -8,13 +8,15 @@ export async function getPythonExtensionApi(): Promise<any | undefined> {
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
 
     if (!pythonExtension) {
-        Logger.error('🐍 ❌ The official Python extension was not found. Is it installed and enabled? Go to the Extensions pane and search for ms-python.python to verify that the official Python extension is both installed and enabled.');
+        Logger.error(
+            '🐍 ❌ The official Python extension was not found. Is it installed and enabled? Go to the Extensions pane and search for ms-python.python to verify that the official Python extension is both installed and enabled.',
+        );
         return undefined;
     }
 
     if (!pythonExtension.isActive) {
         Logger.info(
-            '🐍 💤 Python extension is not active, attempting to activate...'
+            '🐍 💤 Python extension is not active, attempting to activate...',
         );
     }
 
@@ -34,23 +36,23 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
 
         if (!pythonApi) {
             Logger.warn(
-                '🐍 ⚠️ Python extension API is not available after activation'
+                '🐍 ⚠️ Python extension API is not available after activation',
             );
             // Continue to VSCode configuration fallback
         } else {
             Logger.debug(
-                '🐍 ✅ Python extension API is available after activation'
+                '🐍 ✅ Python extension API is available after activation',
             );
             Logger.debug(
                 `🐍 🔍 Python API structure: ${JSON.stringify(
-                    Object.keys(pythonApi)
-                )}`
+                    Object.keys(pythonApi),
+                )}`,
             );
             if (pythonApi.environments) {
                 Logger.debug(
                     `🐍 🔍 Environments API methods: ${JSON.stringify(
-                        Object.keys(pythonApi.environments)
-                    )}`
+                        Object.keys(pythonApi.environments),
+                    )}`,
                 );
             }
         }
@@ -67,8 +69,8 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                     await pythonApi.environments.getActiveEnvironmentPath();
                 Logger.debug(
                     `🐍 🔍 Python extension API active environment path: ${JSON.stringify(
-                        activeEnvironmentPath
-                    )}`
+                        activeEnvironmentPath,
+                    )}`,
                 );
 
                 if (activeEnvironmentPath && activeEnvironmentPath.path) {
@@ -80,12 +82,12 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                         try {
                             const resolvedEnvironment =
                                 await pythonApi.environments.resolveEnvironment(
-                                    activeEnvironmentPath
+                                    activeEnvironmentPath,
                                 );
                             Logger.debug(
                                 `🐍 🔍 Resolved environment details: ${JSON.stringify(
-                                    resolvedEnvironment
-                                )}`
+                                    resolvedEnvironment,
+                                )}`,
                             );
 
                             if (resolvedEnvironment) {
@@ -95,24 +97,24 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                                     resolvedEnvironment.executable?.path ||
                                     activeEnvironmentPath.path;
                                 Logger.info(
-                                    `🐍 ✅ Using resolved Python environment: ${resolvedPath}`
+                                    `🐍 ✅ Using resolved Python environment: ${resolvedPath}`,
                                 );
                                 return resolvedPath;
                             } else {
                                 Logger.warn(
-                                    '🐍 ⚠️ Environment resolution returned undefined, using original path'
+                                    '🐍 ⚠️ Environment resolution returned undefined, using original path',
                                 );
                                 return activeEnvironmentPath.path;
                             }
                         } catch (resolveError) {
                             Logger.warn(
-                                `🐍 ⚠️ Environment resolution failed: ${resolveError}, using original path`
+                                `🐍 ⚠️ Environment resolution failed: ${resolveError}, using original path`,
                             );
                             return activeEnvironmentPath.path;
                         }
                     } else {
                         Logger.debug(
-                            '🐍 ⚠️ resolveEnvironment not available, using original path'
+                            '🐍 ⚠️ resolveEnvironment not available, using original path',
                         );
                         return activeEnvironmentPath.path;
                     }
@@ -135,13 +137,13 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                         await pythonApi.environments.getActiveInterpreter();
                     Logger.debug(
                         `🐍 🔍 Python extension API active interpreter (alt): ${JSON.stringify(
-                            activeInterpreter
-                        )}`
+                            activeInterpreter,
+                        )}`,
                     );
                     return activeInterpreter?.path;
                 } catch (altError) {
                     Logger.debug(
-                        `🐍 ⚠️ Alternative environments API error: ${altError}`
+                        `🐍 ⚠️ Alternative environments API error: ${altError}`,
                     );
                 }
             }
@@ -156,13 +158,13 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                         await pythonApi.environments.getActiveEnvironment();
                     Logger.debug(
                         `🐍 🔍 Python extension API active environment (alt): ${JSON.stringify(
-                            activeEnv
-                        )}`
+                            activeEnv,
+                        )}`,
                     );
                     return activeEnv?.path;
                 } catch (altError) {
                     Logger.debug(
-                        `🐍 ⚠️ Alternative environments API error: ${altError}`
+                        `🐍 ⚠️ Alternative environments API error: ${altError}`,
                     );
                 }
             }
@@ -179,8 +181,8 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
                     await pythonApi.settings.getInterpreterDetails();
                 Logger.debug(
                     `🐍 🔍 Python extension API interpreter details (legacy): ${JSON.stringify(
-                        interpreterDetails
-                    )}`
+                        interpreterDetails,
+                    )}`,
                 );
                 return interpreterDetails?.path;
             } catch (legacyError) {
@@ -200,7 +202,7 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
             .get('defaultInterpreterPath') as string | undefined;
         if (vscodePythonPath) {
             Logger.debug(
-                `🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`
+                `🐍 🔍 Using Python path from VSCode configuration: ${vscodePythonPath}`,
             );
         }
         return vscodePythonPath;
@@ -217,14 +219,14 @@ export async function getPythonInterpreterFromPythonExtension(): Promise<
  */
 export async function setupOfficialPythonExtensionChangeListeners(
     onDidChangeActiveEnvironmentPath: () => Promise<void>,
-    onDidEnvironmentsChanged: (environment: any) => Promise<void>
+    onDidEnvironmentsChanged: (environment: any) => Promise<void>,
 ): Promise<vscode.Disposable | undefined> {
     try {
         const pythonApi = await getPythonExtensionApi();
 
         if (!pythonApi || !pythonApi.environments) {
             Logger.debug(
-                '🐍 ⚠️ [Official Python Extension] Python extension API or environments API not available for event listeners'
+                '🐍 ⚠️ [Official Python Extension] Python extension API or environments API not available for event listeners',
             );
             return undefined;
         }
@@ -237,7 +239,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
             'function'
         ) {
             Logger.info(
-                '🐍 🔧 [Official Python Extension] Setting up Python interpreter change listener for onDidChangeActiveEnvironmentPath...'
+                '🐍 🔧 [Official Python Extension] Setting up Python interpreter change listener for onDidChangeActiveEnvironmentPath...',
             );
 
             const interpreterDisposable =
@@ -246,10 +248,10 @@ export async function setupOfficialPythonExtensionChangeListeners(
                         Logger.info(
                             `🐍 🔔 [Official Python Extension] Python interpreter changed: ${
                                 event?.path || 'undefined'
-                            }`
+                            }`,
                         );
                         await onDidChangeActiveEnvironmentPath();
-                    }
+                    },
                 );
 
             disposables.push(interpreterDisposable);
@@ -261,7 +263,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
             'function'
         ) {
             Logger.info(
-                '🐍 🔧 [Official Python Extension] Setting up Python environment change listener for onDidEnvironmentsChanged...'
+                '🐍 🔧 [Official Python Extension] Setting up Python environment change listener for onDidEnvironmentsChanged...',
             );
 
             const environmentDisposable =
@@ -272,20 +274,20 @@ export async function setupOfficialPythonExtensionChangeListeners(
                             `🐍 🔍 [Official Python Extension] Environment change event received: ${JSON.stringify(
                                 event,
                                 undefined,
-                                2
-                            )}`
+                                2,
+                            )}`,
                         );
 
                         // Handle newly created environments
                         if (event.added && event.added.length > 0) {
                             Logger.info(
-                                `🐍 🆕 [Official Python Extension] New Python environments created: ${event.added.length}`
+                                `🐍 🆕 [Official Python Extension] New Python environments created: ${event.added.length}`,
                             );
                             for (const env of event.added) {
                                 Logger.info(
                                     `🐍 🆕 New environment: ${
                                         env.path || env.id || 'unknown'
-                                    }`
+                                    }`,
                                 );
                                 await onDidEnvironmentsChanged(env);
                             }
@@ -294,13 +296,13 @@ export async function setupOfficialPythonExtensionChangeListeners(
                         // Handle removed environments
                         if (event.removed && event.removed.length > 0) {
                             Logger.info(
-                                `🐍 🗑️ [Official Python Extension] Python environments removed: ${event.removed.length}`
+                                `🐍 🗑️ [Official Python Extension] Python environments removed: ${event.removed.length}`,
                             );
                             for (const env of event.removed) {
                                 Logger.info(
                                     `🐍 🗑️ Removed environment: ${
                                         env.path || env.id || 'unknown'
-                                    }`
+                                    }`,
                                 );
                                 await onDidEnvironmentsChanged(env);
                             }
@@ -309,18 +311,18 @@ export async function setupOfficialPythonExtensionChangeListeners(
                         // Handle updated environments
                         if (event.updated && event.updated.length > 0) {
                             Logger.info(
-                                `🐍 🔄 [Official Python Extension] Python environments updated: ${event.updated.length}`
+                                `🐍 🔄 [Official Python Extension] Python environments updated: ${event.updated.length}`,
                             );
                             for (const env of event.updated) {
                                 Logger.info(
                                     `🐍 🔄 Updated environment: ${
                                         env.path || env.id || 'unknown'
-                                    }`
+                                    }`,
                                 );
                                 await onDidEnvironmentsChanged(env);
                             }
                         }
-                    }
+                    },
                 );
 
             disposables.push(environmentDisposable);
@@ -329,7 +331,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
         // If no listeners were set up, return undefined
         if (disposables.length === 0) {
             Logger.debug(
-                '🐍 ⚠️ No compatible event listeners available in Python extension API'
+                '🐍 ⚠️ No compatible event listeners available in Python extension API',
             );
             return undefined;
         }
@@ -342,7 +344,7 @@ export async function setupOfficialPythonExtensionChangeListeners(
         };
     } catch (error) {
         Logger.warn(
-            `🐍 ❌ Failed to set up Python environment change listeners: ${error}`
+            `🐍 ❌ Failed to set up Python environment change listeners: ${error}`,
         );
         return undefined;
     }

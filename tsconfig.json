@@ -1,25 +1,16 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "ES2021",
-    "outDir": "out",
-    "lib": [
-      "ES2021",
-      "DOM"
-    ],
-    "sourceMap": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
-  },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    ".vscode-test"
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2021",
+        "outDir": "out",
+        "lib": ["ES2021", "DOM"],
+        "sourceMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true
+    },
+    "include": ["src/**/*", "test/**/*"],
+    "exclude": ["node_modules", ".vscode-test"]
 }

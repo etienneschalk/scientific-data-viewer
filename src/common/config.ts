@@ -68,14 +68,14 @@ export function getWorkspaceConfig() {
 export function getMaxSize(): number {
     return getWorkspaceConfig().get<number>(
         MAX_FILE_SIZE,
-        DEFAULT_MAX_FILE_SIZE
+        DEFAULT_MAX_FILE_SIZE,
     );
 }
 
 export function getAllowMultipleTabsForSameFile(): boolean {
     return getWorkspaceConfig().get<boolean>(
         ALLOW_MULTIPLE_TABS_FOR_SAME_FILE,
-        DEFAULT_ALLOW_MULTIPLE_TABS_FOR_SAME_FILE
+        DEFAULT_ALLOW_MULTIPLE_TABS_FOR_SAME_FILE,
     );
 }
 
@@ -86,7 +86,7 @@ export function getDevMode(): boolean {
 export function getMatplotlibStyle(): string {
     const userStyle = getWorkspaceConfig().get<string>(
         MATPLOTLIB_STYLE,
-        DEFAULT_MATPLOTLIB_STYLE
+        DEFAULT_MATPLOTLIB_STYLE,
     );
     if (userStyle && userStyle.trim() !== '') {
         // Return the user-specified style
@@ -100,38 +100,38 @@ export function getMatplotlibStyle(): string {
 export function getWebviewExportTheme(): string {
     return getWorkspaceConfig().get<string>(
         WEBVIEW_EXPORT_THEME,
-        DEFAULT_WEBVIEW_EXPORT_THEME
+        DEFAULT_WEBVIEW_EXPORT_THEME,
     );
 }
 
 export function getOverridePythonInterpreter(): string {
     return getWorkspaceConfig().get<string>(
         OVERRIDE_PYTHON_INTERPRETER,
-        DEFAULT_OVERRIDE_PYTHON_INTERPRETER
+        DEFAULT_OVERRIDE_PYTHON_INTERPRETER,
     );
 }
 
 export function getUseExtensionOwnEnvironment(): boolean {
     return getWorkspaceConfig().get<boolean>(
         USE_EXTENSION_OWN_ENVIRONMENT,
-        DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT
+        DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT,
     );
 }
 
 export function getConvertBandsToVariables(): boolean {
     return getWorkspaceConfig().get<boolean>(
         CONVERT_BANDS_TO_VARIABLES,
-        DEFAULT_CONVERT_BANDS_TO_VARIABLES
+        DEFAULT_CONVERT_BANDS_TO_VARIABLES,
     );
 }
 
 export async function updateUseExtensionOwnEnvironment(
-    value: boolean
+    value: boolean,
 ): Promise<void> {
     return await getWorkspaceConfig().update(
         USE_EXTENSION_OWN_ENVIRONMENT,
         value,
-        vscode.ConfigurationTarget.Workspace
+        vscode.ConfigurationTarget.Workspace,
     );
 }
 
@@ -139,6 +139,6 @@ export async function updateDevMode(value: boolean): Promise<void> {
     return await getWorkspaceConfig().update(
         DEV_MODE,
         value,
-        vscode.ConfigurationTarget.Global
+        vscode.ConfigurationTarget.Global,
     );
 }

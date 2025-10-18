@@ -89,7 +89,6 @@ Available on:
 ## 📦 Installation
 
 1. **Install from VSCode Marketplace**:
-
    - Open VSCode
    - Go to Extensions view (`Ctrl+Shift+X`)
    - Search for "Scientific Data Viewer"
@@ -145,7 +144,6 @@ by VSCode or Cursor.
 The extension supports multiple ways to configure your Python environment:
 
 1. **Python Extension Integration** (Default behaviour):
-
    - This mode delegates most of the work to the **Python extension**. Its installation is a requirement.
      - For VSCode users: [🔗 Python extension (VSCode Marketplace)](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
      - For Cursor users: [🔗 Python extension (Open VSX Registry)](https://open-vsx.org/extension/ms-python/python)
@@ -155,7 +153,6 @@ The extension supports multiple ways to configure your Python environment:
    - The extension will automatically detect it and use it
 
 2. **Extension Virtual Environment (Semi-Standalone)**:
-
    - **Opt-in setting**:
      - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
      - Type "Scientific Data Viewer: Show Settings"
@@ -177,27 +174,23 @@ The extension supports multiple ways to configure your Python environment:
 ### 📂 Opening Data Files
 
 1. **Click on file from File Explorer**:
-
    - Click on any supported file in the File Explorer
    - File opens directly in the Scientific Data Viewer
    - Command "View: Split Editor" is supported
 
 2. **Drag and drop from File Explorer**
-
    - Drag and drop any supported file (or folder)
    - File (or folder) opens directly in the Scientific Data Viewer
      - Multiple files (or folders) can be opened at once if they are selected
    - Command "View: Split Editor" is supported
 
 3. **Context menu from File Explorer**:
-
    - Right-click on any supported file (or folder)
    - Select "Open Scientific Data Viewer" for single file or folder
    - Select "Open Scientific Data Viewer for Selection" to open multiple selected multiple files or folders
    - Command "View: Split Editor" is NOT supported
 
 4. **From command palette**:
-
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
    - Type "Open Scientific Data Viewer" (or "Open Scientific Data Viewer (Folder)")
    - Select a file (or folder) from the file picker
@@ -250,14 +243,12 @@ Right-click on supported file types in the Explorer to access:
 The extension allows you to export complete data viewer content as self-contained HTML reports:
 
 1. **Using the Export Button**:
-
    - Open a scientific data file in the Scientific Data Viewer
    - Click the export button (🖼️) in the header controls
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 
 2. **Using the Command Palette**:
-
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
    - Type "Scientific Data Viewer: Export Webview Content"
    - Choose a location and filename for the HTML report
@@ -324,25 +315,21 @@ The extension includes configuration options that act as feature flags to contro
 ### ⚠️ Common Issues
 
 1. **Python not found**:
-
    - Ensure Python is installed and in your PATH
    - Use the "Python: Select Interpreter" command to manually set the path
    - Consider using the extension's own virtual environment for a self-contained solution
 
 2. **uv not available**:
-
    - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/')
    - Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
    - If uv is not installed, the extension will fall back to using the Python extension's interpreter
 
 3. **Missing packages**:
-
    - Install required packages: `pip install xarray matplotlib`
    - Install per-format packages: `pip install netCDF4 zarr h5py numpy rioxarray`
    - Or let the extension install them automatically (prompt when opening a file)
 
 4. **Large files not loading**:
-
    - Increase the `maxFileSize` setting
    - Consider using data slicing for very large datasets
 

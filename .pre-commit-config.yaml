@@ -1,0 +1,113 @@
+# Pre-commit configuration for Scientific Data Viewer
+# Implements comprehensive code formatting standardization as per issue #65
+# https://github.com/etienneschalk/scientific-data-viewer/issues/65
+
+repos:
+  # TypeScript/JavaScript formatting and linting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8 # Match the version in package.json
+    hooks:
+      - id: prettier
+        name: Prettier (TypeScript/JavaScript)
+        files: \.(ts|tsx|js|jsx|json|md)$
+        args: [--write]
+        types: [file]
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint (TypeScript/JavaScript)
+        entry: npx eslint
+        language: system
+        files: \.(ts|tsx|js|jsx)$
+        args: [--fix, --max-warnings=0]
+        exclude: ^(out/|test/|node_modules/|\.vscode-test/)
+
+  # TypeScript type checking
+  - repo: local
+    hooks:
+      - id: typescript-check
+        name: TypeScript Type Check
+        entry: npx tsc --noEmit --project tsconfig.pre-commit.json
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+        exclude: ^(out/|test/|node_modules/|\.vscode-test/)
+
+  # Python formatting and linting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.1 # Latest stable version
+    hooks:
+      - id: ruff
+        name: Ruff (Python Linting)
+        args: [--fix, --exit-non-zero-on-fix]
+        files: \.py$
+        types: [python]
+        exclude: ^(out/|node_modules/|\.vscode-test/|python/create_sample_data.p)
+
+      - id: ruff-format
+        name: Ruff (Python Formatting)
+        files: \.py$
+        types: [python]
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+  # Additional file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0 # Latest stable version
+    hooks:
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        files: \.(ts|tsx|js|jsx|py|md|json|yaml|yml)$
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+      - id: end-of-file-fixer
+        name: Fix End of Files
+        files: \.(ts|tsx|js|jsx|py|md|json|yaml|yml)$
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+      - id: check-yaml
+        name: Check YAML
+        files: \.(yaml|yml)$
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+      - id: check-json
+        name: Check JSON
+        files: \.(json)$
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        files: \.(ts|tsx|js|jsx|py|md|json|yaml|yml)$
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=1000] # 1MB limit for binary files
+
+  # Security checks
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: ^(out/|node_modules/|\.vscode-test/)
+
+# Global configuration
+default_stages: [commit]
+fail_fast: false
+minimum_pre_commit_version: 2.0.0
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

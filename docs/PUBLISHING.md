@@ -52,7 +52,6 @@ See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instruc
 ### Manual Publishing
 
 1. **Create a Personal Access Token**:
-
    - Go to Azure DevOps
    - Create a new Personal Access Token with Marketplace permissions
 

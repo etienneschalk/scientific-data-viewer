@@ -48,10 +48,12 @@ class WebviewMessageBus {
         // In degraded mode, reject VSCode-specific requests
         if (this.isDegradedMode) {
             console.warn(
-                `⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`
+                `⚠️ Degraded mode: Cannot send request '${command}' - VSCode API not available`,
             );
             return Promise.reject(
-                new Error(`Command '${command}' not available in degraded mode`)
+                new Error(
+                    `Command '${command}' not available in degraded mode`,
+                ),
             );
         }
 
@@ -122,7 +124,7 @@ class WebviewMessageBus {
 
         if (!pendingRequest) {
             console.warn(
-                `Received response for unknown request: ${message.requestId}`
+                `Received response for unknown request: ${message.requestId}`,
             );
             return;
         }
@@ -146,7 +148,7 @@ class WebviewMessageBus {
                 } catch (error) {
                     console.error(
                         `Error in event listener for ${message.event}:`,
-                        error
+                        error,
                     );
                 }
             });
@@ -204,11 +206,11 @@ class WebviewMessageBus {
     }
 
     onScrollToHeader(callback) {
-        return this.onEvent('scrollToHeader', callback);
+        return this.onEvent('scrollToHeaderCommandEvent', callback);
     }
 
     onExportWebviewCommand(callback) {
-        return this.onEvent('exportWebviewCommand', callback);
+        return this.onEvent('exportWebviewCommandEvent', callback);
     }
 }
 
@@ -228,7 +230,7 @@ try {
 } catch (error) {
     console.warn(
         '⚠️ VSCode API not available, running in degraded mode:',
-        error.message
+        error.message,
     );
     // Create a mock messageBus that handles missing VSCode API gracefully
     messageBus = new WebviewMessageBus(null);
@@ -263,7 +265,7 @@ function initialize() {
         console.log('🚀 WebView initialized - VSCode mode enabled');
     } else {
         console.log(
-            '🚀 WebView initialized - Degraded mode (browser-only features)'
+            '🚀 WebView initialized - Degraded mode (browser-only features)',
         );
         // In degraded mode, we can still display static content if it's already loaded
         // but we won't be able to communicate with VSCode
@@ -274,7 +276,7 @@ function initialize() {
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     console.log(
-        '⚛️ 🔧 Document is not ready - Attach event listener to DOMContentLoaded'
+        '⚛️ 🔧 Document is not ready - Attach event listener to DOMContentLoaded',
     );
     document.addEventListener('DOMContentLoaded', () => {
         initialize();
@@ -332,7 +334,7 @@ function showDegradedModeIndicator() {
     plotControls.forEach((control) => {
         const plotError = control.querySelector('.plot-error');
         const plotImageContainer = control.querySelector(
-            '.plot-image-container'
+            '.plot-image-container',
         );
         const hasPlotError =
             plotError && !plotError.classList.contains('hidden');
@@ -345,7 +347,7 @@ function showDegradedModeIndicator() {
         } else {
             // If there's existing plot content, hide only the control buttons but keep containers visible
             const plotButtons = control.querySelectorAll(
-                '.plot-controls-row, .plot-actions'
+                '.plot-controls-row, .plot-actions',
             );
             plotButtons.forEach((button) => {
                 button.style.display = 'none';
@@ -401,12 +403,7 @@ function setupMessageHandlers() {
 
     messageBus.onError((error) => {
         console.error('❌ Error event received:', error);
-        displayGlobalError(
-            error.message,
-            error.details,
-            error.errorType,
-            error.formatInfo
-        );
+        displayGlobalError(error.message, error.details, error.errorType);
     });
 
     messageBus.onPythonEnvironmentChanged((data) => {
@@ -449,11 +446,11 @@ function displayAll(state) {
     displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
     displayHtmlRepresentation(
         state.data.dataInfo.xarray_html_repr_flattened,
-        true
+        true,
     );
     displayTextRepresentation(
         state.data.dataInfo.xarray_text_repr_flattened,
-        true
+        true,
     );
     displayPythonPath(state.python.pythonPath);
     displayExtensionConfig(state.extension.extensionConfig);
@@ -529,10 +526,10 @@ function displayDataInfo(data, filePath) {
         Object.keys(data.variables_flattened).forEach((groupName) => {
             data.variables_flattened[groupName].forEach((variable) => {
                 const fullVariableName = `${
-                    groupName == '/' ? '' : groupName
+                    groupName === '/' ? '' : groupName
                 }/${variable.name}`;
                 const createButton = document.querySelector(
-                    `.create-plot-button[data-variable="${fullVariableName}"]`
+                    `.create-plot-button[data-variable="${fullVariableName}"]`,
                 );
                 if (createButton) {
                     createButton.disabled = false;
@@ -553,7 +550,7 @@ function renderFileInformation(data) {
 
     if (data.fileSize) {
         formatInfo += /*html*/ `<strong>Size:</strong> ${formatFileSize(
-            data.fileSize
+            data.fileSize,
         )} · `;
     }
 
@@ -565,7 +562,7 @@ function renderFileInformation(data) {
         formatInfo += /*html*/ `
             <strong>Available Engines:</strong> ${
                 data.format_info.available_engines.join(', ') || 'None'
-            } · 
+            } ·
             ${
                 data.used_engine
                     ? /*html*/ `<strong>Used Engine:</strong> ${data.used_engine}`
@@ -622,8 +619,8 @@ function renderGroup(data, groupName) {
                         <div class="dimensions">
                             ${dimensionsHtml}
                         </div>
-                    </details>  
-                </div>  
+                    </details>
+                </div>
                 <div class="info-section" id="${joinId([
                     'data-group',
                     groupName,
@@ -643,7 +640,7 @@ function renderGroup(data, groupName) {
                     <details class="" open> <summary><h4>Variables</h4></summary>
                         <div class="variables">
                             ${variablesHtml}
-                        </div>  
+                        </div>
                     </details>
                 </div>
                 <div class="info-section" id="${joinId([
@@ -654,7 +651,7 @@ function renderGroup(data, groupName) {
                     <details class="" open> <summary><h4>Attributes</h4></summary>
                         <div class="attributes">
                             ${attributesHtml}
-                        </div>  
+                        </div>
                     </details>
                 </div>
             </div>
@@ -728,17 +725,17 @@ function renderCoordinateVariable(variable, groupName) {
     const attributesContent = hasAttributes
         ? renderVariableAttributes(
               variable.attributes,
-              joinId(['data-group', groupName, 'coordinate', variable.name])
+              joinId(['data-group', groupName, 'coordinate', variable.name]),
           )
         : '';
 
     return /*html*/ `
-        <details 
-            class="variable-details" 
-            id="${coordId}" 
+        <details
+            class="variable-details"
+            id="${coordId}"
             data-variable="${variable.name}"
         >
-            <summary    
+            <summary
                 class="variable-summary ${hasAttributes ? '' : 'not-clickable'}"
             >
                 <span class="variable-name" title="${variable.name}">
@@ -781,12 +778,12 @@ function renderDataVariable(variable, groupName) {
     const attributesContent = hasAttributes
         ? renderVariableAttributes(
               variable.attributes,
-              joinId(['data-group', groupName, 'variable', variable.name])
+              joinId(['data-group', groupName, 'variable', variable.name]),
           )
         : '';
 
     // For datatree variables, use full path (group/variable) for plotting
-    const fullVariableName = `${groupName == '/' ? '' : groupName}/${
+    const fullVariableName = `${groupName === '/' ? '' : groupName}/${
         variable.name
     }`;
     const plotControls = renderVariablePlotControls(fullVariableName);
@@ -888,7 +885,7 @@ function displayHtmlRepresentation(htmlData, isDatatree) {
             const prefixId = 'section-html-representation-for-groups';
             container.innerHTML = Object.entries(htmlData)
                 .map(([name, value]) =>
-                    renderHtmlRepresentationForGroup(prefixId, name, value)
+                    renderHtmlRepresentationForGroup(prefixId, name, value),
                 )
                 .join('');
         } else {
@@ -926,13 +923,13 @@ function displayTextRepresentation(textData, isDatatree = false) {
             const prefixId = 'section-text-representation-for-groups';
             container.innerHTML = Object.keys(textData)
                 .map((name) =>
-                    renderEmptyTextRepresentationForGroup(prefixId, name)
+                    renderEmptyTextRepresentationForGroup(prefixId, name),
                 )
                 .join('');
 
             for (const [name, value] of Object.entries(textData)) {
                 const textRepresentation = document.getElementById(
-                    joinId(['groupTextRepresentation', name])
+                    joinId(['groupTextRepresentation', name]),
                 );
                 textRepresentation.textContent = value;
             }
@@ -951,16 +948,16 @@ function renderEmptyTextRepresentationForGroup(prefixId, name) {
     <div class="info-section" id="${joinId([prefixId, name])}">
         <details> <summary>${name}</summary>
             <div class="text-representation-container">
-                <button 
-                    id="${joinId(['groupTextCopyButton', name])}" 
+                <button
+                    id="${joinId(['groupTextCopyButton', name])}"
                     data-target-id="${preId}"
                     class="text-copy-button"
                 > 📋 Copy </button>
-                <pre 
+                <pre
                     id="${preId}"
                 ></pre>
             </div>
-        </div>  
+        </div>
         </details>
     </div>
     `;
@@ -998,8 +995,7 @@ function displayGlobalError(
     message,
     details = '',
     errorType = '',
-    formatInfo = null,
-    supportedFormats = SUPPORTED_EXTENSIONS_HARDOCDED.join(', ')
+    supportedFormats = SUPPORTED_EXTENSIONS_HARDOCDED.join(', '),
 ) {
     const errorDiv = document.getElementById('error');
 
@@ -1015,8 +1011,8 @@ function displayGlobalError(
             <li>Make sure that the file format is supported (${supportedFormats})</li>
             <li>Make sure Python is installed and accessible</li>
             <li>
-                Make sure that the Python extension is installed and enabled. 
-                Please go to the Extensions pane and search for <code>ms-python.python</code> 
+                Make sure that the Python extension is installed and enabled.
+                Please go to the Extensions pane and search for <code>ms-python.python</code>
                 to verify that the official Python extension is both installed and enabled.
                 <ul style="margin-left: 20px;">
                     <li>For VSCode users: <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python" target="_blank">🔗 Python extension (VSCode Marketplace)</a></li>
@@ -1025,33 +1021,33 @@ function displayGlobalError(
             </li>
 
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
-            <li>If the python environment is not ready, install required package: 
+            <li>If the python environment is not ready, install required package:
                 <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['xarray'])">
                     🎮 Install xarray</a>
-            <li>If you cannot create plots, install required package: 
+            <li>If you cannot create plots, install required package:
                 <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['matplotlib'])">
                     🎮 Install matplotlib</a>
             <li>Install additional packages for format
                 <ul style="margin-left: 20px;">
-                    <li>NetCDF: 
+                    <li>NetCDF:
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['netCDF4', 'h5netcdf', 'scipy'])">
-                            🎮 Install netCDF4, h5netcdf and scipy</a> 
+                            🎮 Install netCDF4, h5netcdf and scipy</a>
                     </li>
-                    <li>Zarr: 
+                    <li>Zarr:
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['zarr'])">
-                            🎮 Install zarr</a> 
+                            🎮 Install zarr</a>
                     </li>
-                    <li>GRIB: 
+                    <li>GRIB:
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['cfgrib'])">
-                            🎮 Install cfgrib</a> 
+                            🎮 Install cfgrib</a>
                     </li>
-                    <li>GeoTIFF: 
+                    <li>GeoTIFF:
                         <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
-                            🎮 Install rioxarray</a> 
+                            🎮 Install rioxarray</a>
                     </li>
                     <li>JPEG-2000:
                          <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
-                            🎮 Install rioxarray</a> 
+                            🎮 Install rioxarray</a>
                     </li>
                 </ul>
             </li>
@@ -1077,9 +1073,9 @@ function displayGlobalError(
         }
         <div style="margin-top: 15px;">
             ${troubleshootingSteps}
-            
+
             <p style="margin-top: 15px; font-style: italic;">
-                Note: If you see this message even after you have configured the Python interpreter, 
+                Note: If you see this message even after you have configured the Python interpreter,
                 you might need to wait a few moments for the Python environment to be initialized.
                 This can happen if you opened the data viewer panel right after VSCode was opened.
             </p>
@@ -1111,7 +1107,7 @@ function hideGlobalError() {
 // Per-variable plot functions
 function displayVariablePlotLoading(variable) {
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const imageContainer = container.querySelector('.plot-image-container');
 
@@ -1125,7 +1121,7 @@ function displayVariablePlotLoading(variable) {
 
 function displayVariablePlot(variable, plotData) {
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const imageContainer = container.querySelector('.plot-image-container');
 
@@ -1140,7 +1136,7 @@ function displayVariablePlot(variable, plotData) {
         imageContainer.innerHTML = '';
         displayVariablePlotError(
             variable,
-            'Error creating plot: Python script failed'
+            'Error creating plot: Python script failed',
         );
         container.style.display = 'block';
     }
@@ -1148,16 +1144,16 @@ function displayVariablePlot(variable, plotData) {
 
 function displayVariablePlotError(variable, message) {
     const plotError = document.querySelector(
-        `.plot-error[data-variable="${variable}"]`
+        `.plot-error[data-variable="${variable}"]`,
     );
     const errorMessageId = generateUUID();
     const matplotlibInstallButton = message.includes(
-        'Matplotlib is not installed'
+        'Matplotlib is not installed',
     )
         ? /*html*/ `
-                <button 
-                    class="plot-action-button" 
-                    data-target-id="${errorMessageId}" 
+                <button
+                    class="plot-action-button"
+                    data-target-id="${errorMessageId}"
                     onclick="executeInstallPackagesCommand(['matplotlib'])"
                     style="margin-bottom: 6px;"
                     title="Once installed (a notification should appear), retry 'Create Plot' again."
@@ -1169,9 +1165,9 @@ function displayVariablePlotError(variable, message) {
         plotError.innerHTML = /*html*/ `
             <div>
                 ${matplotlibInstallButton}
-                <button 
-                    class="text-copy-button" 
-                    data-target-id="${errorMessageId}" 
+                <button
+                    class="text-copy-button"
+                    data-target-id="${errorMessageId}"
                     title="Copy error message"
                 >📋 Copy</button>
                 <pre id="${errorMessageId}"></pre>
@@ -1187,7 +1183,7 @@ function displayVariablePlotError(variable, message) {
 
 function displayVariablePlotSuccess(variable, message) {
     const plotError = document.querySelector(
-        `.plot-error[data-variable="${variable}"]`
+        `.plot-error[data-variable="${variable}"]`,
     );
     if (plotError) {
         // Format message to handle multi-line messages
@@ -1201,7 +1197,7 @@ function displayVariablePlotSuccess(variable, message) {
 
 function hideVariablePlotError(variable) {
     const plotError = document.querySelector(
-        `.plot-error[data-variable="${variable}"]`
+        `.plot-error[data-variable="${variable}"]`,
     );
     if (plotError) {
         plotError.classList.add('hidden');
@@ -1247,7 +1243,7 @@ function updatePlotAllProgress() {
         const percentage = Math.round(
             (globalStateCreateAllPlotsOperation.completedCount /
                 globalStateCreateAllPlotsOperation.totalCount) *
-                100
+                100,
         );
         plotAllProgress.textContent = `Progress: ${globalStateCreateAllPlotsOperation.completedCount}/${globalStateCreateAllPlotsOperation.totalCount} (${percentage}%)`;
     }
@@ -1295,7 +1291,7 @@ function setupEventListeners() {
 
         // Global event listeners (no data-variable attribute)
         for (const [id, handler] of Object.entries(
-            clickEventMappingIdToHandler
+            clickEventMappingIdToHandler,
         )) {
             if (e.target.id === id) {
                 handler();
@@ -1305,7 +1301,7 @@ function setupEventListeners() {
 
         // Per-variable event listeners for plot controls (needs data-variable attribute)
         for (const [className, handler] of Object.entries(
-            clickEventMappingClassToHandler
+            clickEventMappingClassToHandler,
         )) {
             if (e.target.classList.contains(className)) {
                 const variable = e.target.dataset.variable;
@@ -1317,7 +1313,7 @@ function setupEventListeners() {
     document.addEventListener('change', async (e) => {
         // Change event listeners for plot type select
         for (const [className, handler] of Object.entries(
-            changeEventMappingClassToHandler
+            changeEventMappingClassToHandler,
         )) {
             if (e.target.classList.contains(className)) {
                 const variable = e.target.getAttribute('data-variable');
@@ -1376,18 +1372,18 @@ async function handleExportWebview() {
         if (result.success) {
             console.log(
                 '🖼️ Webview content exported successfully:',
-                result.filePath
+                result.filePath,
             );
         } else {
             console.error('🖼️ Failed to export webview content:', result.error);
             displayGlobalError(
-                'Failed to export webview content: ' + result.error
+                'Failed to export webview content: ' + result.error,
             );
         }
     } catch (error) {
         console.error('🖼️ Error exporting webview content:', error);
         displayGlobalError(
-            'Failed to export webview content: ' + error.message
+            'Failed to export webview content: ' + error.message,
         );
     }
 }
@@ -1401,7 +1397,7 @@ function captureWebviewContent() {
         console.log(
             '🖼️ Content captured, size:',
             htmlContent.length,
-            'characters'
+            'characters',
         );
         return htmlContent;
     } catch (error) {
@@ -1474,7 +1470,7 @@ async function handleCreateAllPlots() {
     const plotPromises = Array.from(buttons).map(async (button) => {
         const variable = button.getAttribute('data-variable');
         const plotTypeSelect = document.querySelector(
-            `.plot-type-select[data-variable="${variable}"]`
+            `.plot-type-select[data-variable="${variable}"]`,
         );
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
@@ -1493,15 +1489,15 @@ async function handleCreateAllPlots() {
 
             // Clear loading state and show error
             const container = document.querySelector(
-                `.plot-container[data-variable="${variable}"]`
+                `.plot-container[data-variable="${variable}"]`,
             );
             const imageContainer = container.querySelector(
-                '.plot-image-container'
+                '.plot-image-container',
             );
             imageContainer.innerHTML = '';
             displayVariablePlotError(
                 variable,
-                'Error creating plot: ' + error.message
+                'Error creating plot: ' + error.message,
             );
 
             globalStateCreateAllPlotsOperation.completedCount++;
@@ -1517,19 +1513,19 @@ async function handleCreateAllPlots() {
 
         // Log results
         const successful = results.filter(
-            (r) => r.status === 'fulfilled' && r.value.success
+            (r) => r.status === 'fulfilled' && r.value.success,
         ).length;
         const failed = results.length - successful;
 
         console.log(
-            `Plot all completed: ${successful} successful, ${failed} failed`
+            `Plot all completed: ${successful} successful, ${failed} failed`,
         );
 
         // Show completion message
         try {
             await messageBus.showNotification(
                 `Plot all completed: ${successful} successful, ${failed} failed`,
-                failed > 0 ? 'warning' : 'info'
+                failed > 0 ? 'warning' : 'info',
             );
         } catch (notificationError) {
             console.error('Failed to show notification:', notificationError);
@@ -1593,14 +1589,14 @@ async function handleSaveAllPlots() {
             const result = await messageBus.savePlot(
                 plotData,
                 variable,
-                fileName
+                fileName,
             );
             if (result.success) {
                 displayVariablePlotSuccess(variable, `Plot saved: ${fileName}`);
             } else {
                 displayVariablePlotError(
                     variable,
-                    `Failed to save: ${result.error}`
+                    `Failed to save: ${result.error}`,
                 );
             }
         }
@@ -1609,7 +1605,7 @@ async function handleSaveAllPlots() {
         try {
             await messageBus.showNotification(
                 'Failed to save all plots: ' + error.message,
-                'error'
+                'error',
             );
         } catch (notificationError) {
             console.error('Failed to show notification:', notificationError);
@@ -1624,7 +1620,7 @@ async function handleCreateVariablePlot(variable) {
     }
 
     const plotTypeSelect = document.querySelector(
-        `.plot-type-select[data-variable="${variable}"]`
+        `.plot-type-select[data-variable="${variable}"]`,
     );
     const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
@@ -1638,20 +1634,20 @@ async function handleCreateVariablePlot(variable) {
         console.error('Failed to create plot:', error);
         // Clear loading state and show error
         const container = document.querySelector(
-            `.plot-container[data-variable="${variable}"]`
+            `.plot-container[data-variable="${variable}"]`,
         );
         const imageContainer = container.querySelector('.plot-image-container');
         imageContainer.innerHTML = '';
         displayVariablePlotError(
             variable,
-            'Error creating plot: ' + error.message
+            'Error creating plot: ' + error.message,
         );
     }
 }
 
 async function handleResetVariablePlot(variable) {
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const imageContainer = container.querySelector('.plot-image-container');
 
@@ -1667,7 +1663,7 @@ async function handleSaveVariablePlot(variable) {
     }
 
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const img = container.querySelector('img');
 
@@ -1685,20 +1681,20 @@ async function handleSaveVariablePlot(variable) {
         if (result.success) {
             displayVariablePlotSuccess(
                 variable,
-                `Plot saved successfully: ${fileName}`
+                `Plot saved successfully: ${fileName}`,
             );
             console.log('Plot saved successfully:', result.filePath);
         } else {
             displayVariablePlotError(
                 variable,
-                `Failed to save plot: ${result.error}`
+                `Failed to save plot: ${result.error}`,
             );
         }
     } catch (error) {
         console.error('Error saving plot:', error);
         displayVariablePlotError(
             variable,
-            'Failed to save plot: ' + error.message
+            'Failed to save plot: ' + error.message,
         );
     }
 }
@@ -1710,7 +1706,7 @@ async function handleSaveVariablePlotAs(variable) {
     }
 
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const img = container.querySelector('img');
 
@@ -1729,7 +1725,7 @@ async function handleSaveVariablePlotAs(variable) {
             if (result.error !== 'Save cancelled by user') {
                 displayVariablePlotError(
                     variable,
-                    `Failed to save plot: ${result.error}`
+                    `Failed to save plot: ${result.error}`,
                 );
             }
         }
@@ -1737,7 +1733,7 @@ async function handleSaveVariablePlotAs(variable) {
         console.error('Error saving plot as:', error);
         displayVariablePlotError(
             variable,
-            'Failed to save plot: ' + error.message
+            'Failed to save plot: ' + error.message,
         );
     }
 }
@@ -1749,7 +1745,7 @@ async function handleOpenVariablePlot(variable) {
     }
 
     const container = document.querySelector(
-        `.plot-container[data-variable="${variable}"]`
+        `.plot-container[data-variable="${variable}"]`,
     );
     const img = container.querySelector('img');
 
@@ -1769,14 +1765,14 @@ async function handleOpenVariablePlot(variable) {
         console.error('Error opening plot:', error);
         displayVariablePlotError(
             variable,
-            'Failed to open plot: ' + error.message
+            'Failed to open plot: ' + error.message,
         );
     }
 }
 
 async function handlePlotTypeSelect(variable) {
     const createButton = document.querySelector(
-        `.create-plot-button[data-variable="${variable}"]`
+        `.create-plot-button[data-variable="${variable}"]`,
     );
     if (createButton) {
         createButton.disabled = false;
@@ -1788,7 +1784,7 @@ function doScrollToHeader(
     headerId,
     headerLabel,
     verticalOffset = 80,
-    highlightTimeout = 3000
+    highlightTimeout = 3000,
 ) {
     console.log(`📋 Scrolling to header: ${headerLabel} (${headerId})`);
 
@@ -1818,7 +1814,7 @@ function doScrollToHeader(
 
         if (openedCount > 0) {
             console.log(
-                `📋 Opened ${openedCount} parent details groups for: ${headerLabel}`
+                `📋 Opened ${openedCount} parent details groups for: ${headerLabel}`,
             );
         }
 
@@ -1846,19 +1842,19 @@ function doScrollToHeader(
         console.log(
             '📋 Available headers:',
             Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).map(
-                (h) => h.textContent.trim()
-            )
+                (h) => h.textContent.trim(),
+            ),
         );
         console.log(
             '📋 Available summaries:',
             Array.from(document.querySelectorAll('summary')).map((s) =>
-                s.textContent.trim()
-            )
+                s.textContent.trim(),
+            ),
         );
     }
 }
 
-// Function to execute the show logs command
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeShowLogsCommand() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Show logs command not available in degraded mode');
@@ -1877,16 +1873,16 @@ async function executeShowLogsCommand() {
         console.error('❌ Failed to execute show logs command:', error);
         // Fallback: show a notification to the user
         displayGlobalError(
-            'Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"'
+            'Failed to open extension logs. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Extension Logs"',
         );
     }
 }
 
-// Function to execute the install packages command
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeInstallPackagesCommand(packages) {
     if (messageBus.isDegradedMode) {
         console.warn(
-            '⚠️ Install packages command not available in degraded mode'
+            '⚠️ Install packages command not available in degraded mode',
         );
         return;
     }
@@ -1904,11 +1900,12 @@ async function executeInstallPackagesCommand(packages) {
         console.error('❌ Failed to execute install packages command:', error);
         // Fallback: show a notification to the user
         displayGlobalError(
-            `Failed to install packages: ${error.message}. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Install Python Packages"`
+            `Failed to install packages: ${error.message}. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Install Python Packages"`,
         );
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeShowSettingsCommand() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Show settings command not available in degraded mode');
@@ -1926,7 +1923,7 @@ async function executeShowSettingsCommand() {
     } catch (error) {
         console.error('❌ Failed to execute show settings command:', error);
         displayGlobalError(
-            'Failed to open extension settings. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Settings"'
+            'Failed to open extension settings. Please use Command Palette (Ctrl+Shift+P) → "Scientific Data Viewer: Show Settings"',
         );
     }
 }

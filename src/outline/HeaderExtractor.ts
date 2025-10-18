@@ -22,7 +22,7 @@ export class HeaderExtractor {
 
             // Find all header elements (h1, h2, h3, h4, h5, h6)
             const headerElements = doc.querySelectorAll(
-                'h1, h2, h3, h4, h5, h6'
+                'h1, h2, h3, h4, h5, h6',
             );
 
             const headers: HeaderItem[] = [];
@@ -65,7 +65,7 @@ export class HeaderExtractor {
             });
 
             Logger.info(
-                `📋 Extracted ${headers.length} top-level headers from HTML content`
+                `📋 Extracted ${headers.length} top-level headers from HTML content`,
             );
             return headers;
         } catch (error) {
@@ -140,7 +140,7 @@ export class HeaderExtractor {
      * Create dynamic headers based on data information, including group details
      */
     static createDynamicDataViewerHeaders(
-        dataInfo?: DataInfoResult
+        dataInfo?: DataInfoResult,
     ): HeaderItem[] {
         const baseHeaders = this.createDataViewerHeaders();
 
@@ -151,7 +151,7 @@ export class HeaderExtractor {
         // Find sections that should be enriched with group information
         const enrichedHeaders = baseHeaders.map((header) => {
             const groupNames = Object.keys(
-                dataInfo.xarray_html_repr_flattened || {}
+                dataInfo.xarray_html_repr_flattened || {},
             ).filter((groupName) => groupName && groupName.trim() !== ''); // Filter out empty group names
 
             // Enrich group representation sections
@@ -166,7 +166,7 @@ export class HeaderExtractor {
                             level: 2,
                             id: HeaderExtractor.joinId([header.id, groupName]),
                             children: [],
-                        })
+                        }),
                     );
 
                     return {
@@ -189,9 +189,9 @@ export class HeaderExtractor {
                             ]),
                             children: this.createDataGroupSubHeaders(
                                 groupName,
-                                dataInfo
+                                dataInfo,
                             ),
-                        })
+                        }),
                     );
 
                     return {
@@ -205,7 +205,7 @@ export class HeaderExtractor {
         });
 
         Logger.info(
-            `📋 Created dynamic outline with ${enrichedHeaders.length} main sections and group information`
+            `📋 Created dynamic outline with ${enrichedHeaders.length} main sections and group information`,
         );
         return enrichedHeaders;
     }
@@ -215,7 +215,7 @@ export class HeaderExtractor {
      */
     private static createDataGroupSubHeaders(
         groupName: string,
-        dataInfo: DataInfoResult
+        dataInfo: DataInfoResult,
     ): HeaderItem[] {
         const subHeaders: HeaderItem[] = [];
 
@@ -269,10 +269,10 @@ export class HeaderExtractor {
                             Object.keys(coord.attributes).length > 0
                         ) {
                             const attrEntries = Object.entries(
-                                coord.attributes
+                                coord.attributes,
                             ).filter(
                                 ([attrName]) =>
-                                    attrName && attrName.trim() !== ''
+                                    attrName && attrName.trim() !== '',
                             ); // Filter out empty attribute names
                             if (attrEntries.length > 0) {
                                 coordChildren.push({
@@ -302,7 +302,7 @@ export class HeaderExtractor {
                                                 attrName,
                                             ]),
                                             children: [],
-                                        })
+                                        }),
                                     ),
                                 });
                             }
@@ -337,7 +337,7 @@ export class HeaderExtractor {
                 children: variables
                     .filter(
                         (variable) =>
-                            variable.name && variable.name.trim() !== ''
+                            variable.name && variable.name.trim() !== '',
                     ) // Filter out empty variable names
                     .map((variable) => {
                         const varChildren: HeaderItem[] = [];
@@ -348,10 +348,10 @@ export class HeaderExtractor {
                             Object.keys(variable.attributes).length > 0
                         ) {
                             const attrEntries = Object.entries(
-                                variable.attributes
+                                variable.attributes,
                             ).filter(
                                 ([attrName]) =>
-                                    attrName && attrName.trim() !== ''
+                                    attrName && attrName.trim() !== '',
                             ); // Filter out empty attribute names
                             if (attrEntries.length > 0) {
                                 varChildren.push({
@@ -381,7 +381,7 @@ export class HeaderExtractor {
                                                 attrName,
                                             ]),
                                             children: [],
-                                        })
+                                        }),
                                     ),
                                 });
                             }

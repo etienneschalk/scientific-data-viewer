@@ -58,10 +58,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize error boundary
     const errorBoundary = ErrorBoundary.getInstance();
-    errorBoundary.registerGlobalHandler((error, context) => {
+    errorBoundary.registerGlobalHandler((error) => {
         Logger.error(`❌ Global error: ${error.message}`);
         vscode.window.showErrorMessage(
-            `${getDisplayName()} Error: ${error.message}`
+            `${getDisplayName()} Error: ${error.message}`,
         );
     });
 
@@ -70,24 +70,24 @@ export function activate(context: vscode.ExtensionContext) {
         retainContextWhenHidden: true,
     };
     const webviewOptions: vscode.WebviewOptions = getWebviewOptions(
-        context.extensionUri
+        context.extensionUri,
     );
     const iconPath = vscode.Uri.joinPath(
         context.extensionUri,
         'media',
-        'icon_viridis_bold_monochromatic.svg'
+        'icon_viridis_bold_monochromatic.svg',
     );
 
     // Create status bar item for Python interpreter (hidden by default)
     const statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Right,
-        100
+        100,
     );
 
     // Initialize managers
     Logger.info('🧩 🔧 Initializing extension managers...');
     const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
-        context.globalStorageUri.fsPath
+        context.globalStorageUri.fsPath,
     );
     const extensionVirtualEnvironmentManagerUI =
         new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
@@ -104,8 +104,8 @@ export function activate(context: vscode.ExtensionContext) {
         ...registerCustomEditorProviders(
             dataProcessor,
             webviewOptions,
-            webviewPanelOptions
-        )
+            webviewPanelOptions,
+        ),
     );
     Logger.info('🧩 🚀 Custom editor providers registered successfully');
 
@@ -124,8 +124,8 @@ export function activate(context: vscode.ExtensionContext) {
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
-                pythonManager
-            )
+                pythonManager,
+            ),
         ),
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER_MULTIPLE,
@@ -133,8 +133,8 @@ export function activate(context: vscode.ExtensionContext) {
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
-                pythonManager
-            )
+                pythonManager,
+            ),
         ),
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER_FOLDER,
@@ -142,118 +142,121 @@ export function activate(context: vscode.ExtensionContext) {
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
-                pythonManager
-            )
+                pythonManager,
+            ),
         ),
         vscode.commands.registerCommand(
             CMD_REFRESH_PYTHON_ENVIRONMENT,
-            commandHandlerRefreshPythonEnvironment(pythonManager, statusBarItem)
+            commandHandlerRefreshPythonEnvironment(
+                pythonManager,
+                statusBarItem,
+            ),
         ),
         vscode.commands.registerCommand(
             CMD_SHOW_LOGS,
-            commandHandlerShowLogs()
+            commandHandlerShowLogs(),
         ),
         vscode.commands.registerCommand(
             CMD_SHOW_SETTINGS,
-            commandHandlerShowSettings()
+            commandHandlerShowSettings(),
         ),
         vscode.commands.registerCommand(
             CMD_OPEN_DEVELOPER_TOOLS,
-            commandHandlerOpenDeveloperTools()
+            commandHandlerOpenDeveloperTools(),
         ),
         vscode.commands.registerCommand(
             CMD_SCROLL_TO_HEADER,
-            commandHandlerScrollToHeader(outlineProvider)
+            commandHandlerScrollToHeader(outlineProvider),
         ),
         vscode.commands.registerCommand(
             CMD_EXPAND_ALL,
-            commandHandlerExpandAll(outlineProvider)
+            commandHandlerExpandAll(outlineProvider),
         ),
         vscode.commands.registerCommand(
             CMD_PYTHON_INSTALL_PACKAGES,
-            commandHandlerPythonInstallPackages(pythonManager, statusBarItem)
+            commandHandlerPythonInstallPackages(pythonManager, statusBarItem),
         ),
         vscode.commands.registerCommand(
             CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT,
             commandHandlerManageExtensionOwnEnvironment(
-                extensionVirtualEnvironmentManagerUI
-            )
+                extensionVirtualEnvironmentManagerUI,
+            ),
         ),
         vscode.commands.registerCommand(
             CMD_EXPORT_WEBVIEW,
-            commandHandlerExportWebview()
+            commandHandlerExportWebview(),
         ),
         vscode.commands.registerCommand(
             CMD_TOGGLE_DEV_MODE,
-            commandHandlerToggleDevMode()
+            commandHandlerToggleDevMode(),
         ),
         vscode.commands.registerCommand(
             CMD_HEALTHCHECK,
-            commandHandlerHealthcheck(pythonManager)
-        )
+            commandHandlerHealthcheck(pythonManager),
+        ),
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
 
     const supportedExtensions = getAllSupportedExtensions();
     Logger.info(
-        `🧩 🔧 Detected supported extensions from package.json: ${supportedExtensions}`
+        `🧩 🔧 Detected supported extensions from package.json: ${supportedExtensions}`,
     );
     Logger.info(`🧩 🔧 Set up workspace listeners...`);
     context.subscriptions.push(
         // Open devtools and logs when opening a file in devmode
         vscode.workspace.onDidOpenTextDocument(
-            handlerOnDidOpenTextDocument(supportedExtensions)
+            handlerOnDidOpenTextDocument(supportedExtensions),
         ),
         // Set up configuration change listener for all ${getDisplayName()} settings
         vscode.workspace.onDidChangeConfiguration(
             handlerOnDidChangeConfiguration(
                 pythonManager,
                 statusBarItem,
-                extensionEnvManager
-            )
+                extensionEnvManager,
+            ),
         ),
         // Also listen for workspace folder changes (when Python interpreter might change)
         vscode.workspace.onDidChangeWorkspaceFolders(
-            handlerOnDidChangeWorkspaceFolders(pythonManager, statusBarItem)
-        )
+            handlerOnDidChangeWorkspaceFolders(pythonManager, statusBarItem),
+        ),
     );
     Logger.info(`🧩 🚀 Workspace listeners set up successfully`);
 
     Logger.info(
-        '🧩 🔧 Set up immediate official Python extension interpreter change detection...'
+        '🧩 🔧 Set up immediate official Python extension interpreter change detection...',
     );
     const handleOnDidChangeActiveEnvironmentPath = async () => {
         Logger.info(
-            '🧩 🐍 🔧 Python interpreter configuration changed, refreshing Python environment...'
+            '🧩 🐍 🔧 Python interpreter configuration changed, refreshing Python environment...',
         );
         await refreshPython(pythonManager, statusBarItem);
     };
-    const handleOnDidEnvironmentsChanged = async (environment: any) => {
+    const handleOnDidEnvironmentsChanged = async () => {
         Logger.info(
-            '🧩 🐍 🔧 Python environment created, refreshing Python environment...'
+            '🧩 🐍 🔧 Python environment changed, refreshing Python environment...',
         );
         await refreshPython(pythonManager, statusBarItem);
     };
     setupOfficialPythonExtensionChangeListeners(
         handleOnDidChangeActiveEnvironmentPath,
-        handleOnDidEnvironmentsChanged
+        handleOnDidEnvironmentsChanged,
     )
         .then((listener: vscode.Disposable | undefined) => {
             if (listener) {
                 Logger.info(
-                    '🧩 🚀 Immediate official Python extension interpreter change detection enabled'
+                    '🧩 🚀 Immediate official Python extension interpreter change detection enabled',
                 );
                 // Add to subscriptions after it's created
                 context.subscriptions.push(listener);
             } else {
                 Logger.warn(
-                    '🧩 ⚠️ Immediate Python interpreter change detection not available'
+                    '🧩 ⚠️ Immediate Python interpreter change detection not available',
                 );
             }
         })
         .catch((error) => {
             Logger.error(
-                `🧩 ❌ Failed to set up immediate Python interpreter change detection: ${error}`
+                `🧩 ❌ Failed to set up immediate Python interpreter change detection: ${error}`,
             );
         });
 }
@@ -281,7 +284,7 @@ export function deactivate() {
 }
 
 function handlerOnDidOpenTextDocument(
-    supportedExtensions: string[]
+    supportedExtensions: string[],
 ): (e: vscode.TextDocument) => void {
     return async (document: vscode.TextDocument) => {
         const ext = document.uri.path.split('.').pop()?.toLowerCase();
@@ -291,32 +294,32 @@ function handlerOnDidOpenTextDocument(
 
             if (devMode) {
                 Logger.info(
-                    '🧑‍💻 DevMode enabled - automatically running development commands for opened file...'
+                    '🧑‍💻 DevMode enabled - automatically running development commands for opened file...',
                 );
 
                 // Run "Show Extension Logs" command immediately
                 try {
                     await vscode.commands.executeCommand(CMD_SHOW_LOGS);
                     Logger.info(
-                        '🧑‍💻 DevMode: Show Extension Logs command executed'
+                        '🧑‍💻 DevMode: Show Extension Logs command executed',
                     );
                 } catch (error) {
                     Logger.error(
-                        `🧑‍💻 DevMode: Failed to execute showLogs command: ${error}`
+                        `🧑‍💻 DevMode: Failed to execute showLogs command: ${error}`,
                     );
                 }
 
                 // Run "Open Developer Tools" command immediately
                 try {
                     await vscode.commands.executeCommand(
-                        CMD_OPEN_DEVELOPER_TOOLS
+                        CMD_OPEN_DEVELOPER_TOOLS,
                     );
                     Logger.info(
-                        '🧑‍💻 DevMode: Open Developer Tools command executed'
+                        '🧑‍💻 DevMode: Open Developer Tools command executed',
                     );
                 } catch (error) {
                     Logger.error(
-                        `🧑‍💻 DevMode: Failed to execute openDeveloperTools command: ${error}`
+                        `🧑‍💻 DevMode: Failed to execute openDeveloperTools command: ${error}`,
                     );
                 }
             }
@@ -327,7 +330,7 @@ function handlerOnDidOpenTextDocument(
 function handlerOnDidChangeConfiguration(
     pythonManager: PythonManager,
     statusBarItem: vscode.StatusBarItem,
-    extensionEnvManager: ExtensionVirtualEnvironmentManager
+    extensionEnvManager: ExtensionVirtualEnvironmentManager,
 ): (e: vscode.ConfigurationChangeEvent) => void {
     return async (event: vscode.ConfigurationChangeEvent) => {
         if (event.affectsConfiguration(SDV_EXTENSION_ID)) {
@@ -335,11 +338,11 @@ function handlerOnDidChangeConfiguration(
 
             if (
                 event.affectsConfiguration(
-                    getOverridePythonInterpreterConfigFullKey()
+                    getOverridePythonInterpreterConfigFullKey(),
                 )
             ) {
                 const message = `🎛️ SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
-                    getOverridePythonInterpreter()
+                    getOverridePythonInterpreter(),
                 )}`;
                 Logger.info(message);
                 if (getDevMode()) {
@@ -349,11 +352,11 @@ function handlerOnDidChangeConfiguration(
                 refreshPython(pythonManager, statusBarItem);
             } else if (
                 event.affectsConfiguration(
-                    getUseExtensionOwnEnvironmentConfigFullKey()
+                    getUseExtensionOwnEnvironmentConfigFullKey(),
                 )
             ) {
                 const message = `🎛️ SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
-                    getUseExtensionOwnEnvironment()
+                    getUseExtensionOwnEnvironment(),
                 )}`;
                 Logger.info(message);
                 if (getDevMode()) {
@@ -376,7 +379,7 @@ function handlerOnDidChangeConfiguration(
                             Please install uv from ${uvInstallationUrl} and try again.`;
                     showErrorMessageAndProposeHelpToInstallUv(
                         error,
-                        uvInstallationUrl
+                        uvInstallationUrl,
                     );
                 });
             }
@@ -385,11 +388,11 @@ function handlerOnDidChangeConfiguration(
             event.affectsConfiguration('python.venvPath') ||
             event.affectsConfiguration('python.terminal.activateEnvironment') ||
             event.affectsConfiguration(
-                'python.terminal.activateEnvInCurrentTerminal'
+                'python.terminal.activateEnvInCurrentTerminal',
             )
         ) {
             Logger.info(
-                '🎛️ 🐍 🔧 Configuration change that might affect the Python interpreter, refreshing Python environment...'
+                '🎛️ 🐍 🔧 Configuration change that might affect the Python interpreter, refreshing Python environment...',
             );
             refreshPython(pythonManager, statusBarItem);
         }
@@ -398,18 +401,18 @@ function handlerOnDidChangeConfiguration(
 
 function handlerOnDidChangeWorkspaceFolders(
     pythonManager: PythonManager,
-    statusBarItem: vscode.StatusBarItem
+    statusBarItem: vscode.StatusBarItem,
 ): (e: vscode.WorkspaceFoldersChangeEvent) => void {
     return async () => {
         Logger.info(
-            '🏢 🐍 🔧 Workspace folder changed, refreshing Python environment...'
+            '🏢 🐍 🔧 Workspace folder changed, refreshing Python environment...',
         );
         await refreshPython(pythonManager, statusBarItem);
     };
 }
 
 function commandHandlerManageExtensionOwnEnvironment(
-    extensionVirtualEnvironmentManagerUI: ExtensionVirtualEnvironmentManagerUI
+    extensionVirtualEnvironmentManagerUI: ExtensionVirtualEnvironmentManagerUI,
 ): () => void {
     return async () => {
         Logger.info('🎮 🐍 🔧 Command: Manage Extension Virtual Environment');
@@ -426,20 +429,20 @@ function commandHandlerExportWebview(): () => void {
 
         if (!activePanel) {
             vscode.window.showErrorMessage(
-                'No active data viewer panel found. Please open a scientific data file first.'
+                'No active data viewer panel found. Please open a scientific data file first.',
             );
             return;
         }
 
         // Export webview content
         try {
-            await activePanel.emitExportWebview();
+            await activePanel.emitCommandExportWebview();
         } catch (error) {
             Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
             vscode.window.showErrorMessage(
                 `Failed to export webview content: ${
                     error instanceof Error ? error.message : String(error)
-                }`
+                }`,
             );
         }
     };
@@ -450,43 +453,46 @@ function commandHandlerToggleDevMode(): () => void {
         Logger.info('🎮 🔧 Command: Toggle Dev Mode');
         const currentDevMode = getDevMode();
         const newDevMode = !currentDevMode;
-        
+
         try {
             await updateDevMode(newDevMode);
             const status = newDevMode ? 'enabled' : 'disabled';
             Logger.info(`🔧 Dev Mode ${status}`);
             vscode.window.showInformationMessage(
-                `Dev Mode ${status}. ${newDevMode ? 'Extension logs and developer tools will open automatically when opening scientific data files.' : 'Automatic opening of logs and developer tools is disabled.'}`
+                `Dev Mode ${status}. ${newDevMode ? 'Extension logs and developer tools will open automatically when opening scientific data files.' : 'Automatic opening of logs and developer tools is disabled.'}`,
             );
         } catch (error) {
             Logger.error(`Failed to toggle dev mode: ${error}`);
             vscode.window.showErrorMessage(
-                `Failed to toggle dev mode: ${error}`
+                `Failed to toggle dev mode: ${error}`,
             );
         }
     };
 }
 
-function commandHandlerHealthcheck(
-    pythonManager: PythonManager,
-): () => void {
+function commandHandlerHealthcheck(pythonManager: PythonManager): () => void {
     return async () => {
         Logger.info('🎮 🏥 Command: Run Healthcheck');
-        
+
         try {
             const healthcheckManager = HealthcheckManager.getInstance();
-            const report = await healthcheckManager.runHealthcheck(pythonManager);
-            await healthcheckManager.openHealthcheckReport(report, pythonManager);
-            
-            const statusMessage = report.overallStatus === 'healthy' 
-                ? 'Healthcheck completed - All systems healthy! ✅'
-                : `Healthcheck completed - Found ${report.issues.length} issue(s). See report for details.`;
-            
+            const report =
+                await healthcheckManager.runHealthcheck(pythonManager);
+            await healthcheckManager.openHealthcheckReport(
+                report,
+                pythonManager,
+            );
+
+            const statusMessage =
+                report.overallStatus === 'healthy'
+                    ? 'Healthcheck completed - All systems healthy! ✅'
+                    : `Healthcheck completed - Found ${report.issues.length} issue(s). See report for details.`;
+
             vscode.window.showInformationMessage(statusMessage);
         } catch (error) {
             Logger.error(`🏥 ❌ Failed to run healthcheck: ${error}`);
             vscode.window.showErrorMessage(
-                `Failed to run healthcheck: ${error instanceof Error ? error.message : String(error)}`
+                `Failed to run healthcheck: ${error instanceof Error ? error.message : String(error)}`,
             );
         }
     };
@@ -504,7 +510,7 @@ function commandHandlerOpenDeveloperTools(): () => void {
         Logger.info('🎮 🧑‍💻 Command: Opening developer tools for WebView...');
         // This will open the developer tools for the currently active WebView
         vscode.commands.executeCommand(
-            'workbench.action.webview.openDeveloperTools'
+            'workbench.action.webview.openDeveloperTools',
         );
     };
 }
@@ -514,7 +520,7 @@ function commandHandlerShowSettings(): () => void {
         Logger.info(`🎮 🎛️ Command: Opening ${getDisplayName()} settings...`);
         vscode.commands.executeCommand(
             'workbench.action.openSettings',
-            SDV_EXTENSION_ID
+            SDV_EXTENSION_ID,
         );
     };
 }
@@ -528,11 +534,11 @@ function commandHandlerShowLogs(): () => void {
 
 function commandHandlerRefreshPythonEnvironment(
     pythonManager: PythonManager,
-    statusBarItem: vscode.StatusBarItem
+    statusBarItem: vscode.StatusBarItem,
 ): () => void {
     return async () => {
         Logger.info(
-            '🎮 🐍 🔄 Command: Manually refreshing Python environment...'
+            '🎮 🐍 🔄 Command: Manually refreshing Python environment...',
         );
         await refreshPython(pythonManager, statusBarItem);
         vscode.window.showInformationMessage('Python environment refreshed!');
@@ -541,13 +547,13 @@ function commandHandlerRefreshPythonEnvironment(
 
 function commandHandlerPythonInstallPackages(
     pythonManager: PythonManager,
-    statusBarItem: vscode.StatusBarItem
+    statusBarItem: vscode.StatusBarItem,
 ): (packages?: string[]) => void {
     return async (packages?: string[]) => {
         Logger.info('🎮 🐍 📦 Command: Installing Python packages');
         if (!packages || packages.length === 0) {
             vscode.window.showErrorMessage(
-                'No packages specified for installation'
+                'No packages specified for installation',
             );
             return;
         }
@@ -557,31 +563,31 @@ function commandHandlerPythonInstallPackages(
             // at extension level.
             await refreshPython(pythonManager, statusBarItem);
             vscode.window.showInformationMessage(
-                `Successfully installed packages: ${packages.join(', ')}`
+                `Successfully installed packages: ${packages.join(', ')}`,
             );
         } catch (error) {
             Logger.error(`🐍 📦 ❌ Failed to install packages: ${error}`);
             vscode.window.showErrorMessage(
-                `Failed to install packages: ${error}`
+                `Failed to install packages: ${error}`,
             );
         }
     };
 }
 
 function commandHandlerScrollToHeader(
-    outlineProvider: OutlineProvider
+    outlineProvider: OutlineProvider,
 ): (headerId: string, headerLabel: string) => void {
     return (headerId: string, headerLabel: string) => {
         // We can only manage one file at a time, so we need to get the current file from the outline provider
         let currentPanelId = outlineProvider.getCurrentPanelId();
 
         Logger.info(
-            `🎮 ↕️ Command: Scrolling to header ${headerLabel} (${headerId}) for panel with ID: ${currentPanelId}`
+            `🎮 ↕️ Command: Scrolling to header ${headerLabel} (${headerId}) for panel with ID: ${currentPanelId}`,
         );
 
         if (!currentPanelId) {
             Logger.warn(
-                `🎮 ↕️ ⚠️ No valid documentUri available for scrollToHeader command`
+                `🎮 ↕️ ⚠️ No valid documentUri available for scrollToHeader command`,
             );
             return;
         }
@@ -589,7 +595,7 @@ function commandHandlerScrollToHeader(
         // Find the active DataViewerPanel and scroll to the header
         const activePanel = DataViewerPanel.getPanel(currentPanelId);
         if (activePanel) {
-            activePanel.emitScrollToHeader(headerId, headerLabel);
+            activePanel.emitCommandScrollToHeader(headerId, headerLabel);
         } else {
             Logger.warn('↕️ ⚠️ No active DataViewerPanel found for scrolling');
         }
@@ -600,24 +606,24 @@ function commandHandlerOpenViewerFolder(
     iconPath: vscode.Uri,
     webviewOptions: vscode.WebviewOptions,
     webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager
+    pythonManager: PythonManager,
 ): (uri?: vscode.Uri) => void {
     return async (uri?: vscode.Uri) => {
         Logger.info('🎮 👁️ 📁 Command: Open data viewer (folder)...');
         if (uri) {
             Logger.info(
-                `🎮 👁️ 📁 Opening data viewer for folder: ${uri.fsPath}`
+                `🎮 👁️ 📁 Opening data viewer for folder: ${uri.fsPath}`,
             );
             await waitThenCreateOrRevealPanel(
                 uri,
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
-                pythonManager
+                pythonManager,
             );
         } else {
             Logger.info(
-                '🎮 👁️ 📁 Opening folder selection dialog for data viewer'
+                '🎮 👁️ 📁 Opening folder selection dialog for data viewer',
             );
             const folderUriList = await vscode.window.showOpenDialog({
                 canSelectFiles: false,
@@ -627,14 +633,14 @@ function commandHandlerOpenViewerFolder(
             });
             folderUriList?.forEach(async (uri) => {
                 Logger.info(
-                    `🎮 👁️ 📁 Folder selected for data viewer: ${uri.fsPath}`
+                    `🎮 👁️ 📁 Folder selected for data viewer: ${uri.fsPath}`,
                 );
                 await waitThenCreateOrRevealPanel(
                     uri,
                     iconPath,
                     webviewOptions,
                     webviewPanelOptions,
-                    pythonManager
+                    pythonManager,
                 );
             });
         }
@@ -645,7 +651,7 @@ function commandHandlerOpenViewer(
     iconPath: vscode.Uri,
     webviewOptions: vscode.WebviewOptions,
     webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager
+    pythonManager: PythonManager,
 ): (uri?: vscode.Uri) => void {
     return async (uri?: vscode.Uri) => {
         Logger.info('🎮 👁️ 📄 Command: Open data viewer...');
@@ -656,11 +662,11 @@ function commandHandlerOpenViewer(
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
-                pythonManager
+                pythonManager,
             );
         } else {
             Logger.info(
-                '🎮 👁️ 📄 Opening file selection dialog for data viewer'
+                '🎮 👁️ 📄 Opening file selection dialog for data viewer',
             );
             const fileUriList = await vscode.window.showOpenDialog({
                 canSelectFiles: true,
@@ -676,14 +682,14 @@ function commandHandlerOpenViewer(
             });
             fileUriList?.forEach(async (uri) => {
                 Logger.info(
-                    `🎮 👁️ 📄 File selected for data viewer: ${uri.fsPath}`
+                    `🎮 👁️ 📄 File selected for data viewer: ${uri.fsPath}`,
                 );
                 await waitThenCreateOrRevealPanel(
                     uri,
                     iconPath,
                     webviewOptions,
                     webviewPanelOptions,
-                    pythonManager
+                    pythonManager,
                 );
             });
         }
@@ -694,7 +700,7 @@ function commandHandlerOpenViewerMultiple(
     iconPath: vscode.Uri,
     webviewOptions: vscode.WebviewOptions,
     webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager
+    pythonManager: PythonManager,
 ): (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => void {
     return async (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => {
         Logger.info('🎮 👁️ 📄📄 Command: Open multiple data viewers...');
@@ -703,8 +709,8 @@ function commandHandlerOpenViewerMultiple(
         // All selections is the list of all selected files or folders (we want it to be opened in data viewers)
         Logger.debug(
             `🎮 👁️ 📄📄 Command arguments: allSelectedUriList: [${allSelectedUriList.join(
-                ' , '
-            )}]`
+                ' , ',
+            )}]`,
         );
 
         // Try to use command arguments (if VSCode passes them)
@@ -714,24 +720,24 @@ function commandHandlerOpenViewerMultiple(
         }
 
         Logger.info(
-            `🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`
+            `🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`,
         );
         for (const uri of allSelectedUriList) {
             if (uri instanceof vscode.Uri) {
                 Logger.info(
-                    `🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`
+                    `🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`,
                 );
                 await waitThenCreateOrRevealPanel(
                     uri,
                     iconPath,
                     webviewOptions,
                     webviewPanelOptions,
-                    pythonManager
+                    pythonManager,
                 );
             }
         }
         Logger.info(
-            `🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`
+            `🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`,
         );
     };
 }
@@ -739,11 +745,11 @@ function commandHandlerOpenViewerMultiple(
 function registerCustomEditorProviders(
     dataProcessor: DataProcessor,
     webviewOptions: vscode.WebviewOptions,
-    webviewPanelOptions: vscode.WebviewPanelOptions
+    webviewPanelOptions: vscode.WebviewPanelOptions,
 ): vscode.Disposable[] {
     const sciEditorProvider = new ScientificDataEditorProvider(
         webviewOptions,
-        dataProcessor
+        dataProcessor,
     );
     const options = {
         // Warning! Naming is confusing!
@@ -762,8 +768,8 @@ function registerCustomEditorProviders(
         vscode.window.registerCustomEditorProvider(
             viewType,
             sciEditorProvider,
-            options
-        )
+            options,
+        ),
     );
     return editorRegistrations;
 }
@@ -795,13 +801,13 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
 
 async function refreshPython(
     pythonManager: PythonManager,
-    statusBarItem: vscode.StatusBarItem
+    statusBarItem: vscode.StatusBarItem,
 ) {
     try {
         await pythonManager.forceInitialize();
         updateStatusBarItem(
             pythonManager.getCurrentEnvironmentInfo(),
-            statusBarItem
+            statusBarItem,
         );
         await DataViewerPanel.refreshPanelsWithErrors();
     } catch (error) {
@@ -809,7 +815,7 @@ async function refreshPython(
         showErrorMessage(
             `❌ Failed to validate Python environment: ${error}`,
             true,
-            true
+            true,
         );
     }
 }
@@ -819,18 +825,18 @@ async function waitThenCreateOrRevealPanel(
     iconPath: vscode.Uri,
     webviewOptions: vscode.WebviewOptions,
     webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager
+    pythonManager: PythonManager,
 ) {
     // Wait for Python initialization to complete before creating the panel
     // This prevents the race condition where file opening happens before Python validation
     try {
         await pythonManager.waitForInitialization();
         Logger.info(
-            `🚚 👍 Python initialization complete, creating data viewer panel for: ${uri.fsPath}`
+            `🚚 👍 Python initialization complete, creating data viewer panel for: ${uri.fsPath}`,
         );
     } catch (error) {
         Logger.warn(
-            `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
+            `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`,
         );
     }
 
@@ -838,6 +844,6 @@ async function waitThenCreateOrRevealPanel(
         uri,
         iconPath,
         webviewOptions,
-        webviewPanelOptions
+        webviewPanelOptions,
     );
 }

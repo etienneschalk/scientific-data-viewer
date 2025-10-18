@@ -85,7 +85,7 @@ suite('OutlineProvider Test Suite', () => {
         assert.strictEqual(treeItem.label, 'Test Header');
         assert.strictEqual(
             treeItem.collapsibleState,
-            vscode.TreeItemCollapsibleState.None
+            vscode.TreeItemCollapsibleState.None,
         );
     });
 
@@ -113,7 +113,7 @@ suite('OutlineProvider Test Suite', () => {
         assert.strictEqual(treeItem.label, 'Test Header');
         assert.strictEqual(
             treeItem.collapsibleState,
-            vscode.TreeItemCollapsibleState.Collapsed
+            vscode.TreeItemCollapsibleState.Collapsed,
         );
     });
 
@@ -257,7 +257,7 @@ suite('OutlineProvider Test Suite', () => {
         assert.ok(treeItem.command);
         assert.strictEqual(
             treeItem.command?.command,
-            'scientificDataViewer.scrollToHeader'
+            'scientificDataViewer.scrollToHeader',
         );
     });
 

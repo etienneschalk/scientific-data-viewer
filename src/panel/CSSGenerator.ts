@@ -7,7 +7,7 @@ import * as path from 'path';
 export class CSSGenerator {
     private static readonly cssPath = path.join(
         __dirname,
-        '../../../src/panel/webview/styles.css'
+        '../../../src/panel/webview/styles.css',
     );
     private static content: string | null = null;
 

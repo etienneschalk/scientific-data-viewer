@@ -143,7 +143,7 @@ suite('DataViewerPanel Test Suite', () => {
     test('should have correct view type', () => {
         assert.strictEqual(
             DataViewerPanel.viewType,
-            'scientificDataViewer.defaultWebviewPanel'
+            'scientificDataViewer.defaultWebviewPanel',
         );
     });
 
@@ -166,7 +166,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -202,7 +202,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -240,7 +240,7 @@ suite('DataViewerPanel Test Suite', () => {
                     }
                     return undefined;
                 },
-            } as any);
+            }) as any;
 
         try {
             const fileUri = vscode.Uri.file('/path/to/test.nc');
@@ -248,7 +248,7 @@ suite('DataViewerPanel Test Suite', () => {
                 mockContext.extensionUri,
                 fileUri,
                 mockWebviewOptions,
-                mockWebviewPanelOptions
+                mockWebviewPanelOptions,
             );
 
             // Should not throw an error
@@ -268,7 +268,7 @@ suite('DataViewerPanel Test Suite', () => {
         DataViewerPanel.createFromWebviewPanel(
             mockContext.extensionUri,
             mockWebviewPanel,
-            mockWebviewOptions
+            mockWebviewOptions,
         );
 
         // Should not throw an error
@@ -287,7 +287,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _handleGetDataInfo method was removed from DataViewerPanel'
+            'Test skipped - _handleGetDataInfo method was removed from DataViewerPanel',
         );
     });
 
@@ -296,7 +296,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is tested in integration tests with real file system operations
         assert.ok(
             true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions'
+            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
         );
     });
 
@@ -305,7 +305,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is tested in integration tests with real file system operations
         assert.ok(
             true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions'
+            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
         );
     });
 
@@ -314,7 +314,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is tested in integration tests with real file system operations
         assert.ok(
             true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions'
+            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
         );
     });
 
@@ -323,7 +323,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is tested in integration tests with real file system operations
         assert.ok(
             true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions'
+            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
         );
     });
 
@@ -332,7 +332,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel'
+            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel',
         );
     });
 
@@ -341,7 +341,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel'
+            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel',
         );
     });
 
@@ -350,7 +350,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _handleGetPythonPath method was removed from DataViewerPanel'
+            'Test skipped - _handleGetPythonPath method was removed from DataViewerPanel',
         );
     });
 
@@ -359,7 +359,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _handleGetExtensionConfig method was removed from DataViewerPanel'
+            'Test skipped - _handleGetExtensionConfig method was removed from DataViewerPanel',
         );
     });
 
@@ -367,7 +367,7 @@ suite('DataViewerPanel Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions
+            mockWebviewOptions,
         );
 
         DataViewerPanel.dispose();
@@ -381,7 +381,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel'
+            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel',
         );
     });
 
@@ -390,7 +390,7 @@ suite('DataViewerPanel Test Suite', () => {
         // The functionality is now handled by UIController
         assert.ok(
             true,
-            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel'
+            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel',
         );
     });
 });

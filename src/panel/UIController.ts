@@ -18,7 +18,7 @@ import {
     getWebviewExportTheme,
     getConvertBandsToVariables,
 } from '../common/config';
-import { DataInfoPythonResponse, ErrorContext } from '../types';
+import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
 
 export class UIController {
@@ -38,7 +38,7 @@ export class UIController {
         webview: vscode.Webview,
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void,
-        onOutlineUpdateCallback?: () => void
+        onOutlineUpdateCallback?: () => void,
     ) {
         this.id = id;
         this.webview = webview;
@@ -56,17 +56,17 @@ export class UIController {
         this.setupStateSubscription();
     }
 
+    private getComponentName(): string {
+        return `${this.constructor.name}-<${this.id}>`;
+    }
     private setupErrorHandling(): void {
-        this.errorBoundary.registerHandler(
-            `ui-${this.id}`,
-            (error, context) => {
-                this.messageBus.emitError(
-                    error.message,
-                    'An error occurred in the UI. Please check the output panel for details.',
-                    'UIError'
-                );
-            }
-        );
+        this.errorBoundary.registerHandler(this.getComponentName(), (error) => {
+            this.messageBus.emitError(
+                error.message,
+                'An error occurred in the UI. Please check the output panel for details.',
+                'UIError',
+            );
+        });
     }
 
     private setupMessageHandlers(): void {
@@ -75,7 +75,7 @@ export class UIController {
             'getDataInfo',
             async (payload) => {
                 return this.handleGetDataInfo(payload.filePath);
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler(
@@ -83,16 +83,16 @@ export class UIController {
             async (payload) => {
                 return this.handleCreatePlot(
                     payload.variable,
-                    payload.plotType
+                    payload.plotType,
                 );
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler('savePlot', async (payload) => {
             return this.handleSavePlot(
                 payload.plotData,
                 payload.variable,
-                payload.fileName
+                payload.fileName,
             );
         });
 
@@ -101,16 +101,16 @@ export class UIController {
             async (payload) => {
                 return this.handleSavePlotAs(
                     payload.plotData,
-                    payload.variable
+                    payload.variable,
                 );
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler('openPlot', async (payload) => {
             return this.handleOpenPlot(
                 payload.plotData,
                 payload.variable,
-                payload.fileName
+                payload.fileName,
             );
         });
 
@@ -122,7 +122,7 @@ export class UIController {
             'getCurrentFilePath',
             async () => {
                 return this.handleGetCurrentFilePath();
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler(
@@ -130,37 +130,37 @@ export class UIController {
             async (payload) => {
                 return this.handleShowNotification(
                     payload.message,
-                    payload.type
+                    payload.type,
                 );
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler(
             'executeCommand',
             async (payload) => {
                 return this.handleExecuteCommand(payload.command, payload.args);
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler(
             'updateHeaders',
             async (payload) => {
                 return this.handleUpdateHeaders(payload.headers);
-            }
+            },
         );
 
         this.messageBus.registerRequestHandler(
             'exportWebview',
             async (payload) => {
                 return this.handleExportWebview(payload.htmlContent);
-            }
+            },
         );
     }
 
     private setupStateSubscription(): void {
         this.unsubscribeState = this.stateManager.subscribe((state) => {
             Logger.debug(
-                `[UIController] [setupStateSubscription] State changed`
+                `[UIController] [setupStateSubscription] State changed`,
             );
             this.updateUI(state);
         });
@@ -173,13 +173,13 @@ export class UIController {
      */
     private async showFileActionDialog(
         message: string,
-        fileUri: vscode.Uri
+        fileUri: vscode.Uri,
     ): Promise<void> {
         const action = await vscode.window.showInformationMessage(
             message,
             'Open File',
             'Open in Browser',
-            'Reveal in Explorer'
+            'Reveal in Explorer',
         );
 
         // Handle user action
@@ -188,7 +188,7 @@ export class UIController {
                 await vscode.commands.executeCommand(
                     'vscode.open',
                     fileUri,
-                    vscode.ViewColumn.Beside
+                    vscode.ViewColumn.Beside,
                 );
             } catch (error) {
                 await vscode.env.openExternal(fileUri);
@@ -203,7 +203,7 @@ export class UIController {
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'getDataInfo',
             data: { filePath },
         };
@@ -220,7 +220,7 @@ export class UIController {
                 // Check Python environment
                 if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
                     throw new Error(
-                        'Python path not found. Please configure Python interpreter first.'
+                        'Python path not found. Please configure Python interpreter first.',
                     );
                 }
 
@@ -232,8 +232,8 @@ export class UIController {
                 if (stat.size > maxSize) {
                     throw new Error(
                         `File too large (${Math.round(
-                            stat.size / 1024 / 1024
-                        )}MB). Maximum allowed: ${maxSize}MB`
+                            stat.size / 1024 / 1024,
+                        )}MB). Maximum allowed: ${maxSize}MB`,
                     );
                 }
 
@@ -242,18 +242,18 @@ export class UIController {
                     this.shouldConvertBandsToVariables(filePath);
                 const dataInfo = await this.dataProcessor.getDataInfo(
                     fileUri,
-                    convertBandsToVariables
+                    convertBandsToVariables,
                 );
 
                 if (!dataInfo) {
                     throw new Error(
-                        'Failed to load data file. The file might be corrupted or in an unsupported format.'
+                        `Failed to load data file. The file might be corrupted or in an unsupported format. File: ${filePath}`,
                     );
                 }
 
                 if (dataInfo.error) {
                     throw new Error(
-                        `Data processing error: ${dataInfo.error.error}`
+                        `Data processing error: ${dataInfo.error.error}`,
                     );
                 }
 
@@ -263,13 +263,13 @@ export class UIController {
                 this.stateManager.setLoading(false);
                 this.stateManager.setError(null);
                 this.stateManager.setPythonPath(
-                    this.dataProcessor.pythonManagerInstance.pythonPath || null
+                    this.dataProcessor.pythonManagerInstance.pythonPath || null,
                 );
                 this.stateManager.setPythonReady(
-                    this.dataProcessor.pythonManagerInstance.ready
+                    this.dataProcessor.pythonManagerInstance.ready,
                 );
                 this.stateManager.setExtension(
-                    await this.handleGetExtensionConfig()
+                    await this.handleGetExtensionConfig(),
                 );
                 this.stateManager.setDataInfo(dataInfo.result);
 
@@ -291,7 +291,7 @@ export class UIController {
                 if (error instanceof Error) {
                     this.stateManager.setLoading(false);
                     this.stateManager.setError(
-                        error instanceof Error ? error.message : String(error)
+                        error instanceof Error ? error.message : String(error),
                     );
 
                     // Notify the panel about the error so it can be added to error state
@@ -312,7 +312,7 @@ export class UIController {
 
     private async handleCreatePlot(
         variable: string,
-        plotType: string
+        plotType: string,
     ): Promise<string | undefined> {
         try {
             const state = this.stateManager.getState();
@@ -324,13 +324,13 @@ export class UIController {
             const fileUri = vscode.Uri.file(state.data.currentFile);
 
             const convertBandsToVariables = this.shouldConvertBandsToVariables(
-                state.data.currentFile
+                state.data.currentFile,
             );
             const plotData = await this.dataProcessor.createPlot(
                 fileUri,
                 variable,
                 plotType,
-                convertBandsToVariables
+                convertBandsToVariables,
             );
 
             if (!plotData) {
@@ -339,7 +339,7 @@ export class UIController {
 
             if (plotData.error) {
                 throw new Error(
-                    `Data processing error: ${plotData.error.error}`
+                    `Data processing error: ${plotData.error.error}`,
                 );
             }
 
@@ -355,10 +355,10 @@ export class UIController {
     private async handleSavePlot(
         plotData: string,
         variable: string,
-        fileName: string
+        fileName: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'savePlot',
             data: { variable, fileName },
         };
@@ -379,7 +379,7 @@ export class UIController {
                     .slice(0, -1)
                     .join('/');
                 const savePath = vscode.Uri.file(
-                    `${currentFileDir}/${fileName}`
+                    `${currentFileDir}/${fileName}`,
                 );
 
                 // Write the file
@@ -388,11 +388,11 @@ export class UIController {
                 // Show success notification
                 await this.showFileActionDialog(
                     `Plot saved successfully: ${fileName}`,
-                    savePath
+                    savePath,
                 );
 
                 Logger.info(
-                    `[UIController] Plot saved successfully: ${savePath.fsPath}`
+                    `[UIController] Plot saved successfully: ${savePath.fsPath}`,
                 );
                 return { success: true, filePath: savePath.fsPath };
             } catch (error) {
@@ -410,10 +410,10 @@ export class UIController {
 
     private async handleSavePlotAs(
         plotData: string,
-        variable: string
+        variable: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'savePlotAs',
             data: { variable },
         };
@@ -463,7 +463,7 @@ export class UIController {
                     `Plot saved successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    saveUri
+                    saveUri,
                 );
 
                 Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
@@ -484,15 +484,15 @@ export class UIController {
     private async handleOpenPlot(
         plotData: string,
         variable: string,
-        fileName: string
+        fileName: string,
     ): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'openPlot',
             data: { variable, fileName },
         };
 
-        const result = await this.errorBoundary.wrapAsync(async () => {
+        await this.errorBoundary.wrapAsync(async () => {
             // Convert base64 to buffer
             const buffer = Buffer.from(plotData, 'base64');
 
@@ -508,28 +508,28 @@ export class UIController {
                 await vscode.commands.executeCommand(
                     'vscode.open',
                     tempFile,
-                    vscode.ViewColumn.Beside
+                    vscode.ViewColumn.Beside,
                 );
                 Logger.info(
-                    `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`
+                    `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`,
                 );
             } catch (vscodeError) {
                 // If opening in VSCode fails, open with external application
                 try {
                     await vscode.env.openExternal(tempFile);
                     Logger.info(
-                        `[UIController] Plot opened with external app: ${tempFile.fsPath}`
+                        `[UIController] Plot opened with external app: ${tempFile.fsPath}`,
                     );
                 } catch (externalError) {
                     Logger.error(
-                        `[UIController] Failed to open plot with both VSCode and external app: ${externalError}`
+                        `[UIController] Failed to open plot with both VSCode and external app: ${externalError}`,
                     );
                     throw new Error(
                         `Failed to open plot: ${
                             externalError instanceof Error
                                 ? externalError.message
                                 : String(externalError)
-                        }`
+                        }`,
                     );
                 }
             }
@@ -541,7 +541,7 @@ export class UIController {
         any
     > | null> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'getExtensionConfig',
         };
 
@@ -555,7 +555,7 @@ export class UIController {
 
     private async handleRefresh(): Promise<void | null> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'refresh',
         };
 
@@ -571,7 +571,7 @@ export class UIController {
 
     private async handleGetCurrentFilePath(): Promise<{ filePath: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'getCurrentFilePath',
         };
 
@@ -588,10 +588,10 @@ export class UIController {
 
     private async handleShowNotification(
         message: string,
-        type: 'info' | 'warning' | 'error'
+        type: 'info' | 'warning' | 'error',
     ): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'showNotification',
         };
 
@@ -614,22 +614,22 @@ export class UIController {
         try {
             // This will be handled by the outline provider when we register it
             Logger.info(
-                `[UIController] 📋 Received header update with ${headers.length} headers`
+                `[UIController] 📋 Received header update with ${headers.length} headers`,
             );
             // The actual outline update will be handled by the DataViewerPanel
         } catch (error) {
             Logger.error(
-                `[UIController] ❌ Error handling header update: ${error}`
+                `[UIController] ❌ Error handling header update: ${error}`,
             );
             throw error;
         }
     }
 
     private async handleExportWebview(
-        htmlContent: string
+        htmlContent: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'exportWebview',
         };
 
@@ -657,7 +657,7 @@ export class UIController {
                 // Show save dialog
                 const saveUri = await vscode.window.showSaveDialog({
                     defaultUri: vscode.Uri.file(
-                        `${currentFileDir}/${defaultFileName}`
+                        `${currentFileDir}/${defaultFileName}`,
                     ),
                     filters: {
                         'HTML Files': ['html'],
@@ -677,13 +677,13 @@ export class UIController {
                 const processedHtmlContent =
                     ThemeManager.applyThemeToWebviewContent(
                         htmlContent,
-                        getWebviewExportTheme()
+                        getWebviewExportTheme(),
                     );
 
                 // Write the file
                 await vscode.workspace.fs.writeFile(
                     saveUri,
-                    Buffer.from(processedHtmlContent, 'utf8')
+                    Buffer.from(processedHtmlContent, 'utf8'),
                 );
 
                 // Show success notification
@@ -691,16 +691,16 @@ export class UIController {
                     `Webview content exported successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
-                    saveUri
+                    saveUri,
                 );
 
                 Logger.info(
-                    `[UIController] Webview content exported: ${saveUri.fsPath}`
+                    `[UIController] Webview content exported: ${saveUri.fsPath}`,
                 );
                 return { success: true, filePath: saveUri.fsPath };
             } catch (error) {
                 Logger.error(
-                    `[UIController] Error exporting webview content: ${error}`
+                    `[UIController] Error exporting webview content: ${error}`,
                 );
                 return {
                     success: false,
@@ -718,21 +718,24 @@ export class UIController {
         this.messageBus.emitUIStateChanged(state);
     }
 
-    public emitScrollToHeader(headerId: string, headerLabel: string): void {
-        this.messageBus.emitScrollToHeader(headerId, headerLabel);
+    public emitCommandScrollToHeader(
+        headerId: string,
+        headerLabel: string,
+    ): void {
+        this.messageBus.emitCommandScrollToHeader(headerId, headerLabel);
     }
 
     /**
      * Export webview content (what the user currently sees)
      */
-    public emitExportWebview(): void {
-        this.messageBus.emitExportWebviewCommand();
+    public emitCommandExportWebview(): void {
+        this.messageBus.emitCommandExportWebview();
     }
 
     // Public methods for external control
     public async loadFile(filePath: string): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'loadFile',
             data: { filePath },
         };
@@ -762,10 +765,10 @@ export class UIController {
 
     private async handleExecuteCommand(
         command: string,
-        args?: any[]
+        args?: any[],
     ): Promise<any> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'executeCommand',
             data: { command, args },
         };
@@ -774,10 +777,10 @@ export class UIController {
             Logger.info(`[UIController] 🔧 Executing command: ${command}`);
             const result = await vscode.commands.executeCommand(
                 command,
-                ...(args || [])
+                ...(args || []),
             );
             Logger.info(
-                `[UIController] 🔧 Command executed successfully: ${command}`
+                `[UIController] 🔧 Command executed successfully: ${command}`,
             );
             return result;
         }, context);
@@ -803,7 +806,7 @@ export class UIController {
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
-            this.getId()
+            this.getId(),
         );
     }
 

@@ -33,7 +33,7 @@ export class ErrorBoundary {
         // Handle uncaught errors
         process.on('uncaughtException', (error) => {
             this.handleError(error, {
-                component: this,
+                component: this.constructor.name,
                 operation: 'uncaughtException',
             });
         });
@@ -55,7 +55,7 @@ export class ErrorBoundary {
 
         // Log the error
         Logger.error(
-            `🩹 Error in ${context.component}.${context.operation}: ${error.message}`
+            `🩹 Error in ${context.component}.${context.operation}: ${error.message}`,
         );
 
         // Try component-specific handler first
@@ -66,7 +66,7 @@ export class ErrorBoundary {
                 return;
             } catch (handlerError) {
                 Logger.error(
-                    `🩹 Error in component handler for ${context.component}: ${handlerError}`
+                    `🩹 Error in component handler for ${context.component}: ${handlerError}`,
                 );
             }
         }
@@ -77,7 +77,9 @@ export class ErrorBoundary {
                 this.globalErrorHandler(error, context);
                 return;
             } catch (globalHandlerError) {
-                Logger.error(`🩹 Error in global handler: ${globalHandlerError}`);
+                Logger.error(
+                    `🩹 Error in global handler: ${globalHandlerError}`,
+                );
             }
         }
 
@@ -106,7 +108,7 @@ export class ErrorBoundary {
             .showErrorMessage(
                 `${getDisplayName()} Error: ${userMessage}`,
                 'Show Details',
-                'Report Issue'
+                'Report Issue',
             )
             .then((selection) => {
                 if (selection === 'Show Details') {
@@ -119,7 +121,7 @@ export class ErrorBoundary {
 
     private getUserFriendlyMessage(
         error: Error,
-        context: ErrorContext
+        context: ErrorContext,
     ): string {
         // Map technical errors to user-friendly messages
         if (error.message.includes('Python environment not ready')) {
@@ -200,7 +202,7 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
     getErrorCount(component?: any): number {
         if (component) {
             return this.errorHistory.filter(
-                (entry) => entry.context.component === component
+                (entry) => entry.context.component === component,
             ).length;
         }
         return this.errorHistory.length;
@@ -209,14 +211,14 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
     // Wrapper for async operations
     async wrapAsync<T>(
         operation: () => Promise<T>,
-        context: ErrorContext
+        context: ErrorContext,
     ): Promise<T | null> {
         try {
             return await operation();
         } catch (error) {
             this.handleError(
                 error instanceof Error ? error : new Error(String(error)),
-                context
+                context,
             );
             return null;
         }
@@ -229,7 +231,7 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
         } catch (error) {
             this.handleError(
                 error instanceof Error ? error : new Error(String(error)),
-                context
+                context,
             );
             return null;
         }

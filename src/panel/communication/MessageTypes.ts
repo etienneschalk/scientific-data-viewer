@@ -149,7 +149,7 @@ export class MessageFactory {
         requestId: string,
         success: boolean,
         payload?: T,
-        error?: string
+        error?: string,
     ): ResponseMessage<T> {
         return {
             id: this.generateId(),
@@ -179,7 +179,7 @@ export function isRequestMessage(message: Message): message is RequestMessage {
 }
 
 export function isResponseMessage(
-    message: Message
+    message: Message,
 ): message is ResponseMessage {
     return message.type === 'response';
 }
@@ -205,8 +205,8 @@ export const EVENTS = {
     ERROR: 'error',
     PYTHON_ENVIRONMENT_CHANGED: 'pythonEnvironmentChanged',
     UI_STATE_CHANGED: 'uiStateChanged',
-    SCROLL_TO_HEADER: 'scrollToHeader',
-    EXPORT_WEBVIEW_COMMAND: 'exportWebviewCommand',
+    SCROLL_TO_HEADER_EVENT_COMMAND: 'scrollToHeaderCommandEvent',
+    EXPORT_WEBVIEW_COMMAND_EVENT: 'exportWebviewCommandEvent',
 } as const;
 
 export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];

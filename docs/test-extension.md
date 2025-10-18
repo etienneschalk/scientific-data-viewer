@@ -9,11 +9,13 @@
 ## 🧪 How to Test
 
 ### Step 1: Reload the Extension
+
 1. Press `Ctrl+Shift+P`
 2. Type "Developer: Reload Window"
 3. Press Enter
 
 ### Step 2: Test File Recognition
+
 1. Right-click on any of these files in the explorer:
    - `sample-data/sample_data.nc` (NetCDF)
    - `sample-data/sample_data.h5` (HDF5)
@@ -21,6 +23,7 @@
 2. You should see "Open in Scientific Data Viewer" option
 
 ### Step 3: Test the Viewer
+
 1. Click "Open in Scientific Data Viewer"
 2. If you see an error, it will now show:
    - Clear error message
@@ -30,26 +33,34 @@
 ## 🔧 Common Issues and Solutions
 
 ### Issue: "Python environment not ready"
+
 **Solution:**
+
 1. Press `Ctrl+Shift+P`
 2. Type "Python: Select Interpreter"
 3. Choose your Python installation
 4. Install required packages: `pip install xarray netCDF4 zarr h5py numpy matplotlib`
 
 ### Issue: "Missing Python package"
+
 **Solution:**
+
 ```bash
 pip install xarray netCDF4 zarr h5py numpy matplotlib
 ```
 
 ### Issue: "File too large"
+
 **Solution:**
+
 1. Press `Ctrl+,` to open Settings
 2. Search for "Scientific Data Viewer"
 3. Increase the "Max File Size" setting
 
 ### Issue: "File not found" or "Permission denied"
+
 **Solution:**
+
 - Check file permissions
 - Make sure the file exists and is readable
 - Try with a different file
@@ -57,6 +68,7 @@ pip install xarray netCDF4 zarr h5py numpy matplotlib
 ## 📊 Expected Behavior
 
 When working correctly, you should see:
+
 1. **File Information**: Format, size, modification date
 2. **Dimensions**: List of dimensions with their sizes
 3. **Variables**: List of data variables with types and shapes
@@ -65,6 +77,7 @@ When working correctly, you should see:
 ## 🐛 Debugging
 
 If something doesn't work:
+
 1. **Check VSCode Output Panel**:
    - View → Output
    - Select "Scientific Data Viewer" from dropdown
@@ -85,4 +98,3 @@ If something doesn't work:
 - ✅ Shows file information, dimensions, and variables
 - ✅ Can create plots (if Python packages installed)
 - ✅ Clear error messages if something goes wrong
-

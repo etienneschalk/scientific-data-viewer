@@ -7,7 +7,7 @@ import * as path from 'path';
 export class JavaScriptGenerator {
     private static readonly jsPath = path.join(
         __dirname,
-        '../../../src/panel/webview/webview-script.js'
+        '../../../src/panel/webview/webview-script.js',
     );
     private static content: string | null = null;
 
@@ -29,7 +29,7 @@ export class JavaScriptGenerator {
             this.content = `
                 console.error('Failed to load webview script');
                 const vscode = acquireVsCodeApi();
-                const messageBus = { 
+                const messageBus = {
                     sendRequest: () => Promise.reject(new Error('Script not loaded')),
                     onDataLoaded: () => {},
                     onError: () => {},

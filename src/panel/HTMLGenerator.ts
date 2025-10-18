@@ -2,6 +2,15 @@ import { getDisplayName, getVersion } from '../common/vscodeutils';
 import { CSSGenerator } from './CSSGenerator';
 import { JavaScriptGenerator } from './JavaScriptGenerator';
 
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
 /**
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
@@ -52,7 +61,7 @@ export class HTMLGenerator {
         return /*html*/ `
     <div class="header">
         <div class="title" id="top-level-title">${getDisplayName()} <small>v${getVersion()} ${
-            devMode ? `[${panelId}]` : ''
+            devMode ? escapeHtml(`<${panelId}>`) : ''
         }</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
@@ -143,7 +152,7 @@ export class HTMLGenerator {
     static generateTextRepresentation(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" id="section-text-representation"> 
+            <details class="sticky-group-details" id="section-text-representation">
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button data-target-id="textRepresentation" class="text-copy-button">
@@ -158,7 +167,7 @@ export class HTMLGenerator {
     static generateTextRepresentationForGroups(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" id="section-text-representation-for-groups"> 
+            <details class="sticky-group-details" id="section-text-representation-for-groups">
             <summary><h3>Xarray Text Representation (for each group)</h3></summary>
                 <div id="textRepresentationForGroups" class="text-representation-for-groups"></div>
             </details>
@@ -168,7 +177,7 @@ export class HTMLGenerator {
     static generateTroubleshooting(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" id="section-troubleshooting"> 
+            <details class="sticky-group-details" id="section-troubleshooting">
                 <summary><h3>Troubleshooting</h3></summary>
                 <div class="info-section">
                     <details open>
@@ -204,16 +213,16 @@ export class HTMLGenerator {
     static generatePlottingSections(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" id="section-global-plot-controls"> 
+            <details class="sticky-group-details" id="section-global-plot-controls">
                 <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
                     <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
-                <div 
-                    id="createAllPlotsProgress" 
-                    class="plot-progress hidden" 
+                <div
+                    id="createAllPlotsProgress"
+                    class="plot-progress hidden"
                 >
                     Progress: 0/0 (0%)
                 </div>

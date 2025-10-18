@@ -1,0 +1,83 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate-changes:
+    name: Validate Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        node-version: ["22"]
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      # Run pre-commit on all files - this covers:
+      # - Prettier formatting (TypeScript/JavaScript/JSON/Markdown)
+      # - ESLint (TypeScript/JavaScript) with --fix
+      # - TypeScript type checking
+      # - Ruff linting and formatting (Python)
+      # - Trailing whitespace, end-of-file fixes
+      # - YAML/JSON validation
+      # - Merge conflict detection
+      # - Large file detection
+      # - Secret detection
+      - name: Run pre-commit on all files
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files --verbose
+
+      # Additional checks not covered by pre-commit
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Install virtual display dependencies (for tests)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+      - name: Run tests with virtual display
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3
+          npm run test
+      - name: Package extension
+        run: npm run package
+        if: matrix.node-version == '22'
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate

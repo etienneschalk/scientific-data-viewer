@@ -6,7 +6,7 @@ import { CMD_HEALTHCHECK } from './common/config';
 // Function to update status bar with current Python interpreter
 export function updateStatusBarItem(
     envInfo: EnvironmentInfo,
-    statusBarItem: vscode.StatusBarItem
+    statusBarItem: vscode.StatusBarItem,
 ) {
     statusBarItem.backgroundColor = undefined;
 
@@ -30,13 +30,13 @@ export function updateStatusBarItem(
     statusBarItem.text = `${icon} SDV ${source}`;
     statusBarItem.tooltip = `${getDisplayName()} - State
 
-Status: 
-${tooltipStatus} 
+Status:
+${tooltipStatus}
 
 Environment Source:
 ${source}
 
-Environment Python interpreter path: 
+Environment Python interpreter path:
 ${envInfo.path ?? 'Not set'}
 
 Click to run healthcheck

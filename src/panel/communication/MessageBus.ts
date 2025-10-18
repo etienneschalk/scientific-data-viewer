@@ -52,7 +52,7 @@ export class MessageBus {
     async sendRequest<T, R>(
         command: string,
         payload: T,
-        timeout: number = 10000
+        timeout: number = 10000,
     ): Promise<R> {
         const request = MessageFactory.createRequest(command, payload);
 
@@ -85,13 +85,13 @@ export class MessageBus {
         requestId: string,
         success: boolean,
         payload?: T,
-        error?: string
+        error?: string,
     ): void {
         const response = MessageFactory.createResponse(
             requestId,
             success,
             payload,
-            error
+            error,
         );
         this.webview.postMessage(response);
     }
@@ -105,7 +105,7 @@ export class MessageBus {
     // Register a request handler
     registerRequestHandler(
         command: string,
-        handler: (payload: any) => Promise<any>
+        handler: (payload: any) => Promise<any>,
     ): void {
         this.requestHandlers.set(command, handler);
     }
@@ -138,7 +138,7 @@ export class MessageBus {
                 message.id,
                 false,
                 undefined,
-                `Unknown command: ${message.command}`
+                `Unknown command: ${message.command}`,
             );
             return;
         }
@@ -158,7 +158,7 @@ export class MessageBus {
 
         if (!pendingRequest) {
             console.warn(
-                `Received response for unknown request: ${message.requestId}`
+                `Received response for unknown request: ${message.requestId}`,
             );
             return;
         }
@@ -182,7 +182,7 @@ export class MessageBus {
                 } catch (error) {
                     console.error(
                         `Error in event listener for ${message.event}:`,
-                        error
+                        error,
                     );
                 }
             });
@@ -201,7 +201,7 @@ export class MessageBus {
     async savePlot(
         plotData: string,
         variable: string,
-        fileName: string
+        fileName: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         return this.sendRequest(COMMANDS.SAVE_PLOT, {
             plotData,
@@ -212,7 +212,7 @@ export class MessageBus {
 
     async savePlotAs(
         plotData: string,
-        variable: string
+        variable: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         return this.sendRequest(COMMANDS.SAVE_PLOT_AS, { plotData, variable });
     }
@@ -220,7 +220,7 @@ export class MessageBus {
     async openPlot(
         plotData: string,
         variable: string,
-        fileName: string
+        fileName: string,
     ): Promise<void> {
         return this.sendRequest(COMMANDS.OPEN_PLOT, {
             plotData,
@@ -238,7 +238,7 @@ export class MessageBus {
         message: string,
         details?: string,
         errorType?: string,
-        formatInfo?: any
+        formatInfo?: any,
     ): void {
         this.sendEvent(EVENTS.ERROR, {
             message,
@@ -250,7 +250,7 @@ export class MessageBus {
 
     emitPythonEnvironmentChanged(
         isReady: boolean,
-        pythonPath: string | null
+        pythonPath: string | null,
     ): void {
         this.sendEvent(EVENTS.PYTHON_ENVIRONMENT_CHANGED, {
             isReady,
@@ -262,12 +262,15 @@ export class MessageBus {
         this.sendEvent(EVENTS.UI_STATE_CHANGED, state);
     }
 
-    emitScrollToHeader(headerId: string, headerLabel: string): void {
-        this.sendEvent(EVENTS.SCROLL_TO_HEADER, { headerId, headerLabel });
+    emitCommandScrollToHeader(headerId: string, headerLabel: string): void {
+        this.sendEvent(EVENTS.SCROLL_TO_HEADER_EVENT_COMMAND, {
+            headerId,
+            headerLabel,
+        });
     }
 
-    emitExportWebviewCommand(): void {
-        this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND, {});
+    emitCommandExportWebview(): void {
+        this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND_EVENT, {});
     }
 
     // Cleanup
