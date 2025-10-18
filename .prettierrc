@@ -14,9 +14,5 @@
         "tabWidth": 2
       }
     }
-  ],
-  "env": {
-    "browser": true,
-    "node": true
-  }
+  ]
 }
