@@ -403,12 +403,7 @@ function setupMessageHandlers() {
 
     messageBus.onError((error) => {
         console.error('❌ Error event received:', error);
-        displayGlobalError(
-            error.message,
-            error.details,
-            error.errorType,
-            error.formatInfo,
-        );
+        displayGlobalError(error.message, error.details, error.errorType);
     });
 
     messageBus.onPythonEnvironmentChanged((data) => {
@@ -531,7 +526,7 @@ function displayDataInfo(data, filePath) {
         Object.keys(data.variables_flattened).forEach((groupName) => {
             data.variables_flattened[groupName].forEach((variable) => {
                 const fullVariableName = `${
-                    groupName == '/' ? '' : groupName
+                    groupName === '/' ? '' : groupName
                 }/${variable.name}`;
                 const createButton = document.querySelector(
                     `.create-plot-button[data-variable="${fullVariableName}"]`,
@@ -788,7 +783,7 @@ function renderDataVariable(variable, groupName) {
         : '';
 
     // For datatree variables, use full path (group/variable) for plotting
-    const fullVariableName = `${groupName == '/' ? '' : groupName}/${
+    const fullVariableName = `${groupName === '/' ? '' : groupName}/${
         variable.name
     }`;
     const plotControls = renderVariablePlotControls(fullVariableName);
@@ -1000,7 +995,6 @@ function displayGlobalError(
     message,
     details = '',
     errorType = '',
-    formatInfo = null,
     supportedFormats = SUPPORTED_EXTENSIONS_HARDOCDED.join(', '),
 ) {
     const errorDiv = document.getElementById('error');
@@ -1860,7 +1854,7 @@ function doScrollToHeader(
     }
 }
 
-// Function to execute the show logs command
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeShowLogsCommand() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Show logs command not available in degraded mode');
@@ -1884,7 +1878,7 @@ async function executeShowLogsCommand() {
     }
 }
 
-// Function to execute the install packages command
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeInstallPackagesCommand(packages) {
     if (messageBus.isDegradedMode) {
         console.warn(
@@ -1911,6 +1905,7 @@ async function executeInstallPackagesCommand(packages) {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function executeShowSettingsCommand() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Show settings command not available in degraded mode');

@@ -18,7 +18,7 @@ import {
     getWebviewExportTheme,
     getConvertBandsToVariables,
 } from '../common/config';
-import { DataInfoPythonResponse, ErrorContext } from '../types';
+import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
 
 export class UIController {
@@ -56,10 +56,13 @@ export class UIController {
         this.setupStateSubscription();
     }
 
+    private getComponentName(): string {
+        return `${this.constructor.name}-<${this.id}>`;
+    }
     private setupErrorHandling(): void {
         this.errorBoundary.registerHandler(
-            `ui-${this.id}`,
-            (error, context) => {
+            this.getComponentName(),
+            (error) => {
                 this.messageBus.emitError(
                     error.message,
                     'An error occurred in the UI. Please check the output panel for details.',
@@ -203,7 +206,7 @@ export class UIController {
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component:  this.getComponentName(),
             operation: 'getDataInfo',
             data: { filePath },
         };
@@ -247,7 +250,7 @@ export class UIController {
 
                 if (!dataInfo) {
                     throw new Error(
-                        'Failed to load data file. The file might be corrupted or in an unsupported format.',
+                        `Failed to load data file. The file might be corrupted or in an unsupported format. File: ${filePath}`,
                     );
                 }
 
@@ -358,7 +361,7 @@ export class UIController {
         fileName: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'savePlot',
             data: { variable, fileName },
         };
@@ -413,7 +416,7 @@ export class UIController {
         variable: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'savePlotAs',
             data: { variable },
         };
@@ -487,12 +490,12 @@ export class UIController {
         fileName: string,
     ): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'openPlot',
             data: { variable, fileName },
         };
 
-        const result = await this.errorBoundary.wrapAsync(async () => {
+        await this.errorBoundary.wrapAsync(async () => {
             // Convert base64 to buffer
             const buffer = Buffer.from(plotData, 'base64');
 
@@ -541,7 +544,7 @@ export class UIController {
         any
     > | null> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'getExtensionConfig',
         };
 
@@ -555,7 +558,7 @@ export class UIController {
 
     private async handleRefresh(): Promise<void | null> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'refresh',
         };
 
@@ -571,7 +574,7 @@ export class UIController {
 
     private async handleGetCurrentFilePath(): Promise<{ filePath: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'getCurrentFilePath',
         };
 
@@ -591,7 +594,7 @@ export class UIController {
         type: 'info' | 'warning' | 'error',
     ): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'showNotification',
         };
 
@@ -629,7 +632,7 @@ export class UIController {
         htmlContent: string,
     ): Promise<{ success: boolean; filePath?: string; error?: string }> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'exportWebview',
         };
 
@@ -735,7 +738,7 @@ export class UIController {
     // Public methods for external control
     public async loadFile(filePath: string): Promise<void> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'loadFile',
             data: { filePath },
         };
@@ -768,7 +771,7 @@ export class UIController {
         args?: any[],
     ): Promise<any> {
         const context: ErrorContext = {
-            component: `ui-${this.id}`,
+            component: this.getComponentName(),
             operation: 'executeCommand',
             data: { command, args },
         };

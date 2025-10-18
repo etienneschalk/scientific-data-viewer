@@ -58,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize error boundary
     const errorBoundary = ErrorBoundary.getInstance();
-    errorBoundary.registerGlobalHandler((error, context) => {
+    errorBoundary.registerGlobalHandler((error) => {
         Logger.error(`❌ Global error: ${error.message}`);
         vscode.window.showErrorMessage(
             `${getDisplayName()} Error: ${error.message}`,
@@ -231,9 +231,9 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await refreshPython(pythonManager, statusBarItem);
     };
-    const handleOnDidEnvironmentsChanged = async (environment: any) => {
+    const handleOnDidEnvironmentsChanged = async () => {
         Logger.info(
-            '🧩 🐍 🔧 Python environment created, refreshing Python environment...',
+            '🧩 🐍 🔧 Python environment changed, refreshing Python environment...',
         );
         await refreshPython(pythonManager, statusBarItem);
     };

@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { Logger } from '../common/Logger';
 
 /**

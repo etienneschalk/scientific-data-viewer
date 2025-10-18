@@ -224,7 +224,7 @@ export class ExtensionVirtualEnvironmentManager {
      * Install Python using uv
      */
     private async uvInstallPython(): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             Logger.info(
                 `[uv] 🔧 Installing Python ${this.PYTHON_VERSION} with uv...`,
             );
@@ -284,7 +284,7 @@ export class ExtensionVirtualEnvironmentManager {
      * Create a virtual environment using uv
      */
     private async uvCreateVirtualEnvironment(envPath: string): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             Logger.info(
                 `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`,
             );

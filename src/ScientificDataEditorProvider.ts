@@ -13,8 +13,6 @@ export class ScientificDataEditorProvider
 
     public async openCustomDocument(
         uri: vscode.Uri,
-        openContext: vscode.CustomDocumentOpenContext,
-        _token: vscode.CancellationToken,
     ): Promise<vscode.CustomDocument> {
         Logger.info(`🚚 📖 Opening custom document for: ${uri.fsPath}`);
 
@@ -32,7 +30,6 @@ export class ScientificDataEditorProvider
     public async resolveCustomEditor(
         document: vscode.CustomDocument,
         webviewPanel: vscode.WebviewPanel,
-        _token: vscode.CancellationToken,
     ): Promise<void> {
         Logger.info(
             `🚚 🎯 Resolving custom editor for: ${document.uri.fsPath}`,

@@ -2,6 +2,15 @@ import { getDisplayName, getVersion } from '../common/vscodeutils';
 import { CSSGenerator } from './CSSGenerator';
 import { JavaScriptGenerator } from './JavaScriptGenerator';
 
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
 /**
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
@@ -52,7 +61,7 @@ export class HTMLGenerator {
         return /*html*/ `
     <div class="header">
         <div class="title" id="top-level-title">${getDisplayName()} <small>v${getVersion()} ${
-            devMode ? `[${panelId}]` : ''
+            devMode ? escapeHtml(`<${panelId}>`) : ''
         }</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}

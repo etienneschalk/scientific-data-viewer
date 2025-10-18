@@ -33,7 +33,7 @@ export class ErrorBoundary {
         // Handle uncaught errors
         process.on('uncaughtException', (error) => {
             this.handleError(error, {
-                component: this,
+                component: this.constructor.name,
                 operation: 'uncaughtException',
             });
         });

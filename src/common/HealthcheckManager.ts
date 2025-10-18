@@ -222,6 +222,9 @@ export class HealthcheckManager {
             markdown += `- **Ready:** No\n\n`;
         }
 
+        // Component details - bullet points
+        markdown = this.generateComponentDetails(markdown, statusIcon, report);
+
         // Issues section - separate by status
         const errorIssues = report.issues.filter(
             (issue) => issue.status === 'error',
@@ -258,58 +261,48 @@ export class HealthcheckManager {
             markdown += `All systems are operating normally.\n\n`;
         }
 
-        // Component details - bullet points
-        markdown += `## 🔧 Component Status\n\n`;
-        markdown += `- **Panes**: ${
-            statusIcon[report.components.panes.status]
-        } ${report.components.panes.status} - ${
-            report.components.panes.message
-        }\n`;
-        markdown += `- **Panes with Error**: ${
-            statusIcon[report.components.panesWithErrors.status]
-        } ${report.components.panesWithErrors.status} - ${
-            report.components.panesWithErrors.message
-        }\n`;
-        markdown += `- **Python Environment**: ${
-            statusIcon[report.components.pythonEnvironment.status]
-        } ${report.components.pythonEnvironment.status} - ${
-            report.components.pythonEnvironment.message
-        }\n`;
-        markdown += `- **Dependencies**: ${
-            statusIcon[report.components.dependencies.status]
-        } ${report.components.dependencies.status} - ${
-            report.components.dependencies.message
-        }\n`;
-        markdown += `- **Configuration**: ${
-            statusIcon[report.components.configuration.status]
-        } ${report.components.configuration.status} - ${
-            report.components.configuration.message
-        }\n`;
-        markdown += `- **Error Boundary**: ${
-            statusIcon[report.components.errorBoundary.status]
-        } ${report.components.errorBoundary.status} - ${
-            report.components.errorBoundary.message
-        }\n`;
-        markdown += `- **Memory Usage**: ${
-            statusIcon[report.components.memory.status]
-        } ${report.components.memory.status} - ${
-            report.components.memory.message
-        }\n`;
-        markdown += `- **Supported Formats**: ${
-            statusIcon[report.components.supportedFormats.status]
-        } ${report.components.supportedFormats.status} - ${
-            report.components.supportedFormats.message
-        }\n`;
-        markdown += `- **Logging System**: ${
-            statusIcon[report.components.logging.status]
-        } ${report.components.logging.status} - ${
-            report.components.logging.message
-        }\n`;
-        markdown += `- **Performance**: ${
-            statusIcon[report.components.performance.status]
-        } ${report.components.performance.status} - ${
-            report.components.performance.message
-        }\n\n`;
+
+
+        // Error History Section
+        const errorBoundary = ErrorBoundary.getInstance();
+        const errorHistory = errorBoundary.getErrorHistory();
+        if (errorHistory.length > 0) {
+            markdown += `## 🚨 Error History\n\n`;
+            markdown += `Total errors recorded: **${errorHistory.length}**\n\n`;
+            
+            // Group errors by component
+            const errorsByComponent = errorHistory.reduce((acc, entry) => {
+                const component = entry.context.component || 'Unknown';
+                if (!acc[component]) {
+                    acc[component] = [];
+                }
+                acc[component].push(entry);
+                return acc;
+            }, {} as Record<string, typeof errorHistory>);
+            
+            // Show errors by component
+            Object.entries(errorsByComponent).forEach(([component, errors]) => {
+                markdown += `### Component: ${component} (${errors.length} errors)\n\n`;
+                errors.forEach((entry, index) => {
+                    const timeAgo = this.getTimeAgo(entry.timestamp);
+                    markdown += `${index + 1}. [${entry.timestamp.toISOString()}] (*${timeAgo}*) - \`${entry.context.operation}\`\n`;
+                    markdown += `   - **Error:** ${entry.error.message}\n`;
+                    if (entry.context.data) {
+                        markdown += `   - **Data:** \`${JSON.stringify(entry.context.data)}\`\n`;
+                    }
+                    if (entry.context.userAction) {
+                        markdown += `   - **User Action:** ${entry.context.userAction}\n`;
+                    }
+                    markdown += `\n`;
+                });
+                if (errors.length > 5) {
+                    markdown += `*... and ${errors.length - 5} more errors*\n\n`;
+                }
+            });
+        } else {
+            markdown += `## ✅ Error History\n\n`;
+            markdown += `No errors have been recorded. The extension is running smoothly!\n\n`;
+        }
 
         // Recommendations
         if (report.recommendations.length > 0) {
@@ -331,6 +324,21 @@ export class HealthcheckManager {
             2,
         )}\n\`\`\`\n\n`;
 
+        return markdown;
+    }
+
+    private generateComponentDetails(markdown: string, statusIcon: { healthy: string; warning: string; error: string; }, report: HealthcheckReport) {
+        markdown += `## 🔧 Component Status\n\n`;
+        markdown += `- **Panes**: ${statusIcon[report.components.panes.status]} ${report.components.panes.status} - ${report.components.panes.message}\n`;
+        markdown += `- **Panes with Error**: ${statusIcon[report.components.panesWithErrors.status]} ${report.components.panesWithErrors.status} - ${report.components.panesWithErrors.message}\n`;
+        markdown += `- **Python Environment**: ${statusIcon[report.components.pythonEnvironment.status]} ${report.components.pythonEnvironment.status} - ${report.components.pythonEnvironment.message}\n`;
+        markdown += `- **Dependencies**: ${statusIcon[report.components.dependencies.status]} ${report.components.dependencies.status} - ${report.components.dependencies.message}\n`;
+        markdown += `- **Configuration**: ${statusIcon[report.components.configuration.status]} ${report.components.configuration.status} - ${report.components.configuration.message}\n`;
+        markdown += `- **Error Boundary**: ${statusIcon[report.components.errorBoundary.status]} ${report.components.errorBoundary.status} - ${report.components.errorBoundary.message}\n`;
+        markdown += `- **Memory Usage**: ${statusIcon[report.components.memory.status]} ${report.components.memory.status} - ${report.components.memory.message}\n`;
+        markdown += `- **Supported Formats**: ${statusIcon[report.components.supportedFormats.status]} ${report.components.supportedFormats.status} - ${report.components.supportedFormats.message}\n`;
+        markdown += `- **Logging System**: ${statusIcon[report.components.logging.status]} ${report.components.logging.status} - ${report.components.logging.message}\n`;
+        markdown += `- **Performance**: ${statusIcon[report.components.performance.status]} ${report.components.performance.status} - ${report.components.performance.message}\n\n`;
         return markdown;
     }
 
@@ -407,7 +415,7 @@ export class HealthcheckManager {
                 const errorDetails = errorPanels
                     .map(
                         (panel) =>
-                            `- ⚠️ Panel ${panel.getId()}: ${
+                            `- ⚠️ Panel <${panel.getId()}>: ${
                                 panel.getFileUri().fsPath
                             }`,
                     )
@@ -765,12 +773,54 @@ export class HealthcheckManager {
     private checkErrorBoundary(): HealthcheckResult {
         try {
             const errorBoundary = ErrorBoundary.getInstance();
-            // We don't have a direct way to check if there are errors, but we can check if it's properly initialized
+            const errorHistory = errorBoundary.getErrorHistory();
+            const errorCount = errorHistory.length;
+            
+            // Get recent errors (last 24 hours)
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const recentErrors = errorHistory.filter(
+                (entry) => entry.timestamp > oneDayAgo
+            );
+            
+            // Get errors by component
+            const errorsByComponent = errorHistory.reduce((acc, entry) => {
+                const component = entry.context.component || 'Unknown';
+                acc[component] = (acc[component] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            
+            let status: 'healthy' | 'warning' | 'error' = 'healthy';
+            let message = '';
+            let details = '';
+            
+            if (errorCount === 0) {
+                message = 'Error boundary is active - no errors recorded';
+                details = 'Error boundary is properly initialized and monitoring for errors. No errors have been recorded.';
+            } else if (recentErrors.length === 0) {
+                status = 'warning';
+                message = `Error boundary active - ${errorCount} historical errors (none recent)`;
+                details = `Error boundary is properly initialized. ${errorCount} errors recorded historically, but none in the last 24 hours.\n\n` +
+                    `Historical errors by component:\n${Object.entries(errorsByComponent)
+                        .map(([component, count]) => `- ${component}: ${count}`)
+                        .join('\n')}`;
+            } else  {
+                status = 'warning';
+                message = `Error boundary active - ${recentErrors.length} recent errors`;
+                details = `Error boundary is properly initialized. ${recentErrors.length} errors recorded in the last 24 hours.\n\n` +
+                    `Recent errors by component:\n${Object.entries(errorsByComponent)
+                        .map(([component, count]) => `- ${component}: ${count}`)
+                        .join('\n')}\n\n` +
+                    `Recent error details:\n${recentErrors
+                        .map((entry, index) => 
+                            `${index + 1}. [${entry.timestamp.toISOString()}] ${entry.context.component || 'Unknown'}.${entry.context.operation}: ${entry.error.message}`
+                        )
+                        .join('\n')}`;
+            } 
+            
             return {
-                status: 'healthy',
-                message: 'Error boundary is active',
-                details:
-                    'Error boundary is properly initialized and monitoring for errors.',
+                status,
+                message,
+                details,
                 timestamp: new Date(),
             };
         } catch (error) {
@@ -880,6 +930,29 @@ export class HealthcheckManager {
             );
         }
 
+        // Error-related recommendations
+        const errorBoundary = ErrorBoundary.getInstance();
+        const errorHistory = errorBoundary.getErrorHistory();
+        const recentErrors = errorHistory.filter(
+            (entry) => entry.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000)
+        );
+
+        if (recentErrors.length > 10) {
+            recommendations.push(
+                '🚨 **High Error Rate**: The extension is experiencing many errors. Consider restarting VS Code or checking the error logs for patterns.',
+            );
+        } else if (recentErrors.length > 0) {
+            recommendations.push(
+                '⚠️ **Recent Errors**: Some errors have been recorded recently. Check the error history section for details.',
+            );
+        }
+
+        if (errorHistory.length > 50) {
+            recommendations.push(
+                '🧹 **Cleanup**: Consider clearing the error history if it contains many old errors that are no longer relevant.',
+            );
+        }
+
         if (recommendations.length === 0) {
             recommendations.push(
                 '✅ No specific recommendations at this time - all systems are healthy!',
@@ -918,7 +991,6 @@ export class HealthcheckManager {
                 '.safe': ['rasterio'],
             };
 
-            const supportedExtensions = Object.keys(formatEngineMap);
             const formatEngines = {
                 netcdf4: ['netCDF4'],
                 h5netcdf: ['h5netcdf'],
@@ -1101,5 +1173,25 @@ export class HealthcheckManager {
             return 'warning';
         }
         return 'healthy';
+    }
+
+    private getTimeAgo(timestamp: Date): string {
+        const now = new Date();
+        const diffMs = now.getTime() - timestamp.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMinutes < 1) {
+            return 'Just now';
+        } else if (diffMinutes < 60) {
+            return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+        } else if (diffHours < 24) {
+            return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        } else if (diffDays < 7) {
+            return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+        } else {
+            return timestamp.toLocaleDateString();
+        }
     }
 }
