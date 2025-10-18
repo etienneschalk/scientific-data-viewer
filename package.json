@@ -509,8 +509,14 @@
         "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.6.2",
         "eslint": "^8.28.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.4",
         "glob": "^10.3.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.4",
         "mocha": "^10.2.0",
+        "pre-commit": "^1.2.2",
+        "prettier": "^3.6.2",
         "typescript": "^4.9.4"
     },
     "dependencies": {

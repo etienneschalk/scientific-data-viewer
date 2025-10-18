@@ -13,10 +13,8 @@ export function quoteIfNeeded(value: string): string {
 
 /**
  * Format configuration value based on type
-*/
-export function formatConfigValue(
-    value: any
-): string {
+ */
+export function formatConfigValue(value: any): string {
     switch (typeof value) {
         case 'boolean':
             return value ? 'enabled 🟢' : 'disabled 🔴';

@@ -71,8 +71,8 @@ suite('Integration Test Suite', () => {
         // Create fresh instances for each test
         pythonManager = new PythonManager(
             new ExtensionVirtualEnvironmentManager(
-                mockContext.globalStorageUri.fsPath
-            )
+                mockContext.globalStorageUri.fsPath,
+            ),
         );
         dataProcessor = new DataProcessor(pythonManager);
     });
@@ -90,7 +90,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 // Return different responses based on the script and args
                 if (args[0] === 'info') {
@@ -104,15 +104,16 @@ suite('Integration Test Suite', () => {
                     // Return base64 image data for plot creation
                     return {
                         result: {
-                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            plot_data:
+                                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
                             format_info: {
                                 extension: 'nc',
                                 display_name: 'NetCDF',
                                 available_engines: ['netcdf4'],
                                 missing_packages: [],
-                                is_supported: true
-                            }
-                        }
+                                is_supported: true,
+                            },
+                        },
                     };
                 }
                 return {};
@@ -135,7 +136,7 @@ suite('Integration Test Suite', () => {
         const plotData = await processor.createPlot(
             mockUri,
             'temperature',
-            'line'
+            'line',
         );
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -190,7 +191,7 @@ suite('Integration Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions
+            mockWebviewOptions,
         );
 
         assert.ok(panel);
@@ -214,7 +215,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 if (args[0] === 'info') {
                     return {
@@ -225,7 +226,7 @@ suite('Integration Test Suite', () => {
                         error: 'File corrupted or unsupported format',
                     };
                 } else if (args[0] === 'plot') {
-                    return { 
+                    return {
                         error: {
                             error: 'File corrupted or unsupported format',
                             format_info: {
@@ -233,9 +234,9 @@ suite('Integration Test Suite', () => {
                                 display_name: 'NetCDF',
                                 available_engines: ['netcdf4'],
                                 missing_packages: [],
-                                is_supported: true
-                            }
-                        }
+                                is_supported: true,
+                            },
+                        },
                     };
                 }
                 return {};
@@ -255,12 +256,16 @@ suite('Integration Test Suite', () => {
         assert.ok(dataInfo?.error);
 
         // Test plot creation with error - should return error in response
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
+        const plotData = await processor.createPlot(
+            mockUri,
+            'temperature',
+            'line',
+        );
         assert.ok(plotData);
         assert.ok(plotData?.error);
         assert.strictEqual(
             plotData.error?.error,
-            'File corrupted or unsupported format'
+            'File corrupted or unsupported format',
         );
     });
 
@@ -270,7 +275,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 throw new Error('Python script execution failed');
             },
@@ -318,7 +323,7 @@ suite('Integration Test Suite', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
             mockWebviewPanel,
-            mockWebviewOptions
+            mockWebviewOptions,
         );
 
         // Test that panel can handle different message types - these methods were removed from DataViewerPanel
@@ -334,7 +339,7 @@ suite('Integration Test Suite', () => {
         for (const messageType of messageTypes) {
             assert.ok(
                 true,
-                `Message handler ${messageType} was moved to UIController`
+                `Message handler ${messageType} was moved to UIController`,
             );
         }
     });
@@ -350,7 +355,7 @@ suite('Integration Test Suite', () => {
                     }
                     return undefined;
                 },
-            } as any);
+            }) as any;
 
         try {
             const mockWebviewPanel = {
@@ -374,12 +379,12 @@ suite('Integration Test Suite', () => {
             const panel1 = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions
+                mockWebviewOptions,
             );
             const panel2 = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions
+                mockWebviewOptions,
             );
 
             assert.ok(DataViewerPanel.getPanel(panel1.getId()));
@@ -394,7 +399,7 @@ suite('Integration Test Suite', () => {
         // The functionality is tested with real file system operations in other contexts
         assert.ok(
             true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions'
+            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
         );
     });
 
@@ -405,7 +410,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 if (args[0] === 'info') {
                     return {
@@ -417,15 +422,16 @@ suite('Integration Test Suite', () => {
                 } else if (args[0] === 'plot') {
                     return {
                         result: {
-                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            plot_data:
+                                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
                             format_info: {
                                 extension: 'nc',
                                 display_name: 'NetCDF',
                                 available_engines: ['netcdf4'],
                                 missing_packages: [],
-                                is_supported: true
-                            }
-                        }
+                                is_supported: true,
+                            },
+                        },
                     };
                 }
                 return {};
@@ -470,7 +476,7 @@ suite('Integration Test Suite', () => {
                             return undefined;
                     }
                 },
-            } as any);
+            }) as any;
 
         try {
             // Create DataViewerPanel - _handleGetDataInfo method was removed, functionality now in UIController
@@ -478,7 +484,7 @@ suite('Integration Test Suite', () => {
             const panel = DataViewerPanel.createFromWebviewPanel(
                 vscode.Uri.file('/path/to/test.nc'),
                 mockWebviewPanel,
-                mockWebviewOptions
+                mockWebviewOptions,
             );
 
             // Test that panel is created successfully
@@ -487,7 +493,7 @@ suite('Integration Test Suite', () => {
 
             // Test data processing (without triggering the panel's _handleGetDataInfo)
             const dataInfo = await processor.getDataInfo(
-                vscode.Uri.file('/path/to/test.nc')
+                vscode.Uri.file('/path/to/test.nc'),
             );
             assert.ok(dataInfo);
             assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
@@ -496,7 +502,7 @@ suite('Integration Test Suite', () => {
             const plotData = await processor.createPlot(
                 vscode.Uri.file('/path/to/test.nc'),
                 'temperature',
-                'line'
+                'line',
             );
             assert.ok(plotData);
             assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -515,7 +521,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => ({
                 format: 'NetCDF',
                 fileSize: 1024,
@@ -532,7 +538,7 @@ suite('Integration Test Suite', () => {
         const operations = [];
         for (let i = 0; i < 5; i++) {
             operations.push(
-                processor.getDataInfo(vscode.Uri.file(`/path/to/test${i}.nc`))
+                processor.getDataInfo(vscode.Uri.file(`/path/to/test${i}.nc`)),
             );
         }
 
@@ -553,7 +559,7 @@ suite('Integration Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 if (attemptCount === 0) {
                     attemptCount++;
@@ -576,13 +582,13 @@ suite('Integration Test Suite', () => {
 
         // First attempt should fail
         const firstResult = await processor.getDataInfo(
-            vscode.Uri.file('/path/to/test.nc')
+            vscode.Uri.file('/path/to/test.nc'),
         );
         assert.strictEqual(firstResult, null); // Should return null due to error
 
         // Second attempt should succeed
         const dataInfo = await processor.getDataInfo(
-            vscode.Uri.file('/path/to/test.nc')
+            vscode.Uri.file('/path/to/test.nc'),
         );
         assert.ok(dataInfo);
         assert.strictEqual(dataInfo?.result?.format, 'NetCDF');

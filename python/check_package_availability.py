@@ -5,10 +5,10 @@ Takes a list of package names as command line arguments and returns a JSON dict
 mapping package names to boolean availability status.
 """
 
-import sys
 import json
+import sys
 from importlib.util import find_spec
-from typing import List, Dict
+from typing import Dict, List
 
 
 def check_package_availability(package_names: List[str]) -> Dict[str, bool]:

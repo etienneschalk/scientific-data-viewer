@@ -8,13 +8,13 @@ export class ScientificDataEditorProvider
 {
     constructor(
         private readonly webviewOptions: vscode.WebviewOptions,
-        private readonly dataProcessor: DataProcessor
+        private readonly dataProcessor: DataProcessor,
     ) {}
 
     public async openCustomDocument(
         uri: vscode.Uri,
         openContext: vscode.CustomDocumentOpenContext,
-        _token: vscode.CancellationToken
+        _token: vscode.CancellationToken,
     ): Promise<vscode.CustomDocument> {
         Logger.info(`🚚 📖 Opening custom document for: ${uri.fsPath}`);
 
@@ -23,7 +23,7 @@ export class ScientificDataEditorProvider
             uri: uri,
             dispose: () => {
                 Logger.info(
-                    `🚚 📕 Disposed custom document for: ${uri.fsPath}`
+                    `🚚 📕 Disposed custom document for: ${uri.fsPath}`,
                 );
             },
         };
@@ -32,22 +32,22 @@ export class ScientificDataEditorProvider
     public async resolveCustomEditor(
         document: vscode.CustomDocument,
         webviewPanel: vscode.WebviewPanel,
-        _token: vscode.CancellationToken
+        _token: vscode.CancellationToken,
     ): Promise<void> {
         Logger.info(
-            `🚚 🎯 Resolving custom editor for: ${document.uri.fsPath}`
+            `🚚 🎯 Resolving custom editor for: ${document.uri.fsPath}`,
         );
-        
+
         // Wait for Python initialization to complete before creating the panel
         // This prevents the race condition where file opening happens before Python validation
         try {
             await this.dataProcessor.pythonManagerInstance.waitForInitialization();
             Logger.info(
-                `🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`
+                `🚚 👍 Python initialization complete, creating data viewer panel for: ${document.uri.fsPath}`,
             );
         } catch (error) {
             Logger.warn(
-                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`
+                `🚚 ⚠️ Python initialization failed, but proceeding with panel creation: ${error}`,
             );
         }
 
@@ -58,7 +58,7 @@ export class ScientificDataEditorProvider
         DataViewerPanel.createFromWebviewPanel(
             document.uri,
             webviewPanel,
-            this.webviewOptions
+            this.webviewOptions,
         );
     }
 }

@@ -33,15 +33,14 @@ export class Logger {
 
     public static initialize(): void {
         if (!this.outputChannel) {
-            this.outputChannel = vscode.window.createOutputChannel(
-                getDisplayName()
-            );
+            this.outputChannel =
+                vscode.window.createOutputChannel(getDisplayName());
         }
     }
 
     public static log(
         message: string,
-        level: 'info' | 'warn' | 'error' | 'debug' = 'info'
+        level: 'info' | 'warn' | 'error' | 'debug' = 'info',
     ): void {
         this.initialize();
 

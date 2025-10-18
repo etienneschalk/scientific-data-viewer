@@ -4,13 +4,12 @@ Script to create sample scientific data files for testing the VSCode extension.
 This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000.
 """
 
+import os
+import warnings
+from datetime import datetime, timedelta
+
 import numpy as np
 import xarray as xr
-import os
-import tempfile
-import shutil
-from datetime import datetime, timedelta
-import warnings
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
@@ -219,8 +218,8 @@ def create_sample_zarr_with_nested_groups_from_datatree():
     print("🌊 Creating sample Zarr file with xr.DataTree and nested groups...")
 
     try:
-        import zarr
         import xarray as xr
+        import zarr
     except ImportError:
         print(
             "  ❌ zarr or datatree not available, skipping xr.DataTree Zarr file creation."
@@ -1007,7 +1006,7 @@ def create_sample_geotiff():
     try:
         ds.rio.to_raster(output_file, compress="lzw")
         print(f"✅ Created {output_file} (compressed GeoTIFF)")
-    except Exception as e:
+    except Exception:
         # Fallback to uncompressed if compression fails
         ds.rio.to_raster(output_file)
         print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
@@ -1751,7 +1750,7 @@ def create_sample_geotiff_geotiff():
     try:
         ds.rio.to_raster(output_file, compress="lzw")
         print(f"✅ Created {output_file} (compressed GeoTIFF)")
-    except Exception as e:
+    except Exception:
         # Fallback to uncompressed if compression fails
         ds.rio.to_raster(output_file)
         print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
@@ -1861,7 +1860,7 @@ def create_sample_multiband_geotiff():
     try:
         ds.rio.to_raster(output_file, compress="lzw")
         print(f"✅ Created {output_file} (compressed multi-band GeoTIFF)")
-    except Exception as e:
+    except Exception:
         # Fallback to uncompressed if compression fails
         ds.rio.to_raster(output_file)
         print(f"✅ Created {output_file} (uncompressed multi-band GeoTIFF)")
@@ -2126,8 +2125,8 @@ def create_disposable_zarr_files():
     print(f"🗑️ Creating 10 small Zarr files in {disposable_dir}/ directory...")
 
     try:
-        import zarr
         import xarray as xr
+        import zarr
     except ImportError:
         print(
             "  ❌ zarr or xarray not available, skipping disposable Zarr file creation."
@@ -2232,8 +2231,8 @@ def create_sample_zarr_arborescence():
     print("🌳 Creating sample Zarr file with arborescence structure...")
 
     try:
-        import zarr
         import xarray as xr
+        import zarr
     except ImportError:
         print(
             "  ❌ zarr or xarray not available, skipping arborescence Zarr file creation."
@@ -2436,8 +2435,8 @@ def create_sample_zarr_inherited_coords():
     print("🔗 Creating sample Zarr file with inherited coordinates...")
 
     try:
-        import zarr
         import xarray as xr
+        import zarr
     except ImportError:
         print(
             "  ❌ zarr or xarray not available, skipping inherited coords Zarr file creation."
@@ -3487,8 +3486,8 @@ def create_sample_netcdf_complex_long_names():
         "purpose": "testing_complex_long_names_multiple_dimensions",
         "test_type": "comprehensive_ui_display_handling",
         "max_variable_name_length": max(len(name) for name in complex_variable_names),
-        "max_dimension_name_length": max(len(name) for name in coords.keys()),
-        "max_coordinate_name_length": max(len(name) for name in coords.keys()),
+        "max_dimension_name_length": max(len(name) for name in coords),
+        "max_coordinate_name_length": max(len(name) for name in coords),
         "total_variables": len(ds.data_vars),
         "total_dimensions": len(ds.dims),
         "total_coordinates": len(ds.coords),
@@ -3496,7 +3495,7 @@ def create_sample_netcdf_complex_long_names():
             len(name) for name in complex_variable_names
         )
         / len(complex_variable_names),
-        "average_dimension_name_length": sum(len(name) for name in coords.keys())
+        "average_dimension_name_length": sum(len(name) for name in coords)
         / len(coords.keys()),
         "longest_variable_name": max(complex_variable_names, key=len),
         "longest_dimension_name": max(coords.keys(), key=len),
@@ -3519,7 +3518,7 @@ def create_sample_netcdf_complex_long_names():
         f"   Longest variable name: {max(complex_variable_names, key=len)} ({max(len(name) for name in complex_variable_names)} characters)"
     )
     print(
-        f"   Longest dimension name: {max(coords.keys(), key=len)} ({max(len(name) for name in coords.keys())} characters)"
+        f"   Longest dimension name: {max(coords.keys(), key=len)} ({max(len(name) for name in coords)} characters)"
     )
     print(f"   Total data points: {sum(data.size for data in ds.data_vars.values()):,}")
     return output_file
@@ -4118,9 +4117,9 @@ def create_sample_netcdf_many_encoding():
     print(
         f"✅ Created {output_file} with {len(ds.data_vars)} variables and {len(ds.coords)} coordinates"
     )
-    print(f"   Encoding types: float32, float64, int8, int16, uint8")
+    print("   Encoding types: float32, float64, int8, int16, uint8")
     print(
-        f"   CF attributes tested: valid_range, valid_min, valid_max, missing_value, _FillValue, scale_factor, add_offset, flag_values, flag_meanings, flag_masks, cell_methods, coordinates, grid_mapping, ancillary_variables, bounds"
+        "   CF attributes tested: valid_range, valid_min, valid_max, missing_value, _FillValue, scale_factor, add_offset, flag_values, flag_meanings, flag_masks, cell_methods, coordinates, grid_mapping, ancillary_variables, bounds"
     )
     print(
         f"   Quality control variables: {len([v for v in ds.data_vars if v.endswith('_qc')])}"
@@ -4191,7 +4190,7 @@ def create_sample_netcdf_no_attributes():
     print(f"✅ Created {output_file}")
     print(f"   Variables: {list(ds.data_vars.keys())}")
     print(f"   Coordinates: {list(ds.coords.keys())}")
-    print(f"   Variable attributes: None")
+    print("   Variable attributes: None")
     return output_file
 
 
@@ -4391,7 +4390,7 @@ def main(do_create_disposable_files: bool = False):
             for format_name in skipped_files:
                 print(f"  • {format_name}")
 
-        print(f"\n🎯 You can now test the VSCode extension with these files!")
+        print("\n🎯 You can now test the VSCode extension with these files!")
         print("   Right-click on any file in VS Code and select 'Open in Data Viewer'")
 
     except Exception as e:

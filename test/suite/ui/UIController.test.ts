@@ -22,11 +22,12 @@ suite('UIController Test Suite', () => {
             promptToInstallRequiredPackages: () => {},
             promptToInstallPackagesForFormat: () => {},
             executePythonFile: async () => ({ format: 'NetCDF' }),
-            executePythonFileWithLogs: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            executePythonFileWithLogs: async () =>
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             executePythonScript: async () => ({}),
             forceReinitialize: async () => {},
             getCurrentInterpreterPath: async () => '/usr/bin/python3',
-            setupInterpreterChangeListener: async () => undefined
+            setupInterpreterChangeListener: async () => undefined,
         } as any;
 
         // Mock DataProcessor
@@ -39,19 +40,25 @@ suite('UIController Test Suite', () => {
                     xarray_html_repr: '<div>Test HTML</div>',
                     xarray_text_repr: 'Test text representation',
                     xarray_show_versions: 'Test versions',
-                    format_info: { extension: 'nc', available_engines: [], missing_packages: [], is_supported: true },
+                    format_info: {
+                        extension: 'nc',
+                        available_engines: [],
+                        missing_packages: [],
+                        is_supported: true,
+                    },
                     used_engine: 'netcdf4',
                     dimensions_flattened: {},
                     coordinates_flattened: {},
                     variables_flattened: {},
                     attributes_flattened: {},
                     xarray_html_repr_flattened: {},
-                    xarray_text_repr_flattened: {}
-                }
+                    xarray_text_repr_flattened: {},
+                },
             }),
             getVariableList: async () => ['temperature', 'time'],
             getDimensionList: async () => ['time', 'lat', 'lon'],
-            createPlot: async () => 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            createPlot: async () =>
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
             getHtmlRepresentation: async () => '<div>Test HTML</div>',
             getTextRepresentation: async () => 'Test text representation',
         } as any;
@@ -59,7 +66,7 @@ suite('UIController Test Suite', () => {
         // Mock Webview
         mockWebview = {
             onDidReceiveMessage: () => ({ dispose: () => {} }),
-            postMessage: async () => true
+            postMessage: async () => true,
         } as any;
     });
 
@@ -67,9 +74,15 @@ suite('UIController Test Suite', () => {
         uiController = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); },
-            () => { console.log('Outline update'); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
+            () => {
+                console.log('Outline update');
+            },
         );
     });
 
@@ -132,14 +145,22 @@ suite('UIController Test Suite', () => {
         const controller1 = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
         const controller2 = new UIController(
             2,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         assert.ok(controller1);
@@ -154,8 +175,12 @@ suite('UIController Test Suite', () => {
         const minimalController = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         assert.ok(minimalController);
@@ -167,8 +192,12 @@ suite('UIController Test Suite', () => {
         const errorController = new UIController(
             1,
             mockWebview,
-            (error: Error) => { errorCallbackCalled = true; },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                errorCallbackCalled = true;
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         assert.ok(errorController);
@@ -181,8 +210,12 @@ suite('UIController Test Suite', () => {
         const successController = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { successCallbackCalled = true; }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                successCallbackCalled = true;
+            },
         );
 
         assert.ok(successController);
@@ -195,9 +228,15 @@ suite('UIController Test Suite', () => {
         const outlineController = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); },
-            () => { outlineCallbackCalled = true; }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
+            () => {
+                outlineCallbackCalled = true;
+            },
         );
 
         assert.ok(outlineController);
@@ -208,26 +247,34 @@ suite('UIController Test Suite', () => {
     test('should handle different webview instances', () => {
         const webview1 = {
             onDidReceiveMessage: () => ({ dispose: () => {} }),
-            postMessage: async () => true
+            postMessage: async () => true,
         } as any;
 
         const webview2 = {
             onDidReceiveMessage: () => ({ dispose: () => {} }),
-            postMessage: async () => true
+            postMessage: async () => true,
         } as any;
 
         const controller1 = new UIController(
             1,
             webview1,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         const controller2 = new UIController(
             2,
             webview2,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         assert.ok(controller1);
@@ -240,26 +287,34 @@ suite('UIController Test Suite', () => {
     test('should handle different data processors', () => {
         const dataProcessor1 = {
             pythonManagerInstance: mockPythonManager,
-            getDataInfo: async () => ({ result: { format: 'NetCDF' } })
+            getDataInfo: async () => ({ result: { format: 'NetCDF' } }),
         } as any;
 
         const dataProcessor2 = {
             pythonManagerInstance: mockPythonManager,
-            getDataInfo: async () => ({ result: { format: 'HDF5' } })
+            getDataInfo: async () => ({ result: { format: 'HDF5' } }),
         } as any;
 
         const controller1 = new UIController(
             1,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         const controller2 = new UIController(
             2,
             mockWebview,
-            (error: Error) => { console.log('Error:', error.message); },
-            (success: string) => { console.log('Success:', success); }
+            (error: Error) => {
+                console.log('Error:', error.message);
+            },
+            (success: string) => {
+                console.log('Success:', success);
+            },
         );
 
         assert.ok(controller1);

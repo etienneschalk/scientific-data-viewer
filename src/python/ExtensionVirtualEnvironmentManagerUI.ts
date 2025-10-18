@@ -11,7 +11,7 @@ import { ExtensionVirtualEnvironment } from '../types';
 
 export class ExtensionVirtualEnvironmentManagerUI {
     constructor(
-        private extensionEnvManager: ExtensionVirtualEnvironmentManager
+        private extensionEnvManager: ExtensionVirtualEnvironmentManager,
     ) {}
 
     /**
@@ -37,7 +37,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                         placeHolder:
                             'Extension virtual environment not found. What would you like to do?',
                         title: 'Extension Environment Setup',
-                    }
+                    },
                 );
 
                 if (createAction?.label === '$(plus) Create') {
@@ -74,7 +74,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 {
                     placeHolder: 'Extension Virtual Environment Management',
                     title: 'Extension Environment Status',
-                }
+                },
             );
 
             switch (action?.label) {
@@ -90,7 +90,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 case '$(folder-opened) Open in Explorer':
                     vscode.commands.executeCommand(
                         'revealFileInOS',
-                        vscode.Uri.file(envInfo.path)
+                        vscode.Uri.file(envInfo.path),
                     );
                     break;
                 case '$(info) Information':
@@ -99,10 +99,10 @@ export class ExtensionVirtualEnvironmentManagerUI {
             }
         } catch (error) {
             Logger.error(
-                `🔧 ❌ Failed to manage extension environment: ${error}`
+                `🔧 ❌ Failed to manage extension environment: ${error}`,
             );
             showErrorMessage(
-                `Failed to manage extension environment: ${error}`
+                `Failed to manage extension environment: ${error}`,
             );
         }
     }
@@ -117,11 +117,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
             // Update the configuration to use the extension environment
             await updateUseExtensionOwnEnvironment(true);
             vscode.window.showInformationMessage(
-                'Extension virtual environment created successfully! The extension will now use its own isolated environment.'
+                'Extension virtual environment created successfully! The extension will now use its own isolated environment.',
             );
         } catch (error) {
             Logger.error(
-                `🔧 ❌ Failed to create extension environment: ${error}`
+                `🔧 ❌ Failed to create extension environment: ${error}`,
             );
             const uvInstallationUrl =
                 this.extensionEnvManager.UV_INSTALLATION_URL;
@@ -139,16 +139,16 @@ export class ExtensionVirtualEnvironmentManagerUI {
 
             if (updated) {
                 vscode.window.showInformationMessage(
-                    'Extension environment packages updated successfully!'
+                    'Extension environment packages updated successfully!',
                 );
             } else {
                 showErrorMessage(
-                    'Failed to update extension environment packages.'
+                    'Failed to update extension environment packages.',
                 );
             }
         } catch (error) {
             Logger.error(
-                `📦 ❌ Failed to update extension environment packages: ${error}`
+                `📦 ❌ Failed to update extension environment packages: ${error}`,
             );
             showErrorMessage(`Failed to update packages: ${error}`, true, true);
         }
@@ -175,7 +175,7 @@ export class ExtensionVirtualEnvironmentManagerUI {
                     placeHolder:
                         'Are you sure you want to delete the extension virtual environment?',
                     title: 'Delete Environment Confirmation',
-                }
+                },
             );
 
             if (action?.label === '$(trash) Delete') {
@@ -185,20 +185,20 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 if (deleted) {
                     await updateUseExtensionOwnEnvironment(false);
                     vscode.window.showInformationMessage(
-                        'Extension virtual environment deleted successfully!'
+                        'Extension virtual environment deleted successfully!',
                     );
                 } else {
                     showErrorMessage(
-                        'Failed to delete extension virtual environment.'
+                        'Failed to delete extension virtual environment.',
                     );
                 }
             }
         } catch (error) {
             Logger.error(
-                `🗑️ ❌ Failed to delete extension environment: ${error}`
+                `🗑️ ❌ Failed to delete extension environment: ${error}`,
             );
             showErrorMessage(
-                `Failed to delete extension environment: ${error}`
+                `Failed to delete extension environment: ${error}`,
             );
         }
     }
@@ -207,14 +207,14 @@ export class ExtensionVirtualEnvironmentManagerUI {
      * Show environment information in a new text editor tab
      */
     private async showInfo(
-        envInfo: ExtensionVirtualEnvironment
+        envInfo: ExtensionVirtualEnvironment,
     ): Promise<void> {
         try {
             const lastUpdated = envInfo.lastUpdated.toLocaleString();
 
             const toolUsed = envInfo.createdWithUv
                 ? `uv (Python ${quoteIfNeeded(
-                      this.extensionEnvManager.PYTHON_VERSION
+                      this.extensionEnvManager.PYTHON_VERSION,
                   )})`
                 : 'Unknown';
 
@@ -254,14 +254,14 @@ _Report generated on: ${new Date().toLocaleString()}_
             });
 
             Logger.info(
-                '📋 Environment information displayed in new editor tab'
+                '📋 Environment information displayed in new editor tab',
             );
         } catch (error) {
             Logger.error(
-                `📋 ❌ Failed to show environment info in editor: ${error}`
+                `📋 ❌ Failed to show environment info in editor: ${error}`,
             );
             showErrorMessage(
-                `Failed to show environment information: ${error}`
+                `Failed to show environment information: ${error}`,
             );
         }
     }

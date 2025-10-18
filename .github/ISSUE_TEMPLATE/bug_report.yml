@@ -105,7 +105,7 @@ body:
       description: Please share your Scientific Data Viewer extension settings
       placeholder: |
         Go to VSCode Settings (Ctrl+,) and search for "Scientific Data Viewer", then copy the relevant settings:
-        - scientificDataViewer.maxFileSize: 
+        - scientificDataViewer.maxFileSize:
         - scientificDataViewer.allowMultipleTabsForSameFile:
     validations:
       required: false

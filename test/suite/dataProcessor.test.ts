@@ -23,7 +23,7 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 // Mock response for testing
                 if (args[0] === 'info') {
@@ -52,15 +52,16 @@ suite('DataProcessor Test Suite', () => {
                 } else if (args[0] === 'plot') {
                     return {
                         result: {
-                            plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                            plot_data:
+                                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
                             format_info: {
                                 extension: 'nc',
                                 display_name: 'NetCDF',
                                 available_engines: ['netcdf4'],
                                 missing_packages: [],
-                                is_supported: true
-                            }
-                        }
+                                is_supported: true,
+                            },
+                        },
                     };
                 }
                 return {};
@@ -90,7 +91,7 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 throw new Error('Python script failed');
             },
@@ -109,19 +110,20 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 return {
                     result: {
-                        plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                        plot_data:
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
                         format_info: {
                             extension: 'nc',
                             display_name: 'NetCDF',
                             available_engines: ['netcdf4'],
                             missing_packages: [],
-                            is_supported: true
-                        }
-                    }
+                            is_supported: true,
+                        },
+                    },
                 };
             },
         } as any;
@@ -132,7 +134,7 @@ suite('DataProcessor Test Suite', () => {
         const plotData = await processor.createPlot(
             mockUri,
             'temperature',
-            'line'
+            'line',
         );
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -144,19 +146,20 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 return {
                     result: {
-                        plot_data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                        plot_data:
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
                         format_info: {
                             extension: 'nc',
                             display_name: 'NetCDF',
                             available_engines: ['netcdf4'],
                             missing_packages: [],
-                            is_supported: true
-                        }
-                    }
+                            is_supported: true,
+                        },
+                    },
                 };
             },
         } as any;
@@ -175,7 +178,7 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 throw new Error('Plot creation failed');
             },
@@ -200,9 +203,9 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
-                return { 
+                return {
                     error: {
                         error: 'Plot creation failed',
                         format_info: {
@@ -210,9 +213,9 @@ suite('DataProcessor Test Suite', () => {
                             display_name: 'NetCDF',
                             available_engines: ['netcdf4'],
                             missing_packages: [],
-                            is_supported: true
-                        }
-                    }
+                            is_supported: true,
+                        },
+                    },
                 };
             },
         } as any;
@@ -221,7 +224,11 @@ suite('DataProcessor Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
         // createPlot returns error in response instead of throwing
-        const plotData = await processor.createPlot(mockUri, 'temperature', 'line');
+        const plotData = await processor.createPlot(
+            mockUri,
+            'temperature',
+            'line',
+        );
         assert.ok(plotData);
         assert.ok(plotData?.error);
         assert.strictEqual(plotData.error?.error, 'Plot creation failed');
@@ -267,7 +274,7 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 // Mock response for empty file
                 return {
@@ -294,7 +301,7 @@ suite('DataProcessor Test Suite', () => {
             executePythonFile: async (
                 scriptPath: string,
                 args: string[],
-                enableLogs: boolean = false
+                enableLogs: boolean = false,
             ) => {
                 return {
                     format: 'NetCDF',

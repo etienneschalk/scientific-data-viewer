@@ -35,7 +35,7 @@ export class ThemeManager {
      */
     static applyThemeToWebviewContent(
         htmlContent: string,
-        exportTheme: string
+        exportTheme: string,
     ): string {
         // If no theme is specified, don't apply any theme
         if (!exportTheme || exportTheme.trim() === '') {
@@ -71,11 +71,11 @@ export class ThemeManager {
                 .replace(sdvStyleTag, sdvStyleTag + '\n' + themeCSS)
                 .replaceAll(
                     '"vscode-dark"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`
+                    `"vscode-${themeMode}"`,
                 )
                 .replaceAll(
                     '"vscode-light"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`
+                    `"vscode-${themeMode}"`,
                 )
         );
     }
@@ -92,7 +92,7 @@ export class ThemeManager {
         const themeColors = this.getThemeColorSet(themeName);
         if (!themeColors) {
             Logger.warn(
-                `Unknown theme: ${themeName}, return empty string to use default VS Code variables`
+                `Unknown theme: ${themeName}, return empty string to use default VS Code variables`,
             );
             return '';
         }

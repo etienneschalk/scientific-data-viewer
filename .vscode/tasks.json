@@ -45,9 +45,7 @@
             "label": "reload-window",
             "type": "shell",
             "command": "echo",
-            "args": [
-                "Reloading window..."
-            ],
+            "args": ["Reloading window..."],
             "group": "build",
             "presentation": {
                 "panel": "shared",

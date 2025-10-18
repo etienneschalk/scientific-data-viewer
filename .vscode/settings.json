@@ -17,9 +17,5 @@
         "**/.vscode-test": true
     },
     "prettier.configPath": ".prettierrc",
-    "cSpell.words": [
-        "datatree",
-        "repr",
-        "xarray"
-    ]
+    "cSpell.words": ["datatree", "repr", "xarray"]
 }

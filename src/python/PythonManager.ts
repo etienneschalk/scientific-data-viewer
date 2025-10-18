@@ -64,7 +64,7 @@ export class PythonManager {
     ];
 
     constructor(
-        private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager
+        private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager,
     ) {}
 
     /**
@@ -92,7 +92,7 @@ export class PythonManager {
     async waitForInitialization(): Promise<void> {
         if (this._initializationPromise) {
             Logger.debug(
-                '🐍 ⏳ Waiting for Python initialization to complete...'
+                '🐍 ⏳ Waiting for Python initialization to complete...',
             );
             await this._initializationPromise;
         }
@@ -117,17 +117,17 @@ export class PythonManager {
     async executePythonFile(
         scriptPath: string,
         args: string[] = [],
-        enableLogs: boolean = false
+        enableLogs: boolean = false,
     ): Promise<any> {
         if (!this._initialized) {
             throw new Error(
-                'Python environment not properly initialized. Please run "Python: Select Interpreter" command first.'
+                'Python environment not properly initialized. Please run "Python: Select Interpreter" command first.',
             );
         }
 
         if (this._pythonPath === null) {
             throw new Error(
-                'Python path is not set. Please run "Python: Select Interpreter" command first.'
+                'Python path is not set. Please run "Python: Select Interpreter" command first.',
             );
         }
 
@@ -135,7 +135,7 @@ export class PythonManager {
             this._pythonPath,
             scriptPath,
             args,
-            enableLogs
+            enableLogs,
         );
     }
 
@@ -143,31 +143,27 @@ export class PythonManager {
         pythonPath: string,
         scriptPath: string,
         args: string[],
-        enableLogs: boolean
+        enableLogs: boolean,
     ) {
         const quotedPythonPath = quoteIfNeeded(pythonPath);
         Logger.log(
-            `🐍 📜 Executing Python file ${scriptPath} with args: [${args.join(' ')}]`
+            `🐍 📜 Executing Python file ${scriptPath} with args: [${args.join(' ')}]`,
         );
         Logger.info(
             `🐍 📜 - ${
                 enableLogs ? 'With logs handover' : 'Without logs handover'
-            }`
+            }`,
         );
         Logger.info(
-            `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`
+            `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`,
         );
         Logger.info(`🐍 📜 - Is initialized: ${this._initialized}`);
 
         return new Promise((resolve, reject) => {
-            const process = spawn(
-                quotedPythonPath,
-                [scriptPath, ...args],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                }
-            );
+            const process = spawn(quotedPythonPath, [scriptPath, ...args], {
+                shell: true,
+                stdio: ['pipe', 'pipe', 'pipe'],
+            });
 
             let stdout = '';
             let stderr = '';
@@ -196,21 +192,21 @@ export class PythonManager {
                             const message = line.split(' - ERROR - ')[1];
                             if (message) {
                                 Logger.error(
-                                    `🐍 📜 [Python] [ERROR] ${message}`
+                                    `🐍 📜 [Python] [ERROR] ${message}`,
                                 );
                             }
                         } else if (line.includes(' - WARNING - ')) {
                             const message = line.split(' - WARNING - ')[1];
                             if (message) {
                                 Logger.warn(
-                                    `🐍 📜 [Python] [WARNING] ${message}`
+                                    `🐍 📜 [Python] [WARNING] ${message}`,
                                 );
                             }
                         } else if (line.includes(' - DEBUG - ')) {
                             const message = line.split(' - DEBUG - ')[1];
                             if (message) {
                                 Logger.debug(
-                                    `🐍 📜 [Python] [DEBUG] ${message}`
+                                    `🐍 📜 [Python] [DEBUG] ${message}`,
                                 );
                             }
                         } else if (line.trim()) {
@@ -234,26 +230,26 @@ export class PythonManager {
                     if (errorMessage.includes('ModuleNotFoundError')) {
                         reject(
                             new Error(
-                                `Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`
-                            )
+                                `Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`,
+                            ),
                         );
                     } else if (errorMessage.includes('PermissionError')) {
                         reject(
                             new Error(
-                                `Permission denied: ${errorMessage}. Please check file permissions.`
-                            )
+                                `Permission denied: ${errorMessage}. Please check file permissions.`,
+                            ),
                         );
                     } else if (errorMessage.includes('FileNotFoundError')) {
                         reject(
                             new Error(
-                                `File not found: ${errorMessage}. Please check the file path.`
-                            )
+                                `File not found: ${errorMessage}. Please check the file path.`,
+                            ),
                         );
                     } else {
                         reject(
                             new Error(
-                                `Python script failed (exit code ${code}): \n${errorMessage}`
-                            )
+                                `Python script failed (exit code ${code}): \n${errorMessage}`,
+                            ),
                         );
                     }
                 }
@@ -263,14 +259,14 @@ export class PythonManager {
                 if (error.message.includes('ENOENT')) {
                     reject(
                         new Error(
-                            `Python interpreter not found at: ${pythonPath}. Please check your Python installation.`
-                        )
+                            `Python interpreter not found at: ${pythonPath}. Please check your Python installation.`,
+                        ),
                     );
                 } else {
                     reject(
                         new Error(
-                            `Failed to execute Python script: ${error.message}`
-                        )
+                            `Failed to execute Python script: ${error.message}`,
+                        ),
                     );
                 }
             });
@@ -294,7 +290,7 @@ export class PythonManager {
         // If initialization is already in progress, wait for it to complete
         if (this._initializationPromise) {
             Logger.debug(
-                '🐍 ⏳ Python initialization already in progress, waiting...'
+                '🐍 ⏳ Python initialization already in progress, waiting...',
             );
             return this._initializationPromise;
         }
@@ -314,11 +310,11 @@ export class PythonManager {
             // First, check if there's an override interpreter set
             if (overrideInterpreter) {
                 Logger.info(
-                    `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`
+                    `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`,
                 );
                 await this.validatePythonEnvironment(
                     overrideInterpreter,
-                    'override'
+                    'override',
                 );
                 return;
             }
@@ -330,7 +326,7 @@ export class PythonManager {
                 if (this.extensionEnvManager.ready) {
                     await this.validatePythonEnvironment(
                         this.extensionEnvManager.pythonPath,
-                        'own-uv-env'
+                        'own-uv-env',
                     );
                     return;
                 } else if (ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT) {
@@ -340,18 +336,18 @@ export class PythonManager {
                         if (this.extensionEnvManager.ready) {
                             await this.validatePythonEnvironment(
                                 this.extensionEnvManager.pythonPath,
-                                'own-uv-env'
+                                'own-uv-env',
                             );
                             return;
                         }
                     } catch (error) {
                         Logger.warn(
-                            '🐍 ⚠️ Failed to create extension own environment, falling back to Python extension'
+                            '🐍 ⚠️ Failed to create extension own environment, falling back to Python extension',
                         );
                     }
                 } else {
                     Logger.warn(
-                        '🐍 ⚠️ Extension own environment not ready, falling back to Python extension'
+                        '🐍 ⚠️ Extension own environment not ready, falling back to Python extension',
                     );
                 }
             }
@@ -362,11 +358,11 @@ export class PythonManager {
 
             if (newPythonPath) {
                 Logger.info(
-                    `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`
+                    `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`,
                 );
                 await this.validatePythonEnvironment(
                     newPythonPath,
-                    'python-extension'
+                    'python-extension',
                 );
                 return;
             }
@@ -388,7 +384,7 @@ export class PythonManager {
                     if (version) {
                         await this.validatePythonEnvironment(
                             pythonPath,
-                            'system'
+                            'system',
                         );
                         return;
                     }
@@ -398,7 +394,7 @@ export class PythonManager {
             }
 
             Logger.warn(
-                'No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.'
+                'No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.',
             );
         } finally {
             // Clear the initialization promise when done
@@ -433,34 +429,38 @@ export class PythonManager {
     }
 
     private async checkAvailablePackages(
-        pythonPath: string
+        pythonPath: string,
     ): Promise<string[]> {
         Logger.debug(`🐍 🔍 Checking required packages`);
 
-        const allPackages = [...this.corePackages, ...this.plotPackages,  ...this.extendedPackages];
+        const allPackages = [
+            ...this.corePackages,
+            ...this.plotPackages,
+            ...this.extendedPackages,
+        ];
 
         try {
             const availability = await this.checkPackagesAvailability(
                 pythonPath,
-                allPackages
+                allPackages,
             );
 
             const availablePackages: string[] = [];
             for (const [packageName, isAvailable] of Object.entries(
-                availability
+                availability,
             )) {
                 if (isAvailable) {
                     availablePackages.push(packageName);
                     Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
                 } else {
                     Logger.debug(
-                        `🐍 📦 ⚠️ Package not available: ${packageName}`
+                        `🐍 📦 ⚠️ Package not available: ${packageName}`,
                     );
                 }
             }
 
             Logger.debug(
-                `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`
+                `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`,
             );
             return availablePackages;
         } catch (error) {
@@ -477,23 +477,23 @@ export class PythonManager {
      */
     public async checkPackagesAvailability(
         pythonPath: string,
-        packageNames: string[]
+        packageNames: string[],
     ): Promise<Record<string, boolean>> {
         const scriptPath = path.join(
             __dirname,
-            '../../../python/check_package_availability.py'
+            '../../../python/check_package_availability.py',
         );
 
         try {
             Logger.debug(
-                `🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`
+                `🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`,
             );
 
             const result = await this.executePythonFileUnchecked(
                 pythonPath,
                 scriptPath,
                 packageNames,
-                false // Don't enable logs for package checking
+                false, // Don't enable logs for package checking
             );
 
             // The result should be a JSON object with package availability
@@ -501,7 +501,7 @@ export class PythonManager {
                 return result as Record<string, boolean>;
             } else {
                 throw new Error(
-                    'Invalid response format from package availability check'
+                    'Invalid response format from package availability check',
                 );
             }
         } catch (error) {
@@ -522,7 +522,7 @@ export class PythonManager {
                 {
                     shell: true,
                     stdio: ['pipe', 'pipe', 'pipe'],
-                }
+                },
             );
 
             let stdout = '';
@@ -545,8 +545,8 @@ export class PythonManager {
                         new Error(
                             `pip check failed (exit code ${code}): ${
                                 stderr || stdout
-                            }`
-                        )
+                            }`,
+                        ),
                     );
                 }
             });
@@ -554,8 +554,8 @@ export class PythonManager {
             process.on('error', (error) => {
                 reject(
                     new Error(
-                        `Failed to check pip availability: ${error.message}`
-                    )
+                        `Failed to check pip availability: ${error.message}`,
+                    ),
                 );
             });
         });
@@ -563,13 +563,13 @@ export class PythonManager {
 
     private async validatePythonEnvironment(
         pythonPath: string | null,
-        source: EnvironmentSource
+        source: EnvironmentSource,
     ): Promise<void> {
         this._pythonPath = pythonPath;
         this._environmentSource = source;
 
         Logger.info(
-            `🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this._initialized} | Python path: ${this._pythonPath}`
+            `🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this._initialized} | Python path: ${this._pythonPath}`,
         );
 
         if (!this._pythonPath) {
@@ -578,29 +578,29 @@ export class PythonManager {
 
         try {
             const packages = await this.checkAvailablePackages(
-                this._pythonPath
+                this._pythonPath,
             );
             const missingCorePackages = this.corePackages.filter(
-                (pkg) => !packages.includes(pkg)
+                (pkg) => !packages.includes(pkg),
             );
 
             // Only require core packages for basic functionality
             if (missingCorePackages.length === 0) {
                 this._corePackagesInstalled = true;
                 Logger.info(
-                    `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`
+                    `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`,
                 );
             } else {
                 this._corePackagesInstalled = false;
                 Logger.info(
                     `🐍 📦 ⚠️ Python environment not ready! Missing core packages: ${missingCorePackages.join(
-                        ', '
-                    )}`
+                        ', ',
+                    )}`,
                 );
             }
         } catch (error) {
             Logger.error(
-                `🐍 📦 ❌ Python environment validation failed: ${error}`
+                `🐍 📦 ❌ Python environment validation failed: ${error}`,
             );
             showErrorMessage(`Failed to validate Python environment: ${error}`);
         }
@@ -616,15 +616,15 @@ export class PythonManager {
             await this.checkPipAvailability();
         } catch (error) {
             throw new Error(
-                `pip is not available: ${error}. Please install pip or use a different Python interpreter.`
+                `pip is not available: ${error}. Please install pip or use a different Python interpreter.`,
             );
         }
 
         return new Promise((resolve, reject) => {
             Logger.info(
                 `🐍 📦 🔍 Installing packages: ${packages.join(
-                    ', '
-                )} using Python: ${this._pythonPath}`
+                    ', ',
+                )} using Python: ${this._pythonPath}`,
             );
             Logger.debug(`🐍 📦 🔍 Working directory: ${process.cwd()}`);
             Logger.debug(`🐍 📦 🔍 Environment PATH: ${process.env.PATH}`);
@@ -635,7 +635,7 @@ export class PythonManager {
                 {
                     shell: true,
                     stdio: ['pipe', 'pipe', 'pipe'],
-                }
+                },
             );
 
             let stdout = '';
@@ -661,8 +661,8 @@ export class PythonManager {
                 if (code === 0) {
                     Logger.info(
                         `Successfully installed packages: ${packages.join(
-                            ', '
-                        )}`
+                            ', ',
+                        )}`,
                     );
                     resolve();
                 } else {
@@ -696,7 +696,7 @@ export class PythonManager {
                         errorMessage += `\n\n💡 Troubleshooting: SSL/Certificate issue. Try:\n${
                             this._pythonPath
                         } -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org ${packages.join(
-                            ' '
+                            ' ',
                         )}`;
                     } else if (stderr.includes('Microsoft Visual C++')) {
                         errorMessage += `\n\n💡 Troubleshooting: Missing Visual C++ compiler. Install Microsoft Visual C++ Build Tools or use pre-compiled packages.`;
@@ -719,5 +719,4 @@ export class PythonManager {
             });
         });
     }
-
 }

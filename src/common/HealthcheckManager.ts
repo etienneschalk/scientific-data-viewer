@@ -57,7 +57,7 @@ export class HealthcheckManager {
      * Run a comprehensive healthcheck and generate a report
      */
     public async runHealthcheck(
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): Promise<HealthcheckReport> {
         Logger.info('🏥 Running comprehensive healthcheck...');
 
@@ -108,9 +108,8 @@ export class HealthcheckManager {
         }
 
         // Check supported formats
-        const supportedFormatsResult = await this.checkSupportedFormats(
-            pythonManager
-        );
+        const supportedFormatsResult =
+            await this.checkSupportedFormats(pythonManager);
         if (supportedFormatsResult.status !== 'healthy') {
             issues.push(supportedFormatsResult);
         }
@@ -165,7 +164,7 @@ export class HealthcheckManager {
      */
     public generateMarkdownReport(
         report: HealthcheckReport,
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): string {
         const statusIcon = {
             healthy: '✅',
@@ -225,13 +224,13 @@ export class HealthcheckManager {
 
         // Issues section - separate by status
         const errorIssues = report.issues.filter(
-            (issue) => issue.status === 'error'
+            (issue) => issue.status === 'error',
         );
         const warningIssues = report.issues.filter(
-            (issue) => issue.status === 'warning'
+            (issue) => issue.status === 'warning',
         );
         const healthyIssues = report.issues.filter(
-            (issue) => issue.status === 'healthy'
+            (issue) => issue.status === 'healthy',
         );
 
         if (errorIssues.length > 0) {
@@ -324,12 +323,12 @@ export class HealthcheckManager {
         // Configuration Details
         markdown += `## ⚙️ Configuration Details\n\n`;
         const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer'
+            'scientificDataViewer',
         );
         markdown += `\`\`\`json\n${JSON.stringify(
             config,
             null,
-            2
+            2,
         )}\n\`\`\`\n\n`;
 
         return markdown;
@@ -340,14 +339,14 @@ export class HealthcheckManager {
      */
     public async openHealthcheckReport(
         report: HealthcheckReport,
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): Promise<void> {
         const markdown = this.generateMarkdownReport(report, pythonManager);
 
         // Create an untitled document with a custom name
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const untitledUri = vscode.Uri.parse(
-            `untitled:SDV-Healthcheck-${timestamp}.md`
+            `untitled:SDV-Healthcheck-${timestamp}.md`,
         );
 
         // Open the untitled document
@@ -410,7 +409,7 @@ export class HealthcheckManager {
                         (panel) =>
                             `- ⚠️ Panel ${panel.getId()}: ${
                                 panel.getFileUri().fsPath
-                            }`
+                            }`,
                     )
                     .join('\n');
 
@@ -446,7 +445,7 @@ export class HealthcheckManager {
     }
 
     private async checkPythonEnvironment(
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): Promise<HealthcheckResult> {
         try {
             const envInfo = pythonManager.getCurrentEnvironmentInfo();
@@ -503,7 +502,7 @@ export class HealthcheckManager {
     }
 
     private async checkDependencies(
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): Promise<HealthcheckResult> {
         try {
             const corePackages = ['xarray'];
@@ -537,35 +536,35 @@ export class HealthcheckManager {
             const packageAvailability =
                 await pythonManager.checkPackagesAvailability(
                     pythonManager.pythonPath,
-                    allPackages
+                    allPackages,
                 );
 
             const availablePackages = Object.keys(packageAvailability).filter(
-                (pkg) => packageAvailability[pkg] === true
+                (pkg) => packageAvailability[pkg] === true,
             );
             const missingPackages = Object.keys(packageAvailability).filter(
-                (pkg) => packageAvailability[pkg] === false
+                (pkg) => packageAvailability[pkg] === false,
             );
 
             const coreMissing = missingPackages.filter((pkg) =>
-                corePackages.includes(pkg)
+                corePackages.includes(pkg),
             );
             const plotMissing = missingPackages.filter((pkg) =>
-                plotPackages.includes(pkg)
+                plotPackages.includes(pkg),
             );
             const extendedMissing = missingPackages.filter((pkg) =>
-                extendedPackages.includes(pkg)
+                extendedPackages.includes(pkg),
             );
 
             // Create detailed package lists
             const coreAvailable = corePackages.filter(
-                (pkg) => packageAvailability[pkg] === true
+                (pkg) => packageAvailability[pkg] === true,
             );
             const plotAvailable = plotPackages.filter(
-                (pkg) => packageAvailability[pkg] === true
+                (pkg) => packageAvailability[pkg] === true,
             );
             const extendedAvailable = extendedPackages.filter(
-                (pkg) => packageAvailability[pkg] === true
+                (pkg) => packageAvailability[pkg] === true,
             );
 
             let status: 'healthy' | 'warning' | 'error' = 'healthy';
@@ -610,7 +609,7 @@ export class HealthcheckManager {
                 details =
                     `All core packages are available, but some optional packages are missing.\n\n` +
                     `- ✅ Available core packages: ${coreAvailable.join(
-                        ', '
+                        ', ',
                     )}\n` +
                     `- ✅ Available plotting packages: ${
                         plotAvailable.length > 0
@@ -634,13 +633,13 @@ export class HealthcheckManager {
                 message = `All packages available (${availablePackages.length}/${allPackages.length})`;
                 details =
                     `- ✅ Available core packages: ${coreAvailable.join(
-                        ', '
+                        ', ',
                     )}\n` +
                     `- ✅ Available plotting packages: ${plotAvailable.join(
-                        ', '
+                        ', ',
                     )}\n` +
                     `- ✅ Available extended packages: ${extendedAvailable.join(
-                        ', '
+                        ', ',
                     )}`;
             }
 
@@ -673,7 +672,7 @@ export class HealthcheckManager {
 
             if (devMode) {
                 warnings.push(
-                    '- Development mode is enabled (this is normal for development)'
+                    '- Development mode is enabled (this is normal for development)',
                 );
             }
 
@@ -686,7 +685,7 @@ export class HealthcheckManager {
                 const uvAvailable = await this.checkUvAvailability();
                 if (!uvAvailable) {
                     issues.push(
-                        '- Using extension own environment but uv is not available'
+                        '- Using extension own environment but uv is not available',
                     );
                 }
             }
@@ -734,8 +733,8 @@ export class HealthcheckManager {
     private async checkUvAvailability(): Promise<boolean> {
         try {
             // Check if uv command is available in the system PATH
-            const { exec } = require('child_process');
-            const { promisify } = require('util');
+            const { exec } = await import('child_process');
+            const { promisify } = await import('util');
             const execAsync = promisify(exec);
 
             try {
@@ -749,7 +748,7 @@ export class HealthcheckManager {
                 Logger.debug(
                     `uv is not available: ${
                         error instanceof Error ? error.message : String(error)
-                    }`
+                    }`,
                 );
                 return false;
             }
@@ -757,7 +756,7 @@ export class HealthcheckManager {
             Logger.debug(
                 `Failed to check uv availability: ${
                     error instanceof Error ? error.message : String(error)
-                }`
+                }`,
             );
             return false;
         }
@@ -822,26 +821,26 @@ export class HealthcheckManager {
 
     private generateRecommendations(
         issues: HealthcheckResult[],
-        recommendations: string[]
+        recommendations: string[],
     ): void {
         const errorIssues = issues.filter((issue) => issue.status === 'error');
         const warningIssues = issues.filter(
-            (issue) => issue.status === 'warning'
+            (issue) => issue.status === 'warning',
         );
 
         if (errorIssues.length > 0) {
             recommendations.push(
-                '🚨 **URGENT**: Address all error-level issues first as they may prevent the extension from working properly'
+                '🚨 **URGENT**: Address all error-level issues first as they may prevent the extension from working properly',
             );
         }
 
         if (
             errorIssues.some((issue) =>
-                issue.message.includes('Python environment')
+                issue.message.includes('Python environment'),
             )
         ) {
             recommendations.push(
-                '🔧 **Error Fix**: Try refreshing the Python environment using the "Refresh Python Environment" command'
+                '🔧 **Error Fix**: Try refreshing the Python environment using the "Refresh Python Environment" command',
             );
         }
 
@@ -849,47 +848,47 @@ export class HealthcheckManager {
             errorIssues.some((issue) => issue.message.includes('core packages'))
         ) {
             recommendations.push(
-                '🔧 **Error Fix**: Install missing core packages using the "Install Python Packages" command or refresh the Python environment'
+                '🔧 **Error Fix**: Install missing core packages using the "Install Python Packages" command or refresh the Python environment',
             );
         }
 
         if (warningIssues.some((issue) => issue.message.includes('packages'))) {
             recommendations.push(
-                '⚠️ **Warning**: Consider installing missing optional packages for enhanced functionality'
+                '⚠️ **Warning**: Consider installing missing optional packages for enhanced functionality',
             );
         }
 
         if (warningIssues.some((issue) => issue.message.includes('panes'))) {
             recommendations.push(
-                '⚠️ **Warning**: Consider closing unused data viewer panes to improve performance'
+                '⚠️ **Warning**: Consider closing unused data viewer panes to improve performance',
             );
         }
 
         if (warningIssues.some((issue) => issue.message.includes('memory'))) {
             recommendations.push(
-                '⚠️ **Warning**: Consider restarting VS Code if memory usage continues to be high'
+                '⚠️ **Warning**: Consider restarting VS Code if memory usage continues to be high',
             );
         }
 
         if (
             warningIssues.some((issue) =>
-                issue.message.includes('configuration')
+                issue.message.includes('configuration'),
             )
         ) {
             recommendations.push(
-                '⚠️ **Warning**: Review your extension configuration settings'
+                '⚠️ **Warning**: Review your extension configuration settings',
             );
         }
 
         if (recommendations.length === 0) {
             recommendations.push(
-                '✅ No specific recommendations at this time - all systems are healthy!'
+                '✅ No specific recommendations at this time - all systems are healthy!',
             );
         }
     }
 
     private async checkSupportedFormats(
-        pythonManager: PythonManager
+        pythonManager: PythonManager,
     ): Promise<HealthcheckResult> {
         try {
             // Use the same format mapping as generateSupportedFormatsInfo
@@ -950,7 +949,7 @@ export class HealthcheckManager {
             const packageAvailability =
                 await pythonManager.checkPackagesAvailability(
                     pythonManager.pythonPath,
-                    allEnginePackages
+                    allEnginePackages,
                 );
 
             // Check which engines are available
@@ -959,7 +958,7 @@ export class HealthcheckManager {
 
             for (const [engine, packages] of Object.entries(formatEngines)) {
                 const allPackagesAvailable = packages.every(
-                    (pkg) => packageAvailability[pkg] === true
+                    (pkg) => packageAvailability[pkg] === true,
                 );
                 if (allPackagesAvailable) {
                     availableEngines.push(engine);
@@ -979,7 +978,7 @@ export class HealthcheckManager {
                         `No data format engines are available.\n\n` +
                         `- ❌ Missing engines: ${missingEngines.join(', ')}\n` +
                         `- 📦 Required packages: ${allEnginePackages.join(
-                            ', '
+                            ', ',
                         )}`,
                     timestamp: new Date(),
                 };
@@ -992,7 +991,7 @@ export class HealthcheckManager {
                     details:
                         `Some format engines are missing, limiting data format support.\n\n` +
                         `- ✅ Available engines: ${availableEngines.join(
-                            ', '
+                            ', ',
                         )}\n` +
                         `- ❌ Missing engines: ${missingEngines.join(', ')}`,
                     timestamp: new Date(),
@@ -1093,7 +1092,7 @@ export class HealthcheckManager {
     }
 
     private determineOverallStatus(
-        issues: HealthcheckResult[]
+        issues: HealthcheckResult[],
     ): 'healthy' | 'warning' | 'error' {
         if (issues.some((issue) => issue.status === 'error')) {
             return 'error';

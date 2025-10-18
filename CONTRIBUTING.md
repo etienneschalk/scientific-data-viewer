@@ -54,7 +54,6 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
    ```
 
 2. **Make your changes**:
-
    - Write code following the project's style guidelines
    - Add tests for new functionality
    - Update documentation as needed
@@ -132,14 +131,12 @@ test/
 ### Pull Request Process
 
 1. **Ensure your code is ready**:
-
    - All tests pass
    - Code is properly formatted
    - Documentation is updated
    - No console.log statements left in
 
 2. **Create a pull request**:
-
    - Use a descriptive title
    - Provide a detailed description
    - Link any related issues

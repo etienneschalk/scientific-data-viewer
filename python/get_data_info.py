@@ -29,29 +29,23 @@ Examples:
 Author: Scientific Data Viewer Extension
 """
 
-import datetime
-from logging import Logger
-
 import argparse
 import base64
-from dataclasses import asdict, dataclass, field
+import datetime
 import io
 import json
 import logging
 import os
-from pathlib import Path, PurePosixPath
 import sys
-from typing import Any, Callable, Literal, cast, Union, List, Dict
-
-import xarray as xr
-import numpy as np
-
+from dataclasses import asdict, dataclass, field, is_dataclass
 from importlib.util import find_spec
 from io import BytesIO
+from logging import Logger
+from pathlib import Path, PurePosixPath
+from typing import Any, Callable, Dict, List, Literal, Type, Union, cast
 
-from dataclasses import is_dataclass
-from typing import Type
-
+import numpy as np
+import xarray as xr
 
 # <JSON Serialization Section>
 
@@ -885,9 +879,7 @@ def create_plot(
             group = xds_dict[str(group_name)]
 
         # Get variable
-        if variable_name in group.data_vars:
-            var = group[variable_name]
-        elif variable_name in group.coords:
+        if variable_name in group.data_vars or variable_name in group.coords:
             var = group[variable_name]
         else:
             logger.error(f"Variable '{variable_name}' not found in dataset")

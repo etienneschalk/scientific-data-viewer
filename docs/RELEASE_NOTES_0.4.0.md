@@ -77,13 +77,11 @@ The extension now uses a clear priority system for Python interpreter selection:
 ### Python Environment Settings
 
 - **`scientificDataViewer.python.overridePythonInterpreter`**
-
   - Type: `string`
   - Default: `""`
   - Description: Override Python interpreter path (takes precedence over all other options)
 
 - **`scientificDataViewer.python.useExtensionOwnEnvironment`**
-
   - Type: `boolean`
   - Default: `false`
   - Description: Use the extension's own virtual environment (requires uv)
@@ -98,7 +96,6 @@ The extension now uses a clear priority system for Python interpreter selection:
 1. **Install uv**: Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
 
 2. **Enable Extension Environment**:
-
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
    - Type "Scientific Data Viewer: Show Settings"
    - Check "Scientific Data Viewer > Python > Use Extension Own Environment"

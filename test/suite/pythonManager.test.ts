@@ -12,10 +12,10 @@ suite('PythonManager Test Suite', () => {
     let pythonManager: PythonManager;
     let mockContext: vscode.ExtensionContext;
     let mockGetExtension: (
-        extensionId: string
+        extensionId: string,
     ) => vscode.Extension<any> | undefined;
     let originalGetExtension: (
-        extensionId: string
+        extensionId: string,
     ) => vscode.Extension<any> | undefined;
 
     suiteSetup(() => {
@@ -84,8 +84,8 @@ suite('PythonManager Test Suite', () => {
     setup(() => {
         pythonManager = new PythonManager(
             new ExtensionVirtualEnvironmentManager(
-                mockContext.globalStorageUri.fsPath
-            )
+                mockContext.globalStorageUri.fsPath,
+            ),
         );
         // Apply the mock for each test
         vscode.extensions.getExtension = mockGetExtension;
@@ -132,7 +132,7 @@ suite('PythonManager Test Suite', () => {
                             test: 'api',
                             environments: {
                                 onDidChangeActiveEnvironmentPath: (
-                                    callback: any
+                                    callback: any,
                                 ) => ({
                                     dispose: () => {},
                                 }),
@@ -262,8 +262,8 @@ suite('PythonManager Test Suite', () => {
             assert.ok(error instanceof Error);
             assert.ok(
                 error.message.includes(
-                    'Python environment not properly initialized'
-                )
+                    'Python environment not properly initialized',
+                ),
             );
         }
     });
@@ -273,15 +273,15 @@ suite('PythonManager Test Suite', () => {
             await pythonManager.executePythonFile(
                 '/path/to/script.py',
                 [],
-                true
+                true,
             );
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
             assert.ok(
                 error.message.includes(
-                    'Python environment not properly initialized'
-                )
+                    'Python environment not properly initialized',
+                ),
             );
         }
     });
@@ -306,7 +306,7 @@ suite('PythonManager Test Suite', () => {
 
         const listener = await setupOfficialPythonExtensionChangeListeners(
             async () => {},
-            async (environment: any) => {}
+            async (environment: any) => {},
         );
         assert.ok(listener?.dispose);
     });
@@ -320,7 +320,7 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {}
+                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -336,7 +336,7 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {}
+                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -354,7 +354,7 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {}
+                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -372,7 +372,7 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {}
+                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -384,7 +384,7 @@ suite('PythonManager Test Suite', () => {
         // The functionality is tested through other methods that use the Python extension
         assert.ok(
             true,
-            'Test skipped - isPythonExtensionAvailable is not a public method'
+            'Test skipped - isPythonExtensionAvailable is not a public method',
         );
     });
 
@@ -393,7 +393,7 @@ suite('PythonManager Test Suite', () => {
         // The functionality is tested through other methods that use the Python extension
         assert.ok(
             true,
-            'Test skipped - isPythonExtensionAvailable is not a public method'
+            'Test skipped - isPythonExtensionAvailable is not a public method',
         );
     });
 
@@ -444,7 +444,7 @@ suite('PythonManager Test Suite', () => {
                     }
                     return undefined;
                 },
-            } as any);
+            }) as any;
 
         // Configure mock to return extension that activates but returns null (triggers fallback)
         configureMockGetExtension({

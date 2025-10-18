@@ -11,14 +11,14 @@ import { CustomEditor, PackageJson } from '../package-types';
 export function showInformationMessage(
     message: string,
     showLogs: boolean = true,
-    showSettings: boolean = false
+    showSettings: boolean = false,
 ): void {
     vscode.window
         .showInformationMessage(
             message,
             'OK',
             showLogs ? 'Show Logs' : '',
-            showSettings ? 'Show Settings' : ''
+            showSettings ? 'Show Settings' : '',
         )
         .then((selection) => {
             if (selection === 'Show Logs') {
@@ -27,7 +27,7 @@ export function showInformationMessage(
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    SDV_EXTENSION_ID
+                    SDV_EXTENSION_ID,
                 );
             }
         });
@@ -42,14 +42,14 @@ export function showInformationMessage(
 export function showErrorMessage(
     message: string,
     showLogs: boolean = true,
-    showSettings: boolean = false
+    showSettings: boolean = false,
 ): void {
     vscode.window
         .showErrorMessage(
             message,
             'OK',
             showLogs ? 'Show Logs' : '',
-            showSettings ? 'Show Settings' : ''
+            showSettings ? 'Show Settings' : '',
         )
         .then((selection) => {
             if (selection === 'Show Logs') {
@@ -58,7 +58,7 @@ export function showErrorMessage(
             if (selection === 'Show Settings') {
                 vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    SDV_EXTENSION_ID
+                    SDV_EXTENSION_ID,
                 );
             }
         });
@@ -71,14 +71,14 @@ export function showErrorMessage(
  */
 export function showErrorMessageAndProposeHelpToInstallUv(
     error: any,
-    uvInstallationUrl: string
+    uvInstallationUrl: string,
 ) {
     vscode.window
         .showErrorMessage(
             `Failed to create extension environment: ${error}`,
             'OK',
             'Install uv',
-            'Show Logs'
+            'Show Logs',
         )
         .then((selection) => {
             if (selection === 'Install uv') {
@@ -118,7 +118,7 @@ export function getPackageJson(): PackageJson {
 }
 
 export function getPackageJsonFromExtensionContext(
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
 ): PackageJson {
     // Important: We need to cast to PackageJson to avoid type errors
     // when accessing the package.json file
@@ -158,7 +158,7 @@ export function getShowDialogFilters(ids?: string[]): {
     const languages = getPackageJson().contributes.languages;
     const filters: { [name: string]: string[] } = {
         'Scientific Data Files': getAllSupportedExtensions(ids).map((ext) =>
-            ext.slice(1)
+            ext.slice(1),
         ),
         ...Object.fromEntries(
             languages
@@ -166,7 +166,7 @@ export function getShowDialogFilters(ids?: string[]): {
                 .map((el) => [
                     el.aliases[0],
                     el.extensions.map((ext) => ext.slice(1)),
-                ])
+                ]),
         ),
     };
     return filters;

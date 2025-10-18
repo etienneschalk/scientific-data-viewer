@@ -48,7 +48,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this.currentPanelId = currentPanelId;
         this.headersToPanelId.set(currentPanelId, headers);
         Logger.info(
-            `[${this.currentPanelId}] 📋 Updated outline with ${headers.length} headers for panel with ID: ${currentPanelId}`
+            `[${this.currentPanelId}] 📋 Updated outline with ${headers.length} headers for panel with ID: ${currentPanelId}`,
         );
         this.refresh();
     }
@@ -59,7 +59,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             Logger.warn('[ ] 📋 No current panel ID found');
             return new vscode.TreeItem(
                 element.label,
-                vscode.TreeItemCollapsibleState.None
+                vscode.TreeItemCollapsibleState.None,
             );
         }
 
@@ -104,7 +104,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             };
             if (VERBOSE_DEBUG_LOGS) {
                 Logger.debug(
-                    `[${this.currentPanelId}] 📋 Added scroll command for header: ${element.label} (${element.id})`
+                    `[${this.currentPanelId}] 📋 Added scroll command for header: ${element.label} (${element.id})`,
                 );
             }
         }
@@ -118,7 +118,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             currentPanelId,
             element.level,
             sanitizedLabel,
-            element
+            element,
         );
         treeItem.id = uniqueId;
 
@@ -136,7 +136,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         // Find parent by traversing the tree
         const findParent = (
             items: HeaderItem[],
-            target: HeaderItem
+            target: HeaderItem,
         ): HeaderItem | undefined => {
             for (const item of items) {
                 if (item.children.includes(target)) {
@@ -157,7 +157,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this.clearFileHeadersForPanel(panelId);
         this.clearExpandedStateForPanel(panelId);
         Logger.info(
-            `[${this.currentPanelId}] 📋 Disposed outline provider for panel with ID: ${panelId}`
+            `[${this.currentPanelId}] 📋 Disposed outline provider for panel with ID: ${panelId}`,
         );
     }
 
@@ -176,7 +176,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         if (headers) {
             this.currentHeaders = headers;
             Logger.info(
-                `[${this.currentPanelId}] 📋 Switched outline to panel with ID: ${panelId}`
+                `[${this.currentPanelId}] 📋 Switched outline to panel with ID: ${panelId}`,
             );
 
             // Restore expanded state after a short delay to ensure tree view is ready
@@ -188,7 +188,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         } else {
             // If no headers are cached for this file, clear the outline
             Logger.info(
-                `[${this.currentPanelId}] 📋 No cached headers for panel with ID: ${panelId}, clearing outline`
+                `[${this.currentPanelId}] 📋 No cached headers for panel with ID: ${panelId}, clearing outline`,
             );
             this.clearOutline();
         }
@@ -212,7 +212,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     expandAll(): void {
         if (!this.treeView) {
             Logger.warn(
-                `[${this.currentPanelId}] 📋 Tree view not available for expandAll operation`
+                `[${this.currentPanelId}] 📋 Tree view not available for expandAll operation`,
             );
             return;
         }
@@ -220,7 +220,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         // Get all elements that have children (can be expanded)
         const allElements = this.getAllElements(this.currentHeaders);
         const expandableElements = allElements.filter(
-            (element) => element.children.length > 0
+            (element) => element.children.length > 0,
         );
 
         // Add all expandable elements to the expanded state for the current file
@@ -236,7 +236,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             });
 
             Logger.info(
-                `[${this.currentPanelId}] 📋 Added ${expandableElements.length} items to expanded state for panel with ID: ${this.currentPanelId}`
+                `[${this.currentPanelId}] 📋 Added ${expandableElements.length} items to expanded state for panel with ID: ${this.currentPanelId}`,
             );
         }
 
@@ -250,13 +250,13 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
                 });
             } catch (error) {
                 Logger.debug(
-                    `[${this.currentPanelId}] 📋 Failed to expand element: ${element.label}, ${error}`
+                    `[${this.currentPanelId}] 📋 Failed to expand element: ${element.label}, ${error}`,
                 );
             }
         });
 
         Logger.info(
-            `[${this.currentPanelId}] 📋 Expanded ${expandableElements.length} items in tree view`
+            `[${this.currentPanelId}] 📋 Expanded ${expandableElements.length} items in tree view`,
         );
     }
 
@@ -305,7 +305,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         activePaneId: number,
         level: number,
         sanitizedLabel: string,
-        element: HeaderItem
+        element: HeaderItem,
     ): string {
         // Create a base ID
         let baseId = `${activePaneId}-${level}-${sanitizedLabel}`;
@@ -358,7 +358,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
 
         this.expandedStates.get(this.currentPanelId)!.add(elementId);
         Logger.debug(
-            `[${this.currentPanelId}] 📋 Saved expanded state for element: ${elementId} in panel with ID: ${this.currentPanelId}`
+            `[${this.currentPanelId}] 📋 Saved expanded state for element: ${elementId} in panel with ID: ${this.currentPanelId}`,
         );
     }
 
@@ -375,7 +375,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         if (this.expandedStates.has(this.currentPanelId)) {
             this.expandedStates.get(this.currentPanelId)!.delete(elementId);
             Logger.debug(
-                `[${this.currentPanelId}] 📋 Saved collapsed state for element: ${elementId} in panel with ID: ${this.currentPanelId}`
+                `[${this.currentPanelId}] 📋 Saved collapsed state for element: ${elementId} in panel with ID: ${this.currentPanelId}`,
             );
         }
     }
@@ -405,7 +405,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             this.currentPanelId!,
             element.level,
             sanitizedLabel,
-            element
+            element,
         );
     }
 
@@ -414,7 +414,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
      */
     private restoreExpandedState(
         panelId: number,
-        forceExpand: boolean = true
+        forceExpand: boolean = true,
     ): void {
         if (!this.treeView || !this.expandedStates.has(panelId)) {
             return;
@@ -426,7 +426,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         }
 
         Logger.debug(
-            `[${this.currentPanelId}] 📋 Restoring expanded state for ${expandedIds.size} elements in panel with ID: ${panelId}`
+            `[${this.currentPanelId}] 📋 Restoring expanded state for ${expandedIds.size} elements in panel with ID: ${panelId}`,
         );
 
         // Find and expand all elements that should be expanded
@@ -442,7 +442,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
                     });
                 } catch (error) {
                     Logger.debug(
-                        `[${this.currentPanelId}] 📋 Failed to expand element: ${elementId}, ${error}`
+                        `[${this.currentPanelId}] 📋 Failed to expand element: ${elementId}, ${error}`,
                     );
                 }
             }
@@ -455,27 +455,27 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private clearExpandedStateForPanel(panelId: number): void {
         if (!panelId) {
             Logger.warn(
-                `[${this.currentPanelId}] 📋 Invalid panelId provided to clearExpandedStateForPanel`
+                `[${this.currentPanelId}] 📋 Invalid panelId provided to clearExpandedStateForPanel`,
             );
             return;
         }
 
         this.expandedStates.delete(panelId);
         Logger.info(
-            `[${this.currentPanelId}] 📋 Cleared expanded state for panel with ID: ${panelId}`
+            `[${this.currentPanelId}] 📋 Cleared expanded state for panel with ID: ${panelId}`,
         );
     }
 
     private clearFileHeadersForPanel(panelId: number): void {
         if (!panelId) {
             Logger.warn(
-                `[${this.currentPanelId}] 📋 Invalid panelId provided to clearFileHeadersForPanel`
+                `[${this.currentPanelId}] 📋 Invalid panelId provided to clearFileHeadersForPanel`,
             );
             return;
         }
         this.headersToPanelId.delete(panelId);
         Logger.info(
-            `[${this.currentPanelId}] 📋 Disposed file headers for panel with ID: ${panelId}`
+            `[${this.currentPanelId}] 📋 Disposed file headers for panel with ID: ${panelId}`,
         );
     }
 }

@@ -48,7 +48,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -65,7 +65,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -82,7 +82,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -99,7 +99,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -116,7 +116,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -133,7 +133,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -151,14 +151,14 @@ suite('Logger Test Suite', () => {
                 capturedMessages.push(message);
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
         Logger.info('Message 1');
         Logger.info('Message 2');
         Logger.warn('Message 3');
-        
+
         assert.strictEqual(capturedMessages.length, 3);
         assert.ok(capturedMessages[0].includes('Message 1'));
         assert.ok(capturedMessages[1].includes('Message 2'));
@@ -173,7 +173,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -189,11 +189,12 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
-        const specialMessage = 'Test message with special chars: !@#$%^&*()_+-=[]{}|;:,.<>?';
+        const specialMessage =
+            'Test message with special chars: !@#$%^&*()_+-=[]{}|;:,.<>?';
         Logger.info(specialMessage);
         assert.ok(capturedMessage.includes(specialMessage));
     });
@@ -206,7 +207,7 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -219,11 +220,13 @@ suite('Logger Test Suite', () => {
 
     test('should show output channel', () => {
         Logger.initialize();
-        
+
         // Mock the show method
         let showCalled = false;
         const mockOutputChannel = {
-            show: () => { showCalled = true; }
+            show: () => {
+                showCalled = true;
+            },
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -233,11 +236,13 @@ suite('Logger Test Suite', () => {
 
     test('should dispose output channel', () => {
         Logger.initialize();
-        
+
         // Mock the dispose method
         let disposeCalled = false;
         const mockOutputChannel = {
-            dispose: () => { disposeCalled = true; }
+            dispose: () => {
+                disposeCalled = true;
+            },
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
@@ -249,7 +254,7 @@ suite('Logger Test Suite', () => {
     test('should handle dispose when no output channel exists', () => {
         // Ensure no output channel exists
         (Logger as any).outputChannel = undefined;
-        
+
         // Should not throw an error
         assert.doesNotThrow(() => {
             Logger.dispose();
@@ -259,7 +264,7 @@ suite('Logger Test Suite', () => {
     test('should handle show when not initialized', () => {
         // Ensure no output channel exists
         (Logger as any).outputChannel = undefined;
-        
+
         // Should not throw an error and should initialize
         assert.doesNotThrow(() => {
             Logger.show();
@@ -270,7 +275,7 @@ suite('Logger Test Suite', () => {
     test('should handle log when not initialized', () => {
         // Ensure no output channel exists
         (Logger as any).outputChannel = undefined;
-        
+
         // Mock the output channel to capture messages
         let capturedMessage = '';
         const mockOutputChannel = {
@@ -278,11 +283,12 @@ suite('Logger Test Suite', () => {
                 capturedMessage = message;
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
-        
+
         // Mock vscode.window.createOutputChannel
-        const originalCreateOutputChannel = (vscode as any).window.createOutputChannel;
+        const originalCreateOutputChannel = (vscode as any).window
+            .createOutputChannel;
         (vscode as any).window.createOutputChannel = () => mockOutputChannel;
 
         try {
@@ -290,7 +296,8 @@ suite('Logger Test Suite', () => {
             assert.ok(capturedMessage.includes('Test message'));
             assert.ok((Logger as any).outputChannel);
         } finally {
-            (vscode as any).window.createOutputChannel = originalCreateOutputChannel;
+            (vscode as any).window.createOutputChannel =
+                originalCreateOutputChannel;
         }
     });
 
@@ -299,7 +306,7 @@ suite('Logger Test Suite', () => {
             { method: Logger.info.bind(Logger), level: 'info' },
             { method: Logger.warn.bind(Logger), level: 'warn' },
             { method: Logger.error.bind(Logger), level: 'error' },
-            { method: Logger.debug.bind(Logger), level: 'debug' }
+            { method: Logger.debug.bind(Logger), level: 'debug' },
         ];
 
         testCases.forEach(({ method, level }) => {
@@ -310,13 +317,17 @@ suite('Logger Test Suite', () => {
                     capturedMessage = message;
                 },
                 show: () => {},
-                dispose: () => {}
+                dispose: () => {},
             };
             (Logger as any).outputChannel = mockOutputChannel;
 
             method(`Test ${level} message`);
             assert.ok(capturedMessage.includes(`Test ${level} message`));
-            assert.ok(capturedMessage.includes(`[${level.toUpperCase().padStart(8, " ")}]`));
+            assert.ok(
+                capturedMessage.includes(
+                    `[${level.toUpperCase().padStart(8, ' ')}]`,
+                ),
+            );
         });
     });
 
@@ -328,21 +339,27 @@ suite('Logger Test Suite', () => {
                 capturedMessages.push(message);
             },
             show: () => {},
-            dispose: () => {}
+            dispose: () => {},
         };
         (Logger as any).outputChannel = mockOutputChannel;
 
         // Create multiple concurrent log calls
         const promises = [];
         for (let i = 0; i < 10; i++) {
-            promises.push(Promise.resolve(Logger.info(`Concurrent message ${i}`)));
+            promises.push(
+                Promise.resolve(Logger.info(`Concurrent message ${i}`)),
+            );
         }
-        
+
         await Promise.all(promises);
-        
+
         assert.strictEqual(capturedMessages.length, 10);
         for (let i = 0; i < 10; i++) {
-            assert.ok(capturedMessages.some(msg => msg.includes(`Concurrent message ${i}`)));
+            assert.ok(
+                capturedMessages.some((msg) =>
+                    msg.includes(`Concurrent message ${i}`),
+                ),
+            );
         }
     });
 });
