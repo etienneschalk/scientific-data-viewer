@@ -48,6 +48,8 @@ jobs:
             # - name: Run unit tests
             #   run: npm run test:unit
 
+            - name: Compile TypeScript
+              run: npm run compile
             - name: Run integration tests with virtual display
               run: |
                   export DISPLAY=:99
