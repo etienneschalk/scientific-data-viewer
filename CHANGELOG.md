@@ -6,6 +6,22 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [Unreleased]
+
+### Documentation
+
+- **Updated Pre-commit Documentation**: Updated `docs/PRE_COMMIT_SETUP.md` to reflect current tool versions and configuration
+  - Updated Prettier to v3.6.2
+  - Updated ESLint to v8.28.0 with `.eslintrc.js` configuration
+  - Updated Ruff to v0.14.1 with comprehensive linting rules
+  - Updated detect-secrets to v1.5.0
+  - Updated pre-commit-hooks to v4.6.0
+- **Updated GitHub Actions Documentation**: Updated `docs/GITHUB_ACTIONS_SETUP.md` to reflect current workflow structure
+  - Simplified to single `pr-validation.yml` workflow
+  - Updated Node.js version to 22 (current LTS)
+  - Removed references to non-existent workflows
+  - Updated trigger configuration and features
+
 ## [0.5.0] - 2025-01-08
 
 ### Added

@@ -10,24 +10,26 @@ The pre-commit configuration ensures consistent code formatting and quality acro
 
 - `.pre-commit-config.yaml` - Main pre-commit configuration
 - `pyproject.toml` - Ruff configuration for Python formatting and linting
+- `.prettierrc` - Prettier configuration for code formatting
+- `.eslintrc.js` - ESLint configuration for TypeScript/JavaScript linting
 - `.secrets.baseline` - Baseline for detect-secrets security scanning
 
 ## Tools Used
 
 ### TypeScript/JavaScript
 
-- **Prettier** - Code formatting
-- **ESLint** - Linting and code quality
-- **TypeScript Compiler** - Type checking
+- **Prettier v3.6.2** - Code formatting
+- **ESLint v8.28.0** - Linting and code quality
+- **TypeScript Compiler v4.9.4** - Type checking
 
 ### Python
 
-- **Ruff** - Linting and formatting (replaces black, flake8, isort, etc.)
+- **Ruff v0.14.1** - Linting and formatting (replaces black, flake8, isort, etc.)
 
 ### General
 
-- **pre-commit-hooks** - Basic file checks (trailing whitespace, end-of-file, etc.)
-- **detect-secrets** - Security scanning for secrets
+- **pre-commit-hooks v4.6.0** - Basic file checks (trailing whitespace, end-of-file, etc.)
+- **detect-secrets v1.5.0** - Security scanning for secrets
 
 ## Installation
 
@@ -120,7 +122,11 @@ Uses the existing `.prettierrc` file with:
 
 ### ESLint Configuration
 
-Uses the existing `.eslintrc.json` with TypeScript support and custom rules.
+Uses the existing `.eslintrc.js` with TypeScript support and custom rules:
+
+- TypeScript parser and plugin support
+- Custom rules for code quality
+- Ignores compiled output and dependencies
 
 ### Ruff Configuration
 
@@ -128,8 +134,9 @@ Configured in `pyproject.toml` with:
 
 - 88-character line length (Black-compatible)
 - 4-space indentation
-- Comprehensive linting rules
+- Comprehensive linting rules (E4, E7, E9, F, I, B, C4, UP, ARG001, SIM, TCH, TID, Q, RUF)
 - Auto-formatting capabilities
+- Python 3.8+ target version
 
 ## Troubleshooting
 

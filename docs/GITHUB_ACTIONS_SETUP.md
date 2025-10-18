@@ -4,44 +4,20 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 
 ## Workflows Overview
 
-### 1. Pre-commit Workflow (`.github/workflows/pre-commit.yml`)
+### 1. Pull Request Validation (`.github/workflows/pr-validation.yml`)
 
-**Triggers**: Pull requests and pushes to main/develop branches
-**Purpose**: Runs pre-commit hooks on all files
+**Triggers**: Pull request events (opened, synchronized, reopened, ready for review) and pushes to main/develop branches
+**Purpose**: Comprehensive validation and testing
 
 **Features**:
 
 - Runs pre-commit on all files with verbose output
 - Includes TypeScript compilation check
 - Includes Python-specific checks
-- 10-minute timeout per job
-
-### 2. Continuous Integration (`.github/workflows/ci.yml`)
-
-**Triggers**: Pull requests and pushes to main/develop branches
-**Purpose**: Comprehensive CI pipeline
-
-**Features**:
-
-- Lint and format checks
-- Build and test with multiple Node.js versions (20, 22)
-- Security scanning
+- Security scanning with npm audit
+- Test execution with virtual display
 - Extension packaging
-- 15-minute timeout for build jobs
-
-### 3. Pull Request Validation (`.github/workflows/pr-validation.yml`)
-
-**Triggers**: Pull request events (opened, synchronized, reopened, ready for review)
-**Purpose**: Focused PR validation
-
-**Features**:
-
-- Validates only changed files
-- Checks code formatting
-- Runs security checks
-- TypeScript compilation
-- ESLint validation
-- Test execution
+- 20-minute timeout per job
 
 ## Workflow Features
 
@@ -56,7 +32,7 @@ All workflows use the `pre-commit/action@v3.0.1` action which:
 
 ### Multi-Environment Testing
 
-- **Node.js versions**: 20, 22 (latest LTS and current)
+- **Node.js version**: 22 (current LTS)
 - **Python version**: 3.13
 - **Operating System**: Ubuntu Latest
 
@@ -76,35 +52,18 @@ All workflows use the `pre-commit/action@v3.0.1` action which:
 
 ## Workflow Triggers
 
-### Pre-commit Workflow
-
-```yaml
-on:
-  pull_request:
-    branches: [main, develop]
-  push:
-    branches: [main, develop]
-  workflow_dispatch:
-```
-
-### CI Workflow
-
-```yaml
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-  workflow_dispatch:
-```
-
-### PR Validation
+### PR Validation Workflow
 
 ```yaml
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main, develop]
+  push:
+    branches: [main, develop]
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 ```
 
 ## Pre-commit Hooks in CI
@@ -128,8 +87,8 @@ The workflows run all configured pre-commit hooks:
 
 ### Manual Execution
 
-- Use `workflow_dispatch` trigger for manual runs
-- Available in GitHub Actions tab
+- Workflows run automatically on pull requests and pushes
+- No manual trigger available in current configuration
 
 ### Local Testing
 
@@ -159,9 +118,7 @@ pre-commit run
 
 ### GitHub Actions
 
-- `.github/workflows/pre-commit.yml` - Pre-commit workflow
-- `.github/workflows/ci.yml` - Continuous integration
-- `.github/workflows/pr-validation.yml` - PR validation
+- `.github/workflows/pr-validation.yml` - Pull request validation and testing
 
 ## Benefits
 
