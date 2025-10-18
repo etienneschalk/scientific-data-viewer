@@ -44,7 +44,7 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
         files: \.py$
         types: [python]
-        exclude: ^(out/|node_modules/|\.vscode-test/)
+        exclude: ^(out/|node_modules/|\.vscode-test/|python/create_sample_data.p)
 
       - id: ruff-format
         name: Ruff (Python Formatting)

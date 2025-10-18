@@ -15,6 +15,7 @@ module.exports = {
 
         // TypeScript-specific rules
         '@typescript-eslint/no-unused-vars': 'warn',
+        // XXX any is used in some places to avoid type errors, we should fix them instead.
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-var-requires': 'error',
     },

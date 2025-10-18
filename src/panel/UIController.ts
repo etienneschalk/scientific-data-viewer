@@ -60,16 +60,13 @@ export class UIController {
         return `${this.constructor.name}-<${this.id}>`;
     }
     private setupErrorHandling(): void {
-        this.errorBoundary.registerHandler(
-            this.getComponentName(),
-            (error) => {
-                this.messageBus.emitError(
-                    error.message,
-                    'An error occurred in the UI. Please check the output panel for details.',
-                    'UIError',
-                );
-            },
-        );
+        this.errorBoundary.registerHandler(this.getComponentName(), (error) => {
+            this.messageBus.emitError(
+                error.message,
+                'An error occurred in the UI. Please check the output panel for details.',
+                'UIError',
+            );
+        });
     }
 
     private setupMessageHandlers(): void {
@@ -206,7 +203,7 @@ export class UIController {
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
         const context: ErrorContext = {
-            component:  this.getComponentName(),
+            component: this.getComponentName(),
             operation: 'getDataInfo',
             data: { filePath },
         };

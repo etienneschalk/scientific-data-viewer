@@ -622,7 +622,7 @@ def open_datatree_with_fallback(
                     import h5netcdf
 
                     with h5netcdf.File(file_path) as f:
-                        groups = list(str(g) for g in f.groups)
+                        groups = [str(g) for g in f.groups]
 
                     groups = ["/", *groups]
                 else:
@@ -771,15 +771,9 @@ def detect_plotting_strategy(
             else:
                 logger.info("Using 3D plotting strategy with col parameter")
                 return "3d_col"
-    elif ndim == 4:
-        # Check if last two dimensions are spatial
-        if (
-            len(dims) >= 2
-            # and is_spatial_dimension(dims[-2])
-            # and is_spatial_dimension(dims[-1])
-        ):
-            logger.info("Using 4D plotting strategy with col and row parameters")
-            return "4d_col_row"
+    elif ndim == 4 and len(dims) >= 2:
+        logger.info("Using 4D plotting strategy with col and row parameters")
+        return "4d_col_row"
 
     logger.info("Using default plotting strategy")
     return "default"
@@ -1036,12 +1030,9 @@ def get_file_info(
 
             # logger.info(f"{xdt=}")
 
-            flat_dict_of_xds: DictOfDatasets = {
-                group: group_xdt
-                for group, group_xdt in sorted(
-                    xdt.to_dict().items(), key=lambda x: x[0]
-                )
-            }
+            flat_dict_of_xds: DictOfDatasets = dict(
+                sorted(xdt.to_dict().items(), key=lambda x: x[0])
+            )
             logger.info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
             )
@@ -1094,7 +1085,7 @@ def get_file_info(
             xarray_text_repr_flattened={},
         )
 
-        for group in flat_dict_of_xds.keys():
+        for group in flat_dict_of_xds:
             logger.info(f"Processing group: {group}")
             # logger.info(f"{flat_dict_of_xds[group]=}")
             xds = flat_dict_of_xds[group]

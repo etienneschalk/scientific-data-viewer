@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { DataViewerPanel } from '../DataViewerPanel';
 import { PythonManager } from '../python/PythonManager';
-import { ExtensionVirtualEnvironmentManager } from '../python/ExtensionVirtualEnvironmentManager';
 import { ErrorBoundary } from './ErrorBoundary';
 import { getDisplayName, getVersion } from './vscodeutils';
 import {
@@ -232,9 +231,6 @@ export class HealthcheckManager {
         const warningIssues = report.issues.filter(
             (issue) => issue.status === 'warning',
         );
-        const healthyIssues = report.issues.filter(
-            (issue) => issue.status === 'healthy',
-        );
 
         if (errorIssues.length > 0) {
             markdown += `## ❌ Errors Found\n\n`;
@@ -261,25 +257,26 @@ export class HealthcheckManager {
             markdown += `All systems are operating normally.\n\n`;
         }
 
-
-
         // Error History Section
         const errorBoundary = ErrorBoundary.getInstance();
         const errorHistory = errorBoundary.getErrorHistory();
         if (errorHistory.length > 0) {
             markdown += `## 🚨 Error History\n\n`;
             markdown += `Total errors recorded: **${errorHistory.length}**\n\n`;
-            
+
             // Group errors by component
-            const errorsByComponent = errorHistory.reduce((acc, entry) => {
-                const component = entry.context.component || 'Unknown';
-                if (!acc[component]) {
-                    acc[component] = [];
-                }
-                acc[component].push(entry);
-                return acc;
-            }, {} as Record<string, typeof errorHistory>);
-            
+            const errorsByComponent = errorHistory.reduce(
+                (acc, entry) => {
+                    const component = entry.context.component || 'Unknown';
+                    if (!acc[component]) {
+                        acc[component] = [];
+                    }
+                    acc[component].push(entry);
+                    return acc;
+                },
+                {} as Record<string, typeof errorHistory>,
+            );
+
             // Show errors by component
             Object.entries(errorsByComponent).forEach(([component, errors]) => {
                 markdown += `### Component: ${component} (${errors.length} errors)\n\n`;
@@ -327,7 +324,11 @@ export class HealthcheckManager {
         return markdown;
     }
 
-    private generateComponentDetails(markdown: string, statusIcon: { healthy: string; warning: string; error: string; }, report: HealthcheckReport) {
+    private generateComponentDetails(
+        markdown: string,
+        statusIcon: { healthy: string; warning: string; error: string },
+        report: HealthcheckReport,
+    ) {
         markdown += `## 🔧 Component Status\n\n`;
         markdown += `- **Panes**: ${statusIcon[report.components.panes.status]} ${report.components.panes.status} - ${report.components.panes.message}\n`;
         markdown += `- **Panes with Error**: ${statusIcon[report.components.panesWithErrors.status]} ${report.components.panesWithErrors.status} - ${report.components.panesWithErrors.message}\n`;
@@ -775,48 +776,59 @@ export class HealthcheckManager {
             const errorBoundary = ErrorBoundary.getInstance();
             const errorHistory = errorBoundary.getErrorHistory();
             const errorCount = errorHistory.length;
-            
+
             // Get recent errors (last 24 hours)
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             const recentErrors = errorHistory.filter(
-                (entry) => entry.timestamp > oneDayAgo
+                (entry) => entry.timestamp > oneDayAgo,
             );
-            
+
             // Get errors by component
-            const errorsByComponent = errorHistory.reduce((acc, entry) => {
-                const component = entry.context.component || 'Unknown';
-                acc[component] = (acc[component] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-            
+            const errorsByComponent = errorHistory.reduce(
+                (acc, entry) => {
+                    const component = entry.context.component || 'Unknown';
+                    acc[component] = (acc[component] || 0) + 1;
+                    return acc;
+                },
+                {} as Record<string, number>,
+            );
+
             let status: 'healthy' | 'warning' | 'error' = 'healthy';
             let message = '';
             let details = '';
-            
+
             if (errorCount === 0) {
                 message = 'Error boundary is active - no errors recorded';
-                details = 'Error boundary is properly initialized and monitoring for errors. No errors have been recorded.';
+                details =
+                    'Error boundary is properly initialized and monitoring for errors. No errors have been recorded.';
             } else if (recentErrors.length === 0) {
                 status = 'warning';
                 message = `Error boundary active - ${errorCount} historical errors (none recent)`;
-                details = `Error boundary is properly initialized. ${errorCount} errors recorded historically, but none in the last 24 hours.\n\n` +
-                    `Historical errors by component:\n${Object.entries(errorsByComponent)
+                details =
+                    `Error boundary is properly initialized. ${errorCount} errors recorded historically, but none in the last 24 hours.\n\n` +
+                    `Historical errors by component:\n${Object.entries(
+                        errorsByComponent,
+                    )
                         .map(([component, count]) => `- ${component}: ${count}`)
                         .join('\n')}`;
-            } else  {
+            } else {
                 status = 'warning';
                 message = `Error boundary active - ${recentErrors.length} recent errors`;
-                details = `Error boundary is properly initialized. ${recentErrors.length} errors recorded in the last 24 hours.\n\n` +
-                    `Recent errors by component:\n${Object.entries(errorsByComponent)
+                details =
+                    `Error boundary is properly initialized. ${recentErrors.length} errors recorded in the last 24 hours.\n\n` +
+                    `Recent errors by component:\n${Object.entries(
+                        errorsByComponent,
+                    )
                         .map(([component, count]) => `- ${component}: ${count}`)
                         .join('\n')}\n\n` +
                     `Recent error details:\n${recentErrors
-                        .map((entry, index) => 
-                            `${index + 1}. [${entry.timestamp.toISOString()}] ${entry.context.component || 'Unknown'}.${entry.context.operation}: ${entry.error.message}`
+                        .map(
+                            (entry, index) =>
+                                `${index + 1}. [${entry.timestamp.toISOString()}] ${entry.context.component || 'Unknown'}.${entry.context.operation}: ${entry.error.message}`,
                         )
                         .join('\n')}`;
-            } 
-            
+            }
+
             return {
                 status,
                 message,
@@ -934,7 +946,8 @@ export class HealthcheckManager {
         const errorBoundary = ErrorBoundary.getInstance();
         const errorHistory = errorBoundary.getErrorHistory();
         const recentErrors = errorHistory.filter(
-            (entry) => entry.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000)
+            (entry) =>
+                entry.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000),
         );
 
         if (recentErrors.length > 10) {
@@ -965,32 +978,6 @@ export class HealthcheckManager {
     ): Promise<HealthcheckResult> {
         try {
             // Use the same format mapping as generateSupportedFormatsInfo
-            const formatEngineMap: Record<string, string[]> = {
-                // NetCDF formats
-                '.nc': ['netcdf4', 'h5netcdf', 'scipy'],
-                '.nc4': ['netcdf4', 'h5netcdf'],
-                '.netcdf': ['netcdf4', 'h5netcdf', 'scipy'],
-                '.cdf': ['netcdf4', 'h5netcdf', 'scipy'],
-                // Zarr format
-                '.zarr': ['zarr'],
-                // HDF5 formats
-                '.h5': ['h5netcdf', 'h5py', 'netcdf4'],
-                '.hdf5': ['h5netcdf', 'h5py', 'netcdf4'],
-                // GRIB formats
-                '.grib': ['cfgrib'],
-                '.grib2': ['cfgrib'],
-                '.grb': ['cfgrib'],
-                // GeoTIFF formats
-                '.tif': ['rasterio'],
-                '.tiff': ['rasterio'],
-                '.geotiff': ['rasterio'],
-                // JPEG-2000 formats
-                '.jp2': ['rasterio'],
-                '.jpeg2000': ['rasterio'],
-                // Sentinel-1 SAFE format
-                '.safe': ['rasterio'],
-            };
-
             const formatEngines = {
                 netcdf4: ['netCDF4'],
                 h5netcdf: ['h5netcdf'],
