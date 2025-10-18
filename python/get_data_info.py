@@ -257,9 +257,9 @@ DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
 
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = {
-    engine: False for engine in ENGINE_PACKAGES
-}
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = dict.fromkeys(
+    ENGINE_PACKAGES, False
+)
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 
@@ -870,11 +870,11 @@ def create_plot(
         variable_name: str = path.stem
 
         if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
-            xdt = cast(xr.DataTree, xds_or_xdt)
+            xdt = cast("xr.DataTree", xds_or_xdt)
 
             group = xdt[str(group_name)].to_dataset()
         else:
-            xds_dict = cast(DictOfDatasets, xds_or_xdt)
+            xds_dict = cast("DictOfDatasets", xds_or_xdt)
 
             group = xds_dict[str(group_name)]
 
@@ -885,10 +885,10 @@ def create_plot(
             logger.error(f"Variable '{variable_name}' not found in dataset")
             # Close Start
             if datatree_flag:
-                xdt = cast(xr.DataTree, xds_or_xdt)
+                xdt = cast("xr.DataTree", xds_or_xdt)
                 xdt.close()
             else:
-                xds_dict = cast(DictOfDatasets, xds_or_xdt)
+                xds_dict = cast("DictOfDatasets", xds_or_xdt)
                 for group, xds in xds_dict.items():
                     logger.info(f"Close {group=}")
                     xds.close()
@@ -951,10 +951,10 @@ def create_plot(
 
         # Close Start
         if datatree_flag:
-            xdt: xr.DataTree = cast(xr.DataTree, xds_or_xdt)
+            xdt: xr.DataTree = cast("xr.DataTree", xds_or_xdt)
             xdt.close()
         else:
-            xds_dict: DictOfDatasets = cast(DictOfDatasets, xds_or_xdt)
+            xds_dict: DictOfDatasets = cast("DictOfDatasets", xds_or_xdt)
             for group, xds in xds_dict.items():
                 logger.info(f"Close {group=}")
                 xds.close()
@@ -1025,7 +1025,7 @@ def get_file_info(
             xds_or_xdt, xr.DataTree
         )
         if datatree_flag:
-            xdt: xr.DataTree = cast(xr.DataTree, xds_or_xdt)
+            xdt: xr.DataTree = cast("xr.DataTree", xds_or_xdt)
             # Extract information
             with xr.set_options(**XR_TEXT_OPTIONS):
                 # Get HTML representation using xarray's built-in HTML representation
@@ -1046,7 +1046,7 @@ def get_file_info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
             )
         else:
-            xds_dict: DictOfDatasets = cast(DictOfDatasets, xds_or_xdt)
+            xds_dict: DictOfDatasets = cast("DictOfDatasets", xds_or_xdt)
             # For a single root group, display the traditional Dataset reprs
             if len(xds_dict) == 1 and "/" in xds_dict:
                 xds: xr.Dataset = xds_dict["/"]
@@ -1129,10 +1129,10 @@ def get_file_info(
 
         # Close Start
         if datatree_flag:
-            xdt: xr.DataTree = cast(xr.DataTree, xds_or_xdt)
+            xdt: xr.DataTree = cast("xr.DataTree", xds_or_xdt)
             xdt.close()
         else:
-            xds_dict: DictOfDatasets = cast(DictOfDatasets, xds_or_xdt)
+            xds_dict: DictOfDatasets = cast("DictOfDatasets", xds_or_xdt)
             for group, xds in xds_dict.items():
                 logger.info(f"Close {group=}")
                 xds.close()
