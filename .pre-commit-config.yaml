@@ -29,11 +29,11 @@ repos:
     hooks:
       - id: typescript-check
         name: TypeScript Type Check
-        entry: npx tsc --noEmit
+        entry: npx tsc --noEmit --project tsconfig.pre-commit.json
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
-        exclude: ^(out/|node_modules/|\.vscode-test/)
+        exclude: ^(out/|test/|node_modules/|\.vscode-test/)
 
   # Python formatting and linting with Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
