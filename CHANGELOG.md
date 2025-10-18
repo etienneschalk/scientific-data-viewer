@@ -8,19 +8,33 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [Unreleased]
 
-### Documentation
+### Added
 
-- **Updated Pre-commit Documentation**: Updated `docs/PRE_COMMIT_SETUP.md` to reflect current tool versions and configuration
-  - Updated Prettier to v3.6.2
-  - Updated ESLint to v8.28.0 with `.eslintrc.js` configuration
-  - Updated Ruff to v0.14.1 with comprehensive linting rules
-  - Updated detect-secrets to v1.5.0
-  - Updated pre-commit-hooks to v4.6.0
-- **Updated GitHub Actions Documentation**: Updated `docs/GITHUB_ACTIONS_SETUP.md` to reflect current workflow structure
-  - Simplified to single `pr-validation.yml` workflow
-  - Updated Node.js version to 22 (current LTS)
-  - Removed references to non-existent workflows
-  - Updated trigger configuration and features
+- **Pre-commit Configuration**: Comprehensive code quality and formatting automation
+- **GitHub Actions Workflow**: Streamlined CI/CD pipeline with `pr-validation.yml`
+  - **Comprehensive Validation**: Single workflow covering all quality checks
+  - **Node.js 22 Support**: Updated to current LTS version
+  - **Python 3.13 Support**: Latest Python version for testing
+  - **Virtual Display Testing**: Xvfb integration for headless testing
+  - **Security Auditing**: npm audit integration for dependency security
+  - **Concurrency Control**: Prevents multiple runs of same PR validation
+- **TypeScript Configuration**: Enhanced build configuration
+  - **Pre-commit TypeScript Config**: Separate `tsconfig.pre-commit.json` for faster type checking
+  - **Improved Formatting**: Better code organization and formatting standards
+
+### Enhanced
+
+- **Developer Experience**: Streamlined development workflow with automated quality checks
+- **Code Quality**: Consistent formatting and linting across TypeScript and Python codebases
+- **CI/CD Pipeline**: Faster, more reliable continuous integration with comprehensive validation
+- **Security**: Automated secret detection and dependency security auditing
+
+### Technical Improvements
+
+- **ESLint Migration**: Migrated from `.eslintrc.json` to `.eslintrc.js` for better configuration flexibility
+- **Pre-commit Hooks**: Comprehensive pre-commit configuration with 10+ quality checks
+- **Workflow Optimization**: Single workflow replacing multiple separate CI jobs
+- **Type Safety**: Enhanced TypeScript configuration with separate pre-commit type checking
 
 ## [0.5.0] - 2025-01-08
 
