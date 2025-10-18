@@ -2,10 +2,9 @@ name: Test with Virtual Display
 
 on:
     workflow_dispatch:
-    push:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
         branches: [main, develop]
-        paths: ["test/**", "src/**", "package.json"]
-
 jobs:
     test-with-display:
         name: Test with Virtual Display
