@@ -45,15 +45,15 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y xvfb
 
-            - name: Run unit tests
-              run: npm run test:unit
+            # - name: Run unit tests
+            #   run: npm run test:unit
 
             - name: Run integration tests with virtual display
               run: |
                   export DISPLAY=:99
                   Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
                   sleep 3
-                  npm run test:integration
+                  npm run test
 
             - name: Package extension
               run: npm run package
