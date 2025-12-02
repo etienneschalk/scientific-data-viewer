@@ -6,10 +6,23 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [Unreleased]
+## [0.6.0] - 2025-12-TBD
 
 ### Added
 
+- **NASA CDF Format Support**: Full support for NASA's Common Data Format (.cdf files)
+  - **cdflib Integration**: Uses `cdflib` library for reading and writing CDF files
+  - **Format Distinction**: Clear separation between CDF (NASA) and NetCDF formats in all documentation and error messages
+  - **Dedicated Engine**: Added `cdflib` as a dedicated engine for `.cdf` file extension
+  - **Special Handling**: CDF files are processed using `cdflib.xarray.cdf_to_xarray()` for seamless xarray integration
+  - **Sample Data Generation**: Updated sample data creation to use `cdflib` for authentic CDF files
+  - **Troubleshooting Support**: Added CDF-specific installation instructions in error messages
+  - **Files Modified**:
+    - python/get_data_info.py - Added cdflib engine and special handling for CDF files
+    - python/create_sample_data.py - Updated to generate CDF files using cdflib
+    - src/panel/webview/webview-script.js - Added cdflib installation option in troubleshooting section
+    - README.md - Updated format table to distinguish CDF from NetCDF
+    - docs/RELEASE_NOTES_0.6.0.md - Comprehensive documentation of CDF support
 - **Pre-commit Configuration**: Comprehensive code quality and formatting automation
 - **GitHub Actions Workflow**: Streamlined CI/CD pipeline with `pr-validation.yml`
   - **Comprehensive Validation**: Single workflow covering all quality checks
@@ -24,10 +37,18 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Enhanced
 
+- **Format Support**: Added NASA CDF format to supported formats list
+- **Error Handling**: Improved error messages and troubleshooting guidance for CDF files
+- **Documentation**: Updated all documentation to clearly distinguish CDF from NetCDF
 - **Developer Experience**: Streamlined development workflow with automated quality checks
 - **Code Quality**: Consistent formatting and linting across TypeScript and Python codebases
 - **CI/CD Pipeline**: Faster, more reliable continuous integration with comprehensive validation
 - **Security**: Automated secret detection and dependency security auditing
+
+### Fixed
+
+- **Issue #104**: Fixed support for CDF files created with `cdflib` versions 3.3.1 and 3.9.0
+- **Format Confusion**: Resolved confusion between CDF and NetCDF formats in documentation and error messages
 
 ### Technical Improvements
 
@@ -35,6 +56,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Pre-commit Hooks**: Comprehensive pre-commit configuration with 10+ quality checks
 - **Workflow Optimization**: Single workflow replacing multiple separate CI jobs
 - **Type Safety**: Enhanced TypeScript configuration with separate pre-commit type checking
+- **Engine Architecture**: Enhanced engine selection logic to support format-specific engines (cdflib for CDF)
 
 ## [0.5.0] - 2025-01-08
 

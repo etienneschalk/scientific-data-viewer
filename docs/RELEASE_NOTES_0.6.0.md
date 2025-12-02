@@ -103,7 +103,7 @@ The sample data generation script now creates authentic NASA CDF files using `cd
 
 ## 🙏 Acknowledgments
 
-Special thanks to the user who reported [Issue #104](https://github.com/etienneschalk/scientific-data-viewer/issues/104) and provided valuable feedback on CDF file support. This release addresses their specific needs for working with NASA CDF files created with `cdflib`.
+Special thanks to the user @fpartous who reported [Issue #104](https://github.com/etienneschalk/scientific-data-viewer/issues/104) and provided valuable feedback on CDF file support. This release addresses their specific needs for working with NASA CDF files created with `cdflib`.
 
 ---
 
