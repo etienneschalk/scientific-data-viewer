@@ -524,6 +524,7 @@ export class HealthcheckManager {
                 'scipy',
                 'cfgrib',
                 'rioxarray',
+                'cdflib',
             ];
 
             const allPackages = [
@@ -986,6 +987,7 @@ export class HealthcheckManager {
                 h5py: ['h5py'],
                 cfgrib: ['cfgrib'],
                 rasterio: ['rioxarray'],
+                cdflib: ['cdflib'],
             };
 
             if (!pythonManager.pythonPath) {

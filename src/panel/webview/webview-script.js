@@ -1049,6 +1049,10 @@ function displayGlobalError(
                          <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['rioxarray'])">
                             🎮 Install rioxarray</a>
                     </li>
+                    <li>CDF (NASA):
+                        <a href="#" class="small-button-link" onclick="executeInstallPackagesCommand(['cdflib'])">
+                            🎮 Install cdflib</a>
+                    </li>
                 </ul>
             </li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>

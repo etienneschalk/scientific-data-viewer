@@ -10,3 +10,4 @@ sample-data/
 **/*.pyc
 .venv/
 venv/
+blog-article.md

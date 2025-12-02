@@ -61,6 +61,7 @@ export class PythonManager {
         'scipy',
         'cfgrib',
         'rioxarray',
+        'cdflib',
     ];
 
     constructor(

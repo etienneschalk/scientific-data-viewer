@@ -174,6 +174,7 @@ EngineType = Literal[
     "h5py",
     "cfgrib",
     "rasterio",
+    "cdflib",
 ]
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
@@ -181,7 +182,7 @@ FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".nc4": ["netcdf4", "h5netcdf"],
     ".netcdf": ["netcdf4", "h5netcdf", "scipy"],
-    ".cdf": ["netcdf4", "h5netcdf", "scipy"],
+    ".cdf": ["cdflib"],  # NASA CDF format, not NetCDF
     #
     ".zarr": ["zarr"],
     #
@@ -205,7 +206,7 @@ FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
     ".nc": "NetCDF",
     ".nc4": "NetCDF4",
     ".netcdf": "NetCDF",
-    ".cdf": "CDF/NetCDF",
+    ".cdf": "CDF (NASA)",
     #
     ".zarr": "Zarr",
     #
@@ -233,6 +234,7 @@ ENGINE_PACKAGES: Dict[EngineType, str] = {
     "h5py": "h5py",
     "cfgrib": "cfgrib",
     "rasterio": "rioxarray",
+    "cdflib": "cdflib",
 }
 # Default backend kwargs for each engine
 DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
@@ -243,6 +245,7 @@ DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
     "h5py": {"decode_cf": False},
     "cfgrib": {"decode_cf": False},
     "rasterio": {},
+    "cdflib": {},  # cdflib uses its own API, not xr.open_dataset
 }
 # Default backend kwargs for each engine
 DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
@@ -253,6 +256,7 @@ DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
     "h5py": None,
     "cfgrib": {"indexpath": ""},  # Avoid intempestive .idx file creation
     "rasterio": {"mask_and_scale": False},
+    "cdflib": None,  # cdflib uses its own API, not xr.open_dataset
 }
 
 
@@ -262,6 +266,7 @@ DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = dict.fromkeys(
 )
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cdflib"] = True  # cdflib uses its own API
 
 
 @dataclass(frozen=True)
@@ -582,10 +587,32 @@ def open_datatree_with_fallback(
             f"Missing packages: {', '.join(file_format_info.missing_packages)}"
         )
 
+    # Special handling for cdflib (NASA CDF format)
+    # cdflib uses its own API, not xr.open_dataset
+    if "cdflib" in file_format_info.available_engines:
+        try:
+            import cdflib.xarray
+
+            logger.info("Using cdflib to open CDF file")
+            xds = cdflib.xarray.cdf_to_xarray(file_path)
+            # cdflib returns a Dataset, wrap it in a dict for consistency
+            xds_dict: DictOfDatasets = {"/": xds}
+            return xds_dict, "cdflib"
+        except Exception as exc:
+            logger.error(f"Failed to open CDF file with cdflib: {exc!r}")
+            # If cdflib fails and it's the only engine, raise the error
+            if len(file_format_info.available_engines) == 1:
+                raise exc
+            # Otherwise, continue to try other engines (though there shouldn't be any for .cdf)
+
     # Try each available engine
     exceptions: list[Exception] = []
 
     for engine in file_format_info.available_engines:
+        # Skip cdflib as it's handled separately above
+        if engine == "cdflib":
+            continue
+
         try:
             # Prepare backend kwargs based on configuration
             backend_kwargs = (
