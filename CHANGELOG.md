@@ -47,7 +47,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
-- **Issue #104**: Fixed support for CDF files created with `cdflib` versions 3.3.1 and 3.9.0
+- **Issue #104**: Fixed support for CDF files
 - **Format Confusion**: Resolved confusion between CDF and NetCDF formats in documentation and error messages
 
 ### Technical Improvements

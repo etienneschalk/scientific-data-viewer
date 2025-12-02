@@ -2,14 +2,14 @@
 
 ## 🎉 New Format Support: NASA CDF Files
 
-Version 0.6.0 adds support for NASA's Common Data Format (CDF) files, addressing a long-standing request from the scientific community. This release distinguishes CDF files from NetCDF files and provides proper support for files created with `cdflib` versions 3.3.1 and 3.9.0.
+Version 0.6.0 adds support for NASA's Common Data Format (CDF) files. This release distinguishes CDF files from NetCDF files and opens CDF files using `cdflib`.
 
 ## ✨ What's New
 
 ### 📊 NASA CDF Format Support
 
-- **Native CDF Support**: Full support for NASA's Common Data Format (.cdf files)
-- **cdflib Integration**: Uses `cdflib` library for reading and writing CDF files
+- **Native CDF Support**: Support for NASA's Common Data Format (.cdf files)
+- **cdflib Integration**: Uses `cdflib` library for reading CDF files
 - **Format Distinction**: Clear separation between CDF (NASA) and NetCDF formats
 - **Sample Data Generation**: Updated sample data creation to use `cdflib` for authentic CDF files
 - **Error Handling**: Improved error messages and troubleshooting guidance for CDF files
@@ -60,7 +60,6 @@ If you encounter issues with CDF files:
 
 1. **Install cdflib**: Use the troubleshooting section in the error message to install `cdflib`
 2. **Check File Format**: Ensure your `.cdf` file is a NASA CDF file (not NetCDF)
-3. **Version Compatibility**: Files created with `cdflib` versions 3.3.1 and 3.9.0 are fully supported
 
 ## 🔧 Technical Details
 
@@ -82,7 +81,7 @@ The sample data generation script now creates authentic NASA CDF files using `cd
 
 ## 🐛 Bug Fixes
 
-- **Issue #104**: Fixed support for CDF files created with `cdflib` versions 3.3.1 and 3.9.0
+- **Issue #104**: Fixed support for CDF files
 - **Format Confusion**: Resolved confusion between CDF and NetCDF formats in documentation and error messages
 
 ## 📝 Changes
