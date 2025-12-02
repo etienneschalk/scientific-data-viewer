@@ -6,7 +6,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [0.6.0] - 2025-12-TBD
+## [0.6.0] - 2025-12-02
 
 ### Added
 
