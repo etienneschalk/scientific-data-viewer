@@ -1154,20 +1154,37 @@ def create_sample_netcdf4():
 
 
 def create_sample_netcdf_cdf():
-    """Create a sample NetCDF file with .cdf extension."""
+    """Create a sample NASA CDF file with .cdf extension using cdflib."""
     output_file = "sample_data.cdf"
 
     # Check if file already exists
     if os.path.exists(output_file):
-        print(f"📄 NetCDF CDF file {output_file} already exists. Skipping creation.")
+        print(f"📄 CDF file {output_file} already exists. Skipping creation.")
         print("  🔄 To regenerate, please delete the existing file first.")
         return output_file
 
-    print("🌡️ Creating sample NetCDF CDF file...")
+    try:
+        import cdflib
+    except ImportError:
+        print("⚠️  cdflib is not installed. Skipping CDF file creation.")
+        print("  💡 Install it with: pip install cdflib")
+        return None
+
+    print("🌡️ Creating sample NASA CDF file...")
 
     # Create time dimension
     time = np.arange(0, 12, 1)  # Monthly data
-    dates = [datetime(2020, 1, 1) + timedelta(days=int(t * 30)) for t in time]
+    # Convert dates to CDF_TIME_TT2000 (nanoseconds since 2000-01-01 00:00:00)
+    base_time = datetime(2000, 1, 1)
+    dates = [
+        int(
+            (
+                datetime(2020, 1, 1) + timedelta(days=int(t * 30)) - base_time
+            ).total_seconds()
+            * 1e9
+        )
+        for t in time
+    ]
 
     # Create lat/lon grid
     lat = np.linspace(-90, 90, 90)
@@ -1182,41 +1199,103 @@ def create_sample_netcdf_cdf():
         + np.random.normal(0, 2, (12, 90, 180))
     )
 
-    # Create dataset
-    ds = xr.Dataset(
-        {
-            "temperature": (
-                ["time", "lat", "lon"],
-                temperature,
-                {
-                    "long_name": "Monthly Temperature",
-                    "units": "Celsius",
-                    "standard_name": "air_temperature",
-                    "valid_range": [-50, 50],
-                    "missing_value": -9999,
-                },
-            ),
-        },
-        coords={
-            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
-            "lat": (["lat"], lat, {"long_name": "Latitude", "units": "degrees_north"}),
-            "lon": (["lon"], lon, {"long_name": "Longitude", "units": "degrees_east"}),
-        },
-    )
+    # Create CDF file using cdflib.cdfwrite
+    import cdflib.cdfwrite
 
-    # Add global attributes
-    ds.attrs = {
-        "title": "Sample NetCDF CDF Data",
-        "description": "Sample NetCDF file with .cdf extension for testing VSCode extension",
-        "institution": "Climate Test Center",
-        "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        "Conventions": "CF-1.7",
-        "featureType": "timeSeries",
-    }
+    cdf_file = cdflib.cdfwrite.CDF(output_file)
 
-    # Save to NetCDF
-    ds.to_netcdf(output_file)
+    try:
+        # Create time variable (zVariable, 0D - scalar per record)
+        cdf_file.write_var(
+            var_spec={
+                "Variable": "time",
+                "Data_Type": cdflib.cdfwrite.CDF.CDF_TIME_TT2000,
+                "Num_Elements": 1,
+                "Rec_Vary": True,
+                "Var_Type": "zVariable",
+                "Dim_Sizes": [],  # 0-dimension (scalar per record)
+            },
+            var_attrs={
+                "FIELDNAM": "Time",
+                "UNITS": "ns",
+                "LABLAXIS": "Time",
+            },
+            var_data=np.array(dates, dtype=np.int64),
+        )
+
+        # Create latitude variable (zVariable, 1D)
+        cdf_file.write_var(
+            var_spec={
+                "Variable": "lat",
+                "Data_Type": cdflib.cdfwrite.CDF.CDF_FLOAT,
+                "Num_Elements": 1,
+                "Rec_Vary": False,
+                "Var_Type": "zVariable",
+                "Dim_Sizes": [],
+            },
+            var_attrs={
+                "FIELDNAM": "Latitude",
+                "UNITS": "degrees_north",
+                "LABLAXIS": "Latitude",
+            },
+            var_data=lat.astype(np.float32),
+        )
+
+        # Create longitude variable (zVariable, 1D)
+        cdf_file.write_var(
+            var_spec={
+                "Variable": "lon",
+                "Data_Type": cdflib.cdfwrite.CDF.CDF_FLOAT,
+                "Num_Elements": 1,
+                "Rec_Vary": False,
+                "Var_Type": "zVariable",
+                "Dim_Sizes": [],
+            },
+            var_attrs={
+                "FIELDNAM": "Longitude",
+                "UNITS": "degrees_east",
+                "LABLAXIS": "Longitude",
+            },
+            var_data=lon.astype(np.float32),
+        )
+
+        # Create temperature variable (zVariable, 3D: time, lat, lon)
+        cdf_file.write_var(
+            var_spec={
+                "Variable": "temperature",
+                "Data_Type": cdflib.cdfwrite.CDF.CDF_FLOAT,
+                "Num_Elements": 1,
+                "Rec_Vary": True,
+                "Var_Type": "zVariable",
+                "Dim_Sizes": [90, 180],  # lat, lon dimensions
+            },
+            var_attrs={
+                "FIELDNAM": "Monthly Temperature",
+                "UNITS": "Celsius",
+                "VALIDMIN": -50.0,
+                "VALIDMAX": 50.0,
+                "FILLVAL": -9999.0,
+            },
+            var_data=temperature.astype(np.float32),
+        )
+
+        # Add global attributes
+        global_attrs = {
+            "TITLE": {0: "Sample NASA CDF Data"},
+            "DESCRIPTION": {
+                0: "Sample NASA CDF file with .cdf extension for testing VSCode extension"
+            },
+            "INSTITUTION": {0: "Climate Test Center"},
+            "SOURCE": {0: "Generated for testing"},
+            "HISTORY": {
+                0: f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            },
+        }
+        cdf_file.write_globalattrs(global_attrs)
+
+    finally:
+        cdf_file.close()
+
     print(f"✅ Created {output_file}")
     return output_file
 
@@ -4219,7 +4298,7 @@ def main(do_create_disposable_files: bool = False):
 
         netcdf_cdf_file = create_sample_netcdf_cdf()
         if netcdf_cdf_file:
-            created_files.append((netcdf_cdf_file, "NetCDF CDF"))
+            created_files.append((netcdf_cdf_file, "CDF (NASA)"))
 
         netcdf_netcdf_file = create_sample_netcdf_netcdf()
         if netcdf_netcdf_file:

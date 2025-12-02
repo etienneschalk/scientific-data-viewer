@@ -21,14 +21,15 @@ Available on:
 
 - **Multi-format Support**:
 
-| Format    | File Extension           |
-| --------- | ------------------------ |
-| NetCDF    | .nc, .netcdf, .nc4, .cdf |
-| Zarr      | .zarr                    |
-| HDF5      | .h5, .hdf5               |
-| GRIB      | .grib, .grib2, .grb      |
-| GeoTIFF   | .tif, .tiff, .geotiff    |
-| JPEG-2000 | .jp2, .jpeg2000          |
+| Format     | File Extension        |
+| ---------- | --------------------- |
+| NetCDF     | .nc, .netcdf, .nc4    |
+| CDF (NASA) | .cdf                  |
+| Zarr       | .zarr                 |
+| HDF5       | .h5, .hdf5            |
+| GRIB       | .grib, .grib2, .grb   |
+| GeoTIFF    | .tif, .tiff, .geotiff |
+| JPEG-2000  | .jp2, .jpeg2000       |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
@@ -103,7 +104,7 @@ Available on:
 3. **Install optional Python dependencies**: (prompted by extension)
 
    ```bash
-   pip install netCDF4 h5py rioxarray cfgrib zarr
+   pip install netCDF4 h5py rioxarray cfgrib zarr cdflib
    ```
 
 4. **Open a supported file 🎉**
@@ -127,6 +128,7 @@ The extension will prompt you to install the following packages if they are not 
    - rioxarray
    - cfgrib
    - zarr
+   - cdflib (for NASA CDF files)
 
 Note: Former Python versions may work, but it is not guaranteed nor supported.
 

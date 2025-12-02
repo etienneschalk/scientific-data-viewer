@@ -23,6 +23,7 @@ export class ExtensionVirtualEnvironmentManager {
         'scipy',
         'cfgrib',
         'rioxarray',
+        'cdflib',
     ];
 
     /**
