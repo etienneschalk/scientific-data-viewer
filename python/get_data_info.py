@@ -33,6 +33,7 @@ import argparse
 import base64
 import datetime
 import io
+import itertools
 import json
 import logging
 import os
@@ -238,12 +239,42 @@ ENGINE_PACKAGES: Dict[EngineType, str] = {
 }
 # Default backend kwargs for each engine
 DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
-    "netcdf4": {"decode_cf": False},
-    "h5netcdf": {"decode_cf": False},
-    "scipy": {"decode_cf": False},
-    "zarr": {"decode_cf": False},
-    "h5py": {"decode_cf": False},
-    "cfgrib": {"decode_cf": False},
+    "netcdf4": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
+    "h5netcdf": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
+    "scipy": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
+    "zarr": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
+    "h5py": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
+    "cfgrib": {
+        "decode_cf": True,
+        # "decode_times": True,
+        # "decode_timedelta": True,
+        # "use_cftime": True,
+    },
     "rasterio": {},
     "cdflib": {},  # cdflib uses its own API, not xr.open_dataset
 }
@@ -1282,7 +1313,16 @@ def get_file_info(
             xds = flat_dict_of_xds[group]
 
             # Add attributes for group
-            info.attributes_flattened[group] = {str(k): v for k, v in xds.attrs.items()}
+            info.attributes_flattened[group] = {
+                str(k): v
+                for k, v in itertools.chain(
+                    xds.attrs.items(),
+                    (
+                        ("__xarray_encoding." + str(k), v)
+                        for k, v in xds.encoding.items()
+                    ),
+                )
+            }
             info.dimensions_flattened[group] = {str(k): v for k, v in xds.dims.items()}
             # Add coordinate variables for group
             for coord_name, coord in xds.coords.items():
@@ -1296,6 +1336,7 @@ def get_file_info(
                     # Compute min and max values
                     try:
                         import pandas as pd
+
                         coord_values = coord.values
                         if coord_values.size > 0:
                             min_val = pd.Timestamp(coord_values.min()).isoformat()
@@ -1304,15 +1345,19 @@ def get_file_info(
                             min_val = None
                             max_val = None
                     except Exception as exc:
-                        logger.warning(f"Could not compute min/max for datetime coordinate {coord_name}: {exc!r}")
+                        logger.warning(
+                            f"Could not compute min/max for datetime coordinate {coord_name}: {exc!r}"
+                        )
                         min_val = None
                         max_val = None
-                    
-                    info.datetime_variables.setdefault(group, []).append({
-                        "name": str(coord_name),
-                        "min": min_val,
-                        "max": max_val,
-                    })
+
+                    info.datetime_variables.setdefault(group, []).append(
+                        {
+                            "name": str(coord_name),
+                            "min": min_val,
+                            "max": max_val,
+                        }
+                    )
 
             # Add data variables for group
             for var_name, var in xds.data_vars.items():
@@ -1330,6 +1375,7 @@ def get_file_info(
                     # Compute min and max values
                     try:
                         import pandas as pd
+
                         var_values = var.values
                         if var_values.size > 0:
                             min_val = pd.Timestamp(var_values.min()).isoformat()
@@ -1338,15 +1384,19 @@ def get_file_info(
                             min_val = None
                             max_val = None
                     except Exception as exc:
-                        logger.warning(f"Could not compute min/max for datetime variable {var_name}: {exc!r}")
+                        logger.warning(
+                            f"Could not compute min/max for datetime variable {var_name}: {exc!r}"
+                        )
                         min_val = None
                         max_val = None
-                    
-                    info.datetime_variables.setdefault(group, []).append({
-                        "name": str(var_name),
-                        "min": min_val,
-                        "max": max_val,
-                    })
+
+                    info.datetime_variables.setdefault(group, []).append(
+                        {
+                            "name": str(var_name),
+                            "min": min_val,
+                            "max": max_val,
+                        }
+                    )
 
             # Extract information
             with xr.set_options(**XR_TEXT_OPTIONS):
@@ -1406,7 +1456,13 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
         shape=list(var.shape),
         dimensions=[str(d) for d in var.dims],
         size_bytes=var.nbytes,
-        attributes={str(k): v for k, v in var.attrs.items()},
+        attributes={
+            str(k): v
+            for k, v in itertools.chain(
+                var.attrs.items(),
+                (("__xarray_encoding." + str(k), v) for k, v in var.encoding.items()),
+            )
+        },
     )
 
 
@@ -1479,7 +1535,13 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
         shape=list(coord.shape),
         dimensions=[str(d) for d in coord.dims],
         size_bytes=coord.nbytes,
-        attributes={str(k): v for k, v in coord.attrs.items()},
+        attributes={
+            str(k): v
+            for k, v in itertools.chain(
+                coord.attrs.items(),
+                (("__xarray_encoding." + str(k), v) for k, v in coord.encoding.items()),
+            )
+        },
     )
 
 
