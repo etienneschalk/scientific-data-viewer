@@ -4329,6 +4329,13 @@ def create_temporal_datasets():
         else:
             skipped_files.append("CDF multiple datetime (cdflib not available)")
 
+        # 7. CDF file with unordered time variable
+        cdf_file4 = create_temporal_cdf_unordered_time()
+        if cdf_file4:
+            created_files.append((cdf_file4, "CDF with unordered time variable"))
+        else:
+            skipped_files.append("CDF unordered time (cdflib not available)")
+
         print("\n" + "=" * 80)
         print("✅ Temporal test datasets created successfully!")
         print(f"\n📊 Created {len(created_files)} files:")
@@ -4850,6 +4857,136 @@ def create_temporal_cdf_multiple_datetime():
         cdf_file.close()
 
     print(f"✅ Created {output_file}")
+    return output_file
+
+
+def create_temporal_cdf_unordered_time():
+    """Create a CDF file with unordered time variable to test time selection with non-chronological data."""
+    output_file = "temporal_cdf_unordered_time.cdf"
+
+    if os.path.exists(output_file):
+        print(f"📄 CDF file {output_file} already exists. Skipping creation.")
+        return output_file
+
+    try:
+        import cdflib
+    except ImportError:
+        print("⚠️  cdflib is not installed. Skipping CDF file creation.")
+        return None
+
+    print("📅 Creating CDF file with unordered time variable...")
+
+    # Create time dimension - 20 time points, but in random order
+    base_time = datetime(2019, 5, 10, 0, 0, 0)
+    # Create ordered time points first
+    ordered_dates = [
+        int(
+            (base_time + timedelta(hours=i) - datetime(2000, 1, 1)).total_seconds()
+            * 1e9
+        )
+        for i in range(20)
+    ]
+    
+    # Create corresponding ordered indices for data
+    ordered_indices = np.arange(20)
+    
+    # Shuffle the time points to create unordered sequence
+    # But keep track of the original order for data alignment
+    np.random.seed(999)  # Fixed seed for reproducibility
+    shuffled_indices = np.random.permutation(20)
+    unordered_dates = [ordered_dates[i] for i in shuffled_indices]
+    
+    # Create sample data variables that correspond to the original ordered time
+    # When we shuffle time, we need to shuffle data in the same way
+    np.random.seed(42)
+    temperature_ordered = (
+        20 + 5 * np.sin(2 * np.pi * np.arange(20) / 20) + np.random.normal(0, 1, 20)
+    )
+    pressure_ordered = (
+        1013.25
+        + 10 * np.cos(2 * np.pi * np.arange(20) / 20)
+        + np.random.normal(0, 2, 20)
+    )
+    humidity_ordered = (
+        50 + 20 * np.sin(2 * np.pi * np.arange(20) / 20) + np.random.normal(0, 5, 20)
+    )
+    
+    # Shuffle data in the same way as time
+    temperature = temperature_ordered[shuffled_indices]
+    pressure = pressure_ordered[shuffled_indices]
+    humidity = humidity_ordered[shuffled_indices]
+
+    import cdflib.cdfwrite
+
+    cdf_file = cdflib.cdfwrite.CDF(output_file)
+
+    try:
+        # Create unordered time variable (zVariable, 0D - scalar per record)
+        cdf_file.write_var(
+            var_spec={
+                "Variable": "time",
+                "Data_Type": cdflib.cdfwrite.CDF.CDF_TIME_TT2000,
+                "Num_Elements": 1,
+                "Rec_Vary": True,
+                "Var_Type": "zVariable",
+                "Dim_Sizes": [],
+            },
+            var_attrs={
+                "FIELDNAM": "Time",
+                "UNITS": "ns",
+                "LABLAXIS": "Time",
+                "NOTE": "Time values are intentionally unordered for testing purposes",
+            },
+            var_data=np.array(unordered_dates, dtype=np.int64),
+        )
+
+        # Create data variables (also shuffled to match time order)
+        for var_name, var_data in [
+            ("temperature", temperature),
+            ("pressure", pressure),
+            ("humidity", humidity),
+        ]:
+            cdf_file.write_var(
+                var_spec={
+                    "Variable": var_name,
+                    "Data_Type": cdflib.cdfwrite.CDF.CDF_FLOAT,
+                    "Num_Elements": 1,
+                    "Rec_Vary": True,
+                    "Var_Type": "zVariable",
+                    "Dim_Sizes": [],
+                },
+                var_attrs={
+                    "FIELDNAM": var_name.title(),
+                    "UNITS": "Celsius"
+                    if var_name == "temperature"
+                    else ("hPa" if var_name == "pressure" else "%"),
+                },
+                var_data=var_data.astype(np.float32),
+            )
+
+        # Add global attributes
+        global_attrs = {
+            "TITLE": {0: "Temporal CDF with Unordered Time Variable"},
+            "DESCRIPTION": {
+                0: "Test CDF file with intentionally unordered time values to test time selection functionality"
+            },
+            "NOTE": {
+                0: "Time values are not in chronological order. This tests that time filtering works correctly even when data is not sorted by time."
+            },
+        }
+        cdf_file.write_globalattrs(global_attrs)
+
+    finally:
+        cdf_file.close()
+
+    # Calculate time range for display
+    base_epoch = datetime(2000, 1, 1)
+    min_time = base_epoch + timedelta(seconds=min(ordered_dates) / 1e9)
+    max_time = base_epoch + timedelta(seconds=max(ordered_dates) / 1e9)
+    
+    print(f"✅ Created {output_file}")
+    print(f"   Time points: {len(unordered_dates)} (unordered)")
+    print(f"   Time range: {min_time} to {max_time}")
     return output_file
 
 
