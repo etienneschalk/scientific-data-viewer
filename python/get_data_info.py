@@ -960,6 +960,7 @@ def create_plot(
         # Handle datetime variable and time filtering
         datetime_var = None
         datetime_var_display_name = None
+        datetime_var_name = None
         if datetime_variable_name:
             try:
                 # Parse datetime strings
@@ -1132,31 +1133,56 @@ def create_plot(
                         )
                         var.plot()
                     else:
-                        import matplotlib.dates as mdates
+                        # Use xarray's default datetime plotting by setting datetime as coordinate
+                        # Create a temporary dataset with datetime as coordinate for plotting
+                        import pandas as pd
 
-                        plt.plot(datetime_values, var_values)
-                        plt.xlabel(
-                            datetime_var_display_name
-                            if datetime_var_display_name
-                            else datetime_variable_name
+                        # Convert datetime values to pandas DatetimeIndex if needed
+                        if not isinstance(datetime_values, pd.DatetimeIndex):
+                            datetime_index = pd.DatetimeIndex(datetime_values)
+                        else:
+                            datetime_index = datetime_values
+
+                        # Create a temporary DataArray with datetime as coordinate
+                        var_with_time = xr.DataArray(
+                            var_values,
+                            coords={datetime_var_display_name: datetime_index},
+                            dims=[datetime_var_display_name],
+                            name=variable_name,
                         )
-                        plt.ylabel(variable_name)
-                        # Format x-axis as dates with full date information
-                        plt.gca().xaxis.set_major_formatter(
-                            mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
-                        )
-                        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-                        plt.xticks(rotation=45)
+
+                        # Use xarray's native plotting (handles datetime formatting automatically)
+                        var_with_time.plot()
+
                 else:
                     var.plot()
 
-            plt.suptitle(
-                f"Variable: {variable_name}\n"
+            # Build suptitle with optional start/end time information
+            # Only include start/end time if datetime variable is actually being used
+            datetime_var_used = False
+            if datetime_var is not None and datetime_var_name is not None:
+                datetime_var_used = (
+                    datetime_var_name in var.dims
+                    or datetime_var_name in var.coords
+                    or bool(set(var.dims) & set(datetime_var.dims))
+                )
+
+            suptitle_lines = [
+                f"Variable: {variable_name}",
                 "Creation date: "
                 f"{datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')}",
-                # f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                y=1.10,
-            )
+            ]
+            if datetime_var_used:
+                if start_datetime:
+                    suptitle_lines.append(
+                        f"Start Time: {start_datetime} ({datetime_var_name})"
+                    )
+                if end_datetime:
+                    suptitle_lines.append(
+                        f"End Time: {end_datetime} ({datetime_var_name})"
+                    )
+
+            plt.suptitle("\n".join(suptitle_lines), y=1.10)
             # Convert to base64 string
             buffer = BytesIO()
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
