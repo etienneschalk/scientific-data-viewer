@@ -228,12 +228,12 @@ export class HTMLGenerator {
                 </div>
 
                 <!-- Time Controls Subsection -->
-                <div class="time-controls-section">
+                <div class="time-controls-section" style="display: none;">
                     <h4>Time Controls</h4>
                     <div class="time-controls-row">
                         <label for="datetimeVariableSelect">Select Datetime Variable:</label>
                         <select id="datetimeVariableSelect" class="datetime-variable-select">
-                            <option value="">None (use record number)</option>
+                            <option value="">Select datetime variable...</option>
                             <!-- Options will be populated dynamically -->
                         </select>
                     </div>

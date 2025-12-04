@@ -1265,17 +1265,25 @@ const globalTimeControlsState = {
 
 // Populate datetime variable select
 function populateDatetimeVariables(data) {
-    const select = document.getElementById('datetimeVariableSelect');
-    if (!select) {return;}
-
-    // Clear existing options except "None"
-    select.innerHTML = '<option value="">None (use record number)</option>';
+    const timeControlsSection = document.querySelector('.time-controls-section');
+    if (!timeControlsSection) return;
 
     // data is already the result object (not wrapped in data.result)
-    if (!data || !data.datetime_variables) {
+    if (!data || !data.datetime_variables || Object.keys(data.datetime_variables).length === 0) {
         console.log('No datetime variables found in data:', data);
+        // Hide the time controls section if no datetime variables are available
+        timeControlsSection.style.display = 'none';
         return;
     }
+
+    // Show the time controls section
+    timeControlsSection.style.display = 'block';
+
+    const select = document.getElementById('datetimeVariableSelect');
+    if (!select) return;
+
+    // Clear existing options
+    select.innerHTML = '<option value="">Select datetime variable...</option>';
 
     console.log('Found datetime variables:', data.datetime_variables);
 
