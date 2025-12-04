@@ -1141,9 +1141,9 @@ def create_plot(
                             else datetime_variable_name
                         )
                         plt.ylabel(variable_name)
-                        # Format x-axis as dates
+                        # Format x-axis as dates with full date information
                         plt.gca().xaxis.set_major_formatter(
-                            mdates.DateFormatter("%H:%M:%S")
+                            mdates.DateFormatter("%Y-%m-%d %H:%M:%S")
                         )
                         plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
                         plt.xticks(rotation=45)
