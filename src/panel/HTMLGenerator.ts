@@ -226,6 +226,29 @@ export class HTMLGenerator {
                 >
                     Progress: 0/0 (0%)
                 </div>
+
+                <!-- Time Controls Subsection -->
+                <div class="time-controls-section">
+                    <h4>Time Controls</h4>
+                    <div class="time-controls-row">
+                        <label for="datetimeVariableSelect">Select Datetime Variable:</label>
+                        <select id="datetimeVariableSelect" class="datetime-variable-select">
+                            <option value="">None (use record number)</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="time-controls-row">
+                        <label for="startDatetimeInput">Start Time:</label>
+                        <input type="datetime-local" id="startDatetimeInput" class="datetime-input" />
+                    </div>
+                    <div class="time-controls-row">
+                        <label for="endDatetimeInput">End Time:</label>
+                        <input type="datetime-local" id="endDatetimeInput" class="datetime-input" />
+                    </div>
+                    <div class="time-controls-row">
+                        <button id="clearTimeControlsButton" class="plot-control-button">Clear Time Controls</button>
+                    </div>
+                </div>
             </details>
         </div>`;
     }

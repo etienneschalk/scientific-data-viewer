@@ -403,6 +403,8 @@ class FileInfoResult:
     attributes_flattened: Dict[str, Dict[str, Any]]
     xarray_html_repr_flattened: Dict[str, str] = field(repr=False)
     xarray_text_repr_flattened: Dict[str, str] = field(repr=False)
+    datetime_variables: Dict[str, List[str]] = field(default_factory=dict)
+    # Format: {group_name: [list of datetime variable names]}
 
 
 @dataclass(frozen=True)
@@ -812,6 +814,9 @@ def create_plot(
     plot_type: str = "auto",
     style: str = "auto",
     convert_bands_to_variables: bool = False,
+    datetime_variable_name: str | None = None,
+    start_datetime: str | None = None,
+    end_datetime: str | None = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -919,6 +924,88 @@ def create_plot(
                 format_info=file_format_info,
             )
 
+        # Handle datetime variable and time filtering
+        datetime_var = None
+        datetime_var_display_name = None
+        if datetime_variable_name:
+            try:
+                # Parse datetime strings
+                import pandas as pd
+
+                start_ts = pd.Timestamp(start_datetime) if start_datetime else None
+                end_ts = pd.Timestamp(end_datetime) if end_datetime else None
+
+                # Handle datetime variable path (may include group path like "/time" or "group/time")
+                datetime_path = PurePosixPath(datetime_variable_name)
+                datetime_group_name = datetime_path.parent
+                datetime_var_name = datetime_path.stem
+                datetime_var_display_name = datetime_var_name  # Store for plot labels
+
+                # If datetime variable is in a different group, get that group
+                datetime_group = group
+                if (
+                    str(datetime_group_name) != str(group_name)
+                    and str(datetime_group_name) != "."
+                ):
+                    if can_use_datatree(used_engine) and isinstance(
+                        xds_or_xdt, xr.DataTree
+                    ):
+                        xdt = cast("xr.DataTree", xds_or_xdt)
+                        datetime_group = xdt[str(datetime_group_name)].to_dataset()
+                    else:
+                        xds_dict = cast("DictOfDatasets", xds_or_xdt)
+                        datetime_group = xds_dict[str(datetime_group_name)]
+
+                # Get the datetime variable
+                if (
+                    datetime_var_name not in datetime_group.coords
+                    and datetime_var_name not in datetime_group.data_vars
+                ):
+                    logger.error(
+                        f"Datetime variable '{datetime_var_name}' not found in dataset"
+                    )
+                    return CreatePlotError(
+                        error=f"Datetime variable '{datetime_var_name}' not found in dataset",
+                        format_info=file_format_info,
+                    )
+
+                datetime_var = datetime_group[datetime_var_name]
+
+                # If datetime variable is not a coordinate but shares a dimension with var,
+                # we can set it as a coordinate temporarily or use boolean indexing
+                if datetime_var_name not in datetime_group.coords:
+                    # Find common dimension
+                    common_dims = set(var.dims) & set(datetime_var.dims)
+                    if common_dims:
+                        dim_name = list(common_dims)[0]
+                        # Create boolean mask for time range filtering
+                        if start_ts and end_ts:
+                            mask = (datetime_var >= start_ts) & (datetime_var <= end_ts)
+                        elif start_ts:
+                            mask = datetime_var >= start_ts
+                        elif end_ts:
+                            mask = datetime_var <= end_ts
+                        else:
+                            mask = None
+
+                        if mask is not None:
+                            var = var.isel({dim_name: mask})
+                            datetime_var = datetime_var.isel({dim_name: mask})
+                else:
+                    # Use .sel() if datetime is a coordinate
+                    # slice() accepts None for start/end, so a single call handles all cases
+                    var = var.sel({datetime_var_name: slice(start_ts, end_ts)})
+                    datetime_var = datetime_var.sel(
+                        {datetime_var_name: slice(start_ts, end_ts)}
+                    )
+
+            except Exception as exc:
+                logger.error(f"Error processing datetime variable: {exc!r}")
+                return CreatePlotError(
+                    error=f"Error processing datetime variable: {exc!r}",
+                    format_info=file_format_info,
+                )
+
         # Detect plotting strategy
         strategy = detect_plotting_strategy(var)
         logger.info(f"Using plotting strategy: {strategy}")
@@ -954,7 +1041,25 @@ def create_plot(
             else:
                 # Default plotting behavior - let xarray decide the best method
                 logger.info("Creating default plot using xarray's native plotting")
-                var.plot()
+                # If datetime variable is provided and var is 1D, use datetime for x-axis
+                if datetime_var is not None and var.ndim == 1:
+                    import matplotlib.dates as mdates
+
+                    plt.plot(datetime_var.values, var.values)
+                    plt.xlabel(
+                        datetime_var_display_name
+                        if datetime_var_display_name
+                        else datetime_variable_name
+                    )
+                    plt.ylabel(variable_name)
+                    # Format x-axis as dates
+                    plt.gca().xaxis.set_major_formatter(
+                        mdates.DateFormatter("%H:%M:%S")
+                    )
+                    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+                    plt.xticks(rotation=45)
+                else:
+                    var.plot()
 
             plt.suptitle(
                 f"Variable: {variable_name}\n"
@@ -1110,6 +1215,7 @@ def get_file_info(
             attributes_flattened={},
             xarray_html_repr_flattened={},
             xarray_text_repr_flattened={},
+            datetime_variables={},
         )
 
         for group in flat_dict_of_xds:
@@ -1124,6 +1230,14 @@ def get_file_info(
             for coord_name, coord in xds.coords.items():
                 coord_info = create_coord_info(str(coord_name), coord)
                 info.coordinates_flattened.setdefault(group, []).append(coord_info)
+                # Check if coordinate is a datetime variable
+                if is_datetime_variable(coord):
+                    logger.info(
+                        f"Found datetime coordinate: {group}/{coord_name} (dtype: {coord.dtype})"
+                    )
+                    info.datetime_variables.setdefault(group, []).append(
+                        str(coord_name)
+                    )
 
             # Add data variables for group
             for var_name, var in xds.data_vars.items():
@@ -1133,6 +1247,12 @@ def get_file_info(
                 )
 
                 info.variables_flattened.setdefault(group, []).append(var_info)
+                # Check if data variable is a datetime variable
+                if is_datetime_variable(var):
+                    logger.info(
+                        f"Found datetime data variable: {group}/{var_name} (dtype: {var.dtype})"
+                    )
+                    info.datetime_variables.setdefault(group, []).append(str(var_name))
 
             # Extract information
             with xr.set_options(**XR_TEXT_OPTIONS):
@@ -1156,6 +1276,7 @@ def get_file_info(
                 xds.close()
         # Close End
 
+        logger.info(f"Detected datetime variables: {info.datetime_variables}")
         return info
     except Exception as exc:
         logger.info(f"Error getting file info: {exc!r}")
@@ -1193,6 +1314,54 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
         size_bytes=var.nbytes,
         attributes={str(k): v for k, v in var.attrs.items()},
     )
+
+
+def is_datetime_variable(var: xr.DataArray) -> bool:
+    """Check if a variable is a datetime type.
+
+    Parameters
+    ----------
+    var : xr.DataArray
+        Variable to check
+
+    Returns
+    -------
+    bool
+        True if variable is datetime type
+    """
+    # Check dtype for datetime64
+    if np.issubdtype(var.dtype, np.datetime64):
+        return True
+
+    # Check if dtype string contains 'datetime'
+    dtype_str = str(var.dtype)
+    if "datetime" in dtype_str.lower():
+        return True
+
+    # Check for CF-convention time coordinates (numeric with time units)
+    # These are often used in NetCDF files
+    attrs = var.attrs
+    if "units" in attrs:
+        units = str(attrs["units"]).lower()
+        # Check for time units like "days since", "hours since", "seconds since", etc.
+        if "since" in units and any(
+            time_unit in units
+            for time_unit in ["day", "hour", "minute", "second", "year", "month"]
+        ):
+            return True
+
+    # Check for standard_name indicating time
+    if "standard_name" in attrs and str(attrs["standard_name"]).lower() == "time":
+        return True
+
+    # Check if variable name suggests it's a time variable (common names)
+    var_name_lower = str(var.name).lower() if hasattr(var, "name") else ""
+    if var_name_lower in ["time", "timestamp", "datetime", "date", "t"]:
+        # Additional check: if it has units or standard_name, it's likely a time variable
+        if "units" in attrs or "standard_name" in attrs:
+            return True
+
+    return False
 
 
 def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
@@ -1275,6 +1444,24 @@ Examples:
         help="Convert bands of GeoTIFF rasters to variables for better readability",
     )
 
+    parser.add_argument(
+        "--datetime-variable",
+        default=None,
+        help="Name of datetime variable to use as x-axis",
+    )
+
+    parser.add_argument(
+        "--start-datetime",
+        default=None,
+        help="Start datetime for filtering (ISO format string)",
+    )
+
+    parser.add_argument(
+        "--end-datetime",
+        default=None,
+        help="End datetime for filtering (ISO format string)",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1300,6 +1487,9 @@ Examples:
             args.plot_type,
             args.style,
             args.convert_bands_to_variables,
+            args.datetime_variable,
+            args.start_datetime,
+            args.end_datetime,
         )
         ok = isinstance(result, CreatePlotResult)
 

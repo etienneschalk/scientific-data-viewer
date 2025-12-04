@@ -194,8 +194,20 @@ export class MessageBus {
         return this.sendRequest(COMMANDS.GET_DATA_INFO, { filePath });
     }
 
-    async createPlot(variable: string, plotType: string): Promise<string> {
-        return this.sendRequest(COMMANDS.CREATE_PLOT, { variable, plotType });
+    async createPlot(
+        variable: string,
+        plotType: string,
+        datetimeVariableName?: string,
+        startDatetime?: string,
+        endDatetime?: string,
+    ): Promise<string> {
+        return this.sendRequest(COMMANDS.CREATE_PLOT, {
+            variable,
+            plotType,
+            datetimeVariableName,
+            startDatetime,
+            endDatetime,
+        });
     }
 
     async savePlot(

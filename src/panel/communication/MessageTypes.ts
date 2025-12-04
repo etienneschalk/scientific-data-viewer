@@ -46,6 +46,9 @@ export interface DataInfoResponse {
 export interface CreatePlotRequest {
     variable: string;
     plotType: string;
+    datetimeVariableName?: string;
+    startDatetime?: string;
+    endDatetime?: string;
 }
 
 export interface CreatePlotResponse {

@@ -68,6 +68,7 @@ export interface DataInfoResult {
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
     xarray_html_repr_flattened: { [groupName: string]: string };
     xarray_text_repr_flattened: { [groupName: string]: string };
+    datetime_variables?: { [groupName: string]: string[] };
 }
 
 export interface DataInfoError {
@@ -123,6 +124,7 @@ export interface DataInfoResult {
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
     xarray_html_repr_flattened: { [groupName: string]: string };
     xarray_text_repr_flattened: { [groupName: string]: string };
+    datetime_variables?: { [groupName: string]: string[] };
 }
 
 export interface DataInfoError {

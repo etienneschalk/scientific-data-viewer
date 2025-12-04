@@ -84,6 +84,9 @@ export class UIController {
                 return this.handleCreatePlot(
                     payload.variable,
                     payload.plotType,
+                    payload.datetimeVariableName,
+                    payload.startDatetime,
+                    payload.endDatetime,
                 );
             },
         );
@@ -313,6 +316,9 @@ export class UIController {
     private async handleCreatePlot(
         variable: string,
         plotType: string,
+        datetimeVariableName?: string,
+        startDatetime?: string,
+        endDatetime?: string,
     ): Promise<string | undefined> {
         try {
             const state = this.stateManager.getState();
@@ -331,6 +337,9 @@ export class UIController {
                 variable,
                 plotType,
                 convertBandsToVariables,
+                datetimeVariableName,
+                startDatetime,
+                endDatetime,
             );
 
             if (!plotData) {

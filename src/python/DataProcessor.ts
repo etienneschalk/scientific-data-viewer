@@ -72,6 +72,9 @@ export class DataProcessor {
         variable: string,
         plotType: string = 'auto',
         convertBandsToVariables: boolean = false,
+        datetimeVariableName?: string,
+        startDatetime?: string,
+        endDatetime?: string,
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -97,6 +100,19 @@ export class DataProcessor {
 
         if (convertBandsToVariables) {
             args.push('--convert-bands-to-variables');
+        }
+
+        if (datetimeVariableName) {
+            args.push(
+                '--datetime-variable',
+                quoteIfNeeded(datetimeVariableName),
+            );
+        }
+        if (startDatetime) {
+            args.push('--start-datetime', quoteIfNeeded(startDatetime));
+        }
+        if (endDatetime) {
+            args.push('--end-datetime', quoteIfNeeded(endDatetime));
         }
 
         try {
