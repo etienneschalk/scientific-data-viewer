@@ -403,8 +403,8 @@ class FileInfoResult:
     attributes_flattened: Dict[str, Dict[str, Any]]
     xarray_html_repr_flattened: Dict[str, str] = field(repr=False)
     xarray_text_repr_flattened: Dict[str, str] = field(repr=False)
-    datetime_variables: Dict[str, List[str]] = field(default_factory=dict)
-    # Format: {group_name: [list of datetime variable names]}
+    datetime_variables: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    # Format: {group_name: [{"name": var_name, "min": min_value, "max": max_value}, ...]}
 
 
 @dataclass(frozen=True)
@@ -1293,9 +1293,26 @@ def get_file_info(
                     logger.info(
                         f"Found datetime coordinate: {group}/{coord_name} (dtype: {coord.dtype})"
                     )
-                    info.datetime_variables.setdefault(group, []).append(
-                        str(coord_name)
-                    )
+                    # Compute min and max values
+                    try:
+                        import pandas as pd
+                        coord_values = coord.values
+                        if coord_values.size > 0:
+                            min_val = pd.Timestamp(coord_values.min()).isoformat()
+                            max_val = pd.Timestamp(coord_values.max()).isoformat()
+                        else:
+                            min_val = None
+                            max_val = None
+                    except Exception as exc:
+                        logger.warning(f"Could not compute min/max for datetime coordinate {coord_name}: {exc!r}")
+                        min_val = None
+                        max_val = None
+                    
+                    info.datetime_variables.setdefault(group, []).append({
+                        "name": str(coord_name),
+                        "min": min_val,
+                        "max": max_val,
+                    })
 
             # Add data variables for group
             for var_name, var in xds.data_vars.items():
@@ -1310,7 +1327,26 @@ def get_file_info(
                     logger.info(
                         f"Found datetime data variable: {group}/{var_name} (dtype: {var.dtype})"
                     )
-                    info.datetime_variables.setdefault(group, []).append(str(var_name))
+                    # Compute min and max values
+                    try:
+                        import pandas as pd
+                        var_values = var.values
+                        if var_values.size > 0:
+                            min_val = pd.Timestamp(var_values.min()).isoformat()
+                            max_val = pd.Timestamp(var_values.max()).isoformat()
+                        else:
+                            min_val = None
+                            max_val = None
+                    except Exception as exc:
+                        logger.warning(f"Could not compute min/max for datetime variable {var_name}: {exc!r}")
+                        min_val = None
+                        max_val = None
+                    
+                    info.datetime_variables.setdefault(group, []).append({
+                        "name": str(var_name),
+                        "min": min_val,
+                        "max": max_val,
+                    })
 
             # Extract information
             with xr.set_options(**XR_TEXT_OPTIONS):

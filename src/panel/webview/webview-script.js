@@ -1261,6 +1261,7 @@ const globalTimeControlsState = {
     datetimeVariableName: null,
     startDatetime: null,
     endDatetime: null,
+    datetimeVarsMap: new Map(), // Map fullPath -> {name, fullPath, group, min, max}
 };
 
 // Populate datetime variable select
@@ -1287,17 +1288,26 @@ function populateDatetimeVariables(data) {
 
     console.log('Found datetime variables:', data.datetime_variables);
 
-    // Collect all datetime variables from all groups
+    // Collect all datetime variables from all groups with min/max values
     const datetimeVars = [];
+    const datetimeVarsMap = new Map(); // Map fullPath -> {name, fullPath, group, min, max}
+    
     for (const [groupName, vars] of Object.entries(data.datetime_variables)) {
-        for (const varName of vars) {
+        for (const varInfo of vars) {
+            const varName = typeof varInfo === 'string' ? varInfo : varInfo.name;
+            const minVal = typeof varInfo === 'object' ? varInfo.min : null;
+            const maxVal = typeof varInfo === 'object' ? varInfo.max : null;
             const fullPath =
                 groupName === '/' ? varName : `${groupName}/${varName}`;
-            datetimeVars.push({
+            const varData = {
                 name: varName,
                 fullPath: fullPath,
                 group: groupName,
-            });
+                min: minVal,
+                max: maxVal,
+            };
+            datetimeVars.push(varData);
+            datetimeVarsMap.set(fullPath, varData);
         }
     }
 
@@ -1310,6 +1320,9 @@ function populateDatetimeVariables(data) {
         option.textContent = name;
         select.appendChild(option);
     });
+    
+    // Store the map for later use when selecting datetime variables
+    globalTimeControlsState.datetimeVarsMap = datetimeVarsMap;
 }
 
 // Convert datetime-local format to text format (YYYY-MM-DD HH:MM:SS)
@@ -1373,8 +1386,58 @@ function setupTimeControlsEventListeners() {
 
     if (datetimeSelect) {
         datetimeSelect.addEventListener('change', (e) => {
-            globalTimeControlsState.datetimeVariableName =
-                e.target.value || null;
+            const selectedPath = e.target.value || null;
+            globalTimeControlsState.datetimeVariableName = selectedPath;
+            
+            // Prefill start/end time inputs with min/max if available
+            if (selectedPath && globalTimeControlsState.datetimeVarsMap.has(selectedPath)) {
+                const varData = globalTimeControlsState.datetimeVarsMap.get(selectedPath);
+                const startInput = document.getElementById('startDatetimeInput');
+                const startTextInput = document.getElementById('startDatetimeTextInput');
+                const endInput = document.getElementById('endDatetimeInput');
+                const endTextInput = document.getElementById('endDatetimeTextInput');
+                
+                // Convert ISO format to datetime-local format
+                function isoToDatetimeLocal(isoString) {
+                    if (!isoString) return '';
+                    // ISO format: "2025-01-01T12:30:00" or "2025-01-01T12:30:00.000000"
+                    // datetime-local format: "2025-01-01T12:30"
+                    const dateTime = isoString.split('T');
+                    if (dateTime.length !== 2) return '';
+                    const date = dateTime[0];
+                    const time = dateTime[1].split(':');
+                    if (time.length < 2) return '';
+                    return `${date}T${time[0]}:${time[1]}`;
+                }
+                
+                // Set min value to start time inputs
+                if (varData.min) {
+                    const minDatetimeLocal = isoToDatetimeLocal(varData.min);
+                    if (minDatetimeLocal) {
+                        if (startInput) {
+                            startInput.value = minDatetimeLocal;
+                            globalTimeControlsState.startDatetime = minDatetimeLocal;
+                        }
+                        if (startTextInput) {
+                            startTextInput.value = convertDatetimeLocalToText(minDatetimeLocal);
+                        }
+                    }
+                }
+                
+                // Set max value to end time inputs
+                if (varData.max) {
+                    const maxDatetimeLocal = isoToDatetimeLocal(varData.max);
+                    if (maxDatetimeLocal) {
+                        if (endInput) {
+                            endInput.value = maxDatetimeLocal;
+                            globalTimeControlsState.endDatetime = maxDatetimeLocal;
+                        }
+                        if (endTextInput) {
+                            endTextInput.value = convertDatetimeLocalToText(maxDatetimeLocal);
+                        }
+                    }
+                }
+            }
         });
     }
 
