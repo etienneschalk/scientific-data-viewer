@@ -991,6 +991,14 @@ def create_plot(
                         if mask is not None:
                             var = var.isel({dim_name: mask})
                             datetime_var = datetime_var.isel({dim_name: mask})
+                    else:
+                        # No common dimensions - cannot use this datetime variable for plotting
+                        logger.warning(
+                            f"Datetime variable '{datetime_var_name}' does not share any dimensions "
+                            f"with variable '{variable_name}'. Cannot use for plotting. "
+                            f"Variable dimensions: {var.dims}, datetime dimensions: {datetime_var.dims}"
+                        )
+                        datetime_var = None
                 else:
                     # Use .sel() if datetime is a coordinate
                     # slice() accepts None for start/end, so a single call handles all cases
@@ -1043,21 +1051,33 @@ def create_plot(
                 logger.info("Creating default plot using xarray's native plotting")
                 # If datetime variable is provided and var is 1D, use datetime for x-axis
                 if datetime_var is not None and var.ndim == 1:
-                    import matplotlib.dates as mdates
+                    # Verify that datetime_var and var have compatible shapes for plotting
+                    datetime_values = datetime_var.values
+                    var_values = var.values
 
-                    plt.plot(datetime_var.values, var.values)
-                    plt.xlabel(
-                        datetime_var_display_name
-                        if datetime_var_display_name
-                        else datetime_variable_name
-                    )
-                    plt.ylabel(variable_name)
-                    # Format x-axis as dates
-                    plt.gca().xaxis.set_major_formatter(
-                        mdates.DateFormatter("%H:%M:%S")
-                    )
-                    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-                    plt.xticks(rotation=45)
+                    if datetime_values.shape != var_values.shape:
+                        logger.warning(
+                            f"Cannot use datetime variable for plotting: shape mismatch. "
+                            f"Datetime shape: {datetime_values.shape}, variable shape: {var_values.shape}. "
+                            f"Falling back to default plotting."
+                        )
+                        var.plot()
+                    else:
+                        import matplotlib.dates as mdates
+
+                        plt.plot(datetime_values, var_values)
+                        plt.xlabel(
+                            datetime_var_display_name
+                            if datetime_var_display_name
+                            else datetime_variable_name
+                        )
+                        plt.ylabel(variable_name)
+                        # Format x-axis as dates
+                        plt.gca().xaxis.set_major_formatter(
+                            mdates.DateFormatter("%H:%M:%S")
+                        )
+                        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+                        plt.xticks(rotation=45)
                 else:
                     var.plot()
 
