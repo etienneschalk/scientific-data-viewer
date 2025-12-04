@@ -160,8 +160,25 @@ class WebviewMessageBus {
         return this.sendRequest('getDataInfo', { filePath });
     }
 
-    async createPlot(variable, plotType) {
-        return this.sendRequest('createPlot', { variable, plotType });
+    async createPlot(variable, plotType, datetimeVariableName, startDatetime, endDatetime) {
+        const payload = {
+            variable,
+            plotType,
+        };
+
+        // Only include optional fields if they have values (not null/undefined/empty)
+        if (datetimeVariableName != null && datetimeVariableName !== '') {
+            payload.datetimeVariableName = datetimeVariableName;
+        }
+        if (startDatetime != null && startDatetime !== '') {
+            payload.startDatetime = startDatetime;
+        }
+        if (endDatetime != null && endDatetime !== '') {
+            payload.endDatetime = endDatetime;
+        }
+
+        console.log('📤 WebviewMessageBus.createPlot payload:', payload);
+        return this.sendRequest('createPlot', payload);
     }
 
     async savePlot(plotData, variable, fileName) {
@@ -1291,7 +1308,7 @@ function populateDatetimeVariables(data) {
     // Collect all datetime variables from all groups with min/max values
     const datetimeVars = [];
     const datetimeVarsMap = new Map(); // Map fullPath -> {name, fullPath, group, min, max}
-    
+
     for (const [groupName, vars] of Object.entries(data.datetime_variables)) {
         for (const varInfo of vars) {
             const varName = typeof varInfo === 'string' ? varInfo : varInfo.name;
@@ -1320,7 +1337,7 @@ function populateDatetimeVariables(data) {
         option.textContent = name;
         select.appendChild(option);
     });
-    
+
     // Store the map for later use when selecting datetime variables
     globalTimeControlsState.datetimeVarsMap = datetimeVarsMap;
 }
@@ -1339,36 +1356,36 @@ function convertDatetimeLocalToText(datetimeLocal) {
 // Convert text format (YYYY-MM-DD HH:MM:SS or variations) to datetime-local format
 function convertTextToDatetimeLocal(textValue) {
     if (!textValue) return '';
-    
+
     // Try to parse various formats
     // Formats: "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM", "YYYY-MM-DD", etc.
     let dateStr = textValue.trim();
-    
+
     // Replace space between date and time with 'T' if present
     if (dateStr.includes(' ')) {
         dateStr = dateStr.replace(' ', 'T');
     }
-    
+
     // If it already has 'T', keep it
     if (!dateStr.includes('T')) {
         // If no time part, add default time
         dateStr += 'T00:00';
     }
-    
+
     // Parse and validate
     try {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) {
             return '';
         }
-        
+
         // Convert to datetime-local format: YYYY-MM-DDTHH:mm
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        
+
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (e) {
         return '';
@@ -1388,7 +1405,7 @@ function setupTimeControlsEventListeners() {
         datetimeSelect.addEventListener('change', (e) => {
             const selectedPath = e.target.value || null;
             globalTimeControlsState.datetimeVariableName = selectedPath;
-            
+
             // Prefill start/end time inputs with min/max if available
             if (selectedPath && globalTimeControlsState.datetimeVarsMap.has(selectedPath)) {
                 const varData = globalTimeControlsState.datetimeVarsMap.get(selectedPath);
@@ -1396,7 +1413,7 @@ function setupTimeControlsEventListeners() {
                 const startTextInput = document.getElementById('startDatetimeTextInput');
                 const endInput = document.getElementById('endDatetimeInput');
                 const endTextInput = document.getElementById('endDatetimeTextInput');
-                
+
                 // Convert ISO format to datetime-local format
                 function isoToDatetimeLocal(isoString) {
                     if (!isoString) return '';
@@ -1409,32 +1426,56 @@ function setupTimeControlsEventListeners() {
                     if (time.length < 2) return '';
                     return `${date}T${time[0]}:${time[1]}`;
                 }
-                
+
                 // Set min value to start time inputs
                 if (varData.min) {
                     const minDatetimeLocal = isoToDatetimeLocal(varData.min);
                     if (minDatetimeLocal) {
                         if (startInput) {
                             startInput.value = minDatetimeLocal;
+                            // Update state explicitly
                             globalTimeControlsState.startDatetime = minDatetimeLocal;
+                            // Trigger change event to ensure all listeners are notified
+                            startInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         if (startTextInput) {
                             startTextInput.value = convertDatetimeLocalToText(minDatetimeLocal);
                         }
                     }
+                } else {
+                    // Clear start time if no min value
+                    if (startInput) {
+                        startInput.value = '';
+                        globalTimeControlsState.startDatetime = null;
+                    }
+                    if (startTextInput) {
+                        startTextInput.value = '';
+                    }
                 }
-                
+
                 // Set max value to end time inputs
                 if (varData.max) {
                     const maxDatetimeLocal = isoToDatetimeLocal(varData.max);
                     if (maxDatetimeLocal) {
                         if (endInput) {
                             endInput.value = maxDatetimeLocal;
+                            // Update state explicitly
                             globalTimeControlsState.endDatetime = maxDatetimeLocal;
+                            // Trigger change event to ensure all listeners are notified
+                            endInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         if (endTextInput) {
                             endTextInput.value = convertDatetimeLocalToText(maxDatetimeLocal);
                         }
+                    }
+                } else {
+                    // Clear end time if no max value
+                    if (endInput) {
+                        endInput.value = '';
+                        globalTimeControlsState.endDatetime = null;
+                    }
+                    if (endTextInput) {
+                        endTextInput.value = '';
                     }
                 }
             }
@@ -1519,7 +1560,7 @@ function convertDatetimeLocalToISO(datetimeLocal) {
     // datetime-local already has the format "YYYY-MM-DDTHH:mm"
     // Just add seconds if not present to make it "YYYY-MM-DDTHH:mm:ss"
     let isoString = datetimeLocal;
-    
+
     // Count colons to determine if we need to add seconds
     const colonCount = (isoString.match(/:/g) || []).length;
     if (colonCount === 1) {
@@ -1756,13 +1797,40 @@ async function handleCreateAllPlots() {
     // Update UI to show operation in progress
     updatePlotAllUI(true);
 
-    // Get time control values (same for all plots)
-    const datetimeVariableName = globalTimeControlsState.datetimeVariableName;
-    const startDatetime = globalTimeControlsState.startDatetime
-        ? convertDatetimeLocalToISO(globalTimeControlsState.startDatetime)
+    // Get time control values (same for all plots) - also read directly from inputs as fallback
+    let datetimeVariableName = globalTimeControlsState.datetimeVariableName;
+    let startDatetime = globalTimeControlsState.startDatetime;
+    let endDatetime = globalTimeControlsState.endDatetime;
+
+    // Fallback: read directly from inputs if state is not set
+    if (!startDatetime) {
+        const startInput = document.getElementById('startDatetimeInput');
+        if (startInput && startInput.value) {
+            startDatetime = startInput.value;
+            globalTimeControlsState.startDatetime = startDatetime;
+        }
+    }
+    if (!endDatetime) {
+        const endInput = document.getElementById('endDatetimeInput');
+        if (endInput && endInput.value) {
+            endDatetime = endInput.value;
+            globalTimeControlsState.endDatetime = endDatetime;
+        }
+    }
+    if (!datetimeVariableName) {
+        const datetimeSelect = document.getElementById('datetimeVariableSelect');
+        if (datetimeSelect && datetimeSelect.value) {
+            datetimeVariableName = datetimeSelect.value;
+            globalTimeControlsState.datetimeVariableName = datetimeVariableName;
+        }
+    }
+
+    // Convert to ISO format for Python
+    const startDatetimeISO = startDatetime
+        ? convertDatetimeLocalToISO(startDatetime)
         : null;
-    const endDatetime = globalTimeControlsState.endDatetime
-        ? convertDatetimeLocalToISO(globalTimeControlsState.endDatetime)
+    const endDatetimeISO = endDatetime
+        ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
     // Prepare all plot operations
@@ -1781,8 +1849,8 @@ async function handleCreateAllPlots() {
                 variable,
                 plotType,
                 datetimeVariableName,
-                startDatetime,
-                endDatetime,
+                startDatetimeISO,
+                endDatetimeISO,
             );
             displayVariablePlot(variable, plotData);
             globalStateCreateAllPlotsOperation.completedCount++;
@@ -1929,14 +1997,50 @@ async function handleCreateVariablePlot(variable) {
     );
     const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
-    // Get time control values
-    const datetimeVariableName = globalTimeControlsState.datetimeVariableName;
-    const startDatetime = globalTimeControlsState.startDatetime
-        ? convertDatetimeLocalToISO(globalTimeControlsState.startDatetime)
+    // Get time control values - also read directly from inputs as fallback
+    let datetimeVariableName = globalTimeControlsState.datetimeVariableName;
+    let startDatetime = globalTimeControlsState.startDatetime;
+    let endDatetime = globalTimeControlsState.endDatetime;
+
+    // Fallback: read directly from inputs if state is not set
+    if (!startDatetime) {
+        const startInput = document.getElementById('startDatetimeInput');
+        if (startInput && startInput.value) {
+            startDatetime = startInput.value;
+            globalTimeControlsState.startDatetime = startDatetime;
+        }
+    }
+    if (!endDatetime) {
+        const endInput = document.getElementById('endDatetimeInput');
+        if (endInput && endInput.value) {
+            endDatetime = endInput.value;
+            globalTimeControlsState.endDatetime = endDatetime;
+        }
+    }
+    if (!datetimeVariableName) {
+        const datetimeSelect = document.getElementById('datetimeVariableSelect');
+        if (datetimeSelect && datetimeSelect.value) {
+            datetimeVariableName = datetimeSelect.value;
+            globalTimeControlsState.datetimeVariableName = datetimeVariableName;
+        }
+    }
+
+    // Convert to ISO format for Python
+    const startDatetimeISO = startDatetime
+        ? convertDatetimeLocalToISO(startDatetime)
         : null;
-    const endDatetime = globalTimeControlsState.endDatetime
-        ? convertDatetimeLocalToISO(globalTimeControlsState.endDatetime)
+    const endDatetimeISO = endDatetime
+        ? convertDatetimeLocalToISO(endDatetime)
         : null;
+
+    console.log('Creating plot with time controls:', {
+        datetimeVariableName,
+        startDatetime,
+        endDatetime,
+        startDatetimeISO,
+        endDatetimeISO,
+        rawState: globalTimeControlsState,
+    });
 
     // Show loading indicator
     displayVariablePlotLoading(variable);
@@ -1946,8 +2050,8 @@ async function handleCreateVariablePlot(variable) {
             variable,
             plotType,
             datetimeVariableName,
-            startDatetime,
-            endDatetime,
+            startDatetimeISO,
+            endDatetimeISO,
         );
         displayVariablePlot(variable, plotData);
     } catch (error) {

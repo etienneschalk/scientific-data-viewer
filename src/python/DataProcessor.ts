@@ -102,22 +102,25 @@ export class DataProcessor {
             args.push('--convert-bands-to-variables');
         }
 
-        if (datetimeVariableName) {
+        if (datetimeVariableName && datetimeVariableName.trim() !== '') {
             args.push(
                 '--datetime-variable',
                 quoteIfNeeded(datetimeVariableName),
             );
         }
-        if (startDatetime) {
+        if (startDatetime && startDatetime.trim() !== '') {
             args.push('--start-datetime', quoteIfNeeded(startDatetime));
         }
-        if (endDatetime) {
+        if (endDatetime && endDatetime.trim() !== '') {
             args.push('--end-datetime', quoteIfNeeded(endDatetime));
         }
 
         try {
             Logger.info(
                 `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`,
+            );
+            Logger.info(
+                `[DataProcessor] [createPlot] Time controls: datetimeVariableName='${datetimeVariableName}', startDatetime='${startDatetime}', endDatetime='${endDatetime}'`,
             );
 
             // Execute Python script and capture both stdout and stderr
