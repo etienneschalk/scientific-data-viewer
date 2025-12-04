@@ -748,8 +748,20 @@ button:active {
     font-size: var(--vscode-font-size);
 }
 
+.datetime-text-input {
+    flex: 1;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
 .datetime-variable-select:focus,
-.datetime-input:focus {
+.datetime-input:focus,
+.datetime-text-input:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
 }

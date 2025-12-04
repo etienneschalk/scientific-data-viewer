@@ -1312,11 +1312,63 @@ function populateDatetimeVariables(data) {
     });
 }
 
+// Convert datetime-local format to text format (YYYY-MM-DD HH:MM:SS)
+function convertDatetimeLocalToText(datetimeLocal) {
+    if (!datetimeLocal) return '';
+    // datetime-local format: "YYYY-MM-DDTHH:mm"
+    // Convert to: "YYYY-MM-DD HH:MM:SS"
+    const [date, time] = datetimeLocal.split('T');
+    if (!time) return datetimeLocal;
+    const [hours, minutes] = time.split(':');
+    return `${date} ${hours}:${minutes || '00'}:00`;
+}
+
+// Convert text format (YYYY-MM-DD HH:MM:SS or variations) to datetime-local format
+function convertTextToDatetimeLocal(textValue) {
+    if (!textValue) return '';
+    
+    // Try to parse various formats
+    // Formats: "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM", "YYYY-MM-DD", etc.
+    let dateStr = textValue.trim();
+    
+    // Replace space between date and time with 'T' if present
+    if (dateStr.includes(' ')) {
+        dateStr = dateStr.replace(' ', 'T');
+    }
+    
+    // If it already has 'T', keep it
+    if (!dateStr.includes('T')) {
+        // If no time part, add default time
+        dateStr += 'T00:00';
+    }
+    
+    // Parse and validate
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+        
+        // Convert to datetime-local format: YYYY-MM-DDTHH:mm
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (e) {
+        return '';
+    }
+}
+
 // Setup time controls event listeners
 function setupTimeControlsEventListeners() {
     const datetimeSelect = document.getElementById('datetimeVariableSelect');
     const startInput = document.getElementById('startDatetimeInput');
+    const startTextInput = document.getElementById('startDatetimeTextInput');
     const endInput = document.getElementById('endDatetimeInput');
+    const endTextInput = document.getElementById('endDatetimeTextInput');
     const clearButton = document.getElementById('clearTimeControlsButton');
 
     if (datetimeSelect) {
@@ -1326,15 +1378,57 @@ function setupTimeControlsEventListeners() {
         });
     }
 
+    // Start time: sync datetime-local -> text
     if (startInput) {
         startInput.addEventListener('change', (e) => {
-            globalTimeControlsState.startDatetime = e.target.value || null;
+            const value = e.target.value || null;
+            globalTimeControlsState.startDatetime = value;
+            if (startTextInput) {
+                startTextInput.value = convertDatetimeLocalToText(value);
+            }
         });
     }
 
+    // Start time: sync text -> datetime-local
+    if (startTextInput) {
+        startTextInput.addEventListener('input', (e) => {
+            const textValue = e.target.value;
+            const datetimeLocalValue = convertTextToDatetimeLocal(textValue);
+            if (datetimeLocalValue && startInput) {
+                startInput.value = datetimeLocalValue;
+                globalTimeControlsState.startDatetime = datetimeLocalValue;
+            } else if (!textValue) {
+                // Clear both if text is cleared
+                if (startInput) startInput.value = '';
+                globalTimeControlsState.startDatetime = null;
+            }
+        });
+    }
+
+    // End time: sync datetime-local -> text
     if (endInput) {
         endInput.addEventListener('change', (e) => {
-            globalTimeControlsState.endDatetime = e.target.value || null;
+            const value = e.target.value || null;
+            globalTimeControlsState.endDatetime = value;
+            if (endTextInput) {
+                endTextInput.value = convertDatetimeLocalToText(value);
+            }
+        });
+    }
+
+    // End time: sync text -> datetime-local
+    if (endTextInput) {
+        endTextInput.addEventListener('input', (e) => {
+            const textValue = e.target.value;
+            const datetimeLocalValue = convertTextToDatetimeLocal(textValue);
+            if (datetimeLocalValue && endInput) {
+                endInput.value = datetimeLocalValue;
+                globalTimeControlsState.endDatetime = datetimeLocalValue;
+            } else if (!textValue) {
+                // Clear both if text is cleared
+                if (endInput) endInput.value = '';
+                globalTimeControlsState.endDatetime = null;
+            }
         });
     }
 
@@ -1345,25 +1439,38 @@ function setupTimeControlsEventListeners() {
             globalTimeControlsState.endDatetime = null;
             if (datetimeSelect) {datetimeSelect.value = '';}
             if (startInput) {startInput.value = '';}
+            if (startTextInput) {startTextInput.value = '';}
             if (endInput) {endInput.value = '';}
+            if (endTextInput) {endTextInput.value = '';}
         });
     }
 }
 
-// Convert datetime-local to ISO format
+// Convert datetime-local to ISO format (preserving local time, no timezone conversion)
 function convertDatetimeLocalToISO(datetimeLocal) {
     // datetime-local format: "YYYY-MM-DDTHH:mm"
-    // Need to convert to ISO format for Python
+    // Need to convert to ISO format for Python (YYYY-MM-DDTHH:mm:ss)
+    // IMPORTANT: Preserve local time without timezone conversion to avoid shifting dates
     if (!datetimeLocal) {return null;}
 
-    // Add seconds if not present
+    // datetime-local already has the format "YYYY-MM-DDTHH:mm"
+    // Just add seconds if not present to make it "YYYY-MM-DDTHH:mm:ss"
     let isoString = datetimeLocal;
-    if (!isoString.includes(':')) {
+    
+    // Count colons to determine if we need to add seconds
+    const colonCount = (isoString.match(/:/g) || []).length;
+    if (colonCount === 1) {
+        // Has hours:minutes, add seconds
         isoString += ':00';
+    } else if (colonCount === 0) {
+        // No time part at all (shouldn't happen with datetime-local, but handle it)
+        isoString += 'T00:00:00';
     }
+    // If colonCount === 2, it already has seconds, so we're good
 
-    // Ensure we have proper format
-    return new Date(isoString).toISOString();
+    // Return as-is (naive datetime, no timezone conversion)
+    // Python's pd.Timestamp will interpret this as the exact time entered
+    return isoString;
 }
 
 // Event listeners setup

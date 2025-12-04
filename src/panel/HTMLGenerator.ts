@@ -240,10 +240,12 @@ export class HTMLGenerator {
                     <div class="time-controls-row">
                         <label for="startDatetimeInput">Start Time:</label>
                         <input type="datetime-local" id="startDatetimeInput" class="datetime-input" />
+                        <input type="text" id="startDatetimeTextInput" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" />
                     </div>
                     <div class="time-controls-row">
                         <label for="endDatetimeInput">End Time:</label>
                         <input type="datetime-local" id="endDatetimeInput" class="datetime-input" />
+                        <input type="text" id="endDatetimeTextInput" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" />
                     </div>
                     <div class="time-controls-row">
                         <button id="clearTimeControlsButton" class="plot-control-button">Clear Time Controls</button>

@@ -893,7 +893,9 @@ def create_plot(
 
         path = PurePosixPath(variable_path)
         group_name = path.parent
-        variable_name: str = path.stem
+        variable_name: str = (
+            path.name
+        )  # Use .name instead of .stem to preserve dots in variable names
 
         if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
             xdt = cast("xr.DataTree", xds_or_xdt)
@@ -938,7 +940,9 @@ def create_plot(
                 # Handle datetime variable path (may include group path like "/time" or "group/time")
                 datetime_path = PurePosixPath(datetime_variable_name)
                 datetime_group_name = datetime_path.parent
-                datetime_var_name = datetime_path.stem
+                datetime_var_name = (
+                    datetime_path.name
+                )  # Use .name instead of .stem to preserve dots in variable names
                 datetime_var_display_name = datetime_var_name  # Store for plot labels
 
                 # If datetime variable is in a different group, get that group
@@ -1001,11 +1005,45 @@ def create_plot(
                         datetime_var = None
                 else:
                     # Use .sel() if datetime is a coordinate
-                    # slice() accepts None for start/end, so a single call handles all cases
-                    var = var.sel({datetime_var_name: slice(start_ts, end_ts)})
-                    datetime_var = datetime_var.sel(
-                        {datetime_var_name: slice(start_ts, end_ts)}
-                    )
+                    # But first check if the coordinate exists in var's dataset
+                    # (it might be from a different group)
+                    if datetime_var_name in group.coords:
+                        # Coordinate exists in var's dataset - can use .sel() directly
+                        # slice() accepts None for start/end, so a single call handles all cases
+                        var = var.sel({datetime_var_name: slice(start_ts, end_ts)})
+                        datetime_var = datetime_var.sel(
+                            {datetime_var_name: slice(start_ts, end_ts)}
+                        )
+                    else:
+                        # Coordinate is from a different group - need to use positional indexing
+                        # Find common dimension between var and datetime_var
+                        common_dims = set(var.dims) & set(datetime_var.dims)
+                        if common_dims:
+                            dim_name = list(common_dims)[0]
+                            # Create boolean mask for time range filtering
+                            if start_ts and end_ts:
+                                mask = (datetime_var >= start_ts) & (
+                                    datetime_var <= end_ts
+                                )
+                            elif start_ts:
+                                mask = datetime_var >= start_ts
+                            elif end_ts:
+                                mask = datetime_var <= end_ts
+                            else:
+                                mask = None
+
+                            if mask is not None:
+                                var = var.isel({dim_name: mask})
+                                datetime_var = datetime_var.isel({dim_name: mask})
+                        else:
+                            # No common dimensions - cannot use this datetime variable for plotting
+                            logger.warning(
+                                f"Datetime variable '{datetime_var_name}' is a coordinate in a different group "
+                                f"and does not share any dimensions with variable '{variable_name}'. "
+                                f"Cannot use for plotting. "
+                                f"Variable dimensions: {var.dims}, datetime dimensions: {datetime_var.dims}"
+                            )
+                            datetime_var = None
 
             except Exception as exc:
                 logger.error(f"Error processing datetime variable: {exc!r}")
