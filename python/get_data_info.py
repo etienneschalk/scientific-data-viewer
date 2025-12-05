@@ -1013,7 +1013,7 @@ def create_plot(
                     # Find common dimension
                     common_dims = set(var.dims) & set(datetime_var.dims)
                     if common_dims:
-                        dim_name = list(common_dims)[0]
+                        dim_name = next(iter(common_dims))
                         # Create boolean mask for time range filtering
                         if start_ts and end_ts:
                             mask = (datetime_var >= start_ts) & (datetime_var <= end_ts)
@@ -1100,7 +1100,7 @@ def create_plot(
                         # Find common dimension between var and datetime_var
                         common_dims = set(var.dims) & set(datetime_var.dims)
                         if common_dims:
-                            dim_name = list(common_dims)[0]
+                            dim_name = next(iter(common_dims))
                             # Create boolean mask for time range filtering
                             if start_ts and end_ts:
                                 mask = (datetime_var >= start_ts) & (
@@ -1581,12 +1581,10 @@ def is_datetime_variable(var: xr.DataArray) -> bool:
 
     # Check if variable name suggests it's a time variable (common names)
     var_name_lower = str(var.name).lower() if hasattr(var, "name") else ""
-    if var_name_lower in ["time", "timestamp", "datetime", "date", "t"]:
-        # Additional check: if it has units or standard_name, it's likely a time variable
-        if "units" in attrs or "standard_name" in attrs:
-            return True
-
-    return False
+    # Additional check: if it has units or standard_name, it's likely a time variable
+    return var_name_lower in ["time", "timestamp", "datetime", "date", "t"] and (
+        "units" in attrs or "standard_name" in attrs
+    )
 
 
 def check_monotonicity(

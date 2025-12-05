@@ -5,25 +5,26 @@ Unit tests for datetime variable detection and time filtering edge cases.
 This test suite covers all edge cases mentioned in IMPLEMENTATION_PROPOSAL_ISSUE_106.md
 """
 
-import numpy as np
-import pandas as pd
-import pytest
-import xarray as xr
-from pathlib import Path
-import tempfile
 import os
 
 # Import functions to test
 import sys
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+import xarray as xr
 
 sys.path.insert(0, str(Path(__file__).parent))
 from get_data_info import (
-    is_datetime_variable,
+    CreatePlotError,
+    CreatePlotResult,
     check_monotonicity,
     create_plot,
     get_file_info,
-    CreatePlotResult,
-    CreatePlotError,
+    is_datetime_variable,
 )
 
 
@@ -162,7 +163,7 @@ class TestCheckMonotonicity:
     def test_duplicate_values(self):
         """Test with duplicate values (should still be monotonic)."""
         dates = pd.date_range("2020-01-01", periods=5, freq="D")
-        dates_with_duplicates = dates.tolist() + [dates[-1], dates[-1]]
+        dates_with_duplicates = [*dates.tolist(), dates[-1], dates[-1]]
         var = xr.DataArray(dates_with_duplicates, dims=["time"])
         result = check_monotonicity(var)
         assert result == "increasing"
@@ -381,7 +382,7 @@ class TestCreatePlotEdgeCases:
         try:
             with netCDF4.Dataset(temp_file, "w") as nc:
                 # Root group variable
-                time_dim = nc.createDimension("time", 10)
+                nc.createDimension("time", 10)
                 temp_var = nc.createVariable("temperature", "f4", ("time",))
                 temp_var[:] = np.arange(10)
 
