@@ -709,3 +709,59 @@ button:active {
     z-index: 1000;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+
+.time-controls-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+}
+
+.time-controls-section h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--vscode-foreground);
+}
+
+.time-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.time-controls-row label {
+    min-width: 180px;
+    color: var(--vscode-foreground);
+}
+
+.datetime-variable-select,
+.datetime-input {
+    flex: 1;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.datetime-text-input {
+    flex: 1;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.datetime-variable-select:focus,
+.datetime-input:focus,
+.datetime-text-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
