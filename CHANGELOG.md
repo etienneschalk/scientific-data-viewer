@@ -6,6 +6,60 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.7.0] - 2025-12-04
+
+### Added
+
+- **Timestamp Variable Selection and Time Range Filtering**: Comprehensive support for datetime variable selection and time-based filtering (Issue #106)
+  - **Automatic Datetime Detection**: Multi-method detection including datetime64 dtype, CF-convention time coordinates, standard_name attributes, and common variable names
+  - **Time Range Filtering**: Filter data by specifying start and end datetime values
+  - **Monotonicity Handling**: Intelligently handles monotonic increasing, decreasing, and non-monotonic datetime sequences
+  - **Cross-Group Support**: Works with datetime variables in different groups than the plotted variable
+  - **Min/Max Pre-filling**: Automatically pre-fills time range inputs with min/max values from detected datetime variables
+  - **Dual Input Methods**: Native HTML5 datetime-local picker and text input for pasting dates
+  - **Bidirectional Binding**: Text and datetime-local inputs stay synchronized
+  - **Smart Visibility**: Time controls automatically hide when no datetime variables are found
+  - **Files Modified**:
+    - python/get_data_info.py - Added datetime detection, monotonicity checking, and time filtering logic
+    - src/types.ts - Updated DataInfoResult and CreatePlotRequest interfaces
+    - src/python/DataProcessor.ts - Added datetime parameters to createPlot method
+    - src/panel/UIController.ts - Added datetime parameter handling
+    - src/panel/communication/MessageBus.ts - Updated createPlot signature
+    - src/panel/HTMLGenerator.ts - Added time controls UI section
+    - src/panel/webview/webview-script.js - Added time controls state management and event handlers
+    - src/panel/webview/styles.css - Added time controls styling
+    - python/create_sample_data.py - Added sample CDF file with unordered time variable
+- **Comprehensive Test Suite**: 27 Python unit tests covering all 16 identified edge cases
+  - python/test_datetime_edge_cases.py - Complete test coverage for datetime functionality
+  - test/suite/datetimeEdgeCases.test.ts - TypeScript integration tests
+  - setup.sh - Integrated Python datetime tests into setup process
+
+### Enhanced
+
+- **Plot Titles**: Conditional suptitle includes start/end time information only when datetime filtering is actually used
+- **X-Axis Display**: Full date and time information displayed on x-axis instead of just hours
+- **Error Handling**: Comprehensive error handling for all edge cases (invalid datetimes, missing variables, shape mismatches, etc.)
+- **Variable Name Handling**: Correctly handles variable names containing dots (e.g., "temperature.hourly")
+
+### Fixed
+
+- **Issue #106**: Implemented timestamp variable selection and time range filtering
+- **Timezone Issues**: Fixed timezone conversion problems in datetime input handling
+- **Variable Name Parsing**: Fixed issue with variable names containing dots being truncated (changed from `.stem` to `.name`)
+- **Cross-Group Variables**: Fixed handling of datetime variables from different groups
+- **Monotonicity**: Fixed filtering for monotonic decreasing and non-monotonic datetime sequences
+- **Python 3.8 Compatibility**: Changed `str | None` to `Optional[str]` for Python 3.8 support
+
+### Technical Improvements
+
+- **Monotonicity Detection**: Uses pandas Index methods (`is_monotonic_increasing`, `is_monotonic_decreasing`) for efficient checking
+- **Filtering Strategy**: 
+  - Monotonic increasing: Uses `xarray.sel()` with slice notation
+  - Monotonic decreasing: Automatically swaps start/end times
+  - Non-monotonic: Falls back to boolean indexing
+- **Timezone Preservation**: All datetime conversions preserve local time without unexpected timezone shifts
+- **Comprehensive Edge Case Handling**: 16 edge cases identified and handled robustly
+
 ## [0.6.0] - 2025-12-02
 
 ### Added

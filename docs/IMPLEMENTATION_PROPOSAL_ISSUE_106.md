@@ -31,6 +31,7 @@ class FileInfoResult:
 #### 1.2 Added `is_datetime_variable()` function
 
 Comprehensive datetime detection function that checks:
+
 - `datetime64` dtype
 - Dtype string containing 'datetime'
 - CF-convention time coordinates (numeric with time units like "days since", "hours since", etc.)
@@ -43,30 +44,30 @@ def is_datetime_variable(var: xr.DataArray) -> bool:
     # Check dtype for datetime64
     if np.issubdtype(var.dtype, np.datetime64):
         return True
-    
+
     # Check if dtype string contains 'datetime'
     dtype_str = str(var.dtype)
     if "datetime" in dtype_str.lower():
         return True
-    
+
     # Check for CF-convention time coordinates
     attrs = var.attrs
     if "units" in attrs:
         units = str(attrs["units"]).lower()
-        if "since" in units and any(time_unit in units for time_unit in 
+        if "since" in units and any(time_unit in units for time_unit in
                                      ["day", "hour", "minute", "second", "year", "month"]):
             return True
-    
+
     # Check for standard_name indicating time
     if "standard_name" in attrs and str(attrs["standard_name"]).lower() == "time":
         return True
-    
+
     # Check if variable name suggests it's a time variable
     var_name_lower = str(var.name).lower() if hasattr(var, "name") else ""
     if var_name_lower in ["time", "timestamp", "datetime", "date", "t"]:
         if "units" in attrs or "standard_name" in attrs:
             return True
-    
+
     return False
 ```
 
@@ -87,10 +88,10 @@ def check_monotonicity(var: xr.DataArray) -> Literal["increasing", "decreasing",
     """Check if a variable is monotonic increasing, decreasing, or non-monotonic."""
     if var.size < 2:
         return "increasing"
-    
+
     import pandas as pd
     index = pd.Index(var.values)
-    
+
     if index.is_monotonic_increasing:
         return "increasing"
     elif index.is_monotonic_decreasing:
@@ -102,6 +103,7 @@ def check_monotonicity(var: xr.DataArray) -> Literal["increasing", "decreasing",
 #### 1.5 Modified `create_plot()` function
 
 **Key Features:**
+
 - Accepts optional parameters: `datetime_variable_name`, `start_datetime`, `end_datetime`
 - Handles datetime variable paths including group paths (e.g., "/time" or "group/time")
 - Uses `.name` instead of `.stem` to preserve dots in variable names
@@ -148,7 +150,7 @@ else:
         else:
             slice_start = start_ts
             slice_end = end_ts
-        
+
         var = var.sel({datetime_var_name: slice(slice_start, slice_end)})
         datetime_var = datetime_var.sel({datetime_var_name: slice(slice_start, slice_end)})
 ```
@@ -182,12 +184,12 @@ parser.add_argument(
 ```typescript
 export interface DataInfoResult {
   // ... existing fields ...
-  datetime_variables?: { 
-    [groupName: string]: Array<{ 
-      name: string; 
-      min?: string; 
-      max?: string 
-    }> 
+  datetime_variables?: {
+    [groupName: string]: Array<{
+      name: string;
+      min?: string;
+      max?: string;
+    }>;
   };
 }
 ```
@@ -246,6 +248,7 @@ Updated signature to accept and forward datetime parameters.
 #### 4.1 HTML Generation (`src/panel/HTMLGenerator.ts`)
 
 Added Time Controls subsection with:
+
 - Datetime variable select dropdown
 - Start time input (both `datetime-local` and text input)
 - End time input (both `datetime-local` and text input)
@@ -255,16 +258,18 @@ Added Time Controls subsection with:
 #### 4.2 JavaScript/Webview (`src/panel/webview/webview-script.js`)
 
 **State Management:**
+
 ```javascript
 const globalTimeControlsState = {
-    datetimeVariableName: null,
-    startDatetime: null,
-    endDatetime: null,
-    datetimeVarsMap: new Map(), // Map fullPath -> {name, fullPath, group, min, max}
+  datetimeVariableName: null,
+  startDatetime: null,
+  endDatetime: null,
+  datetimeVarsMap: new Map(), // Map fullPath -> {name, fullPath, group, min, max}
 };
 ```
 
 **Key Functions:**
+
 - `populateDatetimeVariables(data)`: Populates dropdown and stores min/max values. Hides time controls if no datetime variables found.
 - `setupTimeControlsEventListeners()`: Sets up bidirectional binding between `datetime-local` and text inputs. Pre-fills min/max when datetime variable is selected.
 - `convertDatetimeLocalToText()`: Converts "YYYY-MM-DDTHH:mm" to "YYYY-MM-DD HH:MM:SS"
@@ -272,6 +277,7 @@ const globalTimeControlsState = {
 - `convertDatetimeLocalToISO()`: Converts to ISO format preserving local time (no UTC conversion)
 
 **Timezone Handling:**
+
 - All datetime conversions preserve local time without timezone shifts
 - Text input parsing avoids `new Date()` constructor to prevent UTC interpretation
 - ISO conversion formats directly without timezone conversion
@@ -279,6 +285,7 @@ const globalTimeControlsState = {
 #### 4.3 CSS Styling (`src/panel/webview/styles.css`)
 
 Added comprehensive styling for time controls section, including:
+
 - `.time-controls-section`: Container styling
 - `.time-controls-row`: Flex layout for controls
 - `.datetime-variable-select`, `.datetime-input`, `.datetime-text-input`: Input styling
@@ -287,66 +294,82 @@ Added comprehensive styling for time controls section, including:
 ## Edge Cases Handled
 
 ### 1. Invalid Datetime Strings
+
 - **Handling**: `pd.Timestamp()` raises exception, caught in try/except block
 - **Result**: Returns `CreatePlotError` with descriptive message
 
 ### 2. Empty Datetime Arrays
+
 - **Handling**: Size checks in `check_monotonicity()` and min/max computation
 - **Result**: Returns "increasing" for empty/single-value arrays, None for min/max
 
 ### 3. Timezone Issues
+
 - **Handling**: All UI conversions preserve local time, avoid `new Date()` timezone interpretation
 - **Result**: No unexpected timezone shifts
 
 ### 4. Shape Mismatches
+
 - **Handling**: Verified before plotting 1D time series (line 1177)
 - **Result**: Falls back to default plotting with warning
 
 ### 5. Multiple Common Dimensions
+
 - **Handling**: Uses `next(iter(common_dims))` to select first common dimension
 - **Result**: Works correctly for typical time dimension scenarios
 
 ### 6. Start > End for Monotonic Decreasing
+
 - **Handling**: After swapping, if user's start > end (from their perspective), slice returns empty
 - **Result**: Correctly returns empty plot (expected behavior)
 
 ### 7. Empty Result After Filtering
+
 - **Handling**: xarray/matplotlib handle empty arrays gracefully
 - **Result**: Empty plot displayed (no crash)
 
 ### 8. Datetime Variable with NaN Values
+
 - **Handling**: pandas Index methods handle NaN values appropriately
 - **Result**: Monotonicity check works correctly
 
 ### 9. CF-Convention Time Variables
+
 - **Handling**: Detected by `is_datetime_variable()`, rely on xarray's `decode_cf=True`
 - **Result**: Properly detected and handled
 
 ### 10. Variable Names with Dots
+
 - **Handling**: Uses `PurePosixPath.name` instead of `.stem` to preserve dots
 - **Result**: Variable names like "temperature.hourly" are preserved correctly
 
 ### 11. Cross-Group Datetime Variables
+
 - **Handling**: Resolves group path, retrieves datetime variable from correct group
 - **Result**: Works for datetime variables in different groups than plotted variable
 
 ### 12. Non-Monotonic Datetime
+
 - **Handling**: Detected by `check_monotonicity()`, falls back to boolean indexing
 - **Result**: Correctly filters non-monotonic time data
 
 ### 13. Monotonic Decreasing Datetime
+
 - **Handling**: Detected, swaps start/end times for slice
 - **Result**: Correctly filters decreasing time sequences
 
 ### 14. No Common Dimensions
+
 - **Handling**: Checks for common dimensions, logs warning, sets `datetime_var = None`
 - **Result**: Plot proceeds without datetime (no crash)
 
 ### 15. Datetime Variable Not Found
+
 - **Handling**: Checks existence in coords and data_vars, returns error if not found
 - **Result**: Returns `CreatePlotError` with descriptive message
 
 ### 16. No Datetime Variables in File
+
 - **Handling**: Time controls section is hidden
 - **Result**: Clean UI, no confusion
 
