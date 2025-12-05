@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {

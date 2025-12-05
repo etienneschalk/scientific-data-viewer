@@ -47,7 +47,7 @@ npm install
 
 # Install Python dependencies
 echo "🐍 Installing Python dependencies..."
-pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray
+pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray pandas pytest
 
 # Create sample data
 echo "📊 Creating sample data files..."
@@ -60,7 +60,19 @@ npm run compile
 
 # Run tests
 echo "🧪 Running tests..."
+echo "   Running TypeScript tests..."
 npm test
+
+echo "   Running Python datetime edge case tests..."
+set +e  # Temporarily disable exit on error for test execution
+python3 -m pytest python/test_datetime_edge_cases.py -v
+PYTEST_EXIT_CODE=$?
+set -e  # Re-enable exit on error
+if [ $PYTEST_EXIT_CODE -eq 0 ]; then
+    echo "✅ Python datetime edge case tests passed"
+else
+    echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
+fi
 
 echo ""
 echo "🎉 Setup complete!"

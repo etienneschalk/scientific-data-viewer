@@ -43,7 +43,7 @@ from importlib.util import find_spec
 from io import BytesIO
 from logging import Logger
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable, Dict, List, Literal, Type, Union, cast
+from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union, cast
 
 import numpy as np
 import xarray as xr
@@ -845,9 +845,9 @@ def create_plot(
     plot_type: str = "auto",
     style: str = "auto",
     convert_bands_to_variables: bool = False,
-    datetime_variable_name: str | None = None,
-    start_datetime: str | None = None,
-    end_datetime: str | None = None,
+    datetime_variable_name: Optional[str] = None,
+    start_datetime: Optional[str] = None,
+    end_datetime: Optional[str] = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -1040,12 +1040,61 @@ def create_plot(
                     # But first check if the coordinate exists in var's dataset
                     # (it might be from a different group)
                     if datetime_var_name in group.coords:
-                        # Coordinate exists in var's dataset - can use .sel() directly
-                        # slice() accepts None for start/end, so a single call handles all cases
-                        var = var.sel({datetime_var_name: slice(start_ts, end_ts)})
-                        datetime_var = datetime_var.sel(
-                            {datetime_var_name: slice(start_ts, end_ts)}
-                        )
+                        # Check monotonicity before using .sel() with slice
+                        monotonicity = check_monotonicity(datetime_var)
+                        if monotonicity == "non_monotonic":
+                            # Fall back to boolean indexing for non-monotonic data
+                            logger.info(
+                                f"Datetime variable '{datetime_var_name}' is not monotonic. "
+                                f"Using boolean indexing instead of .sel() with slice."
+                            )
+                            # Find common dimension
+                            common_dims = set(var.dims) & set(datetime_var.dims)
+                            if common_dims:
+                                dim_name = next(iter(common_dims))
+                                # Create boolean mask for time range filtering
+                                if start_ts and end_ts:
+                                    mask = (datetime_var >= start_ts) & (
+                                        datetime_var <= end_ts
+                                    )
+                                elif start_ts:
+                                    mask = datetime_var >= start_ts
+                                elif end_ts:
+                                    mask = datetime_var <= end_ts
+                                else:
+                                    mask = None
+
+                                if mask is not None:
+                                    var = var.isel({dim_name: mask})
+                                    datetime_var = datetime_var.isel({dim_name: mask})
+                            else:
+                                logger.warning(
+                                    f"Datetime variable '{datetime_var_name}' does not share any dimensions "
+                                    f"with variable '{variable_name}'. Cannot use for plotting."
+                                )
+                                datetime_var = None
+                        else:
+                            # Coordinate exists in var's dataset - can use .sel() directly
+                            # For monotonic decreasing, swap start and end times
+                            if monotonicity == "decreasing":
+                                logger.info(
+                                    f"Datetime variable '{datetime_var_name}' is monotonic decreasing. "
+                                    f"Swapping start and end times for slice."
+                                )
+                                slice_start = end_ts
+                                slice_end = start_ts
+                            else:
+                                # monotonicity == "increasing"
+                                slice_start = start_ts
+                                slice_end = end_ts
+
+                            # slice() accepts None for start/end, so a single call handles all cases
+                            var = var.sel(
+                                {datetime_var_name: slice(slice_start, slice_end)}
+                            )
+                            datetime_var = datetime_var.sel(
+                                {datetime_var_name: slice(slice_start, slice_end)}
+                            )
                     else:
                         # Coordinate is from a different group - need to use positional indexing
                         # Find common dimension between var and datetime_var
@@ -1182,7 +1231,7 @@ def create_plot(
                         f"End Time: {end_datetime} ({datetime_var_name})"
                     )
 
-            plt.suptitle("\n".join(suptitle_lines), y=1.10)
+            plt.suptitle("\n".join(suptitle_lines), y=1.20)
             # Convert to base64 string
             buffer = BytesIO()
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
@@ -1538,6 +1587,42 @@ def is_datetime_variable(var: xr.DataArray) -> bool:
             return True
 
     return False
+
+
+def check_monotonicity(
+    var: xr.DataArray,
+) -> Literal["increasing", "decreasing", "non_monotonic"]:
+    """Check if a variable is monotonic increasing, decreasing, or non-monotonic.
+
+    Uses pandas Index methods for efficient monotonicity checking.
+
+    Parameters
+    ----------
+    var : xr.DataArray
+        Variable to check (typically a datetime coordinate)
+
+    Returns
+    -------
+    str
+        'increasing' if monotonic increasing, 'decreasing' if monotonic decreasing,
+        'non_monotonic' if not monotonic
+    """
+    if var.size < 2:
+        # Single value or empty - consider as increasing for simplicity
+        return "increasing"
+
+    # Convert to pandas Index to use built-in monotonicity checks
+    import pandas as pd
+
+    index = pd.Index(var.values)
+
+    # Check monotonicity using pandas Index properties
+    if index.is_monotonic_increasing:
+        return "increasing"
+    elif index.is_monotonic_decreasing:
+        return "decreasing"
+    else:
+        return "non_monotonic"
 
 
 def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
