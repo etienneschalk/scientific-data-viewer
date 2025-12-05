@@ -53,7 +53,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 ### Technical Improvements
 
 - **Monotonicity Detection**: Uses pandas Index methods (`is_monotonic_increasing`, `is_monotonic_decreasing`) for efficient checking
-- **Filtering Strategy**: 
+- **Filtering Strategy**:
   - Monotonic increasing: Uses `xarray.sel()` with slice notation
   - Monotonic decreasing: Automatically swaps start/end times
   - Non-monotonic: Falls back to boolean indexing

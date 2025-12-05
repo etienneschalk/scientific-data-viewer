@@ -160,20 +160,26 @@ class WebviewMessageBus {
         return this.sendRequest('getDataInfo', { filePath });
     }
 
-    async createPlot(variable, plotType, datetimeVariableName, startDatetime, endDatetime) {
+    async createPlot(
+        variable,
+        plotType,
+        datetimeVariableName,
+        startDatetime,
+        endDatetime,
+    ) {
         const payload = {
             variable,
             plotType,
         };
 
         // Only include optional fields if they have values (not null/undefined/empty)
-        if (datetimeVariableName != null && datetimeVariableName !== '') {
+        if (datetimeVariableName !== null && datetimeVariableName !== '') {
             payload.datetimeVariableName = datetimeVariableName;
         }
-        if (startDatetime != null && startDatetime !== '') {
+        if (startDatetime !== null && startDatetime !== '') {
             payload.startDatetime = startDatetime;
         }
-        if (endDatetime != null && endDatetime !== '') {
+        if (endDatetime !== null && endDatetime !== '') {
             payload.endDatetime = endDatetime;
         }
 
@@ -1283,11 +1289,19 @@ const globalTimeControlsState = {
 
 // Populate datetime variable select
 function populateDatetimeVariables(data) {
-    const timeControlsSection = document.querySelector('.time-controls-section');
-    if (!timeControlsSection) return;
+    const timeControlsSection = document.querySelector(
+        '.time-controls-section',
+    );
+    if (!timeControlsSection) {
+        return;
+    }
 
     // data is already the result object (not wrapped in data.result)
-    if (!data || !data.datetime_variables || Object.keys(data.datetime_variables).length === 0) {
+    if (
+        !data ||
+        !data.datetime_variables ||
+        Object.keys(data.datetime_variables).length === 0
+    ) {
         console.log('No datetime variables found in data:', data);
         // Hide the time controls section if no datetime variables are available
         timeControlsSection.style.display = 'none';
@@ -1298,7 +1312,9 @@ function populateDatetimeVariables(data) {
     timeControlsSection.style.display = 'block';
 
     const select = document.getElementById('datetimeVariableSelect');
-    if (!select) return;
+    if (!select) {
+        return;
+    }
 
     // Clear existing options
     select.innerHTML = '<option value="">Select datetime variable...</option>';
@@ -1311,7 +1327,8 @@ function populateDatetimeVariables(data) {
 
     for (const [groupName, vars] of Object.entries(data.datetime_variables)) {
         for (const varInfo of vars) {
-            const varName = typeof varInfo === 'string' ? varInfo : varInfo.name;
+            const varName =
+                typeof varInfo === 'string' ? varInfo : varInfo.name;
             const minVal = typeof varInfo === 'object' ? varInfo.min : null;
             const maxVal = typeof varInfo === 'object' ? varInfo.max : null;
             const fullPath =
@@ -1344,18 +1361,24 @@ function populateDatetimeVariables(data) {
 
 // Convert datetime-local format to text format (YYYY-MM-DD HH:MM:SS)
 function convertDatetimeLocalToText(datetimeLocal) {
-    if (!datetimeLocal) return '';
+    if (!datetimeLocal) {
+        return '';
+    }
     // datetime-local format: "YYYY-MM-DDTHH:mm"
     // Convert to: "YYYY-MM-DD HH:MM:SS"
     const [date, time] = datetimeLocal.split('T');
-    if (!time) return datetimeLocal;
+    if (!time) {
+        return datetimeLocal;
+    }
     const [hours, minutes] = time.split(':');
     return `${date} ${hours}:${minutes || '00'}:00`;
 }
 
 // Convert text format (YYYY-MM-DD HH:MM:SS or variations) to datetime-local format
 function convertTextToDatetimeLocal(textValue) {
-    if (!textValue) return '';
+    if (!textValue) {
+        return '';
+    }
 
     // Try to parse various formats
     // Formats: "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM", "YYYY-MM-DD", etc.
@@ -1407,23 +1430,38 @@ function setupTimeControlsEventListeners() {
             globalTimeControlsState.datetimeVariableName = selectedPath;
 
             // Prefill start/end time inputs with min/max if available
-            if (selectedPath && globalTimeControlsState.datetimeVarsMap.has(selectedPath)) {
-                const varData = globalTimeControlsState.datetimeVarsMap.get(selectedPath);
-                const startInput = document.getElementById('startDatetimeInput');
-                const startTextInput = document.getElementById('startDatetimeTextInput');
+            if (
+                selectedPath &&
+                globalTimeControlsState.datetimeVarsMap.has(selectedPath)
+            ) {
+                const varData =
+                    globalTimeControlsState.datetimeVarsMap.get(selectedPath);
+                const startInput =
+                    document.getElementById('startDatetimeInput');
+                const startTextInput = document.getElementById(
+                    'startDatetimeTextInput',
+                );
                 const endInput = document.getElementById('endDatetimeInput');
-                const endTextInput = document.getElementById('endDatetimeTextInput');
+                const endTextInput = document.getElementById(
+                    'endDatetimeTextInput',
+                );
 
                 // Convert ISO format to datetime-local format
                 function isoToDatetimeLocal(isoString) {
-                    if (!isoString) return '';
+                    if (!isoString) {
+                        return '';
+                    }
                     // ISO format: "2025-01-01T12:30:00" or "2025-01-01T12:30:00.000000"
                     // datetime-local format: "2025-01-01T12:30"
                     const dateTime = isoString.split('T');
-                    if (dateTime.length !== 2) return '';
+                    if (dateTime.length !== 2) {
+                        return '';
+                    }
                     const date = dateTime[0];
                     const time = dateTime[1].split(':');
-                    if (time.length < 2) return '';
+                    if (time.length < 2) {
+                        return '';
+                    }
                     return `${date}T${time[0]}:${time[1]}`;
                 }
 
@@ -1434,12 +1472,16 @@ function setupTimeControlsEventListeners() {
                         if (startInput) {
                             startInput.value = minDatetimeLocal;
                             // Update state explicitly
-                            globalTimeControlsState.startDatetime = minDatetimeLocal;
+                            globalTimeControlsState.startDatetime =
+                                minDatetimeLocal;
                             // Trigger change event to ensure all listeners are notified
-                            startInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            startInput.dispatchEvent(
+                                new Event('change', { bubbles: true }),
+                            );
                         }
                         if (startTextInput) {
-                            startTextInput.value = convertDatetimeLocalToText(minDatetimeLocal);
+                            startTextInput.value =
+                                convertDatetimeLocalToText(minDatetimeLocal);
                         }
                     }
                 } else {
@@ -1460,12 +1502,16 @@ function setupTimeControlsEventListeners() {
                         if (endInput) {
                             endInput.value = maxDatetimeLocal;
                             // Update state explicitly
-                            globalTimeControlsState.endDatetime = maxDatetimeLocal;
+                            globalTimeControlsState.endDatetime =
+                                maxDatetimeLocal;
                             // Trigger change event to ensure all listeners are notified
-                            endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            endInput.dispatchEvent(
+                                new Event('change', { bubbles: true }),
+                            );
                         }
                         if (endTextInput) {
-                            endTextInput.value = convertDatetimeLocalToText(maxDatetimeLocal);
+                            endTextInput.value =
+                                convertDatetimeLocalToText(maxDatetimeLocal);
                         }
                     }
                 } else {
@@ -1503,7 +1549,9 @@ function setupTimeControlsEventListeners() {
                 globalTimeControlsState.startDatetime = datetimeLocalValue;
             } else if (!textValue) {
                 // Clear both if text is cleared
-                if (startInput) startInput.value = '';
+                if (startInput) {
+                    startInput.value = '';
+                }
                 globalTimeControlsState.startDatetime = null;
             }
         });
@@ -1530,7 +1578,9 @@ function setupTimeControlsEventListeners() {
                 globalTimeControlsState.endDatetime = datetimeLocalValue;
             } else if (!textValue) {
                 // Clear both if text is cleared
-                if (endInput) endInput.value = '';
+                if (endInput) {
+                    endInput.value = '';
+                }
                 globalTimeControlsState.endDatetime = null;
             }
         });
@@ -1541,11 +1591,21 @@ function setupTimeControlsEventListeners() {
             globalTimeControlsState.datetimeVariableName = null;
             globalTimeControlsState.startDatetime = null;
             globalTimeControlsState.endDatetime = null;
-            if (datetimeSelect) {datetimeSelect.value = '';}
-            if (startInput) {startInput.value = '';}
-            if (startTextInput) {startTextInput.value = '';}
-            if (endInput) {endInput.value = '';}
-            if (endTextInput) {endTextInput.value = '';}
+            if (datetimeSelect) {
+                datetimeSelect.value = '';
+            }
+            if (startInput) {
+                startInput.value = '';
+            }
+            if (startTextInput) {
+                startTextInput.value = '';
+            }
+            if (endInput) {
+                endInput.value = '';
+            }
+            if (endTextInput) {
+                endTextInput.value = '';
+            }
         });
     }
 }
@@ -1555,7 +1615,9 @@ function convertDatetimeLocalToISO(datetimeLocal) {
     // datetime-local format: "YYYY-MM-DDTHH:mm"
     // Need to convert to ISO format for Python (YYYY-MM-DDTHH:mm:ss)
     // IMPORTANT: Preserve local time without timezone conversion to avoid shifting dates
-    if (!datetimeLocal) {return null;}
+    if (!datetimeLocal) {
+        return null;
+    }
 
     // datetime-local already has the format "YYYY-MM-DDTHH:mm"
     // Just add seconds if not present to make it "YYYY-MM-DDTHH:mm:ss"
@@ -1818,7 +1880,9 @@ async function handleCreateAllPlots() {
         }
     }
     if (!datetimeVariableName) {
-        const datetimeSelect = document.getElementById('datetimeVariableSelect');
+        const datetimeSelect = document.getElementById(
+            'datetimeVariableSelect',
+        );
         if (datetimeSelect && datetimeSelect.value) {
             datetimeVariableName = datetimeSelect.value;
             globalTimeControlsState.datetimeVariableName = datetimeVariableName;
@@ -2018,7 +2082,9 @@ async function handleCreateVariablePlot(variable) {
         }
     }
     if (!datetimeVariableName) {
-        const datetimeSelect = document.getElementById('datetimeVariableSelect');
+        const datetimeSelect = document.getElementById(
+            'datetimeVariableSelect',
+        );
         if (datetimeSelect && datetimeSelect.value) {
             datetimeVariableName = datetimeSelect.value;
             globalTimeControlsState.datetimeVariableName = datetimeVariableName;

@@ -253,7 +253,10 @@ suite('Datetime Edge Cases Test Suite', () => {
         assert.ok(dataInfo);
         assert.ok(dataInfo?.result?.datetime_variables);
         assert.ok(dataInfo?.result?.datetime_variables['/']);
-        assert.strictEqual(dataInfo?.result?.datetime_variables['/'][0].name, 'time');
+        assert.strictEqual(
+            dataInfo?.result?.datetime_variables['/'][0].name,
+            'time',
+        );
         assert.ok(dataInfo?.result?.datetime_variables['/'][0].min);
         assert.ok(dataInfo?.result?.datetime_variables['/'][0].max);
     });
@@ -365,4 +368,3 @@ suite('Datetime Edge Cases Test Suite', () => {
         assert.ok(plotData.error?.error.includes('not found'));
     });
 });
-

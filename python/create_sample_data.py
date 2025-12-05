@@ -4886,16 +4886,16 @@ def create_temporal_cdf_unordered_time():
         )
         for i in range(20)
     ]
-    
+
     # Create corresponding ordered indices for data
     ordered_indices = np.arange(20)
-    
+
     # Shuffle the time points to create unordered sequence
     # But keep track of the original order for data alignment
     np.random.seed(999)  # Fixed seed for reproducibility
     shuffled_indices = np.random.permutation(20)
     unordered_dates = [ordered_dates[i] for i in shuffled_indices]
-    
+
     # Create sample data variables that correspond to the original ordered time
     # When we shuffle time, we need to shuffle data in the same way
     np.random.seed(42)
@@ -4910,7 +4910,7 @@ def create_temporal_cdf_unordered_time():
     humidity_ordered = (
         50 + 20 * np.sin(2 * np.pi * np.arange(20) / 20) + np.random.normal(0, 5, 20)
     )
-    
+
     # Shuffle data in the same way as time
     temperature = temperature_ordered[shuffled_indices]
     pressure = pressure_ordered[shuffled_indices]
@@ -4983,7 +4983,7 @@ def create_temporal_cdf_unordered_time():
     base_epoch = datetime(2000, 1, 1)
     min_time = base_epoch + timedelta(seconds=min(ordered_dates) / 1e9)
     max_time = base_epoch + timedelta(seconds=max(ordered_dates) / 1e9)
-    
+
     print(f"✅ Created {output_file}")
     print(f"   Time points: {len(unordered_dates)} (unordered)")
     print(f"   Time range: {min_time} to {max_time}")

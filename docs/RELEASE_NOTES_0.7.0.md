@@ -21,7 +21,7 @@ Version 0.7.0 introduces comprehensive support for datetime variable selection a
 ### 🎨 Enhanced User Interface
 
 - **Time Controls Section**: New dedicated UI section for datetime variable selection and time filtering
-- **Dual Input Methods**: 
+- **Dual Input Methods**:
   - Native HTML5 `datetime-local` picker for easy date/time selection
   - Text input for pasting dates in various formats (YYYY-MM-DD HH:MM:SS)
 - **Bidirectional Binding**: Text and datetime-local inputs stay synchronized
@@ -62,6 +62,7 @@ Version 0.7.0 introduces comprehensive support for datetime variable selection a
 ## 📊 Supported Formats
 
 All datetime features work with:
+
 - **NetCDF**: .nc, .netcdf, .nc4
 - **CDF (NASA)**: .cdf
 - **Zarr**: .zarr
@@ -76,7 +77,7 @@ All datetime features work with:
 
 1. **Open a Data File**: Right-click on any supported file and select "Open in Data Viewer"
 2. **Select Datetime Variable**: In the "Time Controls" section, choose a datetime variable from the dropdown
-3. **Set Time Range**: 
+3. **Set Time Range**:
    - Use the datetime picker for easy selection
    - Or paste dates directly into the text input (e.g., "2020-01-01 12:30:00")
 4. **Create Plot**: Click "Plot" on any variable - the plot will automatically use the selected datetime for the x-axis and apply the time filter
@@ -158,4 +159,3 @@ This release implements [Issue #106](https://github.com/etienneschalk/scientific
 **Documentation**: [GitHub Repository](https://github.com/etienneschalk/scientific-data-viewer)
 
 **Report Issues**: [GitHub Issues](https://github.com/etienneschalk/scientific-data-viewer/issues)
-
