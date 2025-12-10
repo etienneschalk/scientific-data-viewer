@@ -18,6 +18,7 @@ interface ActiveProcess {
     process: ChildProcess;
     operationId: string;
     startTime: number;
+    timeoutHandle?: NodeJS.Timeout; // Server-side timeout handle
 }
 
 /**
@@ -126,6 +127,9 @@ export class PythonManager {
      * @param args          The arguments to pass to the Python file
      * @param enableLogs    Whether to enable logs
      * @param operationId   Optional ID to track this operation for abort support
+     * @param timeoutMs     Optional server-side timeout in milliseconds (default: no timeout)
+     *                      This timeout is independent of the webview and will kill the process
+     *                      even if the webview is closed.
      * @returns             The result of the Python file
      */
     async executePythonFile(
@@ -133,6 +137,7 @@ export class PythonManager {
         args: string[] = [],
         enableLogs: boolean = false,
         operationId?: string,
+        timeoutMs?: number,
     ): Promise<any> {
         if (!this._initialized) {
             throw new Error(
@@ -152,6 +157,7 @@ export class PythonManager {
             args,
             enableLogs,
             operationId,
+            timeoutMs,
         );
     }
 
@@ -161,6 +167,7 @@ export class PythonManager {
         args: string[],
         enableLogs: boolean,
         operationId?: string,
+        timeoutMs?: number,
     ) {
         const quotedPythonPath = quoteIfNeeded(pythonPath);
         Logger.log(
@@ -190,12 +197,31 @@ export class PythonManager {
             });
 
             // Track this process if an operation ID was provided
+            let serverTimeoutHandle: NodeJS.Timeout | undefined;
             if (operationId) {
-                this._activeProcesses.set(operationId, {
+                const activeProcess: ActiveProcess = {
                     process: childProcess,
                     operationId,
                     startTime: Date.now(),
-                });
+                };
+
+                // Set up server-side timeout if specified
+                // This timeout is independent of the webview and will kill the process
+                // even if the user closes the tab
+                if (timeoutMs && timeoutMs > 0) {
+                    serverTimeoutHandle = setTimeout(() => {
+                        Logger.warn(
+                            `🐍 ⏰ Server-side timeout (${timeoutMs}ms) reached for operation: ${operationId}`,
+                        );
+                        this.abortProcess(operationId);
+                    }, timeoutMs);
+                    activeProcess.timeoutHandle = serverTimeoutHandle;
+                    Logger.debug(
+                        `🐍 📜 Server-side timeout set: ${timeoutMs}ms for operation: ${operationId}`,
+                    );
+                }
+
+                this._activeProcesses.set(operationId, activeProcess);
                 Logger.debug(
                     `🐍 📜 Tracking process for operation: ${operationId} (PID: ${childProcess.pid})`,
                 );
@@ -254,8 +280,17 @@ export class PythonManager {
             });
 
             childProcess.on('close', (code, signal) => {
+                // Clear server-side timeout if it exists
+                if (serverTimeoutHandle) {
+                    clearTimeout(serverTimeoutHandle);
+                }
+
                 // Remove from active processes tracking
                 if (operationId) {
+                    const activeProcess = this._activeProcesses.get(operationId);
+                    if (activeProcess?.timeoutHandle) {
+                        clearTimeout(activeProcess.timeoutHandle);
+                    }
                     this._activeProcesses.delete(operationId);
                     Logger.debug(
                         `🐍 📜 Process completed for operation: ${operationId} (code: ${code}, signal: ${signal})`,
@@ -310,8 +345,17 @@ export class PythonManager {
             });
 
             childProcess.on('error', (error) => {
+                // Clear server-side timeout if it exists
+                if (serverTimeoutHandle) {
+                    clearTimeout(serverTimeoutHandle);
+                }
+
                 // Remove from active processes tracking
                 if (operationId) {
+                    const activeProcess = this._activeProcesses.get(operationId);
+                    if (activeProcess?.timeoutHandle) {
+                        clearTimeout(activeProcess.timeoutHandle);
+                    }
                     this._activeProcesses.delete(operationId);
                 }
 
@@ -344,6 +388,11 @@ export class PythonManager {
                 `🐍 ⚠️ No active process found for operation: ${operationId}`,
             );
             return false;
+        }
+
+        // Clear the server-side timeout if it exists
+        if (activeProcess.timeoutHandle) {
+            clearTimeout(activeProcess.timeoutHandle);
         }
 
         const { process: childProcess } = activeProcess;
@@ -415,6 +464,34 @@ export class PythonManager {
      */
     public isOperationActive(operationId: string): boolean {
         return this._activeProcesses.has(operationId);
+    }
+
+    /**
+     * Abort all active processes.
+     * This is useful for cleanup when the extension is deactivated or when
+     * a panel is disposed while operations are still running.
+     * @returns The number of processes that were aborted
+     */
+    public abortAllProcesses(): number {
+        const operationIds = Array.from(this._activeProcesses.keys());
+        if (operationIds.length === 0) {
+            Logger.info('🐍 🧹 No active processes to abort');
+            return 0;
+        }
+
+        Logger.info(
+            `🐍 🧹 Aborting all ${operationIds.length} active processes`,
+        );
+
+        let abortedCount = 0;
+        for (const operationId of operationIds) {
+            if (this.abortProcess(operationId)) {
+                abortedCount++;
+            }
+        }
+
+        Logger.info(`🐍 🧹 Aborted ${abortedCount} processes`);
+        return abortedCount;
     }
 
     /**

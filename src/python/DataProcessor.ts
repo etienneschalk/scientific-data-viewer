@@ -67,6 +67,11 @@ export class DataProcessor {
         }
     }
 
+    // Default server-side timeout for plot operations: 2 minutes
+    // This timeout is independent of the webview and will kill the process
+    // even if the user closes the tab before the webview timeout fires.
+    private static readonly DEFAULT_PLOT_TIMEOUT_MS = 10000;
+
     async createPlot(
         uri: vscode.Uri,
         variable: string,
@@ -76,6 +81,7 @@ export class DataProcessor {
         startDatetime?: string,
         endDatetime?: string,
         operationId?: string,
+        timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -125,17 +131,19 @@ export class DataProcessor {
             );
             if (operationId) {
                 Logger.info(
-                    `[DataProcessor] [createPlot] Operation ID: ${operationId}`,
+                    `[DataProcessor] [createPlot] Operation ID: ${operationId}, Server timeout: ${timeoutMs}ms`,
                 );
             }
 
             // Execute Python script and capture both stdout and stderr
             // Pass the operation ID for tracking and potential abort
+            // Pass the server-side timeout that will kill the process even if webview is closed
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true,
                 operationId,
+                timeoutMs,
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
