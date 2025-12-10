@@ -6,7 +6,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [0.8.0] - UNRELEASEDgit s
+## [0.8.0] - UNRELEASED
 
 ### Fixed
 
@@ -16,6 +16,26 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **HTML Unaffected**: HTML representations retain collapsed attributes since users can interactively expand them
   - **Files Modified**:
     - python/get_data_info.py - Fixed xarray display options for text representations
+
+- **Issue #97**: Fixed resource-intensive plotting processes that timeout but are not killed
+  - **Problem**: When plotting large datasets, the request would timeout in the webview but the Python process continued running indefinitely, consuming system resources
+  - **Solution**: Implemented two-layer timeout architecture with proper process termination
+  - **Features Added**:
+    - **Process Tracking**: PythonManager now tracks active processes with unique operation IDs
+    - **Process Group Killing**: Uses `detached: true` and negative PID to kill entire process groups, ensuring both shell and Python child processes are terminated
+    - **Client-side Timeout (15s)**: Webview timeout provides quick user feedback and sends abort request
+    - **Server-side Timeout (20s)**: Safety net that kills processes even if the user closes the tab before client timeout fires
+    - **Cancel All Button**: New button appears during Plot All operations, showing count of active operations
+    - **Concurrency Limiting**: Plot All now processes max 5 plots simultaneously, leaving resources for cancel operations
+    - **Cancellation Flag**: Queued plots are skipped when Cancel All is clicked
+  - **Files Modified**:
+    - src/python/PythonManager.ts - Process tracking, server-side timeout, abortProcess(), abortAllProcesses()
+    - src/python/DataProcessor.ts - Added timeout parameter to createPlot()
+    - src/panel/UIController.ts - Added abortPlot message handler
+    - src/panel/webview/webview-script.js - Client-side timeout, Cancel All button, concurrency limiting
+    - src/panel/HTMLGenerator.ts - Cancel All button HTML
+    - src/panel/webview/styles.css - Cancel button styling
+    - python/create_sample_data.py - Added large 4D NetCDF test file generator
 
 ## [0.7.0] - 2025-12-04
 
