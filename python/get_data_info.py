@@ -146,7 +146,13 @@ MATPLOTLIB_RC_CONTEXT = {
 }
 
 XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
-XR_TEXT_OPTIONS: Dict[str, Any] = {**XR_OPTIONS, "display_max_rows": 1000}
+# For text representation, expand attrs since users can't click to expand them
+XR_TEXT_OPTIONS: Dict[str, Any] = {
+    "display_expand_attrs": True,
+    "display_expand_data": True,
+    "display_max_rows": 1000,
+}
+# For HTML representation, keep attrs collapsed (users can click to expand)
 XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
 
 SupportedExtensionType = Literal[
