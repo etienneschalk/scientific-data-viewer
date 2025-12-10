@@ -70,7 +70,7 @@ export class DataProcessor {
     // Default server-side timeout for plot operations: 2 minutes
     // This timeout is independent of the webview and will kill the process
     // even if the user closes the tab before the webview timeout fires.
-    private static readonly DEFAULT_PLOT_TIMEOUT_MS = 10000;
+    private static readonly DEFAULT_PLOT_TIMEOUT_MS = 20000;
 
     async createPlot(
         uri: vscode.Uri,
