@@ -75,6 +75,7 @@ export class DataProcessor {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        operationId?: string,
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -122,12 +123,19 @@ export class DataProcessor {
             Logger.info(
                 `[DataProcessor] [createPlot] Time controls: datetimeVariableName='${datetimeVariableName}', startDatetime='${startDatetime}', endDatetime='${endDatetime}'`,
             );
+            if (operationId) {
+                Logger.info(
+                    `[DataProcessor] [createPlot] Operation ID: ${operationId}`,
+                );
+            }
 
             // Execute Python script and capture both stdout and stderr
+            // Pass the operation ID for tracking and potential abort
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true,
+                operationId,
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
@@ -138,5 +146,26 @@ export class DataProcessor {
             );
             throw error;
         }
+    }
+
+    /**
+     * Abort an active plot operation
+     * @param operationId The ID of the plot operation to abort
+     * @returns true if the operation was aborted, false otherwise
+     */
+    abortPlot(operationId: string): boolean {
+        Logger.info(
+            `[DataProcessor] [abortPlot] Aborting plot operation: ${operationId}`,
+        );
+        return this.pythonManager.abortProcess(operationId);
+    }
+
+    /**
+     * Check if a plot operation is currently active
+     * @param operationId The ID of the plot operation to check
+     * @returns true if the operation is active, false otherwise
+     */
+    isPlotOperationActive(operationId: string): boolean {
+        return this.pythonManager.isOperationActive(operationId);
     }
 }

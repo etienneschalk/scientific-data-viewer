@@ -160,16 +160,25 @@ class WebviewMessageBus {
         return this.sendRequest('getDataInfo', { filePath });
     }
 
+    /**
+     * Create a plot for a variable with timeout and abort support.
+     * If the request times out, the backend Python process will be automatically killed.
+     */
     async createPlot(
         variable,
         plotType,
         datetimeVariableName,
         startDatetime,
         endDatetime,
+        timeout = 30000,
     ) {
+        // Generate a unique operation ID for this plot request
+        const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
         const payload = {
             variable,
             plotType,
+            operationId,
         };
 
         // Only include optional fields if they have values (not null/undefined/empty)
@@ -184,7 +193,71 @@ class WebviewMessageBus {
         }
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
-        return this.sendRequest('createPlot', payload);
+
+        // Create a custom promise that handles timeout with abort
+        return new Promise(async (resolve, reject) => {
+            let timeoutId = null;
+            let isResolved = false;
+
+            // Set up timeout that will abort the backend process
+            timeoutId = setTimeout(async () => {
+                if (isResolved) return;
+                isResolved = true;
+
+                console.warn(`⏰ Plot request timed out after ${timeout}ms, aborting process: ${operationId}`);
+
+                // Send abort request to kill the backend process
+                try {
+                    const abortResult = await this.abortPlot(operationId);
+                    console.log('🛑 Abort result:', abortResult);
+                } catch (abortError) {
+                    console.error('❌ Failed to abort plot process:', abortError);
+                }
+
+                reject(new Error(`Plot request timeout: The plot generation took too long (>${timeout / 1000}s). The backend process has been terminated. Try selecting a smaller data subset or a simpler plot type.`));
+            }, timeout);
+
+            try {
+                // Send the actual request (without the default timeout)
+                const request = this.createRequest('createPlot', payload);
+
+                const result = await new Promise((innerResolve, innerReject) => {
+                    // Store the request
+                    this.pendingRequests.set(request.id, {
+                        resolve: (value) => {
+                            innerResolve(value);
+                        },
+                        reject: (error) => {
+                            innerReject(error);
+                        },
+                    });
+
+                    // Send the request
+                    this.vscode.postMessage(request);
+                });
+
+                if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(timeoutId);
+                    resolve(result);
+                }
+            } catch (error) {
+                if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(timeoutId);
+                    reject(error);
+                }
+            }
+        });
+    }
+
+    /**
+     * Abort an active plot operation
+     * @param operationId The ID of the plot operation to abort
+     * @returns Result of the abort operation
+     */
+    async abortPlot(operationId) {
+        return this.sendRequest('abortPlot', { operationId }, 5000); // Short timeout for abort
     }
 
     async savePlot(plotData, variable, fileName) {
@@ -262,13 +335,6 @@ try {
 // Global state for file path
 const globalState = {
     currentDatasetFilePath: null,
-};
-
-// Global state for plot all operation
-const globalStateCreateAllPlotsOperation = {
-    isRunning: false,
-    completedCount: 0,
-    totalCount: 0,
 };
 
 // Initialization
@@ -1238,44 +1304,17 @@ function hideVariablePlotError(variable) {
 
 function updatePlotAllUI(isRunning) {
     const button = document.getElementById('createAllPlotsButton');
-    const progress = document.getElementById('createAllPlotsProgress');
 
     if (isRunning) {
-        // Show progress
         if (button) {
             button.disabled = true;
             button.textContent = 'Plotting...';
         }
-        if (progress) {
-            progress.classList.remove('hidden');
-            progress.textContent = 'Starting...';
-        }
     } else {
-        // Reset to normal state
         if (button) {
             button.disabled = false;
             button.textContent = '⚠️ Plot All';
         }
-        if (progress) {
-            progress.classList.add('hidden');
-            progress.textContent = '';
-        }
-    }
-}
-
-function updatePlotAllProgress() {
-    const plotAllProgress = document.getElementById('plotAllProgress');
-    if (
-        plotAllProgress &&
-        globalStateCreateAllPlotsOperation.isRunning &&
-        globalStateCreateAllPlotsOperation.totalCount > 0
-    ) {
-        const percentage = Math.round(
-            (globalStateCreateAllPlotsOperation.completedCount /
-                globalStateCreateAllPlotsOperation.totalCount) *
-                100,
-        );
-        plotAllProgress.textContent = `Progress: ${globalStateCreateAllPlotsOperation.completedCount}/${globalStateCreateAllPlotsOperation.totalCount} (${percentage}%)`;
     }
 }
 
@@ -1838,23 +1877,12 @@ async function handleCreateAllPlots() {
 
     console.log('🔍 Plot All Variables - Debug Info:');
 
-    // Check if operation is already running
-    if (globalStateCreateAllPlotsOperation.isRunning) {
-        console.log('Plot all operation already running');
-        return;
-    }
-
     // Get all variables to plot
     const buttons = document.querySelectorAll('.create-plot-button');
     if (buttons.length === 0) {
         console.log('No variables to plot');
         return;
     }
-
-    // Initialize operation state
-    globalStateCreateAllPlotsOperation.isRunning = true;
-    globalStateCreateAllPlotsOperation.completedCount = 0;
-    globalStateCreateAllPlotsOperation.totalCount = buttons.length;
 
     // Update UI to show operation in progress
     updatePlotAllUI(true);
@@ -1917,8 +1945,6 @@ async function handleCreateAllPlots() {
                 endDatetimeISO,
             );
             displayVariablePlot(variable, plotData);
-            globalStateCreateAllPlotsOperation.completedCount++;
-            updatePlotAllProgress();
 
             return { variable, success: true };
         } catch (error) {
@@ -1936,9 +1962,6 @@ async function handleCreateAllPlots() {
                 variable,
                 'Error creating plot: ' + error.message,
             );
-
-            globalStateCreateAllPlotsOperation.completedCount++;
-            updatePlotAllProgress();
 
             return { variable, success: false, error: error.message };
         }
@@ -1970,11 +1993,6 @@ async function handleCreateAllPlots() {
     } catch (error) {
         console.error('Error in plot all operation:', error);
     } finally {
-        // Reset operation state
-        globalStateCreateAllPlotsOperation.isRunning = false;
-        globalStateCreateAllPlotsOperation.completedCount = 0;
-        globalStateCreateAllPlotsOperation.totalCount = 0;
-
         // Update UI to show operation completed
         updatePlotAllUI(false);
     }
