@@ -263,17 +263,23 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
     Logger.info("🧩 🔧 Starting extension's deactivation procedure...");
+
+    // Abort all active Python processes to prevent orphan processes
+    // This is important for long-running operations like plot generation
+    const dataProcessor = DataProcessor.getInstance();
+    if (dataProcessor) {
+        const abortedCount =
+            dataProcessor.pythonManagerInstance.abortAllProcesses();
+        if (abortedCount > 0) {
+            Logger.info(
+                `🧩 🧹 Aborted ${abortedCount} active Python process(es) during deactivation`,
+            );
+        }
+    }
+
     // Dispose of data viewer panel static resources
     DataViewerPanel.dispose();
     ErrorBoundary.getInstance().dispose();
-    // Has event listeners that needs to be disposed
-    // Could be a singleton
-    // Needs to access instance
-    // Cannot activate return disposables?
-    // PythonManager
-
-    // Nothing to dispose.
-    // DataProcessor
 
     // Panes-related data is disposed by panes themselves.
     // OutlineProvider
