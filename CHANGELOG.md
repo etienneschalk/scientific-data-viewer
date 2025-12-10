@@ -6,6 +6,17 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.8.0] - UNRELEASEDgit s
+
+### Fixed
+
+- **Issue #108**: Fixed attributes being truncated in text representations
+  - **Root Cause**: xarray display options had `display_expand_attrs=False` and `display_expand_data=False` applied to text representations, causing attributes and data to show only counts (e.g., `Attributes: (3)`) instead of actual values
+  - **Solution**: Updated `XR_TEXT_OPTIONS` to use `display_expand_attrs=True` and `display_expand_data=True` for text representations, ensuring full attribute and data display
+  - **HTML Unaffected**: HTML representations retain collapsed attributes since users can interactively expand them
+  - **Files Modified**:
+    - python/get_data_info.py - Fixed xarray display options for text representations
+
 ## [0.7.0] - 2025-12-04
 
 ### Added
