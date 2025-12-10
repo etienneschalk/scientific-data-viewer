@@ -170,7 +170,7 @@ class WebviewMessageBus {
         datetimeVariableName,
         startDatetime,
         endDatetime,
-        timeout = 30000,
+        timeout = 5000,
     ) {
         // Generate a unique operation ID for this plot request
         const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -194,10 +194,20 @@ class WebviewMessageBus {
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
 
+        // Track this operation for cancel functionality
+        activePlotOperations.add(operationId);
+        updateCancelButtonVisibility();
+
         // Create a custom promise that handles timeout with abort
         return new Promise(async (resolve, reject) => {
             let timeoutId = null;
             let isResolved = false;
+
+            // Helper to clean up operation tracking
+            const cleanupOperation = () => {
+                activePlotOperations.delete(operationId);
+                updateCancelButtonVisibility();
+            };
 
             // Set up timeout that will abort the backend process
             timeoutId = setTimeout(async () => {
@@ -214,6 +224,7 @@ class WebviewMessageBus {
                     console.error('❌ Failed to abort plot process:', abortError);
                 }
 
+                cleanupOperation();
                 reject(new Error(`Plot request timeout: The plot generation took too long (>${timeout / 1000}s). The backend process has been terminated. Try selecting a smaller data subset or a simpler plot type.`));
             }, timeout);
 
@@ -239,16 +250,25 @@ class WebviewMessageBus {
                 if (!isResolved) {
                     isResolved = true;
                     clearTimeout(timeoutId);
+                    cleanupOperation();
                     resolve(result);
                 }
             } catch (error) {
                 if (!isResolved) {
                     isResolved = true;
                     clearTimeout(timeoutId);
+                    cleanupOperation();
                     reject(error);
                 }
             }
         });
+    }
+
+    /**
+     * Get the current operation ID (for external cancel)
+     */
+    getActiveOperationIds() {
+        return Array.from(activePlotOperations);
     }
 
     /**
@@ -336,6 +356,9 @@ try {
 const globalState = {
     currentDatasetFilePath: null,
 };
+
+// Track active plot operations for cancel functionality
+const activePlotOperations = new Set();
 
 // Initialization
 function initialize() {
@@ -1304,17 +1327,103 @@ function hideVariablePlotError(variable) {
 
 function updatePlotAllUI(isRunning) {
     const button = document.getElementById('createAllPlotsButton');
+    const cancelButton = document.getElementById('cancelAllPlotsButton');
 
     if (isRunning) {
         if (button) {
             button.disabled = true;
             button.textContent = 'Plotting...';
         }
+        if (cancelButton) {
+            cancelButton.classList.remove('hidden');
+        }
     } else {
         if (button) {
             button.disabled = false;
             button.textContent = '⚠️ Plot All';
         }
+        if (cancelButton) {
+            cancelButton.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * Update cancel button visibility based on active operations
+ */
+function updateCancelButtonVisibility() {
+    const cancelButton = document.getElementById('cancelAllPlotsButton');
+    if (cancelButton) {
+        if (activePlotOperations.size > 0) {
+            cancelButton.classList.remove('hidden');
+            cancelButton.textContent = `🛑 Cancel All (${activePlotOperations.size})`;
+        } else {
+            cancelButton.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * Cancel all active plot operations
+ */
+async function handleCancelAllPlots() {
+    // Set the cancellation flag to prevent new plots from starting
+    // This is especially important when using concurrency-limited Plot All
+    plotAllCancelled = true;
+
+    const operationIds = Array.from(activePlotOperations);
+    const activeCount = operationIds.length;
+    
+    console.log(`🛑 Cancelling plot operations. Active: ${activeCount}, Flag set to prevent new plots.`);
+
+    if (activeCount === 0) {
+        console.log('No active plot operations to cancel (but flag set to prevent pending ones)');
+        // Still show notification and update UI
+        updatePlotAllUI(false);
+        try {
+            await messageBus.showNotification(
+                'Plot operation cancelled - no active processes to abort',
+                'info'
+            );
+        } catch (error) {
+            console.error('Failed to show notification:', error);
+        }
+        return;
+    }
+
+    console.log(`🛑 Aborting ${activeCount} active plot operations:`, operationIds);
+
+    // Abort all active operations in parallel
+    const abortPromises = operationIds.map(async (operationId) => {
+        try {
+            const result = await messageBus.abortPlot(operationId);
+            console.log(`🛑 Aborted ${operationId}:`, result);
+            return { operationId, success: true, result };
+        } catch (error) {
+            console.error(`❌ Failed to abort ${operationId}:`, error);
+            return { operationId, success: false, error };
+        }
+    });
+
+    const results = await Promise.allSettled(abortPromises);
+    
+    // Clear all tracked operations
+    activePlotOperations.clear();
+    updateCancelButtonVisibility();
+    updatePlotAllUI(false);
+
+    // Log summary
+    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    console.log(`🛑 Cancel all completed: ${successful}/${activeCount} operations aborted`);
+
+    // Show notification
+    try {
+        await messageBus.showNotification(
+            `Cancelled: ${successful} process(es) aborted`,
+            'info'
+        );
+    } catch (error) {
+        console.error('Failed to show notification:', error);
     }
 }
 
@@ -1691,6 +1800,7 @@ function setupEventListeners() {
         exportWebviewButton: handleExportWebview,
         // Global plot controls
         createAllPlotsButton: handleCreateAllPlots,
+        cancelAllPlotsButton: handleCancelAllPlots,
         resetAllPlotsButton: handleResetAllPlots,
         saveAllPlotsButton: handleSaveAllPlots,
     };
@@ -1869,6 +1979,51 @@ function handleCollapseAllSections() {
     console.log(`📁 Collapsed ${collapsedCount} sections`);
 }
 
+/**
+ * Process items with a concurrency limit.
+ * This ensures we don't overwhelm the system with too many parallel operations.
+ * @param items Array of items to process
+ * @param processor Async function to process each item
+ * @param concurrencyLimit Maximum number of concurrent operations
+ * @returns Array of results in the same order as items
+ */
+async function processWithConcurrencyLimit(items, processor, concurrencyLimit = 5) {
+    const results = [];
+    const executing = new Set();
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Create the promise for this item
+        const promise = (async () => {
+            try {
+                const result = await processor(item, i);
+                return { status: 'fulfilled', value: result };
+            } catch (error) {
+                return { status: 'rejected', reason: error };
+            }
+        })();
+        
+        // Track this promise
+        results[i] = promise;
+        executing.add(promise);
+        
+        // When promise completes, remove from executing set
+        promise.then(() => executing.delete(promise));
+        
+        // If we've reached the concurrency limit, wait for one to complete
+        if (executing.size >= concurrencyLimit) {
+            await Promise.race(executing);
+        }
+    }
+    
+    // Wait for all remaining promises to complete
+    return Promise.all(results);
+}
+
+// Flag to track if plot all operation was cancelled
+let plotAllCancelled = false;
+
 async function handleCreateAllPlots() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Create plots not available in degraded mode');
@@ -1876,6 +2031,9 @@ async function handleCreateAllPlots() {
     }
 
     console.log('🔍 Plot All Variables - Debug Info:');
+
+    // Reset cancellation flag
+    plotAllCancelled = false;
 
     // Get all variables to plot
     const buttons = document.querySelectorAll('.create-plot-button');
@@ -1925,13 +2083,25 @@ async function handleCreateAllPlots() {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
-    // Prepare all plot operations
-    const plotPromises = Array.from(buttons).map(async (button) => {
-        const variable = button.getAttribute('data-variable');
-        const plotTypeSelect = document.querySelector(
-            `.plot-type-select[data-variable="${variable}"]`,
-        );
+    // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
+    const plotTasks = Array.from(buttons).map((button) => ({
+        variable: button.getAttribute('data-variable'),
+        plotTypeSelect: document.querySelector(
+            `.plot-type-select[data-variable="${button.getAttribute('data-variable')}"]`,
+        ),
+    }));
+
+    console.log(`📊 Starting Plot All with ${plotTasks.length} variables (max 5 concurrent)`);
+
+    // Process plots with concurrency limit to leave room for cancel operations
+    const processSinglePlot = async (task) => {
+        const { variable, plotTypeSelect } = task;
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
+
+        // Check if cancelled before starting
+        if (plotAllCancelled) {
+            return { variable, success: false, error: 'Cancelled', skipped: true };
+        }
 
         // Show loading indicator
         displayVariablePlotLoading(variable);
@@ -1954,10 +2124,14 @@ async function handleCreateAllPlots() {
             const container = document.querySelector(
                 `.plot-container[data-variable="${variable}"]`,
             );
-            const imageContainer = container.querySelector(
-                '.plot-image-container',
-            );
-            imageContainer.innerHTML = '';
+            if (container) {
+                const imageContainer = container.querySelector(
+                    '.plot-image-container',
+                );
+                if (imageContainer) {
+                    imageContainer.innerHTML = '';
+                }
+            }
             displayVariablePlotError(
                 variable,
                 'Error creating plot: ' + error.message,
@@ -1965,36 +2139,47 @@ async function handleCreateAllPlots() {
 
             return { variable, success: false, error: error.message };
         }
-    });
+    };
 
     try {
-        // Wait for all plots to complete (or fail)
-        const results = await Promise.allSettled(plotPromises);
+        // Process with concurrency limit of 5 (leaves room for cancel operations)
+        const results = await processWithConcurrencyLimit(plotTasks, processSinglePlot, 5);
 
         // Log results
         const successful = results.filter(
             (r) => r.status === 'fulfilled' && r.value.success,
         ).length;
-        const failed = results.length - successful;
+        const skipped = results.filter(
+            (r) => r.status === 'fulfilled' && r.value.skipped,
+        ).length;
+        const failed = results.length - successful - skipped;
 
         console.log(
-            `Plot all completed: ${successful} successful, ${failed} failed`,
+            `Plot all completed: ${successful} successful, ${failed} failed, ${skipped} skipped (cancelled)`,
         );
 
-        // Show completion message
-        try {
-            await messageBus.showNotification(
-                `Plot all completed: ${successful} successful, ${failed} failed`,
-                failed > 0 ? 'warning' : 'info',
-            );
-        } catch (notificationError) {
-            console.error('Failed to show notification:', notificationError);
+        // Show completion message (only if not fully cancelled)
+        if (!plotAllCancelled || successful > 0) {
+            try {
+                let message = `Plot all: ${successful} successful`;
+                if (failed > 0) message += `, ${failed} failed`;
+                if (skipped > 0) message += `, ${skipped} cancelled`;
+                
+                await messageBus.showNotification(
+                    message,
+                    failed > 0 ? 'warning' : 'info',
+                );
+            } catch (notificationError) {
+                console.error('Failed to show notification:', notificationError);
+            }
         }
     } catch (error) {
         console.error('Error in plot all operation:', error);
     } finally {
         // Update UI to show operation completed
         updatePlotAllUI(false);
+        // Reset cancellation flag
+        plotAllCancelled = false;
     }
 }
 

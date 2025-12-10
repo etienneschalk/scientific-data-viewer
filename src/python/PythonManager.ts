@@ -266,7 +266,7 @@ export class PythonManager {
                 if (signal === 'SIGTERM' || signal === 'SIGKILL') {
                     reject(
                         new Error(
-                            `Process was aborted (signal: ${signal}). This usually happens when a plot operation times out.`,
+                            `Process was aborted (signal: ${signal}). This usually happens when a plot operation times out, or if the plot operation was cancelled by the user.`,
                         ),
                     );
                     return;
