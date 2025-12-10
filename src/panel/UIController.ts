@@ -92,12 +92,9 @@ export class UIController {
             },
         );
 
-        this.messageBus.registerRequestHandler(
-            'abortPlot',
-            async (payload) => {
-                return this.handleAbortPlot(payload.operationId);
-            },
-        );
+        this.messageBus.registerRequestHandler('abortPlot', async (payload) => {
+            return this.handleAbortPlot(payload.operationId);
+        });
 
         this.messageBus.registerRequestHandler('savePlot', async (payload) => {
             return this.handleSavePlot(

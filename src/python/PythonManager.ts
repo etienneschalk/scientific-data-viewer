@@ -190,11 +190,15 @@ export class PythonManager {
             // Use detached: true so we can kill the entire process group
             // This is important because shell: true spawns a shell that then spawns Python
             // Without detached: true, killing the shell leaves Python as an orphan process
-            const childProcess = spawn(quotedPythonPath, [scriptPath, ...args], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe'],
-                detached: true,
-            });
+            const childProcess = spawn(
+                quotedPythonPath,
+                [scriptPath, ...args],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                    detached: true,
+                },
+            );
 
             // Track this process if an operation ID was provided
             let serverTimeoutHandle: NodeJS.Timeout | undefined;
@@ -287,7 +291,8 @@ export class PythonManager {
 
                 // Remove from active processes tracking
                 if (operationId) {
-                    const activeProcess = this._activeProcesses.get(operationId);
+                    const activeProcess =
+                        this._activeProcesses.get(operationId);
                     if (activeProcess?.timeoutHandle) {
                         clearTimeout(activeProcess.timeoutHandle);
                     }
@@ -352,7 +357,8 @@ export class PythonManager {
 
                 // Remove from active processes tracking
                 if (operationId) {
-                    const activeProcess = this._activeProcesses.get(operationId);
+                    const activeProcess =
+                        this._activeProcesses.get(operationId);
                     if (activeProcess?.timeoutHandle) {
                         clearTimeout(activeProcess.timeoutHandle);
                     }
@@ -417,9 +423,7 @@ export class PythonManager {
             // which then spawns Python. We need to kill the entire process group
             // to ensure the Python process is also terminated.
             // The process was spawned with detached: true to make this work.
-            Logger.debug(
-                `🐍 🛑 Killing process group with SIGTERM: -${pid}`,
-            );
+            Logger.debug(`🐍 🛑 Killing process group with SIGTERM: -${pid}`);
             process.kill(-pid, 'SIGTERM');
 
             // If the process doesn't terminate within 1 second, force kill with SIGKILL
