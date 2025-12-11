@@ -225,7 +225,22 @@ else
     print_warning "CHANGELOG.md not found"
 fi
 
-# Check 2: Git working directory is clean
+# Check 2: Release notes exist for this version
+print_step "Checking release notes..."
+RELEASE_NOTES_FILE="docs/RELEASE_NOTES_${PACKAGE_VERSION}.md"
+if [ -f "$RELEASE_NOTES_FILE" ]; then
+    print_success "Release notes found: ${RELEASE_NOTES_FILE}"
+else
+    print_warning "Release notes not found: ${RELEASE_NOTES_FILE}"
+    read -p "Continue without release notes? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_error "Aborted. Please create ${RELEASE_NOTES_FILE} first."
+        exit 1
+    fi
+fi
+
+# Check 3: Git working directory is clean
 print_step "Checking git status..."
 if [ -d ".git" ]; then
     if [ -n "$(git status --porcelain)" ]; then
@@ -242,7 +257,7 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
-    # Check 3: Current branch (check this BEFORE tag operations)
+    # Check 4: Current branch (check this BEFORE tag operations)
     print_step "Checking current branch..."
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
@@ -257,7 +272,7 @@ if [ -d ".git" ]; then
         fi
     fi
 
-    # Check 4: Git tag for this version
+    # Check 5: Git tag for this version
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
@@ -290,7 +305,7 @@ if [ -d ".git" ]; then
     fi
 fi
 
-# Check 5: Version hasn't been published already
+# Check 6: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
