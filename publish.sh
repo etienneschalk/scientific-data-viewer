@@ -231,6 +231,7 @@ else
     print_warning "CHANGELOG.md not found"
 fi
 
+<<<<<<< HEAD
 # Check 2: Release notes exist for this version
 print_step "Checking release notes..."
 RELEASE_NOTES_FILE="docs/RELEASE_NOTES_${PACKAGE_VERSION}.md"
@@ -247,6 +248,9 @@ else
 fi
 
 # Check 3: Git working directory is clean
+=======
+# Check 2: Git working directory is clean
+>>>>>>> Draft for auto publish, and simpler manual script
 print_step "Checking git status..."
 if [ -d ".git" ]; then
     if [ -n "$(git status --porcelain)" ]; then
@@ -263,6 +267,7 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
+<<<<<<< HEAD
     # Check 4: Current branch (check this BEFORE tag operations)
     print_step "Checking current branch..."
     CURRENT_BRANCH=$(git branch --show-current)
@@ -283,6 +288,13 @@ if [ -d ".git" ]; then
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
         print_success "Git tag ${TAG_NAME} exists locally"
+=======
+    # Check 3: Git tag for this version
+    print_step "Checking git tags..."
+    TAG_NAME="v${PACKAGE_VERSION}"
+    if git tag -l | grep -q "^${TAG_NAME}$"; then
+        print_success "Git tag ${TAG_NAME} exists"
+>>>>>>> Draft for auto publish, and simpler manual script
 
         # Check if we're on the tagged commit
         TAG_COMMIT=$(git rev-list -n 1 "${TAG_NAME}" 2>/dev/null || echo "")
@@ -292,6 +304,7 @@ if [ -d ".git" ]; then
             print_info "Tag commit: ${TAG_COMMIT:0:8}"
             print_info "HEAD commit: ${HEAD_COMMIT:0:8}"
         fi
+<<<<<<< HEAD
 
         # Check if tag is pushed to remote
         if ! git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
@@ -326,11 +339,34 @@ if [ -d ".git" ]; then
             else
                 print_warning "Tag not created (remember to create it manually after publishing)"
             fi
+=======
+    else
+        print_warning "Git tag ${TAG_NAME} does not exist yet"
+        print_info "Consider creating it after publishing: git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
+    fi
+
+    # Check 4: Current branch
+    print_step "Checking current branch..."
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+        print_success "On branch: ${CURRENT_BRANCH}"
+    else
+        print_warning "Not on main/master branch (current: ${CURRENT_BRANCH})"
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Aborted by user"
+            exit 1
+>>>>>>> Draft for auto publish, and simpler manual script
         fi
     fi
 fi
 
+<<<<<<< HEAD
 # Check 6: Version hasn't been published already
+=======
+# Check 5: Version hasn't been published already
+>>>>>>> Draft for auto publish, and simpler manual script
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
@@ -497,17 +533,21 @@ fi
 
 print_header "Summary"
 
+<<<<<<< HEAD
 # Get GitHub repo URL from package.json or git remote
 REPO_URL=$(node -p "require('./package.json').repository?.url || ''" 2>/dev/null | sed 's/\.git$//' | sed 's|^git+||')
 if [ -z "$REPO_URL" ]; then
     REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|^git@github.com:|https://github.com/|')
 fi
 
+=======
+>>>>>>> Draft for auto publish, and simpler manual script
 if [ "$PUBLISH_SUCCESS" = true ]; then
     print_success "Publishing completed successfully!"
     echo ""
     echo "Next steps:"
     echo "  1. Verify the extension on the marketplaces"
+<<<<<<< HEAD
 
     # Check if tag exists on remote
     TAG_NAME="v${PACKAGE_VERSION}"
@@ -521,6 +561,12 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
         echo "     gh release create ${TAG_NAME} --generate-notes"
     fi
 
+=======
+    echo "  2. Create a GitHub release if not done yet:"
+    echo "     git tag v${PACKAGE_VERSION}"
+    echo "     git push origin v${PACKAGE_VERSION}"
+    echo "     gh release create v${PACKAGE_VERSION} --generate-notes"
+>>>>>>> Draft for auto publish, and simpler manual script
     echo ""
     echo "Marketplace URLs:"
     [ "$SKIP_VSCODE" = false ] && echo "  • https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"

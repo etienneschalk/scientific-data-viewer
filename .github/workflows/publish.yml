@@ -1,0 +1,87 @@
+# name: Publish Extension
+
+# # Trigger on GitHub Release publication
+# # This gives you control to review before publishing
+# on:
+#   release:
+#     types: [published]
+
+# jobs:
+#   publish:
+#     name: Publish Extension
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 15
+
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "22"
+#           cache: "npm"
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.13"
+
+#       # Extract version from tag and validate it matches package.json
+#       - name: Validate Version Match
+#         run: |
+#           # Get tag from release event (removes 'v' prefix)
+#           TAG_VERSION="${GITHUB_REF_NAME#v}"
+#           PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+#           echo "Tag version: $TAG_VERSION"
+#           echo "Package version: $PACKAGE_VERSION"
+
+#           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+#             echo "❌ ERROR: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+#             echo "Please ensure the tag matches the version in package.json"
+#             exit 1
+#           fi
+
+#           echo "✅ Version match confirmed: $PACKAGE_VERSION"
+
+#       - name: Install Dependencies
+#         run: npm ci
+
+#       - name: Compile TypeScript
+#         run: npm run compile
+
+#       - name: Install Virtual Display Dependencies
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y xvfb
+
+#       - name: Run Tests
+#         run: |
+#           export DISPLAY=:99
+#           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+#           sleep 3
+#           npm run test
+
+#       # Publish to Open VSX first (it builds the .vsix file)
+#       - name: Publish to Open VSX Registry
+#         id: publishToOpenVSX
+#         uses: HaaLeo/publish-vscode-extension@v2
+#         with:
+#           pat: ${{ secrets.OPEN_VSX_TOKEN }}
+
+#       # Publish to VS Code Marketplace using the same .vsix file
+#       - name: Publish to VS Code Marketplace
+#         uses: HaaLeo/publish-vscode-extension@v2
+#         with:
+#           pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
+#           registryUrl: https://marketplace.visualstudio.com
+#           extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+
+#       # Upload the .vsix as a release asset for manual download
+#       - name: Upload VSIX to Release
+#         uses: softprops/action-gh-release@v2
+#         with:
+#           files: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
