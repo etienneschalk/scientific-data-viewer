@@ -4990,6 +4990,140 @@ def create_temporal_cdf_unordered_time():
     return output_file
 
 
+def create_sample_netcdf_large_4d():
+    """
+    Create a large NetCDF file with a 4D variable of shape (3, 366, 366, 12).
+
+    This file is designed to reproduce the bug described in issue #97:
+    Resource intensive plotting processes timeout but are not killed.
+
+    The large data size (3 * 366 * 366 * 12 = ~4.8 million elements) is intended
+    to create a plot that takes significant time to generate, triggering the
+    timeout behavior that needs to be handled properly.
+    """
+    output_file = "sample_large_4d_data.nc"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(
+            f"📄 Large 4D NetCDF file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🔬 Creating large 4D NetCDF file for timeout testing (issue #97)...")
+    print("   Shape: (3, 366, 366, 12) - ~4.8 million elements")
+
+    # Create dimensions
+    # Simulating a dataset with:
+    # - 3 time steps (e.g., 3 years or 3 ensemble members)
+    # - 366 x 366 spatial grid (e.g., lat x lon)
+    # - 12 months or vertical levels
+    time_dim = 3
+    y_dim = 366
+    x_dim = 366
+    level_dim = 12
+
+    # Create coordinate arrays
+    time = np.arange(time_dim)
+    y = np.linspace(-90, 90, y_dim)  # Latitude-like
+    x = np.linspace(-180, 180, x_dim)  # Longitude-like
+    level = np.arange(level_dim)  # Months or levels
+
+    # Create sample data (large 4D array)
+    np.random.seed(97)  # Seed based on issue number for reproducibility
+
+    # Create temperature-like data with some spatial and temporal patterns
+    # This creates interesting visual patterns when plotted
+    time_pattern = np.sin(2 * np.pi * time / time_dim)[
+        :, np.newaxis, np.newaxis, np.newaxis
+    ]
+    y_pattern = np.cos(np.pi * y / 90)[np.newaxis, :, np.newaxis, np.newaxis]
+    x_pattern = np.sin(2 * np.pi * x / 360)[np.newaxis, np.newaxis, :, np.newaxis]
+    level_pattern = np.exp(-level / level_dim)[np.newaxis, np.newaxis, np.newaxis, :]
+
+    # Combine patterns with noise
+    temperature = (
+        20
+        + 10 * time_pattern * y_pattern
+        + 5 * x_pattern * level_pattern
+        + np.random.normal(0, 2, (time_dim, y_dim, x_dim, level_dim))
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "temperature_4d": (
+                ["time", "y", "x", "level"],
+                temperature.astype(np.float32),  # Use float32 to save space
+                {
+                    "long_name": "4D Temperature Field (Large Dataset for Timeout Testing)",
+                    "units": "Celsius",
+                    "standard_name": "air_temperature",
+                    "description": "Large 4D dataset designed to test timeout handling in plot generation (issue #97)",
+                },
+            ),
+        },
+        coords={
+            "time": (
+                ["time"],
+                time,
+                {
+                    "long_name": "Time Step",
+                    "units": "time steps",
+                },
+            ),
+            "y": (
+                ["y"],
+                y,
+                {
+                    "long_name": "Y Coordinate (Latitude-like)",
+                    "units": "degrees_north",
+                },
+            ),
+            "x": (
+                ["x"],
+                x,
+                {
+                    "long_name": "X Coordinate (Longitude-like)",
+                    "units": "degrees_east",
+                },
+            ),
+            "level": (
+                ["level"],
+                level,
+                {
+                    "long_name": "Vertical Level or Month",
+                    "units": "level",
+                },
+            ),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Large 4D Dataset for Timeout Testing",
+        "description": "NetCDF file with shape (3, 366, 366, 12) for testing timeout handling in plot generation",
+        "issue": "https://github.com/etienneschalk/scientific-data-viewer/issues/97",
+        "purpose": "Test that resource-intensive plotting processes are properly killed on timeout",
+        "total_elements": str(time_dim * y_dim * x_dim * level_dim),
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Save to file
+    ds.to_netcdf(output_file)
+
+    # Calculate file size
+    file_size_mb = os.path.getsize(output_file) / (1024 * 1024)
+
+    print(f"✅ Created {output_file}")
+    print(f"   Shape: ({time_dim}, {y_dim}, {x_dim}, {level_dim})")
+    print(f"   Total elements: {time_dim * y_dim * x_dim * level_dim:,}")
+    print(f"   File size: {file_size_mb:.2f} MB")
+    return output_file
+
+
 def main(do_create_disposable_files: bool = False):
     """Create all sample data files."""
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
@@ -5041,6 +5175,13 @@ def main(do_create_disposable_files: bool = False):
         if complex_long_names_netcdf_file:
             created_files.append(
                 (complex_long_names_netcdf_file, "NetCDF (Complex Long Names)")
+            )
+
+        # Large 4D dataset for timeout testing (issue #97)
+        large_4d_netcdf_file = create_sample_netcdf_large_4d()
+        if large_4d_netcdf_file:
+            created_files.append(
+                (large_4d_netcdf_file, "NetCDF (Large 4D - Timeout Test)")
             )
 
         many_encoding_netcdf_file = create_sample_netcdf_many_encoding()

@@ -583,6 +583,18 @@ details.sticky-group-details summary > * {
     cursor: not-allowed;
 }
 
+/* Cancel button variant - more prominent styling */
+.plot-control-button.cancel-button {
+    background-color: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+    color: var(--vscode-inputValidation-errorForeground, #f48771);
+    border: 1px solid var(--vscode-inputValidation-errorBorder, #be1100);
+}
+
+.plot-control-button.cancel-button:hover {
+    background-color: var(--vscode-inputValidation-errorBorder, #be1100);
+    color: #ffffff;
+}
+
 /* Tree control button styles */
 .tree-controls {
     display: flex;

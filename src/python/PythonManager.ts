@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { Logger } from '../common/Logger';
 import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
 import { quoteIfNeeded } from '../common/utils';
@@ -10,6 +10,16 @@ import {
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 import path from 'path';
+
+/**
+ * Represents an active Python process that can be tracked and aborted
+ */
+interface ActiveProcess {
+    process: ChildProcess;
+    operationId: string;
+    startTime: number;
+    timeoutHandle?: NodeJS.Timeout; // Server-side timeout handle
+}
 
 /**
  * Flag to control the creation of the extension own virtual environment
@@ -48,6 +58,9 @@ export class PythonManager {
     private _initializationPromise: Promise<void> | null = null;
     private _environmentSource: EnvironmentSource | null = null;
     private _corePackagesInstalled: boolean = false;
+
+    // Track active processes for timeout/abort handling
+    private _activeProcesses: Map<string, ActiveProcess> = new Map();
 
     // Core packages required for basic functionality
     private readonly corePackages = ['xarray'];
@@ -113,12 +126,18 @@ export class PythonManager {
      * @param scriptPath    The path to the Python file
      * @param args          The arguments to pass to the Python file
      * @param enableLogs    Whether to enable logs
+     * @param operationId   Optional ID to track this operation for abort support
+     * @param timeoutMs     Optional server-side timeout in milliseconds (default: no timeout)
+     *                      This timeout is independent of the webview and will kill the process
+     *                      even if the webview is closed.
      * @returns             The result of the Python file
      */
     async executePythonFile(
         scriptPath: string,
         args: string[] = [],
         enableLogs: boolean = false,
+        operationId?: string,
+        timeoutMs?: number,
     ): Promise<any> {
         if (!this._initialized) {
             throw new Error(
@@ -137,6 +156,8 @@ export class PythonManager {
             scriptPath,
             args,
             enableLogs,
+            operationId,
+            timeoutMs,
         );
     }
 
@@ -145,6 +166,8 @@ export class PythonManager {
         scriptPath: string,
         args: string[],
         enableLogs: boolean,
+        operationId?: string,
+        timeoutMs?: number,
     ) {
         const quotedPythonPath = quoteIfNeeded(pythonPath);
         Logger.log(
@@ -159,21 +182,63 @@ export class PythonManager {
             `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`,
         );
         Logger.info(`🐍 📜 - Is initialized: ${this._initialized}`);
+        if (operationId) {
+            Logger.info(`🐍 📜 - Operation ID: ${operationId}`);
+        }
 
         return new Promise((resolve, reject) => {
-            const process = spawn(quotedPythonPath, [scriptPath, ...args], {
-                shell: true,
-                stdio: ['pipe', 'pipe', 'pipe'],
-            });
+            // Use detached: true so we can kill the entire process group
+            // This is important because shell: true spawns a shell that then spawns Python
+            // Without detached: true, killing the shell leaves Python as an orphan process
+            const childProcess = spawn(
+                quotedPythonPath,
+                [scriptPath, ...args],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                    detached: true,
+                },
+            );
+
+            // Track this process if an operation ID was provided
+            let serverTimeoutHandle: NodeJS.Timeout | undefined;
+            if (operationId) {
+                const activeProcess: ActiveProcess = {
+                    process: childProcess,
+                    operationId,
+                    startTime: Date.now(),
+                };
+
+                // Set up server-side timeout if specified
+                // This timeout is independent of the webview and will kill the process
+                // even if the user closes the tab
+                if (timeoutMs && timeoutMs > 0) {
+                    serverTimeoutHandle = setTimeout(() => {
+                        Logger.warn(
+                            `🐍 ⏰ Server-side timeout (${timeoutMs}ms) reached for operation: ${operationId}`,
+                        );
+                        this.abortProcess(operationId);
+                    }, timeoutMs);
+                    activeProcess.timeoutHandle = serverTimeoutHandle;
+                    Logger.debug(
+                        `🐍 📜 Server-side timeout set: ${timeoutMs}ms for operation: ${operationId}`,
+                    );
+                }
+
+                this._activeProcesses.set(operationId, activeProcess);
+                Logger.debug(
+                    `🐍 📜 Tracking process for operation: ${operationId} (PID: ${childProcess.pid})`,
+                );
+            }
 
             let stdout = '';
             let stderr = '';
 
-            process.stdout.on('data', (data) => {
+            childProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
 
-            process.stderr.on('data', (data) => {
+            childProcess.stderr.on('data', (data) => {
                 const logData = data.toString();
                 stderr += logData;
 
@@ -218,7 +283,35 @@ export class PythonManager {
                 }
             });
 
-            process.on('close', (code) => {
+            childProcess.on('close', (code, signal) => {
+                // Clear server-side timeout if it exists
+                if (serverTimeoutHandle) {
+                    clearTimeout(serverTimeoutHandle);
+                }
+
+                // Remove from active processes tracking
+                if (operationId) {
+                    const activeProcess =
+                        this._activeProcesses.get(operationId);
+                    if (activeProcess?.timeoutHandle) {
+                        clearTimeout(activeProcess.timeoutHandle);
+                    }
+                    this._activeProcesses.delete(operationId);
+                    Logger.debug(
+                        `🐍 📜 Process completed for operation: ${operationId} (code: ${code}, signal: ${signal})`,
+                    );
+                }
+
+                // Check if this process was killed/aborted
+                if (signal === 'SIGTERM' || signal === 'SIGKILL') {
+                    reject(
+                        new Error(
+                            `Process was aborted (signal: ${signal}). This usually happens when a plot operation times out, or if the plot operation was cancelled by the user.`,
+                        ),
+                    );
+                    return;
+                }
+
                 if (code === 0) {
                     try {
                         const result = JSON.parse(stdout);
@@ -256,7 +349,22 @@ export class PythonManager {
                 }
             });
 
-            process.on('error', (error) => {
+            childProcess.on('error', (error) => {
+                // Clear server-side timeout if it exists
+                if (serverTimeoutHandle) {
+                    clearTimeout(serverTimeoutHandle);
+                }
+
+                // Remove from active processes tracking
+                if (operationId) {
+                    const activeProcess =
+                        this._activeProcesses.get(operationId);
+                    if (activeProcess?.timeoutHandle) {
+                        clearTimeout(activeProcess.timeoutHandle);
+                    }
+                    this._activeProcesses.delete(operationId);
+                }
+
                 if (error.message.includes('ENOENT')) {
                     reject(
                         new Error(
@@ -272,6 +380,122 @@ export class PythonManager {
                 }
             });
         });
+    }
+
+    /**
+     * Abort an active Python process by operation ID
+     * @param operationId The ID of the operation to abort
+     * @returns true if the process was found and killed, false otherwise
+     */
+    public abortProcess(operationId: string): boolean {
+        const activeProcess = this._activeProcesses.get(operationId);
+        if (!activeProcess) {
+            Logger.warn(
+                `🐍 ⚠️ No active process found for operation: ${operationId}`,
+            );
+            return false;
+        }
+
+        // Clear the server-side timeout if it exists
+        if (activeProcess.timeoutHandle) {
+            clearTimeout(activeProcess.timeoutHandle);
+        }
+
+        const { process: childProcess } = activeProcess;
+        const duration = Date.now() - activeProcess.startTime;
+        const pid = childProcess.pid;
+
+        Logger.info(
+            `🐍 🛑 Aborting process for operation: ${operationId} (PID: ${pid}, duration: ${duration}ms)`,
+        );
+
+        if (!pid) {
+            Logger.warn(
+                `🐍 ⚠️ Process PID is undefined, cannot kill: ${operationId}`,
+            );
+            this._activeProcesses.delete(operationId);
+            return false;
+        }
+
+        try {
+            // Kill the entire process group using negative PID
+            // This is necessary because when shell: true is used, Node spawns a shell
+            // which then spawns Python. We need to kill the entire process group
+            // to ensure the Python process is also terminated.
+            // The process was spawned with detached: true to make this work.
+            Logger.debug(`🐍 🛑 Killing process group with SIGTERM: -${pid}`);
+            process.kill(-pid, 'SIGTERM');
+
+            // If the process doesn't terminate within 1 second, force kill with SIGKILL
+            setTimeout(() => {
+                if (this._activeProcesses.has(operationId)) {
+                    Logger.warn(
+                        `🐍 ⚠️ Process didn't terminate gracefully, force killing process group: ${operationId}`,
+                    );
+                    try {
+                        process.kill(-pid, 'SIGKILL');
+                    } catch (killError) {
+                        // Process might already be dead, which is fine
+                        Logger.debug(
+                            `🐍 ℹ️ Force kill returned error (process may already be dead): ${killError}`,
+                        );
+                    }
+                }
+            }, 1000);
+
+            return true;
+        } catch (error) {
+            Logger.error(
+                `🐍 ❌ Failed to abort process ${operationId}: ${error}`,
+            );
+            this._activeProcesses.delete(operationId);
+            return false;
+        }
+    }
+
+    /**
+     * Get all active operation IDs
+     * @returns Array of active operation IDs
+     */
+    public getActiveOperations(): string[] {
+        return Array.from(this._activeProcesses.keys());
+    }
+
+    /**
+     * Check if an operation is currently active
+     * @param operationId The ID of the operation to check
+     * @returns true if the operation is active, false otherwise
+     */
+    public isOperationActive(operationId: string): boolean {
+        return this._activeProcesses.has(operationId);
+    }
+
+    /**
+     * Abort all active processes.
+     * This is useful for cleanup when the extension is deactivated or when
+     * a panel is disposed while operations are still running.
+     * @returns The number of processes that were aborted
+     */
+    public abortAllProcesses(): number {
+        const operationIds = Array.from(this._activeProcesses.keys());
+        if (operationIds.length === 0) {
+            Logger.info('🐍 🧹 No active processes to abort');
+            return 0;
+        }
+
+        Logger.info(
+            `🐍 🧹 Aborting all ${operationIds.length} active processes`,
+        );
+
+        let abortedCount = 0;
+        for (const operationId of operationIds) {
+            if (this.abortProcess(operationId)) {
+                abortedCount++;
+            }
+        }
+
+        Logger.info(`🐍 🧹 Aborted ${abortedCount} processes`);
+        return abortedCount;
     }
 
     /**

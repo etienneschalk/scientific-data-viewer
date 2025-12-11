@@ -87,9 +87,14 @@ export class UIController {
                     payload.datetimeVariableName,
                     payload.startDatetime,
                     payload.endDatetime,
+                    payload.operationId,
                 );
             },
         );
+
+        this.messageBus.registerRequestHandler('abortPlot', async (payload) => {
+            return this.handleAbortPlot(payload.operationId);
+        });
 
         this.messageBus.registerRequestHandler('savePlot', async (payload) => {
             return this.handleSavePlot(
@@ -319,6 +324,7 @@ export class UIController {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        operationId?: string,
     ): Promise<string | undefined> {
         try {
             const state = this.stateManager.getState();
@@ -340,6 +346,7 @@ export class UIController {
                 datetimeVariableName,
                 startDatetime,
                 endDatetime,
+                operationId,
             );
 
             if (!plotData) {
@@ -358,6 +365,37 @@ export class UIController {
             // instead of sending a global error. We'll re-throw the error so the MessageBus
             // can send it as a failed response that the webview can catch.
             throw error;
+        }
+    }
+
+    private async handleAbortPlot(
+        operationId: string,
+    ): Promise<{ success: boolean; message: string }> {
+        Logger.info(
+            `[UIController] [handleAbortPlot] Aborting plot operation: ${operationId}`,
+        );
+
+        try {
+            const wasAborted = this.dataProcessor.abortPlot(operationId);
+            if (wasAborted) {
+                return {
+                    success: true,
+                    message: `Plot operation ${operationId} was aborted successfully`,
+                };
+            } else {
+                return {
+                    success: false,
+                    message: `No active plot operation found with ID: ${operationId}`,
+                };
+            }
+        } catch (error) {
+            Logger.error(
+                `[UIController] [handleAbortPlot] Error aborting plot: ${error}`,
+            );
+            return {
+                success: false,
+                message: `Failed to abort plot operation: ${error instanceof Error ? error.message : String(error)}`,
+            };
         }
     }
 

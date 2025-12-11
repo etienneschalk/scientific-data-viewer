@@ -217,14 +217,9 @@ export class HTMLGenerator {
                 <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
                     <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
+                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">🛑 Cancel All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
-                </div>
-                <div
-                    id="createAllPlotsProgress"
-                    class="plot-progress hidden"
-                >
-                    Progress: 0/0 (0%)
                 </div>
 
                 <!-- Time Controls Subsection -->

@@ -67,6 +67,11 @@ export class DataProcessor {
         }
     }
 
+    // Default server-side timeout for plot operations: 2 minutes
+    // This timeout is independent of the webview and will kill the process
+    // even if the user closes the tab before the webview timeout fires.
+    private static readonly DEFAULT_PLOT_TIMEOUT_MS = 20000;
+
     async createPlot(
         uri: vscode.Uri,
         variable: string,
@@ -75,6 +80,8 @@ export class DataProcessor {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        operationId?: string,
+        timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
@@ -122,12 +129,21 @@ export class DataProcessor {
             Logger.info(
                 `[DataProcessor] [createPlot] Time controls: datetimeVariableName='${datetimeVariableName}', startDatetime='${startDatetime}', endDatetime='${endDatetime}'`,
             );
+            if (operationId) {
+                Logger.info(
+                    `[DataProcessor] [createPlot] Operation ID: ${operationId}, Server timeout: ${timeoutMs}ms`,
+                );
+            }
 
             // Execute Python script and capture both stdout and stderr
+            // Pass the operation ID for tracking and potential abort
+            // Pass the server-side timeout that will kill the process even if webview is closed
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true,
+                operationId,
+                timeoutMs,
             );
             // Return the result even if it contains an error field
             // The caller can check for result.error to handle errors
@@ -138,5 +154,26 @@ export class DataProcessor {
             );
             throw error;
         }
+    }
+
+    /**
+     * Abort an active plot operation
+     * @param operationId The ID of the plot operation to abort
+     * @returns true if the operation was aborted, false otherwise
+     */
+    abortPlot(operationId: string): boolean {
+        Logger.info(
+            `[DataProcessor] [abortPlot] Aborting plot operation: ${operationId}`,
+        );
+        return this.pythonManager.abortProcess(operationId);
+    }
+
+    /**
+     * Check if a plot operation is currently active
+     * @param operationId The ID of the plot operation to check
+     * @returns true if the operation is active, false otherwise
+     */
+    isPlotOperationActive(operationId: string): boolean {
+        return this.pythonManager.isOperationActive(operationId);
     }
 }
