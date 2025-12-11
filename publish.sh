@@ -159,21 +159,27 @@ if [ "$PYTHON_MAJOR" -lt "$REQUIRED_PYTHON_MAJOR" ] || \
 fi
 print_success "Python: ${PYTHON_VERSION} (>= ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR} ✓)"
 
-if ! command -v vsce &> /dev/null && ! npx vsce --version &> /dev/null; then
-    print_warning "vsce not found globally, will use npx"
-    VSCE_CMD="npx @vscode/vsce"
-else
+if command -v vsce &> /dev/null; then
     VSCE_CMD="vsce"
-fi
-print_success "vsce: available"
-
-if ! command -v ovsx &> /dev/null && ! npx ovsx --version &> /dev/null; then
-    print_warning "ovsx not found globally, will use npx"
-    OVSX_CMD="npx ovsx"
+    print_success "vsce: available (global)"
+elif npx @vscode/vsce --version &> /dev/null; then
+    VSCE_CMD="npx @vscode/vsce"
+    print_success "vsce: available (via npx)"
 else
-    OVSX_CMD="ovsx"
+    print_error "vsce not found (install with: npm install -g @vscode/vsce)"
+    exit 1
 fi
-print_success "ovsx: available"
+
+if command -v ovsx &> /dev/null; then
+    OVSX_CMD="ovsx"
+    print_success "ovsx: available (global)"
+elif npx ovsx --version &> /dev/null; then
+    OVSX_CMD="npx ovsx"
+    print_success "ovsx: available (via npx)"
+else
+    print_error "ovsx not found (install with: npm install -g ovsx)"
+    exit 1
+fi
 
 # =============================================================================
 # Version Consistency Checks
@@ -276,7 +282,7 @@ if [ -d ".git" ]; then
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
-        print_success "Git tag ${TAG_NAME} exists"
+        print_success "Git tag ${TAG_NAME} exists locally"
 
         # Check if we're on the tagged commit
         TAG_COMMIT=$(git rev-list -n 1 "${TAG_NAME}" 2>/dev/null || echo "")
@@ -285,6 +291,25 @@ if [ -d ".git" ]; then
             print_warning "Current HEAD is not at tag ${TAG_NAME}"
             print_info "Tag commit: ${TAG_COMMIT:0:8}"
             print_info "HEAD commit: ${HEAD_COMMIT:0:8}"
+        fi
+
+        # Check if tag is pushed to remote
+        if ! git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
+            print_warning "Git tag ${TAG_NAME} is not pushed to remote"
+            if [ "$DRY_RUN" = true ]; then
+                print_info "Would push tag ${TAG_NAME} in non-dry-run mode"
+            else
+                read -p "Push tag ${TAG_NAME} to origin? (Y/n) " -n 1 -r
+                echo ""
+                if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+                    git push origin "${TAG_NAME}"
+                    print_success "Pushed tag ${TAG_NAME} to origin"
+                else
+                    print_warning "Tag not pushed (remember to push it manually)"
+                fi
+            fi
+        else
+            print_success "Git tag ${TAG_NAME} is pushed to origin"
         fi
     else
         print_warning "Git tag ${TAG_NAME} does not exist yet"
@@ -472,15 +497,30 @@ fi
 
 print_header "Summary"
 
+# Get GitHub repo URL from package.json or git remote
+REPO_URL=$(node -p "require('./package.json').repository?.url || ''" 2>/dev/null | sed 's/\.git$//' | sed 's|^git+||')
+if [ -z "$REPO_URL" ]; then
+    REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|^git@github.com:|https://github.com/|')
+fi
+
 if [ "$PUBLISH_SUCCESS" = true ]; then
     print_success "Publishing completed successfully!"
     echo ""
     echo "Next steps:"
     echo "  1. Verify the extension on the marketplaces"
-    echo "  2. Create a GitHub release if not done yet:"
-    echo "     git tag v${PACKAGE_VERSION}"
-    echo "     git push origin v${PACKAGE_VERSION}"
-    echo "     gh release create v${PACKAGE_VERSION} --generate-notes"
+
+    # Check if tag exists on remote
+    TAG_NAME="v${PACKAGE_VERSION}"
+    if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
+        echo "  2. Tag ${TAG_NAME} is already pushed. View the release:"
+        echo "     ${REPO_URL}/releases/tag/${TAG_NAME}"
+    else
+        echo "  2. Create a GitHub release:"
+        echo "     git tag ${TAG_NAME}"
+        echo "     git push origin ${TAG_NAME}"
+        echo "     gh release create ${TAG_NAME} --generate-notes"
+    fi
+
     echo ""
     echo "Marketplace URLs:"
     [ "$SKIP_VSCODE" = false ] && echo "  • https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"
