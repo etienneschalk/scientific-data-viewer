@@ -242,7 +242,22 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
-    # Check 3: Git tag for this version
+    # Check 3: Current branch (check this BEFORE tag operations)
+    print_step "Checking current branch..."
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+        print_success "On branch: ${CURRENT_BRANCH}"
+    else
+        print_warning "Not on main/master branch (current: ${CURRENT_BRANCH})"
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo ""
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_error "Aborted by user"
+            exit 1
+        fi
+    fi
+
+    # Check 4: Git tag for this version
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
@@ -258,21 +273,19 @@ if [ -d ".git" ]; then
         fi
     else
         print_warning "Git tag ${TAG_NAME} does not exist yet"
-        print_info "Consider creating it after publishing: git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
-    fi
-
-    # Check 4: Current branch
-    print_step "Checking current branch..."
-    CURRENT_BRANCH=$(git branch --show-current)
-    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
-        print_success "On branch: ${CURRENT_BRANCH}"
-    else
-        print_warning "Not on main/master branch (current: ${CURRENT_BRANCH})"
-        read -p "Continue anyway? (y/N) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_error "Aborted by user"
-            exit 1
+        if [ "$DRY_RUN" = true ]; then
+            print_info "Would create tag ${TAG_NAME} in non-dry-run mode"
+        else
+            read -p "Create and push tag ${TAG_NAME}? (Y/n) " -n 1 -r
+            echo ""
+            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+                git tag "${TAG_NAME}"
+                print_success "Created tag ${TAG_NAME}"
+                git push origin "${TAG_NAME}"
+                print_success "Pushed tag ${TAG_NAME} to origin"
+            else
+                print_warning "Tag not created (remember to create it manually after publishing)"
+            fi
         fi
     fi
 fi
