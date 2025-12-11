@@ -683,7 +683,7 @@ function renderFileInformation(data) {
     }
 
     formatInfo += /*html*/ `<strong>Format:</strong> ${
-        data.format || 'Unknown'
+        data.format || data.format_info?.display_name || 'Unknown'
     } · `;
 
     if (data.format_info) {
