@@ -8,6 +8,19 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [0.8.0] - UNRELEASED
 
+### Added
+
+- **Publishing Script**: New `publish.sh` script for manual extension publishing to both VS Code Marketplace and Open VSX Registry
+  - **Version Consistency Checks**: Validates CHANGELOG entry, release notes file, git branch, and git tag
+  - **Automatic CHANGELOG Date Update**: Replaces `UNRELEASED` with current date and offers to commit the change
+  - **Git Tag Management**: Offers to create and push version tag with user confirmation
+  - **Environment Validation**: Checks Node.js 22+ and Python 3.13+ versions before publishing
+  - **Dual Marketplace Publishing**: Publishes to both VS Code Marketplace (via `vsce`) and Open VSX (via `ovsx`)
+  - **Dry-run Mode**: Test the publishing process without actually publishing (`--dry-run`)
+  - **Files Added**:
+    - publish.sh - Manual publishing script with comprehensive checks
+    - docs/DRAFT_AUTOMATED_PUBLISHING.md - Documentation for future GitHub Actions automated publishing
+
 ### Fixed
 
 - **Issue #99**: Fixed "Format: Unknown" always shown in the File Information section
