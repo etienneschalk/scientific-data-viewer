@@ -10,6 +10,12 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
+- **Issue #99**: Fixed "Format: Unknown" always shown in the File Information section
+  - **Root Cause**: The webview was looking for `data.format` which was never set by the Python backend; the format name is stored in `format_info.display_name`
+  - **Solution**: Updated `renderFileInformation()` to use `format_info.display_name` as fallback when `format` is not set
+  - **Files Modified**:
+    - src/panel/webview/webview-script.js - Use format_info.display_name for format display
+
 - **Issue #108**: Fixed attributes being truncated in text representations
   - **Root Cause**: xarray display options had `display_expand_attrs=False` and `display_expand_data=False` applied to text representations, causing attributes and data to show only counts (e.g., `Attributes: (3)`) instead of actual values
   - **Solution**: Updated `XR_TEXT_OPTIONS` to use `display_expand_attrs=True` and `display_expand_data=True` for text representations, ensuring full attribute and data display
