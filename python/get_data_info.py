@@ -1148,29 +1148,25 @@ def create_plot(
             if strategy == "2d_classic":
                 # 2D spatial data - plot directly with appropriate colormap
                 logger.info("Creating 2D spatial plot")
-                var.plot.imshow(cmap="viridis")
+                var.plot.imshow()
                 plt.gca().set_aspect("equal")
             elif strategy == "2d_classic_isel":
                 logger.info("Creating 2D spatial plot with isel")
                 first_dim = var.dims[0]
-                var.isel({first_dim: 0}).plot.imshow(cmap="viridis")
+                var.isel({first_dim: 0}).plot.imshow()
                 plt.gca().set_aspect("equal")
             elif strategy == "3d_col":
                 # 3D data with spatial dimensions - use col parameter
                 logger.info("Creating 3D plot with col parameter")
                 first_dim = var.dims[0]
                 col_wrap = min(4, var.shape[0])
-                var.plot.imshow(
-                    col=first_dim, cmap="viridis", aspect=1, size=4, col_wrap=col_wrap
-                )
+                var.plot.imshow(col=first_dim, aspect=1, size=4, col_wrap=col_wrap)
             elif strategy == "4d_col_row":
                 # 4D data with spatial dimensions - use col and row parameters
                 logger.info("Creating 4D plot with col and row parameters")
                 first_dim = var.dims[0]
                 second_dim = var.dims[1]
-                var.plot.imshow(
-                    col=second_dim, row=first_dim, cmap="viridis", aspect=1, size=4
-                )
+                var.plot.imshow(col=second_dim, row=first_dim, aspect=1, size=4)
             else:
                 # Default plotting behavior - let xarray decide the best method
                 logger.info("Creating default plot using xarray's native plotting")
