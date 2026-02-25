@@ -44,8 +44,10 @@ def main():
     # Check availability
     availability = check_package_availability(package_names)
 
-    # Output as JSON
-    print(json.dumps(availability))
+    # Output as JSON. Flush so piped stdout is visible on Windows (Issue #118).
+    # When stdout is a pipe, Windows uses full buffering; without flush the
+    # parent may receive nothing or partial output.
+    print(json.dumps(availability), flush=True)
 
 
 if __name__ == "__main__":
