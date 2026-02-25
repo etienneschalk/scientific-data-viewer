@@ -22,6 +22,12 @@ The extension now recognizes all of the following as GRIB data:
 | .grb      | GRIB   |
 | .grb2     | GRIB2  |
 
+### Bug Fix: Extension own environment (uv) after reinstall (Issue #115)
+
+- **Problem**: If you had previously used "use extension own environment" (uv) and then uninstalled and reinstalled the extension, initialization could fail with:
+  `A virtual environment already exists at ... Use --clear to replace it`.
+- **Fix**: The extension now passes `--clear` when creating the uv virtual environment, so an existing env at the same path (e.g. left over from a previous install) is replaced instead of causing a failure. No action needed from you; reinstall + "use own env" will work as expected.
+
 ### Upgrading
 
 No action required. After updating to 0.8.1, `.grb2` files will be associated with the GRIB Data Viewer like other GRIB extensions.

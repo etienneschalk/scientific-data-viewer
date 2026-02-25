@@ -18,6 +18,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/panel/webview/webview-script.js - SUPPORTED_EXTENSIONS_HARDOCDED
     - python/get_data_info.py - SUPPORTED_EXTENSIONS, SupportedExtensionType, FORMAT_ENGINE_MAP, FORMAT_DISPLAY_NAMES
 
+### Fixed
+
+- **Issue #115**: Extension failed to initialize when "use own environment" (uv) was enabled and a previous install had left an existing uv env in globalStorage (e.g. after uninstall then reinstall)
+  - **Problem**: `uv venv` failed with "A virtual environment already exists at ... Use `--clear` to replace it", blocking creation of the extension's virtual environment
+  - **Solution**: Pass `--clear` when creating the virtual environment with `uv venv` so an existing env at the same path is replaced instead of causing failure
+  - **Files Modified**:
+    - src/python/ExtensionVirtualEnvironmentManager.ts - Added `--clear` to `uv venv` arguments in `uvCreateVirtualEnvironment()`
+
 ## [0.8.0] - 2025-12-11
 
 ### Added
