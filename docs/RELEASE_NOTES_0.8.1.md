@@ -15,12 +15,12 @@ This patch adds support for the `.grb2` file extension used by many GRIB2 (Gridd
 
 The extension now recognizes all of the following as GRIB data:
 
-| Extension | Format  |
-| --------- | ------- |
-| .grib     | GRIB    |
-| .grib2    | GRIB2   |
-| .grb      | GRIB    |
-| .grb2     | GRIB2   |
+| Extension | Format |
+| --------- | ------ |
+| .grib     | GRIB   |
+| .grib2    | GRIB2  |
+| .grb      | GRIB   |
+| .grb2     | GRIB2  |
 
 ### Upgrading
 
