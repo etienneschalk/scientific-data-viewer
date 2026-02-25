@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.8.0** • [Release Notes](./docs/RELEASE_NOTES_0.8.0.md)
+**Current Version: v0.8.1** • [Release Notes](./docs/RELEASE_NOTES_0.8.1.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -21,15 +21,15 @@ Available on:
 
 - **Multi-format Support**:
 
-| Format     | File Extension        |
-| ---------- | --------------------- |
-| NetCDF     | .nc, .netcdf, .nc4    |
-| CDF (NASA) | .cdf                  |
-| Zarr       | .zarr                 |
-| HDF5       | .h5, .hdf5            |
-| GRIB       | .grib, .grib2, .grb   |
-| GeoTIFF    | .tif, .tiff, .geotiff |
-| JPEG-2000  | .jp2, .jpeg2000       |
+| Format     | File Extension             |
+| ---------- | -------------------------- |
+| NetCDF     | .nc, .netcdf, .nc4         |
+| CDF (NASA) | .cdf                       |
+| Zarr       | .zarr                      |
+| HDF5       | .h5, .hdf5                 |
+| GRIB       | .grib, .grib2, .grb, .grb2 |
+| GeoTIFF    | .tif, .tiff, .geotiff      |
+| JPEG-2000  | .jp2, .jpeg2000            |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them

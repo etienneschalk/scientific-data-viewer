@@ -14,6 +14,7 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
     '.grib',
     '.grib2',
     '.grb',
+    '.grb2',
     '.tif',
     '.tiff',
     '.geotiff',

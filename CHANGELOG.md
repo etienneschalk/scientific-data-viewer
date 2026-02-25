@@ -6,6 +6,18 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.8.1] - 2026-02-25
+
+### Added
+
+- **Issue #116**: Support for `.grb2` file extension (GRIB2 format)
+  - **Problem**: Users with `.grb2` files could not load them in the viewer; only `.grib`, `.grib2`, and `.grb` were recognized
+  - **Solution**: Added `.grb2` to all GRIB-related contributions (context menus, language, custom editor selector), webview supported extensions, and Python backend format/engine mapping
+  - **Files Modified**:
+    - package.json - Menus, languages.grib.extensions, customEditors.gribEditor.selector
+    - src/panel/webview/webview-script.js - SUPPORTED_EXTENSIONS_HARDOCDED
+    - python/get_data_info.py - SUPPORTED_EXTENSIONS, SupportedExtensionType, FORMAT_ENGINE_MAP, FORMAT_DISPLAY_NAMES
+
 ## [0.8.0] - 2025-12-11
 
 ### Added

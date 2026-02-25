@@ -166,6 +166,7 @@ SupportedExtensionType = Literal[
     ".grib",
     ".grib2",
     ".grb",
+    ".grb2",
     ".tif",
     ".tiff",
     ".geotiff",
@@ -199,6 +200,7 @@ FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
     ".grib": ["cfgrib"],
     ".grib2": ["cfgrib"],
     ".grb": ["cfgrib"],
+    ".grb2": ["cfgrib"],
     #
     ".tif": ["rasterio"],
     ".tiff": ["rasterio"],
@@ -223,6 +225,7 @@ FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
     ".grib": "GRIB",
     ".grib2": "GRIB2",
     ".grb": "GRIB",
+    ".grb2": "GRIB2",
     #
     ".tif": "GeoTIFF",
     ".tiff": "GeoTIFF",
