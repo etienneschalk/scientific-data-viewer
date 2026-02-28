@@ -246,6 +246,26 @@ export class HTMLGenerator {
                         <button id="clearTimeControlsButton" class="plot-control-button">Clear Time Controls</button>
                     </div>
                 </div>
+
+                <!-- Dimension Slices (Issue #117) -->
+                <div class="dimension-slices-section" style="display: none;">
+                    <h4>Dimension Slices</h4>
+                    <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting.</p>
+                    <div id="dimensionSlicesContainer"></div>
+                    <div class="dimension-slices-facets">
+                        <label for="facetRowSelect">Facet row:</label>
+                        <select id="facetRowSelect" class="facet-select">
+                            <option value="">None</option>
+                        </select>
+                        <label for="facetColSelect">Facet col:</label>
+                        <select id="facetColSelect" class="facet-select">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div class="time-controls-row">
+                        <button id="clearDimensionSlicesButton" class="plot-control-button">Clear Dimension Slices</button>
+                    </div>
+                </div>
             </details>
         </div>`;
     }

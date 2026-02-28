@@ -87,6 +87,9 @@ export class UIController {
                     payload.datetimeVariableName,
                     payload.startDatetime,
                     payload.endDatetime,
+                    payload.dimensionSlices,
+                    payload.facetRow,
+                    payload.facetCol,
                     payload.operationId,
                 );
             },
@@ -324,6 +327,9 @@ export class UIController {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        dimensionSlices?: Record<string, string | number>,
+        facetRow?: string,
+        facetCol?: string,
         operationId?: string,
     ): Promise<string | undefined> {
         try {
@@ -346,6 +352,9 @@ export class UIController {
                 datetimeVariableName,
                 startDatetime,
                 endDatetime,
+                dimensionSlices,
+                facetRow,
+                facetCol,
                 operationId,
             );
 
@@ -354,9 +363,9 @@ export class UIController {
             }
 
             if (plotData.error) {
-                throw new Error(
-                    `Data processing error: ${plotData.error.error}`,
-                );
+                const msg = `Data processing error: ${plotData.error.error}`;
+                Logger.error(`[UIController] [createPlot] ${msg}`);
+                throw new Error(msg);
             }
 
             return plotData?.result?.plot_data;

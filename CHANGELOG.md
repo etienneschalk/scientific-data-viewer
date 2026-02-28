@@ -6,6 +6,33 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.9.0] - 2026-02-28
+
+### Added
+
+- **Issue #102**: Scalar and small array values are now computed and displayed for variables and coordinates
+  - **Problem**: Small variables (e.g. single-value time coordinates after interpolation) showed only shape/dtype/size, not the actual value
+  - **Solution**: When a variable or coordinate is at or below 1000 bytes (`SMALL_VARIABLE_BYTES`), its values are loaded and shown in the UI (truncated to 500 chars)
+  - **Files Modified**:
+    - python/get_data_info.py - `VariableInfo`/`CoordinateInfo` optional `display_value`, `_format_small_value()`, `create_variable_info`/`create_coord_info` set `display_value` when under threshold
+    - src/types.ts - optional `display_value` on variable/coordinate items
+    - src/panel/webview/webview-script.js - render `display_value` in variable/coordinate details; src/panel/webview/styles.css - `.variable-display-value` styling
+
+- **Issue #117**: Select and slice dimensions in the UI before plotting (xarray-style isel and faceting)
+  - **Problem**: Users could not subset data by dimension index/slice or create faceted plots from the UI
+  - **Solution**: New "Dimension Slices" section in plot controls: one text input per dimension (Python slice syntax, e.g. `0:24:2`, `100:120`, or `130`), plus Facet row/Facet col dropdowns. Slices are applied as `var.isel(...)` before time filtering and plotting; row/col override default faceting dimensions for 3D/4D plots
+  - **Files Modified**:
+    - src/panel/communication/MessageTypes.ts - `CreatePlotRequest`: `dimensionSlices`, `facetRow`, `facetCol`
+    - python/get_data_info.py - `_parse_dimension_slice_spec`, `_parse_dimension_slices`, `create_plot()` args and isel application, CLI `--dimension-slices` (JSON), `--facet-row`, `--facet-col`
+    - src/python/DataProcessor.ts, src/panel/UIController.ts - pass through new params
+    - src/panel/HTMLGenerator.ts - Dimension Slices section; src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
+
+- **Issue #121**: Log full executable command for copy-paste
+  - **Problem**: When debugging (e.g. package check on Windows), users had to manually reconstruct the full command from separate log lines
+  - **Solution**: Extension now logs a single copy-pasteable command line when executing a Python script (e.g. package check or get_data_info)
+  - **Files Modified**:
+    - src/python/PythonManager.ts - In `executePythonFileUnchecked()`, log `🐍 📜 Full command (copy-paste): <pythonPath> <scriptPath> <args...>` on one line
+
 ## [0.8.1] - 2026-02-25
 
 ### Added

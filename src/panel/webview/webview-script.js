@@ -171,6 +171,9 @@ class WebviewMessageBus {
         datetimeVariableName,
         startDatetime,
         endDatetime,
+        dimensionSlices,
+        facetRow,
+        facetCol,
         timeout = 15000,
     ) {
         // Generate a unique operation ID for this plot request
@@ -191,6 +194,15 @@ class WebviewMessageBus {
         }
         if (endDatetime !== null && endDatetime !== '') {
             payload.endDatetime = endDatetime;
+        }
+        if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
+            payload.dimensionSlices = dimensionSlices;
+        }
+        if (facetRow !== null && facetRow !== undefined && facetRow !== '') {
+            payload.facetRow = facetRow;
+        }
+        if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
+            payload.facetCol = facetCol;
         }
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
@@ -669,6 +681,9 @@ function displayDataInfo(data, filePath) {
     // Populate datetime variables
     populateDatetimeVariables(data);
 
+    // Populate dimension slices (Issue #117)
+    populateDimensionSlices(data);
+
     // Show content
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
@@ -881,13 +896,16 @@ function renderCoordinateVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'coordinate',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${variable.display_value ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>` : ''}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'coordinate',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
     `;
 }
@@ -916,6 +934,9 @@ function renderDataVariable(variable, groupName) {
         variable.name
     }`;
     const plotControls = renderVariablePlotControls(fullVariableName);
+    const displayValueBlock = variable.display_value
+        ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>`
+        : '';
 
     return /*html*/ `
         <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
@@ -936,13 +957,16 @@ function renderDataVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'variable',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${displayValueBlock}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'variable',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
         ${plotControls}
     `;
@@ -1532,6 +1556,83 @@ function populateDatetimeVariables(data) {
     globalTimeControlsState.datetimeVarsMap = datetimeVarsMap;
 }
 
+// Populate dimension slice inputs and facet dropdowns (Issue #117)
+function populateDimensionSlices(data) {
+    const section = document.querySelector('.dimension-slices-section');
+    if (!section) {
+        return;
+    }
+    if (
+        !data ||
+        !data.dimensions_flattened ||
+        Object.keys(data.dimensions_flattened).length === 0
+    ) {
+        section.style.display = 'none';
+        return;
+    }
+    section.style.display = 'block';
+    const container = document.getElementById('dimensionSlicesContainer');
+    if (!container) {
+        return;
+    }
+    const groupNames = Object.keys(data.dimensions_flattened);
+    const firstGroup = groupNames[0] || '/';
+    const dimensions = data.dimensions_flattened[firstGroup];
+    if (!dimensions || Object.keys(dimensions).length === 0) {
+        container.innerHTML = '<p class="muted-text">No dimensions in this group.</p>';
+        const facetRowSelect = document.getElementById('facetRowSelect');
+        const facetColSelect = document.getElementById('facetColSelect');
+        if (facetRowSelect) {
+            facetRowSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (facetColSelect) {
+            facetColSelect.innerHTML = '<option value="">None</option>';
+        }
+        return;
+    }
+    const dimNames = Object.keys(dimensions);
+    container.innerHTML = dimNames
+        .map(
+            (dimName) =>
+                `<div class="dimension-slice-row">
+                    <label for="dim-slice-${dimName}">${escapeHtml(dimName)} (${dimensions[dimName]}):</label>
+                    <input type="text" id="dim-slice-${dimName}" class="dimension-slice-input" data-dimension="${escapeHtml(dimName)}" placeholder="e.g. 0:24:2 or 130" />
+                </div>`,
+        )
+        .join('');
+    const facetRowSelect = document.getElementById('facetRowSelect');
+    const facetColSelect = document.getElementById('facetColSelect');
+    const facetOptions = '<option value="">None</option>' + dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    if (facetRowSelect) {
+        facetRowSelect.innerHTML = facetOptions;
+    }
+    if (facetColSelect) {
+        facetColSelect.innerHTML = facetOptions;
+    }
+}
+
+function getDimensionSlicesState() {
+    const dimensionSlices = {};
+    const inputs = document.querySelectorAll('.dimension-slice-input');
+    inputs.forEach((input) => {
+        const val = input.value && input.value.trim();
+        if (val) {
+            const dim = input.dataset.dimension;
+            if (dim) {
+                const num = Number(val);
+                dimensionSlices[dim] = Number.isInteger(num) ? num : val;
+            }
+        }
+    });
+    const facetRowSelect = document.getElementById('facetRowSelect');
+    const facetColSelect = document.getElementById('facetColSelect');
+    return {
+        dimensionSlices: Object.keys(dimensionSlices).length ? dimensionSlices : null,
+        facetRow: facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
+        facetCol: facetColSelect && facetColSelect.value ? facetColSelect.value : '',
+    };
+}
+
 // Convert datetime-local format to text format (YYYY-MM-DD HH:MM:SS)
 function convertDatetimeLocalToText(datetimeLocal) {
     if (!datetimeLocal) {
@@ -1778,6 +1879,23 @@ function setupTimeControlsEventListeners() {
             }
             if (endTextInput) {
                 endTextInput.value = '';
+            }
+        });
+    }
+
+    const clearDimSlicesButton = document.getElementById('clearDimensionSlicesButton');
+    if (clearDimSlicesButton) {
+        clearDimSlicesButton.addEventListener('click', () => {
+            document.querySelectorAll('.dimension-slice-input').forEach((input) => {
+                input.value = '';
+            });
+            const facetRowSelect = document.getElementById('facetRowSelect');
+            const facetColSelect = document.getElementById('facetColSelect');
+            if (facetRowSelect) {
+                facetRowSelect.value = '';
+            }
+            if (facetColSelect) {
+                facetColSelect.value = '';
             }
         });
     }
@@ -2112,6 +2230,8 @@ async function handleCreateAllPlots() {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
+    const { dimensionSlices, facetRow, facetCol } = getDimensionSlicesState();
+
     // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
     const plotTasks = Array.from(buttons).map((button) => ({
         variable: button.getAttribute('data-variable'),
@@ -2149,6 +2269,9 @@ async function handleCreateAllPlots() {
                 datetimeVariableName,
                 startDatetimeISO,
                 endDatetimeISO,
+                dimensionSlices,
+                facetRow,
+                facetCol,
             );
             displayVariablePlot(variable, plotData);
 
@@ -2349,12 +2472,17 @@ async function handleCreateVariablePlot(variable) {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
+    const { dimensionSlices, facetRow, facetCol } = getDimensionSlicesState();
+
     console.log('Creating plot with time controls:', {
         datetimeVariableName,
         startDatetime,
         endDatetime,
         startDatetimeISO,
         endDatetimeISO,
+        dimensionSlices,
+        facetRow,
+        facetCol,
         rawState: globalTimeControlsState,
     });
 
@@ -2368,6 +2496,9 @@ async function handleCreateVariablePlot(variable) {
             datetimeVariableName,
             startDatetimeISO,
             endDatetimeISO,
+            dimensionSlices,
+            facetRow,
+            facetCol,
         );
         displayVariablePlot(variable, plotData);
     } catch (error) {

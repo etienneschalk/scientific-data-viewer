@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
-import { quoteIfNeeded } from '../common/utils';
+import { quoteIfNeeded, quoteForShell } from '../common/utils';
 import { getMatplotlibStyle } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
@@ -80,6 +80,9 @@ export class DataProcessor {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        dimensionSlices?: Record<string, string | number>,
+        facetRow?: string,
+        facetCol?: string,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
@@ -120,6 +123,21 @@ export class DataProcessor {
         }
         if (endDatetime && endDatetime.trim() !== '') {
             args.push('--end-datetime', quoteIfNeeded(endDatetime));
+        }
+        if (
+            dimensionSlices &&
+            Object.keys(dimensionSlices).length > 0
+        ) {
+            args.push(
+                '--dimension-slices',
+                quoteForShell(JSON.stringify(dimensionSlices)),
+            );
+        }
+        if (facetRow && facetRow.trim() !== '') {
+            args.push('--facet-row', quoteIfNeeded(facetRow));
+        }
+        if (facetCol && facetCol.trim() !== '') {
+            args.push('--facet-col', quoteIfNeeded(facetCol));
         }
 
         try {
