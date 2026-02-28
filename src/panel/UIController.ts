@@ -87,6 +87,9 @@ export class UIController {
                     payload.datetimeVariableName,
                     payload.startDatetime,
                     payload.endDatetime,
+                    payload.dimensionSlices,
+                    payload.facetRow,
+                    payload.facetCol,
                     payload.operationId,
                 );
             },
@@ -324,6 +327,9 @@ export class UIController {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        dimensionSlices?: Record<string, string | number>,
+        facetRow?: string,
+        facetCol?: string,
         operationId?: string,
     ): Promise<string | undefined> {
         try {
@@ -346,6 +352,9 @@ export class UIController {
                 datetimeVariableName,
                 startDatetime,
                 endDatetime,
+                dimensionSlices,
+                facetRow,
+                facetCol,
                 operationId,
             );
 

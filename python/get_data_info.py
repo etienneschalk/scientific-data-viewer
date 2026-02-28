@@ -874,6 +874,47 @@ def detect_plotting_strategy(
     return "default"
 
 
+def _parse_dimension_slice_spec(spec: Union[str, int]) -> Union[int, slice]:
+    """Parse a single dimension slice spec (Issue #117). Returns int or slice()."""
+    if isinstance(spec, int):
+        return spec
+    s = str(spec).strip()
+    if not s:
+        raise ValueError("Empty slice spec")
+    if ":" not in s:
+        return int(s)
+    parts = s.split(":")
+    if len(parts) == 2:
+        start_s, stop_s = parts
+        start = int(start_s) if start_s else None
+        stop = int(stop_s) if stop_s else None
+        return slice(start, stop)
+    if len(parts) == 3:
+        start_s, stop_s, step_s = parts
+        start = int(start_s) if start_s else None
+        stop = int(stop_s) if stop_s else None
+        step = int(step_s) if step_s else None
+        return slice(start, stop, step)
+    raise ValueError(f"Invalid slice spec: {s!r}")
+
+
+def _parse_dimension_slices(
+    slices_dict: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Union[int, slice]]]:
+    """Parse dimension_slices from JSON/CLI into isel-compatible dict (Issue #117)."""
+    if not slices_dict:
+        return None
+    out: Dict[str, Union[int, slice]] = {}
+    for dim, spec in slices_dict.items():
+        if spec is None or (isinstance(spec, str) and not spec.strip()):
+            continue
+        try:
+            out[str(dim)] = _parse_dimension_slice_spec(spec)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid slice for dimension {dim!r}: {e}") from e
+    return out if out else None
+
+
 def create_plot(
     file_path: Path,
     variable_path: str,
@@ -883,6 +924,9 @@ def create_plot(
     datetime_variable_name: Optional[str] = None,
     start_datetime: Optional[str] = None,
     end_datetime: Optional[str] = None,
+    dimension_slices: Optional[Dict[str, Union[str, int]]] = None,
+    facet_row: Optional[str] = None,
+    facet_col: Optional[str] = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -991,6 +1035,23 @@ def create_plot(
                 error=f"Variable '{variable_name}' not found in dataset",
                 format_info=file_format_info,
             )
+
+        # Apply dimension slices (Issue #117) before datetime filtering
+        if dimension_slices:
+            try:
+                isel_dict = _parse_dimension_slices(dimension_slices)
+                if isel_dict:
+                    # Only apply isel for dimensions that exist on this variable
+                    var_dims = set(var.dims)
+                    isel_subset = {d: v for d, v in isel_dict.items() if d in var_dims}
+                    if isel_subset:
+                        var = var.isel(isel_subset)
+                        logger.info(f"Applied dimension slices: {isel_subset}")
+            except ValueError as e:
+                return CreatePlotError(
+                    error=f"Invalid dimension slice: {e}",
+                    format_info=file_format_info,
+                )
 
         # Handle datetime variable and time filtering
         datetime_var = None
@@ -1185,17 +1246,20 @@ def create_plot(
                 var.isel({first_dim: 0}).plot.imshow()
                 plt.gca().set_aspect("equal")
             elif strategy == "3d_col":
-                # 3D data with spatial dimensions - use col parameter
+                # 3D data with spatial dimensions - use col parameter (Issue #117: facet_col)
                 logger.info("Creating 3D plot with col parameter")
                 first_dim = var.dims[0]
-                col_wrap = min(4, var.shape[0])
-                var.plot.imshow(col=first_dim, aspect=1, size=4, col_wrap=col_wrap)
+                col_dim = facet_col if (facet_col and facet_col in var.dims) else first_dim
+                col_wrap = min(4, var.sizes.get(col_dim, 4))
+                var.plot.imshow(col=col_dim, aspect=1, size=4, col_wrap=col_wrap)
             elif strategy == "4d_col_row":
-                # 4D data with spatial dimensions - use col and row parameters
+                # 4D data with spatial dimensions - use col and row parameters (Issue #117: facet_row, facet_col)
                 logger.info("Creating 4D plot with col and row parameters")
                 first_dim = var.dims[0]
                 second_dim = var.dims[1]
-                var.plot.imshow(col=second_dim, row=first_dim, aspect=1, size=4)
+                row_dim = facet_row if (facet_row and facet_row in var.dims) else first_dim
+                col_dim = facet_col if (facet_col and facet_col in var.dims) else second_dim
+                var.plot.imshow(col=col_dim, row=row_dim, aspect=1, size=4)
             else:
                 # Default plotting behavior - let xarray decide the best method
                 logger.info("Creating default plot using xarray's native plotting")
@@ -1768,6 +1832,24 @@ Examples:
         help="End datetime for filtering (ISO format string)",
     )
 
+    parser.add_argument(
+        "--dimension-slices",
+        default=None,
+        help="JSON object of dimension name to index or slice string (e.g. {\"time\": \"0:24:2\", \"rlat\": \"100:120\", \"rlon\": 130}) for isel() before plotting (Issue #117)",
+    )
+
+    parser.add_argument(
+        "--facet-row",
+        default=None,
+        help="Dimension name for faceted plot row (Issue #117)",
+    )
+
+    parser.add_argument(
+        "--facet-col",
+        default=None,
+        help="Dimension name for faceted plot col (Issue #117)",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1786,6 +1868,13 @@ Examples:
         ok = isinstance(result, FileInfoResult)
 
     elif args.mode == "plot":
+        dimension_slices_dict = None
+        if args.dimension_slices and args.dimension_slices.strip():
+            try:
+                dimension_slices_dict = json.loads(args.dimension_slices)
+            except json.JSONDecodeError as e:
+                print(to_json_best_effort({"error": f"Invalid --dimension-slices JSON: {e}"}))
+                return 1
         # Create plot
         result = create_plot(
             args.file_path,
@@ -1796,6 +1885,9 @@ Examples:
             args.datetime_variable,
             args.start_datetime,
             args.end_datetime,
+            dimension_slices=dimension_slices_dict,
+            facet_row=args.facet_row,
+            facet_col=args.facet_col,
         )
         ok = isinstance(result, CreatePlotResult)
 
