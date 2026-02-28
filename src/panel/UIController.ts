@@ -363,9 +363,9 @@ export class UIController {
             }
 
             if (plotData.error) {
-                throw new Error(
-                    `Data processing error: ${plotData.error.error}`,
-                );
+                const msg = `Data processing error: ${plotData.error.error}`;
+                Logger.error(`[UIController] [createPlot] ${msg}`);
+                throw new Error(msg);
             }
 
             return plotData?.result?.plot_data;
