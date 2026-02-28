@@ -12,6 +12,16 @@ export function quoteIfNeeded(value: string): string {
 }
 
 /**
+ * Quote a string for safe passing as a single shell argument (e.g. JSON).
+ * Escapes internal double quotes and backslashes so the shell passes one argument.
+ * Use for values that contain ", {, }, etc. so the shell does not split them.
+ */
+export function quoteForShell(value: string): string {
+    const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return `"${escaped}"`;
+}
+
+/**
  * Format configuration value based on type
  */
 export function formatConfigValue(value: any): string {

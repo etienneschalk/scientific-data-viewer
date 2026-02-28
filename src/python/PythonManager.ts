@@ -333,7 +333,41 @@ export class PythonManager {
                         resolve(stdout);
                     }
                 } else {
-                    const errorMessage = stderr || 'Unknown Python error';
+                    // Log so Extension Log always shows what we got (exit code 1 often = uncaught exception)
+                    Logger.error(
+                        `🐍 📜 Python script exited with code ${code}. Stderr (${stderr?.length ?? 0} chars):\n${stderr || '(empty)'}`,
+                    );
+                    Logger.error(
+                        `🐍 📜 Python script stdout (${stdout?.length ?? 0} chars):\n${stdout || '(empty)'}`,
+                    );
+                    const errorMessage = stderr || stdout || 'Unknown Python error';
+                    // Prefer script's JSON error from stdout (e.g. Invalid --dimension-slices JSON)
+                    let userMessage: string;
+                    try {
+                        const out = stdout?.trim();
+                        if (out && (out.startsWith('{') || out.startsWith('['))) {
+                            const parsed = JSON.parse(out);
+                            if (
+                                parsed &&
+                                typeof parsed.error === 'string' &&
+                                parsed.error.length > 0
+                            ) {
+                                userMessage = parsed.error;
+                            } else {
+                                userMessage =
+                                    errorMessage.trim().split('\n').pop()?.trim() ||
+                                    `Python script failed (exit code ${code})`;
+                            }
+                        } else {
+                            userMessage =
+                                errorMessage.trim().split('\n').pop()?.trim() ||
+                                `Python script failed (exit code ${code})`;
+                        }
+                    } catch {
+                        userMessage =
+                            errorMessage.trim().split('\n').pop()?.trim() ||
+                            `Python script failed (exit code ${code})`;
+                    }
                     if (errorMessage.includes('ModuleNotFoundError')) {
                         reject(
                             new Error(
@@ -353,11 +387,7 @@ export class PythonManager {
                             ),
                         );
                     } else {
-                        reject(
-                            new Error(
-                                `Python script failed (exit code ${code}): \n${errorMessage}`,
-                            ),
-                        );
+                        reject(new Error(userMessage));
                     }
                 }
             });

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
-import { quoteIfNeeded } from '../common/utils';
+import { quoteIfNeeded, quoteForShell } from '../common/utils';
 import { getMatplotlibStyle } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
@@ -130,7 +130,7 @@ export class DataProcessor {
         ) {
             args.push(
                 '--dimension-slices',
-                quoteIfNeeded(JSON.stringify(dimensionSlices)),
+                quoteForShell(JSON.stringify(dimensionSlices)),
             );
         }
         if (facetRow && facetRow.trim() !== '') {

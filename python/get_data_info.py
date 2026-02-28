@@ -1048,8 +1048,15 @@ def create_plot(
                         var = var.isel(isel_subset)
                         logger.info(f"Applied dimension slices: {isel_subset}")
             except ValueError as e:
+                logger.warning(f"Dimension slice parse error: {e}")
                 return CreatePlotError(
                     error=f"Invalid dimension slice: {e}",
+                    format_info=file_format_info,
+                )
+            except Exception as e:
+                logger.exception("Dimension slice (isel) failed")
+                return CreatePlotError(
+                    error=f"Dimension slice error: {type(e).__name__}: {e}",
                     format_info=file_format_info,
                 )
 
