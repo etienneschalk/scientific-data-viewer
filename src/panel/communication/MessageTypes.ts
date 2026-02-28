@@ -49,6 +49,12 @@ export interface CreatePlotRequest {
     datetimeVariableName?: string;
     startDatetime?: string;
     endDatetime?: string;
+    /** Dimension index/slice per dimension (Issue #117). e.g. { time: "0:24:2", rlat: "100:120", rlon: 130 } */
+    dimensionSlices?: Record<string, string | number>;
+    /** Dimension name for faceted plot row (Issue #117) */
+    facetRow?: string;
+    /** Dimension name for faceted plot col (Issue #117) */
+    facetCol?: string;
 }
 
 export interface CreatePlotResponse {

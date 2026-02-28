@@ -732,6 +732,49 @@ button:active {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.dimension-slices-section {
+    margin-top: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--vscode-panel-border);
+}
+
+.dimension-slices-section h4 {
+    margin: 0 0 4px 0;
+}
+
+.dimension-slices-hint {
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    margin: 0 0 8px 0;
+}
+
+.dimension-slice-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.dimension-slice-row label {
+    min-width: 120px;
+}
+
+.dimension-slice-row input {
+    flex: 1;
+    max-width: 200px;
+}
+
+.dimension-slices-facets {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.dimension-slices-facets .facet-select {
+    margin-right: 12px;
+}
+
 .time-controls-section {
     margin-top: 20px;
     padding: 15px;
