@@ -317,6 +317,9 @@ export class PythonManager {
                         const result = JSON.parse(stdout);
                         resolve(result);
                     } catch (error) {
+                        Logger.debug(
+                            `🐍 📜 JSON parse failed for script output (stdout length=${stdout.length}): ${stdout.slice(0, 300)}`,
+                        );
                         resolve(stdout);
                     }
                 } else {
@@ -721,10 +724,25 @@ export class PythonManager {
                 false, // Don't enable logs for package checking
             );
 
+            // Log raw result for debugging (e.g. Issue #118: invalid response format)
+            const resultType = typeof result;
+            const resultPreview =
+                result === null
+                    ? 'null'
+                    : resultType === 'string'
+                      ? (result as string).slice(0, 500)
+                      : JSON.stringify(result).slice(0, 500);
+            Logger.debug(
+                `🐍 📦 Package availability check raw result: type=${resultType}, preview=${resultPreview}`,
+            );
+
             // The result should be a JSON object with package availability
             if (typeof result === 'object' && result !== null) {
                 return result as Record<string, boolean>;
             } else {
+                Logger.error(
+                    `🐍 📦 Invalid package check response: expected object, got type=${resultType}, value=${resultPreview}`,
+                );
                 throw new Error(
                     'Invalid response format from package availability check',
                 );

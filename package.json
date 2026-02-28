@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -115,12 +115,12 @@
         "menus": {
             "explorer/context": [
                 {
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewer",
                     "group": "navigation"
                 },
                 {
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewerMultiple",
                     "group": "navigation"
                 }
@@ -239,7 +239,8 @@
                 "extensions": [
                     ".grib",
                     ".grib2",
-                    ".grb"
+                    ".grb",
+                    ".grb2"
                 ],
                 "aliases": [
                     "GRIB",
@@ -358,6 +359,9 @@
                     },
                     {
                         "filenamePattern": "*.grb"
+                    },
+                    {
+                        "filenamePattern": "*.grb2"
                     }
                 ],
                 "icon": {
@@ -514,9 +518,13 @@
         "glob": "^10.3.0",
         "husky": "^9.1.7",
         "lint-staged": "^16.2.4",
-        "mocha": "^10.2.0",
+        "mocha": "^11.3.0",
         "prettier": "^3.6.2",
         "typescript": "^4.9.4"
+    },
+    "overrides": {
+        "serialize-javascript": "^7.0.3",
+        "diff": "^8.0.3"
     },
     "dependencies": {
         "axios": "^1.6.0",

@@ -315,6 +315,28 @@ suite('Extension Test Suite', () => {
                 hdf5Language.extensions.includes('.hdf5'),
                 'HDF5 should support .hdf5 files',
             );
+
+            const gribLanguage = languages.find(
+                (lang: any) => lang.id === 'grib',
+            );
+            assert.ok(gribLanguage, 'Should have GRIB language');
+            assert.ok(gribLanguage.extensions, 'GRIB should have extensions');
+            assert.ok(
+                gribLanguage.extensions.includes('.grib'),
+                'GRIB should support .grib files',
+            );
+            assert.ok(
+                gribLanguage.extensions.includes('.grib2'),
+                'GRIB should support .grib2 files',
+            );
+            assert.ok(
+                gribLanguage.extensions.includes('.grb'),
+                'GRIB should support .grb files',
+            );
+            assert.ok(
+                gribLanguage.extensions.includes('.grb2'),
+                'GRIB should support .grb2 files',
+            );
         }
     });
 

@@ -1680,6 +1680,131 @@ def create_sample_grib_grb():
     return output_file
 
 
+def create_sample_grib_grb2_file():
+    """Create a sample GRIB file with .grb2 extension (GRIB2 format)."""
+    output_file = "sample_data.grb2"
+
+    # Check if file already exists
+    if os.path.exists(output_file):
+        print(f"🌦️ GRIB GRB2 file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🌦️ Creating sample GRIB GRB2 file (.grb2 extension)...")
+
+    try:
+        import eccodes
+
+        print("  ✅ eccodes available, creating GRIB GRB2 file")
+    except ImportError:
+        print("  ❌ eccodes not available, skipping GRIB GRB2 file creation.")
+        return None
+
+    # Create time dimension
+    time = np.arange(0, 8, 2)  # 2-hourly data for 8 hours
+    dates = [datetime(2020, 1, 1) + timedelta(hours=int(t)) for t in time]
+
+    # Create lat/lon grid
+    lat = np.linspace(50, 40, 10)
+    lon = np.linspace(0, 20, 15)
+
+    # Create sample weather data
+    np.random.seed(808)
+    time_3d = time[:, np.newaxis, np.newaxis]
+    pressure = np.clip(
+        1010
+        + 15 * np.sin(2 * np.pi * time_3d / 8)
+        + np.random.normal(0, 5, (4, 10, 15)),
+        990,
+        1030,
+    )
+
+    # Create dataset
+    ds = xr.Dataset(
+        {
+            "pressure": (
+                ["time", "latitude", "longitude"],
+                pressure,
+                {
+                    "long_name": "Surface Pressure",
+                    "units": "Pa",
+                    "standard_name": "surface_air_pressure",
+                },
+            ),
+        },
+        coords={
+            "time": (["time"], dates, {"long_name": "Time", "standard_name": "time"}),
+            "latitude": (
+                ["latitude"],
+                lat,
+                {"long_name": "Latitude", "units": "degrees_north"},
+            ),
+            "longitude": (
+                ["longitude"],
+                lon,
+                {"long_name": "Longitude", "units": "degrees_east"},
+            ),
+        },
+    )
+
+    # Add global attributes
+    ds.attrs = {
+        "title": "Sample GRIB GRB2 Data",
+        "description": "Sample GRIB file with .grb2 extension for testing VSCode extension",
+        "institution": "Weather Test Center",
+        "source": "Generated for testing",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "Conventions": "CF-1.6",
+    }
+
+    # Save to GRIB using eccodes directly
+    try:
+        with open(output_file, "wb") as f:
+            for i, time_val in enumerate(dates):
+                grib_id = eccodes.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+
+                try:
+                    eccodes.codes_set_string(grib_id, "shortName", "msl")
+                    eccodes.codes_set_long(
+                        grib_id, "dataDate", int(time_val.strftime("%Y%m%d"))
+                    )
+                    eccodes.codes_set_long(
+                        grib_id, "dataTime", int(time_val.strftime("%H%M"))
+                    )
+
+                    data_2d = ds["pressure"].isel(time=i).values
+                    if data_2d.size != eccodes.codes_get_size(grib_id, "values"):
+                        expected_size = eccodes.codes_get_size(grib_id, "values")
+                        if data_2d.size < expected_size:
+                            padded_data = np.zeros(expected_size)
+                            padded_data[: data_2d.size] = data_2d.flatten()
+                            data_2d = padded_data
+                        else:
+                            data_2d = data_2d.flatten()[:expected_size]
+                    else:
+                        data_2d = data_2d.flatten()
+
+                    eccodes.codes_set_values(grib_id, data_2d)
+                    eccodes.codes_write(grib_id, f)
+
+                finally:
+                    eccodes.codes_release(grib_id)
+
+        print(f"✅ Created {output_file} (GRIB2 format)")
+
+    except Exception as e:
+        print(f"  ⚠️ Error writing GRIB GRB2 file with eccodes: {e}")
+        print("  🔄 Falling back to NetCDF format with .grb2 extension")
+        temp_file = output_file.replace(".grb2", "_temp.nc")
+        ds.to_netcdf(temp_file, engine="netcdf4")
+        import shutil
+
+        shutil.move(temp_file, output_file)
+        print(f"✅ Created {output_file} (NetCDF format with .grb2 extension)")
+
+    return output_file
+
+
 def create_sample_geotiff_tiff():
     """Create a sample GeoTIFF file with .tiff extension."""
     output_file = "sample_data.tiff"
@@ -5219,6 +5344,12 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((grib_grb_file, "GRIB GRB"))
         else:
             skipped_files.append("GRIB GRB (eccodes not available)")
+
+        grib_grb2_file = create_sample_grib_grb2_file()
+        if grib_grb2_file:
+            created_files.append((grib_grb2_file, "GRIB GRB2"))
+        else:
+            skipped_files.append("GRIB GRB2 (eccodes not available)")
 
         print("\n📁 Creating GeoTIFF files...")
         geotiff_file = create_sample_geotiff()

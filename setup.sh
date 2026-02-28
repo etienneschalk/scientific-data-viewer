@@ -63,6 +63,7 @@ echo "🧪 Running tests..."
 echo "   Running TypeScript tests..."
 npm test
 
+# XXX No venv is used ; requires pytest to be installed globally.
 echo "   Running Python datetime edge case tests..."
 set +e  # Temporarily disable exit on error for test execution
 python3 -m pytest python/test_datetime_edge_cases.py -v

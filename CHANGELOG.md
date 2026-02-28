@@ -6,6 +6,35 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.8.1] - 2026-02-25
+
+### Added
+
+- **Issue #116**: Support for `.grb2` file extension (GRIB2 format)
+  - **Problem**: Users with `.grb2` files could not load them in the viewer; only `.grib`, `.grib2`, and `.grb` were recognized
+  - **Solution**: Added `.grb2` to all GRIB-related contributions (context menus, language, custom editor selector), webview supported extensions, and Python backend format/engine mapping
+  - **Files Modified**:
+    - package.json - Menus, languages.grib.extensions, customEditors.gribEditor.selector
+    - src/panel/webview/webview-script.js - SUPPORTED_EXTENSIONS_HARDOCDED
+    - python/get_data_info.py - SUPPORTED_EXTENSIONS, SupportedExtensionType, FORMAT_ENGINE_MAP, FORMAT_DISPLAY_NAMES
+
+### Fixed
+
+- **Issue #115**: Extension failed to initialize when "use own environment" (uv) was enabled and a previous install had left an existing uv env in globalStorage (e.g. after uninstall then reinstall)
+  - **Problem**: `uv venv` failed with "A virtual environment already exists at ... Use `--clear` to replace it", blocking creation of the extension's virtual environment
+  - **Solution**: Pass `--clear` when creating the virtual environment with `uv venv` so an existing env at the same path is replaced instead of causing failure
+  - **Files Modified**:
+    - src/python/ExtensionVirtualEnvironmentManager.ts - Added `--clear` to `uv venv` arguments in `uvCreateVirtualEnvironment()`
+
+### Attempted to fix
+
+- **Issue #118**: Package availability check could fail on Windows when using the extension's own (uv) environment, with "Invalid response format" and "Missing core packages"
+  - **Problem**: When Node spawns the Python package-check script and reads its stdout via a pipe, Windows uses full buffering for the pipe. The script's small JSON output could stay in the buffer and not be flushed before the process exited, so the parent received empty or incomplete stdout and JSON parsing failed.
+  - **Solution**: (1) In the package-check script, use `print(..., flush=True)` so stdout is flushed to the pipe immediately on Windows. (2) Added debug logging of the raw package-check result to simplify diagnosis if issues persist.
+  - **Files Modified**:
+    - python/check_package_availability.py - `print(json.dumps(availability), flush=True)`
+    - src/python/PythonManager.ts - debug/error logging for package check result
+
 ## [0.8.0] - 2025-12-11
 
 ### Added

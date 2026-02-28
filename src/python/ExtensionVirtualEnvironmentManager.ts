@@ -290,11 +290,12 @@ export class ExtensionVirtualEnvironmentManager {
                 `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`,
             );
 
-            // Try to use Python specifically
+            // Try to use Python specifically. --clear replaces existing env (e.g. after uninstall/reinstall).
             const process = spawn(
                 'uv',
                 [
                     'venv',
+                    '--clear',
                     '--python',
                     this.PYTHON_VERSION,
                     quoteIfNeeded(envPath),
