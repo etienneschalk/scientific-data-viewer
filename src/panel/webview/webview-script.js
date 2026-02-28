@@ -896,14 +896,16 @@ function renderCoordinateVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            ${variable.display_value ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>` : ''}
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'coordinate',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${variable.display_value ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>` : ''}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'coordinate',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
     `;
 }
@@ -955,14 +957,16 @@ function renderDataVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            ${displayValueBlock}
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'variable',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${displayValueBlock}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'variable',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
         ${plotControls}
     `;

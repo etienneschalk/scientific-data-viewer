@@ -369,6 +369,13 @@ select:focus {
     flex: 1;
     color: var(--vscode-descriptionForeground);
     white-space: nowrap;
+    text-align: right;
+    max-width: 80px;
+}
+
+/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
+.variable-details-content {
+    display: block;
 }
 
 .variable-display-value {
@@ -377,6 +384,7 @@ select:focus {
     font-size: 0.9em;
     color: var(--vscode-descriptionForeground);
     word-break: break-all;
+    display: block;
 }
 
 .variable-display-value code {
