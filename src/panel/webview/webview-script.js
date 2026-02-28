@@ -881,6 +881,7 @@ function renderCoordinateVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
+            ${variable.display_value ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>` : ''}
             <div id="${joinId([
                 'data-group',
                 groupName,
@@ -916,6 +917,9 @@ function renderDataVariable(variable, groupName) {
         variable.name
     }`;
     const plotControls = renderVariablePlotControls(fullVariableName);
+    const displayValueBlock = variable.display_value
+        ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>`
+        : '';
 
     return /*html*/ `
         <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
@@ -936,6 +940,7 @@ function renderDataVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
+            ${displayValueBlock}
             <div id="${joinId([
                 'data-group',
                 groupName,

@@ -369,8 +369,18 @@ select:focus {
     flex: 1;
     color: var(--vscode-descriptionForeground);
     white-space: nowrap;
-    text-align: right;
-    max-width: 80px;
+}
+
+.variable-display-value {
+    margin: 4px 0 4px 1em;
+    padding: 4px 6px;
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    word-break: break-all;
+}
+
+.variable-display-value code {
+    font-family: var(--vscode-editor-font-family);
 }
 
 /* Attributes details styling */
