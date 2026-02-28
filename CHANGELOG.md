@@ -26,12 +26,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files Modified**:
     - src/python/ExtensionVirtualEnvironmentManager.ts - Added `--clear` to `uv venv` arguments in `uvCreateVirtualEnvironment()`
 
+### Attempted to fix
+
 - **Issue #118**: Package availability check could fail on Windows when using the extension's own (uv) environment, with "Invalid response format" and "Missing core packages"
   - **Problem**: When Node spawns the Python package-check script and reads its stdout via a pipe, Windows uses full buffering for the pipe. The script's small JSON output could stay in the buffer and not be flushed before the process exited, so the parent received empty or incomplete stdout and JSON parsing failed.
-  - **Solution**: (1) In the package-check script, use `print(..., flush=True)` so stdout is flushed to the pipe immediately on Windows. (2) In the Node side, normalize stdout before parsing (strip UTF-8 BOM and trim whitespace) and, when the result is a string, try parsing the trimmed string once more as a fallback. (3) Added debug logging of the raw package-check result to simplify diagnosis if issues persist.
+  - **Solution**: (1) In the package-check script, use `print(..., flush=True)` so stdout is flushed to the pipe immediately on Windows. (2) Added debug logging of the raw package-check result to simplify diagnosis if issues persist.
   - **Files Modified**:
     - python/check_package_availability.py - `print(json.dumps(availability), flush=True)`
-    - src/python/PythonManager.ts - BOM strip and trim before JSON.parse in executePythonFileUnchecked; recovery parse in checkPackagesAvailability when result is string; debug/error logging for package check result
+    - src/python/PythonManager.ts - debug/error logging for package check result
 
 ## [0.8.0] - 2025-12-11
 

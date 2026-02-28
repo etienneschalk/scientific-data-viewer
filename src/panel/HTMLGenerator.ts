@@ -185,7 +185,7 @@ export class HTMLGenerator {
                             <button data-target-id="pythonPath" class="text-copy-button">
                                 📋 Copy
                             </button>
-                            <pre id="pythonPath">Loading Python path... XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxXXXXXXXXXXXxx</pre>
+                            <pre id="pythonPath">Loading Python path...</pre>
                     </details>
                 </div>
                 <div class="info-section">
