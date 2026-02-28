@@ -53,6 +53,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     variables_flattened: {
@@ -63,6 +64,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
@@ -115,6 +117,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     variables_flattened: {
@@ -125,6 +128,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };

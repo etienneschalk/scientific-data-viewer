@@ -155,6 +155,26 @@ XR_TEXT_OPTIONS: Dict[str, Any] = {
 # For HTML representation, keep attrs collapsed (users can click to expand)
 XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
 
+# Threshold in bytes: variables/coordinates at or below this size get their values
+# loaded and displayed in the UI (Issue #102).
+SMALL_VARIABLE_BYTES = 1000
+SMALL_VALUE_DISPLAY_MAX_LEN = 500
+
+
+def _format_small_value(var: xr.DataArray, max_len: int = SMALL_VALUE_DISPLAY_MAX_LEN) -> str:
+    """Load and format variable values for display when size is below threshold."""
+    try:
+        loaded = var.values
+        if loaded.size == 0:
+            return "[]"
+        s = repr(loaded)
+        if len(s) > max_len:
+            s = s[: max_len - 3] + "..."
+        return s
+    except Exception as e:
+        return f"<could not load: {e!s}>"
+
+
 SupportedExtensionType = Literal[
     ".nc",
     ".nc4",
@@ -360,6 +380,8 @@ class VariableInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Variable attributes/metadata
+    display_value : Optional[str], optional
+        Loaded value(s) as string when size_bytes <= SMALL_VARIABLE_BYTES (Issue #102).
     """
 
     name: str
@@ -368,6 +390,7 @@ class VariableInfo:
     dimensions: List[str]
     size_bytes: int
     attributes: Dict[str, Any]
+    display_value: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -388,6 +411,8 @@ class CoordinateInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Coordinate attributes/metadata
+    display_value : Optional[str], optional
+        Loaded value(s) as string when size_bytes <= SMALL_VARIABLE_BYTES (Issue #102).
     """
 
     name: str
@@ -396,6 +421,7 @@ class CoordinateInfo:
     dimensions: List[str]
     size_bytes: int
     attributes: Dict[str, Any]
+    display_value: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -1530,6 +1556,10 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
     VariableInfo
         Information about the variable
     """
+    display_value = None
+    if var.nbytes <= SMALL_VARIABLE_BYTES:
+        display_value = _format_small_value(var)
+
     return VariableInfo(
         name=str(var_name),
         dtype=str(var.dtype),
@@ -1543,6 +1573,7 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
                 (("__xarray_encoding." + str(k), v) for k, v in var.encoding.items()),
             )
         },
+        display_value=display_value,
     )
 
 
@@ -1643,6 +1674,10 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
     CoordinateInfo
         Information about the coordinate
     """
+    display_value = None
+    if coord.nbytes <= SMALL_VARIABLE_BYTES:
+        display_value = _format_small_value(coord)
+
     return CoordinateInfo(
         name=str(coord_name),
         dtype=str(coord.dtype),
@@ -1656,6 +1691,7 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
                 (("__xarray_encoding." + str(k), v) for k, v in coord.encoding.items()),
             )
         },
+        display_value=display_value,
     )
 
 
