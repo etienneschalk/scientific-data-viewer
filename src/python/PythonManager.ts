@@ -185,6 +185,8 @@ export class PythonManager {
         if (operationId) {
             Logger.info(`🐍 📜 - Operation ID: ${operationId}`);
         }
+        const fullCommand = [quotedPythonPath, scriptPath, ...args].join(' ');
+        Logger.info(`🐍 📜 Full command (copy-paste): ${fullCommand}`);
 
         return new Promise((resolve, reject) => {
             // Use detached: true so we can kill the entire process group
