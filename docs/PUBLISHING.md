@@ -79,6 +79,8 @@ You need an Azure DevOps account to publish extensions to the VSCode marketplace
 
 ### 2. Personal Access Token
 
+_Reference: [https://code.visualstudio.com/ - Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)_
+
 Create a Personal Access Token (PAT) for authentication:
 
 1. **Go to User Settings** → **Personal Access Tokens**
