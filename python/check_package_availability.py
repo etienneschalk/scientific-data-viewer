@@ -5,16 +5,28 @@ Takes a list of package names as command line arguments and returns a JSON dict
 mapping package names to boolean availability status.
 """
 
+import contextlib
 import json
+import os
 import sys
 import traceback
 from importlib.util import find_spec
 from typing import Dict, List
 
+# When SDV_DEBUG_LOG is set (e.g. on Windows), write logs to this file so the
+# extension can read them even when stderr pipe is not captured.
+# Holder list so we can set from __main__ without global declaration.
+_LOG_FILE: list = []
+
 
 def _log(level: str, msg: str) -> None:
     """Print to stderr in a format the extension can forward to its logger."""
-    print(f" - {level} - {msg}", file=sys.stderr, flush=True)
+    line = f" - {level} - {msg}"
+    print(line, file=sys.stderr, flush=True)
+    if _LOG_FILE:
+        with contextlib.suppress(OSError):
+            _LOG_FILE[0].write(line + "\n")
+            _LOG_FILE[0].flush()
 
 
 # Force line-buffered stdout so output is visible when piped (e.g. Windows, Issue #118).
@@ -95,14 +107,25 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        # Always emit valid JSON so the extension can parse and report the error.
-        # Without this, any exception before the final print leaves stdout empty.
-        err_msg = f"{type(e).__name__}: {e}"
-        _log("ERROR", f"Script failed: {err_msg}")
-        payload = {"_error": err_msg}
-        print(json.dumps(payload), flush=True)
-        traceback.print_exc(file=sys.stderr)
-        sys.exit(0)
+    def _run() -> None:
+        try:
+            main()
+        except Exception as e:
+            # Always emit valid JSON so the extension can parse and report the error.
+            err_msg = f"{type(e).__name__}: {e}"
+            _log("ERROR", f"Script failed: {err_msg}")
+            payload = {"_error": err_msg}
+            print(json.dumps(payload), flush=True)
+            traceback.print_exc(file=sys.stderr)
+            sys.exit(0)
+
+    _log_path = os.environ.get("SDV_DEBUG_LOG")
+    if _log_path:
+        with open(_log_path, "a", encoding="utf-8") as logf:
+            _LOG_FILE.append(logf)
+            try:
+                _run()
+            finally:
+                _LOG_FILE.clear()
+    else:
+        _run()
