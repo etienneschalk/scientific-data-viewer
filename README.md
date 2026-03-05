@@ -17,6 +17,8 @@ Available on:
 
 </div>
 
+> **⚠️ Known issue for Windows users:** There is currently a [bug with the uv standalone environment on Windows](https://github.com/etienneschalk/scientific-data-viewer/issues/118) (*[Bug]: uv standalone environment not working anymore on 0.8.0*). If you are affected, you can use [version 0.7.0](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) in the meantime (install an older version from the marketplace or download the VSIX from the [Releases](https://github.com/etienneschalk/scientific-data-viewer/releases) page).
+
 ## 🚀 Features
 
 - **Multi-format Support**:
@@ -316,26 +318,29 @@ The extension includes configuration options that act as feature flags to contro
 
 ### ⚠️ Common Issues
 
-1. **Python not found**:
+1. **Windows: uv standalone environment not working (0.8.x)**:
+   - There is a [known issue](https://github.com/etienneschalk/scientific-data-viewer/issues/118) (*[Bug]: uv standalone environment not working anymore on 0.8.0*) when using the extension’s own environment (`Use Extension Own Environment`) on Windows. As a workaround, use [version 0.7.0](https://github.com/etienneschalk/scientific-data-viewer/releases/tag/v0.7.0) until this is fixed.
+
+2. **Python not found**:
    - Ensure Python is installed and in your PATH
    - Use the "Python: Select Interpreter" command to manually set the path
    - Consider using the extension's own virtual environment for a self-contained solution
 
-2. **uv not available**:
+3. **uv not available**:
    - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/')
    - Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
    - If uv is not installed, the extension will fall back to using the Python extension's interpreter
 
-3. **Missing packages**:
+4. **Missing packages**:
    - Install required packages: `pip install xarray matplotlib`
    - Install per-format packages: `pip install netCDF4 zarr h5py numpy rioxarray`
    - Or let the extension install them automatically (prompt when opening a file)
 
-4. **Large files not loading**:
+5. **Large files not loading**:
    - Increase the `maxFileSize` setting
    - Consider using data slicing for very large datasets
 
-5. **Permission errors**:
+6. **Permission errors**:
    - Ensure the extension has permission to read your data files
    - Check file permissions and VSCode workspace settings
 
