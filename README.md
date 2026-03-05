@@ -17,7 +17,7 @@ Available on:
 
 </div>
 
-> **⚠️ Known issue for Windows users:** There is currently a [bug with the uv standalone environment on Windows](https://github.com/etienneschalk/scientific-data-viewer/issues/118) (_[Bug]: uv standalone environment not working anymore on 0.8.0_). If you are affected, you can use [version 0.7.0](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) in the meantime (install an older version from the marketplace or download the VSIX from the [Releases](https://github.com/etienneschalk/scientific-data-viewer/releases) page).
+> **⚠️ Windows users (0.8.0 / 0.8.1):** Versions 0.8.0 and 0.8.1 have known issues on Windows (e.g. “Invalid response format”, “Python environment not ready”, [Issue #118](https://github.com/etienneschalk/scientific-data-viewer/issues/118)). **v0.8.2 attempts to fix this.** If you still see problems after updating to 0.8.2, use [version 0.7.0](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) as a workaround (install an older version from the marketplace or download the VSIX from the [Releases](https://github.com/etienneschalk/scientific-data-viewer/releases) page).
 
 ## 🚀 Features
 
@@ -318,8 +318,8 @@ The extension includes configuration options that act as feature flags to contro
 
 ### ⚠️ Common Issues
 
-1. **Windows: uv standalone environment not working (0.8.x)**:
-   - There is a [known issue](https://github.com/etienneschalk/scientific-data-viewer/issues/118) (_[Bug]: uv standalone environment not working anymore on 0.8.0_) when using the extension’s own environment (`Use Extension Own Environment`) on Windows. As a workaround, use [version 0.7.0](https://github.com/etienneschalk/scientific-data-viewer/releases/tag/v0.7.0) until this is fixed.
+1. **Windows: extension not working (0.8.0 / 0.8.1)**:
+   - Versions 0.8.0 and 0.8.1 have [known issues](https://github.com/etienneschalk/scientific-data-viewer/issues/118) on Windows (e.g. “Invalid response format”, “Python environment not ready”). **v0.8.2 attempts to fix this.** If the problem persists after updating to 0.8.2, use [version 0.7.0](https://github.com/etienneschalk/scientific-data-viewer/releases/tag/v0.7.0) as a workaround.
 
 2. **Python not found**:
    - Ensure Python is installed and in your PATH
