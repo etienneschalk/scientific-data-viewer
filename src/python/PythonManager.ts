@@ -200,9 +200,9 @@ export class PythonManager {
                 shell: false,
                 stdio: ['pipe', 'pipe', 'pipe'],
                 env: {
-                        ...process.env,
-                        PYTHONUNBUFFERED: '1',
-                    },
+                    ...process.env,
+                    PYTHONUNBUFFERED: '1',
+                },
             });
 
             // Track this process if an operation ID was provided
