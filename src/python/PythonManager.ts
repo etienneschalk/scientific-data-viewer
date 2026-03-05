@@ -331,7 +331,7 @@ export class PythonManager {
                             `🐍 📜 JSON parse failed for script output (stdout length=${stdout.length}): ${stdout.slice(0, 300)}`,
                         );
                         if (stdout.length === 0 && stderr) {
-                            Logger.debug(
+                            Logger.info(
                                 `🐍 📜 Script stderr (stdout was empty): ${stderr.slice(0, 1000)}`,
                             );
                         }
@@ -611,15 +611,26 @@ export class PythonManager {
             }
 
             // Fallback: Last chance - Common Python paths to check
-            const commonPaths = [
-                'python3',
-                'python',
-                '/usr/bin/python3',
-                '/usr/local/bin/python3',
-                'C:\\Python39\\python.exe',
-                'C:\\Python310\\python.exe',
-                'C:\\Python311\\python.exe',
-            ];
+            // On Windows, try "python" before "python3" so we avoid the Windows Store
+            // stub (python3.exe that opens the Store and exits 0 with no output).
+            const commonPaths =
+                process.platform === 'win32'
+                    ? [
+                          'python',
+                          'python3',
+                          'py',
+                          'C:\\Python313\\python.exe',
+                          'C:\\Python312\\python.exe',
+                          'C:\\Python311\\python.exe',
+                          'C:\\Python310\\python.exe',
+                          'C:\\Python39\\python.exe',
+                      ]
+                    : [
+                          'python3',
+                          'python',
+                          '/usr/bin/python3',
+                          '/usr/local/bin/python3',
+                      ];
 
             for (const pythonPath of commonPaths) {
                 try {
