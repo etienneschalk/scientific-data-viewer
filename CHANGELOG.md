@@ -6,6 +6,22 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.8.2] - 2026-03-05
+
+### Added
+
+- **Debug**: Full executed command line is now logged when running Python scripts (e.g. package check), so it can be copy-pasted to reproduce issues locally
+  - **Files Modified**: src/python/PythonManager.ts
+
+### Fixed
+
+- **Issue #118** (follow-up): Package availability check still sometimes returned empty stdout on Windows with the extension's own (uv) environment
+  - **Problem**: After 0.8.1, some users still saw empty script output and "Invalid response format"; an exception before the final `print` or pipe buffering could leave stdout empty
+  - **Solution**: (1) In the package-check script: force line-buffered stdout (`sys.stdout.reconfigure(line_buffering=True)`), and wrap execution in a top-level try/except so any exception results in printing a JSON object `{"_error": "..."}` to stdout and the traceback to stderr (exit 0 so the extension always receives parseable JSON). (2) In the extension: detect `_error` in the script response and throw with that message; when stdout is empty, log stderr for debugging. (3) Set `PYTHONUNBUFFERED=1` when spawning Python scripts so the interpreter does not buffer stdout when piped
+  - **Files Modified**:
+    - python/check_package_availability.py - Line buffering, top-level try/except with _error payload
+    - src/python/PythonManager.ts - _error handling, stderr log when stdout empty, PYTHONUNBUFFERED in spawn env
+
 ## [0.8.1] - 2026-02-25
 
 ### Added
