@@ -185,6 +185,12 @@ export class PythonManager {
         if (operationId) {
             Logger.info(`🐍 📜 - Operation ID: ${operationId}`);
         }
+        const fullCommand = [
+            quotedPythonPath,
+            quoteIfNeeded(scriptPath),
+            ...args.map((a) => quoteIfNeeded(a)),
+        ].join(' ');
+        Logger.log(`🐍 📜 Full command (copy-paste): ${fullCommand}`);
 
         return new Promise((resolve, reject) => {
             // Use detached: true so we can kill the entire process group
@@ -197,6 +203,10 @@ export class PythonManager {
                     shell: true,
                     stdio: ['pipe', 'pipe', 'pipe'],
                     detached: true,
+                    env: {
+                        ...process.env,
+                        PYTHONUNBUFFERED: '1',
+                    },
                 },
             );
 
@@ -320,6 +330,11 @@ export class PythonManager {
                         Logger.debug(
                             `🐍 📜 JSON parse failed for script output (stdout length=${stdout.length}): ${stdout.slice(0, 300)}`,
                         );
+                        if (stdout.length === 0 && stderr) {
+                            Logger.debug(
+                                `🐍 📜 Script stderr (stdout was empty): ${stderr.slice(0, 1000)}`,
+                            );
+                        }
                         resolve(stdout);
                     }
                 } else {
@@ -738,6 +753,18 @@ export class PythonManager {
 
             // The result should be a JSON object with package availability
             if (typeof result === 'object' && result !== null) {
+                const resultObj = result as Record<string, unknown>;
+                if (
+                    '_error' in resultObj &&
+                    typeof resultObj._error === 'string'
+                ) {
+                    Logger.error(
+                        `🐍 📦 Package check script reported error: ${resultObj._error}`,
+                    );
+                    throw new Error(
+                        `Package availability check failed: ${resultObj._error}`,
+                    );
+                }
                 return result as Record<string, boolean>;
             } else {
                 Logger.error(

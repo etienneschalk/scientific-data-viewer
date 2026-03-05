@@ -7,8 +7,15 @@ mapping package names to boolean availability status.
 
 import json
 import sys
+import traceback
 from importlib.util import find_spec
 from typing import Dict, List
+
+# Force line-buffered stdout so output is visible when piped (e.g. Windows, Issue #118).
+# When stdout is a pipe, Python uses full buffering by default; the parent may
+# receive nothing or partial output without this.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
 
 
 def check_package_availability(package_names: List[str]) -> Dict[str, bool]:
@@ -35,9 +42,8 @@ def check_package_availability(package_names: List[str]) -> Dict[str, bool]:
     return availability
 
 
-def main():
+def main() -> None:
     """Main function to handle command line arguments and output results."""
-
     # Get package names from command line arguments
     package_names = sys.argv[1:]
 
@@ -45,10 +51,17 @@ def main():
     availability = check_package_availability(package_names)
 
     # Output as JSON. Flush so piped stdout is visible on Windows (Issue #118).
-    # When stdout is a pipe, Windows uses full buffering; without flush the
-    # parent may receive nothing or partial output.
     print(json.dumps(availability), flush=True)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # Always emit valid JSON so the extension can parse and report the error.
+        # Without this, any exception before the final print leaves stdout empty.
+        err_msg = f"{type(e).__name__}: {e}"
+        payload = {"_error": err_msg}
+        print(json.dumps(payload), flush=True)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(0)
