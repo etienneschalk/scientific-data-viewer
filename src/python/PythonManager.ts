@@ -10,8 +10,6 @@ import {
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 import path from 'path';
-import fs from 'fs';
-import os from 'os';
 
 /**
  * Represents an active Python process that can be tracked and aborted
@@ -170,7 +168,6 @@ export class PythonManager {
         enableLogs: boolean,
         operationId?: string,
         timeoutMs?: number,
-        extraEnv?: Record<string, string>,
     ) {
         const quotedPythonPath = quoteIfNeeded(pythonPath);
         Logger.log(
@@ -203,10 +200,9 @@ export class PythonManager {
                 shell: false,
                 stdio: ['pipe', 'pipe', 'pipe'],
                 env: {
-                    ...process.env,
-                    PYTHONUNBUFFERED: '1',
-                    ...extraEnv,
-                },
+                        ...process.env,
+                        PYTHONUNBUFFERED: '1',
+                    },
             });
 
             // Track this process if an operation ID was provided
@@ -732,13 +728,6 @@ export class PythonManager {
             '../../../python/check_package_availability.py',
         );
 
-        // Log file fallback so we see script output on Windows when stderr pipe is not captured
-        const debugLogPath = path.join(
-            os.tmpdir(),
-            `sdv-pkgcheck-${process.pid}-${Date.now()}.log`,
-        );
-        const extraEnv = { SDV_DEBUG_LOG: debugLogPath };
-
         try {
             Logger.debug(
                 `🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`,
@@ -749,9 +738,6 @@ export class PythonManager {
                 scriptPath,
                 packageNames,
                 true, // Enable log handover for package availability check (e.g. debugging Issue #118)
-                undefined,
-                undefined,
-                extraEnv,
             );
 
             // Log raw result for debugging (e.g. Issue #118: invalid response format)
@@ -792,20 +778,6 @@ export class PythonManager {
         } catch (error) {
             Logger.error(`🐍 📦 ❌ Error checking packages: ${error}`);
             throw new Error(`Failed to check package availability: ${error}`);
-        } finally {
-            try {
-                if (fs.existsSync(debugLogPath)) {
-                    const logContent = fs.readFileSync(debugLogPath, 'utf8');
-                    Logger.info(
-                        `🐍 📦 Package check script log (${debugLogPath}):\n${logContent}`,
-                    );
-                    fs.unlinkSync(debugLogPath);
-                }
-            } catch (e) {
-                Logger.debug(
-                    `🐍 📦 Could not read/delete debug log ${debugLogPath}: ${e}`,
-                );
-            }
         }
     }
 
