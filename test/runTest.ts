@@ -13,7 +13,15 @@ async function main() {
         await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
-            launchArgs: ['--disable-extensions'],
+            launchArgs: [
+                '--disable-extensions',
+                '--no-sandbox',
+                '--disable-gpu',
+            ],
+            // So the child process emits extension debug/info logs to stderr and CI can show them
+            extensionTestsEnv: {
+                SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS: '1',
+            },
         });
     } catch (err) {
         console.error('Failed to run tests');

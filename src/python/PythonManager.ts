@@ -185,20 +185,25 @@ export class PythonManager {
         if (operationId) {
             Logger.info(`🐍 📜 - Operation ID: ${operationId}`);
         }
+        const fullCommand = [
+            quoteIfNeeded(pythonPath),
+            quoteIfNeeded(scriptPath),
+            ...args.map((a) => quoteIfNeeded(a)),
+        ].join(' ');
+        Logger.log(`🐍 📜 Full command (copy-paste): ${fullCommand}`);
 
         return new Promise((resolve, reject) => {
-            // Use detached: true so we can kill the entire process group
-            // This is important because shell: true spawns a shell that then spawns Python
-            // Without detached: true, killing the shell leaves Python as an orphan process
-            const childProcess = spawn(
-                quotedPythonPath,
-                [scriptPath, ...args],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                    detached: true,
+            // Spawn Python directly (shell: false) so we have one child process. That way:
+            // - stdout/stderr are always captured (including on Windows; detached breaks pipes there).
+            // - We can abort by killing the child process directly; no process group needed.
+            const childProcess = spawn(pythonPath, [scriptPath, ...args], {
+                shell: false,
+                stdio: ['pipe', 'pipe', 'pipe'],
+                env: {
+                    ...process.env,
+                    PYTHONUNBUFFERED: '1',
                 },
-            );
+            });
 
             // Track this process if an operation ID was provided
             let serverTimeoutHandle: NodeJS.Timeout | undefined;
@@ -320,6 +325,11 @@ export class PythonManager {
                         Logger.debug(
                             `🐍 📜 JSON parse failed for script output (stdout length=${stdout.length}): ${stdout.slice(0, 300)}`,
                         );
+                        if (stdout.length === 0 && stderr) {
+                            Logger.info(
+                                `🐍 📜 Script stderr (stdout was empty): ${stderr.slice(0, 1000)}`,
+                            );
+                        }
                         resolve(stdout);
                     }
                 } else {
@@ -412,7 +422,7 @@ export class PythonManager {
             `🐍 🛑 Aborting process for operation: ${operationId} (PID: ${pid}, duration: ${duration}ms)`,
         );
 
-        if (!pid) {
+        if (pid === undefined) {
             Logger.warn(
                 `🐍 ⚠️ Process PID is undefined, cannot kill: ${operationId}`,
             );
@@ -420,29 +430,25 @@ export class PythonManager {
             return false;
         }
 
-        try {
-            // Kill the entire process group using negative PID
-            // This is necessary because when shell: true is used, Node spawns a shell
-            // which then spawns Python. We need to kill the entire process group
-            // to ensure the Python process is also terminated.
-            // The process was spawned with detached: true to make this work.
-            Logger.debug(`🐍 🛑 Killing process group with SIGTERM: -${pid}`);
-            process.kill(-pid, 'SIGTERM');
+        this._activeProcesses.delete(operationId);
 
-            // If the process doesn't terminate within 1 second, force kill with SIGKILL
+        try {
+            // We spawn Python directly (shell: false), so the child is the Python process.
+            // Kill it directly; works on Windows and Unix.
+            Logger.debug(`🐍 🛑 Killing process with SIGTERM: ${pid}`);
+            childProcess.kill('SIGTERM');
+
+            // If the process doesn't terminate within 1 second, force kill
             setTimeout(() => {
-                if (this._activeProcesses.has(operationId)) {
-                    Logger.warn(
-                        `🐍 ⚠️ Process didn't terminate gracefully, force killing process group: ${operationId}`,
+                try {
+                    childProcess.kill('SIGKILL');
+                    Logger.debug(
+                        `🐍 ℹ️ Force killed process (may already be dead): ${operationId}`,
                     );
-                    try {
-                        process.kill(-pid, 'SIGKILL');
-                    } catch (killError) {
-                        // Process might already be dead, which is fine
-                        Logger.debug(
-                            `🐍 ℹ️ Force kill returned error (process may already be dead): ${killError}`,
-                        );
-                    }
+                } catch (killError) {
+                    Logger.debug(
+                        `🐍 ℹ️ Force kill returned error (process may already be dead): ${killError}`,
+                    );
                 }
             }, 1000);
 
@@ -451,7 +457,6 @@ export class PythonManager {
             Logger.error(
                 `🐍 ❌ Failed to abort process ${operationId}: ${error}`,
             );
-            this._activeProcesses.delete(operationId);
             return false;
         }
     }
@@ -596,15 +601,26 @@ export class PythonManager {
             }
 
             // Fallback: Last chance - Common Python paths to check
-            const commonPaths = [
-                'python3',
-                'python',
-                '/usr/bin/python3',
-                '/usr/local/bin/python3',
-                'C:\\Python39\\python.exe',
-                'C:\\Python310\\python.exe',
-                'C:\\Python311\\python.exe',
-            ];
+            // On Windows, try "python" before "python3" so we avoid the Windows Store
+            // stub (python3.exe that opens the Store and exits 0 with no output).
+            const commonPaths =
+                process.platform === 'win32'
+                    ? [
+                          'python',
+                          'python3',
+                          'py',
+                          'C:\\Python313\\python.exe',
+                          'C:\\Python312\\python.exe',
+                          'C:\\Python311\\python.exe',
+                          'C:\\Python310\\python.exe',
+                          'C:\\Python39\\python.exe',
+                      ]
+                    : [
+                          'python3',
+                          'python',
+                          '/usr/bin/python3',
+                          '/usr/local/bin/python3',
+                      ];
 
             for (const pythonPath of commonPaths) {
                 try {
@@ -721,7 +737,7 @@ export class PythonManager {
                 pythonPath,
                 scriptPath,
                 packageNames,
-                false, // Don't enable logs for package checking
+                true, // Enable log handover for package availability check (e.g. debugging Issue #118)
             );
 
             // Log raw result for debugging (e.g. Issue #118: invalid response format)
@@ -738,6 +754,18 @@ export class PythonManager {
 
             // The result should be a JSON object with package availability
             if (typeof result === 'object' && result !== null) {
+                const resultObj = result as Record<string, unknown>;
+                if (
+                    '_error' in resultObj &&
+                    typeof resultObj._error === 'string'
+                ) {
+                    Logger.error(
+                        `🐍 📦 Package check script reported error: ${resultObj._error}`,
+                    );
+                    throw new Error(
+                        `Package availability check failed: ${resultObj._error}`,
+                    );
+                }
                 return result as Record<string, boolean>;
             } else {
                 Logger.error(

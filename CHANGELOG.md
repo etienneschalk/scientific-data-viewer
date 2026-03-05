@@ -6,6 +6,44 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.8.2] - 2026-03-05
+
+### Added
+
+- **Debug**: Full executed command line is now logged when running Python scripts (e.g. package check), so it can be copy-pasted to reproduce issues locally
+  - **Files Modified**: src/python/PythonManager.ts
+
+### Fixed
+
+- **Issue #118** (root cause): Package availability check and Python script stdout/stderr broken on Windows since v0.8.0
+  - **Where it was introduced**: In v0.8.0, [PR #110](https://github.com/etienneschalk/scientific-data-viewer/pull/110) (Issue #97 – kill Python on plot timeout) added `detached: true` to the spawn options so the process group could be killed with `process.kill(-pid)`. On Windows, Node.js does not connect a detached child’s stdout/stderr to the parent’s pipes, so the extension received empty output for any script (package check, getDataInfo, and plots). See e.g. [Node.js spawn detached breaks pipe capture on Windows](https://github.com/openclaw/openclaw/issues/18739).
+  - **Why get_data_info seemed to work**: getDataInfo only runs when the extension is “ready,” which requires the package check to have succeeded first. On Windows the package check failed (empty stdout), so the env never became ready and getDataInfo was never called in the failing scenario.
+  - **Solution**: Spawn Python with `shell: false` so the child process is the Python executable directly (no shell in between). Then (1) stdout/stderr are always captured on all platforms; (2) we never use `detached`, so the Windows pipe issue is avoided; (3) on timeout/abort we kill the single child with `childProcess.kill('SIGTERM')`, which still satisfies Issue #97 (no orphan Python process). No regression for the plot-timeout kill behavior.
+  - **Additional hardening**: Windows fallback interpreter order now tries `python` before `python3` to avoid the Windows Store stub; package-check script uses line-buffered stdout and top-level try/except with `_error` JSON on exception; extension sets `PYTHONUNBUFFERED=1` and logs stderr when stdout is empty.
+  - **Files Modified**:
+    - src/python/PythonManager.ts – spawn with `shell: false`, no `detached`; abort via `childProcess.kill()`; Windows commonPaths order; stderr log when stdout empty
+    - python/check_package_availability.py – line buffering, try/except and `_error` payload
+
+- **CI**: Extension debug/info logs from the test child process are now visible in the test (and CI) log. The test runner passes `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` into the spawned VS Code process; the Logger writes all levels to stderr when that is set (and skips the console fallback so INFO and above are not duplicated), so the test runner forwards them once and they appear in the job output.
+  - **Files Modified**:
+    - test/runTest.ts – `extensionTestsEnv: { SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS: '1' }`, plus `--no-sandbox` and `--disable-gpu` in launchArgs
+    - src/common/Logger.ts – when env var set, write only to `process.stderr` (skip console) so child logs are visible in CI without duplication
+
+### Files changed since main (0.8.2 release)
+
+| File                                   | Modification                                                                                                                                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/pr-validation.yml`  | CI matrix: added `windows-latest`; job name includes `matrix.os` and Node version; `fail-fast: false`; separate steps for Linux vs Windows (virtual display setup, run tests).                                              |
+| `CHANGELOG.md`                         | New 0.8.2 section: Added (debug command line, CI verbose logs), Fixed (Issue #118), and this file list.                                                                                                                     |
+| `README.md`                            | Version set to 0.8.2; added known-issue callout for Windows uv; renumbered “Common issues” (1→2, 2→3, …).                                                                                                                   |
+| `docs/RELEASE_NOTES_0.8.2.md`          | New file: release notes for 0.8.2 (Windows fix, CI debug logs).                                                                                                                                                             |
+| `package.json`                         | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
+| `package-lock.json`                    | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
+| `python/check_package_availability.py` | `_log()` helper; line-buffered stdout/stderr; try/except with JSON `_error` on exception; DEBUG/INFO logging; type hints.                                                                                                   |
+| `src/common/Logger.ts`                 | When `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1`, write only to `process.stderr` (skip console) so test/CI shows extension logs once, no duplication.                                                                           |
+| `src/python/PythonManager.ts`          | Spawn Python with `shell: false`, no `detached`; log full command line; abort via `childProcess.kill()`; Windows `commonPaths` try `python` before `python3`; log stderr when stdout empty; PID check and cleanup in abort. |
+| `test/runTest.ts`                      | `launchArgs`: add `--no-sandbox`, `--disable-gpu`; `extensionTestsEnv`: set `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` so child emits logs to stderr.                                                                          |
+
 ## [0.8.1] - 2026-02-25
 
 ### Added

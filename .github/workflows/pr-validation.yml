@@ -12,12 +12,14 @@ concurrency:
 
 jobs:
   validate-changes:
-    name: Validate Changes
-    runs-on: ubuntu-latest
+    name: Validate Changes (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
 
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         node-version: ["22"]
 
     steps:
@@ -65,16 +67,26 @@ jobs:
       - name: Compile TypeScript
         run: npm run compile
 
-      - name: Install virtual display dependencies (for tests)
+      - name: Setup virtual display (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-      - name: Run tests with virtual display
+      - name: Setup virtual display (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: pyvista/setup-headless-display-action@v3
+        with:
+          pyvista: "false"
+      - name: Run tests with virtual display (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           export DISPLAY=:99
           Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
           sleep 3
           npm run test
+      - name: Run tests with virtual display (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run test
       - name: Package extension
         run: npm run package
         if: matrix.node-version == '22'
