@@ -736,7 +736,7 @@ export class PythonManager {
                 pythonPath,
                 scriptPath,
                 packageNames,
-                false, // Don't enable logs for package checking
+                true, // Enable log handover for package availability check (e.g. debugging Issue #118)
             );
 
             // Log raw result for debugging (e.g. Issue #118: invalid response format)
