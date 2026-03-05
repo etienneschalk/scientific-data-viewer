@@ -28,6 +28,17 @@ We also:
 - Harden the **package-check script**: line-buffered stdout and a top-level try/except that prints a JSON `{"_error": "..."}` on any exception.
 - Log the **full command line** for every Python run so you can copy-paste and reproduce issues.
 
+## CI: Extension debug logs in test output
+
+When tests run via `npm run test` (e.g. in CI), the test runner spawns a separate VS Code process that loads the extension. By default, that child process’s `console.log` / `console.debug` output may not appear in the test log, so extension debug and info logs were hard to see in CI.
+
+We now:
+
+- **test/runTest.ts** passes `extensionTestsEnv: { SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS: '1' }` into the child, so the extension knows it is running under the test runner.
+- **Logger** (src/common/Logger.ts), when that env var is set, writes every log line (info, debug, warn, error) to **stderr** in addition to the Output Channel and console. The test runner forwards the child’s stderr to the parent, so all extension logs appear in the same stream as the test output and are visible in the CI log.
+
+This only applies when the test runner sets the env var; normal use is unchanged.
+
 ### Upgrading
 
 No action required. If you were affected by "Invalid response format" or "Python environment not ready" on Windows (especially with "use extension own environment"), updating to 0.8.2 should resolve it. Plot and data-info scripts now get their output correctly on Windows as well.

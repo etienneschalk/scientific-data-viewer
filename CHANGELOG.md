@@ -24,6 +24,26 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/python/PythonManager.ts – spawn with `shell: false`, no `detached`; abort via `childProcess.kill()`; Windows commonPaths order; stderr log when stdout empty
     - python/check_package_availability.py – line buffering, try/except and `_error` payload
 
+- **CI**: Extension debug/info logs from the test child process are now visible in the test (and CI) log. The test runner passes `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` into the spawned VS Code process; the Logger writes all levels to stderr when that is set, so the test runner forwards them and they appear in the job output.
+  - **Files Modified**:
+    - test/runTest.ts – `extensionTestsEnv: { SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS: '1' }`, plus `--no-sandbox` and `--disable-gpu` in launchArgs
+    - src/common/Logger.ts – when env var set, also `process.stderr.write(logMessage)` so child logs are visible in CI
+
+### Files changed since main (0.8.2 release)
+
+| File                                   | Modification                                                                                                                                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/pr-validation.yml`  | CI matrix: added `windows-latest`; job name includes `matrix.os` and Node version; `fail-fast: false`; separate steps for Linux vs Windows (virtual display setup, run tests).                                              |
+| `CHANGELOG.md`                         | New 0.8.2 section: Added (debug command line, CI verbose logs), Fixed (Issue #118), and this file list.                                                                                                                     |
+| `README.md`                            | Version set to 0.8.2; added known-issue callout for Windows uv; renumbered “Common issues” (1→2, 2→3, …).                                                                                                                   |
+| `docs/RELEASE_NOTES_0.8.2.md`          | New file: release notes for 0.8.2 (Windows fix, CI debug logs).                                                                                                                                                             |
+| `package.json`                         | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
+| `package-lock.json`                    | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
+| `python/check_package_availability.py` | `_log()` helper; line-buffered stdout/stderr; try/except with JSON `_error` on exception; DEBUG/INFO logging; type hints.                                                                                                   |
+| `src/common/Logger.ts`                 | When `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1`, also write each log line to `process.stderr` so test/CI shows extension logs from child.                                                                                      |
+| `src/python/PythonManager.ts`          | Spawn Python with `shell: false`, no `detached`; log full command line; abort via `childProcess.kill()`; Windows `commonPaths` try `python` before `python3`; log stderr when stdout empty; PID check and cleanup in abort. |
+| `test/runTest.ts`                      | `launchArgs`: add `--no-sandbox`, `--disable-gpu`; `extensionTestsEnv`: set `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` so child emits logs to stderr.                                                                          |
+
 ## [0.8.1] - 2026-02-25
 
 ### Added

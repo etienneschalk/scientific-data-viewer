@@ -90,6 +90,16 @@ export class Logger {
                     }
             }
         }
+
+        // When running under the test runner (CI), also write to stderr so debug/info
+        // from the child process are forwarded and visible in the test log
+        if (process.env.SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS === '1') {
+            try {
+                process.stderr.write(logMessage + '\n');
+            } catch {
+                // ignore if stderr is not writable
+            }
+        }
     }
 
     public static info(message: string): void {
