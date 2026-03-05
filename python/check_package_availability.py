@@ -11,6 +11,8 @@ import traceback
 from importlib.util import find_spec
 from typing import Dict, List
 
+# test
+
 
 def _log(level: str, msg: str) -> None:
     """Print to stderr in a format the extension can forward to its logger."""
