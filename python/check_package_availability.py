@@ -18,6 +18,8 @@ from typing import Dict, List
 # Holder list so we can set from __main__ without global declaration.
 _LOG_FILE: list = []
 
+# test
+
 
 def _log(level: str, msg: str) -> None:
     """Print to stderr in a format the extension can forward to its logger."""
@@ -107,6 +109,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+
     def _run() -> None:
         try:
             main()
