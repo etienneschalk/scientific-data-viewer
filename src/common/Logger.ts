@@ -62,7 +62,19 @@ export class Logger {
             }
         }
 
-        // Also log to console for development (if available)
+        // When running under the test runner (CI), write only to stderr once so logs
+        // are visible in the test output without duplication (console.* would also
+        // be forwarded and duplicate INFO and above).
+        if (process.env.SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS === '1') {
+            try {
+                process.stderr.write(logMessage + '\n');
+            } catch {
+                // ignore if stderr is not writable
+            }
+            return;
+        }
+
+        // Log to console for development (if available)
         if (
             typeof console !== 'undefined' &&
             console &&
@@ -88,16 +100,6 @@ export class Logger {
                     if (typeof console.log === 'function') {
                         console.log(logMessage);
                     }
-            }
-        }
-
-        // When running under the test runner (CI), also write to stderr so debug/info
-        // from the child process are forwarded and visible in the test log
-        if (process.env.SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS === '1') {
-            try {
-                process.stderr.write(logMessage + '\n');
-            } catch {
-                // ignore if stderr is not writable
             }
         }
     }

@@ -24,10 +24,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/python/PythonManager.ts – spawn with `shell: false`, no `detached`; abort via `childProcess.kill()`; Windows commonPaths order; stderr log when stdout empty
     - python/check_package_availability.py – line buffering, try/except and `_error` payload
 
-- **CI**: Extension debug/info logs from the test child process are now visible in the test (and CI) log. The test runner passes `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` into the spawned VS Code process; the Logger writes all levels to stderr when that is set, so the test runner forwards them and they appear in the job output.
+- **CI**: Extension debug/info logs from the test child process are now visible in the test (and CI) log. The test runner passes `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` into the spawned VS Code process; the Logger writes all levels to stderr when that is set (and skips the console fallback so INFO and above are not duplicated), so the test runner forwards them once and they appear in the job output.
   - **Files Modified**:
     - test/runTest.ts – `extensionTestsEnv: { SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS: '1' }`, plus `--no-sandbox` and `--disable-gpu` in launchArgs
-    - src/common/Logger.ts – when env var set, also `process.stderr.write(logMessage)` so child logs are visible in CI
+    - src/common/Logger.ts – when env var set, write only to `process.stderr` (skip console) so child logs are visible in CI without duplication
 
 ### Files changed since main (0.8.2 release)
 
@@ -40,7 +40,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 | `package.json`                         | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
 | `package-lock.json`                    | Version 0.8.1 → 0.8.2.                                                                                                                                                                                                      |
 | `python/check_package_availability.py` | `_log()` helper; line-buffered stdout/stderr; try/except with JSON `_error` on exception; DEBUG/INFO logging; type hints.                                                                                                   |
-| `src/common/Logger.ts`                 | When `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1`, also write each log line to `process.stderr` so test/CI shows extension logs from child.                                                                                      |
+| `src/common/Logger.ts`                 | When `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1`, write only to `process.stderr` (skip console) so test/CI shows extension logs once, no duplication.                                                                              |
 | `src/python/PythonManager.ts`          | Spawn Python with `shell: false`, no `detached`; log full command line; abort via `childProcess.kill()`; Windows `commonPaths` try `python` before `python3`; log stderr when stdout empty; PID check and cleanup in abort. |
 | `test/runTest.ts`                      | `launchArgs`: add `--no-sandbox`, `--disable-gpu`; `extensionTestsEnv`: set `SCIENTIFIC_DATA_VIEWER_VERBOSE_LOGS=1` so child emits logs to stderr.                                                                          |
 
