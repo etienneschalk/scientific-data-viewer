@@ -196,16 +196,17 @@ export class PythonManager {
         Logger.log(`🐍 📜 Full command (copy-paste): ${fullCommand}`);
 
         return new Promise((resolve, reject) => {
-            // Use detached: true so we can kill the entire process group
-            // This is important because shell: true spawns a shell that then spawns Python
-            // Without detached: true, killing the shell leaves Python as an orphan process
+            // Use detached: true only when we track the process for abort (e.g. plot timeout).
+            // On Windows, detached: true breaks stdout/stderr pipe capture (Issue #118, Node behavior),
+            // so we must not use it for package check or getDataInfo (no operationId).
+            const useDetached = operationId !== undefined;
             const childProcess = spawn(
                 quotedPythonPath,
                 [scriptPath, ...args],
                 {
                     shell: true,
                     stdio: ['pipe', 'pipe', 'pipe'],
-                    detached: true,
+                    detached: useDetached,
                     env: {
                         ...process.env,
                         PYTHONUNBUFFERED: '1',
