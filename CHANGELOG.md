@@ -28,6 +28,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - src/panel/HTMLGenerator.ts - Dimension Slices section; src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
 
 - **Issue #121**: Log full executable command for copy-paste
+  - _Note: Finally implemented in 0.8.2_
   - **Problem**: When debugging (e.g. package check on Windows), users had to manually reconstruct the full command from separate log lines
   - **Solution**: Extension now logs a single copy-pasteable command line when executing a Python script (e.g. package check or get_data_info)
   - **Files Modified**:

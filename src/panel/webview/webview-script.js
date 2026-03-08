@@ -1579,7 +1579,8 @@ function populateDimensionSlices(data) {
     const firstGroup = groupNames[0] || '/';
     const dimensions = data.dimensions_flattened[firstGroup];
     if (!dimensions || Object.keys(dimensions).length === 0) {
-        container.innerHTML = '<p class="muted-text">No dimensions in this group.</p>';
+        container.innerHTML =
+            '<p class="muted-text">No dimensions in this group.</p>';
         const facetRowSelect = document.getElementById('facetRowSelect');
         const facetColSelect = document.getElementById('facetColSelect');
         if (facetRowSelect) {
@@ -1602,7 +1603,14 @@ function populateDimensionSlices(data) {
         .join('');
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
-    const facetOptions = '<option value="">None</option>' + dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+    const facetOptions =
+        '<option value="">None</option>' +
+        dimNames
+            .map(
+                (d) =>
+                    `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`,
+            )
+            .join('');
     if (facetRowSelect) {
         facetRowSelect.innerHTML = facetOptions;
     }
@@ -1627,9 +1635,13 @@ function getDimensionSlicesState() {
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
     return {
-        dimensionSlices: Object.keys(dimensionSlices).length ? dimensionSlices : null,
-        facetRow: facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
-        facetCol: facetColSelect && facetColSelect.value ? facetColSelect.value : '',
+        dimensionSlices: Object.keys(dimensionSlices).length
+            ? dimensionSlices
+            : null,
+        facetRow:
+            facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
+        facetCol:
+            facetColSelect && facetColSelect.value ? facetColSelect.value : '',
     };
 }
 
@@ -1883,12 +1895,16 @@ function setupTimeControlsEventListeners() {
         });
     }
 
-    const clearDimSlicesButton = document.getElementById('clearDimensionSlicesButton');
+    const clearDimSlicesButton = document.getElementById(
+        'clearDimensionSlicesButton',
+    );
     if (clearDimSlicesButton) {
         clearDimSlicesButton.addEventListener('click', () => {
-            document.querySelectorAll('.dimension-slice-input').forEach((input) => {
-                input.value = '';
-            });
+            document
+                .querySelectorAll('.dimension-slice-input')
+                .forEach((input) => {
+                    input.value = '';
+                });
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
             if (facetRowSelect) {

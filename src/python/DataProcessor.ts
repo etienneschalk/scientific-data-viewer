@@ -124,10 +124,7 @@ export class DataProcessor {
         if (endDatetime && endDatetime.trim() !== '') {
             args.push('--end-datetime', quoteIfNeeded(endDatetime));
         }
-        if (
-            dimensionSlices &&
-            Object.keys(dimensionSlices).length > 0
-        ) {
+        if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
             args.push(
                 '--dimension-slices',
                 quoteForShell(JSON.stringify(dimensionSlices)),

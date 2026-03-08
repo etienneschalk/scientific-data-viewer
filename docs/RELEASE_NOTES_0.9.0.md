@@ -29,7 +29,7 @@ You can subset data by dimension index or slice before plotting, and control fac
 
 When the extension runs a Python script (e.g. package availability check or data info), it now logs the full one-line command so you can copy-paste it into a terminal to run the same command manually. This helps when debugging environment or path issues (e.g. on Windows).
 
-- In the extension logs, look for the line:  
+- In the extension logs, look for the line:
   `🐍 📜 Full command (copy-paste): <pythonPath> <scriptPath> <args...>`
 
 ### Upgrading

@@ -340,12 +340,16 @@ export class PythonManager {
                     Logger.error(
                         `🐍 📜 Python script stdout (${stdout?.length ?? 0} chars):\n${stdout || '(empty)'}`,
                     );
-                    const errorMessage = stderr || stdout || 'Unknown Python error';
+                    const errorMessage =
+                        stderr || stdout || 'Unknown Python error';
                     // Prefer script's JSON error from stdout (e.g. Invalid --dimension-slices JSON)
                     let userMessage: string;
                     try {
                         const out = stdout?.trim();
-                        if (out && (out.startsWith('{') || out.startsWith('['))) {
+                        if (
+                            out &&
+                            (out.startsWith('{') || out.startsWith('['))
+                        ) {
                             const parsed = JSON.parse(out);
                             if (
                                 parsed &&
@@ -355,7 +359,11 @@ export class PythonManager {
                                 userMessage = parsed.error;
                             } else {
                                 userMessage =
-                                    errorMessage.trim().split('\n').pop()?.trim() ||
+                                    errorMessage
+                                        .trim()
+                                        .split('\n')
+                                        .pop()
+                                        ?.trim() ||
                                     `Python script failed (exit code ${code})`;
                             }
                         } else {

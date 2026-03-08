@@ -161,7 +161,9 @@ SMALL_VARIABLE_BYTES = 1000
 SMALL_VALUE_DISPLAY_MAX_LEN = 500
 
 
-def _format_small_value(var: xr.DataArray, max_len: int = SMALL_VALUE_DISPLAY_MAX_LEN) -> str:
+def _format_small_value(
+    var: xr.DataArray, max_len: int = SMALL_VALUE_DISPLAY_MAX_LEN
+) -> str:
     """Load and format variable values for display when size is below threshold."""
     try:
         loaded = var.values
@@ -1256,7 +1258,9 @@ def create_plot(
                 # 3D data with spatial dimensions - use col parameter (Issue #117: facet_col)
                 logger.info("Creating 3D plot with col parameter")
                 first_dim = var.dims[0]
-                col_dim = facet_col if (facet_col and facet_col in var.dims) else first_dim
+                col_dim = (
+                    facet_col if (facet_col and facet_col in var.dims) else first_dim
+                )
                 col_wrap = min(4, var.sizes.get(col_dim, 4))
                 var.plot.imshow(col=col_dim, aspect=1, size=4, col_wrap=col_wrap)
             elif strategy == "4d_col_row":
@@ -1264,8 +1268,12 @@ def create_plot(
                 logger.info("Creating 4D plot with col and row parameters")
                 first_dim = var.dims[0]
                 second_dim = var.dims[1]
-                row_dim = facet_row if (facet_row and facet_row in var.dims) else first_dim
-                col_dim = facet_col if (facet_col and facet_col in var.dims) else second_dim
+                row_dim = (
+                    facet_row if (facet_row and facet_row in var.dims) else first_dim
+                )
+                col_dim = (
+                    facet_col if (facet_col and facet_col in var.dims) else second_dim
+                )
                 var.plot.imshow(col=col_dim, row=row_dim, aspect=1, size=4)
             else:
                 # Default plotting behavior - let xarray decide the best method
@@ -1842,7 +1850,7 @@ Examples:
     parser.add_argument(
         "--dimension-slices",
         default=None,
-        help="JSON object of dimension name to index or slice string (e.g. {\"time\": \"0:24:2\", \"rlat\": \"100:120\", \"rlon\": 130}) for isel() before plotting (Issue #117)",
+        help='JSON object of dimension name to index or slice string (e.g. {"time": "0:24:2", "rlat": "100:120", "rlon": 130}) for isel() before plotting (Issue #117)',
     )
 
     parser.add_argument(
@@ -1880,7 +1888,11 @@ Examples:
             try:
                 dimension_slices_dict = json.loads(args.dimension_slices)
             except json.JSONDecodeError as e:
-                print(to_json_best_effort({"error": f"Invalid --dimension-slices JSON: {e}"}))
+                print(
+                    to_json_best_effort(
+                        {"error": f"Invalid --dimension-slices JSON: {e}"}
+                    )
+                )
                 return 1
         # Create plot
         result = create_plot(
