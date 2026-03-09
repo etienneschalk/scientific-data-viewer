@@ -741,46 +741,82 @@ button:active {
 }
 
 .dimension-slices-section {
-    margin-top: 8px;
-    padding: 8px 0;
-    border-top: 1px solid var(--vscode-panel-border);
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
 }
 
 .dimension-slices-section h4 {
-    margin: 0 0 4px 0;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--vscode-foreground);
 }
 
 .dimension-slices-hint {
     font-size: 0.9em;
     color: var(--vscode-descriptionForeground);
-    margin: 0 0 8px 0;
+    margin: 0 0 12px 0;
 }
 
 .dimension-slice-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .dimension-slice-row label {
-    min-width: 120px;
+    min-width: 180px;
+    color: var(--vscode-foreground);
 }
 
 .dimension-slice-row input {
     flex: 1;
-    max-width: 200px;
+    max-width: 220px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slice-row input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
 }
 
 .dimension-slices-facets {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 8px 0;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.dimension-slices-facets label {
+    color: var(--vscode-foreground);
 }
 
 .dimension-slices-facets .facet-select {
-    margin-right: 12px;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .facet-select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-section .plot-control-button {
+    margin-top: 4px;
 }
 
 .time-controls-section {
