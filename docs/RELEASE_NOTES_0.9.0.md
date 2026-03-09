@@ -1,5 +1,7 @@
 # Scientific Data Viewer v0.9.0 Release Notes
 
+**TL;DR** — **Dimension Slices**: subset any dimension by index/slice (e.g. `0:24:2`) and facet row/col before plotting; applies as xarray `isel()`. **Small variables** show actual values in the UI. **Global + Group Plot Controls**: dimensions merged from all groups; per-group overrides (group wins when set). **Time Controls** (datetime start/end) are **off by default**; use Dimension Slices for time. Full command line is logged for copy-paste.
+
 ## Time Controls off by default — use Dimension Slices instead
 
 The former **time dimension selection** (Global Time Controls and Group Time Controls: datetime variable dropdown, start/end time inputs) is now **disabled by default**. In its place, the extension encourages the **Dimension Slices** feature: you can subset any dimension—including time—by index or slice (e.g. `0:24:2`, `100:120`) in the Dimension Slices section. Slices are applied as xarray’s `isel()` and work the same for time and other dimensions, without separate datetime handling. If you prefer the old datetime start/end UI, turn **Global Time Controls** and/or **Group Time Controls** back on in VS Code settings.
