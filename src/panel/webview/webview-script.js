@@ -2458,9 +2458,15 @@ function applyExportStateToClone(clone, valueById) {
             const el = clone.querySelector(`[id="${escapedId}"]`);
             if (!el) return;
             if (el.tagName === 'SELECT') {
-                if (value !== '' && Array.from(el.options).some((o) => o.value === value)) {
-                    el.value = value;
-                }
+                el.value = value;
+                // Set selected attribute on the matching option so serialized HTML shows it (outerHTML may not reflect .value)
+                Array.from(el.options).forEach((opt) => {
+                    if (opt.value === value) {
+                        opt.setAttribute('selected', 'selected');
+                    } else {
+                        opt.removeAttribute('selected');
+                    }
+                });
                 el.disabled = true;
             } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                 el.setAttribute('value', value);

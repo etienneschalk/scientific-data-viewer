@@ -43,6 +43,8 @@ For each group, a collapsible **Group Plot Controls** section appears after that
 
 When you plot a variable (single plot or Plot All), the extension uses **group-scoped** time and dimension-slice values if they are set for that variable’s group; otherwise it falls back to the **global** Time Controls and Dimension Slices.
 
+**Precedence when both are set:** Group controls have **full precedence** over global for that group's variables. The extension does **not** merge global and group: for each of dimension slices, facet row, facet col, and bins, it uses either the group value or the global value. If the group has any value set for that field (e.g. one dimension slice or facet row in Group Dimension Slices), the entire group state for that field is used and the global state is ignored. If the group has nothing set, global is used. So setting both Global and Group Dimension Slices means "use only the group's values" when plotting a variable in that group.
+
 ### Feature flags
 
 Four settings (all **ON** by default) let you enable or disable each block:
