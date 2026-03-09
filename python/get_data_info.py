@@ -1251,13 +1251,17 @@ def create_plot(
         plot_kwargs = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
+        use_histogram = bool(plot_kwargs)
 
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
-            # Create plot using xarray's native plotting methods
-            if strategy == "2d_classic":
+            # When bins is set, use explicit histogram (xarray's .plot() only uses hist for 3+ dims)
+            if use_histogram:
+                logger.info("Creating histogram plot with bins=%s", plot_kwargs["bins"])
+                var.plot.hist(**plot_kwargs)
+            elif strategy == "2d_classic":
                 # 2D spatial data - plot directly with appropriate colormap
                 logger.info("Creating 2D spatial plot")
                 var.plot.imshow()
