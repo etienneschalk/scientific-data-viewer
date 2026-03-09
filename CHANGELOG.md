@@ -8,6 +8,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [0.9.0] - 2026-02-28
 
+### Changed
+
+- **Time Controls disabled by default:** The former **Global Time Controls** and **Group Time Controls** (datetime variable select, start/end time) are now **off by default**. Use the new **Dimension Slices** feature instead to subset by index or slice (including time dimensions) via `isel()`; it is data-agnostic and easier to maintain. You can re-enable Time Controls in settings (`scientificDataViewer.globalTimeControls`, `scientificDataViewer.groupTimeControls`) if you prefer the datetime start/end UI.
+
 ### Added
 
 - **Issue #102**: Scalar and small array values are now computed and displayed for variables and coordinates

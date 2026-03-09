@@ -1,5 +1,9 @@
 # Scientific Data Viewer v0.9.0 Release Notes
 
+## Time Controls off by default — use Dimension Slices instead
+
+The former **time dimension selection** (Global Time Controls and Group Time Controls: datetime variable dropdown, start/end time inputs) is now **disabled by default**. In its place, the extension encourages the **Dimension Slices** feature: you can subset any dimension—including time—by index or slice (e.g. `0:24:2`, `100:120`) in the Dimension Slices section. Slices are applied as xarray’s `isel()` and work the same for time and other dimensions, without separate datetime handling. If you prefer the old datetime start/end UI, turn **Global Time Controls** and/or **Group Time Controls** back on in VS Code settings.
+
 ## Scalar and small array values displayed (Issue #102)
 
 Variables and coordinates that are small (at or below 1000 bytes) now show their actual values in the UI instead of only shape, dtype, and size. This helps when you have single-value coordinates (e.g. time left after interpolation) or small metadata arrays.
@@ -47,14 +51,14 @@ When you plot a variable (single plot or Plot All), the extension uses **group-s
 
 ### Feature flags
 
-Four settings (all **ON** by default) let you enable or disable each block:
+Four settings let you enable or disable each block:
 
-- **Global Time Controls** (`scientificDataViewer.globalTimeControls`)
-- **Global Dimension Slices** (`scientificDataViewer.globalDimensionSlices`)
-- **Group Time Controls** (`scientificDataViewer.groupTimeControls`)
-- **Group Dimension Slices** (`scientificDataViewer.groupDimensionSlices`)
+- **Global Time Controls** (`scientificDataViewer.globalTimeControls`) — **OFF by default** (use Dimension Slices for time instead)
+- **Global Dimension Slices** (`scientificDataViewer.globalDimensionSlices`) — ON by default
+- **Group Time Controls** (`scientificDataViewer.groupTimeControls`) — **OFF by default**
+- **Group Dimension Slices** (`scientificDataViewer.groupDimensionSlices`) — ON by default
 
-Turn off any of these in VS Code settings (or `.vscode/settings.json`) if you prefer a simpler UI.
+Turn Time Controls back on in VS Code settings (or `.vscode/settings.json`) if you want the datetime start/end UI; turn any block off if you prefer a simpler UI.
 
 ## Log full command for copy-paste (Issue #121)
 
@@ -65,4 +69,4 @@ When the extension runs a Python script (e.g. package availability check or data
 
 ### Upgrading
 
-No special steps. After updating to 0.9.0 you’ll see the new Dimension Slices section when a file is loaded, and small variables/coordinates will show values where applicable. For multi-group datasets, Global Time Controls and Dimension Slices now deduplicate and merge across groups; each group also has an optional Group Plot Controls section (after Attributes). You can disable any of these via the four new settings if you prefer.
+After updating to 0.9.0, **Global Time Controls** and **Group Time Controls** are off by default—use **Dimension Slices** to subset time and other dimensions (e.g. `0:24:2`). You can re-enable Time Controls in settings if you prefer the datetime start/end UI. Dimension Slices and small variable/coordinate values are shown when a file is loaded; for multi-group datasets, dimensions merge across groups and each group has an optional Group Plot Controls section. Use the four settings to enable or disable each block.

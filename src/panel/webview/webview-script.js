@@ -205,7 +205,7 @@ class WebviewMessageBus {
         if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
             payload.facetCol = facetCol;
         }
-        if (bins != null && Number.isInteger(bins) && bins >= 1) {
+        if (bins !== null && bins !== undefined && Number.isInteger(bins) && bins >= 1) {
             payload.bins = bins;
         }
 
@@ -742,7 +742,8 @@ function renderFileInformation(data) {
 
 function renderGroup(data, groupName, flags) {
     const groupTimeControls = (flags && flags.groupTimeControls) !== false;
-    const groupDimensionSlices = (flags && flags.groupDimensionSlices) !== false;
+    const groupDimensionSlices =
+        (flags && flags.groupDimensionSlices) !== false;
 
     // Add dimensions for group
     const dimensions = data.dimensions_flattened[groupName];
@@ -902,11 +903,15 @@ function renderGroupPlotControls(data, groupName, flags) {
                 <div class="group-plot-controls dimension-slices-section">
                     <h4>Group Dimension Slices</h4>
                     <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
-                        ${dimNames.map((dimName) => `
+                        ${dimNames
+                            .map(
+                                (dimName) => `
                             <div class="dimension-slice-row">
                                 <label for="group-dim-${safeId}-${dimName}">${escapeHtml(dimName)} (${groupDims[dimName]}):</label>
                                 <input type="text" id="group-dim-${safeId}-${dimName}" class="dimension-slice-input group-dimension-slice-input" data-group="${escapeHtml(groupName)}" data-dimension="${dimName}" placeholder="e.g. 0:24:2 or 130" />
-                            </div>`).join('')}
+                            </div>`,
+                            )
+                            .join('')}
                     </div>
                     <div class="dimension-slices-facets">
                         <label for="group-facet-row-${safeId}">Facet row:</label>
@@ -928,7 +933,9 @@ function renderGroupPlotControls(data, groupName, flags) {
                 </div>`
             : '';
 
-    if (!timeControlsHtml && !dimensionSlicesHtml) return '';
+    if (!timeControlsHtml && !dimensionSlicesHtml) {
+        return '';
+    }
 
     return `
                 <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
@@ -1622,11 +1629,10 @@ const globalTimeControlsState = {
     datetimeVarsMap: new Map(), // Map fullPath -> {name, fullPath, group, min, max}
 };
 
-// Per-group plot control state (optional overrides when set)
-const groupPlotState = {};
-
 function getVariableGroup(variable) {
-    if (!variable || typeof variable !== 'string') return '/';
+    if (!variable || typeof variable !== 'string') {
+        return '/';
+    }
     if (variable.includes('/')) {
         const group = variable.slice(0, variable.lastIndexOf('/'));
         return group === '' ? '/' : group;
@@ -1637,25 +1643,34 @@ function getVariableGroup(variable) {
 function findGroupPlotControlsSection(groupName) {
     const sections = document.querySelectorAll('.group-plot-controls-section');
     for (const el of sections) {
-        if (el.getAttribute('data-group') === groupName) return el;
+        if (el.getAttribute('data-group') === groupName) {
+            return el;
+        }
     }
     return null;
 }
 
 function getGroupTimeControlsState(groupName) {
     const section = findGroupPlotControlsSection(groupName);
-    if (!section) return null;
+    if (!section) {
+        return null;
+    }
     const safeId = joinId(['group-plot', groupName]);
     const select = document.getElementById(`group-datetime-select-${safeId}`);
     const startInput = document.getElementById(
         `group-start-datetime-${safeId}`,
     );
     const endInput = document.getElementById(`group-end-datetime-${safeId}`);
-    if (!select) return null;
+    if (!select) {
+        return null;
+    }
     const datetimeVariableName = select.value || null;
-    const startDatetime = startInput && startInput.value ? startInput.value : null;
+    const startDatetime =
+        startInput && startInput.value ? startInput.value : null;
     const endDatetime = endInput && endInput.value ? endInput.value : null;
-    if (!datetimeVariableName && !startDatetime && !endDatetime) return null;
+    if (!datetimeVariableName && !startDatetime && !endDatetime) {
+        return null;
+    }
     return {
         datetimeVariableName: datetimeVariableName || undefined,
         startDatetime: startDatetime || undefined,
@@ -1665,13 +1680,17 @@ function getGroupTimeControlsState(groupName) {
 
 function getGroupDimensionSlicesState(groupName) {
     const section = findGroupPlotControlsSection(groupName);
-    if (!section) return null;
+    if (!section) {
+        return null;
+    }
     const inputs = section.querySelectorAll(
         '.group-dimension-slice-input[data-group]',
     );
     const dimensionSlices = {};
     inputs.forEach((input) => {
-        if (input.dataset.group !== groupName) return;
+        if (input.dataset.group !== groupName) {
+            return;
+        }
         const val = input.value && input.value.trim();
         if (val && input.dataset.dimension) {
             const num = Number(val);
@@ -1689,13 +1708,15 @@ function getGroupDimensionSlicesState(groupName) {
     let bins = null;
     if (binsEl && binsEl.value && binsEl.value.trim() !== '') {
         const n = parseInt(binsEl.value.trim(), 10);
-        if (Number.isInteger(n) && n >= 1) bins = n;
+        if (Number.isInteger(n) && n >= 1) {
+            bins = n;
+        }
     }
     if (
         Object.keys(dimensionSlices).length === 0 &&
         !facetRow &&
         !facetCol &&
-        bins == null
+        (bins === null || bins === undefined)
     ) {
         return null;
     }
@@ -1785,15 +1806,21 @@ function populateDatetimeVariables(data, flags) {
 
 let groupPlotControlsListenersSetup = false;
 function setupGroupPlotControlsListeners() {
-    if (groupPlotControlsListenersSetup) return;
+    if (groupPlotControlsListenersSetup) {
+        return;
+    }
     groupPlotControlsListenersSetup = true;
     document.body.addEventListener('click', (e) => {
         const clearTimeBtn = e.target.closest('.group-clear-time-btn');
         if (clearTimeBtn) {
             const groupName = clearTimeBtn.getAttribute('data-group');
-            if (!groupName) return;
+            if (!groupName) {
+                return;
+            }
             const section = findGroupPlotControlsSection(groupName);
-            if (!section) return;
+            if (!section) {
+                return;
+            }
             const safeId = joinId(['group-plot', groupName]);
             const select = document.getElementById(
                 `group-datetime-select-${safeId}`,
@@ -1810,11 +1837,21 @@ function setupGroupPlotControlsListeners() {
             const endText = document.getElementById(
                 `group-end-datetime-text-${safeId}`,
             );
-            if (select) select.value = '';
-            if (startInput) startInput.value = '';
-            if (startText) startText.value = '';
-            if (endInput) endInput.value = '';
-            if (endText) endText.value = '';
+            if (select) {
+                select.value = '';
+            }
+            if (startInput) {
+                startInput.value = '';
+            }
+            if (startText) {
+                startText.value = '';
+            }
+            if (endInput) {
+                endInput.value = '';
+            }
+            if (endText) {
+                endText.value = '';
+            }
             return;
         }
 
@@ -1823,9 +1860,13 @@ function setupGroupPlotControlsListeners() {
         );
         if (clearDimBtn) {
             const groupName = clearDimBtn.getAttribute('data-group');
-            if (!groupName) return;
+            if (!groupName) {
+                return;
+            }
             const section = findGroupPlotControlsSection(groupName);
-            if (!section) return;
+            if (!section) {
+                return;
+            }
             section
                 .querySelectorAll('.group-dimension-slice-input')
                 .forEach((input) => {
@@ -1839,9 +1880,15 @@ function setupGroupPlotControlsListeners() {
                 `group-facet-col-${safeId}`,
             );
             const binsEl = document.getElementById(`group-bins-${safeId}`);
-            if (facetRowEl) facetRowEl.value = '';
-            if (facetColEl) facetColEl.value = '';
-            if (binsEl) binsEl.value = '';
+            if (facetRowEl) {
+                facetRowEl.value = '';
+            }
+            if (facetColEl) {
+                facetColEl.value = '';
+            }
+            if (binsEl) {
+                binsEl.value = '';
+            }
         }
     });
 }
@@ -1879,7 +1926,9 @@ function populateDimensionSlices(data, flags) {
     const mergedDimensions = {};
     for (const groupName of Object.keys(data.dimensions_flattened)) {
         const dims = data.dimensions_flattened[groupName];
-        if (!dims) continue;
+        if (!dims) {
+            continue;
+        }
         for (const [dimName, size] of Object.entries(dims)) {
             const existing = mergedDimensions[dimName];
             if (existing === undefined || size > existing) {
@@ -1951,7 +2000,9 @@ function getDimensionSlicesState() {
     let bins = null;
     if (binsInput && binsInput.value && binsInput.value.trim() !== '') {
         const n = parseInt(binsInput.value.trim(), 10);
-        if (Number.isInteger(n) && n >= 1) bins = n;
+        if (Number.isInteger(n) && n >= 1) {
+            bins = n;
+        }
     }
     return {
         dimensionSlices: Object.keys(dimensionSlices).length
@@ -2440,7 +2491,10 @@ function captureFormControlValues() {
     const elements = document.querySelectorAll(EXPORT_FORM_CONTROL_SELECTORS);
     elements.forEach((el) => {
         if (el.id) {
-            valueById.set(el.id, el.value === undefined ? '' : String(el.value));
+            valueById.set(
+                el.id,
+                el.value === undefined ? '' : String(el.value),
+            );
         }
     });
     return valueById;
@@ -2451,12 +2505,18 @@ function captureFormControlValues() {
  * so the exported HTML reflects the state at export time (browser view = readonly).
  */
 function applyExportStateToClone(clone, valueById) {
-    if (!valueById || valueById.size === 0) return;
+    if (!valueById || valueById.size === 0) {
+        return;
+    }
     valueById.forEach((value, id) => {
         try {
-            const escapedId = CSS.escape ? CSS.escape(id) : id.replace(/"/g, '\\"');
+            const escapedId = CSS.escape
+                ? CSS.escape(id)
+                : id.replace(/"/g, '\\"');
             const el = clone.querySelector(`[id="${escapedId}"]`);
-            if (!el) return;
+            if (!el) {
+                return;
+            }
             if (el.tagName === 'SELECT') {
                 el.value = value;
                 // Set selected attribute on the matching option so serialized HTML shows it (outerHTML may not reflect .value)
@@ -2492,7 +2552,9 @@ function captureWebviewContent() {
             '🖼️ Content captured, size:',
             htmlContent.length,
             'characters',
-            valueById.size > 0 ? `(${valueById.size} form values preserved)` : '',
+            valueById.size > 0
+                ? `(${valueById.size} form values preserved)`
+                : '',
         );
         return htmlContent;
     } catch (error) {
@@ -2673,8 +2735,7 @@ async function handleCreateAllPlots() {
         const groupTime = getGroupTimeControlsState(variableGroup);
         const groupDim = getGroupDimensionSlicesState(variableGroup);
 
-        const dtName =
-            groupTime?.datetimeVariableName ?? datetimeVariableName;
+        const dtName = groupTime?.datetimeVariableName ?? datetimeVariableName;
         const startISO = groupTime?.startDatetime
             ? convertDatetimeLocalToISO(groupTime.startDatetime)
             : startDatetimeISO;
@@ -2906,7 +2967,8 @@ async function handleCreateVariablePlot(variable) {
         : null;
 
     const globalDim = getDimensionSlicesState();
-    const dimensionSlices = groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
+    const dimensionSlices =
+        groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
     const facetRow = groupDim?.facetRow ?? globalDim.facetRow;
     const facetCol = groupDim?.facetCol ?? globalDim.facetCol;
     const bins = groupDim?.bins ?? globalDim.bins;

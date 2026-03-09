@@ -1266,23 +1266,37 @@ def create_plot(
                     "User provided dimension/facet/bins params: building plot from user input only"
                 )
                 if plot_kwargs:
-                    logger.info("Creating histogram plot with bins=%s", plot_kwargs["bins"])
+                    logger.info(
+                        "Creating histogram plot with bins=%s", plot_kwargs["bins"]
+                    )
                     var.plot.hist(**plot_kwargs)
                 elif facet_row or facet_col:
                     row_dim = (
                         facet_row.strip()
-                        if (facet_row and facet_row.strip() and facet_row.strip() in var.dims)
+                        if (
+                            facet_row
+                            and facet_row.strip()
+                            and facet_row.strip() in var.dims
+                        )
                         else None
                     )
                     col_dim = (
                         facet_col.strip()
-                        if (facet_col and facet_col.strip() and facet_col.strip() in var.dims)
+                        if (
+                            facet_col
+                            and facet_col.strip()
+                            and facet_col.strip() in var.dims
+                        )
                         else None
                     )
                     if row_dim or col_dim:
                         # Use generic .plot(row=, col=) so xarray picks plot type per panel
                         # (e.g. line for 1D panels, imshow for 2D); .plot.imshow() requires 2D per panel
-                        plot_kw = {"row": row_dim, "col": col_dim} if (row_dim and col_dim) else {}
+                        plot_kw = (
+                            {"row": row_dim, "col": col_dim}
+                            if (row_dim and col_dim)
+                            else {}
+                        )
                         if row_dim and not col_dim:
                             plot_kw["row"] = row_dim
                         elif col_dim and not row_dim:
@@ -1320,9 +1334,7 @@ def create_plot(
                     logger.info("Creating 3D plot (col facet)")
                     first_dim = var.dims[0]
                     col_wrap = min(4, var.sizes.get(first_dim, 4))
-                    var.plot.imshow(
-                        col=first_dim, aspect=1, size=4, col_wrap=col_wrap
-                    )
+                    var.plot.imshow(col=first_dim, aspect=1, size=4, col_wrap=col_wrap)
                 elif strategy == "4d_col_row":
                     logger.info("Creating 4D plot (row and col facets)")
                     first_dim = var.dims[0]
@@ -1346,17 +1358,13 @@ def create_plot(
                         else:
                             import pandas as pd
 
-                            if not isinstance(
-                                datetime_values, pd.DatetimeIndex
-                            ):
+                            if not isinstance(datetime_values, pd.DatetimeIndex):
                                 datetime_index = pd.DatetimeIndex(datetime_values)
                             else:
                                 datetime_index = datetime_values
                             var_with_time = xr.DataArray(
                                 var_values,
-                                coords={
-                                    datetime_var_display_name: datetime_index
-                                },
+                                coords={datetime_var_display_name: datetime_index},
                                 dims=[datetime_var_display_name],
                                 name=variable_name,
                             )
