@@ -1243,111 +1243,126 @@ def create_plot(
                     format_info=file_format_info,
                 )
 
-        # Detect plotting strategy
-        strategy = detect_plotting_strategy(var)
-        logger.info(f"Using plotting strategy: {strategy}")
+        # Branch: user provided any dimension-slice/facet/bins params => build only from user input
+        user_provided = bool(
+            (dimension_slices and len(dimension_slices) > 0)
+            or (facet_row and facet_row.strip())
+            or (facet_col and facet_col.strip())
+            or (bins is not None and bins >= 1)
+        )
 
-        # Optional plot kwargs (e.g. bins for histogram-style plots, Issue #117)
+        # Optional plot kwargs (e.g. bins for histogram)
         plot_kwargs = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
-        use_histogram = bool(plot_kwargs)
 
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
-            # When bins is set, use explicit histogram (xarray's .plot() only uses hist for 3+ dims)
-            if use_histogram:
-                logger.info("Creating histogram plot with bins=%s", plot_kwargs["bins"])
-                var.plot.hist(**plot_kwargs)
-            elif strategy == "2d_classic":
-                # 2D spatial data - plot directly with appropriate colormap
-                logger.info("Creating 2D spatial plot")
-                var.plot.imshow()
-                plt.gca().set_aspect("equal")
-            elif strategy == "2d_classic_isel":
-                logger.info("Creating 2D spatial plot with isel")
-                first_dim = var.dims[0]
-                var.isel({first_dim: 0}).plot.imshow()
-                plt.gca().set_aspect("equal")
-            elif strategy == "3d_col":
-                # 3D data: one facet dimension; use user facet_row or facet_col if provided (Issue #117)
-                logger.info("Creating 3D plot with facet parameters")
-                first_dim = var.dims[0]
-                row_dim = (
-                    facet_row if (facet_row and facet_row in var.dims) else None
+            if user_provided:
+                # --- User-provided branch: build plot only from user params (Issue #117) ---
+                logger.info(
+                    "User provided dimension/facet/bins params: building plot from user input only"
                 )
-                col_dim = (
-                    facet_col if (facet_col and facet_col in var.dims) else None
-                )
-                # Prefer user choice: row over col over default
-                if row_dim:
-                    var.plot.imshow(row=row_dim, aspect=1, size=4)
-                elif col_dim:
-                    col_wrap = min(4, var.sizes.get(col_dim, 4))
-                    var.plot.imshow(
-                        col=col_dim, aspect=1, size=4, col_wrap=col_wrap
+                if plot_kwargs:
+                    logger.info("Creating histogram plot with bins=%s", plot_kwargs["bins"])
+                    var.plot.hist(**plot_kwargs)
+                elif facet_row or facet_col:
+                    row_dim = (
+                        facet_row.strip()
+                        if (facet_row and facet_row.strip() and facet_row.strip() in var.dims)
+                        else None
                     )
+                    col_dim = (
+                        facet_col.strip()
+                        if (facet_col and facet_col.strip() and facet_col.strip() in var.dims)
+                        else None
+                    )
+                    if row_dim or col_dim:
+                        # Use generic .plot(row=, col=) so xarray picks plot type per panel
+                        # (e.g. line for 1D panels, imshow for 2D); .plot.imshow() requires 2D per panel
+                        plot_kw = {"row": row_dim, "col": col_dim} if (row_dim and col_dim) else {}
+                        if row_dim and not col_dim:
+                            plot_kw["row"] = row_dim
+                        elif col_dim and not row_dim:
+                            plot_kw["col"] = col_dim
+                            plot_kw["col_wrap"] = min(4, var.sizes.get(col_dim, 4))
+                        if plot_kw:
+                            var.plot(**{**plot_kw, **plot_kwargs})
+                        else:
+                            var.plot(**plot_kwargs) if plot_kwargs else var.plot()
+                    else:
+                        logger.warning(
+                            "Facet row/col not found on variable dims %s; using default plot",
+                            var.dims,
+                        )
+                        var.plot(**plot_kwargs) if plot_kwargs else var.plot()
                 else:
+                    # Slices only, no facet/bins: let xarray choose plot type
+                    logger.info("Creating plot from sliced data (xarray default)")
+                    var.plot(**plot_kwargs) if plot_kwargs else var.plot()
+            else:
+                # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
+                strategy = detect_plotting_strategy(var)
+                logger.info(f"Auto-plot: using strategy {strategy}")
+
+                if strategy == "2d_classic":
+                    logger.info("Creating 2D spatial plot")
+                    var.plot.imshow()
+                    plt.gca().set_aspect("equal")
+                elif strategy == "2d_classic_isel":
+                    logger.info("Creating 2D spatial plot with isel")
+                    first_dim = var.dims[0]
+                    var.isel({first_dim: 0}).plot.imshow()
+                    plt.gca().set_aspect("equal")
+                elif strategy == "3d_col":
+                    logger.info("Creating 3D plot (col facet)")
+                    first_dim = var.dims[0]
                     col_wrap = min(4, var.sizes.get(first_dim, 4))
                     var.plot.imshow(
                         col=first_dim, aspect=1, size=4, col_wrap=col_wrap
                     )
-            elif strategy == "4d_col_row":
-                # 4D data with spatial dimensions - use col and row parameters (Issue #117: facet_row, facet_col)
-                logger.info("Creating 4D plot with col and row parameters")
-                first_dim = var.dims[0]
-                second_dim = var.dims[1]
-                row_dim = (
-                    facet_row if (facet_row and facet_row in var.dims) else first_dim
-                )
-                col_dim = (
-                    facet_col if (facet_col and facet_col in var.dims) else second_dim
-                )
-                var.plot.imshow(
-                    col=col_dim, row=row_dim, aspect=1, size=4
-                )
-            else:
-                # Default plotting behavior - let xarray decide the best method
-                logger.info("Creating default plot using xarray's native plotting")
-                # If datetime variable is provided and var is 1D, use datetime for x-axis
-                if datetime_var is not None and var.ndim == 1:
-                    # Verify that datetime_var and var have compatible shapes for plotting
-                    datetime_values = datetime_var.values
-                    var_values = var.values
-
-                    if datetime_values.shape != var_values.shape:
-                        logger.warning(
-                            f"Cannot use datetime variable for plotting: shape mismatch. "
-                            f"Datetime shape: {datetime_values.shape}, variable shape: {var_values.shape}. "
-                            f"Falling back to default plotting."
-                        )
-                        var.plot(**plot_kwargs)
-                    else:
-                        # Use xarray's default datetime plotting by setting datetime as coordinate
-                        # Create a temporary dataset with datetime as coordinate for plotting
-                        import pandas as pd
-
-                        # Convert datetime values to pandas DatetimeIndex if needed
-                        if not isinstance(datetime_values, pd.DatetimeIndex):
-                            datetime_index = pd.DatetimeIndex(datetime_values)
-                        else:
-                            datetime_index = datetime_values
-
-                        # Create a temporary DataArray with datetime as coordinate
-                        var_with_time = xr.DataArray(
-                            var_values,
-                            coords={datetime_var_display_name: datetime_index},
-                            dims=[datetime_var_display_name],
-                            name=variable_name,
-                        )
-
-                        # Use xarray's native plotting (handles datetime formatting automatically)
-                        var_with_time.plot(**plot_kwargs)
-
+                elif strategy == "4d_col_row":
+                    logger.info("Creating 4D plot (row and col facets)")
+                    first_dim = var.dims[0]
+                    second_dim = var.dims[1]
+                    var.plot.imshow(
+                        col=second_dim,
+                        row=first_dim,
+                        aspect=1,
+                        size=4,
+                    )
                 else:
-                    var.plot(**plot_kwargs)
+                    logger.info("Creating default plot (xarray choice)")
+                    if datetime_var is not None and var.ndim == 1:
+                        datetime_values = datetime_var.values
+                        var_values = var.values
+                        if datetime_values.shape != var_values.shape:
+                            logger.warning(
+                                "Datetime shape mismatch, falling back to default plot"
+                            )
+                            var.plot(**plot_kwargs)
+                        else:
+                            import pandas as pd
+
+                            if not isinstance(
+                                datetime_values, pd.DatetimeIndex
+                            ):
+                                datetime_index = pd.DatetimeIndex(datetime_values)
+                            else:
+                                datetime_index = datetime_values
+                            var_with_time = xr.DataArray(
+                                var_values,
+                                coords={
+                                    datetime_var_display_name: datetime_index
+                                },
+                                dims=[datetime_var_display_name],
+                                name=variable_name,
+                            )
+                            var_with_time.plot(**plot_kwargs)
+                    else:
+                        var.plot(**plot_kwargs)
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
