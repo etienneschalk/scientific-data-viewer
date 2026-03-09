@@ -2413,16 +2413,80 @@ async function handleExportWebview() {
     }
 }
 
+/**
+ * Selectors for user-filled form controls that should be exported with their
+ * current values and made read-only in the exported HTML.
+ */
+const EXPORT_FORM_CONTROL_SELECTORS = [
+    'select.datetime-variable-select',
+    'select.group-datetime-select',
+    'input.datetime-input',
+    'input.group-datetime-input',
+    'input.datetime-text-input',
+    'input.dimension-slice-input',
+    'input.group-dimension-slice-input',
+    'select.facet-select',
+    'select.group-facet-select',
+    'input.bins-input',
+    'input.group-bins-input',
+].join(', ');
+
+/**
+ * Capture current values of exportable form controls (by id) from the live document.
+ * @returns {Map<string, string>} id -> current value
+ */
+function captureFormControlValues() {
+    const valueById = new Map();
+    const elements = document.querySelectorAll(EXPORT_FORM_CONTROL_SELECTORS);
+    elements.forEach((el) => {
+        if (el.id) {
+            valueById.set(el.id, el.value === undefined ? '' : String(el.value));
+        }
+    });
+    return valueById;
+}
+
+/**
+ * Apply captured values to the cloned document and make form controls read-only
+ * so the exported HTML reflects the state at export time (browser view = readonly).
+ */
+function applyExportStateToClone(clone, valueById) {
+    if (!valueById || valueById.size === 0) return;
+    valueById.forEach((value, id) => {
+        try {
+            const escapedId = CSS.escape ? CSS.escape(id) : id.replace(/"/g, '\\"');
+            const el = clone.querySelector(`[id="${escapedId}"]`);
+            if (!el) return;
+            if (el.tagName === 'SELECT') {
+                if (value !== '' && Array.from(el.options).some((o) => o.value === value)) {
+                    el.value = value;
+                }
+                el.disabled = true;
+            } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.setAttribute('value', value);
+                el.value = value;
+                el.readOnly = true;
+            }
+        } catch (e) {
+            console.warn('Export: could not set value for id', id, e);
+        }
+    });
+}
+
 function captureWebviewContent() {
     console.log('🖼️ Capturing webview content...');
 
     try {
-        // Get the current document HTML
-        const htmlContent = document.documentElement.outerHTML;
+        const valueById = captureFormControlValues();
+        const clone = document.documentElement.cloneNode(true);
+        applyExportStateToClone(clone, valueById);
+
+        const htmlContent = clone.outerHTML;
         console.log(
             '🖼️ Content captured, size:',
             htmlContent.length,
             'characters',
+            valueById.size > 0 ? `(${valueById.size} form values preserved)` : '',
         );
         return htmlContent;
     } catch (error) {
