@@ -134,7 +134,12 @@ export class DataProcessor {
         if (facetCol && facetCol.trim() !== '') {
             args.push('--facet-col', quoteIfNeeded(facetCol));
         }
-        if (bins !== null && bins !== undefined && Number.isInteger(bins) && bins >= 1) {
+        if (
+            bins !== null &&
+            bins !== undefined &&
+            Number.isInteger(bins) &&
+            bins >= 1
+        ) {
             args.push('--bins', String(bins));
         }
 

@@ -205,7 +205,12 @@ class WebviewMessageBus {
         if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
             payload.facetCol = facetCol;
         }
-        if (bins !== null && bins !== undefined && Number.isInteger(bins) && bins >= 1) {
+        if (
+            bins !== null &&
+            bins !== undefined &&
+            Number.isInteger(bins) &&
+            bins >= 1
+        ) {
             payload.bins = bins;
         }
 
