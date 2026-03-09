@@ -492,9 +492,10 @@
                 },
                 "scientificDataViewer.globalTimeControls": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "order": 1001,
-                    "description": "Enable Global Time Controls in the plot controls area"
+                    "description": "Enable Global Time Controls (datetime variable, start/end) in the plot controls area",
+                    "markdownDescription": "When enabled, shows datetime variable selection and start/end time inputs. **Off by default:** Dimension Slices (isel) is easier to maintain and data-agnostic—any dimension (including time) can be sliced by index (e.g. `0:24:2`) without handling labels. A future **sel** (label-based) feature could complement **isel** (position-based) for datetime and other coordinates, making the feature complete."
                 },
                 "scientificDataViewer.globalDimensionSlices": {
                     "type": "boolean",
@@ -504,9 +505,10 @@
                 },
                 "scientificDataViewer.groupTimeControls": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "order": 1003,
-                    "description": "Enable Group Time Controls (per-group time/datetime selection)"
+                    "description": "Enable Group Time Controls (per-group datetime selection and start/end)",
+                    "markdownDescription": "When enabled, each group gets its own time/datetime controls. **Off by default:** same rationale as Global Time Controls—Dimension Slices (isel) is data-agnostic; a future sel-based feature could cover datetime and other dimension coordinates uniformly."
                 },
                 "scientificDataViewer.groupDimensionSlices": {
                     "type": "boolean",

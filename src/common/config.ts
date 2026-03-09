@@ -55,9 +55,11 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
-const DEFAULT_GLOBAL_TIME_CONTROLS = true;
+// Time controls off by default: Dimension Slices (isel) is data-agnostic and easier to maintain;
+// a future sel (label-based) feature could cover datetime and other coords uniformly.
+const DEFAULT_GLOBAL_TIME_CONTROLS = false;
 const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
-const DEFAULT_GROUP_TIME_CONTROLS = true;
+const DEFAULT_GROUP_TIME_CONTROLS = false;
 const DEFAULT_GROUP_DIMENSION_SLICES = true;
 
 // Configuration functions
