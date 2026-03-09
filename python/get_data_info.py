@@ -1272,16 +1272,28 @@ def create_plot(
                 var.isel({first_dim: 0}).plot.imshow()
                 plt.gca().set_aspect("equal")
             elif strategy == "3d_col":
-                # 3D data with spatial dimensions - use col parameter (Issue #117: facet_col)
-                logger.info("Creating 3D plot with col parameter")
+                # 3D data: one facet dimension; use user facet_row or facet_col if provided (Issue #117)
+                logger.info("Creating 3D plot with facet parameters")
                 first_dim = var.dims[0]
+                row_dim = (
+                    facet_row if (facet_row and facet_row in var.dims) else None
+                )
                 col_dim = (
-                    facet_col if (facet_col and facet_col in var.dims) else first_dim
+                    facet_col if (facet_col and facet_col in var.dims) else None
                 )
-                col_wrap = min(4, var.sizes.get(col_dim, 4))
-                var.plot.imshow(
-                    col=col_dim, aspect=1, size=4, col_wrap=col_wrap
-                )
+                # Prefer user choice: row over col over default
+                if row_dim:
+                    var.plot.imshow(row=row_dim, aspect=1, size=4)
+                elif col_dim:
+                    col_wrap = min(4, var.sizes.get(col_dim, 4))
+                    var.plot.imshow(
+                        col=col_dim, aspect=1, size=4, col_wrap=col_wrap
+                    )
+                else:
+                    col_wrap = min(4, var.sizes.get(first_dim, 4))
+                    var.plot.imshow(
+                        col=first_dim, aspect=1, size=4, col_wrap=col_wrap
+                    )
             elif strategy == "4d_col_row":
                 # 4D data with spatial dimensions - use col and row parameters (Issue #117: facet_row, facet_col)
                 logger.info("Creating 4D plot with col and row parameters")
