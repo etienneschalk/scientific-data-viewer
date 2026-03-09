@@ -41,6 +41,10 @@ const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
+const GLOBAL_TIME_CONTROLS = 'globalTimeControls';
+const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
+const GROUP_TIME_CONTROLS = 'groupTimeControls';
+const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -51,6 +55,10 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
+const DEFAULT_GLOBAL_TIME_CONTROLS = true;
+const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
+const DEFAULT_GROUP_TIME_CONTROLS = true;
+const DEFAULT_GROUP_DIMENSION_SLICES = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -122,6 +130,34 @@ export function getConvertBandsToVariables(): boolean {
     return getWorkspaceConfig().get<boolean>(
         CONVERT_BANDS_TO_VARIABLES,
         DEFAULT_CONVERT_BANDS_TO_VARIABLES,
+    );
+}
+
+export function getGlobalTimeControls(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GLOBAL_TIME_CONTROLS,
+        DEFAULT_GLOBAL_TIME_CONTROLS,
+    );
+}
+
+export function getGlobalDimensionSlices(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GLOBAL_DIMENSION_SLICES,
+        DEFAULT_GLOBAL_DIMENSION_SLICES,
+    );
+}
+
+export function getGroupTimeControls(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GROUP_TIME_CONTROLS,
+        DEFAULT_GROUP_TIME_CONTROLS,
+    );
+}
+
+export function getGroupDimensionSlices(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GROUP_DIMENSION_SLICES,
+        DEFAULT_GROUP_DIMENSION_SLICES,
     );
 }
 

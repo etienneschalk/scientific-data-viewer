@@ -287,7 +287,7 @@
             "explorer": [
                 {
                     "id": "scientificDataViewer.outline",
-                    "name": "Data Structure",
+                    "name": "Scientific Data Structure",
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
@@ -489,6 +489,30 @@
                     "order": 1000,
                     "description": "Convert bands of GeoTIFF rasters to variables for better readability",
                     "markdownDescription": "When enabled, multi-band GeoTIFF files will have their bands converted to separate variables instead of a single 3D DataArray. This improves readability and plotting capabilities by treating each band as an individual variable.\n\n**Supported formats:** GeoTIFF (.tif, .tiff, .geotiff)\n\n**Benefits:**\n- Better color scale readability for different bands\n- Individual band plotting and analysis\n- Improved data structure visualization\n- Each band treated as a separate variable"
+                },
+                "scientificDataViewer.globalTimeControls": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1001,
+                    "description": "Enable Global Time Controls in the plot controls area"
+                },
+                "scientificDataViewer.globalDimensionSlices": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1002,
+                    "description": "Enable Global Dimension Slices in the plot controls area"
+                },
+                "scientificDataViewer.groupTimeControls": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1003,
+                    "description": "Enable Group Time Controls (per-group time/datetime selection)"
+                },
+                "scientificDataViewer.groupDimensionSlices": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1004,
+                    "description": "Enable Group Dimension Slices (per-group dimension slice inputs)"
                 }
             }
         }

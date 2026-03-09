@@ -25,6 +25,35 @@ You can subset data by dimension index or slice before plotting, and control fac
 - **Facet row** and **Facet col** dropdowns let you choose which dimension is used for rows and columns in faceted plots (e.g. 3D/4D imshow with multiple panels).
 - If not set, the extension keeps its default behavior (first/second dimension).
 
+## Global and Group Plot Controls
+
+Plot controls are improved for multi-group datasets (e.g. Zarr with many groups each having `time`, `lat`, `lon`), and you can optionally use **per-group** controls for finer control.
+
+### Global Plot Controls
+
+- **Time Controls**: Datetime variables are **deduplicated by name** and **sorted**. If every group has a `"time"` coordinate, the dropdown shows a single “time” option instead of one per group.
+- **Dimension Slices**: Dimensions are now **merged from all groups**, not only the root. For Zarr products where the root group has no dimensions, the Dimension Slices section shows dimensions from subgroups (e.g. `time`, `lat`, `lon`) and you can slice and facet as before.
+
+### Group Plot Controls
+
+For each group, a collapsible **Group Plot Controls** section appears after that group’s Attributes. It is scoped to that group only:
+
+- **Group Time Controls**: Datetime variable select, start/end time, and Clear, using only that group’s datetime variables (deduplicated and sorted).
+- **Group Dimension Slices**: One row per dimension in that group, facet row/col dropdowns, and Clear.
+
+When you plot a variable (single plot or Plot All), the extension uses **group-scoped** time and dimension-slice values if they are set for that variable’s group; otherwise it falls back to the **global** Time Controls and Dimension Slices.
+
+### Feature flags
+
+Four settings (all **ON** by default) let you enable or disable each block:
+
+- **Global Time Controls** (`scientificDataViewer.globalTimeControls`)
+- **Global Dimension Slices** (`scientificDataViewer.globalDimensionSlices`)
+- **Group Time Controls** (`scientificDataViewer.groupTimeControls`)
+- **Group Dimension Slices** (`scientificDataViewer.groupDimensionSlices`)
+
+Turn off any of these in VS Code settings (or `.vscode/settings.json`) if you prefer a simpler UI.
+
 ## Log full command for copy-paste (Issue #121)
 
 When the extension runs a Python script (e.g. package availability check or data info), it now logs the full one-line command so you can copy-paste it into a terminal to run the same command manually. This helps when debugging environment or path issues (e.g. on Windows).
@@ -34,4 +63,4 @@ When the extension runs a Python script (e.g. package availability check or data
 
 ### Upgrading
 
-No special steps. After updating to 0.9.0 you’ll see the new Dimension Slices section when a file is loaded, and small variables/coordinates will show values where applicable.
+No special steps. After updating to 0.9.0 you’ll see the new Dimension Slices section when a file is loaded, and small variables/coordinates will show values where applicable. For multi-group datasets, Global Time Controls and Dimension Slices now deduplicate and merge across groups; each group also has an optional Group Plot Controls section (after Attributes). You can disable any of these via the four new settings if you prefer.

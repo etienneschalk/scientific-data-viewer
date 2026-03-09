@@ -980,6 +980,10 @@ def create_plot(
 
         # Inline imports of matplotlib as it is only used in this function.
         import matplotlib as mpl
+
+        # Use non-interactive backend so plotting works headless (e.g. in VSCode)
+        # and we avoid "Current Serial #N" / figure-manager errors from GUI backends.
+        mpl.use("Agg")
         import matplotlib.pyplot as plt
 
         # Apply matplotlib style provided by VSCode extension
@@ -1242,6 +1246,9 @@ def create_plot(
         strategy = detect_plotting_strategy(var)
         logger.info(f"Using plotting strategy: {strategy}")
 
+        # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
+        plt.close("all")
+
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
             # Create plot using xarray's native plotting methods
             if strategy == "2d_classic":
@@ -1347,7 +1354,7 @@ def create_plot(
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
             buffer.seek(0)
             image_base64 = base64.b64encode(buffer.getvalue()).decode()
-            plt.close()
+            plt.close("all")
 
         # Close Start
         if datatree_flag:
