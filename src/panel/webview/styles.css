@@ -819,14 +819,19 @@ button:active {
     margin-top: 4px;
 }
 
-/* Group Plot Controls: per-group time and dimension slices (same look as global) */
+/* Group Plot Controls: per-group time and dimension slices (same structure as Dimensions/Coordinates) */
 .group-plot-controls-section {
-    margin-top: 12px;
-    padding: 0;
+    margin-top: 0;
 }
 
 .group-plot-controls-section details summary {
     cursor: pointer;
+}
+
+/* Content wrapper aligned with .dimensions / .coordinates */
+.group-plot-controls-content {
+    display: grid;
+    grid-template-columns: 1fr;
 }
 
 .group-plot-controls-section .group-plot-controls {

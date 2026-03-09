@@ -783,6 +783,7 @@ function renderGroup(data, groupName, flags) {
     return /*html*/ `
         <div class="info-section" id="${joinId(['data-group', groupName])}">
             <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
+                ${groupPlotControlsHtml}
                 <div class="info-section" id="${joinId([
                     'data-group',
                     groupName,
@@ -827,7 +828,6 @@ function renderGroup(data, groupName, flags) {
                         </div>
                     </details>
                 </div>
-                ${groupPlotControlsHtml}
             </details>
         </div>
         `;
@@ -925,11 +925,12 @@ function renderGroupPlotControls(data, groupName, flags) {
     if (!timeControlsHtml && !dimensionSlicesHtml) return '';
 
     return `
-                <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${safeId}">
-                    <details class="">
-                        <summary><h4>Group Plot Controls</h4></summary>
-                        ${timeControlsHtml}
-                        ${dimensionSlicesHtml}
+                <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
+                    <details class="" open> <summary><h4>Group Plot Controls</h4></summary>
+                        <div class="group-plot-controls-content">
+                            ${timeControlsHtml}
+                            ${dimensionSlicesHtml}
+                        </div>
                     </details>
                 </div>`;
 }
