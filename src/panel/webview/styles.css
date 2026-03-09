@@ -815,6 +815,23 @@ button:active {
     outline-offset: -1px;
 }
 
+.dimension-slices-facets .bins-input {
+    width: 5.5em;
+    max-width: 100px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .bins-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
 .dimension-slices-section .plot-control-button {
     margin-top: 4px;
 }

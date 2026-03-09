@@ -929,6 +929,7 @@ def create_plot(
     dimension_slices: Optional[Dict[str, Union[str, int]]] = None,
     facet_row: Optional[str] = None,
     facet_col: Optional[str] = None,
+    bins: Optional[int] = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -1246,6 +1247,11 @@ def create_plot(
         strategy = detect_plotting_strategy(var)
         logger.info(f"Using plotting strategy: {strategy}")
 
+        # Optional plot kwargs (e.g. bins for histogram-style plots, Issue #117)
+        plot_kwargs = {}
+        if bins is not None and bins >= 1:
+            plot_kwargs["bins"] = bins
+
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
@@ -1269,7 +1275,9 @@ def create_plot(
                     facet_col if (facet_col and facet_col in var.dims) else first_dim
                 )
                 col_wrap = min(4, var.sizes.get(col_dim, 4))
-                var.plot.imshow(col=col_dim, aspect=1, size=4, col_wrap=col_wrap)
+                var.plot.imshow(
+                    col=col_dim, aspect=1, size=4, col_wrap=col_wrap
+                )
             elif strategy == "4d_col_row":
                 # 4D data with spatial dimensions - use col and row parameters (Issue #117: facet_row, facet_col)
                 logger.info("Creating 4D plot with col and row parameters")
@@ -1281,7 +1289,9 @@ def create_plot(
                 col_dim = (
                     facet_col if (facet_col and facet_col in var.dims) else second_dim
                 )
-                var.plot.imshow(col=col_dim, row=row_dim, aspect=1, size=4)
+                var.plot.imshow(
+                    col=col_dim, row=row_dim, aspect=1, size=4
+                )
             else:
                 # Default plotting behavior - let xarray decide the best method
                 logger.info("Creating default plot using xarray's native plotting")
@@ -1297,7 +1307,7 @@ def create_plot(
                             f"Datetime shape: {datetime_values.shape}, variable shape: {var_values.shape}. "
                             f"Falling back to default plotting."
                         )
-                        var.plot()
+                        var.plot(**plot_kwargs)
                     else:
                         # Use xarray's default datetime plotting by setting datetime as coordinate
                         # Create a temporary dataset with datetime as coordinate for plotting
@@ -1318,10 +1328,10 @@ def create_plot(
                         )
 
                         # Use xarray's native plotting (handles datetime formatting automatically)
-                        var_with_time.plot()
+                        var_with_time.plot(**plot_kwargs)
 
                 else:
-                    var.plot()
+                    var.plot(**plot_kwargs)
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
@@ -1872,6 +1882,13 @@ Examples:
         help="Dimension name for faceted plot col (Issue #117)",
     )
 
+    parser.add_argument(
+        "--bins",
+        type=int,
+        default=None,
+        help="Number of bins for histogram-style plots (Issue #117; passed as plot kwarg)",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1914,6 +1931,7 @@ Examples:
             dimension_slices=dimension_slices_dict,
             facet_row=args.facet_row,
             facet_col=args.facet_col,
+            bins=args.bins,
         )
         ok = isinstance(result, CreatePlotResult)
 

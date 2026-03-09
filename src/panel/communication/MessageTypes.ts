@@ -55,6 +55,8 @@ export interface CreatePlotRequest {
     facetRow?: string;
     /** Dimension name for faceted plot col (Issue #117) */
     facetCol?: string;
+    /** Number of bins for histogram-style plots (Issue #117; passed as plot kwarg) */
+    bins?: number;
 }
 
 export interface CreatePlotResponse {

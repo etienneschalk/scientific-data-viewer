@@ -261,6 +261,8 @@ export class HTMLGenerator {
                         <select id="facetColSelect" class="facet-select">
                             <option value="">None</option>
                         </select>
+                        <label for="plotBinsInput">Bins:</label>
+                        <input type="number" id="plotBinsInput" class="bins-input" min="1" placeholder="e.g. 100" title="Number of bins for histogram-style plots" />
                     </div>
                     <div class="time-controls-row">
                         <button id="clearDimensionSlicesButton" class="plot-control-button">Clear Dimension Slices</button>

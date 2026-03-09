@@ -174,6 +174,7 @@ class WebviewMessageBus {
         dimensionSlices,
         facetRow,
         facetCol,
+        bins,
         timeout = 15000,
     ) {
         // Generate a unique operation ID for this plot request
@@ -203,6 +204,9 @@ class WebviewMessageBus {
         }
         if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
             payload.facetCol = facetCol;
+        }
+        if (bins != null && Number.isInteger(bins) && bins >= 1) {
+            payload.bins = bins;
         }
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
@@ -915,6 +919,8 @@ function renderGroupPlotControls(data, groupName, flags) {
                             <option value="">None</option>
                             ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
                         </select>
+                        <label for="group-bins-${safeId}">Bins:</label>
+                        <input type="number" id="group-bins-${safeId}" class="bins-input group-bins-input" min="1" placeholder="e.g. 100" data-group="${escapeHtml(groupName)}" title="Number of bins for histogram-style plots" />
                     </div>
                     <div class="time-controls-row">
                         <button type="button" class="plot-control-button group-clear-dimension-slices-btn" data-group="${escapeHtml(groupName)}">Clear Dimension Slices</button>
@@ -926,7 +932,7 @@ function renderGroupPlotControls(data, groupName, flags) {
 
     return `
                 <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
-                    <details class="" open> <summary><h4>Group Plot Controls</h4></summary>
+                    <details class=""> <summary><h4>Group Plot Controls</h4></summary>
                         <div class="group-plot-controls-content">
                             ${timeControlsHtml}
                             ${dimensionSlicesHtml}
@@ -1677,12 +1683,19 @@ function getGroupDimensionSlicesState(groupName) {
     const safeId = joinId(['group-plot', groupName]);
     const facetRowEl = document.getElementById(`group-facet-row-${safeId}`);
     const facetColEl = document.getElementById(`group-facet-col-${safeId}`);
+    const binsEl = document.getElementById(`group-bins-${safeId}`);
     const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
     const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
+    let bins = null;
+    if (binsEl && binsEl.value && binsEl.value.trim() !== '') {
+        const n = parseInt(binsEl.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) bins = n;
+    }
     if (
         Object.keys(dimensionSlices).length === 0 &&
         !facetRow &&
-        !facetCol
+        !facetCol &&
+        bins == null
     ) {
         return null;
     }
@@ -1691,6 +1704,7 @@ function getGroupDimensionSlicesState(groupName) {
             Object.keys(dimensionSlices).length > 0 ? dimensionSlices : null,
         facetRow,
         facetCol,
+        bins,
     };
 }
 
@@ -1824,8 +1838,10 @@ function setupGroupPlotControlsListeners() {
             const facetColEl = document.getElementById(
                 `group-facet-col-${safeId}`,
             );
+            const binsEl = document.getElementById(`group-bins-${safeId}`);
             if (facetRowEl) facetRowEl.value = '';
             if (facetColEl) facetColEl.value = '';
+            if (binsEl) binsEl.value = '';
         }
     });
 }
@@ -1931,6 +1947,12 @@ function getDimensionSlicesState() {
     });
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
+    const binsInput = document.getElementById('plotBinsInput');
+    let bins = null;
+    if (binsInput && binsInput.value && binsInput.value.trim() !== '') {
+        const n = parseInt(binsInput.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) bins = n;
+    }
     return {
         dimensionSlices: Object.keys(dimensionSlices).length
             ? dimensionSlices
@@ -1939,6 +1961,7 @@ function getDimensionSlicesState() {
             facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
         facetCol:
             facetColSelect && facetColSelect.value ? facetColSelect.value : '',
+        bins,
     };
 }
 
@@ -2204,11 +2227,15 @@ function setupTimeControlsEventListeners() {
                 });
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
+            const binsInput = document.getElementById('plotBinsInput');
             if (facetRowSelect) {
                 facetRowSelect.value = '';
             }
             if (facetColSelect) {
                 facetColSelect.value = '';
+            }
+            if (binsInput) {
+                binsInput.value = '';
             }
         });
     }
@@ -2543,7 +2570,8 @@ async function handleCreateAllPlots() {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
-    const { dimensionSlices, facetRow, facetCol } = getDimensionSlicesState();
+    const { dimensionSlices, facetRow, facetCol, bins } =
+        getDimensionSlicesState();
 
     // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
     const plotTasks = Array.from(buttons).map((button) => ({
@@ -2586,6 +2614,7 @@ async function handleCreateAllPlots() {
         const dimSlices = groupDim?.dimensionSlices ?? dimensionSlices;
         const fRow = groupDim?.facetRow ?? facetRow;
         const fCol = groupDim?.facetCol ?? facetCol;
+        const fBins = groupDim?.bins ?? bins;
 
         displayVariablePlotLoading(variable);
 
@@ -2599,6 +2628,7 @@ async function handleCreateAllPlots() {
                 dimSlices,
                 fRow,
                 fCol,
+                fBins,
             );
             displayVariablePlot(variable, plotData);
 
@@ -2809,6 +2839,7 @@ async function handleCreateVariablePlot(variable) {
     const dimensionSlices = groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
     const facetRow = groupDim?.facetRow ?? globalDim.facetRow;
     const facetCol = groupDim?.facetCol ?? globalDim.facetCol;
+    const bins = groupDim?.bins ?? globalDim.bins;
 
     console.log('Creating plot with time controls:', {
         datetimeVariableName,
@@ -2819,6 +2850,7 @@ async function handleCreateVariablePlot(variable) {
         dimensionSlices,
         facetRow,
         facetCol,
+        bins,
         rawState: globalTimeControlsState,
     });
 
@@ -2835,6 +2867,7 @@ async function handleCreateVariablePlot(variable) {
             dimensionSlices,
             facetRow,
             facetCol,
+            bins,
         );
         displayVariablePlot(variable, plotData);
     } catch (error) {

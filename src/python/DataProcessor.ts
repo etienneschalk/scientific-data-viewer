@@ -83,6 +83,7 @@ export class DataProcessor {
         dimensionSlices?: Record<string, string | number>,
         facetRow?: string,
         facetCol?: string,
+        bins?: number,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
@@ -132,6 +133,9 @@ export class DataProcessor {
         }
         if (facetCol && facetCol.trim() !== '') {
             args.push('--facet-col', quoteIfNeeded(facetCol));
+        }
+        if (bins != null && Number.isInteger(bins) && bins >= 1) {
+            args.push('--bins', String(bins));
         }
 
         try {

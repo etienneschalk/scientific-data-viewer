@@ -90,6 +90,7 @@ export class UIController {
                     payload.dimensionSlices,
                     payload.facetRow,
                     payload.facetCol,
+                    payload.bins,
                     payload.operationId,
                 );
             },
@@ -330,6 +331,7 @@ export class UIController {
         dimensionSlices?: Record<string, string | number>,
         facetRow?: string,
         facetCol?: string,
+        bins?: number,
         operationId?: string,
     ): Promise<string | undefined> {
         try {
@@ -355,6 +357,7 @@ export class UIController {
                 dimensionSlices,
                 facetRow,
                 facetCol,
+                bins,
                 operationId,
             );
 
