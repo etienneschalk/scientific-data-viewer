@@ -1255,6 +1255,7 @@ def create_plot(
                 )
 
         # Branch: user provided any dimension-slice/facet/x/y/hue/bins/aspect/size params => build only from user input
+        # When only cmap is set, we keep auto branch so cmap is passed to the relevant plot calls there
         user_provided = bool(
             (dimension_slices and len(dimension_slices) > 0)
             or (facet_row and facet_row.strip())
@@ -1264,7 +1265,6 @@ def create_plot(
             or (plot_y and plot_y.strip())
             or (plot_hue and plot_hue.strip())
             or (bins is not None and bins >= 1)
-            or (cmap is not None and cmap.strip())
             or (aspect is not None and aspect > 0)
             or (size is not None and size > 0)
         )
@@ -1290,13 +1290,13 @@ def create_plot(
         if col_wrap is not None and col_wrap >= 1:
             plot_kwargs["col_wrap"] = int(col_wrap)
 
-        def _kwargs_for_plot(v, include_cmap=None):
-            """Return plot kwargs for generic .plot() calls. Include cmap only for 2D+ arrays
-            (image-style plots); omit for 1D to avoid AttributeError on line plots.
+        def _kwargs_for_plot():
+            """Return plot kwargs for generic .plot() calls. Never include cmap here:
+            xarray can pass it to artists that do not support it (e.g. Rectangle).
+            Use explicit .plot.imshow() when cmap is needed.
             """
             out = dict(plot_kwargs)
-            if include_cmap is False or (include_cmap is not True and v.ndim < 2):
-                out.pop("cmap", None)
+            out.pop("cmap", None)
             return out
 
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
@@ -1312,7 +1312,7 @@ def create_plot(
                     logger.info(
                         "Creating histogram plot with bins=%s", plot_kwargs["bins"]
                     )
-                    var.plot.hist(**_kwargs_for_plot(var, include_cmap=False))
+                    var.plot.hist(**_kwargs_for_plot())
                 elif facet_row or facet_col or plot_x or plot_y or plot_hue:
                     row_dim = (
                         facet_row.strip()
@@ -1365,16 +1365,16 @@ def create_plot(
                         plot_kw["hue"] = hue_dim
 
                     if plot_kw:
-                        var.plot(**{**plot_kw, **_kwargs_for_plot(var)})
+                        var.plot(**{**plot_kw, **_kwargs_for_plot()})
                     else:
                         logger.warning(
                             "Facet row/col and x/y/hue not found on variable; using default plot",
                         )
-                        var.plot(**_kwargs_for_plot(var)) if plot_kwargs else var.plot()
+                        var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
                 else:
                     # Slices only, no facet/bins: let xarray choose plot type
                     logger.info("Creating plot from sliced data (xarray default)")
-                    var.plot(**_kwargs_for_plot(var)) if plot_kwargs else var.plot()
+                    var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
             else:
                 # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
                 strategy = detect_plotting_strategy(var)
@@ -1431,7 +1431,7 @@ def create_plot(
                             logger.warning(
                                 "Datetime shape mismatch, falling back to default plot"
                             )
-                            var.plot(**_kwargs_for_plot(var))
+                            var.plot(**_kwargs_for_plot())
                         else:
                             import pandas as pd
 
@@ -1445,9 +1445,31 @@ def create_plot(
                                 dims=[datetime_var_display_name],
                                 name=variable_name,
                             )
-                            var_with_time.plot(**_kwargs_for_plot(var_with_time))
+                            var_with_time.plot(**_kwargs_for_plot())
+                    elif var.ndim >= 2 and "cmap" in plot_kwargs:
+                        # Use explicit imshow so cmap is applied (generic .plot() can trigger Rectangle.set(cmap) error)
+                        if var.ndim == 2:
+                            var.plot.imshow(**_plot_kw)
+                        elif var.ndim == 3:
+                            first = var.dims[0]
+                            var.plot.imshow(
+                                col=first,
+                                aspect=_fig_kw.get("aspect", 1),
+                                size=_fig_kw.get("size", 4),
+                                col_wrap=min(4, var.sizes.get(first, 4)),
+                                **_imshow_kw,
+                            )
+                        else:
+                            first, second = var.dims[0], var.dims[1]
+                            var.plot.imshow(
+                                row=first,
+                                col=second,
+                                aspect=_fig_kw.get("aspect", 1),
+                                size=_fig_kw.get("size", 4),
+                                **_imshow_kw,
+                            )
                     else:
-                        var.plot(**_kwargs_for_plot(var))
+                        var.plot(**_kwargs_for_plot())
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
