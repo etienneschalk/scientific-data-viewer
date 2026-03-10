@@ -3,7 +3,11 @@ import * as path from 'path';
 import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
-import { getMatplotlibStyle } from '../common/config';
+import {
+    getMatplotlibStyle,
+    getSmallVariableBytes,
+    getSmallValueDisplayMaxLen,
+} from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
 export class DataProcessor {
@@ -50,6 +54,13 @@ export class DataProcessor {
             if (convertBandsToVariables) {
                 args.push('--convert-bands-to-variables');
             }
+            const smallVariableBytes = getSmallVariableBytes();
+            const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
+            args.push('--small-variable-bytes', String(smallVariableBytes));
+            args.push(
+                '--small-value-display-max-len',
+                String(smallValueDisplayMaxLen),
+            );
 
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,

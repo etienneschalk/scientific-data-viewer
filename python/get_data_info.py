@@ -155,14 +155,15 @@ XR_TEXT_OPTIONS: Dict[str, Any] = {
 # For HTML representation, keep attrs collapsed (users can click to expand)
 XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
 
-# Threshold in bytes: variables/coordinates at or below this size get their values
-# loaded and displayed in the UI (Issue #102).
-SMALL_VARIABLE_BYTES = 1000
-SMALL_VALUE_DISPLAY_MAX_LEN = 500
+# Defaults for Issue #102 (overridable via CLI --small-variable-bytes / --small-value-display-max-len).
+# When small_variable_bytes is 0, the feature is disabled.
+DEFAULT_SMALL_VARIABLE_BYTES = 1000
+DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500
 
 
 def _format_small_value(
-    var: xr.DataArray, max_len: int = SMALL_VALUE_DISPLAY_MAX_LEN
+    var: xr.DataArray,
+    max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
 ) -> str:
     """Load and format variable values for display when size is below threshold."""
     try:
@@ -383,7 +384,7 @@ class VariableInfo:
     attributes : Dict[str, Any]
         Variable attributes/metadata
     display_value : Optional[str], optional
-        Loaded value(s) as string when size_bytes <= SMALL_VARIABLE_BYTES (Issue #102).
+        Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
 
     name: str
@@ -414,7 +415,7 @@ class CoordinateInfo:
     attributes : Dict[str, Any]
         Coordinate attributes/metadata
     display_value : Optional[str], optional
-        Loaded value(s) as string when size_bytes <= SMALL_VARIABLE_BYTES (Issue #102).
+        Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
 
     name: str
@@ -1433,7 +1434,10 @@ def create_plot(
 
 
 def get_file_info(
-    file_path: Path, convert_bands_to_variables: bool = False
+    file_path: Path,
+    convert_bands_to_variables: bool = False,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
 ) -> Union[FileInfoResult, FileInfoError]:
     """Extract comprehensive information from a data file.
 
@@ -1445,6 +1449,12 @@ def get_file_info(
     ----------
     file_path : Path
         Path to the data file
+    convert_bands_to_variables : bool
+        Whether to convert GeoTIFF bands to variables.
+    small_variable_bytes : int
+        Max size in bytes for variables/coordinates to load and display values (Issue #102). If 0, disabled.
+    small_value_display_max_len : int
+        Max character length for displayed small values (truncation).
 
     Returns
     -------
@@ -1567,7 +1577,12 @@ def get_file_info(
             info.dimensions_flattened[group] = {str(k): v for k, v in xds.dims.items()}
             # Add coordinate variables for group
             for coord_name, coord in xds.coords.items():
-                coord_info = create_coord_info(str(coord_name), coord)
+                coord_info = create_coord_info(
+                    str(coord_name),
+                    coord,
+                    small_variable_bytes=small_variable_bytes,
+                    small_value_display_max_len=small_value_display_max_len,
+                )
                 info.coordinates_flattened.setdefault(group, []).append(coord_info)
                 # Check if coordinate is a datetime variable
                 if is_datetime_variable(coord):
@@ -1602,7 +1617,12 @@ def get_file_info(
 
             # Add data variables for group
             for var_name, var in xds.data_vars.items():
-                var_info = create_variable_info(str(var_name), var)
+                var_info = create_variable_info(
+                    str(var_name),
+                    var,
+                    small_variable_bytes=small_variable_bytes,
+                    small_value_display_max_len=small_value_display_max_len,
+                )
                 logger.info(
                     f"Processing group and var: {group=}  {var_name=} {var_info=}"
                 )
@@ -1676,7 +1696,12 @@ def get_file_info(
         return error
 
 
-def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
+def create_variable_info(
+    var_name: str,
+    var: xr.DataArray,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+) -> VariableInfo:
     """Create VariableInfo from a DataArray.
 
     Parameters
@@ -1685,6 +1710,10 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
         Name of the variable
     var : xr.DataArray
         DataArray to extract information from
+    small_variable_bytes : int
+        Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
+    small_value_display_max_len : int
+        Max character length for display (truncation).
 
     Returns
     -------
@@ -1692,8 +1721,8 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
         Information about the variable
     """
     display_value = None
-    if var.nbytes <= SMALL_VARIABLE_BYTES:
-        display_value = _format_small_value(var)
+    if small_variable_bytes > 0 and var.nbytes <= small_variable_bytes:
+        display_value = _format_small_value(var, max_len=small_value_display_max_len)
 
     return VariableInfo(
         name=str(var_name),
@@ -1794,7 +1823,12 @@ def check_monotonicity(
         return "non_monotonic"
 
 
-def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
+def create_coord_info(
+    coord_name: str,
+    coord: xr.DataArray,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+) -> CoordinateInfo:
     """Create CoordinateInfo from a DataArray.
 
     Parameters
@@ -1803,6 +1837,10 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
         Name of the coordinate
     coord : xr.DataArray
         DataArray to extract information from
+    small_variable_bytes : int
+        Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
+    small_value_display_max_len : int
+        Max character length for display (truncation).
 
     Returns
     -------
@@ -1810,8 +1848,8 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
         Information about the coordinate
     """
     display_value = None
-    if coord.nbytes <= SMALL_VARIABLE_BYTES:
-        display_value = _format_small_value(coord)
+    if small_variable_bytes > 0 and coord.nbytes <= small_variable_bytes:
+        display_value = _format_small_value(coord, max_len=small_value_display_max_len)
 
     return CoordinateInfo(
         name=str(coord_name),
@@ -1928,6 +1966,20 @@ Examples:
         help="Number of bins for histogram-style plots (Issue #117; passed as plot kwarg)",
     )
 
+    parser.add_argument(
+        "--small-variable-bytes",
+        type=int,
+        default=DEFAULT_SMALL_VARIABLE_BYTES,
+        help="Max size in bytes for variables/coordinates to load and display values (Issue #102). Set to 0 to disable.",
+    )
+
+    parser.add_argument(
+        "--small-value-display-max-len",
+        type=int,
+        default=DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+        help="Max character length for displayed small variable/coordinate values (truncation).",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1942,7 +1994,12 @@ Examples:
     # Dispatch based on mode
     if args.mode == "info":
         # Get file information
-        result = get_file_info(args.file_path, args.convert_bands_to_variables)
+        result = get_file_info(
+            args.file_path,
+            args.convert_bands_to_variables,
+            small_variable_bytes=args.small_variable_bytes,
+            small_value_display_max_len=args.small_value_display_max_len,
+        )
         ok = isinstance(result, FileInfoResult)
 
     elif args.mode == "plot":

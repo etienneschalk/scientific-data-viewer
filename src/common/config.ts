@@ -45,6 +45,8 @@ const GLOBAL_TIME_CONTROLS = 'globalTimeControls';
 const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
 const GROUP_TIME_CONTROLS = 'groupTimeControls';
 const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
+const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
+const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -61,6 +63,8 @@ const DEFAULT_GLOBAL_TIME_CONTROLS = false;
 const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
 const DEFAULT_GROUP_TIME_CONTROLS = false;
 const DEFAULT_GROUP_DIMENSION_SLICES = true;
+const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
+const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -160,6 +164,20 @@ export function getGroupDimensionSlices(): boolean {
     return getWorkspaceConfig().get<boolean>(
         GROUP_DIMENSION_SLICES,
         DEFAULT_GROUP_DIMENSION_SLICES,
+    );
+}
+
+export function getSmallVariableBytes(): number {
+    return getWorkspaceConfig().get<number>(
+        SMALL_VARIABLE_BYTES,
+        DEFAULT_SMALL_VARIABLE_BYTES,
+    );
+}
+
+export function getSmallValueDisplayMaxLen(): number {
+    return getWorkspaceConfig().get<number>(
+        SMALL_VALUE_DISPLAY_MAX_LEN,
+        DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     );
 }
 

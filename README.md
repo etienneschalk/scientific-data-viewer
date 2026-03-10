@@ -305,6 +305,12 @@ The extension can be configured through VSCode settings:
 - **`scientificDataViewer.matplotlibStyle`**
   - (type: `string`, default:`""` (empty string))
   - Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name.
+- **`scientificDataViewer.smallVariableBytes`**
+  - (type: `number`, default: `1000`)
+  - Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI (scalar and small array display, [Issue #102](https://github.com/etienneschalk/scientific-data-viewer/issues/102)). Variables/coordinates at or below this size get a **display_value** in the variable/coordinate details. **If set to `0`, the whole small-value display feature (Issue #102) is disabled** and no variables/coordinates will show loaded values.
+- **`scientificDataViewer.smallValueDisplayMaxLen`**
+  - (type: `number`, default: `500`)
+  - Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with `"..."`. Only used when **`scientificDataViewer.smallVariableBytes`** is greater than 0.
 
 **🐍 Virtual Environment Settings**
 

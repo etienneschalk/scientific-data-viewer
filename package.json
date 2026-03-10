@@ -515,6 +515,20 @@
                     "default": true,
                     "order": 1004,
                     "description": "Enable Group Dimension Slices (per-group dimension slice inputs)"
+                },
+                "scientificDataViewer.smallVariableBytes": {
+                    "type": "number",
+                    "default": 1000,
+                    "order": 1005,
+                    "description": "Max size in bytes for variables/coordinates to load and display values (Issue #102). Set to 0 to disable.",
+                    "markdownDescription": "Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI. Variables/coordinates at or below this size get a **display_value** (scalar or small array). If set to **0**, the whole small-value display feature (Issue #102) is disabled and no variables/coordinates will show loaded values."
+                },
+                "scientificDataViewer.smallValueDisplayMaxLen": {
+                    "type": "number",
+                    "default": 500,
+                    "order": 1006,
+                    "description": "Max character length for displayed small variable/coordinate values (truncation). Used when smallVariableBytes > 0.",
+                    "markdownDescription": "Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with \"...\". Only used when **smallVariableBytes** is greater than 0."
                 }
             }
         }

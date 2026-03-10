@@ -4,6 +4,8 @@ import {
     getGlobalDimensionSlices,
     getGroupTimeControls,
     getGroupDimensionSlices,
+    getSmallVariableBytes,
+    getSmallValueDisplayMaxLen,
 } from '../../src/common/config';
 
 suite('Config Test Suite', () => {
@@ -25,5 +27,15 @@ suite('Config Test Suite', () => {
     test('getGroupDimensionSlices returns a boolean', () => {
         const value = getGroupDimensionSlices();
         assert.strictEqual(typeof value, 'boolean');
+    });
+
+    test('getSmallVariableBytes returns a number', () => {
+        const value = getSmallVariableBytes();
+        assert.strictEqual(typeof value, 'number');
+    });
+
+    test('getSmallValueDisplayMaxLen returns a number', () => {
+        const value = getSmallValueDisplayMaxLen();
+        assert.strictEqual(typeof value, 'number');
     });
 });
