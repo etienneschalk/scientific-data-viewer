@@ -238,10 +238,20 @@ class WebviewMessageBus {
         if (yincrease !== null && yincrease !== undefined) {
             payload.yincrease = yincrease;
         }
-        if (aspect !== null && aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
+        if (
+            aspect !== null &&
+            aspect !== undefined &&
+            Number.isFinite(aspect) &&
+            aspect > 0
+        ) {
             payload.aspect = aspect;
         }
-        if (size !== null && size !== undefined && Number.isFinite(size) && size > 0) {
+        if (
+            size !== null &&
+            size !== undefined &&
+            Number.isFinite(size) &&
+            size > 0
+        ) {
             payload.size = size;
         }
         if (robust === true) {
@@ -1812,13 +1822,11 @@ function getGroupDimensionSlicesState(groupName) {
     const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
     const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
     let colWrap = undefined;
-    if (
-        colWrapEl &&
-        colWrapEl.value &&
-        colWrapEl.value.trim() !== ''
-    ) {
+    if (colWrapEl && colWrapEl.value && colWrapEl.value.trim() !== '') {
         const n = parseInt(colWrapEl.value.trim(), 10);
-        if (Number.isInteger(n) && n >= 1) colWrap = n;
+        if (Number.isInteger(n) && n >= 1) {
+            colWrap = n;
+        }
     }
     const plotX = plotXEl && plotXEl.value ? plotXEl.value : '';
     const plotY = plotYEl && plotYEl.value ? plotYEl.value : '';
@@ -1833,12 +1841,16 @@ function getGroupDimensionSlicesState(groupName) {
     let aspect = undefined;
     if (aspectEl && aspectEl.value && aspectEl.value.trim() !== '') {
         const n = Number(aspectEl.value.trim());
-        if (Number.isFinite(n) && n > 0) aspect = n;
+        if (Number.isFinite(n) && n > 0) {
+            aspect = n;
+        }
     }
     let size = undefined;
     if (sizeEl && sizeEl.value && sizeEl.value.trim() !== '') {
         const n = Number(sizeEl.value.trim());
-        if (Number.isFinite(n) && n > 0) size = n;
+        if (Number.isFinite(n) && n > 0) {
+            size = n;
+        }
     }
     const robust = robustEl ? robustEl.checked : false;
     const cmap =
@@ -2033,35 +2045,63 @@ function setupGroupPlotControlsListeners() {
             const colWrapEl = document.getElementById(
                 `group-plot-col-wrap-${safeId}`,
             );
-            const plotXEl = document.getElementById(
-                `group-plot-x-${safeId}`,
-            );
-            const plotYEl = document.getElementById(
-                `group-plot-y-${safeId}`,
-            );
+            const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
+            const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
             const plotHueEl = document.getElementById(
                 `group-plot-hue-${safeId}`,
             );
             const binsEl = document.getElementById(`group-bins-${safeId}`);
-            const xIncreaseEl = document.getElementById(`group-x-increase-${safeId}`);
-            const yIncreaseEl = document.getElementById(`group-y-increase-${safeId}`);
-            const aspectEl = document.getElementById(`group-plot-aspect-${safeId}`);
+            const xIncreaseEl = document.getElementById(
+                `group-x-increase-${safeId}`,
+            );
+            const yIncreaseEl = document.getElementById(
+                `group-y-increase-${safeId}`,
+            );
+            const aspectEl = document.getElementById(
+                `group-plot-aspect-${safeId}`,
+            );
             const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
             const robustEl = document.getElementById(`group-robust-${safeId}`);
             const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
-            if (facetRowEl) facetRowEl.value = '';
-            if (facetColEl) facetColEl.value = '';
-            if (colWrapEl) colWrapEl.value = '';
-            if (plotXEl) plotXEl.value = '';
-            if (plotYEl) plotYEl.value = '';
-            if (plotHueEl) plotHueEl.value = '';
-            if (binsEl) binsEl.value = '';
-            if (xIncreaseEl) xIncreaseEl.checked = true;
-            if (yIncreaseEl) yIncreaseEl.checked = true;
-            if (aspectEl) aspectEl.value = '';
-            if (sizeEl) sizeEl.value = '';
-            if (robustEl) robustEl.checked = false;
-            if (cmapEl) cmapEl.value = '';
+            if (facetRowEl) {
+                facetRowEl.value = '';
+            }
+            if (facetColEl) {
+                facetColEl.value = '';
+            }
+            if (colWrapEl) {
+                colWrapEl.value = '';
+            }
+            if (plotXEl) {
+                plotXEl.value = '';
+            }
+            if (plotYEl) {
+                plotYEl.value = '';
+            }
+            if (plotHueEl) {
+                plotHueEl.value = '';
+            }
+            if (binsEl) {
+                binsEl.value = '';
+            }
+            if (xIncreaseEl) {
+                xIncreaseEl.checked = true;
+            }
+            if (yIncreaseEl) {
+                yIncreaseEl.checked = true;
+            }
+            if (aspectEl) {
+                aspectEl.value = '';
+            }
+            if (sizeEl) {
+                sizeEl.value = '';
+            }
+            if (robustEl) {
+                robustEl.checked = false;
+            }
+            if (cmapEl) {
+                cmapEl.value = '';
+            }
         }
     });
 }
@@ -2120,11 +2160,21 @@ function populateDimensionSlices(data, flags) {
         const plotXSelect = document.getElementById('plotXSelect');
         const plotYSelect = document.getElementById('plotYSelect');
         const plotHueSelect = document.getElementById('plotHueSelect');
-        if (facetRowSelect) facetRowSelect.innerHTML = '<option value="">None</option>';
-        if (facetColSelect) facetColSelect.innerHTML = '<option value="">None</option>';
-        if (plotXSelect) plotXSelect.innerHTML = '<option value="">None</option>';
-        if (plotYSelect) plotYSelect.innerHTML = '<option value="">None</option>';
-        if (plotHueSelect) plotHueSelect.innerHTML = '<option value="">None</option>';
+        if (facetRowSelect) {
+            facetRowSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (facetColSelect) {
+            facetColSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotXSelect) {
+            plotXSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotYSelect) {
+            plotYSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotHueSelect) {
+            plotHueSelect.innerHTML = '<option value="">None</option>';
+        }
         return;
     }
 
@@ -2151,11 +2201,21 @@ function populateDimensionSlices(data, flags) {
                     `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`,
             )
             .join('');
-    if (facetRowSelect) facetRowSelect.innerHTML = facetOptions;
-    if (facetColSelect) facetColSelect.innerHTML = facetOptions;
-    if (plotXSelect) plotXSelect.innerHTML = facetOptions;
-    if (plotYSelect) plotYSelect.innerHTML = facetOptions;
-    if (plotHueSelect) plotHueSelect.innerHTML = facetOptions;
+    if (facetRowSelect) {
+        facetRowSelect.innerHTML = facetOptions;
+    }
+    if (facetColSelect) {
+        facetColSelect.innerHTML = facetOptions;
+    }
+    if (plotXSelect) {
+        plotXSelect.innerHTML = facetOptions;
+    }
+    if (plotYSelect) {
+        plotYSelect.innerHTML = facetOptions;
+    }
+    if (plotHueSelect) {
+        plotHueSelect.innerHTML = facetOptions;
+    }
 }
 
 function getDimensionSlicesState() {
@@ -2191,14 +2251,22 @@ function getDimensionSlicesState() {
         }
     }
     let aspect = null;
-    if (plotAspectInput && plotAspectInput.value && plotAspectInput.value.trim() !== '') {
+    if (
+        plotAspectInput &&
+        plotAspectInput.value &&
+        plotAspectInput.value.trim() !== ''
+    ) {
         const n = Number(plotAspectInput.value.trim());
         if (Number.isFinite(n) && n > 0) {
             aspect = n;
         }
     }
     let size = null;
-    if (plotSizeInput && plotSizeInput.value && plotSizeInput.value.trim() !== '') {
+    if (
+        plotSizeInput &&
+        plotSizeInput.value &&
+        plotSizeInput.value.trim() !== ''
+    ) {
         const n = Number(plotSizeInput.value.trim());
         if (Number.isFinite(n) && n > 0) {
             size = n;
@@ -2219,13 +2287,16 @@ function getDimensionSlicesState() {
                 plotColWrapInput.value.trim() !== ''
             ) {
                 const n = parseInt(plotColWrapInput.value.trim(), 10);
-                if (Number.isInteger(n) && n >= 1) return n;
+                if (Number.isInteger(n) && n >= 1) {
+                    return n;
+                }
             }
             return undefined;
         })(),
         plotX: plotXSelect && plotXSelect.value ? plotXSelect.value : '',
         plotY: plotYSelect && plotYSelect.value ? plotYSelect.value : '',
-        plotHue: plotHueSelect && plotHueSelect.value ? plotHueSelect.value : '',
+        plotHue:
+            plotHueSelect && plotHueSelect.value ? plotHueSelect.value : '',
         xincrease: xIncreaseCheckbox ? xIncreaseCheckbox.checked : true,
         yincrease: yIncreaseCheckbox ? yIncreaseCheckbox.checked : true,
         aspect: aspect ?? undefined,
@@ -2501,29 +2572,58 @@ function setupTimeControlsEventListeners() {
                 });
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
-            const plotColWrapInput = document.getElementById('plotColWrapInput');
+            const plotColWrapInput =
+                document.getElementById('plotColWrapInput');
             const plotXSelect = document.getElementById('plotXSelect');
             const plotYSelect = document.getElementById('plotYSelect');
             const plotHueSelect = document.getElementById('plotHueSelect');
             const binsInput = document.getElementById('plotBinsInput');
-            const xIncreaseCheckbox = document.getElementById('xIncreaseCheckbox');
-            const yIncreaseCheckbox = document.getElementById('yIncreaseCheckbox');
+            const xIncreaseCheckbox =
+                document.getElementById('xIncreaseCheckbox');
+            const yIncreaseCheckbox =
+                document.getElementById('yIncreaseCheckbox');
             const plotAspectInput = document.getElementById('plotAspectInput');
             const plotSizeInput = document.getElementById('plotSizeInput');
-            if (facetRowSelect) facetRowSelect.value = '';
-            if (facetColSelect) facetColSelect.value = '';
-            if (plotColWrapInput) plotColWrapInput.value = '';
-            if (plotXSelect) plotXSelect.value = '';
-            if (plotYSelect) plotYSelect.value = '';
-            if (plotHueSelect) plotHueSelect.value = '';
-            if (binsInput) binsInput.value = '';
-            if (xIncreaseCheckbox) xIncreaseCheckbox.checked = true;
-            if (yIncreaseCheckbox) yIncreaseCheckbox.checked = true;
-            if (plotAspectInput) plotAspectInput.value = '';
-            if (plotSizeInput) plotSizeInput.value = '';
-            if (robustCheckbox) robustCheckbox.checked = false;
+            if (facetRowSelect) {
+                facetRowSelect.value = '';
+            }
+            if (facetColSelect) {
+                facetColSelect.value = '';
+            }
+            if (plotColWrapInput) {
+                plotColWrapInput.value = '';
+            }
+            if (plotXSelect) {
+                plotXSelect.value = '';
+            }
+            if (plotYSelect) {
+                plotYSelect.value = '';
+            }
+            if (plotHueSelect) {
+                plotHueSelect.value = '';
+            }
+            if (binsInput) {
+                binsInput.value = '';
+            }
+            if (xIncreaseCheckbox) {
+                xIncreaseCheckbox.checked = true;
+            }
+            if (yIncreaseCheckbox) {
+                yIncreaseCheckbox.checked = true;
+            }
+            if (plotAspectInput) {
+                plotAspectInput.value = '';
+            }
+            if (plotSizeInput) {
+                plotSizeInput.value = '';
+            }
+            if (robustCheckbox) {
+                robustCheckbox.checked = false;
+            }
             const plotCmapInput = document.getElementById('plotCmapInput');
-            if (plotCmapInput) plotCmapInput.value = '';
+            if (plotCmapInput) {
+                plotCmapInput.value = '';
+            }
         });
     }
 }

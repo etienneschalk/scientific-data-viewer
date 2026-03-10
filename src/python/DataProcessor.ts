@@ -178,18 +178,10 @@ export class DataProcessor {
         if (yincrease !== undefined) {
             args.push('--yincrease', yincrease ? 'true' : 'false');
         }
-        if (
-            aspect !== undefined &&
-            Number.isFinite(aspect) &&
-            aspect > 0
-        ) {
+        if (aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
             args.push('--aspect', String(aspect));
         }
-        if (
-            size !== undefined &&
-            Number.isFinite(size) &&
-            size > 0
-        ) {
+        if (size !== undefined && Number.isFinite(size) && size > 0) {
             args.push('--size', String(size));
         }
         if (robust === true) {
