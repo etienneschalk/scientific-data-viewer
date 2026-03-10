@@ -963,7 +963,7 @@ function renderGroupPlotControls(data, groupName, flags) {
                 <div class="group-plot-controls dimension-slices-section">
                     <div class="plot-controls-subsection dimension-slices-isel">
                         <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
-                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. 0:24:2, 100:120, or 130). Applied as isel() before plotting.</p>
+                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting.</p>
                         <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
                             ${dimNames
                                 .map(
@@ -1029,7 +1029,7 @@ function renderGroupPlotControls(data, groupName, flags) {
                         </div>
                         <div class="dimension-slices-row">
                             <label for="group-plot-cmap-${safeId}">cmap:</label>
-                            <input type="text" id="group-plot-cmap-${safeId}" class="plot-cmap-input group-plot-cmap-input" placeholder="e.g. viridis" data-group="${escapeHtml(groupName)}" title="Matplotlib colormap" />
+                            <input type="text" id="group-plot-cmap-${safeId}" class="plot-cmap-input group-plot-cmap-input" placeholder="e.g. viridis, plasma" data-group="${escapeHtml(groupName)}" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
                         </div>
                     </div>
                     </div>
