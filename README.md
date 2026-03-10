@@ -220,6 +220,23 @@ The data viewer editor shows:
     - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
   - **Attributes**: Show group's attributes.
 
+### 📐 Dimension Slices
+
+Dimension Slices let you subset data by dimension index or slice before plotting. They are available in **Global Plot Controls** (dimensions merged from all groups) and, when enabled, in each group’s **Group Plot Controls**.
+
+- **Where to find it**: In the plot controls area, look for the **Dimension Slices** section. Each dimension of the dataset (or group) has a text input.
+- **Slice syntax** (Python-style):
+  - **Single index**: `130` — use one position along that dimension.
+  - **Range**: `100:120` — from index 100 up to (but not including) 120.
+  - **Range with step**: `0:24:2` — from 0 to 24 in steps of 2 (e.g. every other time step).
+- Slices are applied as xarray’s `isel()` before plotting. Invalid slice strings produce a clear error.
+- **Facet row / Facet col**: Use the dropdowns in the same section to choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels).
+- **Bins**: For histogram-style plots, you can set the number of bins in the Dimension Slices row.
+
+When both Global and Group Plot Controls are used, **group values take precedence** for that group’s variables; the extension does not merge global and group slice/facet/bins settings.
+
+**Feature flags**: Four settings control whether each block is shown. **Global Dimension Slices** and **Group Dimension Slices** are **on by default**; **Global Time Controls** and **Group Time Controls** are **off by default** (use Dimension Slices for time instead, e.g. `0:24:2`). You can turn any block on or off in [Settings](#️-settings) under **Feature Flags**.
+
 ### 🎮 Available Commands
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
@@ -314,6 +331,21 @@ The extension includes configuration options that act as feature flags to contro
   - (type: `boolean`, default: `true`)
   - Convert bands of GeoTIFF rasters to variables for better readability. When enabled, multi-band GeoTIFF files (.tif, .tiff, .geotiff) will have their bands converted to separate variables instead of a single 3D DataArray. This improves plotting capabilities and data structure visualization by treating each band as an individual variable.
 
+**Plot controls (Global and Group)**
+
+- **`scientificDataViewer.globalTimeControls`**
+  - (type: `boolean`, default: `false`)
+  - Show **Global Time Controls** (datetime variable, start/end time) in the plot area. When off (default), use Dimension Slices to subset time (e.g. `0:24:2`).
+- **`scientificDataViewer.globalDimensionSlices`**
+  - (type: `boolean`, default: `true`)
+  - Show **Global Dimension Slices** (dimension inputs, facet row/col, bins) with dimensions merged from all groups.
+- **`scientificDataViewer.groupTimeControls`**
+  - (type: `boolean`, default: `false`)
+  - Show **Group Time Controls** per group (datetime, start/end) in each group’s Plot Controls section.
+- **`scientificDataViewer.groupDimensionSlices`**
+  - (type: `boolean`, default: `true`)
+  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, bins) in each group’s Plot Controls section. Group values take precedence over global when set.
+
 ## 🔧 Troubleshooting
 
 ### ⚠️ Common Issues
@@ -380,81 +412,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📁 Project Structure
 
-**Disclaimer**: The information below is provided for reference purposes only and may be outdated. Please refer to actual source code for the most current information.
+**Disclaimer**: The information below is provided for reference only and may be outdated. See the repository for current layout.
 
 ```
 scientific-data-viewer/
-├── src/                          # TypeScript source code
-│   ├── extension.ts              # Main extension entry point and command registration
-│   ├── dataProcessor.ts          # Python integration and data processing
-│   ├── dataViewerPanel.ts        # Webview panel for data visualization
-│   ├── pythonManager.ts          # Advanced Python environment management
-│   ├── logger.ts                 # Comprehensive logging utilities
-│   ├── communication/            # Message passing system
-│   │   ├── MessageBus.ts         # Message bus for communication
-│   │   └── MessageTypes.ts       # Type definitions for messages
-│   ├── error/                    # Error handling
-│   │   └── ErrorBoundary.ts      # Error boundary component
-│   ├── state/                    # Application state management
-│   │   └── AppState.ts           # Global application state
-│   ├── events/                   # Event handling (empty)
-│   └── ui/                       # User interface components
-│       ├── CSSGenerator.ts       # CSS generation utilities
-│       ├── HTMLGenerator.ts      # HTML generation utilities
-│       ├── JavaScriptGenerator.ts # JavaScript generation utilities
-│       ├── UIController.ts       # UI controller logic
-│       └── webview/              # Webview assets
-│           ├── styles.css        # Webview styles
-│           └── webview-script.js # Webview JavaScript
-├── python/                       # Python scripts for data processing
-│   ├── get_data_info.py          # Extract file metadata and variable info
-│   ├── create_sample_data.py     # Generate sample data files
-│   └── tests.ipynb              # Jupyter notebook for testing
-├── test/                         # Test files
-│   ├── runTest.ts               # Test runner
-│   └── suite/                   # Test suites
-├── sample-data/                  # Sample data files for testing
-│   ├── sample_data.nc           # NetCDF sample file
-│   ├── sample_data.h5           # HDF5 sample file
-│   ├── sample_data.grib         # GRIB sample file
-│   ├── sample_data.jp2          # JPEG2000 sample file
-│   ├── sample_data.tif          # GeoTIFF sample file
-│   ├── sample_data.zarr/        # Zarr sample datasets
-│   │   ├── sample_zarr_arborescence.zarr/
-│   │   ├── sample_zarr_inherited_coords.zarr/
-│   │   ├── sample_zarr_nested_groups_from_datatree.zarr/
-│   │   ├── sample_zarr_nested_groups_from_zarr.zarr/
-│   │   └── sample_zarr_single_group_from_dataset.zarr/
-│   ├── broken_file.*            # Test files for error handling
-│   └── sdv-plots/               # Generated plot outputs
-├── docs/                         # Documentation
-│   ├── ARCHITECTURE_IMPROVEMENTS.md
-│   ├── DEVELOPMENT.md            # Development guide
-│   ├── PUBLISHING.md             # Publishing guide
-│   ├── QUICKSTART.md             # Quick start guide
-│   ├── TECHNICAL_ARCHITECTURE.md # Technical architecture docs
-│   ├── test-extension.md         # Extension testing guide
-│   └── rfc/                      # Request for Comments
-│       ├── README.md
-│       └── 001-033-*.md         # RFC documents
-├── media/                        # Media assets
-│   ├── icon.png                 # Extension icon
-│   ├── icon.svg                 # SVG icon
-│   ├── icon_orig.svg            # Original icon
-│   └── Screenshot*.png          # Screenshots
-├── out/                          # Compiled JavaScript output
-│   ├── src/                     # Compiled TypeScript
-│   └── test/                    # Compiled tests
-├── node_modules/                 # Node.js dependencies
-├── package.json                  # Extension manifest and dependencies
-├── package-lock.json            # Dependency lock file
-├── tsconfig.json                # TypeScript configuration
-├── .eslintrc.json               # ESLint configuration
-├── language-configuration.json  # Language configuration
-├── scientific-data-viewer-0.3.0.vsix # Packaged extension
-├── test-publication-readiness.js # Publication readiness test
-├── setup.sh                     # Setup script
-├── README.md                    # Main documentation
-├── CONTRIBUTING.md              # Contribution guidelines
-└── CHANGELOG.md                 # Version history
+├── src/                    # Extension source (TypeScript)
+│   ├── common/             # Config, logger, utils, error handling
+│   ├── panel/              # Webview panel, UI generation, theme, communication
+│   │   └── webview/        # Webview HTML/CSS/JS assets
+│   ├── python/             # Python manager, DataProcessor, venv management
+│   ├── outline/            # Outline / tree view
+│   ├── extension.ts        # Entry point, commands, editor provider
+│   ├── DataViewerPanel.ts
+│   └── ...
+├── python/                 # Data processing and plotting (run by extension)
+│   ├── get_data_info.py    # Info + plot CLI (xarray, matplotlib)
+│   ├── create_sample_data.py
+│   ├── test_*.py           # Unit tests (pytest)
+│   └── *.ipynb             # Notebooks
+├── test/                   # Extension tests (Mocha + VS Code test runner)
+│   ├── runTest.ts
+│   └── suite/              # Test suites (integration, unit)
+├── sample-data/            # Sample NetCDF, Zarr, GeoTIFF, GRIB, etc.
+├── docs/                   # Development, publishing, RFCs
+├── media/                  # Icon, screenshots
+├── package.json
+├── tsconfig.json
+├── README.md
+├── CONTRIBUTING.md
+└── CHANGELOG.md
 ```
