@@ -26,10 +26,24 @@ You can subset data by dimension index or slice before plotting, and control fac
   - Range with step: `0:24:2` (start:stop:step)
 - Slices are applied as xarray’s `isel()` before any time filtering and before plotting. Invalid slice strings produce a clear error.
 
-### Facet row / Facet col
+### Facet row / Facet col / col_wrap
 
 - **Facet row** and **Facet col** dropdowns let you choose which dimension is used for rows and columns in faceted plots (e.g. 3D/4D imshow with multiple panels).
 - If not set, the extension keeps its default behavior (first/second dimension).
+- **col_wrap**: Optional positive integer input (placed next to facet row/col). Passed as xarray’s `col_wrap` plot kwarg to limit the number of columns in the faceted grid (wrapping into multiple rows when there are many panels).
+
+### Plot x, y, hue
+
+- **x**, **y**, and **hue** dropdowns (same choices as facet row/col) map to xarray’s [plot kwargs](https://docs.xarray.dev/en/latest/user-guide/plotting.html): which dimension or coordinate is on the x-axis, y-axis, or used for hue (e.g. multiple lines in line plots).
+
+### Other plot options (xarray)
+
+- **x increase / y increase**: Checkboxes control axes direction; uncheck to reverse.
+- **Aspect / Size**: Optional figure size in inches (both floats). **Aspect** is the width/height ratio; **Size** is the height in inches. xarray uses **width = aspect × size** and **height = size** (per panel for facet plots) when it creates the figure. They apply in both auto and user-provided plot modes.
+- **Robust**: Checkbox to use 2nd/98th percentiles for color limits so [outliers don’t wash out the plot](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust).
+- **cmap**: Text input for the matplotlib colormap name (e.g. `viridis`, `plasma`). The value is passed as the `cmap` plot kwarg. You must provide a valid existing matplotlib colormap; see [Choosing Colormaps in Matplotlib](https://matplotlib.org/stable/users/explain/colors/colormaps.html) for options and guidance.
+
+The global Dimension Slices area includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html).
 
 ## Global and Group Plot Controls
 
@@ -45,11 +59,11 @@ Plot controls are improved for multi-group datasets (e.g. Zarr with many groups 
 For each group, a collapsible **Group Plot Controls** section appears after that group’s Attributes. It is scoped to that group only:
 
 - **Group Time Controls**: Datetime variable select, start/end time, and Clear, using only that group’s datetime variables (deduplicated and sorted).
-- **Group Dimension Slices**: One row per dimension in that group, facet row/col dropdowns, and Clear.
+- **Group Dimension Slices**: One row per dimension in that group, facet row/col and x/y/hue dropdowns, and Clear.
 
 When you plot a variable (single plot or Plot All), the extension uses **group-scoped** time and dimension-slice values if they are set for that variable’s group; otherwise it falls back to the **global** Time Controls and Dimension Slices.
 
-**Precedence when both are set:** Group controls have **full precedence** over global for that group's variables. The extension does **not** merge global and group: for each of dimension slices, facet row, facet col, and bins, it uses either the group value or the global value. If the group has any value set for that field (e.g. one dimension slice or facet row in Group Dimension Slices), the entire group state for that field is used and the global state is ignored. If the group has nothing set, global is used. So setting both Global and Group Dimension Slices means "use only the group's values" when plotting a variable in that group.
+**Precedence when both are set:** Group controls have **full precedence** over global for that group's variables. The extension does **not** merge global and group: for each of dimension slices, facet row, facet col, plot x/y/hue, and bins, it uses either the group value or the global value. If the group has any value set for that field (e.g. one dimension slice or facet row in Group Dimension Slices), the entire group state for that field is used and the global state is ignored. If the group has nothing set, global is used. So setting both Global and Group Dimension Slices means "use only the group's values" when plotting a variable in that group.
 
 ### Feature flags
 

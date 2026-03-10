@@ -24,12 +24,13 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 - **Issue #117**: Select and slice dimensions in the UI before plotting (xarray-style isel and faceting)
   - **Problem**: Users could not subset data by dimension index/slice or create faceted plots from the UI
-  - **Solution**: New "Dimension Slices" section in plot controls: one text input per dimension (Python slice syntax, e.g. `0:24:2`, `100:120`, or `130`), plus Facet row/Facet col dropdowns. Slices are applied as `var.isel(...)` before time filtering and plotting; row/col override default faceting dimensions for 3D/4D plots
+  - **Solution**: New "Dimension Slices" section in plot controls: one text input per dimension (Python slice syntax, e.g. `0:24:2`, `100:120`, or `130`), plus Facet row/Facet col, **col_wrap** (positive integer), **x, y, hue** dropdowns, **x increase / y increase** checkboxes, **Aspect / Size** inputs, **Robust** checkbox, and **cmap** text input. Slices are applied as `var.isel(...)` before time filtering and plotting; row/col override default faceting dimensions for 3D/4D plots; col_wrap, x/y/hue and other options map to [xarray plot kwargs](https://docs.xarray.dev/en/latest/user-guide/plotting.html). The section includes a link to the xarray plotting guide.
   - **Files Modified**:
-    - src/panel/communication/MessageTypes.ts - `CreatePlotRequest`: `dimensionSlices`, `facetRow`, `facetCol`
-    - python/get_data_info.py - `_parse_dimension_slice_spec`, `_parse_dimension_slices`, `create_plot()` args and isel application, CLI `--dimension-slices` (JSON), `--facet-row`, `--facet-col`
+    - src/panel/communication/MessageTypes.ts - `CreatePlotRequest`: `dimensionSlices`, `facetRow`, `facetCol`, `colWrap`, `plotX`, `plotY`, `plotHue`, `xincrease`, `yincrease`, `aspect`, `size`, `robust`, `cmap`
+    - python/get_data_info.py - `_parse_dimension_slice_spec`, `_parse_dimension_slices`, `create_plot()` args and isel application, CLI `--dimension-slices` (JSON), `--facet-row`, `--facet-col`, `--col-wrap`, `--plot-x`, `--plot-y`, `--plot-hue`, `--xincrease`, `--yincrease`, `--aspect`, `--size`, `--robust`, `--cmap`
     - src/python/DataProcessor.ts, src/panel/UIController.ts - pass through new params
-    - src/panel/HTMLGenerator.ts - Dimension Slices section; src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
+    - src/panel/HTMLGenerator.ts - Dimension Slices section (incl. link to xarray plotting); src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
+  - **Future**: Additional plotting options (e.g. line-plot specifics, step plots, colormap) may be added in later releases based on the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html); not included in this release to avoid overloading the UI.
 
 - **Issue #121**: Log full executable command for copy-paste
   - _Note: Finally implemented in 0.8.2_

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Unit tests for dimension slice parsing (Issue #117) and small value display (Issue #102).
+Unit tests for dimension slice parsing (Issue #117), small value display (Issue #102),
+and plot x/y/hue kwargs.
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -138,6 +140,39 @@ class TestFormatSmallValue:
         var = xr.DataArray(1.0)
         assert _format_small_value(var)  # should not raise
         assert "1" in _format_small_value(var)
+
+
+class TestPlotXyHueCLI:
+    """Test that CLI accepts --plot-x, --plot-y, --plot-hue (plot kwargs)."""
+
+    def test_cli_accepts_plot_x_y_hue(self):
+        # Run script with plot mode and plot x/y/hue args; should not get "unrecognized arguments"
+        script = Path(__file__).parent / "get_data_info.py"
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(script),
+                "plot",
+                "/nonexistent/file.nc",
+                "var",
+                "auto",
+                "--plot-x",
+                "time",
+                "--plot-y",
+                "lat",
+                "--plot-hue",
+                "lon",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        # Exit code 2 = argparse error (unrecognized arguments); we want the script to accept
+        # the flags and fail later (e.g. file not found or engine error)
+        assert result.returncode != 2, (
+            f"CLI should accept --plot-x/--plot-y/--plot-hue. stderr: {result.stderr}"
+        )
+        assert "unrecognized" not in (result.stderr or "").lower()
 
 
 if __name__ == "__main__":

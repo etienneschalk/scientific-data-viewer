@@ -359,7 +359,17 @@ suite('DataProcessor Test Suite', () => {
             { time: '0:24:2', rlat: '100:120' },
             'time',
             'rlat',
-            50,
+            undefined, // colWrap
+            'lon',
+            'lat',
+            'time',
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            50, // bins
         );
 
         assert.ok(capturedArgs.includes('--dimension-slices'));
@@ -377,10 +387,95 @@ suite('DataProcessor Test Suite', () => {
             capturedArgs[capturedArgs.indexOf('--facet-col') + 1],
             'rlat',
         );
+        assert.ok(capturedArgs.includes('--plot-x'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-x') + 1],
+            'lon',
+        );
+        assert.ok(capturedArgs.includes('--plot-y'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-y') + 1],
+            'lat',
+        );
+        assert.ok(capturedArgs.includes('--plot-hue'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-hue') + 1],
+            'time',
+        );
         assert.ok(capturedArgs.includes('--bins'));
         assert.strictEqual(
             capturedArgs[capturedArgs.indexOf('--bins') + 1],
             '50',
+        );
+    });
+
+    test('should pass plot x, y, hue only to createPlot', async () => {
+        let capturedArgs: string[] = [];
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async (
+                _scriptPath: string,
+                args: string[],
+                _enableLogs: boolean = false,
+            ) => {
+                capturedArgs = args;
+                return {
+                    result: {
+                        plot_data:
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                        format_info: {
+                            extension: 'nc',
+                            display_name: 'NetCDF',
+                            available_engines: ['netcdf4'],
+                            missing_packages: [],
+                            is_supported: true,
+                        },
+                    },
+                };
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/test.nc');
+
+        await processor.createPlot(
+            mockUri,
+            'temperature',
+            'auto',
+            false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined, // colWrap
+            'time',
+            'lat',
+            'lon',
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        );
+
+        assert.ok(capturedArgs.includes('--plot-x'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-x') + 1],
+            'time',
+        );
+        assert.ok(capturedArgs.includes('--plot-y'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-y') + 1],
+            'lat',
+        );
+        assert.ok(capturedArgs.includes('--plot-hue'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--plot-hue') + 1],
+            'lon',
         );
     });
 });

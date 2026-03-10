@@ -760,6 +760,30 @@ button:active {
     margin: 0 0 12px 0;
 }
 
+.dimension-slices-hint a {
+    color: var(--vscode-textLink-foreground);
+    text-decoration: none;
+}
+
+.dimension-slices-hint a:hover {
+    text-decoration: underline;
+}
+
+.plot-controls-subsection {
+    margin-top: 16px;
+}
+
+.plot-controls-subsection:first-of-type {
+    margin-top: 0;
+}
+
+.plot-controls-subsection-title {
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    margin: 0 0 6px 0;
+}
+
 .dimension-slice-row {
     display: flex;
     align-items: center;
@@ -791,9 +815,16 @@ button:active {
 
 .dimension-slices-facets {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 10px;
     margin: 12px 0;
+}
+
+.dimension-slices-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .dimension-slices-facets label {
@@ -815,9 +846,43 @@ button:active {
     outline-offset: -1px;
 }
 
+.dimension-slices-facets .plot-col-wrap-input {
+    width: 8em;
+    max-width: 160px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-col-wrap-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-aspect-size-input {
+    width: 8em;
+    max-width: 160px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-aspect-size-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
 .dimension-slices-facets .bins-input {
-    width: 5.5em;
-    max-width: 100px;
+    width: 11em;
+    max-width: 200px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border);
@@ -828,6 +893,23 @@ button:active {
 }
 
 .dimension-slices-facets .bins-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-cmap-input {
+    width: 8em;
+    max-width: 140px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-cmap-input:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
 }

@@ -231,7 +231,14 @@ Dimension Slices let you subset data by dimension index or slice before plotting
   - **Range with step**: `0:24:2` — from 0 to 24 in steps of 2 (e.g. every other time step).
 - Slices are applied as xarray’s `isel()` before plotting. Invalid slice strings produce a clear error.
 - **Facet row / Facet col**: Use the dropdowns in the same section to choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels).
+- **col_wrap**: Optional positive integer (next to facet row/col) to limit the number of columns in the faceted grid (xarray `col_wrap` kwarg).
+- **x, y, hue**: Optional plot kwargs (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)): choose a dimension or coordinate for the **x**-axis, **y**-axis, or **hue** (e.g. multiple lines). Same dropdown options as facet row/col.
+- **x increase / y increase**: Checkboxes to control axes direction (xarray `xincrease`/`yincrease`; uncheck to reverse an axis).
+- **Aspect / Size**: Optional integer inputs for figure size (xarray: `figsize = (aspect * size, size)` in inches).
+- **Robust**: When checked, uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate the color scale (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)).
 - **Bins**: For histogram-style plots, you can set the number of bins in the Dimension Slices row.
+
+The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
 When both Global and Group Plot Controls are used, **group values take precedence** for that group’s variables; the extension does not merge global and group slice/facet/bins settings.
 
@@ -344,13 +351,13 @@ The extension includes configuration options that act as feature flags to contro
   - Show **Global Time Controls** (datetime variable, start/end time) in the plot area. When off (default), use Dimension Slices to subset time (e.g. `0:24:2`).
 - **`scientificDataViewer.globalDimensionSlices`**
   - (type: `boolean`, default: `true`)
-  - Show **Global Dimension Slices** (dimension inputs, facet row/col, bins) with dimensions merged from all groups.
+  - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) with dimensions merged from all groups.
 - **`scientificDataViewer.groupTimeControls`**
   - (type: `boolean`, default: `false`)
   - Show **Group Time Controls** per group (datetime, start/end) in each group’s Plot Controls section.
 - **`scientificDataViewer.groupDimensionSlices`**
   - (type: `boolean`, default: `true`)
-  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, bins) in each group’s Plot Controls section. Group values take precedence over global when set.
+  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Group values take precedence over global when set.
 
 ## 🔧 Troubleshooting
 

@@ -930,6 +930,16 @@ def create_plot(
     dimension_slices: Optional[Dict[str, Union[str, int]]] = None,
     facet_row: Optional[str] = None,
     facet_col: Optional[str] = None,
+    col_wrap: Optional[int] = None,
+    plot_x: Optional[str] = None,
+    plot_y: Optional[str] = None,
+    plot_hue: Optional[str] = None,
+    xincrease: Optional[bool] = None,
+    yincrease: Optional[bool] = None,
+    aspect: Optional[Union[int, float]] = None,
+    size: Optional[Union[int, float]] = None,
+    robust: Optional[bool] = None,
+    cmap: Optional[str] = None,
     bins: Optional[int] = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
@@ -1244,18 +1254,50 @@ def create_plot(
                     format_info=file_format_info,
                 )
 
-        # Branch: user provided any dimension-slice/facet/bins params => build only from user input
+        # Branch: user provided any dimension-slice/facet/x/y/hue/bins/aspect/size params => build only from user input
         user_provided = bool(
             (dimension_slices and len(dimension_slices) > 0)
             or (facet_row and facet_row.strip())
             or (facet_col and facet_col.strip())
+            or (col_wrap is not None and col_wrap >= 1)
+            or (plot_x and plot_x.strip())
+            or (plot_y and plot_y.strip())
+            or (plot_hue and plot_hue.strip())
             or (bins is not None and bins >= 1)
+            or (cmap is not None and cmap.strip())
+            or (aspect is not None and aspect > 0)
+            or (size is not None and size > 0)
         )
 
-        # Optional plot kwargs (e.g. bins for histogram)
+        # Optional plot kwargs (e.g. bins for histogram, robust, xincrease, yincrease, aspect, size)
         plot_kwargs = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
+        if robust is True:
+            plot_kwargs["robust"] = (
+                True  # 2nd/98th percentiles for color limits (outliers)
+            )
+        if xincrease is not None:
+            plot_kwargs["xincrease"] = xincrease
+        if yincrease is not None:
+            plot_kwargs["yincrease"] = yincrease
+        if aspect is not None and aspect > 0:
+            plot_kwargs["aspect"] = float(aspect)
+        if size is not None and size > 0:
+            plot_kwargs["size"] = float(size)
+        if cmap is not None and cmap.strip():
+            plot_kwargs["cmap"] = cmap.strip()
+        if col_wrap is not None and col_wrap >= 1:
+            plot_kwargs["col_wrap"] = int(col_wrap)
+
+        def _kwargs_for_plot(v, include_cmap=None):
+            """Return plot kwargs for generic .plot() calls. Include cmap only for 2D+ arrays
+            (image-style plots); omit for 1D to avoid AttributeError on line plots.
+            """
+            out = dict(plot_kwargs)
+            if include_cmap is False or (include_cmap is not True and v.ndim < 2):
+                out.pop("cmap", None)
+            return out
 
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
@@ -1266,12 +1308,12 @@ def create_plot(
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
                 )
-                if plot_kwargs:
+                if "bins" in plot_kwargs and plot_kwargs.get("bins") is not None:
                     logger.info(
                         "Creating histogram plot with bins=%s", plot_kwargs["bins"]
                     )
-                    var.plot.hist(**plot_kwargs)
-                elif facet_row or facet_col:
+                    var.plot.hist(**_kwargs_for_plot(var, include_cmap=False))
+                elif facet_row or facet_col or plot_x or plot_y or plot_hue:
                     row_dim = (
                         facet_row.strip()
                         if (
@@ -1290,52 +1332,85 @@ def create_plot(
                         )
                         else None
                     )
+
+                    # x, y, hue: dimension or coordinate name (xarray plot kwargs)
+                    def _valid_plot_dim(name, var_arr):
+                        if not name or not name.strip():
+                            return None
+                        n = name.strip()
+                        if n in var_arr.dims:
+                            return n
+                        if n in var_arr.coords:
+                            return n
+                        return None
+
+                    x_dim = _valid_plot_dim(plot_x, var)
+                    y_dim = _valid_plot_dim(plot_y, var)
+                    hue_dim = _valid_plot_dim(plot_hue, var)
+
+                    plot_kw = {}
                     if row_dim or col_dim:
-                        # Use generic .plot(row=, col=) so xarray picks plot type per panel
-                        # (e.g. line for 1D panels, imshow for 2D); .plot.imshow() requires 2D per panel
-                        plot_kw = (
-                            {"row": row_dim, "col": col_dim}
-                            if (row_dim and col_dim)
-                            else {}
-                        )
-                        if row_dim and not col_dim:
+                        if row_dim and col_dim:
+                            plot_kw = {"row": row_dim, "col": col_dim}
+                        elif row_dim:
                             plot_kw["row"] = row_dim
-                        elif col_dim and not row_dim:
+                        else:
                             plot_kw["col"] = col_dim
                             plot_kw["col_wrap"] = min(4, var.sizes.get(col_dim, 4))
-                        if plot_kw:
-                            var.plot(**{**plot_kw, **plot_kwargs})
-                        else:
-                            var.plot(**plot_kwargs) if plot_kwargs else var.plot()
+                    if x_dim is not None:
+                        plot_kw["x"] = x_dim
+                    if y_dim is not None:
+                        plot_kw["y"] = y_dim
+                    if hue_dim is not None:
+                        plot_kw["hue"] = hue_dim
+
+                    if plot_kw:
+                        var.plot(**{**plot_kw, **_kwargs_for_plot(var)})
                     else:
                         logger.warning(
-                            "Facet row/col not found on variable dims %s; using default plot",
-                            var.dims,
+                            "Facet row/col and x/y/hue not found on variable; using default plot",
                         )
-                        var.plot(**plot_kwargs) if plot_kwargs else var.plot()
+                        var.plot(**_kwargs_for_plot(var)) if plot_kwargs else var.plot()
                 else:
                     # Slices only, no facet/bins: let xarray choose plot type
                     logger.info("Creating plot from sliced data (xarray default)")
-                    var.plot(**plot_kwargs) if plot_kwargs else var.plot()
+                    var.plot(**_kwargs_for_plot(var)) if plot_kwargs else var.plot()
             else:
                 # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
                 strategy = detect_plotting_strategy(var)
                 logger.info(f"Auto-plot: using strategy {strategy}")
+                # cmap is safe to pass only to .plot.imshow(); include when user set it
+                _imshow_kw = (
+                    {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
+                )
+                # aspect/size: xarray uses figsize = (aspect * size, size) per panel when creating figure
+                _fig_kw = {}
+                if "aspect" in plot_kwargs:
+                    _fig_kw["aspect"] = plot_kwargs["aspect"]
+                if "size" in plot_kwargs:
+                    _fig_kw["size"] = plot_kwargs["size"]
+                _plot_kw = {**_fig_kw, **_imshow_kw}
 
                 if strategy == "2d_classic":
                     logger.info("Creating 2D spatial plot")
-                    var.plot.imshow()
+                    var.plot.imshow(**_plot_kw)
                     plt.gca().set_aspect("equal")
                 elif strategy == "2d_classic_isel":
                     logger.info("Creating 2D spatial plot with isel")
                     first_dim = var.dims[0]
-                    var.isel({first_dim: 0}).plot.imshow()
+                    var.isel({first_dim: 0}).plot.imshow(**_plot_kw)
                     plt.gca().set_aspect("equal")
                 elif strategy == "3d_col":
                     logger.info("Creating 3D plot (col facet)")
                     first_dim = var.dims[0]
                     col_wrap = min(4, var.sizes.get(first_dim, 4))
-                    var.plot.imshow(col=first_dim, aspect=1, size=4, col_wrap=col_wrap)
+                    var.plot.imshow(
+                        col=first_dim,
+                        aspect=_fig_kw.get("aspect", 1),
+                        size=_fig_kw.get("size", 4),
+                        col_wrap=col_wrap,
+                        **_imshow_kw,
+                    )
                 elif strategy == "4d_col_row":
                     logger.info("Creating 4D plot (row and col facets)")
                     first_dim = var.dims[0]
@@ -1343,8 +1418,9 @@ def create_plot(
                     var.plot.imshow(
                         col=second_dim,
                         row=first_dim,
-                        aspect=1,
-                        size=4,
+                        aspect=_fig_kw.get("aspect", 1),
+                        size=_fig_kw.get("size", 4),
+                        **_imshow_kw,
                     )
                 else:
                     logger.info("Creating default plot (xarray choice)")
@@ -1355,7 +1431,7 @@ def create_plot(
                             logger.warning(
                                 "Datetime shape mismatch, falling back to default plot"
                             )
-                            var.plot(**plot_kwargs)
+                            var.plot(**_kwargs_for_plot(var))
                         else:
                             import pandas as pd
 
@@ -1369,9 +1445,9 @@ def create_plot(
                                 dims=[datetime_var_display_name],
                                 name=variable_name,
                             )
-                            var_with_time.plot(**plot_kwargs)
+                            var_with_time.plot(**_kwargs_for_plot(var_with_time))
                     else:
-                        var.plot(**plot_kwargs)
+                        var.plot(**_kwargs_for_plot(var))
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
@@ -1960,10 +2036,76 @@ Examples:
     )
 
     parser.add_argument(
+        "--col-wrap",
+        type=int,
+        default=None,
+        help="xarray plot col_wrap: max number of columns in faceted grid (positive integer)",
+    )
+
+    parser.add_argument(
+        "--plot-x",
+        default=None,
+        help="Dimension or coordinate for x-axis (xarray plot x=)",
+    )
+
+    parser.add_argument(
+        "--plot-y",
+        default=None,
+        help="Dimension or coordinate for y-axis (xarray plot y=)",
+    )
+
+    parser.add_argument(
+        "--plot-hue",
+        default=None,
+        help="Dimension or coordinate for hue (xarray plot hue=, e.g. multiple lines)",
+    )
+
+    parser.add_argument(
+        "--xincrease",
+        default=None,
+        choices=("true", "false"),
+        help="xarray plot xincrease (axes direction): 'true' or 'false'",
+    )
+
+    parser.add_argument(
+        "--yincrease",
+        default=None,
+        choices=("true", "false"),
+        help="xarray plot yincrease (axes direction): 'true' or 'false'",
+    )
+
+    parser.add_argument(
+        "--aspect",
+        type=float,
+        default=None,
+        help="xarray plot aspect (figure width = aspect * size in inches, float)",
+    )
+
+    parser.add_argument(
+        "--size",
+        type=float,
+        default=None,
+        help="xarray plot size (figure height in inches, float)",
+    )
+
+    parser.add_argument(
         "--bins",
         type=int,
         default=None,
         help="Number of bins for histogram-style plots (Issue #117; passed as plot kwarg)",
+    )
+
+    parser.add_argument(
+        "--robust",
+        action="store_true",
+        help="xarray plot robust: use 2nd/98th percentiles for color limits (helps with outliers)",
+    )
+
+    parser.add_argument(
+        "--cmap",
+        type=str,
+        default=None,
+        help="Matplotlib colormap name (user must provide a valid existing cmap). See https://matplotlib.org/stable/users/explain/colors/colormaps.html",
     )
 
     parser.add_argument(
@@ -2014,6 +2156,14 @@ Examples:
                     )
                 )
                 return 1
+        # Parse xincrease/yincrease from CLI ('true'/'false' strings)
+        xincrease_arg = None
+        if args.xincrease is not None:
+            xincrease_arg = args.xincrease == "true"
+        yincrease_arg = None
+        if args.yincrease is not None:
+            yincrease_arg = args.yincrease == "true"
+
         # Create plot
         result = create_plot(
             args.file_path,
@@ -2027,6 +2177,16 @@ Examples:
             dimension_slices=dimension_slices_dict,
             facet_row=args.facet_row,
             facet_col=args.facet_col,
+            col_wrap=args.col_wrap,
+            plot_x=args.plot_x,
+            plot_y=args.plot_y,
+            plot_hue=args.plot_hue,
+            xincrease=xincrease_arg,
+            yincrease=yincrease_arg,
+            aspect=args.aspect,
+            size=args.size,
+            robust=args.robust,
+            cmap=args.cmap,
             bins=args.bins,
         )
         ok = isinstance(result, CreatePlotResult)

@@ -174,6 +174,16 @@ class WebviewMessageBus {
         dimensionSlices,
         facetRow,
         facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
         bins,
         timeout = 15000,
     ) {
@@ -204,6 +214,41 @@ class WebviewMessageBus {
         }
         if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
             payload.facetCol = facetCol;
+        }
+        if (
+            colWrap !== null &&
+            colWrap !== undefined &&
+            Number.isInteger(colWrap) &&
+            colWrap >= 1
+        ) {
+            payload.colWrap = colWrap;
+        }
+        if (plotX !== null && plotX !== undefined && plotX !== '') {
+            payload.plotX = plotX;
+        }
+        if (plotY !== null && plotY !== undefined && plotY !== '') {
+            payload.plotY = plotY;
+        }
+        if (plotHue !== null && plotHue !== undefined && plotHue !== '') {
+            payload.plotHue = plotHue;
+        }
+        if (xincrease !== null && xincrease !== undefined) {
+            payload.xincrease = xincrease;
+        }
+        if (yincrease !== null && yincrease !== undefined) {
+            payload.yincrease = yincrease;
+        }
+        if (aspect !== null && aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
+            payload.aspect = aspect;
+        }
+        if (size !== null && size !== undefined && Number.isFinite(size) && size > 0) {
+            payload.size = size;
+        }
+        if (robust === true) {
+            payload.robust = true;
+        }
+        if (cmap !== null && cmap !== undefined && cmap !== '') {
+            payload.cmap = cmap;
         }
         if (
             bins !== null &&
@@ -906,34 +951,80 @@ function renderGroupPlotControls(data, groupName, flags) {
         flags.groupDimensionSlices && dimNames.length > 0
             ? `
                 <div class="group-plot-controls dimension-slices-section">
-                    <h4>Group Dimension Slices</h4>
-                    <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
-                        ${dimNames
-                            .map(
-                                (dimName) => `
-                            <div class="dimension-slice-row">
-                                <label for="group-dim-${safeId}-${dimName}">${escapeHtml(dimName)} (${groupDims[dimName]}):</label>
-                                <input type="text" id="group-dim-${safeId}-${dimName}" class="dimension-slice-input group-dimension-slice-input" data-group="${escapeHtml(groupName)}" data-dimension="${dimName}" placeholder="e.g. 0:24:2 or 130" />
-                            </div>`,
-                            )
-                            .join('')}
+                    <div class="plot-controls-subsection dimension-slices-isel">
+                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
+                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. 0:24:2, 100:120, or 130). Applied as isel() before plotting.</p>
+                        <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
+                            ${dimNames
+                                .map(
+                                    (dimName) => `
+                                <div class="dimension-slice-row">
+                                    <label for="group-dim-${safeId}-${dimName}">${escapeHtml(dimName)} (${groupDims[dimName]}):</label>
+                                    <input type="text" id="group-dim-${safeId}-${dimName}" class="dimension-slice-input group-dimension-slice-input" data-group="${escapeHtml(groupName)}" data-dimension="${dimName}" placeholder="e.g. 0:24:2 or 130" />
+                                </div>`,
+                                )
+                                .join('')}
+                        </div>
                     </div>
+                    <div class="plot-controls-subsection plot-parameters">
+                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
+                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
                     <div class="dimension-slices-facets">
-                        <label for="group-facet-row-${safeId}">Facet row:</label>
-                        <select id="group-facet-row-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
-                            <option value="">None</option>
-                            ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
-                        </select>
-                        <label for="group-facet-col-${safeId}">Facet col:</label>
-                        <select id="group-facet-col-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
-                            <option value="">None</option>
-                            ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
-                        </select>
-                        <label for="group-bins-${safeId}">Bins:</label>
-                        <input type="number" id="group-bins-${safeId}" class="bins-input group-bins-input" min="1" placeholder="e.g. 100" data-group="${escapeHtml(groupName)}" title="Number of bins for histogram-style plots" />
+                        <div class="dimension-slices-row">
+                            <label for="group-facet-row-${safeId}">row:</label>
+                            <select id="group-facet-row-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-facet-col-${safeId}">col:</label>
+                            <select id="group-facet-col-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-col-wrap-${safeId}">col_wrap:</label>
+                            <input type="number" id="group-plot-col-wrap-${safeId}" class="plot-col-wrap-input group-plot-col-wrap-input" min="1" placeholder="e.g. 4" data-group="${escapeHtml(groupName)}" title="xarray col_wrap" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-plot-x-${safeId}">x:</label>
+                            <select id="group-plot-x-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-y-${safeId}">y:</label>
+                            <select id="group-plot-y-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-hue-${safeId}">hue:</label>
+                            <select id="group-plot-hue-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-x-increase-${safeId}" class="plot-checkbox-label">xincrease:</label>
+                            <input type="checkbox" id="group-x-increase-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray xincrease" />
+                            <label for="group-y-increase-${safeId}" class="plot-checkbox-label">yincrease:</label>
+                            <input type="checkbox" id="group-y-increase-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray yincrease" />
+                            <label for="group-robust-${safeId}" class="plot-checkbox-label">robust:</label>
+                            <input type="checkbox" id="group-robust-${safeId}" class="plot-checkbox group-plot-checkbox" data-group="${escapeHtml(groupName)}" title="xarray robust" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-bins-${safeId}">bins:</label>
+                            <input type="number" id="group-bins-${safeId}" class="bins-input group-bins-input" min="1" placeholder="e.g. 100" data-group="${escapeHtml(groupName)}" title="Number of bins for histogram-style plots" />
+                            <label for="group-plot-aspect-${safeId}">aspect:</label>
+                            <input type="text" id="group-plot-aspect-${safeId}" class="plot-aspect-size-input group-plot-aspect-size-input" placeholder="e.g. 1 or 1.5" data-group="${escapeHtml(groupName)}" title="xarray aspect (float)" />
+                            <label for="group-plot-size-${safeId}">size:</label>
+                            <input type="text" id="group-plot-size-${safeId}" class="plot-aspect-size-input group-plot-aspect-size-input" placeholder="e.g. 4 or 5.5" data-group="${escapeHtml(groupName)}" title="xarray size (float)" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-plot-cmap-${safeId}">cmap:</label>
+                            <input type="text" id="group-plot-cmap-${safeId}" class="plot-cmap-input group-plot-cmap-input" placeholder="e.g. viridis" data-group="${escapeHtml(groupName)}" title="Matplotlib colormap" />
+                        </div>
+                    </div>
                     </div>
                     <div class="time-controls-row">
-                        <button type="button" class="plot-control-button group-clear-dimension-slices-btn" data-group="${escapeHtml(groupName)}">Clear Dimension Slices</button>
+                        <button type="button" class="plot-control-button group-clear-dimension-slices-btn" data-group="${escapeHtml(groupName)}">Clear Dimension Slices and Plot Parameters</button>
                     </div>
                 </div>`
             : '';
@@ -1707,9 +1798,31 @@ function getGroupDimensionSlicesState(groupName) {
     const safeId = joinId(['group-plot', groupName]);
     const facetRowEl = document.getElementById(`group-facet-row-${safeId}`);
     const facetColEl = document.getElementById(`group-facet-col-${safeId}`);
+    const colWrapEl = document.getElementById(`group-plot-col-wrap-${safeId}`);
+    const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
+    const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
+    const plotHueEl = document.getElementById(`group-plot-hue-${safeId}`);
     const binsEl = document.getElementById(`group-bins-${safeId}`);
+    const xIncreaseEl = document.getElementById(`group-x-increase-${safeId}`);
+    const yIncreaseEl = document.getElementById(`group-y-increase-${safeId}`);
+    const aspectEl = document.getElementById(`group-plot-aspect-${safeId}`);
+    const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
+    const robustEl = document.getElementById(`group-robust-${safeId}`);
+    const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
     const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
     const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
+    let colWrap = undefined;
+    if (
+        colWrapEl &&
+        colWrapEl.value &&
+        colWrapEl.value.trim() !== ''
+    ) {
+        const n = parseInt(colWrapEl.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) colWrap = n;
+    }
+    const plotX = plotXEl && plotXEl.value ? plotXEl.value : '';
+    const plotY = plotYEl && plotYEl.value ? plotYEl.value : '';
+    const plotHue = plotHueEl && plotHueEl.value ? plotHueEl.value : '';
     let bins = null;
     if (binsEl && binsEl.value && binsEl.value.trim() !== '') {
         const n = parseInt(binsEl.value.trim(), 10);
@@ -1717,11 +1830,34 @@ function getGroupDimensionSlicesState(groupName) {
             bins = n;
         }
     }
+    let aspect = undefined;
+    if (aspectEl && aspectEl.value && aspectEl.value.trim() !== '') {
+        const n = Number(aspectEl.value.trim());
+        if (Number.isFinite(n) && n > 0) aspect = n;
+    }
+    let size = undefined;
+    if (sizeEl && sizeEl.value && sizeEl.value.trim() !== '') {
+        const n = Number(sizeEl.value.trim());
+        if (Number.isFinite(n) && n > 0) size = n;
+    }
+    const robust = robustEl ? robustEl.checked : false;
+    const cmap =
+        cmapEl && cmapEl.value && cmapEl.value.trim()
+            ? cmapEl.value.trim()
+            : '';
     if (
         Object.keys(dimensionSlices).length === 0 &&
         !facetRow &&
         !facetCol &&
-        (bins === null || bins === undefined)
+        colWrap === undefined &&
+        !plotX &&
+        !plotY &&
+        !plotHue &&
+        (bins === null || bins === undefined) &&
+        aspect === undefined &&
+        size === undefined &&
+        !robust &&
+        !cmap
     ) {
         return null;
     }
@@ -1730,6 +1866,16 @@ function getGroupDimensionSlicesState(groupName) {
             Object.keys(dimensionSlices).length > 0 ? dimensionSlices : null,
         facetRow,
         facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease: xIncreaseEl ? xIncreaseEl.checked : true,
+        yincrease: yIncreaseEl ? yIncreaseEl.checked : true,
+        aspect,
+        size,
+        robust,
+        cmap,
         bins,
     };
 }
@@ -1884,16 +2030,38 @@ function setupGroupPlotControlsListeners() {
             const facetColEl = document.getElementById(
                 `group-facet-col-${safeId}`,
             );
+            const colWrapEl = document.getElementById(
+                `group-plot-col-wrap-${safeId}`,
+            );
+            const plotXEl = document.getElementById(
+                `group-plot-x-${safeId}`,
+            );
+            const plotYEl = document.getElementById(
+                `group-plot-y-${safeId}`,
+            );
+            const plotHueEl = document.getElementById(
+                `group-plot-hue-${safeId}`,
+            );
             const binsEl = document.getElementById(`group-bins-${safeId}`);
-            if (facetRowEl) {
-                facetRowEl.value = '';
-            }
-            if (facetColEl) {
-                facetColEl.value = '';
-            }
-            if (binsEl) {
-                binsEl.value = '';
-            }
+            const xIncreaseEl = document.getElementById(`group-x-increase-${safeId}`);
+            const yIncreaseEl = document.getElementById(`group-y-increase-${safeId}`);
+            const aspectEl = document.getElementById(`group-plot-aspect-${safeId}`);
+            const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
+            const robustEl = document.getElementById(`group-robust-${safeId}`);
+            const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
+            if (facetRowEl) facetRowEl.value = '';
+            if (facetColEl) facetColEl.value = '';
+            if (colWrapEl) colWrapEl.value = '';
+            if (plotXEl) plotXEl.value = '';
+            if (plotYEl) plotYEl.value = '';
+            if (plotHueEl) plotHueEl.value = '';
+            if (binsEl) binsEl.value = '';
+            if (xIncreaseEl) xIncreaseEl.checked = true;
+            if (yIncreaseEl) yIncreaseEl.checked = true;
+            if (aspectEl) aspectEl.value = '';
+            if (sizeEl) sizeEl.value = '';
+            if (robustEl) robustEl.checked = false;
+            if (cmapEl) cmapEl.value = '';
         }
     });
 }
@@ -1949,12 +2117,14 @@ function populateDimensionSlices(data, flags) {
             '<p class="muted-text">No dimensions in any group.</p>';
         const facetRowSelect = document.getElementById('facetRowSelect');
         const facetColSelect = document.getElementById('facetColSelect');
-        if (facetRowSelect) {
-            facetRowSelect.innerHTML = '<option value="">None</option>';
-        }
-        if (facetColSelect) {
-            facetColSelect.innerHTML = '<option value="">None</option>';
-        }
+        const plotXSelect = document.getElementById('plotXSelect');
+        const plotYSelect = document.getElementById('plotYSelect');
+        const plotHueSelect = document.getElementById('plotHueSelect');
+        if (facetRowSelect) facetRowSelect.innerHTML = '<option value="">None</option>';
+        if (facetColSelect) facetColSelect.innerHTML = '<option value="">None</option>';
+        if (plotXSelect) plotXSelect.innerHTML = '<option value="">None</option>';
+        if (plotYSelect) plotYSelect.innerHTML = '<option value="">None</option>';
+        if (plotHueSelect) plotHueSelect.innerHTML = '<option value="">None</option>';
         return;
     }
 
@@ -1970,6 +2140,9 @@ function populateDimensionSlices(data, flags) {
 
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
+    const plotXSelect = document.getElementById('plotXSelect');
+    const plotYSelect = document.getElementById('plotYSelect');
+    const plotHueSelect = document.getElementById('plotHueSelect');
     const facetOptions =
         '<option value="">None</option>' +
         dimNames
@@ -1978,12 +2151,11 @@ function populateDimensionSlices(data, flags) {
                     `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`,
             )
             .join('');
-    if (facetRowSelect) {
-        facetRowSelect.innerHTML = facetOptions;
-    }
-    if (facetColSelect) {
-        facetColSelect.innerHTML = facetOptions;
-    }
+    if (facetRowSelect) facetRowSelect.innerHTML = facetOptions;
+    if (facetColSelect) facetColSelect.innerHTML = facetOptions;
+    if (plotXSelect) plotXSelect.innerHTML = facetOptions;
+    if (plotYSelect) plotYSelect.innerHTML = facetOptions;
+    if (plotHueSelect) plotHueSelect.innerHTML = facetOptions;
 }
 
 function getDimensionSlicesState() {
@@ -2001,12 +2173,35 @@ function getDimensionSlicesState() {
     });
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
+    const plotXSelect = document.getElementById('plotXSelect');
+    const plotYSelect = document.getElementById('plotYSelect');
+    const plotHueSelect = document.getElementById('plotHueSelect');
     const binsInput = document.getElementById('plotBinsInput');
+    const xIncreaseCheckbox = document.getElementById('xIncreaseCheckbox');
+    const yIncreaseCheckbox = document.getElementById('yIncreaseCheckbox');
+    const plotAspectInput = document.getElementById('plotAspectInput');
+    const plotSizeInput = document.getElementById('plotSizeInput');
+    const robustCheckbox = document.getElementById('robustCheckbox');
+    const plotCmapInput = document.getElementById('plotCmapInput');
     let bins = null;
     if (binsInput && binsInput.value && binsInput.value.trim() !== '') {
         const n = parseInt(binsInput.value.trim(), 10);
         if (Number.isInteger(n) && n >= 1) {
             bins = n;
+        }
+    }
+    let aspect = null;
+    if (plotAspectInput && plotAspectInput.value && plotAspectInput.value.trim() !== '') {
+        const n = Number(plotAspectInput.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            aspect = n;
+        }
+    }
+    let size = null;
+    if (plotSizeInput && plotSizeInput.value && plotSizeInput.value.trim() !== '') {
+        const n = Number(plotSizeInput.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            size = n;
         }
     }
     return {
@@ -2017,6 +2212,29 @@ function getDimensionSlicesState() {
             facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
         facetCol:
             facetColSelect && facetColSelect.value ? facetColSelect.value : '',
+        colWrap: (() => {
+            if (
+                plotColWrapInput &&
+                plotColWrapInput.value &&
+                plotColWrapInput.value.trim() !== ''
+            ) {
+                const n = parseInt(plotColWrapInput.value.trim(), 10);
+                if (Number.isInteger(n) && n >= 1) return n;
+            }
+            return undefined;
+        })(),
+        plotX: plotXSelect && plotXSelect.value ? plotXSelect.value : '',
+        plotY: plotYSelect && plotYSelect.value ? plotYSelect.value : '',
+        plotHue: plotHueSelect && plotHueSelect.value ? plotHueSelect.value : '',
+        xincrease: xIncreaseCheckbox ? xIncreaseCheckbox.checked : true,
+        yincrease: yIncreaseCheckbox ? yIncreaseCheckbox.checked : true,
+        aspect: aspect ?? undefined,
+        size: size ?? undefined,
+        robust: robustCheckbox ? robustCheckbox.checked : false,
+        cmap:
+            plotCmapInput && plotCmapInput.value && plotCmapInput.value.trim()
+                ? plotCmapInput.value.trim()
+                : '',
         bins,
     };
 }
@@ -2283,16 +2501,29 @@ function setupTimeControlsEventListeners() {
                 });
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
+            const plotColWrapInput = document.getElementById('plotColWrapInput');
+            const plotXSelect = document.getElementById('plotXSelect');
+            const plotYSelect = document.getElementById('plotYSelect');
+            const plotHueSelect = document.getElementById('plotHueSelect');
             const binsInput = document.getElementById('plotBinsInput');
-            if (facetRowSelect) {
-                facetRowSelect.value = '';
-            }
-            if (facetColSelect) {
-                facetColSelect.value = '';
-            }
-            if (binsInput) {
-                binsInput.value = '';
-            }
+            const xIncreaseCheckbox = document.getElementById('xIncreaseCheckbox');
+            const yIncreaseCheckbox = document.getElementById('yIncreaseCheckbox');
+            const plotAspectInput = document.getElementById('plotAspectInput');
+            const plotSizeInput = document.getElementById('plotSizeInput');
+            if (facetRowSelect) facetRowSelect.value = '';
+            if (facetColSelect) facetColSelect.value = '';
+            if (plotColWrapInput) plotColWrapInput.value = '';
+            if (plotXSelect) plotXSelect.value = '';
+            if (plotYSelect) plotYSelect.value = '';
+            if (plotHueSelect) plotHueSelect.value = '';
+            if (binsInput) binsInput.value = '';
+            if (xIncreaseCheckbox) xIncreaseCheckbox.checked = true;
+            if (yIncreaseCheckbox) yIncreaseCheckbox.checked = true;
+            if (plotAspectInput) plotAspectInput.value = '';
+            if (plotSizeInput) plotSizeInput.value = '';
+            if (robustCheckbox) robustCheckbox.checked = false;
+            const plotCmapInput = document.getElementById('plotCmapInput');
+            if (plotCmapInput) plotCmapInput.value = '';
         });
     }
 }
@@ -2707,8 +2938,22 @@ async function handleCreateAllPlots() {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
-    const { dimensionSlices, facetRow, facetCol, bins } =
-        getDimensionSlicesState();
+    const {
+        dimensionSlices,
+        facetRow,
+        facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
+        bins,
+    } = getDimensionSlicesState();
 
     // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
     const plotTasks = Array.from(buttons).map((button) => ({
@@ -2750,6 +2995,16 @@ async function handleCreateAllPlots() {
         const dimSlices = groupDim?.dimensionSlices ?? dimensionSlices;
         const fRow = groupDim?.facetRow ?? facetRow;
         const fCol = groupDim?.facetCol ?? facetCol;
+        const fColWrap = groupDim?.colWrap ?? colWrap;
+        const fPlotX = groupDim?.plotX ?? plotX;
+        const fPlotY = groupDim?.plotY ?? plotY;
+        const fPlotHue = groupDim?.plotHue ?? plotHue;
+        const fXincrease = groupDim?.xincrease ?? xincrease;
+        const fYincrease = groupDim?.yincrease ?? yincrease;
+        const fAspect = groupDim?.aspect ?? aspect;
+        const fSize = groupDim?.size ?? size;
+        const fRobust = groupDim?.robust ?? robust;
+        const fCmap = groupDim?.cmap ?? cmap;
         const fBins = groupDim?.bins ?? bins;
 
         displayVariablePlotLoading(variable);
@@ -2764,6 +3019,16 @@ async function handleCreateAllPlots() {
                 dimSlices,
                 fRow,
                 fCol,
+                fColWrap,
+                fPlotX,
+                fPlotY,
+                fPlotHue,
+                fXincrease,
+                fYincrease,
+                fAspect,
+                fSize,
+                fRobust,
+                fCmap,
                 fBins,
             );
             displayVariablePlot(variable, plotData);
@@ -2976,6 +3241,16 @@ async function handleCreateVariablePlot(variable) {
         groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
     const facetRow = groupDim?.facetRow ?? globalDim.facetRow;
     const facetCol = groupDim?.facetCol ?? globalDim.facetCol;
+    const colWrap = groupDim?.colWrap ?? globalDim.colWrap;
+    const plotX = groupDim?.plotX ?? globalDim.plotX;
+    const plotY = groupDim?.plotY ?? globalDim.plotY;
+    const plotHue = groupDim?.plotHue ?? globalDim.plotHue;
+    const xincrease = groupDim?.xincrease ?? globalDim.xincrease;
+    const yincrease = groupDim?.yincrease ?? globalDim.yincrease;
+    const aspect = groupDim?.aspect ?? globalDim.aspect;
+    const size = groupDim?.size ?? globalDim.size;
+    const robust = groupDim?.robust ?? globalDim.robust;
+    const cmap = groupDim?.cmap ?? globalDim.cmap;
     const bins = groupDim?.bins ?? globalDim.bins;
 
     console.log('Creating plot with time controls:', {
@@ -2987,6 +3262,16 @@ async function handleCreateVariablePlot(variable) {
         dimensionSlices,
         facetRow,
         facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
         bins,
         rawState: globalTimeControlsState,
     });
@@ -3004,6 +3289,16 @@ async function handleCreateVariablePlot(variable) {
             dimensionSlices,
             facetRow,
             facetCol,
+            colWrap,
+            plotX,
+            plotY,
+            plotHue,
+            xincrease,
+            yincrease,
+            aspect,
+            size,
+            robust,
+            cmap,
             bins,
         );
         displayVariablePlot(variable, plotData);

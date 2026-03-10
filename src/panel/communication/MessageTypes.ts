@@ -55,6 +55,26 @@ export interface CreatePlotRequest {
     facetRow?: string;
     /** Dimension name for faceted plot col (Issue #117) */
     facetCol?: string;
+    /** xarray plot col_wrap: max number of columns in faceted grid (positive integer) */
+    colWrap?: number;
+    /** Dimension or coordinate for x-axis (xarray plot x=, e.g. line/2D) */
+    plotX?: string;
+    /** Dimension or coordinate for y-axis (xarray plot y=, e.g. 2D) */
+    plotY?: string;
+    /** Dimension or coordinate for hue (xarray plot hue=, e.g. multiple lines) */
+    plotHue?: string;
+    /** xarray plot xincrease (axes direction); when set, passed to plot */
+    xincrease?: boolean;
+    /** xarray plot yincrease (axes direction); when set, passed to plot */
+    yincrease?: boolean;
+    /** xarray plot aspect (figure size: width = aspect * size); float */
+    aspect?: number;
+    /** xarray plot size (figure size: height = size in inches); float */
+    size?: number;
+    /** xarray plot robust (use 2nd/98th percentiles for color limits; helps with outliers) */
+    robust?: boolean;
+    /** Matplotlib colormap name (cmap kwarg); user must provide a valid existing cmap */
+    cmap?: string;
     /** Number of bins for histogram-style plots (Issue #117; passed as plot kwarg) */
     bins?: number;
 }

@@ -94,6 +94,16 @@ export class DataProcessor {
         dimensionSlices?: Record<string, string | number>,
         facetRow?: string,
         facetCol?: string,
+        colWrap?: number,
+        plotX?: string,
+        plotY?: string,
+        plotHue?: string,
+        xincrease?: boolean,
+        yincrease?: boolean,
+        aspect?: number,
+        size?: number,
+        robust?: boolean,
+        cmap?: string,
         bins?: number,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
@@ -144,6 +154,49 @@ export class DataProcessor {
         }
         if (facetCol && facetCol.trim() !== '') {
             args.push('--facet-col', quoteIfNeeded(facetCol));
+        }
+        if (
+            colWrap !== null &&
+            colWrap !== undefined &&
+            Number.isInteger(colWrap) &&
+            colWrap >= 1
+        ) {
+            args.push('--col-wrap', String(colWrap));
+        }
+        if (plotX && plotX.trim() !== '') {
+            args.push('--plot-x', quoteIfNeeded(plotX));
+        }
+        if (plotY && plotY.trim() !== '') {
+            args.push('--plot-y', quoteIfNeeded(plotY));
+        }
+        if (plotHue && plotHue.trim() !== '') {
+            args.push('--plot-hue', quoteIfNeeded(plotHue));
+        }
+        if (xincrease !== undefined) {
+            args.push('--xincrease', xincrease ? 'true' : 'false');
+        }
+        if (yincrease !== undefined) {
+            args.push('--yincrease', yincrease ? 'true' : 'false');
+        }
+        if (
+            aspect !== undefined &&
+            Number.isFinite(aspect) &&
+            aspect > 0
+        ) {
+            args.push('--aspect', String(aspect));
+        }
+        if (
+            size !== undefined &&
+            Number.isFinite(size) &&
+            size > 0
+        ) {
+            args.push('--size', String(size));
+        }
+        if (robust === true) {
+            args.push('--robust');
+        }
+        if (cmap && cmap.trim() !== '') {
+            args.push('--cmap', quoteIfNeeded(cmap.trim()));
         }
         if (
             bins !== null &&

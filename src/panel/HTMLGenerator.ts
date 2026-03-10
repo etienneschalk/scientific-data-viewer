@@ -249,23 +249,65 @@ export class HTMLGenerator {
 
                 <!-- Dimension Slices (Issue #117) -->
                 <div class="dimension-slices-section" style="display: none;">
-                    <h4>Dimension Slices</h4>
-                    <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting.</p>
-                    <div id="dimensionSlicesContainer"></div>
+                    <div class="plot-controls-subsection dimension-slices-isel">
+                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
+                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting.</p>
+                        <div id="dimensionSlicesContainer"></div>
+                    </div>
+                    <div class="plot-controls-subsection plot-parameters">
+                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
+                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
                     <div class="dimension-slices-facets">
-                        <label for="facetRowSelect">Facet row:</label>
-                        <select id="facetRowSelect" class="facet-select">
-                            <option value="">None</option>
-                        </select>
-                        <label for="facetColSelect">Facet col:</label>
-                        <select id="facetColSelect" class="facet-select">
-                            <option value="">None</option>
-                        </select>
-                        <label for="plotBinsInput">Bins:</label>
-                        <input type="number" id="plotBinsInput" class="bins-input" min="1" placeholder="e.g. 100" title="Number of bins for histogram-style plots" />
+                        <div class="dimension-slices-row">
+                            <label for="facetRowSelect">row:</label>
+                            <select id="facetRowSelect" class="facet-select">
+                                <option value="">None</option>
+                            </select>
+                            <label for="facetColSelect">col:</label>
+                            <select id="facetColSelect" class="facet-select">
+                                <option value="">None</option>
+                            </select>
+                            <label for="plotColWrapInput">col_wrap:</label>
+                            <input type="number" id="plotColWrapInput" class="plot-col-wrap-input" min="1" placeholder="e.g. 4" title="xarray col_wrap: max columns in faceted grid (positive integer)" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="plotXSelect">x:</label>
+                            <select id="plotXSelect" class="facet-select">
+                                <option value="">None</option>
+                            </select>
+                            <label for="plotYSelect">y:</label>
+                            <select id="plotYSelect" class="facet-select">
+                                <option value="">None</option>
+                            </select>
+                            <label for="plotHueSelect">hue:</label>
+                            <select id="plotHueSelect" class="facet-select">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="xIncreaseCheckbox" class="plot-checkbox-label">xincrease:</label>
+                            <input type="checkbox" id="xIncreaseCheckbox" class="plot-checkbox" checked title="xarray xincrease (uncheck to reverse x-axis)" />
+                            <label for="yIncreaseCheckbox" class="plot-checkbox-label">yincrease:</label>
+                            <input type="checkbox" id="yIncreaseCheckbox" class="plot-checkbox" checked title="xarray yincrease (uncheck to reverse y-axis)" />
+                            <label for="robustCheckbox" class="plot-checkbox-label">robust:</label>
+                            <input type="checkbox" id="robustCheckbox" class="plot-checkbox" title="xarray robust: use 2nd/98th percentiles for color limits (helps with outliers)" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="plotBinsInput">bins:</label>
+                            <input type="number" id="plotBinsInput" class="bins-input" min="1" placeholder="e.g. 100" title="Number of bins for histogram-style plots" />
+                            <label for="plotAspectInput">aspect:</label>
+                            <input type="text" id="plotAspectInput" class="plot-aspect-size-input" placeholder="e.g. 1 or 1.5" title="xarray aspect (fig width = aspect * size, float)" />
+                            <label for="plotSizeInput">size:</label>
+                            <input type="text" id="plotSizeInput" class="plot-aspect-size-input" placeholder="e.g. 4 or 5.5" title="xarray size in inches (fig height, float)" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="plotCmapInput">cmap:</label>
+                            <input type="text" id="plotCmapInput" class="plot-cmap-input" placeholder="e.g. viridis, plasma" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
+                        </div>
+                    </div>
                     </div>
                     <div class="time-controls-row">
-                        <button id="clearDimensionSlicesButton" class="plot-control-button">Clear Dimension Slices</button>
+                        <button id="clearDimensionSlicesButton" class="plot-control-button">Clear Dimension Slices and Plot Parameters</button>
                     </div>
                 </div>
             </details>
