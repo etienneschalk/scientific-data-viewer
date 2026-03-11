@@ -898,8 +898,8 @@ button:active {
 }
 
 .dimension-slices-facets .plot-cmap-input {
-    width: 8em;
-    max-width: 140px;
+    width: 12em;
+    max-width: 210px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border);

@@ -509,10 +509,24 @@ class CreatePlotResult:
     ----------
     plot_data : str
         Base64-encoded PNG image data
+    format_info : FileFormatInfo
+        File format metadata
+    applied_isel_kwargs : dict
+        Final applied dimension slices (isel kwargs); values are int or str for slice
+    applied_plot_kwargs : dict
+        Final applied plot kwargs (row, col, xincrease, etc.)
+    matplotlib_style : str
+        Matplotlib style used for the plot
+    variable_path : str
+        Variable path that was plotted (e.g. '/temperature')
     """
 
     plot_data: str = field(repr=False)
     format_info: FileFormatInfo
+    applied_isel_kwargs: Dict[str, Union[int, str]] = field(default_factory=dict)
+    applied_plot_kwargs: Dict[str, Any] = field(default_factory=dict)
+    matplotlib_style: str = ""
+    variable_path: str = ""
 
 
 @dataclass(frozen=True)
@@ -1055,6 +1069,7 @@ def create_plot(
             )
 
         # Apply dimension slices (Issue #117) before datetime filtering
+        applied_isel: Dict[str, Union[int, slice]] = {}
         if dimension_slices:
             try:
                 isel_dict = _parse_dimension_slices(dimension_slices)
@@ -1064,7 +1079,8 @@ def create_plot(
                     isel_subset = {d: v for d, v in isel_dict.items() if d in var_dims}
                     if isel_subset:
                         var = var.isel(isel_subset)
-                        logger.info(f"Applied dimension slices: {isel_subset}")
+                        applied_isel = dict(isel_subset)
+                        logger.info(f"Applied dimension slices: {applied_isel}")
             except ValueError as e:
                 logger.warning(f"Dimension slice parse error: {e}")
                 return CreatePlotError(
@@ -1270,6 +1286,23 @@ def create_plot(
         )
 
         # Optional plot kwargs (e.g. bins for histogram, robust, xincrease, yincrease, aspect, size)
+        logger.info(
+            "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
+            "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, col_wrap=%s",
+            facet_row,
+            facet_col,
+            plot_x,
+            plot_y,
+            plot_hue,
+            bins,
+            xincrease,
+            yincrease,
+            aspect,
+            size,
+            robust,
+            cmap,
+            col_wrap,
+        )
         plot_kwargs = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
@@ -1289,6 +1322,14 @@ def create_plot(
             plot_kwargs["cmap"] = cmap.strip()
         if col_wrap is not None and col_wrap >= 1:
             plot_kwargs["col_wrap"] = int(col_wrap)
+
+        # Log applied kwargs including row/col (xarray names) when set
+        applied_for_log = dict(plot_kwargs)
+        if facet_row and facet_row.strip():
+            applied_for_log["row"] = facet_row.strip()
+        if facet_col and facet_col.strip():
+            applied_for_log["col"] = facet_col.strip()
+        logger.info("Applied plot kwargs: %s", applied_for_log)
 
         def _kwargs_for_plot():
             """Return plot kwargs for generic .plot() calls. Never include cmap here:
@@ -1516,9 +1557,17 @@ def create_plot(
         # Close End
 
         logger.info("Plot created successfully")
+        # Serialize isel kwargs for result (slice -> str for JSON)
+        applied_isel_serializable: Dict[str, Union[int, str]] = {
+            k: v if isinstance(v, int) else str(v) for k, v in applied_isel.items()
+        }
         return CreatePlotResult(
             plot_data=image_base64,
             format_info=file_format_info,
+            applied_isel_kwargs=applied_isel_serializable,
+            applied_plot_kwargs=dict(applied_for_log),
+            matplotlib_style=style,
+            variable_path=variable_path,
         )
 
     except Exception as exc:

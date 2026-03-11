@@ -963,7 +963,7 @@ function renderGroupPlotControls(data, groupName, flags) {
                 <div class="group-plot-controls dimension-slices-section">
                     <div class="plot-controls-subsection dimension-slices-isel">
                         <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
-                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting.</p>
+                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
                         <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
                             ${dimNames
                                 .map(
