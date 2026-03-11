@@ -87,6 +87,20 @@ export class UIController {
                     payload.datetimeVariableName,
                     payload.startDatetime,
                     payload.endDatetime,
+                    payload.dimensionSlices,
+                    payload.facetRow,
+                    payload.facetCol,
+                    payload.colWrap,
+                    payload.plotX,
+                    payload.plotY,
+                    payload.plotHue,
+                    payload.xincrease,
+                    payload.yincrease,
+                    payload.aspect,
+                    payload.size,
+                    payload.robust,
+                    payload.cmap,
+                    payload.bins,
                     payload.operationId,
                 );
             },
@@ -324,6 +338,20 @@ export class UIController {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        dimensionSlices?: Record<string, string | number>,
+        facetRow?: string,
+        facetCol?: string,
+        colWrap?: number,
+        plotX?: string,
+        plotY?: string,
+        plotHue?: string,
+        xincrease?: boolean,
+        yincrease?: boolean,
+        aspect?: number,
+        size?: number,
+        robust?: boolean,
+        cmap?: string,
+        bins?: number,
         operationId?: string,
     ): Promise<string | undefined> {
         try {
@@ -346,6 +374,20 @@ export class UIController {
                 datetimeVariableName,
                 startDatetime,
                 endDatetime,
+                dimensionSlices,
+                facetRow,
+                facetCol,
+                colWrap,
+                plotX,
+                plotY,
+                plotHue,
+                xincrease,
+                yincrease,
+                aspect,
+                size,
+                robust,
+                cmap,
+                bins,
                 operationId,
             );
 
@@ -354,9 +396,9 @@ export class UIController {
             }
 
             if (plotData.error) {
-                throw new Error(
-                    `Data processing error: ${plotData.error.error}`,
-                );
+                const msg = `Data processing error: ${plotData.error.error}`;
+                Logger.error(`[UIController] [createPlot] ${msg}`);
+                throw new Error(msg);
             }
 
             return plotData?.result?.plot_data;

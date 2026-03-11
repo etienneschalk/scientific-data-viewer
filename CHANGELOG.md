@@ -6,6 +6,39 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.9.0] - 2026-03-09
+
+### Changed
+
+- **Time Controls disabled by default:** The former **Global Time Controls** and **Group Time Controls** (datetime variable select, start/end time) are now **off by default**. Use the new **Dimension Slices** feature instead to subset by index or slice (including time dimensions) via `isel()`; it is data-agnostic and easier to maintain. You can re-enable Time Controls in settings (`scientificDataViewer.globalTimeControls`, `scientificDataViewer.groupTimeControls`) if you prefer the datetime start/end UI.
+
+### Added
+
+- **Issue #102**: Scalar and small array values are now computed and displayed for variables and coordinates
+  - **Problem**: Small variables (e.g. single-value time coordinates after interpolation) showed only shape/dtype/size, not the actual value
+  - **Solution**: When a variable or coordinate is at or below 1000 bytes (`SMALL_VARIABLE_BYTES`), its values are loaded and shown in the UI (truncated to 500 chars)
+  - **Files Modified**:
+    - python/get_data_info.py - `VariableInfo`/`CoordinateInfo` optional `display_value`, `_format_small_value()`, `create_variable_info`/`create_coord_info` set `display_value` when under threshold
+    - src/types.ts - optional `display_value` on variable/coordinate items
+    - src/panel/webview/webview-script.js - render `display_value` in variable/coordinate details; src/panel/webview/styles.css - `.variable-display-value` styling
+
+- **Issue #117**: Select and slice dimensions in the UI before plotting (xarray-style isel and faceting)
+  - **Problem**: Users could not subset data by dimension index/slice or create faceted plots from the UI
+  - **Solution**: New "Dimension Slices" section in plot controls: one text input per dimension (Python slice syntax, e.g. `0:24:2`, `100:120`, or `130`), plus Facet row/Facet col, **col_wrap** (positive integer), **x, y, hue** dropdowns, **x increase / y increase** checkboxes, **Aspect / Size** inputs, **Robust** checkbox, and **cmap** text input. Slices are applied as `var.isel(...)` before time filtering and plotting; row/col override default faceting dimensions for 3D/4D plots; col_wrap, x/y/hue and other options map to [xarray plot kwargs](https://docs.xarray.dev/en/latest/user-guide/plotting.html). The section includes a link to the xarray plotting guide.
+  - **Files Modified**:
+    - src/panel/communication/MessageTypes.ts - `CreatePlotRequest`: `dimensionSlices`, `facetRow`, `facetCol`, `colWrap`, `plotX`, `plotY`, `plotHue`, `xincrease`, `yincrease`, `aspect`, `size`, `robust`, `cmap`
+    - python/get_data_info.py - `_parse_dimension_slice_spec`, `_parse_dimension_slices`, `create_plot()` args and isel application, CLI `--dimension-slices` (JSON), `--facet-row`, `--facet-col`, `--col-wrap`, `--plot-x`, `--plot-y`, `--plot-hue`, `--xincrease`, `--yincrease`, `--aspect`, `--size`, `--robust`, `--cmap`
+    - src/python/DataProcessor.ts, src/panel/UIController.ts - pass through new params
+    - src/panel/HTMLGenerator.ts - Dimension Slices section (incl. link to xarray plotting); src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
+  - **Future**: Additional plotting options (e.g. line-plot specifics, step plots, colormap) may be added in later releases based on the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html); not included in this release to avoid overloading the UI.
+
+- **Issue #121**: Log full executable command for copy-paste
+  - _Note: Finally implemented in 0.8.2_
+  - **Problem**: When debugging (e.g. package check on Windows), users had to manually reconstruct the full command from separate log lines
+  - **Solution**: Extension now logs a single copy-pasteable command line when executing a Python script (e.g. package check or get_data_info)
+  - **Files Modified**:
+    - src/python/PythonManager.ts - In `executePythonFileUnchecked()`, log `🐍 📜 Full command (copy-paste): <pythonPath> <scriptPath> <args...>` on one line
+
 ## [0.8.2] - 2026-03-05
 
 ### Added

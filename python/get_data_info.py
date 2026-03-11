@@ -155,6 +155,29 @@ XR_TEXT_OPTIONS: Dict[str, Any] = {
 # For HTML representation, keep attrs collapsed (users can click to expand)
 XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
 
+# Defaults for Issue #102 (overridable via CLI --small-variable-bytes / --small-value-display-max-len).
+# When small_variable_bytes is 0, the feature is disabled.
+DEFAULT_SMALL_VARIABLE_BYTES = 1000
+DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500
+
+
+def _format_small_value(
+    var: xr.DataArray,
+    max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+) -> str:
+    """Load and format variable values for display when size is below threshold."""
+    try:
+        loaded = var.values
+        if loaded.size == 0:
+            return "[]"
+        s = repr(loaded)
+        if len(s) > max_len:
+            s = s[: max_len - 3] + "..."
+        return s
+    except Exception as e:
+        return f"<could not load: {e!s}>"
+
+
 SupportedExtensionType = Literal[
     ".nc",
     ".nc4",
@@ -360,6 +383,8 @@ class VariableInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Variable attributes/metadata
+    display_value : Optional[str], optional
+        Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
 
     name: str
@@ -368,6 +393,7 @@ class VariableInfo:
     dimensions: List[str]
     size_bytes: int
     attributes: Dict[str, Any]
+    display_value: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -388,6 +414,8 @@ class CoordinateInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Coordinate attributes/metadata
+    display_value : Optional[str], optional
+        Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
 
     name: str
@@ -396,6 +424,7 @@ class CoordinateInfo:
     dimensions: List[str]
     size_bytes: int
     attributes: Dict[str, Any]
+    display_value: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -480,10 +509,24 @@ class CreatePlotResult:
     ----------
     plot_data : str
         Base64-encoded PNG image data
+    format_info : FileFormatInfo
+        File format metadata
+    applied_isel_kwargs : dict
+        Final applied dimension slices (isel kwargs); values are int or str for slice
+    applied_plot_kwargs : dict
+        Final applied plot kwargs (row, col, xincrease, etc.)
+    matplotlib_style : str
+        Matplotlib style used for the plot
+    variable_path : str
+        Variable path that was plotted (e.g. '/temperature')
     """
 
     plot_data: str = field(repr=False)
     format_info: FileFormatInfo
+    applied_isel_kwargs: Dict[str, Union[int, str]] = field(default_factory=dict)
+    applied_plot_kwargs: Dict[str, Any] = field(default_factory=dict)
+    matplotlib_style: str = ""
+    variable_path: str = ""
 
 
 @dataclass(frozen=True)
@@ -848,6 +891,47 @@ def detect_plotting_strategy(
     return "default"
 
 
+def _parse_dimension_slice_spec(spec: Union[str, int]) -> Union[int, slice]:
+    """Parse a single dimension slice spec (Issue #117). Returns int or slice()."""
+    if isinstance(spec, int):
+        return spec
+    s = str(spec).strip()
+    if not s:
+        raise ValueError("Empty slice spec")
+    if ":" not in s:
+        return int(s)
+    parts = s.split(":")
+    if len(parts) == 2:
+        start_s, stop_s = parts
+        start = int(start_s) if start_s else None
+        stop = int(stop_s) if stop_s else None
+        return slice(start, stop)
+    if len(parts) == 3:
+        start_s, stop_s, step_s = parts
+        start = int(start_s) if start_s else None
+        stop = int(stop_s) if stop_s else None
+        step = int(step_s) if step_s else None
+        return slice(start, stop, step)
+    raise ValueError(f"Invalid slice spec: {s!r}")
+
+
+def _parse_dimension_slices(
+    slices_dict: Optional[Dict[str, Any]],
+) -> Optional[Dict[str, Union[int, slice]]]:
+    """Parse dimension_slices from JSON/CLI into isel-compatible dict (Issue #117)."""
+    if not slices_dict:
+        return None
+    out: Dict[str, Union[int, slice]] = {}
+    for dim, spec in slices_dict.items():
+        if spec is None or (isinstance(spec, str) and not spec.strip()):
+            continue
+        try:
+            out[str(dim)] = _parse_dimension_slice_spec(spec)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid slice for dimension {dim!r}: {e}") from e
+    return out if out else None
+
+
 def create_plot(
     file_path: Path,
     variable_path: str,
@@ -857,6 +941,20 @@ def create_plot(
     datetime_variable_name: Optional[str] = None,
     start_datetime: Optional[str] = None,
     end_datetime: Optional[str] = None,
+    dimension_slices: Optional[Dict[str, Union[str, int]]] = None,
+    facet_row: Optional[str] = None,
+    facet_col: Optional[str] = None,
+    col_wrap: Optional[int] = None,
+    plot_x: Optional[str] = None,
+    plot_y: Optional[str] = None,
+    plot_hue: Optional[str] = None,
+    xincrease: Optional[bool] = None,
+    yincrease: Optional[bool] = None,
+    aspect: Optional[Union[int, float]] = None,
+    size: Optional[Union[int, float]] = None,
+    robust: Optional[bool] = None,
+    cmap: Optional[str] = None,
+    bins: Optional[int] = None,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
@@ -908,6 +1006,10 @@ def create_plot(
 
         # Inline imports of matplotlib as it is only used in this function.
         import matplotlib as mpl
+
+        # Use non-interactive backend so plotting works headless (e.g. in VSCode)
+        # and we avoid "Current Serial #N" / figure-manager errors from GUI backends.
+        mpl.use("Agg")
         import matplotlib.pyplot as plt
 
         # Apply matplotlib style provided by VSCode extension
@@ -965,6 +1067,32 @@ def create_plot(
                 error=f"Variable '{variable_name}' not found in dataset",
                 format_info=file_format_info,
             )
+
+        # Apply dimension slices (Issue #117) before datetime filtering
+        applied_isel: Dict[str, Union[int, slice]] = {}
+        if dimension_slices:
+            try:
+                isel_dict = _parse_dimension_slices(dimension_slices)
+                if isel_dict:
+                    # Only apply isel for dimensions that exist on this variable
+                    var_dims = set(var.dims)
+                    isel_subset = {d: v for d, v in isel_dict.items() if d in var_dims}
+                    if isel_subset:
+                        var = var.isel(isel_subset)
+                        applied_isel = dict(isel_subset)
+                        logger.info(f"Applied dimension slices: {applied_isel}")
+            except ValueError as e:
+                logger.warning(f"Dimension slice parse error: {e}")
+                return CreatePlotError(
+                    error=f"Invalid dimension slice: {e}",
+                    format_info=file_format_info,
+                )
+            except Exception as e:
+                logger.exception("Dimension slice (isel) failed")
+                return CreatePlotError(
+                    error=f"Dimension slice error: {type(e).__name__}: {e}",
+                    format_info=file_format_info,
+                )
 
         # Handle datetime variable and time filtering
         datetime_var = None
@@ -1142,74 +1270,247 @@ def create_plot(
                     format_info=file_format_info,
                 )
 
-        # Detect plotting strategy
-        strategy = detect_plotting_strategy(var)
-        logger.info(f"Using plotting strategy: {strategy}")
+        # Branch: user provided any dimension-slice/facet/x/y/hue/bins/aspect/size params => build only from user input
+        # When only cmap is set, we keep auto branch so cmap is passed to the relevant plot calls there
+        user_provided = bool(
+            (dimension_slices and len(dimension_slices) > 0)
+            or (facet_row and facet_row.strip())
+            or (facet_col and facet_col.strip())
+            or (col_wrap is not None and col_wrap >= 1)
+            or (plot_x and plot_x.strip())
+            or (plot_y and plot_y.strip())
+            or (plot_hue and plot_hue.strip())
+            or (bins is not None and bins >= 1)
+            or (aspect is not None and aspect > 0)
+            or (size is not None and size > 0)
+        )
+
+        # Optional plot kwargs (e.g. bins for histogram, robust, xincrease, yincrease, aspect, size)
+        logger.info(
+            "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
+            "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, col_wrap=%s",
+            facet_row,
+            facet_col,
+            plot_x,
+            plot_y,
+            plot_hue,
+            bins,
+            xincrease,
+            yincrease,
+            aspect,
+            size,
+            robust,
+            cmap,
+            col_wrap,
+        )
+        plot_kwargs = {}
+        if bins is not None and bins >= 1:
+            plot_kwargs["bins"] = bins
+        if robust is True:
+            plot_kwargs["robust"] = (
+                True  # 2nd/98th percentiles for color limits (outliers)
+            )
+        if xincrease is not None:
+            plot_kwargs["xincrease"] = xincrease
+        if yincrease is not None:
+            plot_kwargs["yincrease"] = yincrease
+        if aspect is not None and aspect > 0:
+            plot_kwargs["aspect"] = float(aspect)
+        if size is not None and size > 0:
+            plot_kwargs["size"] = float(size)
+        if cmap is not None and cmap.strip():
+            plot_kwargs["cmap"] = cmap.strip()
+        if col_wrap is not None and col_wrap >= 1:
+            plot_kwargs["col_wrap"] = int(col_wrap)
+
+        # Log applied kwargs including row/col (xarray names) when set
+        applied_for_log = dict(plot_kwargs)
+        if facet_row and facet_row.strip():
+            applied_for_log["row"] = facet_row.strip()
+        if facet_col and facet_col.strip():
+            applied_for_log["col"] = facet_col.strip()
+        logger.info("Applied plot kwargs: %s", applied_for_log)
+
+        def _kwargs_for_plot():
+            """Return plot kwargs for generic .plot() calls. Never include cmap here:
+            xarray can pass it to artists that do not support it (e.g. Rectangle).
+            Use explicit .plot.imshow() when cmap is needed.
+            """
+            out = dict(plot_kwargs)
+            out.pop("cmap", None)
+            return out
+
+        # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
+        plt.close("all")
 
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
-            # Create plot using xarray's native plotting methods
-            if strategy == "2d_classic":
-                # 2D spatial data - plot directly with appropriate colormap
-                logger.info("Creating 2D spatial plot")
-                var.plot.imshow()
-                plt.gca().set_aspect("equal")
-            elif strategy == "2d_classic_isel":
-                logger.info("Creating 2D spatial plot with isel")
-                first_dim = var.dims[0]
-                var.isel({first_dim: 0}).plot.imshow()
-                plt.gca().set_aspect("equal")
-            elif strategy == "3d_col":
-                # 3D data with spatial dimensions - use col parameter
-                logger.info("Creating 3D plot with col parameter")
-                first_dim = var.dims[0]
-                col_wrap = min(4, var.shape[0])
-                var.plot.imshow(col=first_dim, aspect=1, size=4, col_wrap=col_wrap)
-            elif strategy == "4d_col_row":
-                # 4D data with spatial dimensions - use col and row parameters
-                logger.info("Creating 4D plot with col and row parameters")
-                first_dim = var.dims[0]
-                second_dim = var.dims[1]
-                var.plot.imshow(col=second_dim, row=first_dim, aspect=1, size=4)
-            else:
-                # Default plotting behavior - let xarray decide the best method
-                logger.info("Creating default plot using xarray's native plotting")
-                # If datetime variable is provided and var is 1D, use datetime for x-axis
-                if datetime_var is not None and var.ndim == 1:
-                    # Verify that datetime_var and var have compatible shapes for plotting
-                    datetime_values = datetime_var.values
-                    var_values = var.values
-
-                    if datetime_values.shape != var_values.shape:
-                        logger.warning(
-                            f"Cannot use datetime variable for plotting: shape mismatch. "
-                            f"Datetime shape: {datetime_values.shape}, variable shape: {var_values.shape}. "
-                            f"Falling back to default plotting."
+            if user_provided:
+                # --- User-provided branch: build plot only from user params (Issue #117) ---
+                logger.info(
+                    "User provided dimension/facet/bins params: building plot from user input only"
+                )
+                if "bins" in plot_kwargs and plot_kwargs.get("bins") is not None:
+                    logger.info(
+                        "Creating histogram plot with bins=%s", plot_kwargs["bins"]
+                    )
+                    var.plot.hist(**_kwargs_for_plot())
+                elif facet_row or facet_col or plot_x or plot_y or plot_hue:
+                    row_dim = (
+                        facet_row.strip()
+                        if (
+                            facet_row
+                            and facet_row.strip()
+                            and facet_row.strip() in var.dims
                         )
-                        var.plot()
-                    else:
-                        # Use xarray's default datetime plotting by setting datetime as coordinate
-                        # Create a temporary dataset with datetime as coordinate for plotting
-                        import pandas as pd
+                        else None
+                    )
+                    col_dim = (
+                        facet_col.strip()
+                        if (
+                            facet_col
+                            and facet_col.strip()
+                            and facet_col.strip() in var.dims
+                        )
+                        else None
+                    )
 
-                        # Convert datetime values to pandas DatetimeIndex if needed
-                        if not isinstance(datetime_values, pd.DatetimeIndex):
-                            datetime_index = pd.DatetimeIndex(datetime_values)
+                    # x, y, hue: dimension or coordinate name (xarray plot kwargs)
+                    def _valid_plot_dim(name, var_arr):
+                        if not name or not name.strip():
+                            return None
+                        n = name.strip()
+                        if n in var_arr.dims:
+                            return n
+                        if n in var_arr.coords:
+                            return n
+                        return None
+
+                    x_dim = _valid_plot_dim(plot_x, var)
+                    y_dim = _valid_plot_dim(plot_y, var)
+                    hue_dim = _valid_plot_dim(plot_hue, var)
+
+                    plot_kw = {}
+                    if row_dim or col_dim:
+                        if row_dim and col_dim:
+                            plot_kw = {"row": row_dim, "col": col_dim}
+                        elif row_dim:
+                            plot_kw["row"] = row_dim
                         else:
-                            datetime_index = datetime_values
+                            plot_kw["col"] = col_dim
+                            plot_kw["col_wrap"] = min(4, var.sizes.get(col_dim, 4))
+                    if x_dim is not None:
+                        plot_kw["x"] = x_dim
+                    if y_dim is not None:
+                        plot_kw["y"] = y_dim
+                    if hue_dim is not None:
+                        plot_kw["hue"] = hue_dim
 
-                        # Create a temporary DataArray with datetime as coordinate
-                        var_with_time = xr.DataArray(
-                            var_values,
-                            coords={datetime_var_display_name: datetime_index},
-                            dims=[datetime_var_display_name],
-                            name=variable_name,
+                    if plot_kw:
+                        var.plot(**{**plot_kw, **_kwargs_for_plot()})
+                    else:
+                        logger.warning(
+                            "Facet row/col and x/y/hue not found on variable; using default plot",
                         )
-
-                        # Use xarray's native plotting (handles datetime formatting automatically)
-                        var_with_time.plot()
-
+                        var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
                 else:
-                    var.plot()
+                    # Slices only, no facet/bins: let xarray choose plot type
+                    logger.info("Creating plot from sliced data (xarray default)")
+                    var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
+            else:
+                # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
+                strategy = detect_plotting_strategy(var)
+                logger.info(f"Auto-plot: using strategy {strategy}")
+                # cmap is safe to pass only to .plot.imshow(); include when user set it
+                _imshow_kw = (
+                    {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
+                )
+                # aspect/size: xarray uses figsize = (aspect * size, size) per panel when creating figure
+                _fig_kw = {}
+                if "aspect" in plot_kwargs:
+                    _fig_kw["aspect"] = plot_kwargs["aspect"]
+                if "size" in plot_kwargs:
+                    _fig_kw["size"] = plot_kwargs["size"]
+                _plot_kw = {**_fig_kw, **_imshow_kw}
+
+                if strategy == "2d_classic":
+                    logger.info("Creating 2D spatial plot")
+                    var.plot.imshow(**_plot_kw)
+                    plt.gca().set_aspect("equal")
+                elif strategy == "2d_classic_isel":
+                    logger.info("Creating 2D spatial plot with isel")
+                    first_dim = var.dims[0]
+                    var.isel({first_dim: 0}).plot.imshow(**_plot_kw)
+                    plt.gca().set_aspect("equal")
+                elif strategy == "3d_col":
+                    logger.info("Creating 3D plot (col facet)")
+                    first_dim = var.dims[0]
+                    col_wrap = min(4, var.sizes.get(first_dim, 4))
+                    var.plot.imshow(
+                        col=first_dim,
+                        aspect=_fig_kw.get("aspect", 1),
+                        size=_fig_kw.get("size", 4),
+                        col_wrap=col_wrap,
+                        **_imshow_kw,
+                    )
+                elif strategy == "4d_col_row":
+                    logger.info("Creating 4D plot (row and col facets)")
+                    first_dim = var.dims[0]
+                    second_dim = var.dims[1]
+                    var.plot.imshow(
+                        col=second_dim,
+                        row=first_dim,
+                        aspect=_fig_kw.get("aspect", 1),
+                        size=_fig_kw.get("size", 4),
+                        **_imshow_kw,
+                    )
+                else:
+                    logger.info("Creating default plot (xarray choice)")
+                    if datetime_var is not None and var.ndim == 1:
+                        datetime_values = datetime_var.values
+                        var_values = var.values
+                        if datetime_values.shape != var_values.shape:
+                            logger.warning(
+                                "Datetime shape mismatch, falling back to default plot"
+                            )
+                            var.plot(**_kwargs_for_plot())
+                        else:
+                            import pandas as pd
+
+                            if not isinstance(datetime_values, pd.DatetimeIndex):
+                                datetime_index = pd.DatetimeIndex(datetime_values)
+                            else:
+                                datetime_index = datetime_values
+                            var_with_time = xr.DataArray(
+                                var_values,
+                                coords={datetime_var_display_name: datetime_index},
+                                dims=[datetime_var_display_name],
+                                name=variable_name,
+                            )
+                            var_with_time.plot(**_kwargs_for_plot())
+                    elif var.ndim >= 2 and "cmap" in plot_kwargs:
+                        # Use explicit imshow so cmap is applied (generic .plot() can trigger Rectangle.set(cmap) error)
+                        if var.ndim == 2:
+                            var.plot.imshow(**_plot_kw)
+                        elif var.ndim == 3:
+                            first = var.dims[0]
+                            var.plot.imshow(
+                                col=first,
+                                aspect=_fig_kw.get("aspect", 1),
+                                size=_fig_kw.get("size", 4),
+                                col_wrap=min(4, var.sizes.get(first, 4)),
+                                **_imshow_kw,
+                            )
+                        else:
+                            first, second = var.dims[0], var.dims[1]
+                            var.plot.imshow(
+                                row=first,
+                                col=second,
+                                aspect=_fig_kw.get("aspect", 1),
+                                size=_fig_kw.get("size", 4),
+                                **_imshow_kw,
+                            )
+                    else:
+                        var.plot(**_kwargs_for_plot())
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
@@ -1242,7 +1543,7 @@ def create_plot(
             plt.savefig(buffer, format="png", dpi=100, bbox_inches="tight")
             buffer.seek(0)
             image_base64 = base64.b64encode(buffer.getvalue()).decode()
-            plt.close()
+            plt.close("all")
 
         # Close Start
         if datatree_flag:
@@ -1256,9 +1557,17 @@ def create_plot(
         # Close End
 
         logger.info("Plot created successfully")
+        # Serialize isel kwargs for result (slice -> str for JSON)
+        applied_isel_serializable: Dict[str, Union[int, str]] = {
+            k: v if isinstance(v, int) else str(v) for k, v in applied_isel.items()
+        }
         return CreatePlotResult(
             plot_data=image_base64,
             format_info=file_format_info,
+            applied_isel_kwargs=applied_isel_serializable,
+            applied_plot_kwargs=dict(applied_for_log),
+            matplotlib_style=style,
+            variable_path=variable_path,
         )
 
     except Exception as exc:
@@ -1272,7 +1581,10 @@ def create_plot(
 
 
 def get_file_info(
-    file_path: Path, convert_bands_to_variables: bool = False
+    file_path: Path,
+    convert_bands_to_variables: bool = False,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
 ) -> Union[FileInfoResult, FileInfoError]:
     """Extract comprehensive information from a data file.
 
@@ -1284,6 +1596,12 @@ def get_file_info(
     ----------
     file_path : Path
         Path to the data file
+    convert_bands_to_variables : bool
+        Whether to convert GeoTIFF bands to variables.
+    small_variable_bytes : int
+        Max size in bytes for variables/coordinates to load and display values (Issue #102). If 0, disabled.
+    small_value_display_max_len : int
+        Max character length for displayed small values (truncation).
 
     Returns
     -------
@@ -1406,7 +1724,12 @@ def get_file_info(
             info.dimensions_flattened[group] = {str(k): v for k, v in xds.dims.items()}
             # Add coordinate variables for group
             for coord_name, coord in xds.coords.items():
-                coord_info = create_coord_info(str(coord_name), coord)
+                coord_info = create_coord_info(
+                    str(coord_name),
+                    coord,
+                    small_variable_bytes=small_variable_bytes,
+                    small_value_display_max_len=small_value_display_max_len,
+                )
                 info.coordinates_flattened.setdefault(group, []).append(coord_info)
                 # Check if coordinate is a datetime variable
                 if is_datetime_variable(coord):
@@ -1441,7 +1764,12 @@ def get_file_info(
 
             # Add data variables for group
             for var_name, var in xds.data_vars.items():
-                var_info = create_variable_info(str(var_name), var)
+                var_info = create_variable_info(
+                    str(var_name),
+                    var,
+                    small_variable_bytes=small_variable_bytes,
+                    small_value_display_max_len=small_value_display_max_len,
+                )
                 logger.info(
                     f"Processing group and var: {group=}  {var_name=} {var_info=}"
                 )
@@ -1515,7 +1843,12 @@ def get_file_info(
         return error
 
 
-def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
+def create_variable_info(
+    var_name: str,
+    var: xr.DataArray,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+) -> VariableInfo:
     """Create VariableInfo from a DataArray.
 
     Parameters
@@ -1524,12 +1857,20 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
         Name of the variable
     var : xr.DataArray
         DataArray to extract information from
+    small_variable_bytes : int
+        Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
+    small_value_display_max_len : int
+        Max character length for display (truncation).
 
     Returns
     -------
     VariableInfo
         Information about the variable
     """
+    display_value = None
+    if small_variable_bytes > 0 and var.nbytes <= small_variable_bytes:
+        display_value = _format_small_value(var, max_len=small_value_display_max_len)
+
     return VariableInfo(
         name=str(var_name),
         dtype=str(var.dtype),
@@ -1543,6 +1884,7 @@ def create_variable_info(var_name: str, var: xr.DataArray) -> VariableInfo:
                 (("__xarray_encoding." + str(k), v) for k, v in var.encoding.items()),
             )
         },
+        display_value=display_value,
     )
 
 
@@ -1628,7 +1970,12 @@ def check_monotonicity(
         return "non_monotonic"
 
 
-def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
+def create_coord_info(
+    coord_name: str,
+    coord: xr.DataArray,
+    small_variable_bytes: int = 0,
+    small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+) -> CoordinateInfo:
     """Create CoordinateInfo from a DataArray.
 
     Parameters
@@ -1637,12 +1984,20 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
         Name of the coordinate
     coord : xr.DataArray
         DataArray to extract information from
+    small_variable_bytes : int
+        Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
+    small_value_display_max_len : int
+        Max character length for display (truncation).
 
     Returns
     -------
     CoordinateInfo
         Information about the coordinate
     """
+    display_value = None
+    if small_variable_bytes > 0 and coord.nbytes <= small_variable_bytes:
+        display_value = _format_small_value(coord, max_len=small_value_display_max_len)
+
     return CoordinateInfo(
         name=str(coord_name),
         dtype=str(coord.dtype),
@@ -1656,6 +2011,7 @@ def create_coord_info(coord_name: str, coord: xr.DataArray) -> CoordinateInfo:
                 (("__xarray_encoding." + str(k), v) for k, v in coord.encoding.items()),
             )
         },
+        display_value=display_value,
     )
 
 
@@ -1732,6 +2088,111 @@ Examples:
         help="End datetime for filtering (ISO format string)",
     )
 
+    parser.add_argument(
+        "--dimension-slices",
+        default=None,
+        help='JSON object of dimension name to index or slice string (e.g. {"time": "0:24:2", "rlat": "100:120", "rlon": 130}) for isel() before plotting (Issue #117)',
+    )
+
+    parser.add_argument(
+        "--facet-row",
+        default=None,
+        help="Dimension name for faceted plot row (Issue #117)",
+    )
+
+    parser.add_argument(
+        "--facet-col",
+        default=None,
+        help="Dimension name for faceted plot col (Issue #117)",
+    )
+
+    parser.add_argument(
+        "--col-wrap",
+        type=int,
+        default=None,
+        help="xarray plot col_wrap: max number of columns in faceted grid (positive integer)",
+    )
+
+    parser.add_argument(
+        "--plot-x",
+        default=None,
+        help="Dimension or coordinate for x-axis (xarray plot x=)",
+    )
+
+    parser.add_argument(
+        "--plot-y",
+        default=None,
+        help="Dimension or coordinate for y-axis (xarray plot y=)",
+    )
+
+    parser.add_argument(
+        "--plot-hue",
+        default=None,
+        help="Dimension or coordinate for hue (xarray plot hue=, e.g. multiple lines)",
+    )
+
+    parser.add_argument(
+        "--xincrease",
+        default=None,
+        choices=("true", "false"),
+        help="xarray plot xincrease (axes direction): 'true' or 'false'",
+    )
+
+    parser.add_argument(
+        "--yincrease",
+        default=None,
+        choices=("true", "false"),
+        help="xarray plot yincrease (axes direction): 'true' or 'false'",
+    )
+
+    parser.add_argument(
+        "--aspect",
+        type=float,
+        default=None,
+        help="xarray plot aspect (figure width = aspect * size in inches, float)",
+    )
+
+    parser.add_argument(
+        "--size",
+        type=float,
+        default=None,
+        help="xarray plot size (figure height in inches, float)",
+    )
+
+    parser.add_argument(
+        "--bins",
+        type=int,
+        default=None,
+        help="Number of bins for histogram-style plots (Issue #117; passed as plot kwarg)",
+    )
+
+    parser.add_argument(
+        "--robust",
+        action="store_true",
+        help="xarray plot robust: use 2nd/98th percentiles for color limits (helps with outliers)",
+    )
+
+    parser.add_argument(
+        "--cmap",
+        type=str,
+        default=None,
+        help="Matplotlib colormap name (user must provide a valid existing cmap). See https://matplotlib.org/stable/users/explain/colors/colormaps.html",
+    )
+
+    parser.add_argument(
+        "--small-variable-bytes",
+        type=int,
+        default=DEFAULT_SMALL_VARIABLE_BYTES,
+        help="Max size in bytes for variables/coordinates to load and display values (Issue #102). Set to 0 to disable.",
+    )
+
+    parser.add_argument(
+        "--small-value-display-max-len",
+        type=int,
+        default=DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+        help="Max character length for displayed small variable/coordinate values (truncation).",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -1746,10 +2207,34 @@ Examples:
     # Dispatch based on mode
     if args.mode == "info":
         # Get file information
-        result = get_file_info(args.file_path, args.convert_bands_to_variables)
+        result = get_file_info(
+            args.file_path,
+            args.convert_bands_to_variables,
+            small_variable_bytes=args.small_variable_bytes,
+            small_value_display_max_len=args.small_value_display_max_len,
+        )
         ok = isinstance(result, FileInfoResult)
 
     elif args.mode == "plot":
+        dimension_slices_dict = None
+        if args.dimension_slices and args.dimension_slices.strip():
+            try:
+                dimension_slices_dict = json.loads(args.dimension_slices)
+            except json.JSONDecodeError as e:
+                print(
+                    to_json_best_effort(
+                        {"error": f"Invalid --dimension-slices JSON: {e}"}
+                    )
+                )
+                return 1
+        # Parse xincrease/yincrease from CLI ('true'/'false' strings)
+        xincrease_arg = None
+        if args.xincrease is not None:
+            xincrease_arg = args.xincrease == "true"
+        yincrease_arg = None
+        if args.yincrease is not None:
+            yincrease_arg = args.yincrease == "true"
+
         # Create plot
         result = create_plot(
             args.file_path,
@@ -1760,6 +2245,20 @@ Examples:
             args.datetime_variable,
             args.start_datetime,
             args.end_datetime,
+            dimension_slices=dimension_slices_dict,
+            facet_row=args.facet_row,
+            facet_col=args.facet_col,
+            col_wrap=args.col_wrap,
+            plot_x=args.plot_x,
+            plot_y=args.plot_y,
+            plot_hue=args.plot_hue,
+            xincrease=xincrease_arg,
+            yincrease=yincrease_arg,
+            aspect=args.aspect,
+            size=args.size,
+            robust=args.robust,
+            cmap=args.cmap,
+            bins=args.bins,
         )
         ok = isinstance(result, CreatePlotResult)
 

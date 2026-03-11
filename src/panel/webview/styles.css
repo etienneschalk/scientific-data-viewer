@@ -373,6 +373,24 @@ select:focus {
     max-width: 80px;
 }
 
+/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
+.variable-details-content {
+    display: block;
+}
+
+.variable-display-value {
+    margin: 4px 0 4px 1em;
+    padding: 4px 6px;
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    word-break: break-all;
+    display: block;
+}
+
+.variable-display-value code {
+    font-family: var(--vscode-editor-font-family);
+}
+
 /* Attributes details styling */
 .attributes-container {
     background-color: var(--vscode-textCodeBlock-background);
@@ -720,6 +738,213 @@ button:active {
     font-weight: bold;
     z-index: 1000;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.dimension-slices-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+}
+
+.dimension-slices-section h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--vscode-foreground);
+}
+
+.dimension-slices-hint {
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    margin: 0 0 12px 0;
+}
+
+.dimension-slices-hint a {
+    color: var(--vscode-textLink-foreground);
+    text-decoration: none;
+}
+
+.dimension-slices-hint a:hover {
+    text-decoration: underline;
+}
+
+.plot-controls-subsection {
+    margin-top: 16px;
+}
+
+.plot-controls-subsection:first-of-type {
+    margin-top: 0;
+}
+
+.plot-controls-subsection-title {
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    margin: 0 0 6px 0;
+}
+
+.dimension-slice-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.dimension-slice-row label {
+    min-width: 180px;
+    color: var(--vscode-foreground);
+}
+
+.dimension-slice-row input {
+    flex: 1;
+    max-width: 220px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slice-row input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.dimension-slices-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dimension-slices-facets label {
+    color: var(--vscode-foreground);
+}
+
+.dimension-slices-facets .facet-select {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .facet-select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-col-wrap-input {
+    width: 8em;
+    max-width: 160px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-col-wrap-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-aspect-size-input {
+    width: 8em;
+    max-width: 160px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-aspect-size-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .bins-input {
+    width: 11em;
+    max-width: 200px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .bins-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-cmap-input {
+    width: 12em;
+    max-width: 210px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-cmap-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-section .plot-control-button {
+    margin-top: 4px;
+}
+
+/* Group Plot Controls: per-group time and dimension slices (same structure as Dimensions/Coordinates) */
+.group-plot-controls-section {
+    margin-top: 0;
+}
+
+.group-plot-controls-section details summary {
+    cursor: pointer;
+}
+
+/* Content wrapper aligned with .dimensions / .coordinates */
+.group-plot-controls-content {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.group-plot-controls-section .group-plot-controls {
+    margin-top: 10px;
+    padding: 12px;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+}
+
+.group-plot-controls-section .group-plot-controls h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--vscode-foreground);
 }
 
 .time-controls-section {
