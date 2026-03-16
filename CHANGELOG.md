@@ -30,6 +30,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
     - python/get_data_info.py - `_parse_dimension_slice_spec`, `_parse_dimension_slices`, `create_plot()` args and isel application, CLI `--dimension-slices` (JSON), `--facet-row`, `--facet-col`, `--col-wrap`, `--plot-x`, `--plot-y`, `--plot-hue`, `--xincrease`, `--yincrease`, `--aspect`, `--size`, `--robust`, `--cmap`
     - src/python/DataProcessor.ts, src/panel/UIController.ts - pass through new params
     - src/panel/HTMLGenerator.ts - Dimension Slices section (incl. link to xarray plotting); src/panel/webview/webview-script.js - `populateDimensionSlices`, `getDimensionSlicesState`, createPlot payload; src/panel/webview/styles.css - dimension-slices-section styling
+  - **Experimental**: The improved plotting experience (Dimension Slices, faceting, and related options) is still experimental. Feedback on bugs or inconsistent behaviour is welcome.
+  - **Why global and per-group, not per-variable:** Plot parameters (dimension slices, facet row/col, x/y/hue, etc.) are scoped at **global** and **per-group** level to avoid overloading the UI. We assume that within a group you often want to use the same dimension selection for several variables; per-variable plot parameters may be added in a later release only if the need is clearly felt.
   - **Future**: Additional plotting options (e.g. line-plot specifics, step plots, colormap) may be added in later releases based on the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html); not included in this release to avoid overloading the UI.
 
 - **Issue #121**: Log full executable command for copy-paste
