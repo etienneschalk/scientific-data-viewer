@@ -425,33 +425,163 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📁 Project Structure
 
-**Disclaimer**: The information below is provided for reference only and may be outdated. See the repository for current layout.
+**Disclaimer**: The information below is provided for reference purposes only and may be outdated. Please refer to actual source code for the most current information.
 
 ```
 scientific-data-viewer/
-├── src/                    # Extension source (TypeScript)
-│   ├── common/             # Config, logger, utils, error handling
-│   ├── panel/              # Webview panel, UI generation, theme, communication
-│   │   └── webview/        # Webview HTML/CSS/JS assets
-│   ├── python/             # Python manager, DataProcessor, venv management
-│   ├── outline/            # Outline / tree view
-│   ├── extension.ts        # Entry point, commands, editor provider
-│   ├── DataViewerPanel.ts
-│   └── ...
-├── python/                 # Data processing and plotting (run by extension)
-│   ├── get_data_info.py    # Info + plot CLI (xarray, matplotlib)
-│   ├── create_sample_data.py
-│   ├── test_*.py           # Unit tests (pytest)
-│   └── *.ipynb             # Notebooks
-├── test/                   # Extension tests (Mocha + VS Code test runner)
-│   ├── runTest.ts
-│   └── suite/              # Test suites (integration, unit)
-├── sample-data/            # Sample NetCDF, Zarr, GeoTIFF, GRIB, etc.
-├── docs/                   # Development, publishing, RFCs
-├── media/                  # Icon, screenshots
-├── package.json
-├── tsconfig.json
-├── README.md
-├── CONTRIBUTING.md
-└── CHANGELOG.md
+├── src/                                    # TypeScript source code
+│   ├── extension.ts                        # Main extension entry point and command registration
+│   ├── ScientificDataEditorProvider.ts     # Custom editor provider for supported file types
+│   ├── DataViewerPanel.ts                  # Webview panel for data visualization and lifecycle
+│   ├── StatusBarItem.ts                    # Status bar item (Python interpreter status)
+│   ├── types.ts                            # Shared TypeScript types (responses, config, etc.)
+│   ├── package-types.ts                    # Package manifest / dependency type definitions
+│   ├── common/                             # Shared utilities, config, and error handling
+│   │   ├── config.ts                       # Extension configuration (settings, feature flags)
+│   │   ├── Logger.ts                       # Logging utilities (extension output channel)
+│   │   ├── utils.ts                        # General helpers (e.g. quoteIfNeeded, formatConfigValue)
+│   │   ├── vscodeutils.ts                  # VSCode API helpers (show message, open settings)
+│   │   ├── HealthcheckManager.ts           # Health check and package availability coordination
+│   │   └── ErrorBoundary.ts                # Error boundary for graceful error handling
+│   ├── panel/                              # Webview panel UI, theme, and message passing
+│   │   ├── HTMLGenerator.ts                # HTML generation for data viewer content (groups, variables, plot controls)
+│   │   ├── UIController.ts                  # UI controller: handles messages, plot requests, export
+│   │   ├── ThemeManager.ts                  # Theme detection and webview styling (light/dark)
+│   │   ├── JavaScriptGenerator.ts          # Inline script generation for webview bootstrap
+│   │   ├── CSSGenerator.ts                 # CSS generation for webview (e.g. dimension slices)
+│   │   ├── communication/                  # Message passing between webview and extension
+│   │   │   ├── MessageBus.ts               # Message bus for postMessage / onDidReceiveMessage
+│   │   │   └── MessageTypes.ts              # Type definitions for request/response messages
+│   │   ├── state/                          # Panel-level application state
+│   │   │   └── AppState.ts                  # Global application state (data, loading, errors)
+│   │   └── webview/                         # Webview static assets (bundled into extension)
+│   │       ├── styles.css                  # Webview styles (layout, variables, plot controls)
+│   │       └── webview-script.js           # Webview client script (tree, plots, export, copy)
+│   ├── python/                             # Python environment and data processing
+│   │   ├── DataProcessor.ts                # Calls get_data_info.py for info and plot; builds CLI args
+│   │   ├── PythonManager.ts                # Python interpreter resolution, spawn, package check, venv
+│   │   ├── ExtensionVirtualEnvironmentManager.ts    # uv-based extension-owned venv (create, update, delete)
+│   │   ├── ExtensionVirtualEnvironmentManagerUI.ts  # UI commands for managing extension venv
+│   │   └── officialPythonExtensionApiUtils.ts       # Integration with official Python extension API
+│   └── outline/                            # Outline / tree view in sidebar
+│       ├── OutlineProvider.ts              # Outline tree data provider (file structure)
+│       └── HeaderExtractor.ts              # Extracts headers/sections for outline from viewer content
+├── python/                                 # Python scripts run by the extension (subprocess)
+│   ├── get_data_info.py                    # CLI: info (metadata, variables, coords) and plot (matplotlib)
+│   ├── check_package_availability.py       # Package availability check (xarray, matplotlib, etc.)
+│   ├── create_sample_data.py              # Generate sample data files (NetCDF, Zarr, GeoTIFF, etc.)
+│   ├── test_datetime_edge_cases.py        # Pytest: datetime parsing and filtering edge cases
+│   ├── test_dimension_slices_and_small_value.py   # Pytest: dimension slices and small value display
+│   ├── tests.ipynb                        # Jupyter notebook for manual testing
+│   ├── issue_104_cdf_file.ipynb           # Notebook for CDF-related testing
+│   └── remote_dataset.ipynb               # Notebook for remote dataset experiments
+├── test/                                   # Extension tests (Mocha + VS Code test runner)
+│   ├── runTest.ts                          # Test runner entry (launch VS Code with extension, run suite)
+│   └── suite/                              # Test suites
+│       ├── index.ts                        # Suite registration and exports
+│       ├── extension.test.ts               # Extension activation and commands
+│       ├── integration.test.ts             # Integration tests (e.g. open file, get data)
+│       ├── dataViewerPanel.test.ts         # DataViewerPanel tests
+│       ├── dataProcessor.test.ts           # DataProcessor tests
+│       ├── pythonManager.test.ts           # PythonManager tests
+│       ├── logger.test.ts                   # Logger tests
+│       ├── config.test.ts                  # Config tests
+│       ├── datetimeEdgeCases.test.ts       # Datetime edge case tests
+│       ├── communication/                  # Message bus and types tests
+│       │   └── MessageBus.test.ts
+│       ├── error/                          # Error boundary tests
+│       │   └── ErrorBoundary.test.ts
+│       ├── state/                           # App state tests
+│       │   └── AppState.test.ts
+│       ├── outline/                         # Outline provider tests
+│       │   ├── OutlineProvider.test.ts
+│       │   └── HeaderExtractor.test.ts
+│       └── ui/                              # UI generator tests
+│           ├── HTMLGenerator.test.ts
+│           ├── UIController.test.ts
+│           └── CSSGenerator.test.ts
+├── sample-data/                            # Sample data files for development and testing
+│   ├── sample_data.nc                      # NetCDF sample (large; used for many tests)
+│   ├── sample_data.h5                      # HDF5 sample
+│   ├── sample_data.grib                    # GRIB sample
+│   ├── sample_data.grib2                   # GRIB2 sample
+│   ├── sample_data.tif                     # GeoTIFF sample
+│   ├── sample_data.jp2                     # JPEG-2000 sample
+│   ├── sample_data.cdf                     # NASA CDF sample
+│   ├── sample_data.nc4                     # NetCDF-4 sample
+│   ├── sample_data.netcdf                  # NetCDF (alternate extension)
+│   ├── sample_data.hdf5                    # HDF5 (alternate extension)
+│   ├── sample_data.tiff                    # GeoTIFF (alternate extension)
+│   ├── sample_data.geotiff                 # GeoTIFF (alternate extension)
+│   ├── sample_data.jpeg2000                # JPEG-2000 (alternate extension)
+│   ├── sample_data_multiple_groups.nc      # NetCDF with multiple groups
+│   ├── sample_data_many_vars.nc            # NetCDF with many variables
+│   ├── sample_data_no_attributes.nc        # NetCDF without attributes
+│   ├── sample_data_long_variable_names.nc  # NetCDF with long variable names
+│   ├── sample_data_complex_long_names.nc   # NetCDF with complex long names
+│   ├── sample_data_many_encoding.nc        # NetCDF with various encodings
+│   ├── sample_large_4d_data.nc             # Large 4D NetCDF
+│   ├── sample_multiband.tif               # Multi-band GeoTIFF
+│   ├── sample data with spaces.nc          # NetCDF in path with spaces (Issue #125)
+│   ├── broken_file.nc                      # Broken/corrupt files for error handling tests
+│   ├── broken_file.h5
+│   ├── broken_file.grib
+│   ├── broken_file.jp2
+│   ├── broken_file.tif
+│   ├── broken_file.zarr/
+│   ├── broken_file.safe/                    # (e.g. Sentinel SAFE placeholder)
+│   ├── sample_zarr_arborescence.zarr/      # Zarr with tree (root/ocean, land, etc.)
+│   ├── sample_zarr_inherited_coords.zarr/   # Zarr with inherited coordinates
+│   ├── sample_zarr_nested_groups_from_datatree.zarr/
+│   ├── sample_zarr_nested_groups_from_zarr.zarr/
+│   ├── sample_zarr_single_group_from_dataset.zarr/
+│   ├── disposable/                          # Disposable test files (e.g. disposable_file_00.nc, .zarr)
+│   ├── nested/                             # Nested sample (e.g. sample_data.tif)
+│   ├── temporal-datasets/                  # Temporal dataset samples
+│   └── sdv-plots/                          # Generated plot outputs (from extension)
+├── docs/                                   # Documentation
+│   ├── DEVELOPMENT.md                      # Development guide (setup, build, test)
+│   ├── PUBLISHING.md                       # Publishing guide (marketplace, Open VSX)
+│   ├── QUICKSTART.md                       # Quick start guide
+│   ├── TECHNICAL_ARCHITECTURE.md            # Technical architecture
+│   ├── ARCHITECTURE_IMPROVEMENTS.md        # Architecture improvement notes
+│   ├── test-extension.md                   # Extension testing guide
+│   ├── PRE_COMMIT_SETUP.md                 # Pre-commit hooks setup
+│   ├── GITHUB_ACTIONS_SETUP.md             # CI / GitHub Actions setup
+│   ├── WEBVIEW_EXPORT_CONTENT.md           # Webview export (HTML report) documentation
+│   ├── IMPLEMENTATION_PROPOSAL_ISSUE_106.md # Implementation proposals
+│   ├── RELEASE_NOTES_0.3.0.md … 0.9.0.md   # Release notes per version
+│   ├── RELEASE_CHECKLIST_0.7.0.md          # Release checklist example
+│   └── PR_SUMMARY_*.md                     # Pull request summaries
+├── media/                                  # Media assets
+│   ├── icon.png                            # Extension icon (PNG)
+│   ├── icon.svg                            # Extension icon (SVG)
+│   ├── icon_dark_bg.svg                    # Icon variant (dark background)
+│   ├── icon_viridis_bold_monochromatic.svg # Icon variant (viridis, monochrome)
+│   └── screenshots/                        # Screenshots for README / marketplace
+│       ├── light-tif-plot-0.3.0.png
+│       ├── dark-tif-plot-0.3.0.png
+│       ├── light-tif-plot-opened-0.3.0.png
+│       ├── light-nc-xarray-html-and-text-repr-0.3.0.png
+│       └── light-zarr-tree-view-focus-on-variable-0.3.0.png
+├── notebooks/                              # Jupyter notebooks (e.g. issue exploration)
+│   └── issue-0117-select-and-slice-before-plotting.ipynb
+├── out/                                    # Compiled JavaScript output (tsc; do not commit)
+│   ├── src/                                # Compiled TypeScript
+│   └── test/                               # Compiled tests
+├── node_modules/                           # Node.js dependencies (npm install)
+├── package.json                            # Extension manifest, scripts, dependencies
+├── package-lock.json                       # Dependency lock file
+├── tsconfig.json                           # TypeScript configuration
+├── tsconfig.pre-commit.json                 # TypeScript config for pre-commit (e.g. type check)
+├── pyproject.toml                         # Python project config (ruff, pytest)
+├── .eslintrc.js                            # ESLint configuration
+├── ensure.sh                               # Environment / dependency ensure script
+├── setup.sh                                # Setup script
+├── publish.sh                              # Publishing script
+├── test-publication-readiness.js            # Publication readiness test (optional)
+├── README.md                               # This file
+├── CONTRIBUTING.md                         # Contribution guidelines
+├── CHANGELOG.md                            # Version history
+└── LICENSE                                 # MIT License
 ```
