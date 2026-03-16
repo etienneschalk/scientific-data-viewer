@@ -1793,8 +1793,12 @@ function getGroupTimeControlsState(groupName) {
  * this we would use the group's "" and never fall back to global for that field.
  */
 function groupOrGlobalString(groupVal, globalVal) {
-    if (groupVal == null) return globalVal;
-    if (typeof groupVal === 'string' && groupVal.trim() === '') return globalVal;
+    if (groupVal === null) {
+        return globalVal;
+    }
+    if (typeof groupVal === 'string' && groupVal.trim() === '') {
+        return globalVal;
+    }
     return groupVal;
 }
 
@@ -3353,8 +3357,14 @@ async function handleCreateVariablePlot(variable) {
     const globalDim = getDimensionSlicesState();
     const dimensionSlices =
         groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
-    const facetRow = groupOrGlobalString(groupDim?.facetRow, globalDim.facetRow);
-    const facetCol = groupOrGlobalString(groupDim?.facetCol, globalDim.facetCol);
+    const facetRow = groupOrGlobalString(
+        groupDim?.facetRow,
+        globalDim.facetRow,
+    );
+    const facetCol = groupOrGlobalString(
+        groupDim?.facetCol,
+        globalDim.facetCol,
+    );
     const colWrap = groupDim?.colWrap ?? globalDim.colWrap;
     const plotX = groupOrGlobalString(groupDim?.plotX, globalDim.plotX);
     const plotY = groupOrGlobalString(groupDim?.plotY, globalDim.plotY);
