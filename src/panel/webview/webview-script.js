@@ -728,10 +728,11 @@ function displayDataInfo(data, filePath, extensionConfig) {
     ) {
         // Display dimensions, coordinates, and variables for each group (with optional Group Plot Controls)
         groupInfoContainer.innerHTML = groups
-            .map((groupName) =>
+            .map((groupName, index) =>
                 renderGroup(data, groupName, {
                     groupTimeControls,
                     groupDimensionSlices,
+                    isFirstRootGroup: index === 0,
                 }),
             )
             .join('');
@@ -1043,9 +1044,10 @@ function renderGroupPlotControls(data, groupName, flags) {
         return '';
     }
 
+    const isFirstRootGroup = (flags && flags.isFirstRootGroup) === true;
     return `
                 <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
-                    <details class=""> <summary><h4>Group Plot Controls</h4></summary>
+                    <details class=""${isFirstRootGroup ? ' open' : ''}> <summary><h4>Group Plot Controls</h4></summary>
                         <div class="group-plot-controls-content">
                             ${timeControlsHtml}
                             ${dimensionSlicesHtml}
