@@ -39,6 +39,13 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files Modified**:
     - src/python/PythonManager.ts - In `executePythonFileUnchecked()`, log `🐍 📜 Full command (copy-paste): <pythonPath> <scriptPath> <args...>` on one line
 
+### Fixed
+
+- **Issue #125**: File path bug when path contains spaces
+  - **Problem**: Opening a supported file (e.g. NetCDF) from a path with spaces caused the extension to pass literal double quotes to get_data_info.py. Python then saw the file extension as `.nc"` instead of `.nc`, leading to "Missing dependencies for Unknown files".
+  - **Solution**: Stopped wrapping file paths and other arguments in quotes when calling the Python script. The extension uses `child_process.spawn` with `shell: false`, so arguments are passed as an array and the OS handles spaces; adding quotes made the quote characters part of the path string.
+  - **Files Modified**: src/python/DataProcessor.ts - removed quoteIfNeeded() for filePath, scriptPath, and all plot/option arguments passed to get_data_info.py
+
 ## [0.8.2] - 2026-03-05
 
 ### Added

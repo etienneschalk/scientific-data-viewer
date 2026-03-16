@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
-import { quoteIfNeeded } from '../common/utils';
 import {
     getMatplotlibStyle,
     getSmallVariableBytes,
@@ -43,9 +42,10 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = quoteIfNeeded(uri.fsPath);
-        const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py',
         );
 
         try {
@@ -112,48 +112,39 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = quoteIfNeeded(uri.fsPath);
-        const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py',
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
         const style = getMatplotlibStyle();
 
         // Use the new merged CLI with 'plot' mode and style parameter
-        const args = [
-            'plot',
-            filePath,
-            quoteIfNeeded(variable),
-            plotType,
-            '--style',
-            quoteIfNeeded(style),
-        ];
+        const args = ['plot', filePath, variable, plotType, '--style', style];
 
         if (convertBandsToVariables) {
             args.push('--convert-bands-to-variables');
         }
 
         if (datetimeVariableName && datetimeVariableName.trim() !== '') {
-            args.push(
-                '--datetime-variable',
-                quoteIfNeeded(datetimeVariableName),
-            );
+            args.push('--datetime-variable', datetimeVariableName);
         }
         if (startDatetime && startDatetime.trim() !== '') {
-            args.push('--start-datetime', quoteIfNeeded(startDatetime));
+            args.push('--start-datetime', startDatetime);
         }
         if (endDatetime && endDatetime.trim() !== '') {
-            args.push('--end-datetime', quoteIfNeeded(endDatetime));
+            args.push('--end-datetime', endDatetime);
         }
         if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
             args.push('--dimension-slices', JSON.stringify(dimensionSlices));
         }
         if (facetRow && facetRow.trim() !== '') {
-            args.push('--facet-row', quoteIfNeeded(facetRow));
+            args.push('--facet-row', facetRow);
         }
         if (facetCol && facetCol.trim() !== '') {
-            args.push('--facet-col', quoteIfNeeded(facetCol));
+            args.push('--facet-col', facetCol);
         }
         if (
             colWrap !== null &&
@@ -164,13 +155,13 @@ export class DataProcessor {
             args.push('--col-wrap', String(colWrap));
         }
         if (plotX && plotX.trim() !== '') {
-            args.push('--plot-x', quoteIfNeeded(plotX));
+            args.push('--plot-x', plotX);
         }
         if (plotY && plotY.trim() !== '') {
-            args.push('--plot-y', quoteIfNeeded(plotY));
+            args.push('--plot-y', plotY);
         }
         if (plotHue && plotHue.trim() !== '') {
-            args.push('--plot-hue', quoteIfNeeded(plotHue));
+            args.push('--plot-hue', plotHue);
         }
         if (xincrease !== undefined) {
             args.push('--xincrease', xincrease ? 'true' : 'false');
@@ -188,7 +179,7 @@ export class DataProcessor {
             args.push('--robust');
         }
         if (cmap && cmap.trim() !== '') {
-            args.push('--cmap', quoteIfNeeded(cmap.trim()));
+            args.push('--cmap', cmap.trim());
         }
         if (
             bins !== null &&

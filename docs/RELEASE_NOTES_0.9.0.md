@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.9.0 Release Notes
 
-**TL;DR** — **Dimension Slices**: subset any dimension by index/slice (e.g. `0:24:2`) and facet row/col before plotting; applies as xarray `isel()`. **Small variables** show actual values in the UI. **Global + Group Plot Controls**: dimensions merged from all groups; per-group overrides (group wins when set). **Time Controls** (datetime start/end) are **off by default**; use Dimension Slices for time. Full command line is logged for copy-paste.
+**TL;DR** — **Dimension Slices**: subset any dimension by index/slice (e.g. `0:24:2`) and facet row/col before plotting; applies as xarray `isel()`. **Small variables** show actual values in the UI. **Global + Group Plot Controls**: dimensions merged from all groups; per-group overrides (group wins when set). **Time Controls** (datetime start/end) are **off by default**; use Dimension Slices for time. Full command line is logged for copy-paste. **Issue #125**: Paths with spaces no longer break file opening.
 
 ## Time Controls off by default — use Dimension Slices instead
 
@@ -85,4 +85,8 @@ When the extension runs a Python script (e.g. package availability check or data
 
 ### Upgrading
 
-After updating to 0.9.0, **Global Time Controls** and **Group Time Controls** are off by default—use **Dimension Slices** to subset time and other dimensions (e.g. `0:24:2`). You can re-enable Time Controls in settings if you prefer the datetime start/end UI. Dimension Slices and small variable/coordinate values are shown when a file is loaded; for multi-group datasets, dimensions merge across groups and each group has an optional Group Plot Controls section. Use the four settings to enable or disable each block.
+After updating to 0.9.0, **Global Time Controls** and **Group Time Controls** are off by default—use **Dimension Slices** to subset time and other dimensions (e.g. `0:24:2`). You can re-enable Time Controls in settings if you prefer the datetime start/end UI. Dimension Slices and small variable/coordinate values are shown when a file is loaded; for multi-group datasets, dimensions merge across groups and each group has an optional Group Plot Controls section. Use the four settings to enable or disable each block. Files in paths containing spaces now open correctly (Issue #125).
+
+## File paths with spaces (Issue #125)
+
+Opening a supported file (e.g. NetCDF) from a path that contains spaces (e.g. `My Data/file.nc`) previously failed with "Missing dependencies for Unknown files" or a UIError. The extension was wrapping paths in double quotes before passing them to the Python script. Because the extension runs Python with `spawn(..., { shell: false })`, arguments are passed as an array and the OS handles spaces; the extra quotes became part of the path string, so Python saw the extension as `.nc"` instead of `.nc`. This is fixed: paths and other arguments are now passed without shell-style quoting, so files in paths with spaces open and plot correctly.
