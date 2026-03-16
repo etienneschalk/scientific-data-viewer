@@ -843,6 +843,7 @@ function renderGroup(data, groupName, flags) {
             ? renderGroupPlotControls(data, groupName, {
                   groupTimeControls,
                   groupDimensionSlices,
+                  isFirstRootGroup: (flags && flags.isFirstRootGroup) === true,
               })
             : '';
 
