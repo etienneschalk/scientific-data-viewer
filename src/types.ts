@@ -29,6 +29,14 @@ export interface CreatePlotPythonResponse {
 export interface CreatePlotResult {
     plot_data: string;
     format_info: DataInfoFormatInfo;
+    /** Final applied isel kwargs (dimension slices); values are int or string for slice */
+    applied_isel_kwargs?: Record<string, number | string>;
+    /** Final applied plot kwargs (row, col, xincrease, etc.) */
+    applied_plot_kwargs?: Record<string, unknown>;
+    /** Matplotlib style used for the plot */
+    matplotlib_style?: string;
+    /** Variable path that was plotted (e.g. '/temperature') */
+    variable_path?: string;
 }
 
 export interface CreatePlotError {
@@ -53,6 +61,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     variables_flattened: {
@@ -63,6 +72,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
@@ -115,6 +125,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     variables_flattened: {
@@ -125,6 +136,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            display_value?: string;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };

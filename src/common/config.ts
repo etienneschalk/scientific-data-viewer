@@ -41,6 +41,12 @@ const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
+const GLOBAL_TIME_CONTROLS = 'globalTimeControls';
+const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
+const GROUP_TIME_CONTROLS = 'groupTimeControls';
+const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
+const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
+const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -51,6 +57,14 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
+// Time controls off by default: Dimension Slices (isel) is data-agnostic and easier to maintain;
+// a future sel (label-based) feature could cover datetime and other coords uniformly.
+const DEFAULT_GLOBAL_TIME_CONTROLS = false;
+const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
+const DEFAULT_GROUP_TIME_CONTROLS = false;
+const DEFAULT_GROUP_DIMENSION_SLICES = true;
+const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
+const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -122,6 +136,48 @@ export function getConvertBandsToVariables(): boolean {
     return getWorkspaceConfig().get<boolean>(
         CONVERT_BANDS_TO_VARIABLES,
         DEFAULT_CONVERT_BANDS_TO_VARIABLES,
+    );
+}
+
+export function getGlobalTimeControls(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GLOBAL_TIME_CONTROLS,
+        DEFAULT_GLOBAL_TIME_CONTROLS,
+    );
+}
+
+export function getGlobalDimensionSlices(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GLOBAL_DIMENSION_SLICES,
+        DEFAULT_GLOBAL_DIMENSION_SLICES,
+    );
+}
+
+export function getGroupTimeControls(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GROUP_TIME_CONTROLS,
+        DEFAULT_GROUP_TIME_CONTROLS,
+    );
+}
+
+export function getGroupDimensionSlices(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        GROUP_DIMENSION_SLICES,
+        DEFAULT_GROUP_DIMENSION_SLICES,
+    );
+}
+
+export function getSmallVariableBytes(): number {
+    return getWorkspaceConfig().get<number>(
+        SMALL_VARIABLE_BYTES,
+        DEFAULT_SMALL_VARIABLE_BYTES,
+    );
+}
+
+export function getSmallValueDisplayMaxLen(): number {
+    return getWorkspaceConfig().get<number>(
+        SMALL_VALUE_DISPLAY_MAX_LEN,
+        DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     );
 }
 

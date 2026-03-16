@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.8.2** • [Release Notes](./docs/RELEASE_NOTES_0.8.2.md)
+**Current Version: v0.9.0** • [Release Notes](./docs/RELEASE_NOTES_0.9.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -220,6 +220,31 @@ The data viewer editor shows:
     - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
   - **Attributes**: Show group's attributes.
 
+### 📐 Dimension Slices
+
+Dimension Slices let you subset data by dimension index or slice before plotting. They are available in **Global Plot Controls** (dimensions merged from all groups) and, when enabled, in each group’s **Group Plot Controls**.
+
+- **Where to find it**: In the plot controls area, look for the **Dimension Slices** section. Each dimension of the dataset (or group) has a text input.
+- **Slice syntax** (Python-style):
+  - **Single index**: `130` — use one position along that dimension.
+  - **Range**: `100:120` — from index 100 up to (but not including) 120.
+  - **Range with step**: `0:24:2` — from 0 to 24 in steps of 2 (e.g. every other time step).
+- Slices are applied as xarray’s `isel()` before plotting. Invalid slice strings produce a clear error.
+- **Facet row / Facet col**: Use the dropdowns in the same section to choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels).
+- **col_wrap**: Optional positive integer (next to facet row/col) to limit the number of columns in the faceted grid (xarray `col_wrap` kwarg).
+- **x, y, hue**: Optional plot kwargs (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)): choose a dimension or coordinate for the **x**-axis, **y**-axis, or **hue** (e.g. multiple lines). Same dropdown options as facet row/col.
+- **x increase / y increase**: Checkboxes to control axes direction (xarray `xincrease`/`yincrease`; uncheck to reverse an axis).
+- **Aspect / Size**: Optional integer inputs for figure size (xarray: `figsize = (aspect * size, size)` in inches).
+- **Robust**: When checked, uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate the color scale (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)).
+- **Bins**: For histogram-style plots, you can set the number of bins in the Dimension Slices row.
+
+The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
+
+**Global vs. Group (inheritance)**
+The extension uses **inheritance** per field: for each plot parameter, the **group** value is used when set (non-empty), otherwise **global** is used. So the two can be mixed (e.g. group's dimension slices with global's facet row when the group left facet at "None"). Empty or "None" in group selectors (facet row/col, plot x/y/hue, cmap) falls back to global. **Only dimension slices are atomic**: they form one set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we do not merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; all other fields (facet row/col, plot x/y/hue, colWrap, aspect, size, robust, cmap, bins, checkboxes) inherit per field (group when set, else global).
+
+**Feature flags**: Four settings control whether each block is shown. **Global Dimension Slices** and **Group Dimension Slices** are **on by default**; **Global Time Controls** and **Group Time Controls** are **off by default** (use Dimension Slices for time instead, e.g. `0:24:2`). You can turn any block on or off in [Settings](#️-settings) under **Feature Flags**.
+
 ### 🎮 Available Commands
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
@@ -288,6 +313,12 @@ The extension can be configured through VSCode settings:
 - **`scientificDataViewer.matplotlibStyle`**
   - (type: `string`, default:`""` (empty string))
   - Matplotlib plot style for data visualizations. If empty, automatically detects VSCode theme and applies appropriate style (light theme → `default`, dark theme → `dark_background`). If set, overrides automatic detection. **Examples:** `default`, `dark_background`, `seaborn`, `ggplot`, or any valid matplotlib style name.
+- **`scientificDataViewer.smallVariableBytes`**
+  - (type: `number`, default: `1000`)
+  - Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI (scalar and small array display, [Issue #102](https://github.com/etienneschalk/scientific-data-viewer/issues/102)). Variables/coordinates at or below this size get a **display_value** in the variable/coordinate details. **If set to `0`, the whole small-value display feature (Issue #102) is disabled** and no variables/coordinates will show loaded values.
+- **`scientificDataViewer.smallValueDisplayMaxLen`**
+  - (type: `number`, default: `500`)
+  - Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with `"..."`. Only used when **`scientificDataViewer.smallVariableBytes`** is greater than 0.
 
 **🐍 Virtual Environment Settings**
 
@@ -313,6 +344,21 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.convertBandsToVariables`**
   - (type: `boolean`, default: `true`)
   - Convert bands of GeoTIFF rasters to variables for better readability. When enabled, multi-band GeoTIFF files (.tif, .tiff, .geotiff) will have their bands converted to separate variables instead of a single 3D DataArray. This improves plotting capabilities and data structure visualization by treating each band as an individual variable.
+
+**Plot controls (Global and Group)**
+
+- **`scientificDataViewer.globalTimeControls`**
+  - (type: `boolean`, default: `false`)
+  - Show **Global Time Controls** (datetime variable, start/end time) in the plot area. When off (default), use Dimension Slices to subset time (e.g. `0:24:2`).
+- **`scientificDataViewer.globalDimensionSlices`**
+  - (type: `boolean`, default: `true`)
+  - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) with dimensions merged from all groups.
+- **`scientificDataViewer.groupTimeControls`**
+  - (type: `boolean`, default: `false`)
+  - Show **Group Time Controls** per group (datetime, start/end) in each group’s Plot Controls section.
+- **`scientificDataViewer.groupDimensionSlices`**
+  - (type: `boolean`, default: `true`)
+  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
 
 ## 🔧 Troubleshooting
 
@@ -384,77 +430,159 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ```
 scientific-data-viewer/
-├── src/                          # TypeScript source code
-│   ├── extension.ts              # Main extension entry point and command registration
-│   ├── dataProcessor.ts          # Python integration and data processing
-│   ├── dataViewerPanel.ts        # Webview panel for data visualization
-│   ├── pythonManager.ts          # Advanced Python environment management
-│   ├── logger.ts                 # Comprehensive logging utilities
-│   ├── communication/            # Message passing system
-│   │   ├── MessageBus.ts         # Message bus for communication
-│   │   └── MessageTypes.ts       # Type definitions for messages
-│   ├── error/                    # Error handling
-│   │   └── ErrorBoundary.ts      # Error boundary component
-│   ├── state/                    # Application state management
-│   │   └── AppState.ts           # Global application state
-│   ├── events/                   # Event handling (empty)
-│   └── ui/                       # User interface components
-│       ├── CSSGenerator.ts       # CSS generation utilities
-│       ├── HTMLGenerator.ts      # HTML generation utilities
-│       ├── JavaScriptGenerator.ts # JavaScript generation utilities
-│       ├── UIController.ts       # UI controller logic
-│       └── webview/              # Webview assets
-│           ├── styles.css        # Webview styles
-│           └── webview-script.js # Webview JavaScript
-├── python/                       # Python scripts for data processing
-│   ├── get_data_info.py          # Extract file metadata and variable info
-│   ├── create_sample_data.py     # Generate sample data files
-│   └── tests.ipynb              # Jupyter notebook for testing
-├── test/                         # Test files
-│   ├── runTest.ts               # Test runner
-│   └── suite/                   # Test suites
-├── sample-data/                  # Sample data files for testing
-│   ├── sample_data.nc           # NetCDF sample file
-│   ├── sample_data.h5           # HDF5 sample file
-│   ├── sample_data.grib         # GRIB sample file
-│   ├── sample_data.jp2          # JPEG2000 sample file
-│   ├── sample_data.tif          # GeoTIFF sample file
-│   ├── sample_data.zarr/        # Zarr sample datasets
-│   │   ├── sample_zarr_arborescence.zarr/
-│   │   ├── sample_zarr_inherited_coords.zarr/
-│   │   ├── sample_zarr_nested_groups_from_datatree.zarr/
-│   │   ├── sample_zarr_nested_groups_from_zarr.zarr/
-│   │   └── sample_zarr_single_group_from_dataset.zarr/
-│   ├── broken_file.*            # Test files for error handling
-│   └── sdv-plots/               # Generated plot outputs
-├── docs/                         # Documentation
-│   ├── ARCHITECTURE_IMPROVEMENTS.md
-│   ├── DEVELOPMENT.md            # Development guide
-│   ├── PUBLISHING.md             # Publishing guide
-│   ├── QUICKSTART.md             # Quick start guide
-│   ├── TECHNICAL_ARCHITECTURE.md # Technical architecture docs
-│   ├── test-extension.md         # Extension testing guide
-│   └── rfc/                      # Request for Comments
-│       ├── README.md
-│       └── 001-033-*.md         # RFC documents
-├── media/                        # Media assets
-│   ├── icon.png                 # Extension icon
-│   ├── icon.svg                 # SVG icon
-│   ├── icon_orig.svg            # Original icon
-│   └── Screenshot*.png          # Screenshots
-├── out/                          # Compiled JavaScript output
-│   ├── src/                     # Compiled TypeScript
-│   └── test/                    # Compiled tests
-├── node_modules/                 # Node.js dependencies
-├── package.json                  # Extension manifest and dependencies
-├── package-lock.json            # Dependency lock file
-├── tsconfig.json                # TypeScript configuration
-├── .eslintrc.json               # ESLint configuration
-├── language-configuration.json  # Language configuration
-├── scientific-data-viewer-0.3.0.vsix # Packaged extension
-├── test-publication-readiness.js # Publication readiness test
-├── setup.sh                     # Setup script
-├── README.md                    # Main documentation
-├── CONTRIBUTING.md              # Contribution guidelines
-└── CHANGELOG.md                 # Version history
+├── src/                                    # TypeScript source code
+│   ├── extension.ts                        # Main extension entry point and command registration
+│   ├── ScientificDataEditorProvider.ts     # Custom editor provider for supported file types
+│   ├── DataViewerPanel.ts                  # Webview panel for data visualization and lifecycle
+│   ├── StatusBarItem.ts                    # Status bar item (Python interpreter status)
+│   ├── types.ts                            # Shared TypeScript types (responses, config, etc.)
+│   ├── package-types.ts                    # Package manifest / dependency type definitions
+│   ├── common/                             # Shared utilities, config, and error handling
+│   │   ├── config.ts                       # Extension configuration (settings, feature flags)
+│   │   ├── Logger.ts                       # Logging utilities (extension output channel)
+│   │   ├── utils.ts                        # General helpers (e.g. quoteIfNeeded, formatConfigValue)
+│   │   ├── vscodeutils.ts                  # VSCode API helpers (show message, open settings)
+│   │   ├── HealthcheckManager.ts           # Health check and package availability coordination
+│   │   └── ErrorBoundary.ts                # Error boundary for graceful error handling
+│   ├── panel/                              # Webview panel UI, theme, and message passing
+│   │   ├── HTMLGenerator.ts                # HTML generation for data viewer content (groups, variables, plot controls)
+│   │   ├── UIController.ts                  # UI controller: handles messages, plot requests, export
+│   │   ├── ThemeManager.ts                  # Theme detection and webview styling (light/dark)
+│   │   ├── JavaScriptGenerator.ts          # Inline script generation for webview bootstrap
+│   │   ├── CSSGenerator.ts                 # CSS generation for webview (e.g. dimension slices)
+│   │   ├── communication/                  # Message passing between webview and extension
+│   │   │   ├── MessageBus.ts               # Message bus for postMessage / onDidReceiveMessage
+│   │   │   └── MessageTypes.ts              # Type definitions for request/response messages
+│   │   ├── state/                          # Panel-level application state
+│   │   │   └── AppState.ts                  # Global application state (data, loading, errors)
+│   │   └── webview/                         # Webview static assets (bundled into extension)
+│   │       ├── styles.css                  # Webview styles (layout, variables, plot controls)
+│   │       └── webview-script.js           # Webview client script (tree, plots, export, copy)
+│   ├── python/                             # Python environment and data processing
+│   │   ├── DataProcessor.ts                # Calls get_data_info.py for info and plot; builds CLI args
+│   │   ├── PythonManager.ts                # Python interpreter resolution, spawn, package check, venv
+│   │   ├── ExtensionVirtualEnvironmentManager.ts    # uv-based extension-owned venv (create, update, delete)
+│   │   ├── ExtensionVirtualEnvironmentManagerUI.ts  # UI commands for managing extension venv
+│   │   └── officialPythonExtensionApiUtils.ts       # Integration with official Python extension API
+│   └── outline/                            # Outline / tree view in sidebar
+│       ├── OutlineProvider.ts              # Outline tree data provider (file structure)
+│       └── HeaderExtractor.ts              # Extracts headers/sections for outline from viewer content
+├── python/                                 # Python scripts run by the extension (subprocess)
+│   ├── get_data_info.py                    # CLI: info (metadata, variables, coords) and plot (matplotlib)
+│   ├── check_package_availability.py       # Package availability check (xarray, matplotlib, etc.)
+│   ├── create_sample_data.py              # Generate sample data files (NetCDF, Zarr, GeoTIFF, etc.)
+│   ├── test_datetime_edge_cases.py        # Pytest: datetime parsing and filtering edge cases
+│   ├── test_dimension_slices_and_small_value.py   # Pytest: dimension slices and small value display
+│   ├── tests.ipynb                        # Jupyter notebook for manual testing
+│   ├── issue_104_cdf_file.ipynb           # Notebook for CDF-related testing
+│   └── remote_dataset.ipynb               # Notebook for remote dataset experiments
+├── test/                                   # Extension tests (Mocha + VS Code test runner)
+│   ├── runTest.ts                          # Test runner entry (launch VS Code with extension, run suite)
+│   └── suite/                              # Test suites
+│       ├── index.ts                        # Suite registration and exports
+│       ├── extension.test.ts               # Extension activation and commands
+│       ├── integration.test.ts             # Integration tests (e.g. open file, get data)
+│       ├── dataViewerPanel.test.ts         # DataViewerPanel tests
+│       ├── dataProcessor.test.ts           # DataProcessor tests
+│       ├── pythonManager.test.ts           # PythonManager tests
+│       ├── logger.test.ts                   # Logger tests
+│       ├── config.test.ts                  # Config tests
+│       ├── datetimeEdgeCases.test.ts       # Datetime edge case tests
+│       ├── communication/                  # Message bus and types tests
+│       │   └── MessageBus.test.ts
+│       ├── error/                          # Error boundary tests
+│       │   └── ErrorBoundary.test.ts
+│       ├── state/                           # App state tests
+│       │   └── AppState.test.ts
+│       ├── outline/                         # Outline provider tests
+│       │   ├── OutlineProvider.test.ts
+│       │   └── HeaderExtractor.test.ts
+│       └── ui/                              # UI generator tests
+│           ├── HTMLGenerator.test.ts
+│           ├── UIController.test.ts
+│           └── CSSGenerator.test.ts
+├── sample-data/                            # Sample data files for development and testing
+│   ├── sample_data.nc                      # NetCDF sample (large; used for many tests)
+│   ├── sample_data.h5                      # HDF5 sample
+│   ├── sample_data.grib                    # GRIB sample
+│   ├── sample_data.grib2                   # GRIB2 sample
+│   ├── sample_data.tif                     # GeoTIFF sample
+│   ├── sample_data.jp2                     # JPEG-2000 sample
+│   ├── sample_data.cdf                     # NASA CDF sample
+│   ├── sample_data.nc4                     # NetCDF-4 sample
+│   ├── sample_data.netcdf                  # NetCDF (alternate extension)
+│   ├── sample_data.hdf5                    # HDF5 (alternate extension)
+│   ├── sample_data.tiff                    # GeoTIFF (alternate extension)
+│   ├── sample_data.geotiff                 # GeoTIFF (alternate extension)
+│   ├── sample_data.jpeg2000                # JPEG-2000 (alternate extension)
+│   ├── sample_data_multiple_groups.nc      # NetCDF with multiple groups
+│   ├── sample_data_many_vars.nc            # NetCDF with many variables
+│   ├── sample_data_no_attributes.nc        # NetCDF without attributes
+│   ├── sample_data_long_variable_names.nc  # NetCDF with long variable names
+│   ├── sample_data_complex_long_names.nc   # NetCDF with complex long names
+│   ├── sample_data_many_encoding.nc        # NetCDF with various encodings
+│   ├── sample_large_4d_data.nc             # Large 4D NetCDF
+│   ├── sample_multiband.tif               # Multi-band GeoTIFF
+│   ├── sample data with spaces.nc          # NetCDF in path with spaces (Issue #125)
+│   ├── broken_file.nc                      # Broken/corrupt files for error handling tests
+│   ├── broken_file.h5
+│   ├── broken_file.grib
+│   ├── broken_file.jp2
+│   ├── broken_file.tif
+│   ├── broken_file.zarr/
+│   ├── broken_file.safe/                    # (e.g. Sentinel SAFE placeholder)
+│   ├── sample_zarr_arborescence.zarr/      # Zarr with tree (root/ocean, land, etc.)
+│   ├── sample_zarr_inherited_coords.zarr/   # Zarr with inherited coordinates
+│   ├── sample_zarr_nested_groups_from_datatree.zarr/
+│   ├── sample_zarr_nested_groups_from_zarr.zarr/
+│   ├── sample_zarr_single_group_from_dataset.zarr/
+│   ├── disposable/                          # Disposable test files (e.g. disposable_file_00.nc, .zarr)
+│   ├── nested/                             # Nested sample (e.g. sample_data.tif)
+│   ├── temporal-datasets/                  # Temporal dataset samples
+│   └── sdv-plots/                          # Generated plot outputs (from extension)
+├── docs/                                   # Documentation
+│   ├── DEVELOPMENT.md                      # Development guide (setup, build, test)
+│   ├── PUBLISHING.md                       # Publishing guide (marketplace, Open VSX)
+│   ├── QUICKSTART.md                       # Quick start guide
+│   ├── TECHNICAL_ARCHITECTURE.md            # Technical architecture
+│   ├── ARCHITECTURE_IMPROVEMENTS.md        # Architecture improvement notes
+│   ├── test-extension.md                   # Extension testing guide
+│   ├── PRE_COMMIT_SETUP.md                 # Pre-commit hooks setup
+│   ├── GITHUB_ACTIONS_SETUP.md             # CI / GitHub Actions setup
+│   ├── WEBVIEW_EXPORT_CONTENT.md           # Webview export (HTML report) documentation
+│   ├── IMPLEMENTATION_PROPOSAL_ISSUE_106.md # Implementation proposals
+│   ├── RELEASE_NOTES_0.3.0.md … 0.9.0.md   # Release notes per version
+│   ├── RELEASE_CHECKLIST_0.7.0.md          # Release checklist example
+│   └── PR_SUMMARY_*.md                     # Pull request summaries
+├── media/                                  # Media assets
+│   ├── icon.png                            # Extension icon (PNG)
+│   ├── icon.svg                            # Extension icon (SVG)
+│   ├── icon_dark_bg.svg                    # Icon variant (dark background)
+│   ├── icon_viridis_bold_monochromatic.svg # Icon variant (viridis, monochrome)
+│   └── screenshots/                        # Screenshots for README / marketplace
+│       ├── light-tif-plot-0.3.0.png
+│       ├── dark-tif-plot-0.3.0.png
+│       ├── light-tif-plot-opened-0.3.0.png
+│       ├── light-nc-xarray-html-and-text-repr-0.3.0.png
+│       └── light-zarr-tree-view-focus-on-variable-0.3.0.png
+├── notebooks/                              # Jupyter notebooks (e.g. issue exploration)
+│   └── issue-0117-select-and-slice-before-plotting.ipynb
+├── out/                                    # Compiled JavaScript output (tsc; do not commit)
+│   ├── src/                                # Compiled TypeScript
+│   └── test/                               # Compiled tests
+├── node_modules/                           # Node.js dependencies (npm install)
+├── package.json                            # Extension manifest, scripts, dependencies
+├── package-lock.json                       # Dependency lock file
+├── tsconfig.json                           # TypeScript configuration
+├── tsconfig.pre-commit.json                 # TypeScript config for pre-commit (e.g. type check)
+├── pyproject.toml                         # Python project config (ruff, pytest)
+├── .eslintrc.js                            # ESLint configuration
+├── ensure.sh                               # Environment / dependency ensure script
+├── setup.sh                                # Setup script
+├── publish.sh                              # Publishing script
+├── test-publication-readiness.js            # Publication readiness test (optional)
+├── README.md                               # This file
+├── CONTRIBUTING.md                         # Contribution guidelines
+├── CHANGELOG.md                            # Version history
+└── LICENSE                                 # MIT License
 ```

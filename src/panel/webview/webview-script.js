@@ -171,6 +171,20 @@ class WebviewMessageBus {
         datetimeVariableName,
         startDatetime,
         endDatetime,
+        dimensionSlices,
+        facetRow,
+        facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
+        bins,
         timeout = 15000,
     ) {
         // Generate a unique operation ID for this plot request
@@ -191,6 +205,68 @@ class WebviewMessageBus {
         }
         if (endDatetime !== null && endDatetime !== '') {
             payload.endDatetime = endDatetime;
+        }
+        if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
+            payload.dimensionSlices = dimensionSlices;
+        }
+        if (facetRow !== null && facetRow !== undefined && facetRow !== '') {
+            payload.facetRow = facetRow;
+        }
+        if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
+            payload.facetCol = facetCol;
+        }
+        if (
+            colWrap !== null &&
+            colWrap !== undefined &&
+            Number.isInteger(colWrap) &&
+            colWrap >= 1
+        ) {
+            payload.colWrap = colWrap;
+        }
+        if (plotX !== null && plotX !== undefined && plotX !== '') {
+            payload.plotX = plotX;
+        }
+        if (plotY !== null && plotY !== undefined && plotY !== '') {
+            payload.plotY = plotY;
+        }
+        if (plotHue !== null && plotHue !== undefined && plotHue !== '') {
+            payload.plotHue = plotHue;
+        }
+        if (xincrease !== null && xincrease !== undefined) {
+            payload.xincrease = xincrease;
+        }
+        if (yincrease !== null && yincrease !== undefined) {
+            payload.yincrease = yincrease;
+        }
+        if (
+            aspect !== null &&
+            aspect !== undefined &&
+            Number.isFinite(aspect) &&
+            aspect > 0
+        ) {
+            payload.aspect = aspect;
+        }
+        if (
+            size !== null &&
+            size !== undefined &&
+            Number.isFinite(size) &&
+            size > 0
+        ) {
+            payload.size = size;
+        }
+        if (robust === true) {
+            payload.robust = true;
+        }
+        if (cmap !== null && cmap !== undefined && cmap !== '') {
+            payload.cmap = cmap;
+        }
+        if (
+            bins !== null &&
+            bins !== undefined &&
+            Number.isInteger(bins) &&
+            bins >= 1
+        ) {
+            payload.bins = bins;
         }
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
@@ -567,7 +643,11 @@ function setupMessageHandlers() {
 }
 
 function displayAll(state) {
-    displayDataInfo(state.data.dataInfo, state.data.currentFile);
+    displayDataInfo(
+        state.data.dataInfo,
+        state.data.currentFile,
+        state.extension.extensionConfig,
+    );
     displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
     displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
     displayHtmlRepresentation(
@@ -602,7 +682,7 @@ function displayTimestamp(isoString, isLoading = false) {
 }
 
 // Display functions
-function displayDataInfo(data, filePath) {
+function displayDataInfo(data, filePath, extensionConfig) {
     if (!data) {
         displayGlobalError('No data available');
         return;
@@ -612,6 +692,13 @@ function displayDataInfo(data, filePath) {
         displayGlobalError(data.error);
         return;
     }
+
+    // Feature flags (default true when config not available)
+    const config = extensionConfig || {};
+    const globalTimeControls = config.globalTimeControls !== false;
+    const globalDimensionSlices = config.globalDimensionSlices !== false;
+    const groupTimeControls = config.groupTimeControls !== false;
+    const groupDimensionSlices = config.groupDimensionSlices !== false;
 
     // Store current file path for plot operations
     globalState.currentDatasetFilePath = filePath;
@@ -639,9 +726,15 @@ function displayDataInfo(data, filePath) {
         data.coordinates_flattened &&
         data.variables_flattened
     ) {
-        // Display dimensions, coordinates, and variables for each group
+        // Display dimensions, coordinates, and variables for each group (with optional Group Plot Controls)
         groupInfoContainer.innerHTML = groups
-            .map((groupName) => renderGroup(data, groupName))
+            .map((groupName, index) =>
+                renderGroup(data, groupName, {
+                    groupTimeControls,
+                    groupDimensionSlices,
+                    isFirstRootGroup: index === 0,
+                }),
+            )
             .join('');
         // Open the first group by default
         groupInfoContainer
@@ -662,12 +755,17 @@ function displayDataInfo(data, filePath) {
                 }
             });
         });
+
+        setupGroupPlotControlsListeners();
     } else {
         contentContainer.innerHTML = '<p>No data available</p>';
     }
 
-    // Populate datetime variables
-    populateDatetimeVariables(data);
+    // Populate datetime variables (respects globalTimeControls flag)
+    populateDatetimeVariables(data, { globalTimeControls });
+
+    // Populate dimension slices (respects globalDimensionSlices flag, merges all groups)
+    populateDimensionSlices(data, { globalDimensionSlices });
 
     // Show content
     document.getElementById('loading').classList.add('hidden');
@@ -703,7 +801,11 @@ function renderFileInformation(data) {
     return formatInfo;
 }
 
-function renderGroup(data, groupName) {
+function renderGroup(data, groupName, flags) {
+    const groupTimeControls = (flags && flags.groupTimeControls) !== false;
+    const groupDimensionSlices =
+        (flags && flags.groupDimensionSlices) !== false;
+
     // Add dimensions for group
     const dimensions = data.dimensions_flattened[groupName];
     const dimensionsHtml =
@@ -736,9 +838,19 @@ function renderGroup(data, groupName) {
                   .join('')
             : /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
 
+    const groupPlotControlsHtml =
+        groupTimeControls || groupDimensionSlices
+            ? renderGroupPlotControls(data, groupName, {
+                  groupTimeControls,
+                  groupDimensionSlices,
+                  isFirstRootGroup: (flags && flags.isFirstRootGroup) === true,
+              })
+            : '';
+
     return /*html*/ `
         <div class="info-section" id="${joinId(['data-group', groupName])}">
             <details class="sticky-group-details"> <summary><h3>Group: ${groupName}</h3></summary>
+                ${groupPlotControlsHtml}
                 <div class="info-section" id="${joinId([
                     'data-group',
                     groupName,
@@ -783,9 +895,166 @@ function renderGroup(data, groupName) {
                         </div>
                     </details>
                 </div>
-            </div>
-        </details>
+            </details>
+        </div>
         `;
+}
+
+function renderGroupPlotControls(data, groupName, flags) {
+    const safeId = joinId(['group-plot', groupName]);
+    const groupDateTimeVars = data.datetime_variables
+        ? data.datetime_variables[groupName]
+        : null;
+    const groupDims = data.dimensions_flattened
+        ? data.dimensions_flattened[groupName]
+        : null;
+
+    // Dedupe datetime vars by name, sort (same as global)
+    const byName = new Map();
+    if (groupDateTimeVars) {
+        for (const varInfo of groupDateTimeVars) {
+            const varName =
+                typeof varInfo === 'string' ? varInfo : varInfo.name;
+            const fullPath =
+                groupName === '/' ? varName : `${groupName}/${varName}`;
+            if (!byName.has(varName)) {
+                byName.set(varName, { name: varName, fullPath });
+            }
+        }
+    }
+    const sortedTimeVars = [...byName.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+    );
+
+    const dimNames =
+        groupDims && Object.keys(groupDims).length > 0
+            ? Object.keys(groupDims).sort()
+            : [];
+
+    const timeControlsHtml =
+        flags.groupTimeControls && sortedTimeVars.length > 0
+            ? `
+                <div class="group-plot-controls time-controls-section">
+                    <h4>Group Time Controls</h4>
+                    <div class="time-controls-row">
+                        <label for="group-datetime-select-${safeId}">Datetime variable:</label>
+                        <select id="group-datetime-select-${safeId}" class="datetime-variable-select group-datetime-select" data-group="${escapeHtml(groupName)}">
+                            <option value="">Select...</option>
+                            ${sortedTimeVars.map((v) => `<option value="${escapeHtml(v.fullPath)}">${escapeHtml(v.name)}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="time-controls-row">
+                        <label for="group-start-datetime-${safeId}">Start:</label>
+                        <input type="datetime-local" id="group-start-datetime-${safeId}" class="datetime-input group-datetime-input" data-group="${escapeHtml(groupName)}" />
+                        <input type="text" id="group-start-datetime-text-${safeId}" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" data-group="${escapeHtml(groupName)}" />
+                    </div>
+                    <div class="time-controls-row">
+                        <label for="group-end-datetime-${safeId}">End:</label>
+                        <input type="datetime-local" id="group-end-datetime-${safeId}" class="datetime-input group-datetime-input" data-group="${escapeHtml(groupName)}" />
+                        <input type="text" id="group-end-datetime-text-${safeId}" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" data-group="${escapeHtml(groupName)}" />
+                    </div>
+                    <div class="time-controls-row">
+                        <button type="button" class="plot-control-button group-clear-time-btn" data-group="${escapeHtml(groupName)}">Clear Time</button>
+                    </div>
+                </div>`
+            : '';
+
+    const dimensionSlicesHtml =
+        flags.groupDimensionSlices && dimNames.length > 0
+            ? `
+                <div class="group-plot-controls dimension-slices-section">
+                    <div class="plot-controls-subsection dimension-slices-isel">
+                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
+                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
+                        <div class="dimension-slices-container" data-group="${escapeHtml(groupName)}">
+                            ${dimNames
+                                .map(
+                                    (dimName) => `
+                                <div class="dimension-slice-row">
+                                    <label for="group-dim-${safeId}-${dimName}">${escapeHtml(dimName)} (${groupDims[dimName]}):</label>
+                                    <input type="text" id="group-dim-${safeId}-${dimName}" class="dimension-slice-input group-dimension-slice-input" data-group="${escapeHtml(groupName)}" data-dimension="${dimName}" placeholder="e.g. 0:24:2 or 130" />
+                                </div>`,
+                                )
+                                .join('')}
+                        </div>
+                    </div>
+                    <div class="plot-controls-subsection plot-parameters">
+                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
+                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                    <div class="dimension-slices-facets">
+                        <div class="dimension-slices-row">
+                            <label for="group-facet-row-${safeId}">row:</label>
+                            <select id="group-facet-row-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-facet-col-${safeId}">col:</label>
+                            <select id="group-facet-col-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-col-wrap-${safeId}">col_wrap:</label>
+                            <input type="number" id="group-plot-col-wrap-${safeId}" class="plot-col-wrap-input group-plot-col-wrap-input" min="1" placeholder="e.g. 4" data-group="${escapeHtml(groupName)}" title="xarray col_wrap" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-plot-x-${safeId}">x:</label>
+                            <select id="group-plot-x-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-y-${safeId}">y:</label>
+                            <select id="group-plot-y-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                            <label for="group-plot-hue-${safeId}">hue:</label>
+                            <select id="group-plot-hue-${safeId}" class="facet-select group-facet-select" data-group="${escapeHtml(groupName)}">
+                                <option value="">None</option>
+                                ${dimNames.map((d) => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-x-increase-${safeId}" class="plot-checkbox-label">xincrease:</label>
+                            <input type="checkbox" id="group-x-increase-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray xincrease" />
+                            <label for="group-y-increase-${safeId}" class="plot-checkbox-label">yincrease:</label>
+                            <input type="checkbox" id="group-y-increase-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray yincrease" />
+                            <label for="group-robust-${safeId}" class="plot-checkbox-label">robust:</label>
+                            <input type="checkbox" id="group-robust-${safeId}" class="plot-checkbox group-plot-checkbox" data-group="${escapeHtml(groupName)}" title="xarray robust" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-bins-${safeId}">bins:</label>
+                            <input type="number" id="group-bins-${safeId}" class="bins-input group-bins-input" min="1" placeholder="e.g. 100" data-group="${escapeHtml(groupName)}" title="Number of bins for histogram-style plots" />
+                            <label for="group-plot-aspect-${safeId}">aspect:</label>
+                            <input type="text" id="group-plot-aspect-${safeId}" class="plot-aspect-size-input group-plot-aspect-size-input" placeholder="e.g. 1 or 1.5" data-group="${escapeHtml(groupName)}" title="xarray aspect (float)" />
+                            <label for="group-plot-size-${safeId}">size:</label>
+                            <input type="text" id="group-plot-size-${safeId}" class="plot-aspect-size-input group-plot-aspect-size-input" placeholder="e.g. 4 or 5.5" data-group="${escapeHtml(groupName)}" title="xarray size (float)" />
+                        </div>
+                        <div class="dimension-slices-row">
+                            <label for="group-plot-cmap-${safeId}">cmap:</label>
+                            <input type="text" id="group-plot-cmap-${safeId}" class="plot-cmap-input group-plot-cmap-input" placeholder="e.g. viridis, plasma" data-group="${escapeHtml(groupName)}" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
+                        </div>
+                    </div>
+                    </div>
+                    <div class="time-controls-row">
+                        <button type="button" class="plot-control-button group-clear-dimension-slices-btn" data-group="${escapeHtml(groupName)}">Clear Dimension Slices and Plot Parameters</button>
+                    </div>
+                </div>`
+            : '';
+
+    if (!timeControlsHtml && !dimensionSlicesHtml) {
+        return '';
+    }
+
+    const isFirstRootGroup = (flags && flags.isFirstRootGroup) === true;
+    return `
+                <div class="info-section group-plot-controls-section" data-group="${escapeHtml(groupName)}" id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
+                    <details class=""${isFirstRootGroup ? ' open' : ''}> <summary><h4>Group Plot Controls</h4></summary>
+                        <div class="group-plot-controls-content">
+                            ${timeControlsHtml}
+                            ${dimensionSlicesHtml}
+                        </div>
+                    </details>
+                </div>`;
 }
 
 function renderGroupDimensions(dimensions, groupName) {
@@ -881,13 +1150,16 @@ function renderCoordinateVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'coordinate',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${variable.display_value ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>` : ''}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'coordinate',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
     `;
 }
@@ -916,6 +1188,9 @@ function renderDataVariable(variable, groupName) {
         variable.name
     }`;
     const plotControls = renderVariablePlotControls(fullVariableName);
+    const displayValueBlock = variable.display_value
+        ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>`
+        : '';
 
     return /*html*/ `
         <details class="variable-details" id="${varId}" data-variable="${fullVariableName}">
@@ -936,13 +1211,16 @@ function renderDataVariable(variable, groupName) {
                 </span>
                 ${sizeStr ? `<span class="size">${sizeStr}</span>` : ''}
             </summary>
-            <div id="${joinId([
-                'data-group',
-                groupName,
-                'variable',
-                variable.name,
-                'attributes',
-            ])}">${attributesContent}</div>
+            <div class="variable-details-content">
+                ${displayValueBlock}
+                <div id="${joinId([
+                    'data-group',
+                    groupName,
+                    'variable',
+                    variable.name,
+                    'attributes',
+                ])}">${attributesContent}</div>
+            </div>
         </details>
         ${plotControls}
     `;
@@ -1460,12 +1738,190 @@ const globalTimeControlsState = {
     datetimeVarsMap: new Map(), // Map fullPath -> {name, fullPath, group, min, max}
 };
 
-// Populate datetime variable select
-function populateDatetimeVariables(data) {
+function getVariableGroup(variable) {
+    if (!variable || typeof variable !== 'string') {
+        return '/';
+    }
+    if (variable.includes('/')) {
+        const group = variable.slice(0, variable.lastIndexOf('/'));
+        return group === '' ? '/' : group;
+    }
+    return '/';
+}
+
+function findGroupPlotControlsSection(groupName) {
+    const sections = document.querySelectorAll('.group-plot-controls-section');
+    for (const el of sections) {
+        if (el.getAttribute('data-group') === groupName) {
+            return el;
+        }
+    }
+    return null;
+}
+
+function getGroupTimeControlsState(groupName) {
+    const section = findGroupPlotControlsSection(groupName);
+    if (!section) {
+        return null;
+    }
+    const safeId = joinId(['group-plot', groupName]);
+    const select = document.getElementById(`group-datetime-select-${safeId}`);
+    const startInput = document.getElementById(
+        `group-start-datetime-${safeId}`,
+    );
+    const endInput = document.getElementById(`group-end-datetime-${safeId}`);
+    if (!select) {
+        return null;
+    }
+    const datetimeVariableName = select.value || null;
+    const startDatetime =
+        startInput && startInput.value ? startInput.value : null;
+    const endDatetime = endInput && endInput.value ? endInput.value : null;
+    if (!datetimeVariableName && !startDatetime && !endDatetime) {
+        return null;
+    }
+    return {
+        datetimeVariableName: datetimeVariableName || undefined,
+        startDatetime: startDatetime || undefined,
+        endDatetime: endDatetime || undefined,
+    };
+}
+
+/**
+ * For group vs global resolution: treat null, undefined, or empty string as "not set"
+ * so we fall back to global. Selectors use <option value="">None</option>, so without
+ * this we would use the group's "" and never fall back to global for that field.
+ */
+function groupOrGlobalString(groupVal, globalVal) {
+    if (groupVal === null) {
+        return globalVal;
+    }
+    if (typeof groupVal === 'string' && groupVal.trim() === '') {
+        return globalVal;
+    }
+    return groupVal;
+}
+
+function getGroupDimensionSlicesState(groupName) {
+    const section = findGroupPlotControlsSection(groupName);
+    if (!section) {
+        return null;
+    }
+    const inputs = section.querySelectorAll(
+        '.group-dimension-slice-input[data-group]',
+    );
+    const dimensionSlices = {};
+    inputs.forEach((input) => {
+        if (input.dataset.group !== groupName) {
+            return;
+        }
+        const val = input.value && input.value.trim();
+        if (val && input.dataset.dimension) {
+            const num = Number(val);
+            dimensionSlices[input.dataset.dimension] = Number.isInteger(num)
+                ? num
+                : val;
+        }
+    });
+    const safeId = joinId(['group-plot', groupName]);
+    const facetRowEl = document.getElementById(`group-facet-row-${safeId}`);
+    const facetColEl = document.getElementById(`group-facet-col-${safeId}`);
+    const colWrapEl = document.getElementById(`group-plot-col-wrap-${safeId}`);
+    const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
+    const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
+    const plotHueEl = document.getElementById(`group-plot-hue-${safeId}`);
+    const binsEl = document.getElementById(`group-bins-${safeId}`);
+    const xIncreaseEl = document.getElementById(`group-x-increase-${safeId}`);
+    const yIncreaseEl = document.getElementById(`group-y-increase-${safeId}`);
+    const aspectEl = document.getElementById(`group-plot-aspect-${safeId}`);
+    const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
+    const robustEl = document.getElementById(`group-robust-${safeId}`);
+    const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
+    const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
+    const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
+    let colWrap = undefined;
+    if (colWrapEl && colWrapEl.value && colWrapEl.value.trim() !== '') {
+        const n = parseInt(colWrapEl.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) {
+            colWrap = n;
+        }
+    }
+    const plotX = plotXEl && plotXEl.value ? plotXEl.value : '';
+    const plotY = plotYEl && plotYEl.value ? plotYEl.value : '';
+    const plotHue = plotHueEl && plotHueEl.value ? plotHueEl.value : '';
+    let bins = null;
+    if (binsEl && binsEl.value && binsEl.value.trim() !== '') {
+        const n = parseInt(binsEl.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) {
+            bins = n;
+        }
+    }
+    let aspect = undefined;
+    if (aspectEl && aspectEl.value && aspectEl.value.trim() !== '') {
+        const n = Number(aspectEl.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            aspect = n;
+        }
+    }
+    let size = undefined;
+    if (sizeEl && sizeEl.value && sizeEl.value.trim() !== '') {
+        const n = Number(sizeEl.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            size = n;
+        }
+    }
+    const robust = robustEl ? robustEl.checked : false;
+    const cmap =
+        cmapEl && cmapEl.value && cmapEl.value.trim()
+            ? cmapEl.value.trim()
+            : '';
+    if (
+        Object.keys(dimensionSlices).length === 0 &&
+        !facetRow &&
+        !facetCol &&
+        colWrap === undefined &&
+        !plotX &&
+        !plotY &&
+        !plotHue &&
+        (bins === null || bins === undefined) &&
+        aspect === undefined &&
+        size === undefined &&
+        !robust &&
+        !cmap
+    ) {
+        return null;
+    }
+    return {
+        dimensionSlices:
+            Object.keys(dimensionSlices).length > 0 ? dimensionSlices : null,
+        facetRow,
+        facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease: xIncreaseEl ? xIncreaseEl.checked : true,
+        yincrease: yIncreaseEl ? yIncreaseEl.checked : true,
+        aspect,
+        size,
+        robust,
+        cmap,
+        bins,
+    };
+}
+
+// Populate datetime variable select (dedupe by name, sorted; optional feature flag)
+function populateDatetimeVariables(data, flags) {
     const timeControlsSection = document.querySelector(
         '.time-controls-section',
     );
     if (!timeControlsSection) {
+        return;
+    }
+
+    const globalTimeControls = (flags && flags.globalTimeControls) !== false;
+    if (!globalTimeControls) {
+        timeControlsSection.style.display = 'none';
         return;
     }
 
@@ -1476,12 +1932,10 @@ function populateDatetimeVariables(data) {
         Object.keys(data.datetime_variables).length === 0
     ) {
         console.log('No datetime variables found in data:', data);
-        // Hide the time controls section if no datetime variables are available
         timeControlsSection.style.display = 'none';
         return;
     }
 
-    // Show the time controls section
     timeControlsSection.style.display = 'block';
 
     const select = document.getElementById('datetimeVariableSelect');
@@ -1489,14 +1943,11 @@ function populateDatetimeVariables(data) {
         return;
     }
 
-    // Clear existing options
     select.innerHTML = '<option value="">Select datetime variable...</option>';
 
-    console.log('Found datetime variables:', data.datetime_variables);
-
-    // Collect all datetime variables from all groups with min/max values
-    const datetimeVars = [];
-    const datetimeVarsMap = new Map(); // Map fullPath -> {name, fullPath, group, min, max}
+    // Collect all datetime variables from all groups; dedupe by name (keep first), then sort by name
+    const datetimeVarsMap = new Map(); // fullPath -> {name, fullPath, group, min, max}
+    const byName = new Map(); // name -> {name, fullPath, ...} (first occurrence per name)
 
     for (const [groupName, vars] of Object.entries(data.datetime_variables)) {
         for (const varInfo of vars) {
@@ -1513,23 +1964,368 @@ function populateDatetimeVariables(data) {
                 min: minVal,
                 max: maxVal,
             };
-            datetimeVars.push(varData);
             datetimeVarsMap.set(fullPath, varData);
+            if (!byName.has(varName)) {
+                byName.set(varName, varData);
+            }
         }
     }
 
-    console.log('Collected datetime variables:', datetimeVars);
+    const sortedUnique = [...byName.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+    );
 
-    // Add options
-    datetimeVars.forEach(({ name, fullPath }) => {
+    sortedUnique.forEach(({ name, fullPath }) => {
         const option = document.createElement('option');
         option.value = fullPath;
         option.textContent = name;
         select.appendChild(option);
     });
 
-    // Store the map for later use when selecting datetime variables
     globalTimeControlsState.datetimeVarsMap = datetimeVarsMap;
+}
+
+let groupPlotControlsListenersSetup = false;
+function setupGroupPlotControlsListeners() {
+    if (groupPlotControlsListenersSetup) {
+        return;
+    }
+    groupPlotControlsListenersSetup = true;
+    document.body.addEventListener('click', (e) => {
+        const clearTimeBtn = e.target.closest('.group-clear-time-btn');
+        if (clearTimeBtn) {
+            const groupName = clearTimeBtn.getAttribute('data-group');
+            if (!groupName) {
+                return;
+            }
+            const section = findGroupPlotControlsSection(groupName);
+            if (!section) {
+                return;
+            }
+            const safeId = joinId(['group-plot', groupName]);
+            const select = document.getElementById(
+                `group-datetime-select-${safeId}`,
+            );
+            const startInput = document.getElementById(
+                `group-start-datetime-${safeId}`,
+            );
+            const startText = document.getElementById(
+                `group-start-datetime-text-${safeId}`,
+            );
+            const endInput = document.getElementById(
+                `group-end-datetime-${safeId}`,
+            );
+            const endText = document.getElementById(
+                `group-end-datetime-text-${safeId}`,
+            );
+            if (select) {
+                select.value = '';
+            }
+            if (startInput) {
+                startInput.value = '';
+            }
+            if (startText) {
+                startText.value = '';
+            }
+            if (endInput) {
+                endInput.value = '';
+            }
+            if (endText) {
+                endText.value = '';
+            }
+            return;
+        }
+
+        const clearDimBtn = e.target.closest(
+            '.group-clear-dimension-slices-btn',
+        );
+        if (clearDimBtn) {
+            const groupName = clearDimBtn.getAttribute('data-group');
+            if (!groupName) {
+                return;
+            }
+            const section = findGroupPlotControlsSection(groupName);
+            if (!section) {
+                return;
+            }
+            section
+                .querySelectorAll('.group-dimension-slice-input')
+                .forEach((input) => {
+                    input.value = '';
+                });
+            const safeId = joinId(['group-plot', groupName]);
+            const facetRowEl = document.getElementById(
+                `group-facet-row-${safeId}`,
+            );
+            const facetColEl = document.getElementById(
+                `group-facet-col-${safeId}`,
+            );
+            const colWrapEl = document.getElementById(
+                `group-plot-col-wrap-${safeId}`,
+            );
+            const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
+            const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
+            const plotHueEl = document.getElementById(
+                `group-plot-hue-${safeId}`,
+            );
+            const binsEl = document.getElementById(`group-bins-${safeId}`);
+            const xIncreaseEl = document.getElementById(
+                `group-x-increase-${safeId}`,
+            );
+            const yIncreaseEl = document.getElementById(
+                `group-y-increase-${safeId}`,
+            );
+            const aspectEl = document.getElementById(
+                `group-plot-aspect-${safeId}`,
+            );
+            const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
+            const robustEl = document.getElementById(`group-robust-${safeId}`);
+            const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
+            if (facetRowEl) {
+                facetRowEl.value = '';
+            }
+            if (facetColEl) {
+                facetColEl.value = '';
+            }
+            if (colWrapEl) {
+                colWrapEl.value = '';
+            }
+            if (plotXEl) {
+                plotXEl.value = '';
+            }
+            if (plotYEl) {
+                plotYEl.value = '';
+            }
+            if (plotHueEl) {
+                plotHueEl.value = '';
+            }
+            if (binsEl) {
+                binsEl.value = '';
+            }
+            if (xIncreaseEl) {
+                xIncreaseEl.checked = true;
+            }
+            if (yIncreaseEl) {
+                yIncreaseEl.checked = true;
+            }
+            if (aspectEl) {
+                aspectEl.value = '';
+            }
+            if (sizeEl) {
+                sizeEl.value = '';
+            }
+            if (robustEl) {
+                robustEl.checked = false;
+            }
+            if (cmapEl) {
+                cmapEl.value = '';
+            }
+        }
+    });
+}
+
+// Populate dimension slice inputs from all groups (merge, dedupe, sorted); optional feature flag
+function populateDimensionSlices(data, flags) {
+    const section = document.querySelector('.dimension-slices-section');
+    if (!section) {
+        return;
+    }
+
+    const globalDimensionSlices =
+        (flags && flags.globalDimensionSlices) !== false;
+    if (!globalDimensionSlices) {
+        section.style.display = 'none';
+        return;
+    }
+
+    if (
+        !data ||
+        !data.dimensions_flattened ||
+        Object.keys(data.dimensions_flattened).length === 0
+    ) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    const container = document.getElementById('dimensionSlicesContainer');
+    if (!container) {
+        return;
+    }
+
+    // Merge dimensions from all groups: dimName -> max size (or first non-zero)
+    const mergedDimensions = {};
+    for (const groupName of Object.keys(data.dimensions_flattened)) {
+        const dims = data.dimensions_flattened[groupName];
+        if (!dims) {
+            continue;
+        }
+        for (const [dimName, size] of Object.entries(dims)) {
+            const existing = mergedDimensions[dimName];
+            if (existing === undefined || size > existing) {
+                mergedDimensions[dimName] = size;
+            }
+        }
+    }
+
+    const dimNames = Object.keys(mergedDimensions).sort();
+
+    if (dimNames.length === 0) {
+        container.innerHTML =
+            '<p class="muted-text">No dimensions in any group.</p>';
+        const facetRowSelect = document.getElementById('facetRowSelect');
+        const facetColSelect = document.getElementById('facetColSelect');
+        const plotXSelect = document.getElementById('plotXSelect');
+        const plotYSelect = document.getElementById('plotYSelect');
+        const plotHueSelect = document.getElementById('plotHueSelect');
+        if (facetRowSelect) {
+            facetRowSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (facetColSelect) {
+            facetColSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotXSelect) {
+            plotXSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotYSelect) {
+            plotYSelect.innerHTML = '<option value="">None</option>';
+        }
+        if (plotHueSelect) {
+            plotHueSelect.innerHTML = '<option value="">None</option>';
+        }
+        return;
+    }
+
+    container.innerHTML = dimNames
+        .map(
+            (dimName) =>
+                `<div class="dimension-slice-row">
+                    <label for="dim-slice-${dimName}">${escapeHtml(dimName)} (${mergedDimensions[dimName]}):</label>
+                    <input type="text" id="dim-slice-${dimName}" class="dimension-slice-input" data-dimension="${dimName}" placeholder="e.g. 0:24:2 or 130" />
+                </div>`,
+        )
+        .join('');
+
+    const facetRowSelect = document.getElementById('facetRowSelect');
+    const facetColSelect = document.getElementById('facetColSelect');
+    const plotXSelect = document.getElementById('plotXSelect');
+    const plotYSelect = document.getElementById('plotYSelect');
+    const plotHueSelect = document.getElementById('plotHueSelect');
+    const facetOptions =
+        '<option value="">None</option>' +
+        dimNames
+            .map(
+                (d) =>
+                    `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`,
+            )
+            .join('');
+    if (facetRowSelect) {
+        facetRowSelect.innerHTML = facetOptions;
+    }
+    if (facetColSelect) {
+        facetColSelect.innerHTML = facetOptions;
+    }
+    if (plotXSelect) {
+        plotXSelect.innerHTML = facetOptions;
+    }
+    if (plotYSelect) {
+        plotYSelect.innerHTML = facetOptions;
+    }
+    if (plotHueSelect) {
+        plotHueSelect.innerHTML = facetOptions;
+    }
+}
+
+function getDimensionSlicesState() {
+    const dimensionSlices = {};
+    const inputs = document.querySelectorAll('.dimension-slice-input');
+    inputs.forEach((input) => {
+        const val = input.value && input.value.trim();
+        if (val) {
+            const dim = input.dataset.dimension;
+            if (dim) {
+                const num = Number(val);
+                dimensionSlices[dim] = Number.isInteger(num) ? num : val;
+            }
+        }
+    });
+    const facetRowSelect = document.getElementById('facetRowSelect');
+    const facetColSelect = document.getElementById('facetColSelect');
+    const plotXSelect = document.getElementById('plotXSelect');
+    const plotYSelect = document.getElementById('plotYSelect');
+    const plotHueSelect = document.getElementById('plotHueSelect');
+    const binsInput = document.getElementById('plotBinsInput');
+    const xIncreaseCheckbox = document.getElementById('xIncreaseCheckbox');
+    const yIncreaseCheckbox = document.getElementById('yIncreaseCheckbox');
+    const plotAspectInput = document.getElementById('plotAspectInput');
+    const plotSizeInput = document.getElementById('plotSizeInput');
+    const robustCheckbox = document.getElementById('robustCheckbox');
+    const plotCmapInput = document.getElementById('plotCmapInput');
+    let bins = null;
+    if (binsInput && binsInput.value && binsInput.value.trim() !== '') {
+        const n = parseInt(binsInput.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) {
+            bins = n;
+        }
+    }
+    let aspect = null;
+    if (
+        plotAspectInput &&
+        plotAspectInput.value &&
+        plotAspectInput.value.trim() !== ''
+    ) {
+        const n = Number(plotAspectInput.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            aspect = n;
+        }
+    }
+    let size = null;
+    if (
+        plotSizeInput &&
+        plotSizeInput.value &&
+        plotSizeInput.value.trim() !== ''
+    ) {
+        const n = Number(plotSizeInput.value.trim());
+        if (Number.isFinite(n) && n > 0) {
+            size = n;
+        }
+    }
+    return {
+        dimensionSlices: Object.keys(dimensionSlices).length
+            ? dimensionSlices
+            : null,
+        facetRow:
+            facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
+        facetCol:
+            facetColSelect && facetColSelect.value ? facetColSelect.value : '',
+        colWrap: (() => {
+            if (
+                plotColWrapInput &&
+                plotColWrapInput.value &&
+                plotColWrapInput.value.trim() !== ''
+            ) {
+                const n = parseInt(plotColWrapInput.value.trim(), 10);
+                if (Number.isInteger(n) && n >= 1) {
+                    return n;
+                }
+            }
+            return undefined;
+        })(),
+        plotX: plotXSelect && plotXSelect.value ? plotXSelect.value : '',
+        plotY: plotYSelect && plotYSelect.value ? plotYSelect.value : '',
+        plotHue:
+            plotHueSelect && plotHueSelect.value ? plotHueSelect.value : '',
+        xincrease: xIncreaseCheckbox ? xIncreaseCheckbox.checked : true,
+        yincrease: yIncreaseCheckbox ? yIncreaseCheckbox.checked : true,
+        aspect: aspect ?? undefined,
+        size: size ?? undefined,
+        robust: robustCheckbox ? robustCheckbox.checked : false,
+        cmap:
+            plotCmapInput && plotCmapInput.value && plotCmapInput.value.trim()
+                ? plotCmapInput.value.trim()
+                : '',
+        bins,
+    };
 }
 
 // Convert datetime-local format to text format (YYYY-MM-DD HH:MM:SS)
@@ -1781,6 +2577,73 @@ function setupTimeControlsEventListeners() {
             }
         });
     }
+
+    const clearDimSlicesButton = document.getElementById(
+        'clearDimensionSlicesButton',
+    );
+    if (clearDimSlicesButton) {
+        clearDimSlicesButton.addEventListener('click', () => {
+            document
+                .querySelectorAll('.dimension-slice-input')
+                .forEach((input) => {
+                    input.value = '';
+                });
+            const facetRowSelect = document.getElementById('facetRowSelect');
+            const facetColSelect = document.getElementById('facetColSelect');
+            const plotColWrapInput =
+                document.getElementById('plotColWrapInput');
+            const plotXSelect = document.getElementById('plotXSelect');
+            const plotYSelect = document.getElementById('plotYSelect');
+            const plotHueSelect = document.getElementById('plotHueSelect');
+            const binsInput = document.getElementById('plotBinsInput');
+            const xIncreaseCheckbox =
+                document.getElementById('xIncreaseCheckbox');
+            const yIncreaseCheckbox =
+                document.getElementById('yIncreaseCheckbox');
+            const plotAspectInput = document.getElementById('plotAspectInput');
+            const plotSizeInput = document.getElementById('plotSizeInput');
+            if (facetRowSelect) {
+                facetRowSelect.value = '';
+            }
+            if (facetColSelect) {
+                facetColSelect.value = '';
+            }
+            if (plotColWrapInput) {
+                plotColWrapInput.value = '';
+            }
+            if (plotXSelect) {
+                plotXSelect.value = '';
+            }
+            if (plotYSelect) {
+                plotYSelect.value = '';
+            }
+            if (plotHueSelect) {
+                plotHueSelect.value = '';
+            }
+            if (binsInput) {
+                binsInput.value = '';
+            }
+            if (xIncreaseCheckbox) {
+                xIncreaseCheckbox.checked = true;
+            }
+            if (yIncreaseCheckbox) {
+                yIncreaseCheckbox.checked = true;
+            }
+            if (plotAspectInput) {
+                plotAspectInput.value = '';
+            }
+            if (plotSizeInput) {
+                plotSizeInput.value = '';
+            }
+            if (robustCheckbox) {
+                robustCheckbox.checked = false;
+            }
+            const plotCmapInput = document.getElementById('plotCmapInput');
+            if (plotCmapInput) {
+                plotCmapInput.value = '';
+            }
+        });
+    }
 }
 
 // Convert datetime-local to ISO format (preserving local time, no timezone conversion)
@@ -1955,16 +2818,97 @@ async function handleExportWebview() {
     }
 }
 
+/**
+ * Selectors for user-filled form controls that should be exported with their
+ * current values and made read-only in the exported HTML.
+ */
+const EXPORT_FORM_CONTROL_SELECTORS = [
+    'select.datetime-variable-select',
+    'select.group-datetime-select',
+    'input.datetime-input',
+    'input.group-datetime-input',
+    'input.datetime-text-input',
+    'input.dimension-slice-input',
+    'input.group-dimension-slice-input',
+    'select.facet-select',
+    'select.group-facet-select',
+    'input.bins-input',
+    'input.group-bins-input',
+].join(', ');
+
+/**
+ * Capture current values of exportable form controls (by id) from the live document.
+ * @returns {Map<string, string>} id -> current value
+ */
+function captureFormControlValues() {
+    const valueById = new Map();
+    const elements = document.querySelectorAll(EXPORT_FORM_CONTROL_SELECTORS);
+    elements.forEach((el) => {
+        if (el.id) {
+            valueById.set(
+                el.id,
+                el.value === undefined ? '' : String(el.value),
+            );
+        }
+    });
+    return valueById;
+}
+
+/**
+ * Apply captured values to the cloned document and make form controls read-only
+ * so the exported HTML reflects the state at export time (browser view = readonly).
+ */
+function applyExportStateToClone(clone, valueById) {
+    if (!valueById || valueById.size === 0) {
+        return;
+    }
+    valueById.forEach((value, id) => {
+        try {
+            const escapedId = CSS.escape
+                ? CSS.escape(id)
+                : id.replace(/"/g, '\\"');
+            const el = clone.querySelector(`[id="${escapedId}"]`);
+            if (!el) {
+                return;
+            }
+            if (el.tagName === 'SELECT') {
+                el.value = value;
+                // Set selected attribute on the matching option so serialized HTML shows it (outerHTML may not reflect .value)
+                Array.from(el.options).forEach((opt) => {
+                    if (opt.value === value) {
+                        opt.setAttribute('selected', 'selected');
+                    } else {
+                        opt.removeAttribute('selected');
+                    }
+                });
+                el.disabled = true;
+            } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.setAttribute('value', value);
+                el.value = value;
+                el.readOnly = true;
+            }
+        } catch (e) {
+            console.warn('Export: could not set value for id', id, e);
+        }
+    });
+}
+
 function captureWebviewContent() {
     console.log('🖼️ Capturing webview content...');
 
     try {
-        // Get the current document HTML
-        const htmlContent = document.documentElement.outerHTML;
+        const valueById = captureFormControlValues();
+        const clone = document.documentElement.cloneNode(true);
+        applyExportStateToClone(clone, valueById);
+
+        const htmlContent = clone.outerHTML;
         console.log(
             '🖼️ Content captured, size:',
             htmlContent.length,
             'characters',
+            valueById.size > 0
+                ? `(${valueById.size} form values preserved)`
+                : '',
         );
         return htmlContent;
     } catch (error) {
@@ -2112,6 +3056,23 @@ async function handleCreateAllPlots() {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
+    const {
+        dimensionSlices,
+        facetRow,
+        facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
+        bins,
+    } = getDimensionSlicesState();
+
     // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
     const plotTasks = Array.from(buttons).map((button) => ({
         variable: button.getAttribute('data-variable'),
@@ -2129,7 +3090,6 @@ async function handleCreateAllPlots() {
         const { variable, plotTypeSelect } = task;
         const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
-        // Check if cancelled before starting
         if (plotAllCancelled) {
             return {
                 variable,
@@ -2139,16 +3099,55 @@ async function handleCreateAllPlots() {
             };
         }
 
-        // Show loading indicator
+        const variableGroup = getVariableGroup(variable);
+        const groupTime = getGroupTimeControlsState(variableGroup);
+        const groupDim = getGroupDimensionSlicesState(variableGroup);
+
+        const dtName = groupTime?.datetimeVariableName ?? datetimeVariableName;
+        const startISO = groupTime?.startDatetime
+            ? convertDatetimeLocalToISO(groupTime.startDatetime)
+            : startDatetimeISO;
+        const endISO = groupTime?.endDatetime
+            ? convertDatetimeLocalToISO(groupTime.endDatetime)
+            : endDatetimeISO;
+        const dimSlices = groupDim?.dimensionSlices ?? dimensionSlices;
+        const fRow = groupOrGlobalString(groupDim?.facetRow, facetRow);
+        const fCol = groupOrGlobalString(groupDim?.facetCol, facetCol);
+        const fColWrap = groupDim?.colWrap ?? colWrap;
+        const fPlotX = groupOrGlobalString(groupDim?.plotX, plotX);
+        const fPlotY = groupOrGlobalString(groupDim?.plotY, plotY);
+        const fPlotHue = groupOrGlobalString(groupDim?.plotHue, plotHue);
+        const fXincrease = groupDim?.xincrease ?? xincrease;
+        const fYincrease = groupDim?.yincrease ?? yincrease;
+        const fAspect = groupDim?.aspect ?? aspect;
+        const fSize = groupDim?.size ?? size;
+        const fRobust = groupDim?.robust ?? robust;
+        const fCmap = groupOrGlobalString(groupDim?.cmap, cmap);
+        const fBins = groupDim?.bins ?? bins;
+
         displayVariablePlotLoading(variable);
 
         try {
             const plotData = await messageBus.createPlot(
                 variable,
                 plotType,
-                datetimeVariableName,
-                startDatetimeISO,
-                endDatetimeISO,
+                dtName,
+                startISO,
+                endISO,
+                dimSlices,
+                fRow,
+                fCol,
+                fColWrap,
+                fPlotX,
+                fPlotY,
+                fPlotHue,
+                fXincrease,
+                fYincrease,
+                fAspect,
+                fSize,
+                fRobust,
+                fCmap,
+                fBins,
             );
             displayVariablePlot(variable, plotData);
 
@@ -2311,27 +3310,34 @@ async function handleCreateVariablePlot(variable) {
     );
     const plotType = plotTypeSelect ? plotTypeSelect.value : 'auto';
 
-    // Get time control values - also read directly from inputs as fallback
-    let datetimeVariableName = globalTimeControlsState.datetimeVariableName;
-    let startDatetime = globalTimeControlsState.startDatetime;
-    let endDatetime = globalTimeControlsState.endDatetime;
+    const variableGroup = getVariableGroup(variable);
+    const groupTime = getGroupTimeControlsState(variableGroup);
+    const groupDim = getGroupDimensionSlicesState(variableGroup);
 
-    // Fallback: read directly from inputs if state is not set
-    if (!startDatetime) {
+    // Time: use group overrides if present, else global
+    let datetimeVariableName =
+        groupTime?.datetimeVariableName ??
+        globalTimeControlsState.datetimeVariableName;
+    let startDatetime =
+        groupTime?.startDatetime ?? globalTimeControlsState.startDatetime;
+    let endDatetime =
+        groupTime?.endDatetime ?? globalTimeControlsState.endDatetime;
+
+    if (!startDatetime && !groupTime) {
         const startInput = document.getElementById('startDatetimeInput');
         if (startInput && startInput.value) {
             startDatetime = startInput.value;
             globalTimeControlsState.startDatetime = startDatetime;
         }
     }
-    if (!endDatetime) {
+    if (!endDatetime && !groupTime) {
         const endInput = document.getElementById('endDatetimeInput');
         if (endInput && endInput.value) {
             endDatetime = endInput.value;
             globalTimeControlsState.endDatetime = endDatetime;
         }
     }
-    if (!datetimeVariableName) {
+    if (!datetimeVariableName && !groupTime) {
         const datetimeSelect = document.getElementById(
             'datetimeVariableSelect',
         );
@@ -2341,7 +3347,6 @@ async function handleCreateVariablePlot(variable) {
         }
     }
 
-    // Convert to ISO format for Python
     const startDatetimeISO = startDatetime
         ? convertDatetimeLocalToISO(startDatetime)
         : null;
@@ -2349,12 +3354,49 @@ async function handleCreateVariablePlot(variable) {
         ? convertDatetimeLocalToISO(endDatetime)
         : null;
 
+    const globalDim = getDimensionSlicesState();
+    const dimensionSlices =
+        groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
+    const facetRow = groupOrGlobalString(
+        groupDim?.facetRow,
+        globalDim.facetRow,
+    );
+    const facetCol = groupOrGlobalString(
+        groupDim?.facetCol,
+        globalDim.facetCol,
+    );
+    const colWrap = groupDim?.colWrap ?? globalDim.colWrap;
+    const plotX = groupOrGlobalString(groupDim?.plotX, globalDim.plotX);
+    const plotY = groupOrGlobalString(groupDim?.plotY, globalDim.plotY);
+    const plotHue = groupOrGlobalString(groupDim?.plotHue, globalDim.plotHue);
+    const xincrease = groupDim?.xincrease ?? globalDim.xincrease;
+    const yincrease = groupDim?.yincrease ?? globalDim.yincrease;
+    const aspect = groupDim?.aspect ?? globalDim.aspect;
+    const size = groupDim?.size ?? globalDim.size;
+    const robust = groupDim?.robust ?? globalDim.robust;
+    const cmap = groupOrGlobalString(groupDim?.cmap, globalDim.cmap);
+    const bins = groupDim?.bins ?? globalDim.bins;
+
     console.log('Creating plot with time controls:', {
         datetimeVariableName,
         startDatetime,
         endDatetime,
         startDatetimeISO,
         endDatetimeISO,
+        dimensionSlices,
+        facetRow,
+        facetCol,
+        colWrap,
+        plotX,
+        plotY,
+        plotHue,
+        xincrease,
+        yincrease,
+        aspect,
+        size,
+        robust,
+        cmap,
+        bins,
         rawState: globalTimeControlsState,
     });
 
@@ -2368,6 +3410,20 @@ async function handleCreateVariablePlot(variable) {
             datetimeVariableName,
             startDatetimeISO,
             endDatetimeISO,
+            dimensionSlices,
+            facetRow,
+            facetCol,
+            colWrap,
+            plotX,
+            plotY,
+            plotHue,
+            xincrease,
+            yincrease,
+            aspect,
+            size,
+            robust,
+            cmap,
+            bins,
         );
         displayVariablePlot(variable, plotData);
     } catch (error) {

@@ -2,8 +2,11 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { PythonManager } from './PythonManager';
 import { Logger } from '../common/Logger';
-import { quoteIfNeeded } from '../common/utils';
-import { getMatplotlibStyle } from '../common/config';
+import {
+    getMatplotlibStyle,
+    getSmallVariableBytes,
+    getSmallValueDisplayMaxLen,
+} from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 
 export class DataProcessor {
@@ -39,9 +42,10 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = quoteIfNeeded(uri.fsPath);
-        const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py',
         );
 
         try {
@@ -50,6 +54,13 @@ export class DataProcessor {
             if (convertBandsToVariables) {
                 args.push('--convert-bands-to-variables');
             }
+            const smallVariableBytes = getSmallVariableBytes();
+            const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
+            args.push('--small-variable-bytes', String(smallVariableBytes));
+            args.push(
+                '--small-value-display-max-len',
+                String(smallValueDisplayMaxLen),
+            );
 
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
@@ -80,6 +91,20 @@ export class DataProcessor {
         datetimeVariableName?: string,
         startDatetime?: string,
         endDatetime?: string,
+        dimensionSlices?: Record<string, string | number>,
+        facetRow?: string,
+        facetCol?: string,
+        colWrap?: number,
+        plotX?: string,
+        plotY?: string,
+        plotHue?: string,
+        xincrease?: boolean,
+        yincrease?: boolean,
+        aspect?: number,
+        size?: number,
+        robust?: boolean,
+        cmap?: string,
+        bins?: number,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
@@ -87,39 +112,82 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = quoteIfNeeded(uri.fsPath);
-        const scriptPath = quoteIfNeeded(
-            path.join(this.pythonScriptsHomeDir, 'get_data_info.py'),
+        const filePath = uri.fsPath;
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py',
         );
 
         // Get the matplotlib style (either from user setting or auto-detected)
         const style = getMatplotlibStyle();
 
         // Use the new merged CLI with 'plot' mode and style parameter
-        const args = [
-            'plot',
-            filePath,
-            quoteIfNeeded(variable),
-            plotType,
-            '--style',
-            quoteIfNeeded(style),
-        ];
+        const args = ['plot', filePath, variable, plotType, '--style', style];
 
         if (convertBandsToVariables) {
             args.push('--convert-bands-to-variables');
         }
 
         if (datetimeVariableName && datetimeVariableName.trim() !== '') {
-            args.push(
-                '--datetime-variable',
-                quoteIfNeeded(datetimeVariableName),
-            );
+            args.push('--datetime-variable', datetimeVariableName);
         }
         if (startDatetime && startDatetime.trim() !== '') {
-            args.push('--start-datetime', quoteIfNeeded(startDatetime));
+            args.push('--start-datetime', startDatetime);
         }
         if (endDatetime && endDatetime.trim() !== '') {
-            args.push('--end-datetime', quoteIfNeeded(endDatetime));
+            args.push('--end-datetime', endDatetime);
+        }
+        if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
+            args.push('--dimension-slices', JSON.stringify(dimensionSlices));
+        }
+        if (facetRow && facetRow.trim() !== '') {
+            args.push('--facet-row', facetRow);
+        }
+        if (facetCol && facetCol.trim() !== '') {
+            args.push('--facet-col', facetCol);
+        }
+        if (
+            colWrap !== null &&
+            colWrap !== undefined &&
+            Number.isInteger(colWrap) &&
+            colWrap >= 1
+        ) {
+            args.push('--col-wrap', String(colWrap));
+        }
+        if (plotX && plotX.trim() !== '') {
+            args.push('--plot-x', plotX);
+        }
+        if (plotY && plotY.trim() !== '') {
+            args.push('--plot-y', plotY);
+        }
+        if (plotHue && plotHue.trim() !== '') {
+            args.push('--plot-hue', plotHue);
+        }
+        if (xincrease !== undefined) {
+            args.push('--xincrease', xincrease ? 'true' : 'false');
+        }
+        if (yincrease !== undefined) {
+            args.push('--yincrease', yincrease ? 'true' : 'false');
+        }
+        if (aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
+            args.push('--aspect', String(aspect));
+        }
+        if (size !== undefined && Number.isFinite(size) && size > 0) {
+            args.push('--size', String(size));
+        }
+        if (robust === true) {
+            args.push('--robust');
+        }
+        if (cmap && cmap.trim() !== '') {
+            args.push('--cmap', cmap.trim());
+        }
+        if (
+            bins !== null &&
+            bins !== undefined &&
+            Number.isInteger(bins) &&
+            bins >= 1
+        ) {
+            args.push('--bins', String(bins));
         }
 
         try {
