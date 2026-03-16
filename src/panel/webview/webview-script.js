@@ -1787,6 +1787,17 @@ function getGroupTimeControlsState(groupName) {
     };
 }
 
+/**
+ * For group vs global resolution: treat null, undefined, or empty string as "not set"
+ * so we fall back to global. Selectors use <option value="">None</option>, so without
+ * this we would use the group's "" and never fall back to global for that field.
+ */
+function groupOrGlobalString(groupVal, globalVal) {
+    if (groupVal == null) return globalVal;
+    if (typeof groupVal === 'string' && groupVal.trim() === '') return globalVal;
+    return groupVal;
+}
+
 function getGroupDimensionSlicesState(groupName) {
     const section = findGroupPlotControlsSection(groupName);
     if (!section) {
@@ -3096,18 +3107,18 @@ async function handleCreateAllPlots() {
             ? convertDatetimeLocalToISO(groupTime.endDatetime)
             : endDatetimeISO;
         const dimSlices = groupDim?.dimensionSlices ?? dimensionSlices;
-        const fRow = groupDim?.facetRow ?? facetRow;
-        const fCol = groupDim?.facetCol ?? facetCol;
+        const fRow = groupOrGlobalString(groupDim?.facetRow, facetRow);
+        const fCol = groupOrGlobalString(groupDim?.facetCol, facetCol);
         const fColWrap = groupDim?.colWrap ?? colWrap;
-        const fPlotX = groupDim?.plotX ?? plotX;
-        const fPlotY = groupDim?.plotY ?? plotY;
-        const fPlotHue = groupDim?.plotHue ?? plotHue;
+        const fPlotX = groupOrGlobalString(groupDim?.plotX, plotX);
+        const fPlotY = groupOrGlobalString(groupDim?.plotY, plotY);
+        const fPlotHue = groupOrGlobalString(groupDim?.plotHue, plotHue);
         const fXincrease = groupDim?.xincrease ?? xincrease;
         const fYincrease = groupDim?.yincrease ?? yincrease;
         const fAspect = groupDim?.aspect ?? aspect;
         const fSize = groupDim?.size ?? size;
         const fRobust = groupDim?.robust ?? robust;
-        const fCmap = groupDim?.cmap ?? cmap;
+        const fCmap = groupOrGlobalString(groupDim?.cmap, cmap);
         const fBins = groupDim?.bins ?? bins;
 
         displayVariablePlotLoading(variable);
@@ -3342,18 +3353,18 @@ async function handleCreateVariablePlot(variable) {
     const globalDim = getDimensionSlicesState();
     const dimensionSlices =
         groupDim?.dimensionSlices ?? globalDim.dimensionSlices;
-    const facetRow = groupDim?.facetRow ?? globalDim.facetRow;
-    const facetCol = groupDim?.facetCol ?? globalDim.facetCol;
+    const facetRow = groupOrGlobalString(groupDim?.facetRow, globalDim.facetRow);
+    const facetCol = groupOrGlobalString(groupDim?.facetCol, globalDim.facetCol);
     const colWrap = groupDim?.colWrap ?? globalDim.colWrap;
-    const plotX = groupDim?.plotX ?? globalDim.plotX;
-    const plotY = groupDim?.plotY ?? globalDim.plotY;
-    const plotHue = groupDim?.plotHue ?? globalDim.plotHue;
+    const plotX = groupOrGlobalString(groupDim?.plotX, globalDim.plotX);
+    const plotY = groupOrGlobalString(groupDim?.plotY, globalDim.plotY);
+    const plotHue = groupOrGlobalString(groupDim?.plotHue, globalDim.plotHue);
     const xincrease = groupDim?.xincrease ?? globalDim.xincrease;
     const yincrease = groupDim?.yincrease ?? globalDim.yincrease;
     const aspect = groupDim?.aspect ?? globalDim.aspect;
     const size = groupDim?.size ?? globalDim.size;
     const robust = groupDim?.robust ?? globalDim.robust;
-    const cmap = groupDim?.cmap ?? globalDim.cmap;
+    const cmap = groupOrGlobalString(groupDim?.cmap, globalDim.cmap);
     const bins = groupDim?.bins ?? globalDim.bins;
 
     console.log('Creating plot with time controls:', {
