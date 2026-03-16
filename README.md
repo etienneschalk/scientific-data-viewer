@@ -240,7 +240,8 @@ Dimension Slices let you subset data by dimension index or slice before plotting
 
 The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
-When both Global and Group Plot Controls are used, **group values take precedence** for that group’s variables; the extension does not merge global and group slice/facet/bins settings.
+**Global vs. Group (inheritance)**  
+When both Global and Group Plot Controls exist, the extension uses **group** values when set (otherwise **global**) for that group’s variables. Per field, group takes precedence when set else global, so the two can be mixed (e.g. group's dimension slices + global's facet row). The one exception is **dimension slices**: they are a single set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we don't merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; other params (facet row, bins, etc.) still fall back to global per field.
 
 **Feature flags**: Four settings control whether each block is shown. **Global Dimension Slices** and **Group Dimension Slices** are **on by default**; **Global Time Controls** and **Group Time Controls** are **off by default** (use Dimension Slices for time instead, e.g. `0:24:2`). You can turn any block on or off in [Settings](#️-settings) under **Feature Flags**.
 
@@ -357,7 +358,7 @@ The extension includes configuration options that act as feature flags to contro
   - Show **Group Time Controls** per group (datetime, start/end) in each group’s Plot Controls section.
 - **`scientificDataViewer.groupDimensionSlices`**
   - (type: `boolean`, default: `true`)
-  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Group values take precedence over global when set.
+  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Per field, group takes precedence when set else global (so the two can be mixed); dimension slices alone are one unit—one change in the group's dimension slice inputs means that group's full dimension-slice set is used and global's is ignored for that group.
 
 ## 🔧 Troubleshooting
 
