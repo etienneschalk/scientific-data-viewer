@@ -1,0 +1,127 @@
+Here’s a concise **prioritized list of new features** inferred from the codebase and docs.
+
+---
+
+# Inferred New Features for Scientific Data Viewer (by priority)
+
+## High priority (user impact + alignment with project direction)
+
+### 1. **Stabilize and extend plotting**
+
+- **Why:** Plotting is explicitly “experimental” and “best effort”; CHANGELOG defers “line-plot specifics, step plots, colormap” and per-variable params.
+- **In code:** `get_data_info.py` has a TODO: “for now, just use the rightmost dims as x and y” (around line 867).
+- **Suggestions:**
+  - Promote Dimension Slices + faceting to stable and document them.
+  - Add explicit plot types (e.g. line, step) and a colormap selector.
+  - Optional per-variable plot overrides (slices/facet/x/y) without overloading the UI (e.g. “Override for this variable”).
+- **Docs:** CHANGELOG 0.9.0, README “Basic Data Visualization”, IMPLEMENTATION_PROPOSAL_ISSUE_106 “Future Enhancements”.
+
+### 2. **Label-based selection (`.sel()`)**
+
+- **Why:** Dimension Slices are index-based (`isel`). Many workflows need coordinate-based selection (e.g. time range, lat/lon).
+- **In code:** `config.ts` (line 62): “a future sel (label-based) feature could cover datetime and other coords uniformly.”
+- **Suggestion:** Add an optional “Coordinate selection” (or “Label slice”) section: choose a coordinate (e.g. time, lat) and enter label values or ranges; backend uses `.sel()` and combines with existing `isel` where appropriate.
+- **Benefit:** Complements Time Controls and Dimension Slices; one coherent “selection” model.
+
+### 3. **Search / filter in data tree**
+
+- **Why:** You have samples like `sample_data_many_vars.nc`, long variable names, and nested groups; finding one variable is tedious.
+- **Suggestion:** A search box that filters the Data Structure tree (and optionally the in-editor groups list) by variable/coordinate/group name (and maybe attribute key).
+- **Benefit:** Better UX on large or complex files with minimal backend change.
+
+### 4. **Copy Python snippet / slice spec**
+
+- **Why:** README and UI already emphasize “Copy buttons” and reproducibility; export is HTML-only.
+- **Suggestions:**
+  - “Copy as Python”: for the current view (or selected variable), copy a small snippet (e.g. `ds["var"].isel(time=slice(0, 24, 2))` or `ds.sel(lat=slice(40, 50))`).
+  - “Copy dimension slices”: copy current Dimension Slices as a dict or `isel(...)` call.
+- **Benefit:** Direct link from viewer to reproducible scripts.
+
+---
+
+## Medium priority (clear value, moderate effort)
+
+### 5. **Complete Phase 3 architecture migration**
+
+- **Why:** TECHNICAL_ARCHITECTURE.md describes Phase 3 (new message format, UI controller, state subscriptions, remove legacy) as “Future” and lists concrete steps.
+- **Suggestion:** Plan and execute Phase 3: webview on new message format, enable UIController + state subscriptions, remove legacy handling.
+- **Benefit:** Single code path, easier to add Virtual DOM, theming, plugins, and state-based features later.
+
+### 6. **Lazy expansion / virtualization for large attribute trees**
+
+- **Why:** RELEASE_NOTES_0.10.0: “consider lazy expansion or virtualization in a future release” for very large nested attribute trees.
+- **Suggestion:** Render only visible nodes (or first N levels) and expand on demand; virtualize long flat lists.
+- **Benefit:** Keeps nested attributes feature usable on Zarr (and similar) with huge `.zattrs`.
+
+### 7. **Open from URL / remote datasets**
+
+- **Why:** `remote_dataset.ipynb` and “sentinel” in keywords suggest interest in remote/cloud data; UI is file/folder-only.
+- **Suggestion:** “Open from URL” (and optionally “Open remote Zarr”) that accepts HTTP(S)/S3-style URLs and passes them to xarray (e.g. `open_zarr(url)` or `open_dataset(url)`). Show a clear “remote” badge and path in the header.
+- **Benefit:** Aligns with cloud and Sentinel-style workflows.
+
+### 8. **Time controls and datetime improvements**
+
+- **Why:** Time Controls are off by default; IMPLEMENTATION_PROPOSAL_ISSUE_106 lists future enhancements.
+- **Suggestions:**
+  - Relative ranges (e.g. “last 24 hours” from `max(time)`).
+  - Optional validation “start &lt; end” with a clear message.
+  - In UI or docs: short note like “Tip: you can also use Dimension Slices for time (e.g. 0:24:2)” when Time Controls are hidden.
+- **Benefit:** Better discoverability and fewer user errors.
+
+### 9. **Sample / preview values in Groups view**
+
+- **Why:** README: “Feature parity is not reached yet as no sample data is currently displayed” for the Groups view.
+- **Suggestion:** Reuse the small-value logic (`smallVariableBytes` / `display_value`) to show a short preview (e.g. first few values or shape + sample) for variables in the group list where data is small enough.
+- **Benefit:** Faster “what’s in this group?” without opening each variable.
+
+---
+
+## Lower priority (nice-to-have / polish)
+
+### 10. **Fine-grained extension environment packages**
+
+- **In code:** `ExtensionVirtualEnvironmentManager.ts`: “TODO: more fine grain control over uv-envs packages.”
+- **Suggestion:** Settings or a “Manage extension environment” flow to add/remove optional packages (e.g. `cfgrib`, `rioxarray`) in the extension’s uv env.
+- **Benefit:** Power users can tune the env without touching the Python extension.
+
+### 11. **Compare files or variables**
+
+- **Why:** `allowMultipleTabsForSameFile` is experimental; no explicit “compare” flow.
+- **Suggestion:** “Compare with…” (second file or second variable) with a simple side-by-side or diff of metadata (and optionally same variable from two files).
+- **Benefit:** Useful for QA and versioned datasets.
+
+### 12. **Global “Plot all” behavior**
+
+- **Why:** README: “Global Plot Controls … not recommended,” “not optimized.”
+- **Suggestion:** Either make “Plot all” opt-in (setting or confirmation) or replace with “Plot visible variables” / “Plot selected” to reduce accidental heavy work.
+- **Benefit:** Fewer timeouts and better expectations.
+
+### 13. **Consistent version display**
+
+- **In code:** `vscodeutils.ts`: “TODO Should use this function everywhere the version is printed.”
+- **Suggestion:** Single helper for “extension version” and use it in troubleshooting, about, and logs.
+- **Benefit:** Consistency and easier support.
+
+### 14. **Format-specific polish**
+
+- **Examples:** CDF (CDF_LIB epoch handling), HDF5 (group hierarchy in tree), GeoTIFF (show CRS in file info or attributes). Optional “Format notes” in the UI for known quirks.
+- **Benefit:** Better experience for power users of each format.
+
+---
+
+## Summary table
+
+| Priority   | Feature                                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
+| **High**   | 1. Stabilize/extend plotting (plot types, colormap, per-variable overrides)                              |
+| **High**   | 2. Label-based selection (`.sel()` for coordinates)                                                      |
+| **High**   | 3. Search/filter in data tree                                                                            |
+| **High**   | 4. Copy Python snippet / slice spec                                                                      |
+| **Medium** | 5. Phase 3 architecture migration                                                                        |
+| **Medium** | 6. Lazy/virtualized attribute trees                                                                      |
+| **Medium** | 7. Open from URL / remote datasets                                                                       |
+| **Medium** | 8. Time controls and datetime improvements                                                               |
+| **Medium** | 9. Sample/preview in Groups view                                                                         |
+| **Lower**  | 10–14. Extension env control, compare mode, “Plot all” behavior, version display, format-specific polish |
+
+If you tell me which 1–2 items you want to pursue first (e.g. “label-based selection” or “search in tree”), I can outline concrete implementation steps in the current codebase (which files to touch and in what order).
