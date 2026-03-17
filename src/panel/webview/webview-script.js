@@ -1154,7 +1154,7 @@ function renderAttributesTree(attrsObj, groupName, idParts) {
                             typeof item === 'string'
                                 ? item
                                 : JSON.stringify(item);
-                            return /*html*/ `<div class="attribute-item"><span class="attribute-value muted-text">${escapeHtml(str)}</span></div>`;
+                        return /*html*/ `<div class="attribute-item"><span class="attribute-value muted-text">${escapeHtml(str)}</span></div>`;
                     })
                     .join('');
                 return /*html*/ `
@@ -1166,9 +1166,7 @@ function renderAttributesTree(attrsObj, groupName, idParts) {
             const valueStr =
                 typeof value === 'string' ? value : JSON.stringify(value);
             const displayStr =
-                valueStr.length > 500
-                    ? valueStr.slice(0, 500) + '…'
-                    : valueStr;
+                valueStr.length > 500 ? valueStr.slice(0, 500) + '…' : valueStr;
             return /*html*/ `
                 <div class="attribute-item" id="${leafId}">
                     <span class="attribute-name" title="${safeKey}">${safeKey}</span>

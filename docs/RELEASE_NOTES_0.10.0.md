@@ -46,10 +46,10 @@ After updating to 0.10.0, the nested attributes tree is **off by default**. To u
 
 ## Summary of changes
 
-| Area            | Change                                                                 |
-|-----------------|------------------------------------------------------------------------|
-| **UI**          | Optional collapsible tree for group attributes (Zarr and others)     |
-| **Settings**    | New `scientificDataViewer.nestedAttributesView` (boolean, default false) |
-| **Test data**   | New Zarr sample with deeply nested `.zattrs` for Issue #120            |
-| **Config**      | Webview receives a plain config object including `nestedAttributesView` |
-| **Docs**        | Release notes, CHANGELOG, README updated; xarray upstream noted       |
+| Area          | Change                                                                   |
+| ------------- | ------------------------------------------------------------------------ |
+| **UI**        | Optional collapsible tree for group attributes (Zarr and others)         |
+| **Settings**  | New `scientificDataViewer.nestedAttributesView` (boolean, default false) |
+| **Test data** | New Zarr sample with deeply nested `.zattrs` for Issue #120              |
+| **Config**    | Webview receives a plain config object including `nestedAttributesView`  |
+| **Docs**      | Release notes, CHANGELOG, README updated; xarray upstream noted          |
