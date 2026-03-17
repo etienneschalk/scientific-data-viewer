@@ -22,6 +22,9 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
     '.jpeg2000',
     // '.safe',
 ];
+
+const MAX_ATTR_DISPLAY_STR_LENGTH = 999999;
+
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -1166,7 +1169,9 @@ function renderAttributesTree(attrsObj, groupName, idParts) {
             const valueStr =
                 typeof value === 'string' ? value : JSON.stringify(value);
             const displayStr =
-                valueStr.length > 500 ? valueStr.slice(0, 500) + '…' : valueStr;
+                valueStr.length > MAX_ATTR_DISPLAY_STR_LENGTH
+                    ? valueStr.slice(0, MAX_ATTR_DISPLAY_STR_LENGTH) + '…'
+                    : valueStr;
             return /*html*/ `
                 <div class="attribute-item" id="${leafId}">
                     <span class="attribute-name" title="${safeKey}">${safeKey}</span>
