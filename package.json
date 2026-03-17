@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -529,6 +529,13 @@
                     "order": 1006,
                     "description": "Max character length for displayed small variable/coordinate values (truncation). Used when smallVariableBytes > 0.",
                     "markdownDescription": "Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with \"...\". Only used when **smallVariableBytes** is greater than 0."
+                },
+                "scientificDataViewer.nestedAttributesView": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1007,
+                    "description": "Show attributes as a collapsible tree (for Zarr and other formats with nested JSON attributes). On by default.",
+                    "markdownDescription": "When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar formats) where attributes are stored as nested JSON (e.g. `.zattrs`). **On by default.** See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)."
                 }
             }
         }

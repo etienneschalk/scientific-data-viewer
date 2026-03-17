@@ -659,6 +659,84 @@ def create_sample_zarr_with_nested_groups_from_zarr():
     return output_file
 
 
+def create_sample_zarr_deeply_nested_attributes():
+    """Create a Zarr store with extremely nested group attributes for testing Issue #120.
+
+    Zarr stores attributes in JSON (.zattrs). This produces a store with 5–10 levels
+    of nested dicts so the collapsible nested-attributes view can be tested and
+    regressions avoided. Uses xarray to write the store so dimension metadata
+    (dimension_names / _ARRAY_DIMENSIONS) is correct for reopening with xarray.
+    """
+    output_file = "sample_zarr_deeply_nested_attrs.zarr"
+
+    if os.path.exists(output_file):
+        print(f"📦 Zarr file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print(
+        "🌊 Creating sample Zarr file with deeply nested group attributes (Issue #120)..."
+    )
+
+    # Deeply nested attributes (10 levels) – typical of complex .zattrs from producers
+    nested_attrs = {
+        "title": "Zarr with deeply nested attributes (Issue #120)",
+        "description": "Test data for collapsible nested attributes view in SDV",
+        "deep": {
+            "level1": {
+                "level2": {
+                    "level3": {
+                        "level4": {
+                            "level5": {
+                                "level6": {
+                                    "level7": {
+                                        "level8": {
+                                            "level9": {
+                                                "level10": "leaf_value",
+                                                "count": 42,
+                                            },
+                                            "name": "deep_node_8",
+                                        },
+                                        "name": "deep_node_7",
+                                    },
+                                    "name": "deep_node_6",
+                                },
+                                "name": "deep_node_5",
+                            },
+                            "name": "deep_node_4",
+                        },
+                        "name": "deep_node_3",
+                    },
+                    "name": "deep_node_2",
+                },
+                "name": "deep_node_1",
+            },
+            "summary": "Use Nested Attributes View setting to expand this tree",
+        },
+        "metadata": {
+            "creator": {"name": "SDV test", "version": "0.10.0"},
+            "nested_list": [1, 2, {"a": "b", "c": [10, 20]}, "four"],
+            "sections": {
+                "instruments": {"sensor": "thermometer", "accuracy": 0.1},
+                "quality": {"flags": [0, 1, 2], "meaning": "good questionable bad"},
+            },
+        },
+    }
+
+    # Create with xarray so dimension metadata is written correctly (works with zarr v2 and v3)
+    ds = xr.Dataset(
+        {"value": (["x"], [1.0, 2.0, 3.0])},
+        coords={"x": [0, 1, 2]},
+        attrs=nested_attrs,
+    )
+    ds.to_zarr(output_file, mode="w")
+
+    print(
+        f"✅ Created {output_file} with deeply nested .zattrs for nested-attributes UI testing"
+    )
+    return output_file
+
+
 def create_sample_hdf5():
     """Create a sample HDF5 file with satellite data."""
     output_file = "sample_data.h5"
@@ -5419,6 +5497,14 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((inherited_coords_zarr_file, "Zarr Inherited Coords"))
         else:
             skipped_files.append("Zarr Inherited Coords (zarr or xarray not available)")
+
+        deeply_nested_attrs_zarr_file = create_sample_zarr_deeply_nested_attributes()
+        if deeply_nested_attrs_zarr_file:
+            created_files.append(
+                (deeply_nested_attrs_zarr_file, "Zarr deeply nested attrs (Issue #120)")
+            )
+        else:
+            skipped_files.append("Zarr deeply nested attrs (zarr not available)")
 
         print("\n📄 Creating file with spaces in name...")
         spaces_file = create_sample_file_with_spaces()

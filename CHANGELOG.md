@@ -6,6 +6,26 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.10.0] - 2026-03-17
+
+### Added
+
+- **Issue #120**: Collapsible nested attributes view for Zarr and other formats
+  - **Problem**: Zarr (and similar formats) store attributes in JSON (e.g. `.zattrs`). The SDV view showed only one level of attributes; nested structures were hard to read.
+  - **Solution**: New optional **Nested Attributes View** (feature flag `scientificDataViewer.nestedAttributesView`, default `false`). When enabled, group attributes are rendered as an expandable/collapsible tree so users can browse the full nested structure. Supports nested objects and arrays.
+  - **Files modified**:
+    - src/common/config.ts — `NESTED_ATTRIBUTES_VIEW`, `getNestedAttributesView()`, `getExtensionConfigForWebview()` so the webview receives a plain config object with all feature flags
+    - package.json — new setting `scientificDataViewer.nestedAttributesView`, version 0.10.0
+    - src/panel/UIController.ts — use `getExtensionConfigForWebview()` in `handleGetExtensionConfig()`
+    - src/panel/webview/webview-script.js — `renderAttributesTree()`, and in `renderGroup()` use tree when `nestedAttributesView` is true
+    - src/panel/webview/styles.css — `.attributes-tree-node`, `.attribute-tree-summary`, `.attributes-tree-children` for tree styling
+  - **Test data**: python/create_sample_data.py — `create_sample_zarr_deeply_nested_attributes()` creates `sample_zarr_deeply_nested_attrs.zarr` with 5–10 levels of nested `.zattrs` for regression and manual testing.
+  - **Upstream**: Release notes document the need for improved representation of nested attributes in xarray; users may open or support a feature request on the xarray project.
+
+### Changed
+
+- Extension config sent to the webview is now a plain object built via `getExtensionConfigForWebview()` (including `nestedAttributesView`) instead of the raw WorkspaceConfiguration, so the webview reliably receives all feature flags.
+
 ## [0.9.0] - 2026-03-09
 
 ### Changed

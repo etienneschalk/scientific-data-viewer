@@ -410,6 +410,36 @@ select:focus {
     flex: 1;
 }
 
+/* Collapsible nested attributes tree (Issue #120) */
+.attributes-tree-node {
+    margin-left: 0.75rem;
+    margin-top: 2px;
+}
+.attributes-tree-node details {
+    margin-left: 0.5rem;
+}
+.attribute-tree-summary {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+.attribute-tree-summary::-webkit-details-marker {
+    display: none;
+}
+.attribute-tree-summary::before {
+    content: '▸ ';
+    display: inline-block;
+    width: 1em;
+}
+.attributes-tree-node[open] > .attribute-tree-summary::before {
+    content: '▾ ';
+}
+.attributes-tree-children {
+    margin-left: 0.5rem;
+    border-left: 1px solid var(--vscode-panel-border);
+    padding-left: 0.5rem;
+}
+
 .muted-text {
     color: var(--vscode-descriptionForeground);
 }

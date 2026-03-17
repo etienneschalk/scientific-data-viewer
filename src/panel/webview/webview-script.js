@@ -22,6 +22,9 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
     '.jpeg2000',
     // '.safe',
 ];
+
+const MAX_ATTR_DISPLAY_STR_LENGTH = 999999;
+
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -693,12 +696,13 @@ function displayDataInfo(data, filePath, extensionConfig) {
         return;
     }
 
-    // Feature flags (default true when config not available)
+    // Feature flags (default true when config not available; nestedAttributesView default true)
     const config = extensionConfig || {};
     const globalTimeControls = config.globalTimeControls !== false;
     const globalDimensionSlices = config.globalDimensionSlices !== false;
     const groupTimeControls = config.groupTimeControls !== false;
     const groupDimensionSlices = config.groupDimensionSlices !== false;
+    const nestedAttributesView = config.nestedAttributesView !== false;
 
     // Store current file path for plot operations
     globalState.currentDatasetFilePath = filePath;
@@ -732,6 +736,7 @@ function displayDataInfo(data, filePath, extensionConfig) {
                 renderGroup(data, groupName, {
                     groupTimeControls,
                     groupDimensionSlices,
+                    nestedAttributesView,
                     isFirstRootGroup: index === 0,
                 }),
             )
@@ -805,6 +810,7 @@ function renderGroup(data, groupName, flags) {
     const groupTimeControls = (flags && flags.groupTimeControls) !== false;
     const groupDimensionSlices =
         (flags && flags.groupDimensionSlices) !== false;
+    const nestedAttributesView = (flags && flags.nestedAttributesView) === true;
 
     // Add dimensions for group
     const dimensions = data.dimensions_flattened[groupName];
@@ -827,15 +833,25 @@ function renderGroup(data, groupName, flags) {
             ? renderGroupDataVariables(variables, groupName)
             : /*html*/ `<p class="muted-text">No variables found in this group.</p>`;
 
-    // Add attributes for group
+    // Add attributes for group (flat list or collapsible tree when nestedAttributesView is on)
     const attributes = data.attributes_flattened[groupName];
     const attributesHtml =
         attributes && Object.keys(attributes).length > 0
-            ? Object.entries(attributes)
-                  .map(([attrName, value]) => {
-                      return renderGroupAttributes(groupName, attrName, value);
-                  })
-                  .join('')
+            ? nestedAttributesView
+                ? renderAttributesTree(attributes, groupName, [
+                      'data-group',
+                      groupName,
+                      'attributes',
+                  ])
+                : Object.entries(attributes)
+                      .map(([attrName, value]) => {
+                          return renderGroupAttributes(
+                              groupName,
+                              attrName,
+                              value,
+                          );
+                      })
+                      .join('')
             : /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
 
     const groupPlotControlsHtml =
@@ -1080,6 +1096,90 @@ function renderGroupDataVariables(variables, groupName) {
             return renderDataVariable(variable, groupName);
         })
         .join('');
+}
+
+/**
+ * Renders a nested attributes object as a collapsible tree (for Zarr .zattrs and similar).
+ * Used when nestedAttributesView feature flag is on.
+ * @param {Record<string, any>} attrsObj - Attributes object (may contain nested objects/arrays)
+ * @param {string} groupName - Group name for id generation
+ * @param {string[]} idParts - Base id parts for joinId (e.g. ['data-group', groupName, 'attributes'])
+ * @returns {string} HTML string
+ */
+function renderAttributesTree(attrsObj, groupName, idParts) {
+    if (!attrsObj || typeof attrsObj !== 'object') {
+        return '';
+    }
+    const entries = Object.entries(attrsObj);
+    if (entries.length === 0) {
+        return /*html*/ `<p class="muted-text">No attributes.</p>`;
+    }
+    return entries
+        .map(([key, value]) => {
+            const safeKey = escapeHtml(String(key));
+            const leafId = joinId([...idParts, 'attr', safeKey]);
+            const isNested =
+                value !== null &&
+                typeof value === 'object' &&
+                !(value instanceof Date) &&
+                !(value instanceof RegExp);
+            if (isNested && !Array.isArray(value)) {
+                const childIdParts = [...idParts, 'attr', safeKey];
+                const innerHtml = renderAttributesTree(
+                    value,
+                    groupName,
+                    childIdParts,
+                );
+                return /*html*/ `
+                    <details class="attributes-tree-node" id="${joinId(childIdParts)}">
+                        <summary class="attribute-tree-summary"><span class="attribute-name">${safeKey}</span></summary>
+                        <div class="attributes-tree-children">${innerHtml}</div>
+                    </details>`;
+            }
+            if (isNested && Array.isArray(value)) {
+                const arrId = joinId([...idParts, 'attr', safeKey]);
+                const items = value
+                    .map((item, i) => {
+                        if (
+                            item !== null &&
+                            typeof item === 'object' &&
+                            !Array.isArray(item) &&
+                            !(item instanceof Date)
+                        ) {
+                            const inner = renderAttributesTree(
+                                item,
+                                groupName,
+                                [...idParts, 'attr', safeKey, String(i)],
+                            );
+                            return /*html*/ `<details class="attributes-tree-node"><summary class="attribute-tree-summary">[${i}]</summary><div class="attributes-tree-children">${inner}</div></details>`;
+                        }
+                        const str =
+                            typeof item === 'string'
+                                ? item
+                                : JSON.stringify(item);
+                        return /*html*/ `<div class="attribute-item"><span class="attribute-value muted-text">${escapeHtml(str)}</span></div>`;
+                    })
+                    .join('');
+                return /*html*/ `
+                    <details class="attributes-tree-node" id="${arrId}">
+                        <summary class="attribute-tree-summary"><span class="attribute-name">${safeKey}</span> <span class="muted-text">(${value.length} items)</span></summary>
+                        <div class="attributes-tree-children">${items}</div>
+                    </details>`;
+            }
+            const valueStr =
+                typeof value === 'string' ? value : JSON.stringify(value);
+            const displayStr =
+                valueStr.length > MAX_ATTR_DISPLAY_STR_LENGTH
+                    ? valueStr.slice(0, MAX_ATTR_DISPLAY_STR_LENGTH) + '…'
+                    : valueStr;
+            return /*html*/ `
+                <div class="attribute-item" id="${leafId}">
+                    <span class="attribute-name" title="${safeKey}">${safeKey}</span>
+                    <span> : </span>
+                    <span class="attribute-value muted-text" title="${escapeHtml(valueStr)}">${escapeHtml(displayStr)}</span>
+                </div>`;
+        })
+        .join('\n');
 }
 
 function renderGroupAttributes(groupName, attrName, value) {
