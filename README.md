@@ -37,7 +37,7 @@ Available on:
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
 - **Custom Editors**: Direct file opening with dedicated editors
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
-- **Collapsible Nested Attributes** (opt-in): Tree view for Zarr and other formats with nested JSON attributes (see [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)); enable via **Nested Attributes View** setting
+- **Collapsible Nested Attributes** (on by default): Tree view for Zarr and other formats with nested JSON attributes (see [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)); opt out via **Nested Attributes View** setting to use a flat list
 - **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
 - **Enhanced GeoTIFF Support**: Multi-band GeoTIFF files automatically convert bands to separate variables for improved readability and plotting
@@ -365,7 +365,7 @@ The extension includes configuration options that act as feature flags to contro
 
 - **`scientificDataViewer.nestedAttributesView`**
   - (type: `boolean`, default: `true`)
-  - When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar) where attributes are stored as nested JSON (e.g. `.zattrs`). On by default. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120).
+  - When on (default), group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar) where attributes are stored as nested JSON (e.g. `.zattrs`). Set to `false` to opt out and use the flat list. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120).
 
 ## 🔧 Troubleshooting
 
