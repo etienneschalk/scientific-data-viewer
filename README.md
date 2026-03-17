@@ -8,7 +8,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.9.0** • [Release Notes](./docs/RELEASE_NOTES_0.9.0.md)
+**Current Version: v0.10.0** • [Release Notes](./docs/RELEASE_NOTES_0.10.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -37,6 +37,7 @@ Available on:
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
 - **Custom Editors**: Direct file opening with dedicated editors
 - **Interactive Data Explorer**: Browse file structure, dimensions, variables, and attributes
+- **Collapsible Nested Attributes** (opt-in): Tree view for Zarr and other formats with nested JSON attributes (see [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)); enable via **Nested Attributes View** setting
 - **Browse Variable Information**: View variable dimension names, data types, shapes, and memory usage
 - **Basic Data Visualization**: Create plots and visualizations directly in VSCode **(experimental, best effort)**
 - **Enhanced GeoTIFF Support**: Multi-band GeoTIFF files automatically convert bands to separate variables for improved readability and plotting
@@ -359,6 +360,12 @@ The extension includes configuration options that act as feature flags to contro
 - **`scientificDataViewer.groupDimensionSlices`**
   - (type: `boolean`, default: `true`)
   - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
+
+**Display (attributes)**
+
+- **`scientificDataViewer.nestedAttributesView`**
+  - (type: `boolean`, default: `true`)
+  - When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar) where attributes are stored as nested JSON (e.g. `.zattrs`). On by default. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120).
 
 ## 🔧 Troubleshooting
 

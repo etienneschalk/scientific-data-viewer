@@ -14,7 +14,7 @@ import { showErrorMessage } from '../common/vscodeutils';
 import {
     getDevMode,
     getMaxSize,
-    getWorkspaceConfig,
+    getExtensionConfigForWebview,
     getWebviewExportTheme,
     getConvertBandsToVariables,
 } from '../common/config';
@@ -636,8 +636,7 @@ export class UIController {
 
         return (
             this.errorBoundary.wrapAsync(async () => {
-                const config = getWorkspaceConfig();
-                return config;
+                return getExtensionConfigForWebview();
             }, context) || {}
         );
     }

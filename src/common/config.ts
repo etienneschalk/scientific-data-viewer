@@ -47,6 +47,7 @@ const GROUP_TIME_CONTROLS = 'groupTimeControls';
 const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
+const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -65,6 +66,7 @@ const DEFAULT_GROUP_TIME_CONTROLS = false;
 const DEFAULT_GROUP_DIMENSION_SLICES = true;
 const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
 const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
+const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -179,6 +181,27 @@ export function getSmallValueDisplayMaxLen(): number {
         SMALL_VALUE_DISPLAY_MAX_LEN,
         DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     );
+}
+
+export function getNestedAttributesView(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        NESTED_ATTRIBUTES_VIEW,
+        DEFAULT_NESTED_ATTRIBUTES_VIEW,
+    );
+}
+
+/**
+ * Plain object of extension config flags for the webview (feature flags and display options).
+ * Use this instead of passing WorkspaceConfiguration so the webview receives a predictable object.
+ */
+export function getExtensionConfigForWebview(): Record<string, unknown> {
+    return {
+        globalTimeControls: getGlobalTimeControls(),
+        globalDimensionSlices: getGlobalDimensionSlices(),
+        groupTimeControls: getGroupTimeControls(),
+        groupDimensionSlices: getGroupDimensionSlices(),
+        nestedAttributesView: getNestedAttributesView(),
+    };
 }
 
 export async function updateUseExtensionOwnEnvironment(
