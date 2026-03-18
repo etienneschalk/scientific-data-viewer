@@ -2354,7 +2354,12 @@ function populateDimensionSlices(data, flags) {
 
 function getDimensionSlicesState() {
     const dimensionSlices = {};
-    const inputs = document.querySelectorAll('.dimension-slice-input');
+    const globalSection = document.getElementById(
+        'section-global-plot-controls',
+    );
+    const inputs = globalSection
+        ? globalSection.querySelectorAll('.dimension-slice-input')
+        : [];
     inputs.forEach((input) => {
         const val = input.value && input.value.trim();
         if (val) {
@@ -2699,11 +2704,16 @@ function setupTimeControlsEventListeners() {
     );
     if (clearDimSlicesButton) {
         clearDimSlicesButton.addEventListener('click', () => {
-            document
-                .querySelectorAll('.dimension-slice-input')
-                .forEach((input) => {
-                    input.value = '';
-                });
+            const globalSection = document.getElementById(
+                'section-global-plot-controls',
+            );
+            if (globalSection) {
+                globalSection
+                    .querySelectorAll('.dimension-slice-input')
+                    .forEach((input) => {
+                        input.value = '';
+                    });
+            }
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
             const plotColWrapInput =

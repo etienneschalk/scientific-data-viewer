@@ -33,16 +33,21 @@ Valid values are Matplotlib colormap names (e.g. `viridis`, `plasma`, `magma`, `
 
 When you export webview content, a success notification appears with options (Open File, Open in Browser, Reveal in Explorer). Previously, the extension waited for you to click one of these (or dismiss the message) before responding to the webview. If you left the popup open or ignored it, the webview request could hit its timeout and the pane would show "Failed to export webview content: Request timeout: exportWebview" even though the export had succeeded. The handler now returns success to the webview as soon as the file is written and shows the notification without blocking, so ignoring the popup no longer leads to an error state.
 
+## Global “Clear Dimension Slices” no longer clears group controls (testing find)
+
+This bug was found during testing of this release and is not tracked by a GitHub issue. Clicking **“Clear Dimension Slices and Plot Parameters”** in **Global Plot Controls** was incorrectly clearing the dimension-slice inputs in **Group Plot Controls** as well. Cause: the global clear handler and the function that reads global dimension-slice state both used `document.querySelectorAll('.dimension-slice-input')`. Group inputs use that same class (plus `group-dimension-slice-input`), so they were included. **Fix:** both the clear button and `getDimensionSlicesState()` now restrict to inputs inside the global section only (`#section-global-plot-controls`), so global and group controls stay independent. Other clear actions (global Clear Time, group Clear Dimension Slices) were already scoped correctly.
+
 ## Upgrading
 
 No breaking changes. After updating to 0.10.1, any cmap you set in plot controls will be applied to 2D+ plots. The plot timeout is configurable (default 20s); increase it in settings if you need longer runs.
 
 ## Summary of changes
 
-| Area        | Change                                                                       |
-| ----------- | ---------------------------------------------------------------------------- |
-| **Added**   | Issue #126: Configurable plot timeout (`scientificDataViewer.plotTimeoutMs`) |
-| **Fixed**   | Issue #101: Export webview no longer times out if user ignores success popup |
-| **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots        |
-| **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+            |
-| **Logging** | Python and extension logs reflect actual cmap sent and used                  |
+| Area        | Change                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| **Added**   | Issue #126: Configurable plot timeout (`scientificDataViewer.plotTimeoutMs`)             |
+| **Fixed**   | Issue #101: Export webview no longer times out if user ignores success popup             |
+| **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots                    |
+| **Fixed**   | Global “Clear Dimension Slices” no longer clears group controls (testing find; no issue) |
+| **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+                        |
+| **Logging** | Python and extension logs reflect actual cmap sent and used                              |
