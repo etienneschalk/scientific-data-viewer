@@ -8,6 +8,13 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [0.10.1] - 2026-03-18
 
+### Added
+
+- **Issue #126**: Configurable timeout for matplotlib plot generation.
+  - **Problem**: The plot timeout was hardcoded; users could not wait longer for expensive plots (e.g. large datasets) without manually slicing first.
+  - **Solution**: New setting `scientificDataViewer.plotTimeoutMs` (milliseconds, default 20000, min 1000, max 600000). The same value is used for the webview client timeout (when the UI shows "timed out" and sends abort) and the server-side timeout (when the backend kills the Python process), so behaviour is consistent. Increase the value (e.g. 120000 for 2 minutes) when you want a quicklook on huge data without slicing.
+  - **Files modified**: src/common/config.ts (`PLOT_TIMEOUT_MS`, `getPlotTimeoutMs()`, `getExtensionConfigForWebview()` includes `plotTimeoutMs`), package.json (new setting), src/panel/UIController.ts (pass `getPlotTimeoutMs()` to DataProcessor.createPlot), src/panel/webview/webview-script.js (globalState.plotTimeoutMs from config, passed to createPlot; effective timeout clamped and used for abort).
+
 ### Fixed
 
 - **Issue #128**: Colormap (cmap) from Group Plot Controls and Global Plot Controls was ignored; plots always used the default (e.g. viridis).

@@ -1,6 +1,17 @@
 # Scientific Data Viewer v0.10.1 Release Notes
 
-**TL;DR** — **Issue #128 fixed**: The colormap (cmap) you select in **Group Plot Controls** or **Global Plot Controls** is now applied to 2D+ plots. Previously it was ignored and the default (e.g. viridis) was used. Logging was improved so extension and Python logs accurately report which colormap is sent and used.
+**TL;DR** — **Issue #128 fixed**: The colormap (cmap) you select in **Group Plot Controls** or **Global Plot Controls** is now applied to 2D+ plots. **Issue #126**: Plot timeout is configurable so you can wait longer for expensive plots. Logging was improved so extension and Python logs accurately report which colormap is sent and used.
+
+## Configurable plot timeout (Issue #126)
+
+The timeout for matplotlib plot generation was previously hardcoded. You can now set **Plot Timeout (ms)** in extension settings to wait longer for heavy plots (e.g. large datasets) without having to slice the data first.
+
+- **Setting:** `scientificDataViewer.plotTimeoutMs`
+- **Default:** 20000 (20 seconds)
+- **Range:** 1000 (1 s) to 600000 (10 minutes)
+- **Where:** VS Code Settings → Scientific Data Viewer → **Plot Timeout (ms)**
+
+The same value is used for the client (when the UI shows "timed out" and triggers abort) and the server (when the backend kills the Python process), so behaviour stays consistent. Example: set to **120000** for 2 minutes when you want a quicklook on huge data without manually slicing.
 
 ## Colormap (cmap) now applied (Issue #128)
 
@@ -20,12 +31,13 @@ Valid values are Matplotlib colormap names (e.g. `viridis`, `plasma`, `magma`, `
 
 ## Upgrading
 
-No breaking changes. After updating to 0.10.1, any cmap you set in plot controls will be applied to 2D+ plots.
+No breaking changes. After updating to 0.10.1, any cmap you set in plot controls will be applied to 2D+ plots. The plot timeout is configurable (default 20s); increase it in settings if you need longer runs.
 
 ## Summary of changes
 
-| Area       | Change                                                                 |
-| ---------- | ---------------------------------------------------------------------- |
-| **Fixed**  | Issue #128: cmap from Group/Global Plot Controls now applied to plots  |
-| **Backend**| User-provided plot branch uses `plot.imshow()` with cmap when 2D+      |
-| **Logging**| Python and extension logs reflect actual cmap sent and used             |
+| Area        | Change                                                                 |
+| ----------- | ---------------------------------------------------------------------- |
+| **Added**   | Issue #126: Configurable plot timeout (`scientificDataViewer.plotTimeoutMs`) |
+| **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots  |
+| **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+      |
+| **Logging** | Python and extension logs reflect actual cmap sent and used            |

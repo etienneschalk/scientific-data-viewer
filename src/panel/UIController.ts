@@ -15,6 +15,7 @@ import {
     getDevMode,
     getMaxSize,
     getExtensionConfigForWebview,
+    getPlotTimeoutMs,
     getWebviewExportTheme,
     getConvertBandsToVariables,
 } from '../common/config';
@@ -389,6 +390,7 @@ export class UIController {
                 cmap,
                 bins,
                 operationId,
+                getPlotTimeoutMs(),
             );
 
             if (!plotData) {
