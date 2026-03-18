@@ -197,6 +197,11 @@ export class DataProcessor {
             Logger.info(
                 `[DataProcessor] [createPlot] Time controls: datetimeVariableName='${datetimeVariableName}', startDatetime='${startDatetime}', endDatetime='${endDatetime}'`,
             );
+            if (cmap && cmap.trim() !== '') {
+                Logger.info(
+                    `[DataProcessor] [createPlot] Colormap: ${cmap.trim()}`,
+                );
+            }
             if (operationId) {
                 Logger.info(
                     `[DataProcessor] [createPlot] Operation ID: ${operationId}, Server timeout: ${timeoutMs}ms`,
