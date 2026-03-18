@@ -1330,6 +1330,11 @@ def create_plot(
         if facet_col and facet_col.strip():
             applied_for_log["col"] = facet_col.strip()
         logger.info("Applied plot kwargs: %s", applied_for_log)
+        if "cmap" in plot_kwargs:
+            logger.info(
+                "cmap=%r will be applied via plot.imshow() (not passed to generic .plot())",
+                plot_kwargs["cmap"],
+            )
 
         def _kwargs_for_plot():
             """Return plot kwargs for generic .plot() calls. Never include cmap here:
@@ -1346,6 +1351,19 @@ def create_plot(
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
             if user_provided:
                 # --- User-provided branch: build plot only from user params (Issue #117) ---
+                # When cmap is set, use plot.imshow() so cmap is applied (Issue #128); generic .plot() strips cmap
+                _imshow_kw = (
+                    {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
+                )
+                _fig_kw = {}
+                if "aspect" in plot_kwargs:
+                    _fig_kw["aspect"] = plot_kwargs["aspect"]
+                if "size" in plot_kwargs:
+                    _fig_kw["size"] = plot_kwargs["size"]
+                if "col_wrap" in plot_kwargs:
+                    _fig_kw["col_wrap"] = plot_kwargs["col_wrap"]
+                _plot_imshow_kw = {**_fig_kw, **_imshow_kw}
+
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
                 )
@@ -1406,24 +1424,46 @@ def create_plot(
                         plot_kw["hue"] = hue_dim
 
                     if plot_kw:
-                        var.plot(**{**plot_kw, **_kwargs_for_plot()})
+                        if var.ndim >= 2 and _imshow_kw:
+                            logger.info(
+                                "Creating plot with user facets/dims and cmap via plot.imshow"
+                            )
+                            var.plot.imshow(**{**plot_kw, **_plot_imshow_kw})
+                        else:
+                            var.plot(**{**plot_kw, **_kwargs_for_plot()})
                     else:
                         logger.warning(
                             "Facet row/col and x/y/hue not found on variable; using default plot",
                         )
-                        var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
+                        if var.ndim >= 2 and _imshow_kw:
+                            logger.info(
+                                "Creating plot from user params with cmap via plot.imshow"
+                            )
+                            var.plot.imshow(**_plot_imshow_kw)
+                        else:
+                            var.plot(
+                                **_kwargs_for_plot()
+                            ) if plot_kwargs else var.plot()
                 else:
                     # Slices only, no facet/bins: let xarray choose plot type
                     logger.info("Creating plot from sliced data (xarray default)")
-                    var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
+                    if var.ndim >= 2 and _imshow_kw:
+                        logger.info(
+                            "Creating 2D+ plot from sliced data with cmap via plot.imshow"
+                        )
+                        var.plot.imshow(**_plot_imshow_kw)
+                    else:
+                        var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
             else:
                 # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
                 strategy = detect_plotting_strategy(var)
-                logger.info(f"Auto-plot: using strategy {strategy}")
+                logger.info("Auto-plot: using strategy %s", strategy)
                 # cmap is safe to pass only to .plot.imshow(); include when user set it
                 _imshow_kw = (
                     {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
                 )
+                if _imshow_kw:
+                    logger.info("Colormap for imshow: %s", _imshow_kw.get("cmap"))
                 # aspect/size: xarray uses figsize = (aspect * size, size) per panel when creating figure
                 _fig_kw = {}
                 if "aspect" in plot_kwargs:

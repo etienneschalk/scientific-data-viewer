@@ -6,6 +6,28 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.10.1] - 2026-03-18
+
+### Added
+
+- **Issue #126**: Configurable timeout for matplotlib plot generation.
+  - **Problem**: The plot timeout was hardcoded; users could not wait longer for expensive plots (e.g. large datasets) without manually slicing first.
+  - **Solution**: New setting `scientificDataViewer.plotTimeoutMs` (milliseconds, default 20000, min 1000, max 600000). The same value is used for the webview client timeout (when the UI shows "timed out" and sends abort) and the server-side timeout (when the backend kills the Python process), so behaviour is consistent. Increase the value (e.g. 120000 for 2 minutes) when you want a quicklook on huge data without slicing.
+  - **Files modified**: src/common/config.ts (`PLOT_TIMEOUT_MS`, `getPlotTimeoutMs()`, `getExtensionConfigForWebview()` includes `plotTimeoutMs`), package.json (new setting), src/panel/UIController.ts (pass `getPlotTimeoutMs()` to DataProcessor.createPlot), src/panel/webview/webview-script.js (globalState.plotTimeoutMs from config, passed to createPlot; effective timeout clamped and used for abort).
+
+### Fixed
+
+- **Issue #101**: Webview export could put the pane into an error state ("Request timeout: exportWebview") when the user did not click any button on the "Webview content exported successfully" popup. The handler was awaiting the file-action dialog, so the response to the webview was delayed until the user chose Open/Reveal or the popup was dismissed; if the user ignored the popup, the webview request eventually timed out. The handler now returns success to the webview immediately after writing the file and shows the notification without awaiting it, so ignoring the popup no longer causes a timeout error. **Files modified**: src/panel/UIController.ts (handleExportWebview: call showFileActionDialog without await, .catch for logging).
+
+- **Issue #128**: Colormap (cmap) from Group Plot Controls and Global Plot Controls was ignored; plots always used the default (e.g. viridis).
+  - **Cause**: In the user-provided plot branch (when dimension slices, facet row/col, or other plot params are set), the backend used `_kwargs_for_plot()` which strips `cmap` and only called generic `var.plot()`, never `var.plot.imshow()`, so the selected cmap was never applied.
+  - **Solution**: In the user-provided branch, when the variable is 2D+ and a cmap is set, the backend now calls `var.plot.imshow()` with the chosen cmap (and aspect/size/col_wrap as needed) so the colormap from group or global controls is applied. Auto-plot branch was already correct.
+  - **Files modified**: python/get_data_info.py (user-provided branch uses plot.imshow with \_imshow_kw/\_plot_imshow_kw when 2D+ and cmap set; col_wrap passed through; logging improved), src/python/DataProcessor.ts (log colormap sent when creating plot).
+
+### Changed
+
+- **Logging**: Plot and extension logs now reflect actual cmap usage: Python logs when cmap is applied via `plot.imshow()`, which colormap is used in the auto branch, and DataProcessor logs the colormap sent to the backend when creating a plot.
+
 ## [0.10.0] - 2026-03-17
 
 ### Added

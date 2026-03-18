@@ -48,6 +48,7 @@ const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
+const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -67,6 +68,8 @@ const DEFAULT_GROUP_DIMENSION_SLICES = true;
 const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
 const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
+// Default plot timeout (ms); server and client use this so the process is killed and UX is consistent
+const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -190,6 +193,17 @@ export function getNestedAttributesView(): boolean {
     );
 }
 
+export function getPlotTimeoutMs(): number {
+    const raw = getWorkspaceConfig().get<number>(
+        PLOT_TIMEOUT_MS,
+        DEFAULT_PLOT_TIMEOUT_MS,
+    );
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 1000) {
+        return DEFAULT_PLOT_TIMEOUT_MS;
+    }
+    return Math.min(Math.floor(raw), 600000); // cap at 10 minutes
+}
+
 /**
  * Plain object of extension config flags for the webview (feature flags and display options).
  * Use this instead of passing WorkspaceConfiguration so the webview receives a predictable object.
@@ -201,6 +215,7 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         groupTimeControls: getGroupTimeControls(),
         groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
+        plotTimeoutMs: getPlotTimeoutMs(),
     };
 }
 

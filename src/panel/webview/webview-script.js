@@ -188,8 +188,15 @@ class WebviewMessageBus {
         robust,
         cmap,
         bins,
-        timeout = 15000,
+        timeout,
     ) {
+        const effectiveTimeout =
+            timeout !== null &&
+            typeof timeout === 'number' &&
+            Number.isFinite(timeout) &&
+            timeout >= 1000
+                ? Math.min(Math.floor(timeout), 600000)
+                : (globalState.plotTimeoutMs ?? 20000);
         // Generate a unique operation ID for this plot request
         const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -297,7 +304,7 @@ class WebviewMessageBus {
                 isResolved = true;
 
                 console.warn(
-                    `⏰ Plot request timed out after ${timeout}ms, aborting process: ${operationId}`,
+                    `⏰ Plot request timed out after ${effectiveTimeout}ms, aborting process: ${operationId}`,
                 );
 
                 // Send abort request to kill the backend process
@@ -314,10 +321,10 @@ class WebviewMessageBus {
                 cleanupOperation();
                 reject(
                     new Error(
-                        `Plot request timeout: The plot generation took too long (>${timeout / 1000}s). The backend process has been terminated. Try selecting a smaller data subset or a simpler plot type.`,
+                        `Plot request timeout: The plot generation took too long (>${effectiveTimeout / 1000}s). The backend process has been terminated. Try selecting a smaller data subset or a simpler plot type.`,
                     ),
                 );
-            }, timeout);
+            }, effectiveTimeout);
 
             try {
                 // Send the actual request (without the default timeout)
@@ -448,6 +455,8 @@ try {
 // Global state for file path
 const globalState = {
     currentDatasetFilePath: null,
+    /** Plot timeout in ms (from extension config); used by createPlot */
+    plotTimeoutMs: 20000,
 };
 
 // Track active plot operations for cancel functionality
@@ -703,6 +712,13 @@ function displayDataInfo(data, filePath, extensionConfig) {
     const groupTimeControls = config.groupTimeControls !== false;
     const groupDimensionSlices = config.groupDimensionSlices !== false;
     const nestedAttributesView = config.nestedAttributesView !== false;
+    const timeoutMs = config.plotTimeoutMs;
+    globalState.plotTimeoutMs =
+        typeof timeoutMs === 'number' &&
+        Number.isFinite(timeoutMs) &&
+        timeoutMs >= 1000
+            ? Math.min(Math.floor(timeoutMs), 600000)
+            : 20000;
 
     // Store current file path for plot operations
     globalState.currentDatasetFilePath = filePath;
@@ -2338,7 +2354,12 @@ function populateDimensionSlices(data, flags) {
 
 function getDimensionSlicesState() {
     const dimensionSlices = {};
-    const inputs = document.querySelectorAll('.dimension-slice-input');
+    const globalSection = document.getElementById(
+        'section-global-plot-controls',
+    );
+    const inputs = globalSection
+        ? globalSection.querySelectorAll('.dimension-slice-input')
+        : [];
     inputs.forEach((input) => {
         const val = input.value && input.value.trim();
         if (val) {
@@ -2683,11 +2704,16 @@ function setupTimeControlsEventListeners() {
     );
     if (clearDimSlicesButton) {
         clearDimSlicesButton.addEventListener('click', () => {
-            document
-                .querySelectorAll('.dimension-slice-input')
-                .forEach((input) => {
-                    input.value = '';
-                });
+            const globalSection = document.getElementById(
+                'section-global-plot-controls',
+            );
+            if (globalSection) {
+                globalSection
+                    .querySelectorAll('.dimension-slice-input')
+                    .forEach((input) => {
+                        input.value = '';
+                    });
+            }
             const facetRowSelect = document.getElementById('facetRowSelect');
             const facetColSelect = document.getElementById('facetColSelect');
             const plotColWrapInput =
@@ -3248,6 +3274,7 @@ async function handleCreateAllPlots() {
                 fRobust,
                 fCmap,
                 fBins,
+                globalState.plotTimeoutMs,
             );
             displayVariablePlot(variable, plotData);
 
@@ -3524,6 +3551,7 @@ async function handleCreateVariablePlot(variable) {
             robust,
             cmap,
             bins,
+            globalState.plotTimeoutMs,
         );
         displayVariablePlot(variable, plotData);
     } catch (error) {

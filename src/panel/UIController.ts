@@ -15,6 +15,7 @@ import {
     getDevMode,
     getMaxSize,
     getExtensionConfigForWebview,
+    getPlotTimeoutMs,
     getWebviewExportTheme,
     getConvertBandsToVariables,
 } from '../common/config';
@@ -389,6 +390,7 @@ export class UIController {
                 cmap,
                 bins,
                 operationId,
+                getPlotTimeoutMs(),
             );
 
             if (!plotData) {
@@ -774,13 +776,18 @@ export class UIController {
                     Buffer.from(processedHtmlContent, 'utf8'),
                 );
 
-                // Show success notification
-                await this.showFileActionDialog(
+                // Show success notification without awaiting (Issue #101: if user ignores
+                // the popup, the webview request must not stay open and later timeout)
+                this.showFileActionDialog(
                     `Webview content exported successfully: ${saveUri.fsPath
                         .split('/')
                         .pop()}`,
                     saveUri,
-                );
+                ).catch((err) => {
+                    Logger.error(
+                        `[UIController] showFileActionDialog after export: ${err}`,
+                    );
+                });
 
                 Logger.info(
                     `[UIController] Webview content exported: ${saveUri.fsPath}`,
