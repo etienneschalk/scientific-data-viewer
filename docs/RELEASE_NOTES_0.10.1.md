@@ -39,10 +39,10 @@ No breaking changes. After updating to 0.10.1, any cmap you set in plot controls
 
 ## Summary of changes
 
-| Area        | Change                                                                 |
-| ----------- | ---------------------------------------------------------------------- |
+| Area        | Change                                                                       |
+| ----------- | ---------------------------------------------------------------------------- |
 | **Added**   | Issue #126: Configurable plot timeout (`scientificDataViewer.plotTimeoutMs`) |
 | **Fixed**   | Issue #101: Export webview no longer times out if user ignores success popup |
-| **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots  |
-| **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+      |
-| **Logging** | Python and extension logs reflect actual cmap sent and used            |
+| **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots        |
+| **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+            |
+| **Logging** | Python and extension logs reflect actual cmap sent and used                  |

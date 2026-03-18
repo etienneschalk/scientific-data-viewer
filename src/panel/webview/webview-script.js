@@ -191,7 +191,7 @@ class WebviewMessageBus {
         timeout,
     ) {
         const effectiveTimeout =
-            timeout != null &&
+            timeout !== null &&
             typeof timeout === 'number' &&
             Number.isFinite(timeout) &&
             timeout >= 1000

@@ -22,7 +22,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Issue #128**: Colormap (cmap) from Group Plot Controls and Global Plot Controls was ignored; plots always used the default (e.g. viridis).
   - **Cause**: In the user-provided plot branch (when dimension slices, facet row/col, or other plot params are set), the backend used `_kwargs_for_plot()` which strips `cmap` and only called generic `var.plot()`, never `var.plot.imshow()`, so the selected cmap was never applied.
   - **Solution**: In the user-provided branch, when the variable is 2D+ and a cmap is set, the backend now calls `var.plot.imshow()` with the chosen cmap (and aspect/size/col_wrap as needed) so the colormap from group or global controls is applied. Auto-plot branch was already correct.
-  - **Files modified**: python/get_data_info.py (user-provided branch uses plot.imshow with _imshow_kw/_plot_imshow_kw when 2D+ and cmap set; col_wrap passed through; logging improved), src/python/DataProcessor.ts (log colormap sent when creating plot).
+  - **Files modified**: python/get_data_info.py (user-provided branch uses plot.imshow with \_imshow_kw/\_plot_imshow_kw when 2D+ and cmap set; col_wrap passed through; logging improved), src/python/DataProcessor.ts (log colormap sent when creating plot).
 
 ### Changed
 
