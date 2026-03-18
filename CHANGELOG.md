@@ -17,6 +17,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
+- **Issue #101**: Webview export could put the pane into an error state ("Request timeout: exportWebview") when the user did not click any button on the "Webview content exported successfully" popup. The handler was awaiting the file-action dialog, so the response to the webview was delayed until the user chose Open/Reveal or the popup was dismissed; if the user ignored the popup, the webview request eventually timed out. The handler now returns success to the webview immediately after writing the file and shows the notification without awaiting it, so ignoring the popup no longer causes a timeout error. **Files modified**: src/panel/UIController.ts (handleExportWebview: call showFileActionDialog without await, .catch for logging).
+
 - **Issue #128**: Colormap (cmap) from Group Plot Controls and Global Plot Controls was ignored; plots always used the default (e.g. viridis).
   - **Cause**: In the user-provided plot branch (when dimension slices, facet row/col, or other plot params are set), the backend used `_kwargs_for_plot()` which strips `cmap` and only called generic `var.plot()`, never `var.plot.imshow()`, so the selected cmap was never applied.
   - **Solution**: In the user-provided branch, when the variable is 2D+ and a cmap is set, the backend now calls `var.plot.imshow()` with the chosen cmap (and aspect/size/col_wrap as needed) so the colormap from group or global controls is applied. Auto-plot branch was already correct.

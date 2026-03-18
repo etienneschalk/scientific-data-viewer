@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.10.1 Release Notes
 
-**TL;DR** — **Issue #128 fixed**: The colormap (cmap) you select in **Group Plot Controls** or **Global Plot Controls** is now applied to 2D+ plots. **Issue #126**: Plot timeout is configurable so you can wait longer for expensive plots. Logging was improved so extension and Python logs accurately report which colormap is sent and used.
+**TL;DR** — **Issue #128 fixed**: The colormap (cmap) you select in **Group Plot Controls** or **Global Plot Controls** is now applied to 2D+ plots. **Issue #126**: Plot timeout is configurable. **Issue #101 fixed**: Export webview no longer times out if you ignore the success popup. Logging was improved so extension and Python logs accurately report which colormap is sent and used.
 
 ## Configurable plot timeout (Issue #126)
 
@@ -29,6 +29,10 @@ When you set a **cmap** in the Dimension Slices / Plot Controls (e.g. `plasma`, 
 
 Valid values are Matplotlib colormap names (e.g. `viridis`, `plasma`, `magma`, `cividis`). See [Matplotlib colormaps](https://matplotlib.org/stable/users/explain/colors/colormaps.html).
 
+## Webview export no longer times out when popup is ignored (Issue #101)
+
+When you export webview content, a success notification appears with options (Open File, Open in Browser, Reveal in Explorer). Previously, the extension waited for you to click one of these (or dismiss the message) before responding to the webview. If you left the popup open or ignored it, the webview request could hit its timeout and the pane would show "Failed to export webview content: Request timeout: exportWebview" even though the export had succeeded. The handler now returns success to the webview as soon as the file is written and shows the notification without blocking, so ignoring the popup no longer leads to an error state.
+
 ## Upgrading
 
 No breaking changes. After updating to 0.10.1, any cmap you set in plot controls will be applied to 2D+ plots. The plot timeout is configurable (default 20s); increase it in settings if you need longer runs.
@@ -38,6 +42,7 @@ No breaking changes. After updating to 0.10.1, any cmap you set in plot controls
 | Area        | Change                                                                 |
 | ----------- | ---------------------------------------------------------------------- |
 | **Added**   | Issue #126: Configurable plot timeout (`scientificDataViewer.plotTimeoutMs`) |
+| **Fixed**   | Issue #101: Export webview no longer times out if user ignores success popup |
 | **Fixed**   | Issue #128: cmap from Group/Global Plot Controls now applied to plots  |
 | **Backend** | User-provided plot branch uses `plot.imshow()` with cmap when 2D+      |
 | **Logging** | Python and extension logs reflect actual cmap sent and used            |
