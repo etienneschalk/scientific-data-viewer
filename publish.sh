@@ -542,9 +542,28 @@ if [ -d ".git" ]; then
     fi
 fi
 
-# Check 7: Version hasn't been published already
-print_step "Checking if version already published..."
-# This is a best-effort check - may fail if not logged in
+# Check 7: GitHub tag + release already exist for this version (do not re-publish)
+print_step "Checking for existing GitHub tag and release..."
+TAG_NAME="v${PACKAGE_VERSION}"
+if ! command -v gh &> /dev/null; then
+    print_error "Cannot tell if version ${PACKAGE_VERSION} is already released on GitHub without the GitHub CLI."
+    print_info "Install gh from https://cli.github.com/ — this script needs it to detect an existing tag and release before you publish."
+    exit 1
+fi
+if ! gh auth status &>/dev/null; then
+    print_warning "Skipping GitHub duplicate-release check (gh not authenticated — run: gh auth login)"
+else
+    if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
+        if gh release view "$TAG_NAME" &>/dev/null; then
+            print_error "GitHub already has tag ${TAG_NAME} and a release for version ${PACKAGE_VERSION}."
+            print_info "Nothing to do for this version — bump package.json (and CHANGELOG, README, release notes), commit, then run this script again."
+            exit 1
+        fi
+    fi
+    print_success "No existing GitHub tag+release pair for ${PACKAGE_VERSION}; OK to continue"
+fi
+
+# Resolve expected .vsix filename (vsce package output)
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
 
 if [ "$CHECKS_PASSED" = false ]; then
