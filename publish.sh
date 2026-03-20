@@ -5,8 +5,9 @@
 # =============================================================================
 # This script publishes the extension to both VS Code Marketplace and Open VSX
 # with comprehensive version consistency checks (CHANGELOG, README, release notes, git).
-# After a successful publish it creates the git tag vX.Y.Z (if needed), pushes it, and
-# opens a minimal GitHub Release (title X.Y.Z) with a changelog permalink in the notes.
+# After build/package, it creates the git tag vX.Y.Z (if needed), pushes it, and opens a
+# minimal GitHub Release (title X.Y.Z) with a changelog permalink — then publishes to the
+# marketplaces so the release exists before publication.
 #
 # Prerequisites:
 #   - VS Code Marketplace: Run `vsce login <publisher>` with your PAT first
@@ -14,7 +15,7 @@
 #   - GitHub: GitHub CLI (`gh`) installed and `gh auth login` (for PR/CI verification and releases)
 #
 # Usage:
-#   ./publish.sh                    # Full publish to both marketplaces + GitHub release
+#   ./publish.sh                    # Tag + GitHub release, then both marketplaces
 #   ./publish.sh --dry-run          # Package only, don't publish or create release
 #   ./publish.sh --skip-tests       # Skip tests (use with caution)
 #   ./publish.sh --skip-pr-check    # Skip GitHub PR / CI verification
@@ -507,7 +508,7 @@ if [ -d ".git" ]; then
 
     verify_github_ci
 
-    # Check 6: Git tag alignment (tag is created/pushed after a successful publish unless --skip-github-release)
+    # Check 6: Git tag alignment (tag/release run after confirm, before marketplaces, unless --skip-github-release)
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     HEAD_COMMIT=$(git rev-parse HEAD)
@@ -521,9 +522,9 @@ if [ -d ".git" ]; then
         fi
     else
         if [ "$DRY_RUN" = true ]; then
-            print_info "Tag ${TAG_NAME} is not created yet (dry run; a real publish would create/push it after marketplaces unless --skip-github-release)"
+            print_info "Tag ${TAG_NAME} is not created yet (dry run; a full run would create tag + release then marketplaces unless --skip-github-release)"
         else
-            print_info "Tag ${TAG_NAME} will be created and pushed after a successful marketplace publish"
+            print_info "Tag ${TAG_NAME} will be created and pushed after you confirm, before marketplace publish"
         fi
     fi
 
@@ -665,15 +666,22 @@ print_header "Publishing"
 
 # Confirmation
 echo ""
-echo "Ready to publish version ${PACKAGE_VERSION} to:"
+echo "Ready to release version ${PACKAGE_VERSION}:"
+if [ "$SKIP_GITHUB_RELEASE" = false ]; then
+    echo "  • Git tag v${PACKAGE_VERSION} + GitHub Release (title ${PACKAGE_VERSION})"
+fi
 [ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
 [ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
 echo ""
-read -p "Proceed with publishing? (y/N) " -n 1 -r
+read -p "Proceed with tag/release and publishing? (y/N) " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     print_error "Aborted by user"
     exit 1
+fi
+
+if [ "$SKIP_GITHUB_RELEASE" = false ]; then
+    create_github_tag_and_release
 fi
 
 PUBLISH_SUCCESS=true
@@ -702,10 +710,6 @@ if [ "$SKIP_OPENVSX" = false ]; then
     fi
 fi
 
-if [ "$PUBLISH_SUCCESS" = true ] && [ "$SKIP_GITHUB_RELEASE" = false ]; then
-    create_github_tag_and_release
-fi
-
 # =============================================================================
 # Summary
 # =============================================================================
@@ -716,14 +720,18 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
     print_success "Publishing completed successfully!"
     echo ""
     echo "Next steps:"
-    echo "  1. Verify the extension on the marketplaces"
     TAG_NAME="v${PACKAGE_VERSION}"
+    STEP=1
     if [ "$SKIP_GITHUB_RELEASE" = false ] && [ -n "$REPO_URL" ]; then
-        echo "  2. GitHub release: ${REPO_URL}/releases/tag/${TAG_NAME}"
-    elif [ "$SKIP_GITHUB_RELEASE" = true ] && [ -n "$REPO_URL" ]; then
-        echo "  2. Create tag & release manually if needed:"
-        echo "     git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
-        echo "     gh release create ${TAG_NAME} --title ${PACKAGE_VERSION} --notes \"...\""
+        echo "  ${STEP}. Verify GitHub release: ${REPO_URL}/releases/tag/${TAG_NAME}"
+        STEP=$((STEP + 1))
+    fi
+    echo "  ${STEP}. Verify the extension on the marketplaces"
+    STEP=$((STEP + 1))
+    if [ "$SKIP_GITHUB_RELEASE" = true ] && [ -n "$REPO_URL" ]; then
+        echo "  ${STEP}. Create tag & release manually if you still need them:"
+        echo "       git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
+        echo "       gh release create ${TAG_NAME} --title ${PACKAGE_VERSION} --notes \"...\""
     fi
 
     echo ""

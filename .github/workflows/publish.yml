@@ -1,6 +1,6 @@
 # =============================================================================
 # DISABLED — reference only. Publishing is performed locally via ./publish.sh
-# (marketplaces + GitHub release/tag via gh). Uncomment below to run publish
+# (GitHub tag/release via gh, then marketplaces). Uncomment below to run publish
 # from GitHub Actions when a release is published instead.
 # =============================================================================
 #
