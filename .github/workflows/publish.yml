@@ -1,3 +1,9 @@
+# =============================================================================
+# DISABLED — reference only. Publishing is performed locally via ./publish.sh
+# (marketplaces + GitHub release/tag via gh). Uncomment below to run publish
+# from GitHub Actions when a release is published instead.
+# =============================================================================
+#
 # name: Publish Extension
 
 # # Trigger on GitHub Release publication
