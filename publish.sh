@@ -4,7 +4,7 @@
 # Scientific Data Viewer - Manual Publishing Script
 # =============================================================================
 # This script publishes the extension to both VS Code Marketplace and Open VSX
-# with comprehensive version consistency checks.
+# with comprehensive version consistency checks (CHANGELOG, README, release notes, git).
 #
 # Prerequisites:
 #   - VS Code Marketplace: Run `vsce login <publisher>` with your PAT first
@@ -246,7 +246,30 @@ else
     fi
 fi
 
-# Check 3: Git working directory is clean
+# Check 3: README.md lists current version and release notes link
+print_step "Checking README.md..."
+if [ -f "README.md" ]; then
+    README_OK=true
+    if ! grep -Fq "Current Version: v${PACKAGE_VERSION}" README.md; then
+        print_error "README.md does not show Current Version: v${PACKAGE_VERSION}"
+        print_info "Update the badge line near the top, e.g. **Current Version: v${PACKAGE_VERSION}**"
+        README_OK=false
+    fi
+    if ! grep -Fq "RELEASE_NOTES_${PACKAGE_VERSION}.md" README.md; then
+        print_error "README.md does not link to docs/RELEASE_NOTES_${PACKAGE_VERSION}.md"
+        print_info "Update the release notes link, e.g. [Release Notes](./docs/RELEASE_NOTES_${PACKAGE_VERSION}.md)"
+        README_OK=false
+    fi
+    if [ "$README_OK" = true ]; then
+        print_success "README.md references version ${PACKAGE_VERSION}"
+    else
+        CHECKS_PASSED=false
+    fi
+else
+    print_warning "README.md not found"
+fi
+
+# Check 4: Git working directory is clean
 print_step "Checking git status..."
 if [ -d ".git" ]; then
     if [ -n "$(git status --porcelain)" ]; then
@@ -263,12 +286,7 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    # Check 4: Current branch (check this BEFORE tag operations)
-=======
-    # Check 3: Current branch (check this BEFORE tag operations)
->>>>>>> feat(publish): improve publish script with better checks and automation
+    # Check 5: Current branch (before tag operations)
     print_step "Checking current branch..."
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
@@ -283,24 +301,12 @@ if [ -d ".git" ]; then
         fi
     fi
 
-<<<<<<< HEAD
-    # Check 5: Git tag for this version
+    # Check 6: Git tag for this version
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
         print_success "Git tag ${TAG_NAME} exists locally"
-=======
-    # Check 3: Git tag for this version
-=======
-    # Check 4: Git tag for this version
->>>>>>> feat(publish): improve publish script with better checks and automation
-    print_step "Checking git tags..."
-    TAG_NAME="v${PACKAGE_VERSION}"
-    if git tag -l | grep -q "^${TAG_NAME}$"; then
-        print_success "Git tag ${TAG_NAME} exists"
->>>>>>> Draft for auto publish, and simpler manual script
 
-        # Check if we're on the tagged commit
         TAG_COMMIT=$(git rev-list -n 1 "${TAG_NAME}" 2>/dev/null || echo "")
         HEAD_COMMIT=$(git rev-parse HEAD)
         if [ "$TAG_COMMIT" != "$HEAD_COMMIT" ]; then
@@ -308,10 +314,8 @@ if [ -d ".git" ]; then
             print_info "Tag commit: ${TAG_COMMIT:0:8}"
             print_info "HEAD commit: ${HEAD_COMMIT:0:8}"
         fi
-<<<<<<< HEAD
 
-        # Check if tag is pushed to remote
-        if ! git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
+        if ! git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
             print_warning "Git tag ${TAG_NAME} is not pushed to remote"
             if [ "$DRY_RUN" = true ]; then
                 print_info "Would push tag ${TAG_NAME} in non-dry-run mode"
@@ -343,50 +347,11 @@ if [ -d ".git" ]; then
             else
                 print_warning "Tag not created (remember to create it manually after publishing)"
             fi
-=======
-    else
-        print_warning "Git tag ${TAG_NAME} does not exist yet"
-<<<<<<< HEAD
-        print_info "Consider creating it after publishing: git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
-    fi
-
-    # Check 4: Current branch
-    print_step "Checking current branch..."
-    CURRENT_BRANCH=$(git branch --show-current)
-    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
-        print_success "On branch: ${CURRENT_BRANCH}"
-    else
-        print_warning "Not on main/master branch (current: ${CURRENT_BRANCH})"
-        read -p "Continue anyway? (y/N) " -n 1 -r
-        echo ""
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            print_error "Aborted by user"
-            exit 1
->>>>>>> Draft for auto publish, and simpler manual script
-=======
-        if [ "$DRY_RUN" = true ]; then
-            print_info "Would create tag ${TAG_NAME} in non-dry-run mode"
-        else
-            read -p "Create and push tag ${TAG_NAME}? (Y/n) " -n 1 -r
-            echo ""
-            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                git tag "${TAG_NAME}"
-                print_success "Created tag ${TAG_NAME}"
-                git push origin "${TAG_NAME}"
-                print_success "Pushed tag ${TAG_NAME} to origin"
-            else
-                print_warning "Tag not created (remember to create it manually after publishing)"
-            fi
->>>>>>> feat(publish): improve publish script with better checks and automation
         fi
     fi
 fi
 
-<<<<<<< HEAD
-# Check 6: Version hasn't been published already
-=======
-# Check 5: Version hasn't been published already
->>>>>>> Draft for auto publish, and simpler manual script
+# Check 7: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
@@ -553,25 +518,21 @@ fi
 
 print_header "Summary"
 
-<<<<<<< HEAD
 # Get GitHub repo URL from package.json or git remote
 REPO_URL=$(node -p "require('./package.json').repository?.url || ''" 2>/dev/null | sed 's/\.git$//' | sed 's|^git+||')
 if [ -z "$REPO_URL" ]; then
     REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|^git@github.com:|https://github.com/|')
 fi
 
-=======
->>>>>>> Draft for auto publish, and simpler manual script
 if [ "$PUBLISH_SUCCESS" = true ]; then
     print_success "Publishing completed successfully!"
     echo ""
     echo "Next steps:"
     echo "  1. Verify the extension on the marketplaces"
-<<<<<<< HEAD
 
     # Check if tag exists on remote
     TAG_NAME="v${PACKAGE_VERSION}"
-    if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
+    if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
         echo "  2. Tag ${TAG_NAME} is already pushed. View the release:"
         echo "     ${REPO_URL}/releases/tag/${TAG_NAME}"
     else
@@ -581,12 +542,6 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
         echo "     gh release create ${TAG_NAME} --generate-notes"
     fi
 
-=======
-    echo "  2. Create a GitHub release if not done yet:"
-    echo "     git tag v${PACKAGE_VERSION}"
-    echo "     git push origin v${PACKAGE_VERSION}"
-    echo "     gh release create v${PACKAGE_VERSION} --generate-notes"
->>>>>>> Draft for auto publish, and simpler manual script
     echo ""
     echo "Marketplace URLs:"
     [ "$SKIP_VSCODE" = false ] && echo "  • https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"
