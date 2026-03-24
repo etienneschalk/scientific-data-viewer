@@ -1374,7 +1374,9 @@ def create_plot(
                     _fig_kw["size"] = plot_kwargs["size"]
                 if "col_wrap" in plot_kwargs:
                     _fig_kw["col_wrap"] = plot_kwargs["col_wrap"]
-                _plot_imshow_kw = {**_kwargs_for_imshow(), **_fig_kw, **_imshow_kw}
+                # Single merge: _kwargs_for_imshow() already includes cmap; do not also ** a
+                # separate {_imshow_kw} into the same call (Python 3.8: duplicate ** cmap errors).
+                _plot_imshow_kw = {**_kwargs_for_imshow(), **_fig_kw}
 
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
@@ -1509,7 +1511,7 @@ def create_plot(
                     _fig_kw["aspect"] = plot_kwargs["aspect"]
                 if "size" in plot_kwargs:
                     _fig_kw["size"] = plot_kwargs["size"]
-                _plot_kw = {**_kwargs_for_imshow(), **_fig_kw, **_imshow_kw}
+                _plot_kw = {**_kwargs_for_imshow(), **_fig_kw}
 
                 if strategy == "2d_classic":
                     logger.info("Creating 2D spatial plot")
@@ -1529,12 +1531,13 @@ def create_plot(
                     first_dim = var.dims[0]
                     col_wrap = min(4, var.sizes.get(first_dim, 4))
                     var.plot.imshow(
-                        col=first_dim,
-                        aspect=_fig_kw.get("aspect", 1),
-                        size=_fig_kw.get("size", 4),
-                        col_wrap=col_wrap,
-                        **_imshow_kw,
-                        **_kwargs_for_imshow(),
+                        **{
+                            **_kwargs_for_imshow(),
+                            "col": first_dim,
+                            "aspect": _fig_kw.get("aspect", 1),
+                            "size": _fig_kw.get("size", 4),
+                            "col_wrap": col_wrap,
+                        }
                     )
                     _log_plot_used("auto:strategy=3d_col:DataArray.plot.imshow")
                 elif strategy == "4d_col_row":
@@ -1542,12 +1545,13 @@ def create_plot(
                     first_dim = var.dims[0]
                     second_dim = var.dims[1]
                     var.plot.imshow(
-                        col=second_dim,
-                        row=first_dim,
-                        aspect=_fig_kw.get("aspect", 1),
-                        size=_fig_kw.get("size", 4),
-                        **_imshow_kw,
-                        **_kwargs_for_imshow(),
+                        **{
+                            **_kwargs_for_imshow(),
+                            "col": second_dim,
+                            "row": first_dim,
+                            "aspect": _fig_kw.get("aspect", 1),
+                            "size": _fig_kw.get("size", 4),
+                        }
                     )
                     _log_plot_used("auto:strategy=4d_col_row:DataArray.plot.imshow")
                 else:
@@ -1590,12 +1594,13 @@ def create_plot(
                         elif var.ndim == 3:
                             first = var.dims[0]
                             var.plot.imshow(
-                                col=first,
-                                aspect=_fig_kw.get("aspect", 1),
-                                size=_fig_kw.get("size", 4),
-                                col_wrap=min(4, var.sizes.get(first, 4)),
-                                **_imshow_kw,
-                                **_kwargs_for_imshow(),
+                                **{
+                                    **_kwargs_for_imshow(),
+                                    "col": first,
+                                    "aspect": _fig_kw.get("aspect", 1),
+                                    "size": _fig_kw.get("size", 4),
+                                    "col_wrap": min(4, var.sizes.get(first, 4)),
+                                }
                             )
                             _log_plot_used(
                                 "auto:default:cmap:DataArray.plot.imshow(ndim=3)"
@@ -1603,12 +1608,13 @@ def create_plot(
                         else:
                             first, second = var.dims[0], var.dims[1]
                             var.plot.imshow(
-                                row=first,
-                                col=second,
-                                aspect=_fig_kw.get("aspect", 1),
-                                size=_fig_kw.get("size", 4),
-                                **_imshow_kw,
-                                **_kwargs_for_imshow(),
+                                **{
+                                    **_kwargs_for_imshow(),
+                                    "row": first,
+                                    "col": second,
+                                    "aspect": _fig_kw.get("aspect", 1),
+                                    "size": _fig_kw.get("size", 4),
+                                }
                             )
                             _log_plot_used(
                                 "auto:default:cmap:DataArray.plot.imshow(ndim>=4)"
