@@ -6,6 +6,24 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.11.0] - 2026-03-24
+
+### Added
+
+- **Plot kwargs** (Python `create_plot`, CLI, extension passthrough): **`vmin`**, **`vmax`**, **`add_colorbar`** (default true; CLI `--no-add-colorbar`), **`add_legend`** (default false; CLI `--add-legend`). Colorbar/legend/vlim apply only on compatible xarray paths; histograms use a restricted kwarg set; `add_legend` is not passed to `plot.imshow` without `hue`.
+  - **Files**: `python/get_data_info.py`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`
+- **`python/non_regression_test_plot.py`**: Visual regression cases for Issue #117 (00–06), extras (10–18), and vlim/legend (20–24); writes `summary.txt` + `summary.md` under `sample-data/non_regression_test_plot/v<version>/` (version from `package.json`).
+- **`setup.sh`**: Runs the non-regression plot script after `create_sample_data.py` (non-fatal on failure).
+- **Plot API analysis tooling/docs**: Added `python/generate_xarray_plot_design_doc.py` (AST parser for xarray `dataarray_plot.py`) plus `docs/XARRAY_PLOT_GUI_DESIGN.md` (data-only) and `docs/XARRAY_PLOT_GUI_DESIGN_llm_interpretation.md` (design suggestions). This is the baseline for maintainable Plot UI improvements aligned with xarray API evolution.
+
+### Changed
+
+- **Plotting architecture** (`python/get_data_info.py`): `PlotKwargsBundle`, `XarrayPlotDispatcher`, strategy registries for user-provided and auto plot branches; histograms use **`hist_kwargs()`** so non-hist keys are not passed to `plot.hist`.
+
+### Fixed
+
+- **robust** (and other imshow-only kwargs) are merged into **every** `DataArray.plot.imshow(...)` path; previously some imshow calls omitted them so the rendered image did not match logs.
+
 ## [0.10.1] - 2026-03-18
 
 ### Added
