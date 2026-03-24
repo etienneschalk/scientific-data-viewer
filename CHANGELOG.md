@@ -6,6 +6,13 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.10.2] - 2026-03-24
+
+### Fixed
+
+- **Plotting**: The **robust** checkbox (and `--robust` CLI) had no effect on the rendered image even though logs showed `robust: True`. **Cause**: `robust` was merged into generic `plot_kwargs` and logged, but `var.plot.imshow()` calls were built only from aspect, size, col_wrap, and cmap—so 2D auto plots and cmap/facet paths never received `robust`. **Solution**: Introduced `_kwargs_for_imshow()` (same as plot kwargs minus `cmap` and `bins`) and merged it into every `plot.imshow` path in `create_plot()` (user-provided and auto branches). Logs now match behaviour.
+  - **Files modified**: `python/get_data_info.py`
+
 ## [0.10.1] - 2026-03-18
 
 ### Added

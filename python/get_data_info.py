@@ -1345,6 +1345,13 @@ def create_plot(
             out.pop("cmap", None)
             return out
 
+        def _kwargs_for_imshow():
+            """Kwargs for .plot.imshow(). Like _kwargs_for_plot but drop *bins* (histogram-only)."""
+            out = dict(plot_kwargs)
+            out.pop("cmap", None)
+            out.pop("bins", None)
+            return out
+
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
@@ -1362,7 +1369,7 @@ def create_plot(
                     _fig_kw["size"] = plot_kwargs["size"]
                 if "col_wrap" in plot_kwargs:
                     _fig_kw["col_wrap"] = plot_kwargs["col_wrap"]
-                _plot_imshow_kw = {**_fig_kw, **_imshow_kw}
+                _plot_imshow_kw = {**_kwargs_for_imshow(), **_fig_kw, **_imshow_kw}
 
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
@@ -1470,7 +1477,7 @@ def create_plot(
                     _fig_kw["aspect"] = plot_kwargs["aspect"]
                 if "size" in plot_kwargs:
                     _fig_kw["size"] = plot_kwargs["size"]
-                _plot_kw = {**_fig_kw, **_imshow_kw}
+                _plot_kw = {**_kwargs_for_imshow(), **_fig_kw, **_imshow_kw}
 
                 if strategy == "2d_classic":
                     logger.info("Creating 2D spatial plot")
@@ -1491,6 +1498,7 @@ def create_plot(
                         size=_fig_kw.get("size", 4),
                         col_wrap=col_wrap,
                         **_imshow_kw,
+                        **_kwargs_for_imshow(),
                     )
                 elif strategy == "4d_col_row":
                     logger.info("Creating 4D plot (row and col facets)")
@@ -1502,6 +1510,7 @@ def create_plot(
                         aspect=_fig_kw.get("aspect", 1),
                         size=_fig_kw.get("size", 4),
                         **_imshow_kw,
+                        **_kwargs_for_imshow(),
                     )
                 else:
                     logger.info("Creating default plot (xarray choice)")
@@ -1539,6 +1548,7 @@ def create_plot(
                                 size=_fig_kw.get("size", 4),
                                 col_wrap=min(4, var.sizes.get(first, 4)),
                                 **_imshow_kw,
+                                **_kwargs_for_imshow(),
                             )
                         else:
                             first, second = var.dims[0], var.dims[1]
@@ -1548,6 +1558,7 @@ def create_plot(
                                 aspect=_fig_kw.get("aspect", 1),
                                 size=_fig_kw.get("size", 4),
                                 **_imshow_kw,
+                                **_kwargs_for_imshow(),
                             )
                     else:
                         var.plot(**_kwargs_for_plot())
