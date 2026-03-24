@@ -105,6 +105,11 @@ export class DataProcessor {
         robust?: boolean,
         cmap?: string,
         bins?: number,
+        vmin?: number,
+        vmax?: number,
+        /** When false, passes --no-add-colorbar (default true: show colorbar when applicable). */
+        addColorbar?: boolean,
+        addLegend?: boolean,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
     ): Promise<CreatePlotPythonResponse | null> {
@@ -188,6 +193,18 @@ export class DataProcessor {
             bins >= 1
         ) {
             args.push('--bins', String(bins));
+        }
+        if (vmin !== undefined && Number.isFinite(vmin)) {
+            args.push('--vmin', String(vmin));
+        }
+        if (vmax !== undefined && Number.isFinite(vmax)) {
+            args.push('--vmax', String(vmax));
+        }
+        if (addColorbar === false) {
+            args.push('--no-add-colorbar');
+        }
+        if (addLegend === true) {
+            args.push('--add-legend');
         }
 
         try {

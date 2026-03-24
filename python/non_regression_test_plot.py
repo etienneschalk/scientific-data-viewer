@@ -2,9 +2,9 @@
 """
 Non-regression plot checks for create_plot (Issue #117 workflows).
 
-Exercises Issue #117 scenarios (cases 00-06) plus extra combinations (10-18:
-cmap, robust, aspect/size, facets, col_wrap, plot x/y, axis direction, histogram
-crops) on the same sample file. See:
+Exercises Issue #117 scenarios (cases 00-06), combinations (10-18), and
+v0.11+ plot controls (20-24: vmin/vmax maps, colorbar, legend) on the same
+sample file. See:
 https://github.com/etienneschalk/scientific-data-viewer/issues/117#issuecomment-4025666878
 
 Default input: ``sample-data/hs-issue-0117.nc`` (expected to be the ``hs`` array
@@ -12,7 +12,7 @@ after ``isel(rlat=slice(200,500), rlon=slice(2000,2250))`` on the original grid)
 
 By default, PNG outputs go under
 ``sample-data/non_regression_test_plot/v<version>/`` where ``<version>`` is read
-from the repository ``package.json`` (e.g. ``v0.10.2``). Pass ``--out-dir`` to
+from the repository ``package.json`` (e.g. ``v0.11.0``). Pass ``--out-dir`` to
 override. ``setup.sh`` runs this after ``create_sample_data.py`` for visual checks.
 Also writes ``summary.md`` next to ``summary.txt`` (markdown with embedded PNGs).
 
@@ -77,7 +77,7 @@ def _merge_slices(base: dict[str, str], extra: dict[str, Any] | None) -> dict[st
 
 @dataclass(frozen=True)
 class PlotCase:
-    """One non-regression case: Issue #117 core (00-06) or extended combos (10+)."""
+    """One non-regression case: core (00-06), combos (10-18), or vlim/legend (20-24)."""
 
     slug: str
     doc: str
@@ -97,6 +97,11 @@ class PlotCase:
     size: float | None = None
     robust: bool | None = None
     cmap: str | None = None
+    vmin: float | None = None
+    vmax: float | None = None
+    # None = use create_plot default (colorbar on, legend off)
+    add_colorbar: bool | None = None
+    add_legend: bool | None = None
 
 
 @dataclass
@@ -111,7 +116,7 @@ class CaseRunOutcome:
 
 
 def _plot_cases(full_grid: bool) -> list[PlotCase]:
-    """Issue #117 scenarios (00-06) plus extended combinations (10+)."""
+    """Issue #117 (00-06), extended combos (10-18), vmin/vmax/colorbar/legend (20+)."""
     if full_grid:
         core = [
             PlotCase(
@@ -311,7 +316,162 @@ def _plot_cases(full_grid: bool) -> list[PlotCase]:
                 facet_col="rlon",
             ),
         ]
-    return core + _extended_plot_cases(full_grid)
+    return (
+        core
+        + _extended_plot_cases(full_grid)
+        + _cases_vmin_vmax_colorbar_legend(full_grid)
+    )
+
+
+def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
+    """Cases 20+: vmin, vmax, add_colorbar, add_legend (create_plot v0.11+)."""
+    if full_grid:
+        b = _FULL_GRID_BASE_SLICES
+        return [
+            PlotCase(
+                slug="20_vmin_vmax_cmap",
+                doc="Fixed color limits (vmin/vmax) on a single-time map",
+                title="vmin + vmax with colormap",
+                xarray_code=(
+                    "sub = ds.isel(time=0, rlat=slice(200, 500), "
+                    "rlon=slice(2000, 2250))['hs']\n"
+                    "plt.figure()\n"
+                    "sub.plot.imshow(cmap='viridis', vmin=0.5, vmax=3.5)"
+                ),
+                dimension_slices=_merge_slices(b, {"time": 0}),
+                cmap="viridis",
+                vmin=0.5,
+                vmax=3.5,
+            ),
+            PlotCase(
+                slug="21_no_colorbar",
+                doc="add_colorbar=False (scalar-mappable plot, no colorbar)",
+                title="Disable colorbar",
+                xarray_code=(
+                    "sub = ds.isel(time=0, rlat=slice(200, 500), "
+                    "rlon=slice(2000, 2250))['hs']\n"
+                    "plt.figure()\n"
+                    "sub.plot.imshow(cmap='viridis', add_colorbar=False)"
+                ),
+                dimension_slices=_merge_slices(b, {"time": 0}),
+                cmap="viridis",
+                add_colorbar=False,
+            ),
+            PlotCase(
+                slug="22_add_legend_line",
+                doc=(
+                    "add_legend=True on a single 1D series (expected: no legend, "
+                    "because there is only one line and no hue grouping)"
+                ),
+                title="add_legend on timeseries",
+                xarray_code=(
+                    "sub = ds.isel(rlat=300, rlon=2100)['hs']\n"
+                    "plt.figure()\n"
+                    "sub.plot(add_legend=True)"
+                ),
+                dimension_slices={"rlat": 300, "rlon": 2100},
+                add_legend=True,
+            ),
+            PlotCase(
+                slug="23_add_legend_hue",
+                doc=(
+                    "add_legend=True with plot_hue=rlon on a 2D slice; keep both "
+                    "time (x-axis) and rlon (hue groups) varying to ensure "
+                    "legend + visible multiple curves (line plot path, not imshow)"
+                ),
+                title="add_legend with hue (line plot path)",
+                xarray_code=(
+                    "sub = ds.isel(rlat=300, rlon=slice(2000, 2004))['hs']\n"
+                    "plt.figure()\n"
+                    'sub.plot(hue="rlon", add_legend=True)'
+                ),
+                dimension_slices={"rlat": 300, "rlon": "2000:2004"},
+                plot_hue="rlon",
+                add_legend=True,
+            ),
+            PlotCase(
+                slug="24_vmin_only",
+                doc="vmin only (vmax from data / xarray)",
+                title="vmin only",
+                xarray_code=(
+                    "sub = ds.isel(time=0, rlat=slice(200, 500), "
+                    "rlon=slice(2000, 2250))['hs']\n"
+                    "plt.figure()\n"
+                    "sub.plot.imshow(cmap='plasma', vmin=1.0)"
+                ),
+                dimension_slices=_merge_slices(b, {"time": 0}),
+                cmap="plasma",
+                vmin=1.0,
+            ),
+        ]
+
+    return [
+        PlotCase(
+            slug="20_vmin_vmax_cmap",
+            doc="Fixed color limits (vmin/vmax) on a single-time map",
+            title="vmin + vmax with colormap",
+            xarray_code=(
+                "plt.figure()\n"
+                "hs.isel(time=0).plot.imshow(cmap='viridis', vmin=0.5, vmax=3.5)"
+            ),
+            dimension_slices={"time": 0},
+            cmap="viridis",
+            vmin=0.5,
+            vmax=3.5,
+        ),
+        PlotCase(
+            slug="21_no_colorbar",
+            doc="add_colorbar=False (no colorbar next to map)",
+            title="Disable colorbar",
+            xarray_code=(
+                "plt.figure()\n"
+                "hs.isel(time=0).plot.imshow(cmap='viridis', add_colorbar=False)"
+            ),
+            dimension_slices={"time": 0},
+            cmap="viridis",
+            add_colorbar=False,
+        ),
+        PlotCase(
+            slug="22_add_legend_line",
+            doc=(
+                "add_legend=True on a single 1D series (expected: no legend, "
+                "because there is only one line and no hue grouping)"
+            ),
+            title="add_legend on 1D line",
+            xarray_code=(
+                "plt.figure()\nhs.isel(rlat=100, rlon=100).plot(add_legend=True)"
+            ),
+            dimension_slices={"rlat": 100, "rlon": 100},
+            add_legend=True,
+        ),
+        PlotCase(
+            slug="23_add_legend_hue",
+            doc=(
+                "add_legend=True with plot_hue=rlon on a 2D slice so multiple "
+                "curves are visible and legend entries are meaningful"
+            ),
+            title="add_legend with hue (line plot path)",
+            xarray_code=(
+                "plt.figure()\n"
+                "hs.isel(rlat=100, rlon=slice(0, 4)).plot("
+                'hue="rlon", add_legend=True)'
+            ),
+            dimension_slices={"rlat": 100, "rlon": "0:4"},
+            plot_hue="rlon",
+            add_legend=True,
+        ),
+        PlotCase(
+            slug="24_vmin_only",
+            doc="vmin only",
+            title="vmin only",
+            xarray_code=(
+                "plt.figure()\nhs.isel(time=0).plot.imshow(cmap='plasma', vmin=1.0)"
+            ),
+            dimension_slices={"time": 0},
+            cmap="plasma",
+            vmin=1.0,
+        ),
+    ]
 
 
 def _extended_plot_cases(full_grid: bool) -> list[PlotCase]:
@@ -578,6 +738,14 @@ def _case_extra_create_plot_kwargs(case: PlotCase) -> str:
         lines.append(f"- `robust={case.robust}`")
     if case.cmap is not None:
         lines.append(f"- `cmap={case.cmap!r}`")
+    if case.vmin is not None:
+        lines.append(f"- `vmin={case.vmin}`")
+    if case.vmax is not None:
+        lines.append(f"- `vmax={case.vmax}`")
+    if case.add_colorbar is not None:
+        lines.append(f"- `add_colorbar={case.add_colorbar}`")
+    if case.add_legend is not None:
+        lines.append(f"- `add_legend={case.add_legend}`")
     if not lines:
         return ""
     return "**Also passed to `create_plot`:**\n\n" + "\n".join(lines) + "\n\n"
@@ -623,7 +791,7 @@ def _write_summary_md(
         f"Case **00** is the baseline `hs.plot()` with no extra UI/plot kwargs; "
         f"**01-06** follow the [issue comment]({ISSUE_117_COMMENT_URL}); "
         "**10-18** add mixed `create_plot` options (cmap, robust, layout, facets, "
-        "axes).\n\n",
+        "axes); **20-24** cover `vmin`/`vmax`, `add_colorbar`, `add_legend`.\n\n",
         "## Run parameters\n\n",
         f"- **Data file:** `{data_path}`\n",
         f"- **Variable path:** `{variable_path}`\n",
@@ -751,6 +919,10 @@ def main() -> int:
             f"aspect={case.aspect!r} size={case.size!r} robust={case.robust!r} "
             f"cmap={case.cmap!r}"
         )
+        lines.append(
+            f"vmin={case.vmin!r} vmax={case.vmax!r} "
+            f"add_colorbar={case.add_colorbar!r} add_legend={case.add_legend!r}"
+        )
 
         result = create_plot(
             data_path,
@@ -771,6 +943,10 @@ def main() -> int:
             robust=case.robust,
             cmap=case.cmap,
             bins=case.bins,
+            vmin=case.vmin,
+            vmax=case.vmax,
+            add_colorbar=(True if case.add_colorbar is None else case.add_colorbar),
+            add_legend=(False if case.add_legend is None else case.add_legend),
         )
 
         if isinstance(result, CreatePlotError):

@@ -954,6 +954,16 @@ def _log_plot_route(route: str) -> None:
     print(msg, file=sys.stderr)
 
 
+def _strip_add_legend_unless_hue(plot_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """xarray ``plot.imshow`` does not accept ``add_legend`` without ``hue`` (can raise)."""
+    if plot_kwargs.get("add_legend") and "hue" not in plot_kwargs:
+        out = dict(plot_kwargs)
+        out.pop("add_legend", None)
+        logger.info("add_legend omitted for plot.imshow without hue=")
+        return out
+    return plot_kwargs
+
+
 @dataclass(frozen=True)
 class PlotKwargsBundle:
     """User-requested plot kwargs. Variants split cmap (imshow-only) from generic .plot()."""
@@ -971,6 +981,10 @@ class PlotKwargsBundle:
         size: Optional[Union[int, float]],
         cmap: Optional[str],
         col_wrap: Optional[int],
+        vmin: Optional[Union[int, float]] = None,
+        vmax: Optional[Union[int, float]] = None,
+        add_colorbar: bool = True,
+        add_legend: bool = False,
     ) -> "PlotKwargsBundle":
         plot_kwargs: Dict[str, Any] = {}
         if bins is not None and bins >= 1:
@@ -989,12 +1003,33 @@ class PlotKwargsBundle:
             plot_kwargs["cmap"] = cmap.strip()
         if col_wrap is not None and col_wrap >= 1:
             plot_kwargs["col_wrap"] = int(col_wrap)
+        if vmin is not None:
+            plot_kwargs["vmin"] = float(vmin)
+        if vmax is not None:
+            plot_kwargs["vmax"] = float(vmax)
+        if not add_colorbar:
+            plot_kwargs["add_colorbar"] = False
+        if add_legend:
+            plot_kwargs["add_legend"] = True
         return PlotKwargsBundle(raw=plot_kwargs)
 
+    def hist_kwargs(self) -> Dict[str, Any]:
+        """Kwargs for .plot.hist(): only keys histograms accept (see xarray hist API)."""
+        out: Dict[str, Any] = {}
+        for k in ("bins", "xincrease", "yincrease"):
+            if k in self.raw:
+                out[k] = self.raw[k]
+        return out
+
     def generic_kwargs(self) -> Dict[str, Any]:
-        """Kwargs for .plot(): never cmap (xarray may pass it to artists that reject it)."""
+        """Kwargs for .plot(): no cmap / color-only keys (xarray may mis-route them)."""
         out = dict(self.raw)
         out.pop("cmap", None)
+        out.pop("vmin", None)
+        out.pop("vmax", None)
+        out.pop("add_colorbar", None)
+        if not out.get("add_legend"):
+            out.pop("add_legend", None)
         return out
 
     def imshow_kwargs(self) -> Dict[str, Any]:
@@ -1028,7 +1063,7 @@ class XarrayPlotDispatcher:
     """Single place for DataArray.plot / .plot.imshow / .plot.hist (reduces scattered calls)."""
 
     def imshow(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
-        dataarray.plot.imshow(**kwargs)
+        dataarray.plot.imshow(**_strip_add_legend_unless_hue(kwargs))
         _log_plot_route(route)
 
     def plot(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
@@ -1151,7 +1186,7 @@ class UserProvidedHistogramStrategy(UserProvidedPlottingStrategy):
         dispatcher.hist(
             var,
             "user_provided:DataArray.plot.hist",
-            **bundle.generic_kwargs(),
+            **bundle.hist_kwargs(),
         )
 
 
@@ -1551,12 +1586,21 @@ def create_plot(
     robust: Optional[bool] = None,
     cmap: Optional[str] = None,
     bins: Optional[int] = None,
+    vmin: Optional[Union[int, float]] = None,
+    vmax: Optional[Union[int, float]] = None,
+    add_colorbar: bool = True,
+    add_legend: bool = False,
 ) -> Union[CreatePlotResult, CreatePlotError]:
     """Create a plot from a data file variable.
 
     Opens a data file, extracts the specified variable, and creates a
     matplotlib visualization. The plotting strategy is automatically
     determined based on the variable's dimensions.
+
+    Other xarray ``DataArray.plot`` kwargs worth wiring later (see xarray plotting
+    docs) include ``norm``, ``center``, ``levels``, ``extend``, ``subplot_kws``,
+    ``cbar_kwargs``, ``edgecolors``, ``linewidth``, ``marker``, ``linestyle``,
+    and ``alpha``.
 
     Parameters
     ----------
@@ -1568,6 +1612,13 @@ def create_plot(
         Type of plot to create (currently only 'auto' supported)
     style : str, optional
         Matplotlib style to use (e.g., 'default', 'dark_background')
+    vmin, vmax : float, optional
+        Color scale limits (passed to colormap plots only; not histograms or plain line plots).
+    add_colorbar : bool, optional
+        Whether to draw a colorbar for scalar-mappable plots (default True). Ignored for histograms.
+    add_legend : bool, optional
+        Whether to add a legend when xarray supports it (e.g. ``hue``); ignored for ``plot.imshow``
+        without ``hue`` (by default False).
 
     Returns
     -------
@@ -1884,7 +1935,8 @@ def create_plot(
         # Optional plot kwargs (e.g. bins for histogram, robust, xincrease, yincrease, aspect, size)
         logger.info(
             "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
-            "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, col_wrap=%s",
+            "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, "
+            "col_wrap=%s, vmin=%s, vmax=%s, add_colorbar=%s, add_legend=%s",
             facet_row,
             facet_col,
             plot_x,
@@ -1898,6 +1950,10 @@ def create_plot(
             robust,
             cmap,
             col_wrap,
+            vmin,
+            vmax,
+            add_colorbar,
+            add_legend,
         )
         bundle = PlotKwargsBundle.build(
             bins=bins,
@@ -1908,6 +1964,10 @@ def create_plot(
             size=size,
             cmap=cmap,
             col_wrap=col_wrap,
+            vmin=vmin,
+            vmax=vmax,
+            add_colorbar=add_colorbar,
+            add_legend=add_legend,
         )
 
         # Log applied kwargs including row/col (xarray names) when set
@@ -2625,6 +2685,29 @@ Examples:
     )
 
     parser.add_argument(
+        "--vmin",
+        type=float,
+        default=None,
+        help="Lower bound for colormap scaling (colormap plots only; not histograms)",
+    )
+    parser.add_argument(
+        "--vmax",
+        type=float,
+        default=None,
+        help="Upper bound for colormap scaling (colormap plots only; not histograms)",
+    )
+    parser.add_argument(
+        "--no-add-colorbar",
+        action="store_true",
+        help="Disable the colorbar on scalar-mappable plots (default is to show one)",
+    )
+    parser.add_argument(
+        "--add-legend",
+        action="store_true",
+        help="Request a legend when xarray supports it (e.g. with hue); ignored for imshow without hue",
+    )
+
+    parser.add_argument(
         "--small-variable-bytes",
         type=int,
         default=DEFAULT_SMALL_VARIABLE_BYTES,
@@ -2704,6 +2787,10 @@ Examples:
             robust=args.robust,
             cmap=args.cmap,
             bins=args.bins,
+            vmin=args.vmin,
+            vmax=args.vmax,
+            add_colorbar=not args.no_add_colorbar,
+            add_legend=args.add_legend,
         )
         ok = isinstance(result, CreatePlotResult)
 

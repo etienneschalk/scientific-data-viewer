@@ -6,12 +6,22 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [0.10.2] - 2026-03-24
+## [0.11.0] - 2026-03-24
+
+### Added
+
+- **Plot kwargs** (Python `create_plot`, CLI, extension passthrough): **`vmin`**, **`vmax`**, **`add_colorbar`** (default true; CLI `--no-add-colorbar`), **`add_legend`** (default false; CLI `--add-legend`). Colorbar/legend/vlim apply only on compatible xarray paths; histograms use a restricted kwarg set; `add_legend` is not passed to `plot.imshow` without `hue`.
+  - **Files**: `python/get_data_info.py`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`
+- **`python/non_regression_test_plot.py`**: Visual regression cases for Issue #117 (00–06), extras (10–18), and vlim/legend (20–24); writes `summary.txt` + `summary.md` under `sample-data/non_regression_test_plot/v<version>/` (version from `package.json`).
+- **`setup.sh`**: Runs the non-regression plot script after `create_sample_data.py` (non-fatal on failure).
+
+### Changed
+
+- **Plotting architecture** (`python/get_data_info.py`): `PlotKwargsBundle`, `XarrayPlotDispatcher`, strategy registries for user-provided and auto plot branches; histograms use **`hist_kwargs()`** so non-hist keys are not passed to `plot.hist`.
 
 ### Fixed
 
-- **Plotting**: The **robust** checkbox (and `--robust` CLI) had no effect on the rendered image even though logs showed `robust: True`. **Cause**: `robust` was merged into generic `plot_kwargs` and logged, but `var.plot.imshow()` calls were built only from aspect, size, col_wrap, and cmap—so 2D auto plots and cmap/facet paths never received `robust`. **Solution**: Introduced `_kwargs_for_imshow()` (same as plot kwargs minus `cmap` and `bins`) and merged it into every `plot.imshow` path in `create_plot()` (user-provided and auto branches). Logs now match behaviour.
-  - **Files modified**: `python/get_data_info.py`
+- **robust** (and other imshow-only kwargs) are merged into **every** `DataArray.plot.imshow(...)` path; previously some imshow calls omitted them so the rendered image did not match logs.
 
 ## [0.10.1] - 2026-03-18
 
