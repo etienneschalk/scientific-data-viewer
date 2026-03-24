@@ -14,6 +14,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/get_data_info.py`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`
 - **`python/non_regression_test_plot.py`**: Visual regression cases for Issue #117 (00–06), extras (10–18), and vlim/legend (20–24); writes `summary.txt` + `summary.md` under `sample-data/non_regression_test_plot/v<version>/` (version from `package.json`).
 - **`setup.sh`**: Runs the non-regression plot script after `create_sample_data.py` (non-fatal on failure).
+- **Plot API analysis tooling/docs**: Added `python/generate_xarray_plot_design_doc.py` (AST parser for xarray `dataarray_plot.py`) plus `docs/XARRAY_PLOT_GUI_DESIGN.md` (data-only) and `docs/XARRAY_PLOT_GUI_DESIGN_llm_interpretation.md` (design suggestions). This is the baseline for maintainable Plot UI improvements aligned with xarray API evolution.
 
 ### Changed
 

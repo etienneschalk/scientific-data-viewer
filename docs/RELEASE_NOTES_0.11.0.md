@@ -34,6 +34,12 @@ When **robust** was enabled, logs showed `robust: True` but some paths built `pl
 - Default output: **`sample-data/non_regression_test_plot/v<version>/`** (version from `package.json`), with **`summary.txt`** and **`summary.md`** (embedded PNGs).
 - **`setup.sh`** runs this script after `create_sample_data.py` (failure is non-fatal).
 
+## Xarray plot API analysis docs (basis for UI improvements)
+
+- Added **`python/generate_xarray_plot_design_doc.py`**: an AST-based parser that reads xarray's `dataarray_plot.py` and generates method/overload inventories, kwargs tables, common-vs-specific kwargs, and a kwargs×method matrix in markdown (no-LLM data extraction).
+- Added generated data-only reference **`docs/XARRAY_PLOT_GUI_DESIGN.md`** and companion interpretation **`docs/XARRAY_PLOT_GUI_DESIGN_llm_interpretation.md`**.
+- These documents provide a maintainable baseline to evolve Plot controls (common controls + method-specific controls) as xarray's plotting API changes.
+
 ## Upgrade notes
 
 No deliberate breaking changes to the JSON/CLI contract beyond **new optional** arguments. After updating to **0.11.0**, enable **robust** to see consistent color scaling on supported rasters, per [xarray’s plotting API](https://docs.xarray.dev/en/stable/user-guide/plotting.html).
