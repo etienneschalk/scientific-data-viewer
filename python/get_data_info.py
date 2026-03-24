@@ -1065,20 +1065,12 @@ def _build_user_facet_plot_kw(
 ) -> Dict[str, Any]:
     row_dim = (
         facet_row.strip()
-        if (
-            facet_row
-            and facet_row.strip()
-            and facet_row.strip() in var.dims
-        )
+        if (facet_row and facet_row.strip() and facet_row.strip() in var.dims)
         else None
     )
     col_dim = (
         facet_col.strip()
-        if (
-            facet_col
-            and facet_col.strip()
-            and facet_col.strip() in var.dims
-        )
+        if (facet_col and facet_col.strip() and facet_col.strip() in var.dims)
         else None
     )
     x_dim = _valid_plot_dim(plot_x, var)
@@ -1143,8 +1135,7 @@ class UserProvidedPlottingStrategy(ABC):
         *,
         dispatcher: XarrayPlotDispatcher,
         request: UserProvidedPlotRequest,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class UserProvidedHistogramStrategy(UserProvidedPlottingStrategy):
@@ -1156,9 +1147,7 @@ class UserProvidedHistogramStrategy(UserProvidedPlottingStrategy):
         dispatcher: XarrayPlotDispatcher,
         request: UserProvidedPlotRequest,
     ) -> None:
-        logger.info(
-            "Creating histogram plot with bins=%s", bundle.raw["bins"]
-        )
+        logger.info("Creating histogram plot with bins=%s", bundle.raw["bins"])
         dispatcher.hist(
             var,
             "user_provided:DataArray.plot.hist",
@@ -1208,9 +1197,7 @@ class UserProvidedFacetedStrategy(UserProvidedPlottingStrategy):
             "Facet row/col and x/y/hue not found on variable; using default plot",
         )
         if var.ndim >= 2 and cmap_imshow:
-            logger.info(
-                "Creating plot from user params with cmap via plot.imshow"
-            )
+            logger.info("Creating plot from user params with cmap via plot.imshow")
             dispatcher.imshow(
                 var,
                 "user_provided:DataArray.plot.imshow(fallback_no_valid_facets)",
@@ -1242,9 +1229,7 @@ class UserProvidedSlicesOnlyStrategy(UserProvidedPlottingStrategy):
         cmap_imshow = bundle.use_cmap_imshow_path()
         merged_imshow = bundle.user_imshow_merged_kw()
         if var.ndim >= 2 and cmap_imshow:
-            logger.info(
-                "Creating 2D+ plot from sliced data with cmap via plot.imshow"
-            )
+            logger.info("Creating 2D+ plot from sliced data with cmap via plot.imshow")
             dispatcher.imshow(
                 var,
                 "user_provided:DataArray.plot.imshow(slices_only+cmap)",
@@ -1317,8 +1302,7 @@ class AutoPlottingStrategy(ABC):
         dispatcher: XarrayPlotDispatcher,
         plt_module: Any,
         default_ctx: AutoDefaultPlotContext,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class AutoTwoDClassicStrategy(AutoPlottingStrategy):
@@ -1433,9 +1417,7 @@ class AutoDefaultStrategy(AutoPlottingStrategy):
             datetime_values = dt_var.values
             var_values = var.values
             if datetime_values.shape != var_values.shape:
-                logger.warning(
-                    "Datetime shape mismatch, falling back to default plot"
-                )
+                logger.warning("Datetime shape mismatch, falling back to default plot")
                 dispatcher.plot(
                     var,
                     "auto:default:DataArray.plot(datetime_mismatch_fallback)",

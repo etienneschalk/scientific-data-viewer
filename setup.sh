@@ -54,6 +54,20 @@ echo "📊 Creating sample data files..."
 echo "   This will regenerate all sample files including disposable test files..."
 python3 python/create_sample_data.py
 
+# Issue #117 non-regression plot PNGs (versioned folder from package.json)
+_PKG_VERSION=$(node -p "require('./package.json').version")
+echo "📈 Generating non-regression plot snapshots (Issue #117)..."
+echo "   Output: sample-data/non_regression_test_plot/v${_PKG_VERSION}/"
+set +e
+python3 python/non_regression_test_plot.py
+NON_REG_PLOT_EXIT=$?
+set -e
+if [ $NON_REG_PLOT_EXIT -eq 0 ]; then
+    echo "✅ Non-regression plots generated (open sample-data/non_regression_test_plot/v*/ for visual check)"
+else
+    echo "⚠️  Non-regression plot script failed or data missing (exit $NON_REG_PLOT_EXIT). Place sample-data/hs-issue-0117.nc or run from repo root."
+fi
+
 # Compile TypeScript
 echo "🔨 Compiling TypeScript..."
 npm run compile
