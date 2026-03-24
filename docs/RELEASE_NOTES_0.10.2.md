@@ -20,7 +20,7 @@ No breaking changes. After updating to 0.10.2, enabling **robust** will change c
 
 ## Summary of changes
 
-| Area        | Change                                                                 |
-| ----------- | ---------------------------------------------------------------------- |
-| **Fixed**   | `robust` applied to all `plot.imshow` paths in `create_plot`          |
+| Area        | Change                                                                       |
+| ----------- | ---------------------------------------------------------------------------- |
+| **Fixed**   | `robust` applied to all `plot.imshow` paths in `create_plot`                 |
 | **Backend** | `python/get_data_info.py`: `_kwargs_for_imshow()`, merged into imshow kwargs |
