@@ -38,12 +38,24 @@ import json
 import logging
 import os
 import sys
+from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field, is_dataclass
 from importlib.util import find_spec
 from io import BytesIO
 from logging import Logger
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import numpy as np
 import xarray as xr
@@ -932,6 +944,608 @@ def _parse_dimension_slices(
     return out if out else None
 
 
+# --- Plot execution: kwargs bundle, dispatcher, and strategies (create_plot) ---
+
+
+def _log_plot_route(route: str) -> None:
+    """Record which plot entry point ran. Stdout is reserved for JSON; print to stderr."""
+    msg = f"plot_used: {route}"
+    logger.info(msg)
+    print(msg, file=sys.stderr)
+
+
+@dataclass(frozen=True)
+class PlotKwargsBundle:
+    """User-requested plot kwargs. Variants split cmap (imshow-only) from generic .plot()."""
+
+    raw: Dict[str, Any]
+
+    @staticmethod
+    def build(
+        *,
+        bins: Optional[int],
+        robust: Optional[bool],
+        xincrease: Optional[bool],
+        yincrease: Optional[bool],
+        aspect: Optional[Union[int, float]],
+        size: Optional[Union[int, float]],
+        cmap: Optional[str],
+        col_wrap: Optional[int],
+    ) -> "PlotKwargsBundle":
+        plot_kwargs: Dict[str, Any] = {}
+        if bins is not None and bins >= 1:
+            plot_kwargs["bins"] = bins
+        if robust is True:
+            plot_kwargs["robust"] = True
+        if xincrease is not None:
+            plot_kwargs["xincrease"] = xincrease
+        if yincrease is not None:
+            plot_kwargs["yincrease"] = yincrease
+        if aspect is not None and aspect > 0:
+            plot_kwargs["aspect"] = float(aspect)
+        if size is not None and size > 0:
+            plot_kwargs["size"] = float(size)
+        if cmap is not None and cmap.strip():
+            plot_kwargs["cmap"] = cmap.strip()
+        if col_wrap is not None and col_wrap >= 1:
+            plot_kwargs["col_wrap"] = int(col_wrap)
+        return PlotKwargsBundle(raw=plot_kwargs)
+
+    def generic_kwargs(self) -> Dict[str, Any]:
+        """Kwargs for .plot(): never cmap (xarray may pass it to artists that reject it)."""
+        out = dict(self.raw)
+        out.pop("cmap", None)
+        return out
+
+    def imshow_kwargs(self) -> Dict[str, Any]:
+        """Kwargs for .plot.imshow(): full raw except bins (histogram-only). Includes cmap."""
+        out = dict(self.raw)
+        out.pop("bins", None)
+        return out
+
+    def use_cmap_imshow_path(self) -> bool:
+        return "cmap" in self.raw
+
+    def _subset_figure_kw(self, keys: Tuple[str, ...]) -> Dict[str, Any]:
+        return {k: self.raw[k] for k in keys if k in self.raw}
+
+    def user_imshow_merged_kw(self) -> Dict[str, Any]:
+        """User branch: imshow + aspect/size/col_wrap (single merge; no duplicate ** cmap)."""
+        fig = self._subset_figure_kw(("aspect", "size", "col_wrap"))
+        return {**self.imshow_kwargs(), **fig}
+
+    def auto_imshow_merged_kw(self) -> Dict[str, Any]:
+        """Auto branch: imshow + aspect/size only (col_wrap handled per strategy)."""
+        fig = self._subset_figure_kw(("aspect", "size"))
+        return {**self.imshow_kwargs(), **fig}
+
+    def auto_figure_defaults(self) -> Dict[str, Any]:
+        """Aspect/size subset for strategies that pass explicit defaults."""
+        return self._subset_figure_kw(("aspect", "size"))
+
+
+class XarrayPlotDispatcher:
+    """Single place for DataArray.plot / .plot.imshow / .plot.hist (reduces scattered calls)."""
+
+    def imshow(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
+        dataarray.plot.imshow(**kwargs)
+        _log_plot_route(route)
+
+    def plot(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
+        if kwargs:
+            dataarray.plot(**kwargs)
+        else:
+            dataarray.plot()
+        _log_plot_route(route)
+
+    def hist(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
+        dataarray.plot.hist(**kwargs)
+        _log_plot_route(route)
+
+
+def _valid_plot_dim(name: Optional[str], var_arr: xr.DataArray) -> Optional[str]:
+    if not name or not name.strip():
+        return None
+    n = name.strip()
+    if n in var_arr.dims:
+        return n
+    if n in var_arr.coords:
+        return n
+    return None
+
+
+def _build_user_facet_plot_kw(
+    var: xr.DataArray,
+    *,
+    facet_row: Optional[str],
+    facet_col: Optional[str],
+    plot_x: Optional[str],
+    plot_y: Optional[str],
+    plot_hue: Optional[str],
+) -> Dict[str, Any]:
+    row_dim = (
+        facet_row.strip()
+        if (
+            facet_row
+            and facet_row.strip()
+            and facet_row.strip() in var.dims
+        )
+        else None
+    )
+    col_dim = (
+        facet_col.strip()
+        if (
+            facet_col
+            and facet_col.strip()
+            and facet_col.strip() in var.dims
+        )
+        else None
+    )
+    x_dim = _valid_plot_dim(plot_x, var)
+    y_dim = _valid_plot_dim(plot_y, var)
+    hue_dim = _valid_plot_dim(plot_hue, var)
+
+    plot_kw: Dict[str, Any] = {}
+    if row_dim or col_dim:
+        if row_dim and col_dim:
+            plot_kw = {"row": row_dim, "col": col_dim}
+        elif row_dim:
+            plot_kw["row"] = row_dim
+        else:
+            plot_kw["col"] = col_dim
+            plot_kw["col_wrap"] = min(4, var.sizes.get(col_dim, 4))
+    if x_dim is not None:
+        plot_kw["x"] = x_dim
+    if y_dim is not None:
+        plot_kw["y"] = y_dim
+    if hue_dim is not None:
+        plot_kw["hue"] = hue_dim
+    return plot_kw
+
+
+@dataclass(frozen=True)
+class UserProvidedPlotRequest:
+    """Facet / x-y-hue names from the user (histogram and slices-only strategies ignore these)."""
+
+    facet_row: Optional[str] = None
+    facet_col: Optional[str] = None
+    plot_x: Optional[str] = None
+    plot_y: Optional[str] = None
+    plot_hue: Optional[str] = None
+
+
+def detect_user_provided_plot_strategy(
+    bundle: PlotKwargsBundle,
+    request: UserProvidedPlotRequest,
+) -> Literal["histogram", "faceted", "slices_only"]:
+    """Pick user-provided plotting strategy from bundle + facet request (mirrors auto `detect_plotting_strategy`)."""
+    if "bins" in bundle.raw and bundle.raw.get("bins") is not None:
+        return "histogram"
+    if (
+        request.facet_row
+        or request.facet_col
+        or request.plot_x
+        or request.plot_y
+        or request.plot_hue
+    ):
+        return "faceted"
+    return "slices_only"
+
+
+class UserProvidedPlottingStrategy(ABC):
+    """One user-driven branch: maps (var, bundle, request) → a single dispatcher call."""
+
+    @abstractmethod
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        request: UserProvidedPlotRequest,
+    ) -> None:
+        ...
+
+
+class UserProvidedHistogramStrategy(UserProvidedPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        request: UserProvidedPlotRequest,
+    ) -> None:
+        logger.info(
+            "Creating histogram plot with bins=%s", bundle.raw["bins"]
+        )
+        dispatcher.hist(
+            var,
+            "user_provided:DataArray.plot.hist",
+            **bundle.generic_kwargs(),
+        )
+
+
+class UserProvidedFacetedStrategy(UserProvidedPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        request: UserProvidedPlotRequest,
+    ) -> None:
+        plot_kw = _build_user_facet_plot_kw(
+            var,
+            facet_row=request.facet_row,
+            facet_col=request.facet_col,
+            plot_x=request.plot_x,
+            plot_y=request.plot_y,
+            plot_hue=request.plot_hue,
+        )
+        cmap_imshow = bundle.use_cmap_imshow_path()
+        merged_imshow = bundle.user_imshow_merged_kw()
+
+        if plot_kw:
+            if var.ndim >= 2 and cmap_imshow:
+                logger.info(
+                    "Creating plot with user facets/dims and cmap via plot.imshow"
+                )
+                dispatcher.imshow(
+                    var,
+                    "user_provided:DataArray.plot.imshow(facets+slice_kwargs)",
+                    **{**plot_kw, **merged_imshow},
+                )
+            else:
+                dispatcher.plot(
+                    var,
+                    "user_provided:DataArray.plot(facets+slice_kwargs)",
+                    **{**plot_kw, **bundle.generic_kwargs()},
+                )
+            return
+
+        logger.warning(
+            "Facet row/col and x/y/hue not found on variable; using default plot",
+        )
+        if var.ndim >= 2 and cmap_imshow:
+            logger.info(
+                "Creating plot from user params with cmap via plot.imshow"
+            )
+            dispatcher.imshow(
+                var,
+                "user_provided:DataArray.plot.imshow(fallback_no_valid_facets)",
+                **merged_imshow,
+            )
+        elif bundle.raw:
+            dispatcher.plot(
+                var,
+                "user_provided:DataArray.plot(fallback_no_valid_facets+kwargs)",
+                **bundle.generic_kwargs(),
+            )
+        else:
+            dispatcher.plot(
+                var,
+                "user_provided:DataArray.plot(fallback_no_valid_facets)",
+            )
+
+
+class UserProvidedSlicesOnlyStrategy(UserProvidedPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        request: UserProvidedPlotRequest,
+    ) -> None:
+        logger.info("Creating plot from sliced data (xarray default)")
+        cmap_imshow = bundle.use_cmap_imshow_path()
+        merged_imshow = bundle.user_imshow_merged_kw()
+        if var.ndim >= 2 and cmap_imshow:
+            logger.info(
+                "Creating 2D+ plot from sliced data with cmap via plot.imshow"
+            )
+            dispatcher.imshow(
+                var,
+                "user_provided:DataArray.plot.imshow(slices_only+cmap)",
+                **merged_imshow,
+            )
+        elif bundle.raw:
+            dispatcher.plot(
+                var,
+                "user_provided:DataArray.plot(slices_only+kwargs)",
+                **bundle.generic_kwargs(),
+            )
+        else:
+            dispatcher.plot(var, "user_provided:DataArray.plot(slices_only)")
+
+
+_USER_PROVIDED_STRATEGY_REGISTRY: Dict[str, UserProvidedPlottingStrategy] = {
+    "histogram": UserProvidedHistogramStrategy(),
+    "faceted": UserProvidedFacetedStrategy(),
+    "slices_only": UserProvidedSlicesOnlyStrategy(),
+}
+
+
+class UserProvidedPlotOrchestrator:
+    """Resolves user-provided strategy name, then runs the matching strategy (same pattern as `AutoPlotOrchestrator`)."""
+
+    def __init__(self, dispatcher: XarrayPlotDispatcher) -> None:
+        self._d = dispatcher
+
+    def run(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        facet_row: Optional[str],
+        facet_col: Optional[str],
+        plot_x: Optional[str],
+        plot_y: Optional[str],
+        plot_hue: Optional[str],
+    ) -> None:
+        request = UserProvidedPlotRequest(
+            facet_row=facet_row,
+            facet_col=facet_col,
+            plot_x=plot_x,
+            plot_y=plot_y,
+            plot_hue=plot_hue,
+        )
+        name = detect_user_provided_plot_strategy(bundle, request)
+        strat = _USER_PROVIDED_STRATEGY_REGISTRY[name]
+        strat.execute(var, bundle, dispatcher=self._d, request=request)
+
+
+@dataclass(frozen=True)
+class AutoDefaultPlotContext:
+    """Extra state only needed for the auto `default` plotting strategy."""
+
+    datetime_var: Optional[xr.DataArray]
+    datetime_var_display_name: Optional[str]
+    variable_name: str
+
+
+class AutoPlottingStrategy(ABC):
+    """One auto-detected strategy: maps (var, bundle) → a single dispatcher call."""
+
+    @abstractmethod
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        ...
+
+
+class AutoTwoDClassicStrategy(AutoPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Creating 2D spatial plot")
+        dispatcher.imshow(
+            var,
+            "auto:strategy=2d_classic:DataArray.plot.imshow",
+            **bundle.auto_imshow_merged_kw(),
+        )
+        plt_module.gca().set_aspect("equal")
+
+
+class AutoTwoDClassicIselStrategy(AutoPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Creating 2D spatial plot with isel")
+        first_dim = var.dims[0]
+        dispatcher.imshow(
+            var.isel({first_dim: 0}),
+            "auto:strategy=2d_classic_isel:DataArray.plot.imshow",
+            **bundle.auto_imshow_merged_kw(),
+        )
+        plt_module.gca().set_aspect("equal")
+
+
+class AutoThreeDColStrategy(AutoPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Creating 3D plot (col facet)")
+        first_dim = var.dims[0]
+        fk = bundle.auto_figure_defaults()
+        col_wrap = min(4, var.sizes.get(first_dim, 4))
+        dispatcher.imshow(
+            var,
+            "auto:strategy=3d_col:DataArray.plot.imshow",
+            **{
+                **bundle.imshow_kwargs(),
+                "col": first_dim,
+                "aspect": fk.get("aspect", 1),
+                "size": fk.get("size", 4),
+                "col_wrap": col_wrap,
+            },
+        )
+
+
+class AutoFourDColRowStrategy(AutoPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Creating 4D plot (row and col facets)")
+        first_dim = var.dims[0]
+        second_dim = var.dims[1]
+        fk = bundle.auto_figure_defaults()
+        dispatcher.imshow(
+            var,
+            "auto:strategy=4d_col_row:DataArray.plot.imshow",
+            **{
+                **bundle.imshow_kwargs(),
+                "col": second_dim,
+                "row": first_dim,
+                "aspect": fk.get("aspect", 1),
+                "size": fk.get("size", 4),
+            },
+        )
+
+
+class AutoDefaultStrategy(AutoPlottingStrategy):
+    def execute(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        *,
+        dispatcher: XarrayPlotDispatcher,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Creating default plot (xarray choice)")
+        dt_var = default_ctx.datetime_var
+        dt_name = default_ctx.datetime_var_display_name
+        vname = default_ctx.variable_name
+
+        if dt_var is not None and var.ndim == 1:
+            datetime_values = dt_var.values
+            var_values = var.values
+            if datetime_values.shape != var_values.shape:
+                logger.warning(
+                    "Datetime shape mismatch, falling back to default plot"
+                )
+                dispatcher.plot(
+                    var,
+                    "auto:default:DataArray.plot(datetime_mismatch_fallback)",
+                    **bundle.generic_kwargs(),
+                )
+                return
+
+            import pandas as pd
+
+            if not isinstance(datetime_values, pd.DatetimeIndex):
+                datetime_index = pd.DatetimeIndex(datetime_values)
+            else:
+                datetime_index = datetime_values
+            var_with_time = xr.DataArray(
+                var_values,
+                coords={dt_name: datetime_index},
+                dims=[dt_name],
+                name=vname,
+            )
+            dispatcher.plot(
+                var_with_time,
+                "auto:default:DataArray.plot(1d+datetime_coord)",
+                **bundle.generic_kwargs(),
+            )
+            return
+
+        if var.ndim >= 2 and "cmap" in bundle.raw:
+            fk = bundle.auto_figure_defaults()
+            plot_kw = bundle.auto_imshow_merged_kw()
+            if var.ndim == 2:
+                dispatcher.imshow(
+                    var,
+                    "auto:default:cmap:DataArray.plot.imshow(ndim=2)",
+                    **plot_kw,
+                )
+            elif var.ndim == 3:
+                first = var.dims[0]
+                dispatcher.imshow(
+                    var,
+                    "auto:default:cmap:DataArray.plot.imshow(ndim=3)",
+                    **{
+                        **bundle.imshow_kwargs(),
+                        "col": first,
+                        "aspect": fk.get("aspect", 1),
+                        "size": fk.get("size", 4),
+                        "col_wrap": min(4, var.sizes.get(first, 4)),
+                    },
+                )
+            else:
+                first, second = var.dims[0], var.dims[1]
+                dispatcher.imshow(
+                    var,
+                    "auto:default:cmap:DataArray.plot.imshow(ndim>=4)",
+                    **{
+                        **bundle.imshow_kwargs(),
+                        "row": first,
+                        "col": second,
+                        "aspect": fk.get("aspect", 1),
+                        "size": fk.get("size", 4),
+                    },
+                )
+            return
+
+        dispatcher.plot(
+            var,
+            "auto:default:DataArray.plot(xarray_routes)",
+            **bundle.generic_kwargs(),
+        )
+
+
+_AUTO_STRATEGY_REGISTRY: Dict[
+    str,
+    AutoPlottingStrategy,
+] = {
+    "2d_classic": AutoTwoDClassicStrategy(),
+    "2d_classic_isel": AutoTwoDClassicIselStrategy(),
+    "3d_col": AutoThreeDColStrategy(),
+    "4d_col_row": AutoFourDColRowStrategy(),
+    "default": AutoDefaultStrategy(),
+}
+
+
+class AutoPlotOrchestrator:
+    """Request path: no user facet/slice params (except cmap on auto) — strategy from detect_plotting_strategy."""
+
+    def __init__(self, dispatcher: XarrayPlotDispatcher) -> None:
+        self._d = dispatcher
+
+    def run(
+        self,
+        var: xr.DataArray,
+        bundle: PlotKwargsBundle,
+        strategy: str,
+        *,
+        plt_module: Any,
+        default_ctx: AutoDefaultPlotContext,
+    ) -> None:
+        logger.info("Auto-plot: using strategy %s", strategy)
+        if bundle.use_cmap_imshow_path():
+            logger.info("Colormap for imshow: %s", bundle.raw.get("cmap"))
+        strat = _AUTO_STRATEGY_REGISTRY[strategy]
+        strat.execute(
+            var,
+            bundle,
+            dispatcher=self._d,
+            plt_module=plt_module,
+            default_ctx=default_ctx,
+        )
+
+
 def create_plot(
     file_path: Path,
     variable_path: str,
@@ -1303,325 +1917,63 @@ def create_plot(
             cmap,
             col_wrap,
         )
-        plot_kwargs = {}
-        if bins is not None and bins >= 1:
-            plot_kwargs["bins"] = bins
-        if robust is True:
-            plot_kwargs["robust"] = (
-                True  # 2nd/98th percentiles for color limits (outliers)
-            )
-        if xincrease is not None:
-            plot_kwargs["xincrease"] = xincrease
-        if yincrease is not None:
-            plot_kwargs["yincrease"] = yincrease
-        if aspect is not None and aspect > 0:
-            plot_kwargs["aspect"] = float(aspect)
-        if size is not None and size > 0:
-            plot_kwargs["size"] = float(size)
-        if cmap is not None and cmap.strip():
-            plot_kwargs["cmap"] = cmap.strip()
-        if col_wrap is not None and col_wrap >= 1:
-            plot_kwargs["col_wrap"] = int(col_wrap)
+        bundle = PlotKwargsBundle.build(
+            bins=bins,
+            robust=robust,
+            xincrease=xincrease,
+            yincrease=yincrease,
+            aspect=aspect,
+            size=size,
+            cmap=cmap,
+            col_wrap=col_wrap,
+        )
 
         # Log applied kwargs including row/col (xarray names) when set
-        applied_for_log = dict(plot_kwargs)
+        applied_for_log = dict(bundle.raw)
         if facet_row and facet_row.strip():
             applied_for_log["row"] = facet_row.strip()
         if facet_col and facet_col.strip():
             applied_for_log["col"] = facet_col.strip()
         logger.info("Applied plot kwargs: %s", applied_for_log)
-        if "cmap" in plot_kwargs:
+        if "cmap" in bundle.raw:
             logger.info(
                 "cmap=%r will be applied via plot.imshow() (not passed to generic .plot())",
-                plot_kwargs["cmap"],
+                bundle.raw["cmap"],
             )
 
-        def _log_plot_used(route: str) -> None:
-            """Record which plot entry point ran. Stdout is reserved for JSON; print to stderr."""
-            msg = f"plot_used: {route}"
-            logger.info(msg)
-            print(msg, file=sys.stderr)
-
-        def _kwargs_for_plot():
-            """Return plot kwargs for generic .plot() calls. Never include cmap here:
-            xarray can pass it to artists that do not support it (e.g. Rectangle).
-            Use explicit .plot.imshow() when cmap is needed.
-            """
-            out = dict(plot_kwargs)
-            out.pop("cmap", None)
-            return out
-
-        def _kwargs_for_imshow():
-            """Kwargs for .plot.imshow(): full plot_kwargs except *bins* (histogram-only). Includes cmap."""
-            out = dict(plot_kwargs)
-            out.pop("bins", None)
-            return out
+        plot_dispatcher = XarrayPlotDispatcher()
 
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
         with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
             if user_provided:
-                # --- User-provided branch: build plot only from user params (Issue #117) ---
-                # When cmap is set, use plot.imshow() so cmap is applied (Issue #128); generic .plot() strips cmap
-                _imshow_kw = (
-                    {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
-                )
-                _fig_kw = {}
-                if "aspect" in plot_kwargs:
-                    _fig_kw["aspect"] = plot_kwargs["aspect"]
-                if "size" in plot_kwargs:
-                    _fig_kw["size"] = plot_kwargs["size"]
-                if "col_wrap" in plot_kwargs:
-                    _fig_kw["col_wrap"] = plot_kwargs["col_wrap"]
-                # Single merge: _kwargs_for_imshow() already includes cmap; do not also ** a
-                # separate {_imshow_kw} into the same call (Python 3.8: duplicate ** cmap errors).
-                _plot_imshow_kw = {**_kwargs_for_imshow(), **_fig_kw}
-
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
                 )
-                if "bins" in plot_kwargs and plot_kwargs.get("bins") is not None:
-                    logger.info(
-                        "Creating histogram plot with bins=%s", plot_kwargs["bins"]
-                    )
-                    var.plot.hist(**_kwargs_for_plot())
-                    _log_plot_used("user_provided:DataArray.plot.hist")
-                elif facet_row or facet_col or plot_x or plot_y or plot_hue:
-                    row_dim = (
-                        facet_row.strip()
-                        if (
-                            facet_row
-                            and facet_row.strip()
-                            and facet_row.strip() in var.dims
-                        )
-                        else None
-                    )
-                    col_dim = (
-                        facet_col.strip()
-                        if (
-                            facet_col
-                            and facet_col.strip()
-                            and facet_col.strip() in var.dims
-                        )
-                        else None
-                    )
-
-                    # x, y, hue: dimension or coordinate name (xarray plot kwargs)
-                    def _valid_plot_dim(name, var_arr):
-                        if not name or not name.strip():
-                            return None
-                        n = name.strip()
-                        if n in var_arr.dims:
-                            return n
-                        if n in var_arr.coords:
-                            return n
-                        return None
-
-                    x_dim = _valid_plot_dim(plot_x, var)
-                    y_dim = _valid_plot_dim(plot_y, var)
-                    hue_dim = _valid_plot_dim(plot_hue, var)
-
-                    plot_kw = {}
-                    if row_dim or col_dim:
-                        if row_dim and col_dim:
-                            plot_kw = {"row": row_dim, "col": col_dim}
-                        elif row_dim:
-                            plot_kw["row"] = row_dim
-                        else:
-                            plot_kw["col"] = col_dim
-                            plot_kw["col_wrap"] = min(4, var.sizes.get(col_dim, 4))
-                    if x_dim is not None:
-                        plot_kw["x"] = x_dim
-                    if y_dim is not None:
-                        plot_kw["y"] = y_dim
-                    if hue_dim is not None:
-                        plot_kw["hue"] = hue_dim
-
-                    if plot_kw:
-                        if var.ndim >= 2 and _imshow_kw:
-                            logger.info(
-                                "Creating plot with user facets/dims and cmap via plot.imshow"
-                            )
-                            var.plot.imshow(**{**plot_kw, **_plot_imshow_kw})
-                            _log_plot_used(
-                                "user_provided:DataArray.plot.imshow(facets+slice_kwargs)"
-                            )
-                        else:
-                            var.plot(**{**plot_kw, **_kwargs_for_plot()})
-                            _log_plot_used(
-                                "user_provided:DataArray.plot(facets+slice_kwargs)"
-                            )
-                    else:
-                        logger.warning(
-                            "Facet row/col and x/y/hue not found on variable; using default plot",
-                        )
-                        if var.ndim >= 2 and _imshow_kw:
-                            logger.info(
-                                "Creating plot from user params with cmap via plot.imshow"
-                            )
-                            var.plot.imshow(**_plot_imshow_kw)
-                            _log_plot_used(
-                                "user_provided:DataArray.plot.imshow(fallback_no_valid_facets)"
-                            )
-                        else:
-                            if plot_kwargs:
-                                var.plot(**_kwargs_for_plot())
-                                _log_plot_used(
-                                    "user_provided:DataArray.plot(fallback_no_valid_facets+kwargs)"
-                                )
-                            else:
-                                var.plot()
-                                _log_plot_used(
-                                    "user_provided:DataArray.plot(fallback_no_valid_facets)"
-                                )
-                else:
-                    # Slices only, no facet/bins: let xarray choose plot type
-                    logger.info("Creating plot from sliced data (xarray default)")
-                    if var.ndim >= 2 and _imshow_kw:
-                        logger.info(
-                            "Creating 2D+ plot from sliced data with cmap via plot.imshow"
-                        )
-                        var.plot.imshow(**_plot_imshow_kw)
-                        _log_plot_used(
-                            "user_provided:DataArray.plot.imshow(slices_only+cmap)"
-                        )
-                    else:
-                        if plot_kwargs:
-                            var.plot(**_kwargs_for_plot())
-                            _log_plot_used(
-                                "user_provided:DataArray.plot(slices_only+kwargs)"
-                            )
-                        else:
-                            var.plot()
-                            _log_plot_used("user_provided:DataArray.plot(slices_only)")
-            else:
-                # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
-                strategy = detect_plotting_strategy(var)
-                logger.info("Auto-plot: using strategy %s", strategy)
-                # cmap is safe to pass only to .plot.imshow(); include when user set it
-                _imshow_kw = (
-                    {"cmap": plot_kwargs["cmap"]} if "cmap" in plot_kwargs else {}
+                UserProvidedPlotOrchestrator(plot_dispatcher).run(
+                    var,
+                    bundle,
+                    facet_row=facet_row,
+                    facet_col=facet_col,
+                    plot_x=plot_x,
+                    plot_y=plot_y,
+                    plot_hue=plot_hue,
                 )
-                if _imshow_kw:
-                    logger.info("Colormap for imshow: %s", _imshow_kw.get("cmap"))
-                # aspect/size: xarray uses figsize = (aspect * size, size) per panel when creating figure
-                _fig_kw = {}
-                if "aspect" in plot_kwargs:
-                    _fig_kw["aspect"] = plot_kwargs["aspect"]
-                if "size" in plot_kwargs:
-                    _fig_kw["size"] = plot_kwargs["size"]
-                _plot_kw = {**_kwargs_for_imshow(), **_fig_kw}
-
-                if strategy == "2d_classic":
-                    logger.info("Creating 2D spatial plot")
-                    var.plot.imshow(**_plot_kw)
-                    _log_plot_used("auto:strategy=2d_classic:DataArray.plot.imshow")
-                    plt.gca().set_aspect("equal")
-                elif strategy == "2d_classic_isel":
-                    logger.info("Creating 2D spatial plot with isel")
-                    first_dim = var.dims[0]
-                    var.isel({first_dim: 0}).plot.imshow(**_plot_kw)
-                    _log_plot_used(
-                        "auto:strategy=2d_classic_isel:DataArray.plot.imshow"
-                    )
-                    plt.gca().set_aspect("equal")
-                elif strategy == "3d_col":
-                    logger.info("Creating 3D plot (col facet)")
-                    first_dim = var.dims[0]
-                    col_wrap = min(4, var.sizes.get(first_dim, 4))
-                    var.plot.imshow(
-                        **{
-                            **_kwargs_for_imshow(),
-                            "col": first_dim,
-                            "aspect": _fig_kw.get("aspect", 1),
-                            "size": _fig_kw.get("size", 4),
-                            "col_wrap": col_wrap,
-                        }
-                    )
-                    _log_plot_used("auto:strategy=3d_col:DataArray.plot.imshow")
-                elif strategy == "4d_col_row":
-                    logger.info("Creating 4D plot (row and col facets)")
-                    first_dim = var.dims[0]
-                    second_dim = var.dims[1]
-                    var.plot.imshow(
-                        **{
-                            **_kwargs_for_imshow(),
-                            "col": second_dim,
-                            "row": first_dim,
-                            "aspect": _fig_kw.get("aspect", 1),
-                            "size": _fig_kw.get("size", 4),
-                        }
-                    )
-                    _log_plot_used("auto:strategy=4d_col_row:DataArray.plot.imshow")
-                else:
-                    logger.info("Creating default plot (xarray choice)")
-                    if datetime_var is not None and var.ndim == 1:
-                        datetime_values = datetime_var.values
-                        var_values = var.values
-                        if datetime_values.shape != var_values.shape:
-                            logger.warning(
-                                "Datetime shape mismatch, falling back to default plot"
-                            )
-                            var.plot(**_kwargs_for_plot())
-                            _log_plot_used(
-                                "auto:default:DataArray.plot(datetime_mismatch_fallback)"
-                            )
-                        else:
-                            import pandas as pd
-
-                            if not isinstance(datetime_values, pd.DatetimeIndex):
-                                datetime_index = pd.DatetimeIndex(datetime_values)
-                            else:
-                                datetime_index = datetime_values
-                            var_with_time = xr.DataArray(
-                                var_values,
-                                coords={datetime_var_display_name: datetime_index},
-                                dims=[datetime_var_display_name],
-                                name=variable_name,
-                            )
-                            var_with_time.plot(**_kwargs_for_plot())
-                            _log_plot_used(
-                                "auto:default:DataArray.plot(1d+datetime_coord)"
-                            )
-                    elif var.ndim >= 2 and "cmap" in plot_kwargs:
-                        # Use explicit imshow so cmap is applied (generic .plot() can trigger Rectangle.set(cmap) error)
-                        if var.ndim == 2:
-                            var.plot.imshow(**_plot_kw)
-                            _log_plot_used(
-                                "auto:default:cmap:DataArray.plot.imshow(ndim=2)"
-                            )
-                        elif var.ndim == 3:
-                            first = var.dims[0]
-                            var.plot.imshow(
-                                **{
-                                    **_kwargs_for_imshow(),
-                                    "col": first,
-                                    "aspect": _fig_kw.get("aspect", 1),
-                                    "size": _fig_kw.get("size", 4),
-                                    "col_wrap": min(4, var.sizes.get(first, 4)),
-                                }
-                            )
-                            _log_plot_used(
-                                "auto:default:cmap:DataArray.plot.imshow(ndim=3)"
-                            )
-                        else:
-                            first, second = var.dims[0], var.dims[1]
-                            var.plot.imshow(
-                                **{
-                                    **_kwargs_for_imshow(),
-                                    "row": first,
-                                    "col": second,
-                                    "aspect": _fig_kw.get("aspect", 1),
-                                    "size": _fig_kw.get("size", 4),
-                                }
-                            )
-                            _log_plot_used(
-                                "auto:default:cmap:DataArray.plot.imshow(ndim>=4)"
-                            )
-                    else:
-                        var.plot(**_kwargs_for_plot())
-                        _log_plot_used("auto:default:DataArray.plot(xarray_routes)")
+            else:
+                strategy = detect_plotting_strategy(var)
+                default_ctx = AutoDefaultPlotContext(
+                    datetime_var=datetime_var,
+                    datetime_var_display_name=datetime_var_display_name,
+                    variable_name=variable_name,
+                )
+                AutoPlotOrchestrator(plot_dispatcher).run(
+                    var,
+                    bundle,
+                    strategy,
+                    plt_module=plt,
+                    default_ctx=default_ctx,
+                )
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
