@@ -1336,6 +1336,12 @@ def create_plot(
                 plot_kwargs["cmap"],
             )
 
+        def _log_plot_used(route: str) -> None:
+            """Record which plot entry point ran. Stdout is reserved for JSON; print to stderr."""
+            msg = f"plot_used: {route}"
+            logger.info(msg)
+            print(msg, file=sys.stderr)
+
         def _kwargs_for_plot():
             """Return plot kwargs for generic .plot() calls. Never include cmap here:
             xarray can pass it to artists that do not support it (e.g. Rectangle).
@@ -1346,9 +1352,8 @@ def create_plot(
             return out
 
         def _kwargs_for_imshow():
-            """Kwargs for .plot.imshow(). Like _kwargs_for_plot but drop *bins* (histogram-only)."""
+            """Kwargs for .plot.imshow(): full plot_kwargs except *bins* (histogram-only). Includes cmap."""
             out = dict(plot_kwargs)
-            out.pop("cmap", None)
             out.pop("bins", None)
             return out
 
@@ -1379,6 +1384,7 @@ def create_plot(
                         "Creating histogram plot with bins=%s", plot_kwargs["bins"]
                     )
                     var.plot.hist(**_kwargs_for_plot())
+                    _log_plot_used("user_provided:DataArray.plot.hist")
                 elif facet_row or facet_col or plot_x or plot_y or plot_hue:
                     row_dim = (
                         facet_row.strip()
@@ -1436,8 +1442,14 @@ def create_plot(
                                 "Creating plot with user facets/dims and cmap via plot.imshow"
                             )
                             var.plot.imshow(**{**plot_kw, **_plot_imshow_kw})
+                            _log_plot_used(
+                                "user_provided:DataArray.plot.imshow(facets+slice_kwargs)"
+                            )
                         else:
                             var.plot(**{**plot_kw, **_kwargs_for_plot()})
+                            _log_plot_used(
+                                "user_provided:DataArray.plot(facets+slice_kwargs)"
+                            )
                     else:
                         logger.warning(
                             "Facet row/col and x/y/hue not found on variable; using default plot",
@@ -1447,10 +1459,20 @@ def create_plot(
                                 "Creating plot from user params with cmap via plot.imshow"
                             )
                             var.plot.imshow(**_plot_imshow_kw)
+                            _log_plot_used(
+                                "user_provided:DataArray.plot.imshow(fallback_no_valid_facets)"
+                            )
                         else:
-                            var.plot(
-                                **_kwargs_for_plot()
-                            ) if plot_kwargs else var.plot()
+                            if plot_kwargs:
+                                var.plot(**_kwargs_for_plot())
+                                _log_plot_used(
+                                    "user_provided:DataArray.plot(fallback_no_valid_facets+kwargs)"
+                                )
+                            else:
+                                var.plot()
+                                _log_plot_used(
+                                    "user_provided:DataArray.plot(fallback_no_valid_facets)"
+                                )
                 else:
                     # Slices only, no facet/bins: let xarray choose plot type
                     logger.info("Creating plot from sliced data (xarray default)")
@@ -1459,8 +1481,18 @@ def create_plot(
                             "Creating 2D+ plot from sliced data with cmap via plot.imshow"
                         )
                         var.plot.imshow(**_plot_imshow_kw)
+                        _log_plot_used(
+                            "user_provided:DataArray.plot.imshow(slices_only+cmap)"
+                        )
                     else:
-                        var.plot(**_kwargs_for_plot()) if plot_kwargs else var.plot()
+                        if plot_kwargs:
+                            var.plot(**_kwargs_for_plot())
+                            _log_plot_used(
+                                "user_provided:DataArray.plot(slices_only+kwargs)"
+                            )
+                        else:
+                            var.plot()
+                            _log_plot_used("user_provided:DataArray.plot(slices_only)")
             else:
                 # --- Auto-plot branch: strategy-based (no user dimension/facet/bins) ---
                 strategy = detect_plotting_strategy(var)
@@ -1482,11 +1514,15 @@ def create_plot(
                 if strategy == "2d_classic":
                     logger.info("Creating 2D spatial plot")
                     var.plot.imshow(**_plot_kw)
+                    _log_plot_used("auto:strategy=2d_classic:DataArray.plot.imshow")
                     plt.gca().set_aspect("equal")
                 elif strategy == "2d_classic_isel":
                     logger.info("Creating 2D spatial plot with isel")
                     first_dim = var.dims[0]
                     var.isel({first_dim: 0}).plot.imshow(**_plot_kw)
+                    _log_plot_used(
+                        "auto:strategy=2d_classic_isel:DataArray.plot.imshow"
+                    )
                     plt.gca().set_aspect("equal")
                 elif strategy == "3d_col":
                     logger.info("Creating 3D plot (col facet)")
@@ -1500,6 +1536,7 @@ def create_plot(
                         **_imshow_kw,
                         **_kwargs_for_imshow(),
                     )
+                    _log_plot_used("auto:strategy=3d_col:DataArray.plot.imshow")
                 elif strategy == "4d_col_row":
                     logger.info("Creating 4D plot (row and col facets)")
                     first_dim = var.dims[0]
@@ -1512,6 +1549,7 @@ def create_plot(
                         **_imshow_kw,
                         **_kwargs_for_imshow(),
                     )
+                    _log_plot_used("auto:strategy=4d_col_row:DataArray.plot.imshow")
                 else:
                     logger.info("Creating default plot (xarray choice)")
                     if datetime_var is not None and var.ndim == 1:
@@ -1522,6 +1560,9 @@ def create_plot(
                                 "Datetime shape mismatch, falling back to default plot"
                             )
                             var.plot(**_kwargs_for_plot())
+                            _log_plot_used(
+                                "auto:default:DataArray.plot(datetime_mismatch_fallback)"
+                            )
                         else:
                             import pandas as pd
 
@@ -1536,10 +1577,16 @@ def create_plot(
                                 name=variable_name,
                             )
                             var_with_time.plot(**_kwargs_for_plot())
+                            _log_plot_used(
+                                "auto:default:DataArray.plot(1d+datetime_coord)"
+                            )
                     elif var.ndim >= 2 and "cmap" in plot_kwargs:
                         # Use explicit imshow so cmap is applied (generic .plot() can trigger Rectangle.set(cmap) error)
                         if var.ndim == 2:
                             var.plot.imshow(**_plot_kw)
+                            _log_plot_used(
+                                "auto:default:cmap:DataArray.plot.imshow(ndim=2)"
+                            )
                         elif var.ndim == 3:
                             first = var.dims[0]
                             var.plot.imshow(
@@ -1549,6 +1596,9 @@ def create_plot(
                                 col_wrap=min(4, var.sizes.get(first, 4)),
                                 **_imshow_kw,
                                 **_kwargs_for_imshow(),
+                            )
+                            _log_plot_used(
+                                "auto:default:cmap:DataArray.plot.imshow(ndim=3)"
                             )
                         else:
                             first, second = var.dims[0], var.dims[1]
@@ -1560,8 +1610,12 @@ def create_plot(
                                 **_imshow_kw,
                                 **_kwargs_for_imshow(),
                             )
+                            _log_plot_used(
+                                "auto:default:cmap:DataArray.plot.imshow(ndim>=4)"
+                            )
                     else:
                         var.plot(**_kwargs_for_plot())
+                        _log_plot_used("auto:default:DataArray.plot(xarray_routes)")
 
             # Build suptitle with optional start/end time information
             # Only include start/end time if datetime variable is actually being used
