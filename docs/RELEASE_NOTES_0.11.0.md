@@ -56,10 +56,10 @@ The data viewer panel exposes the new options next to the existing dimension-sli
 
 The repository’s Python tooling was updated with **Ruff** using **`--unsafe-fixes`**, applying [pyupgrade](https://github.com/asottile/pyupgrade) rules that migrate away from older `typing` styles. The main ones are:
 
-| Ruff rule | PEP | What changed |
-| --------- | --- | ------------ |
-| **UP006** ([non-pep585-annotation](https://docs.astral.sh/ruff/rules/non-pep585-annotation/)) | [PEP 585](https://peps.python.org/pep-0585/) | `typing.List` / `Dict` / … → builtin generics such as `list[...]`, `dict[...]`. Using built-ins as generics was introduced in 3.9; idiomatic style is to stop importing those names from `typing`. |
-| **UP007** ([non-pep604-annotation-union](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/)) | [PEP 604](https://peps.python.org/pep-0604/) | `Optional[...]` / `Union[...]` replaced by PEP 604 union syntax in annotations, which **requires Python 3.10+** to parse. |
+| Ruff rule                                                                                                 | PEP                                          | What changed                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UP006** ([non-pep585-annotation](https://docs.astral.sh/ruff/rules/non-pep585-annotation/))             | [PEP 585](https://peps.python.org/pep-0585/) | `typing.List` / `Dict` / … → builtin generics such as `list[...]`, `dict[...]`. Using built-ins as generics was introduced in 3.9; idiomatic style is to stop importing those names from `typing`. |
+| **UP007** ([non-pep604-annotation-union](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/)) | [PEP 604](https://peps.python.org/pep-0604/) | `Optional[...]` / `Union[...]` replaced by PEP 604 union syntax in annotations, which **requires Python 3.10+** to parse.                                                                          |
 
 **Why this is a breaking change:** If you run or vendor **`python/*.py`** (including `get_data_info.py`, `create_sample_data.py`, `non_regression_test_plot.py`, `generate_xarray_plot_design_doc.py`) with **Python 3.9 or older**, the interpreter will fail to parse files that use PEP 604 unions. **Use Python 3.10 or newer** for those scripts and for **`ruff check`** / **`pre-commit`** (see `target-version = "py310"` in `pyproject.toml`).
 
@@ -75,12 +75,12 @@ This does **not** change the extension’s documented end-user Python strategy (
 
 ## Summary of changes
 
-| Area        | Change                                                                               |
-| ----------- | ------------------------------------------------------------------------------------ |
-| **Backend** | `PlotKwargsBundle`, `XarrayPlotDispatcher`, user/auto plot strategy registries       |
-| **Fixed**   | `robust` (and other imshow kwargs) merged on all `plot.imshow` paths                 |
-| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough    |
-| **Webview** | Inputs for vmin/vmax; add_colorbar / add_legend checkboxes; narrower col_wrap & bins |
-| **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report                  |
+| Area        | Change                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| **Backend** | `PlotKwargsBundle`, `XarrayPlotDispatcher`, user/auto plot strategy registries               |
+| **Fixed**   | `robust` (and other imshow kwargs) merged on all `plot.imshow` paths                         |
+| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough            |
+| **Webview** | Inputs for vmin/vmax; add_colorbar / add_legend checkboxes; narrower col_wrap & bins         |
+| **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report                          |
 | **Tooling** | Ruff `py310`; PEP 585/604 typing in `python/` (UP006/UP007; **Python 3.10+** to run scripts) |
-| **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                       |
+| **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                               |
