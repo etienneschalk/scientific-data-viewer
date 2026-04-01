@@ -877,8 +877,8 @@ button:active {
 }
 
 .dimension-slices-facets .plot-col-wrap-input {
-    width: 8em;
-    max-width: 160px;
+    width: 4em;
+    max-width: 100px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border);
@@ -911,8 +911,8 @@ button:active {
 }
 
 .dimension-slices-facets .bins-input {
-    width: 11em;
-    max-width: 200px;
+    width: 6em;
+    max-width: 140px;
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border);
@@ -923,6 +923,23 @@ button:active {
 }
 
 .dimension-slices-facets .bins-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-vmin-vmax-input {
+    width: 6em;
+    max-width: 140px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-vmin-vmax-input:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
 }

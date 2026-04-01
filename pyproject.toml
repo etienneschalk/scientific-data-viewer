@@ -33,8 +33,9 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-# Assume Python 3.8+
-target-version = "py38"
+# Match modern type syntax (PEP 604 `X | Y`, PEP 585 `list[...]`) used in `python/` tooling.
+# Requires Python 3.10+ to run those scripts (see v0.11.0 release notes).
+target-version = "py310"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.

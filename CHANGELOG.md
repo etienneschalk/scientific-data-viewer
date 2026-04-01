@@ -6,6 +6,30 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.11.0] - 2026-03-24
+
+### Breaking
+
+- **Python 3.10+ required** to run and parse checked-in **`python/*.py`** scripts after Ruff **pyupgrade** fixes (**UP006** PEP 585: `list[...]` / `dict[...]` instead of `typing.List` / `Dict`; **UP007** PEP 604: `X | Y` instead of `Union` / `Optional`). Older interpreters cannot parse PEP 604 union syntax in source. **`pyproject.toml`** `target-version` is now **`py310`**. See [Ruff UP006](https://docs.astral.sh/ruff/rules/non-pep585-annotation/) and [UP007](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/) and **v0.11.0 release notes**.
+
+### Added
+
+- **Plot kwargs** (Python `create_plot`, CLI, extension passthrough): **`vmin`**, **`vmax`**, **`add_colorbar`** (default true; CLI `--no-add-colorbar`), **`add_legend`** (default false; CLI `--add-legend`). Colorbar/legend/vlim apply only on compatible xarray paths; histograms use a restricted kwarg set; `add_legend` is not passed to `plot.imshow` without `hue`.
+  - **Files**: `python/get_data_info.py`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`
+- **Webview plot controls** for those kwargs: **vmin** / **vmax** inputs on the **cmap** row; **add_colorbar** and **add_legend** checkboxes on the same row as **xincrease** / **yincrease** / **robust** (defaults: colorbar on, **add_legend on** in the UI to mirror typical xarray `plot` defaults on supported plot kinds; Python CLI still omits `--add-legend` unless passed). Global and **group** plot sections stay in sync; inheritance matches other plot parameters (group overrides when the group section is in use). **col_wrap** and **bins** control widths were halved for a tighter layout. **Files**: `src/panel/HTMLGenerator.ts`, `src/panel/webview/webview-script.js`, `src/panel/webview/styles.css`, `src/panel/communication/MessageTypes.ts`
+- **`python/non_regression_test_plot.py`**: Visual regression cases for Issue #117 (00–06), extras (10–18), and vlim/legend (20–24); writes `summary.txt` + `summary.md` under `sample-data/non_regression_test_plot/v<version>/` (version from `package.json`).
+- **`setup.sh`**: Runs the non-regression plot script after `create_sample_data.py` (non-fatal on failure).
+- **Plot API analysis tooling/docs**: Added `python/generate_xarray_plot_design_doc.py` (AST parser for xarray `dataarray_plot.py`) plus `docs/XARRAY_PLOT_GUI_DESIGN.md` (data-only) and `docs/XARRAY_PLOT_GUI_DESIGN_llm_interpretation.md` (design suggestions). This is the baseline for maintainable Plot UI improvements aligned with xarray API evolution.
+
+### Changed
+
+- **Plotting architecture** (`python/get_data_info.py`): `PlotKwargsBundle`, `XarrayPlotDispatcher`, strategy registries for user-provided and auto plot branches; histograms use **`hist_kwargs()`** so non-hist keys are not passed to `plot.hist`.
+- **Python typing (Ruff `--unsafe-fixes`)**: Modernized annotations across `python/` (PEP 585/604). **`create_sample_data.py`**: optional **zarr** / **rioxarray** checks use `importlib.util.find_spec` / `importlib.import_module` instead of unused imports; removed dead assignments surfaced by Ruff; hyphen-minus in docstrings/comments (RUF002/RUF003). **Notebooks** under `python/`: minor lint-driven edits (e.g. `print` instead of bare display expressions).
+
+### Fixed
+
+- **robust** (and other imshow-only kwargs) are merged into **every** `DataArray.plot.imshow(...)` path; previously some imshow calls omitted them so the rendered image did not match logs.
+
 ## [0.10.1] - 2026-03-18
 
 ### Added

@@ -291,6 +291,10 @@ export class HTMLGenerator {
                             <input type="checkbox" id="yIncreaseCheckbox" class="plot-checkbox" checked title="xarray yincrease (uncheck to reverse y-axis)" />
                             <label for="robustCheckbox" class="plot-checkbox-label">robust:</label>
                             <input type="checkbox" id="robustCheckbox" class="plot-checkbox" title="xarray robust: use 2nd/98th percentiles for color limits (helps with outliers)" />
+                            <label for="addColorbarCheckbox" class="plot-checkbox-label">add_colorbar:</label>
+                            <input type="checkbox" id="addColorbarCheckbox" class="plot-checkbox" checked title="xarray add_colorbar (uncheck to hide colorbar when applicable)" />
+                            <label for="addLegendCheckbox" class="plot-checkbox-label">add_legend:</label>
+                            <input type="checkbox" id="addLegendCheckbox" class="plot-checkbox" checked title="xarray add_legend (default on: typical xarray plot defaults; backend omits when unsafe for imshow)" />
                         </div>
                         <div class="dimension-slices-row">
                             <label for="plotBinsInput">bins:</label>
@@ -301,6 +305,10 @@ export class HTMLGenerator {
                             <input type="text" id="plotSizeInput" class="plot-aspect-size-input" placeholder="e.g. 4 or 5.5" title="xarray size in inches (fig height, float)" />
                         </div>
                         <div class="dimension-slices-row">
+                            <label for="plotVminInput">vmin:</label>
+                            <input type="text" id="plotVminInput" class="plot-vmin-vmax-input" placeholder="optional" title="Color scale minimum (float)" />
+                            <label for="plotVmaxInput">vmax:</label>
+                            <input type="text" id="plotVmaxInput" class="plot-vmin-vmax-input" placeholder="optional" title="Color scale maximum (float)" />
                             <label for="plotCmapInput">cmap:</label>
                             <input type="text" id="plotCmapInput" class="plot-cmap-input" placeholder="e.g. viridis, plasma" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
                         </div>

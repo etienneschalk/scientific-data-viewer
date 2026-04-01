@@ -9,7 +9,6 @@ import json
 import sys
 import traceback
 from importlib.util import find_spec
-from typing import Dict, List
 
 # test
 
@@ -29,7 +28,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(line_buffering=True)
 
 
-def check_package_availability(package_names: List[str]) -> Dict[str, bool]:
+def check_package_availability(package_names: list[str]) -> dict[str, bool]:
     """
     Check if packages are available in the current Python environment.
 
@@ -39,7 +38,7 @@ def check_package_availability(package_names: List[str]) -> Dict[str, bool]:
     Returns:
         dict: Dictionary mapping package names to boolean availability status
     """
-    availability: Dict[str, bool] = {}
+    availability: dict[str, bool] = {}
     _log(
         "DEBUG",
         f"check_package_availability called with {len(package_names)} package(s): {package_names}",

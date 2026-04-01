@@ -136,7 +136,7 @@ Configured in `pyproject.toml` with:
 - 4-space indentation
 - Comprehensive linting rules (E4, E7, E9, F, I, B, C4, UP, ARG001, SIM, TCH, TID, Q, RUF)
 - Auto-formatting capabilities
-- Python 3.8+ target version
+- Python 3.10+ Ruff target version (`pyproject.toml`; matches PEP 604 typing in `python/`)
 
 ## Troubleshooting
 

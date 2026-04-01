@@ -77,6 +77,14 @@ export interface CreatePlotRequest {
     cmap?: string;
     /** Number of bins for histogram-style plots (Issue #117; passed as plot kwarg) */
     bins?: number;
+    /** Lower color scale limit (scalar-mappable plots) */
+    vmin?: number;
+    /** Upper color scale limit (scalar-mappable plots) */
+    vmax?: number;
+    /** When false, passes --no-add-colorbar (default true in UI) */
+    addColorbar?: boolean;
+    /** When true, passes --add-legend (default true in UI, aligned with typical xarray plot defaults) */
+    addLegend?: boolean;
 }
 
 export interface CreatePlotResponse {

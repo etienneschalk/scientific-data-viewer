@@ -102,6 +102,10 @@ export class UIController {
                     payload.robust,
                     payload.cmap,
                     payload.bins,
+                    payload.vmin,
+                    payload.vmax,
+                    payload.addColorbar,
+                    payload.addLegend,
                     payload.operationId,
                 );
             },
@@ -353,6 +357,10 @@ export class UIController {
         robust?: boolean,
         cmap?: string,
         bins?: number,
+        vmin?: number,
+        vmax?: number,
+        addColorbar?: boolean,
+        addLegend?: boolean,
         operationId?: string,
     ): Promise<string | undefined> {
         try {
@@ -389,6 +397,10 @@ export class UIController {
                 robust,
                 cmap,
                 bins,
+                vmin,
+                vmax,
+                addColorbar,
+                addLegend,
                 operationId,
                 getPlotTimeoutMs(),
             );

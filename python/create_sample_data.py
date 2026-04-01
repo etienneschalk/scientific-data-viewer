@@ -4,12 +4,19 @@ Script to create sample scientific data files for testing the VSCode extension.
 This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000.
 """
 
+import importlib.util
 import os
 import warnings
 from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
+
+
+def _optional_pkg_available(dist_name: str) -> bool:
+    """True if optional dependency is installed (metadata check only; no import)."""
+    return importlib.util.find_spec(dist_name) is not None
+
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
@@ -123,9 +130,7 @@ def create_sample_zarr_single_group_from_dataset():
 
     print("🌊 Creating sample Zarr file...")
 
-    try:
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print("  ❌ zarr not available, skipping Zarr file creation.")
         return None
 
@@ -217,10 +222,7 @@ def create_sample_zarr_with_nested_groups_from_datatree():
 
     print("🌊 Creating sample Zarr file with xr.DataTree and nested groups...")
 
-    try:
-        import xarray as xr
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print(
             "  ❌ zarr or datatree not available, skipping xr.DataTree Zarr file creation."
         )
@@ -467,11 +469,11 @@ def create_sample_zarr_with_nested_groups_from_zarr():
 
     print("🌊 Creating sample Zarr file with nested groups...")
 
-    try:
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print("  ❌ zarr not available, skipping nested Zarr file creation.")
         return None
+
+    import zarr
 
     # Create the root group
     root = zarr.open(output_file, mode="w")
@@ -662,7 +664,7 @@ def create_sample_zarr_with_nested_groups_from_zarr():
 def create_sample_zarr_deeply_nested_attributes():
     """Create a Zarr store with extremely nested group attributes for testing Issue #120.
 
-    Zarr stores attributes in JSON (.zattrs). This produces a store with 5–10 levels
+    Zarr stores attributes in JSON (.zattrs). This produces a store with 5-10 levels
     of nested dicts so the collapsible nested-attributes view can be tested and
     regressions avoided. Uses xarray to write the store so dimension metadata
     (dimension_names / _ARRAY_DIMENSIONS) is correct for reopening with xarray.
@@ -678,7 +680,7 @@ def create_sample_zarr_deeply_nested_attributes():
         "🌊 Creating sample Zarr file with deeply nested group attributes (Issue #120)..."
     )
 
-    # Deeply nested attributes (10 levels) – typical of complex .zattrs from producers
+    # Deeply nested attributes (10 levels) - typical of complex .zattrs from producers
     nested_attrs = {
         "title": "Zarr with deeply nested attributes (Issue #120)",
         "description": "Test data for collapsible nested attributes view in SDV",
@@ -974,13 +976,12 @@ def create_sample_geotiff():
 
     print("🛰️ Creating sample GeoTIFF file...")
 
-    try:
-        import rioxarray
-
-        print("  ✅ rioxarray available, creating GeoTIFF file")
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print("  ❌ rioxarray not available, skipping GeoTIFF file creation.")
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
+
+    print("  ✅ rioxarray available, creating GeoTIFF file")
 
     # Create spatial dimensions
     height = 200
@@ -1104,11 +1105,10 @@ def create_sample_jp2():
 
     print("📸 Creating sample JPEG-2000 file...")
 
-    try:
-        import rioxarray
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print("  ❌ rioxarray not available, skipping JPEG-2000 file creation.")
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
 
     # Create spatial dimensions
     height = 50
@@ -1400,7 +1400,6 @@ def create_sample_netcdf_netcdf():
 
     # Create sample climate data
     np.random.seed(404)
-    time_3d = time[:, np.newaxis, np.newaxis]
     precipitation = np.clip(np.random.exponential(2, (6, 45, 90)), 0, 50).astype(
         np.float32
     )
@@ -1895,13 +1894,12 @@ def create_sample_geotiff_tiff():
 
     print("🛰️ Creating sample GeoTIFF TIFF file...")
 
-    try:
-        import rioxarray
-
-        print("  ✅ rioxarray available, creating GeoTIFF TIFF file")
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print("  ❌ rioxarray not available, skipping GeoTIFF TIFF file creation.")
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
+
+    print("  ✅ rioxarray available, creating GeoTIFF TIFF file")
 
     # Create spatial dimensions
     height = 100
@@ -1970,13 +1968,12 @@ def create_sample_geotiff_geotiff():
 
     print("🛰️ Creating sample GeoTIFF GEOTIFF file...")
 
-    try:
-        import rioxarray
-
-        print("  ✅ rioxarray available, creating GeoTIFF GEOTIFF file")
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print("  ❌ rioxarray not available, skipping GeoTIFF GEOTIFF file creation.")
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
+
+    print("  ✅ rioxarray available, creating GeoTIFF GEOTIFF file")
 
     # Create spatial dimensions
     height = 80
@@ -2054,15 +2051,14 @@ def create_sample_multiband_geotiff():
 
     print("🛰️ Creating sample multi-band GeoTIFF file...")
 
-    try:
-        import rioxarray
-
-        print("  ✅ rioxarray available, creating multi-band GeoTIFF file")
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print(
             "  ❌ rioxarray not available, skipping multi-band GeoTIFF file creation."
         )
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
+
+    print("  ✅ rioxarray available, creating multi-band GeoTIFF file")
 
     # Create spatial dimensions
     height = 100
@@ -2164,13 +2160,12 @@ def create_sample_jp2_jpeg2000():
 
     print("📸 Creating sample JPEG-2000 JPEG2000 file...")
 
-    try:
-        import rioxarray
-    except ImportError:
+    if not _optional_pkg_available("rioxarray"):
         print(
             "  ❌ rioxarray not available, skipping JPEG-2000 JPEG2000 file creation."
         )
         return None
+    importlib.import_module("rioxarray")  # register xarray .rio accessor
 
     # Create spatial dimensions
     height = 40
@@ -2406,10 +2401,7 @@ def create_disposable_zarr_files():
 
     print(f"🗑️ Creating 10 small Zarr files in {disposable_dir}/ directory...")
 
-    try:
-        import xarray as xr
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print(
             "  ❌ zarr or xarray not available, skipping disposable Zarr file creation."
         )
@@ -2512,10 +2504,7 @@ def create_sample_zarr_arborescence():
 
     print("🌳 Creating sample Zarr file with arborescence structure...")
 
-    try:
-        import xarray as xr
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print(
             "  ❌ zarr or xarray not available, skipping arborescence Zarr file creation."
         )
@@ -2716,10 +2705,7 @@ def create_sample_zarr_inherited_coords():
 
     print("🔗 Creating sample Zarr file with inherited coordinates...")
 
-    try:
-        import xarray as xr
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print(
             "  ❌ zarr or xarray not available, skipping inherited coords Zarr file creation."
         )
@@ -2978,7 +2964,7 @@ def create_broken_files():
             os.makedirs(filename, exist_ok=True)
         else:
             # Create empty file for other formats
-            with open(filename, "w") as f:
+            with open(filename, "w"):
                 pass  # Empty file
 
         broken_files.append(filename)
@@ -4808,9 +4794,7 @@ def create_temporal_zarr_multigroups():
         print(f"📦 Zarr file {output_file} already exists. Skipping creation.")
         return output_file
 
-    try:
-        import zarr
-    except ImportError:
+    if not _optional_pkg_available("zarr"):
         print("  ❌ zarr not available, skipping Zarr file creation.")
         return None
 
@@ -5089,9 +5073,6 @@ def create_temporal_cdf_unordered_time():
         )
         for i in range(20)
     ]
-
-    # Create corresponding ordered indices for data
-    ordered_indices = np.arange(20)
 
     # Shuffle the time points to create unordered sequence
     # But keep track of the original order for data alignment
