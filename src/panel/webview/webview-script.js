@@ -2808,8 +2808,9 @@ function setupTimeControlsEventListeners() {
             const plotAspectInput = document.getElementById('plotAspectInput');
             const plotSizeInput = document.getElementById('plotSizeInput');
             const robustCheckbox = document.getElementById('robustCheckbox');
-            const addColorbarCheckbox =
-                document.getElementById('addColorbarCheckbox');
+            const addColorbarCheckbox = document.getElementById(
+                'addColorbarCheckbox',
+            );
             const addLegendCheckbox =
                 document.getElementById('addLegendCheckbox');
             const plotVminInput = document.getElementById('plotVminInput');

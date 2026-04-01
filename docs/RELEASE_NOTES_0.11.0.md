@@ -32,11 +32,11 @@ When **robust** was enabled, logs showed `robust: True` but some paths built `pl
 
 The data viewer panel exposes the new options next to the existing dimension-slice and plot-parameter UI:
 
-| Control           | Placement                                                                 | Default in UI | Backend note                                                                 |
-| ----------------- | ------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------- |
-| **vmin** / **vmax** | Same row as **cmap** (optional free-text numbers; invalid or empty omitted) | (empty)       | Same as Python: only finite values are sent.                                 |
-| **add_colorbar**  | Checkbox row with **xincrease**, **yincrease**, **robust**                | On (`true`)   | Unchecked sends `--no-add-colorbar`.                                         |
-| **add_legend**    | Same checkbox row                                                         | On (`true`)   | Checked sends `--add-legend` (UI default on); Python `create_plot` / CLI omit the flag by default when not used from the panel. |
+| Control             | Placement                                                                   | Default in UI | Backend note                                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **vmin** / **vmax** | Same row as **cmap** (optional free-text numbers; invalid or empty omitted) | (empty)       | Same as Python: only finite values are sent.                                                                                    |
+| **add_colorbar**    | Checkbox row with **xincrease**, **yincrease**, **robust**                  | On (`true`)   | Unchecked sends `--no-add-colorbar`.                                                                                            |
+| **add_legend**      | Same checkbox row                                                           | On (`true`)   | Checked sends `--add-legend` (UI default on); Python `create_plot` / CLI omit the flag by default when not used from the panel. |
 
 **Group Plot Controls** duplicate these fields; per-field **global vs. group** behaviour matches other plot parameters (non-empty group facet/cmap-style fields override global; when the group plot section has no overrides, global values apply). **col_wrap** and **bins** inputs use a narrower width so the extra controls fit more comfortably.
 
@@ -58,11 +58,11 @@ No deliberate breaking changes to the JSON/CLI contract beyond **new optional** 
 
 ## Summary of changes
 
-| Area        | Change                                                                         |
-| ----------- | ------------------------------------------------------------------------------ |
-| **Backend** | `PlotKwargsBundle`, `XarrayPlotDispatcher`, user/auto plot strategy registries |
-| **Fixed**   | `robust` (and other imshow kwargs) merged on all `plot.imshow` paths           |
-| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough |
+| Area        | Change                                                                               |
+| ----------- | ------------------------------------------------------------------------------------ |
+| **Backend** | `PlotKwargsBundle`, `XarrayPlotDispatcher`, user/auto plot strategy registries       |
+| **Fixed**   | `robust` (and other imshow kwargs) merged on all `plot.imshow` paths                 |
+| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough    |
 | **Webview** | Inputs for vmin/vmax; add_colorbar / add_legend checkboxes; narrower col_wrap & bins |
-| **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report            |
-| **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                 |
+| **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report                  |
+| **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                       |
