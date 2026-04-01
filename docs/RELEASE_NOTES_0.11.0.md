@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.11.0 Release Notes
 
-**TL;DR** — **Plotting pipeline overhaul** in Python (`create_plot`): clearer strategy selection, reliable forwarding of style kwargs to the right xarray entry points, **new plot controls** (`vmin` / `vmax`, colorbar on/off, legend), **robust** fixed on all colormap paths, and a **non-regression plot script** (Issue #117 workflows) wired into `setup.sh`. Version **0.11.0** ships these changes together (there is no separate **0.10.2** release).
+**TL;DR** — **Plotting pipeline overhaul** in Python (`create_plot`): clearer strategy selection, reliable forwarding of style kwargs to the right xarray entry points, **new plot kwargs** (`vmin` / `vmax`, colorbar on/off, legend), matching **webview controls** in Global and Group Plot Controls, **robust** fixed on all colormap paths, and a **non-regression plot script** (Issue #117 workflows) wired into `setup.sh`. Version **0.11.0** ships these changes together (there is no separate **0.10.2** release).
 
 ## Plotting backend refactor (`python/get_data_info.py`)
 
@@ -26,7 +26,19 @@ When **robust** was enabled, logs showed `robust: True` but some paths built `pl
 
 **CLI:** `--vmin`, `--vmax`, `--no-add-colorbar`, `--add-legend`.
 
-**Extension:** `DataProcessor.createPlot` / UI pipeline accept optional `vmin`, `vmax`, `addColorbar`, `addLegend` for future UI wiring (defaults match Python).
+**Extension:** `DataProcessor.createPlot` and the webview → `CreatePlot` message accept optional `vmin`, `vmax`, `addColorbar`, and `addLegend` (same semantics as the CLI). The webview **add_legend** checkbox is **on** by default so quicklooks match typical xarray plotting behaviour on methods that default `add_legend=True`; the Python CLI still treats the flag as opt-in (`--add-legend`).
+
+## Webview: Global and Group Plot Controls
+
+The data viewer panel exposes the new options next to the existing dimension-slice and plot-parameter UI:
+
+| Control           | Placement                                                                 | Default in UI | Backend note                                                                 |
+| ----------------- | ------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| **vmin** / **vmax** | Same row as **cmap** (optional free-text numbers; invalid or empty omitted) | (empty)       | Same as Python: only finite values are sent.                                 |
+| **add_colorbar**  | Checkbox row with **xincrease**, **yincrease**, **robust**                | On (`true`)   | Unchecked sends `--no-add-colorbar`.                                         |
+| **add_legend**    | Same checkbox row                                                         | On (`true`)   | Checked sends `--add-legend` (UI default on); Python `create_plot` / CLI omit the flag by default when not used from the panel. |
+
+**Group Plot Controls** duplicate these fields; per-field **global vs. group** behaviour matches other plot parameters (non-empty group facet/cmap-style fields override global; when the group plot section has no overrides, global values apply). **col_wrap** and **bins** inputs use a narrower width so the extra controls fit more comfortably.
 
 ## Non-regression plot script
 
@@ -50,6 +62,7 @@ No deliberate breaking changes to the JSON/CLI contract beyond **new optional** 
 | ----------- | ------------------------------------------------------------------------------ |
 | **Backend** | `PlotKwargsBundle`, `XarrayPlotDispatcher`, user/auto plot strategy registries |
 | **Fixed**   | `robust` (and other imshow kwargs) merged on all `plot.imshow` paths           |
-| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS passthrough        |
+| **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough |
+| **Webview** | Inputs for vmin/vmax; add_colorbar / add_legend checkboxes; narrower col_wrap & bins |
 | **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report            |
 | **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                 |

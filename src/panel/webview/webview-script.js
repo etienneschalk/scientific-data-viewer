@@ -188,6 +188,10 @@ class WebviewMessageBus {
         robust,
         cmap,
         bins,
+        vmin,
+        vmax,
+        addColorbar,
+        addLegend,
         timeout,
     ) {
         const effectiveTimeout =
@@ -277,6 +281,18 @@ class WebviewMessageBus {
             bins >= 1
         ) {
             payload.bins = bins;
+        }
+        if (vmin !== undefined && Number.isFinite(vmin)) {
+            payload.vmin = vmin;
+        }
+        if (vmax !== undefined && Number.isFinite(vmax)) {
+            payload.vmax = vmax;
+        }
+        if (addColorbar === false) {
+            payload.addColorbar = false;
+        }
+        if (addLegend === true) {
+            payload.addLegend = true;
         }
 
         console.log('📤 WebviewMessageBus.createPlot payload:', payload);
@@ -1052,6 +1068,10 @@ function renderGroupPlotControls(data, groupName, flags) {
                             <input type="checkbox" id="group-y-increase-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray yincrease" />
                             <label for="group-robust-${safeId}" class="plot-checkbox-label">robust:</label>
                             <input type="checkbox" id="group-robust-${safeId}" class="plot-checkbox group-plot-checkbox" data-group="${escapeHtml(groupName)}" title="xarray robust" />
+                            <label for="group-add-colorbar-${safeId}" class="plot-checkbox-label">add_colorbar:</label>
+                            <input type="checkbox" id="group-add-colorbar-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray add_colorbar" />
+                            <label for="group-add-legend-${safeId}" class="plot-checkbox-label">add_legend:</label>
+                            <input type="checkbox" id="group-add-legend-${safeId}" class="plot-checkbox group-plot-checkbox" checked data-group="${escapeHtml(groupName)}" title="xarray add_legend (default on)" />
                         </div>
                         <div class="dimension-slices-row">
                             <label for="group-bins-${safeId}">bins:</label>
@@ -1062,6 +1082,10 @@ function renderGroupPlotControls(data, groupName, flags) {
                             <input type="text" id="group-plot-size-${safeId}" class="plot-aspect-size-input group-plot-aspect-size-input" placeholder="e.g. 4 or 5.5" data-group="${escapeHtml(groupName)}" title="xarray size (float)" />
                         </div>
                         <div class="dimension-slices-row">
+                            <label for="group-plot-vmin-${safeId}">vmin:</label>
+                            <input type="text" id="group-plot-vmin-${safeId}" class="plot-vmin-vmax-input group-plot-vmin-vmax-input" placeholder="optional" data-group="${escapeHtml(groupName)}" title="Color scale minimum (float)" />
+                            <label for="group-plot-vmax-${safeId}">vmax:</label>
+                            <input type="text" id="group-plot-vmax-${safeId}" class="plot-vmin-vmax-input group-plot-vmin-vmax-input" placeholder="optional" data-group="${escapeHtml(groupName)}" title="Color scale maximum (float)" />
                             <label for="group-plot-cmap-${safeId}">cmap:</label>
                             <input type="text" id="group-plot-cmap-${safeId}" class="plot-cmap-input group-plot-cmap-input" placeholder="e.g. viridis, plasma" data-group="${escapeHtml(groupName)}" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
                         </div>
@@ -1918,6 +1942,14 @@ function groupOrGlobalString(groupVal, globalVal) {
     return groupVal;
 }
 
+function parseOptionalPlotFloatFromInput(inputEl) {
+    if (!inputEl || !inputEl.value || inputEl.value.trim() === '') {
+        return undefined;
+    }
+    const n = Number(inputEl.value.trim());
+    return Number.isFinite(n) ? n : undefined;
+}
+
 function getGroupDimensionSlicesState(groupName) {
     const section = findGroupPlotControlsSection(groupName);
     if (!section) {
@@ -1952,6 +1984,12 @@ function getGroupDimensionSlicesState(groupName) {
     const aspectEl = document.getElementById(`group-plot-aspect-${safeId}`);
     const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
     const robustEl = document.getElementById(`group-robust-${safeId}`);
+    const addColorbarEl = document.getElementById(
+        `group-add-colorbar-${safeId}`,
+    );
+    const addLegendEl = document.getElementById(`group-add-legend-${safeId}`);
+    const vminEl = document.getElementById(`group-plot-vmin-${safeId}`);
+    const vmaxEl = document.getElementById(`group-plot-vmax-${safeId}`);
     const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
     const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
     const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
@@ -1987,6 +2025,10 @@ function getGroupDimensionSlicesState(groupName) {
         }
     }
     const robust = robustEl ? robustEl.checked : false;
+    const addColorbar = addColorbarEl ? addColorbarEl.checked : true;
+    const addLegend = addLegendEl ? addLegendEl.checked : true;
+    const vmin = parseOptionalPlotFloatFromInput(vminEl);
+    const vmax = parseOptionalPlotFloatFromInput(vmaxEl);
     const cmap =
         cmapEl && cmapEl.value && cmapEl.value.trim()
             ? cmapEl.value.trim()
@@ -2003,7 +2045,11 @@ function getGroupDimensionSlicesState(groupName) {
         aspect === undefined &&
         size === undefined &&
         !robust &&
-        !cmap
+        !cmap &&
+        addColorbar &&
+        addLegend &&
+        vmin === undefined &&
+        vmax === undefined
     ) {
         return null;
     }
@@ -2023,6 +2069,10 @@ function getGroupDimensionSlicesState(groupName) {
         robust,
         cmap,
         bins,
+        vmin,
+        vmax,
+        addColorbar,
+        addLegend,
     };
 }
 
@@ -2196,6 +2246,14 @@ function setupGroupPlotControlsListeners() {
             );
             const sizeEl = document.getElementById(`group-plot-size-${safeId}`);
             const robustEl = document.getElementById(`group-robust-${safeId}`);
+            const addColorbarEl = document.getElementById(
+                `group-add-colorbar-${safeId}`,
+            );
+            const addLegendEl = document.getElementById(
+                `group-add-legend-${safeId}`,
+            );
+            const vminEl = document.getElementById(`group-plot-vmin-${safeId}`);
+            const vmaxEl = document.getElementById(`group-plot-vmax-${safeId}`);
             const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
             if (facetRowEl) {
                 facetRowEl.value = '';
@@ -2232,6 +2290,18 @@ function setupGroupPlotControlsListeners() {
             }
             if (robustEl) {
                 robustEl.checked = false;
+            }
+            if (addColorbarEl) {
+                addColorbarEl.checked = true;
+            }
+            if (addLegendEl) {
+                addLegendEl.checked = true;
+            }
+            if (vminEl) {
+                vminEl.value = '';
+            }
+            if (vmaxEl) {
+                vmaxEl.value = '';
             }
             if (cmapEl) {
                 cmapEl.value = '';
@@ -2372,6 +2442,7 @@ function getDimensionSlicesState() {
     });
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
+    const plotColWrapInput = document.getElementById('plotColWrapInput');
     const plotXSelect = document.getElementById('plotXSelect');
     const plotYSelect = document.getElementById('plotYSelect');
     const plotHueSelect = document.getElementById('plotHueSelect');
@@ -2381,6 +2452,10 @@ function getDimensionSlicesState() {
     const plotAspectInput = document.getElementById('plotAspectInput');
     const plotSizeInput = document.getElementById('plotSizeInput');
     const robustCheckbox = document.getElementById('robustCheckbox');
+    const addColorbarCheckbox = document.getElementById('addColorbarCheckbox');
+    const addLegendCheckbox = document.getElementById('addLegendCheckbox');
+    const plotVminInput = document.getElementById('plotVminInput');
+    const plotVmaxInput = document.getElementById('plotVmaxInput');
     const plotCmapInput = document.getElementById('plotCmapInput');
     let bins = null;
     if (binsInput && binsInput.value && binsInput.value.trim() !== '') {
@@ -2446,6 +2521,10 @@ function getDimensionSlicesState() {
                 ? plotCmapInput.value.trim()
                 : '',
         bins,
+        vmin: parseOptionalPlotFloatFromInput(plotVminInput),
+        vmax: parseOptionalPlotFloatFromInput(plotVmaxInput),
+        addColorbar: addColorbarCheckbox ? addColorbarCheckbox.checked : true,
+        addLegend: addLegendCheckbox ? addLegendCheckbox.checked : true,
     };
 }
 
@@ -2728,6 +2807,13 @@ function setupTimeControlsEventListeners() {
                 document.getElementById('yIncreaseCheckbox');
             const plotAspectInput = document.getElementById('plotAspectInput');
             const plotSizeInput = document.getElementById('plotSizeInput');
+            const robustCheckbox = document.getElementById('robustCheckbox');
+            const addColorbarCheckbox =
+                document.getElementById('addColorbarCheckbox');
+            const addLegendCheckbox =
+                document.getElementById('addLegendCheckbox');
+            const plotVminInput = document.getElementById('plotVminInput');
+            const plotVmaxInput = document.getElementById('plotVmaxInput');
             if (facetRowSelect) {
                 facetRowSelect.value = '';
             }
@@ -2763,6 +2849,18 @@ function setupTimeControlsEventListeners() {
             }
             if (robustCheckbox) {
                 robustCheckbox.checked = false;
+            }
+            if (addColorbarCheckbox) {
+                addColorbarCheckbox.checked = true;
+            }
+            if (addLegendCheckbox) {
+                addLegendCheckbox.checked = true;
+            }
+            if (plotVminInput) {
+                plotVminInput.value = '';
+            }
+            if (plotVmaxInput) {
+                plotVmaxInput.value = '';
             }
             const plotCmapInput = document.getElementById('plotCmapInput');
             if (plotCmapInput) {
@@ -2960,6 +3058,8 @@ const EXPORT_FORM_CONTROL_SELECTORS = [
     'select.group-facet-select',
     'input.bins-input',
     'input.group-bins-input',
+    'input.plot-vmin-vmax-input',
+    'input.group-plot-vmin-vmax-input',
 ].join(', ');
 
 /**
@@ -3197,6 +3297,10 @@ async function handleCreateAllPlots() {
         robust,
         cmap,
         bins,
+        vmin,
+        vmax,
+        addColorbar,
+        addLegend,
     } = getDimensionSlicesState();
 
     // Prepare plot tasks (not promises yet - we'll create them with concurrency control)
@@ -3250,6 +3354,10 @@ async function handleCreateAllPlots() {
         const fRobust = groupDim?.robust ?? robust;
         const fCmap = groupOrGlobalString(groupDim?.cmap, cmap);
         const fBins = groupDim?.bins ?? bins;
+        const fVmin = groupDim?.vmin ?? vmin;
+        const fVmax = groupDim?.vmax ?? vmax;
+        const fAddColorbar = groupDim?.addColorbar ?? addColorbar;
+        const fAddLegend = groupDim?.addLegend ?? addLegend;
 
         displayVariablePlotLoading(variable);
 
@@ -3274,6 +3382,10 @@ async function handleCreateAllPlots() {
                 fRobust,
                 fCmap,
                 fBins,
+                fVmin,
+                fVmax,
+                fAddColorbar,
+                fAddLegend,
                 globalState.plotTimeoutMs,
             );
             displayVariablePlot(variable, plotData);
@@ -3503,6 +3615,10 @@ async function handleCreateVariablePlot(variable) {
     const robust = groupDim?.robust ?? globalDim.robust;
     const cmap = groupOrGlobalString(groupDim?.cmap, globalDim.cmap);
     const bins = groupDim?.bins ?? globalDim.bins;
+    const vmin = groupDim?.vmin ?? globalDim.vmin;
+    const vmax = groupDim?.vmax ?? globalDim.vmax;
+    const addColorbar = groupDim?.addColorbar ?? globalDim.addColorbar;
+    const addLegend = groupDim?.addLegend ?? globalDim.addLegend;
 
     console.log('Creating plot with time controls:', {
         datetimeVariableName,
@@ -3524,6 +3640,10 @@ async function handleCreateVariablePlot(variable) {
         robust,
         cmap,
         bins,
+        vmin,
+        vmax,
+        addColorbar,
+        addLegend,
         rawState: globalTimeControlsState,
     });
 
@@ -3551,6 +3671,10 @@ async function handleCreateVariablePlot(variable) {
             robust,
             cmap,
             bins,
+            vmin,
+            vmax,
+            addColorbar,
+            addLegend,
             globalState.plotTimeoutMs,
         );
         displayVariablePlot(variable, plotData);

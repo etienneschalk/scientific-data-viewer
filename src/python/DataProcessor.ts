@@ -109,6 +109,7 @@ export class DataProcessor {
         vmax?: number,
         /** When false, passes --no-add-colorbar (default true: show colorbar when applicable). */
         addColorbar?: boolean,
+        /** When true, passes --add-legend (webview defaults on; Python `create_plot` still defaults false when the flag is omitted from CLI). */
         addLegend?: boolean,
         operationId?: string,
         timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
