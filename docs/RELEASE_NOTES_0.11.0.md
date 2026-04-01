@@ -52,9 +52,26 @@ The data viewer panel exposes the new options next to the existing dimension-sli
 - Added generated data-only reference **`docs/XARRAY_PLOT_GUI_DESIGN.md`** and companion interpretation **`docs/XARRAY_PLOT_GUI_DESIGN_llm_interpretation.md`**.
 - These documents provide a maintainable baseline to evolve Plot controls (common controls + method-specific controls) as xarray's plotting API changes.
 
+## Breaking change: Python 3.10+ for checked-in Python scripts (typing modernization)
+
+The repository’s Python tooling was updated with **Ruff** using **`--unsafe-fixes`**, applying [pyupgrade](https://github.com/asottile/pyupgrade) rules that migrate away from older `typing` styles. The main ones are:
+
+| Ruff rule | PEP | What changed |
+| --------- | --- | ------------ |
+| **UP006** ([non-pep585-annotation](https://docs.astral.sh/ruff/rules/non-pep585-annotation/)) | [PEP 585](https://peps.python.org/pep-0585/) | `typing.List` / `Dict` / … → builtin generics such as `list[...]`, `dict[...]`. Using built-ins as generics was introduced in 3.9; idiomatic style is to stop importing those names from `typing`. |
+| **UP007** ([non-pep604-annotation-union](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/)) | [PEP 604](https://peps.python.org/pep-0604/) | `Optional[...]` / `Union[...]` replaced by PEP 604 union syntax in annotations, which **requires Python 3.10+** to parse. |
+
+**Why this is a breaking change:** If you run or vendor **`python/*.py`** (including `get_data_info.py`, `create_sample_data.py`, `non_regression_test_plot.py`, `generate_xarray_plot_design_doc.py`) with **Python 3.9 or older**, the interpreter will fail to parse files that use PEP 604 unions. **Use Python 3.10 or newer** for those scripts and for **`ruff check`** / **`pre-commit`** (see `target-version = "py310"` in `pyproject.toml`).
+
+This does **not** change the extension’s documented end-user Python strategy (e.g. Python 3.13 via **uv** in the README); it raises the **minimum Python for maintaining and executing the extension’s checked-in Python sources** in this repo.
+
+**Typing note:** `typing` aliases for built-in collections are [deprecated in Python 3.9+](https://docs.python.org/3/library/typing.html#deprecated-aliases) in favour of PEP 585; PEP 604 union syntax is the modern replacement for `Optional`/`Union` in annotations. Ruff’s fixes are marked unsafe when runtime introspection of annotations on older versions could break (see each rule’s “Fix safety” section in the Ruff docs).
+
 ## Upgrade notes
 
-No deliberate breaking changes to the JSON/CLI contract beyond **new optional** arguments. After updating to **0.11.0**, enable **robust** to see consistent color scaling on supported rasters, per [xarray’s plotting API](https://docs.xarray.dev/en/stable/user-guide/plotting.html).
+- **Python:** Use **3.10+** for repo scripts and linting (see breaking change above).
+- **CLI / JSON:** No deliberate breaking changes to the extension’s plot **JSON/CLI** contract beyond **new optional** arguments.
+- **Plots:** After updating to **0.11.0**, enable **robust** to see consistent color scaling on supported rasters, per [xarray’s plotting API](https://docs.xarray.dev/en/stable/user-guide/plotting.html).
 
 ## Summary of changes
 
@@ -65,4 +82,5 @@ No deliberate breaking changes to the JSON/CLI contract beyond **new optional** 
 | **Added**   | `vmin`, `vmax`, `add_colorbar`, `add_legend`; CLI flags; TS / webview passthrough    |
 | **Webview** | Inputs for vmin/vmax; add_colorbar / add_legend checkboxes; narrower col_wrap & bins |
 | **Added**   | `non_regression_test_plot.py`, `setup.sh` hook, `summary.md` report                  |
+| **Tooling** | Ruff `py310`; PEP 585/604 typing in `python/` (UP006/UP007; **Python 3.10+** to run scripts) |
 | **Version** | **0.11.0** (skips unreleased **0.10.2** label)                                       |

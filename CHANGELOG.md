@@ -8,6 +8,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ## [0.11.0] - 2026-03-24
 
+### Breaking
+
+- **Python 3.10+ required** to run and parse checked-in **`python/*.py`** scripts after Ruff **pyupgrade** fixes (**UP006** PEP 585: `list[...]` / `dict[...]` instead of `typing.List` / `Dict`; **UP007** PEP 604: `X | Y` instead of `Union` / `Optional`). Older interpreters cannot parse PEP 604 union syntax in source. **`pyproject.toml`** `target-version` is now **`py310`**. See [Ruff UP006](https://docs.astral.sh/ruff/rules/non-pep585-annotation/) and [UP007](https://docs.astral.sh/ruff/rules/non-pep604-annotation-union/) and **v0.11.0 release notes**.
+
 ### Added
 
 - **Plot kwargs** (Python `create_plot`, CLI, extension passthrough): **`vmin`**, **`vmax`**, **`add_colorbar`** (default true; CLI `--no-add-colorbar`), **`add_legend`** (default false; CLI `--add-legend`). Colorbar/legend/vlim apply only on compatible xarray paths; histograms use a restricted kwarg set; `add_legend` is not passed to `plot.imshow` without `hue`.
@@ -20,6 +24,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 ### Changed
 
 - **Plotting architecture** (`python/get_data_info.py`): `PlotKwargsBundle`, `XarrayPlotDispatcher`, strategy registries for user-provided and auto plot branches; histograms use **`hist_kwargs()`** so non-hist keys are not passed to `plot.hist`.
+- **Python typing (Ruff `--unsafe-fixes`)**: Modernized annotations across `python/` (PEP 585/604). **`create_sample_data.py`**: optional **zarr** / **rioxarray** checks use `importlib.util.find_spec` / `importlib.import_module` instead of unused imports; removed dead assignments surfaced by Ruff; hyphen-minus in docstrings/comments (RUF002/RUF003). **Notebooks** under `python/`: minor lint-driven edits (e.g. `print` instead of bare display expressions).
 
 ### Fixed
 

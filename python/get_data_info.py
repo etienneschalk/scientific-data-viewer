@@ -39,6 +39,7 @@ import logging
 import os
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, is_dataclass
 from importlib.util import find_spec
 from io import BytesIO
@@ -46,14 +47,7 @@ from logging import Logger
 from pathlib import Path, PurePosixPath
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
-    Union,
     cast,
 )
 
@@ -111,7 +105,7 @@ class ComplexEncoder(json.JSONEncoder):
 def to_json_best_effort(
     obj: Any,
     *,
-    encoder: Type[json.JSONEncoder] = ComplexEncoder,
+    encoder: type[json.JSONEncoder] = ComplexEncoder,
     **kwargs: Any,
 ) -> str:
     """
@@ -135,7 +129,7 @@ def to_json_best_effort(
 
 # </JSON Serialization Section>
 
-DictOfDatasets = Dict[str, xr.Dataset]
+DictOfDatasets = dict[str, xr.Dataset]
 
 # Set up logging
 # Redirect logging to stderr so it doesn't interfere with the base64 output
@@ -159,13 +153,13 @@ MATPLOTLIB_RC_CONTEXT = {
 
 XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
 # For text representation, expand attrs since users can't click to expand them
-XR_TEXT_OPTIONS: Dict[str, Any] = {
+XR_TEXT_OPTIONS: dict[str, Any] = {
     "display_expand_attrs": True,
     "display_expand_data": True,
     "display_max_rows": 1000,
 }
 # For HTML representation, keep attrs collapsed (users can click to expand)
-XR_HTML_OPTIONS: Dict[str, Any] = {**XR_OPTIONS}
+XR_HTML_OPTIONS: dict[str, Any] = {**XR_OPTIONS}
 
 # Defaults for Issue #102 (overridable via CLI --small-variable-bytes / --small-value-display-max-len).
 # When small_variable_bytes is 0, the feature is disabled.
@@ -220,7 +214,7 @@ EngineType = Literal[
     "cdflib",
 ]
 # Format to engine mapping based on xarray documentation
-FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
+FORMAT_ENGINE_MAP: dict[SupportedExtensionType, list[EngineType]] = {
     # Built-in formats
     ".nc": ["netcdf4", "h5netcdf", "scipy"],
     ".nc4": ["netcdf4", "h5netcdf"],
@@ -246,7 +240,7 @@ FORMAT_ENGINE_MAP: Dict[SupportedExtensionType, List[EngineType]] = {
 }
 
 # Format display names
-FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
+FORMAT_DISPLAY_NAMES: dict[SupportedExtensionType, str] = {
     ".nc": "NetCDF",
     ".nc4": "NetCDF4",
     ".netcdf": "NetCDF",
@@ -271,7 +265,7 @@ FORMAT_DISPLAY_NAMES: Dict[SupportedExtensionType, str] = {
 }
 
 # Required packages for each engine
-ENGINE_PACKAGES: Dict[EngineType, str] = {
+ENGINE_PACKAGES: dict[EngineType, str] = {
     "netcdf4": "netCDF4",
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
@@ -282,7 +276,7 @@ ENGINE_PACKAGES: Dict[EngineType, str] = {
     "cdflib": "cdflib",
 }
 # Default backend kwargs for each engine
-DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
+DEFAULT_XR_OPEN_KWARGS: dict[EngineType, dict[str, Any]] = {
     "netcdf4": {
         "decode_cf": True,
         # "decode_times": True,
@@ -323,7 +317,7 @@ DEFAULT_XR_OPEN_KWARGS: Dict[EngineType, Union[Dict[str, Any]]] = {
     "cdflib": {},  # cdflib uses its own API, not xr.open_dataset
 }
 # Default backend kwargs for each engine
-DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
+DEFAULT_ENGINE_BACKEND_KWARGS: dict[EngineType, dict[str, Any] | None] = {
     "netcdf4": None,
     "h5netcdf": None,
     "scipy": None,
@@ -336,7 +330,7 @@ DEFAULT_ENGINE_BACKEND_KWARGS: Dict[EngineType, Union[Dict[str, Any], None]] = {
 
 
 # We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: Dict[str, bool] = dict.fromkeys(
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = dict.fromkeys(
     ENGINE_PACKAGES, False
 )
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
@@ -362,8 +356,8 @@ class FileFormatInfo:
 
     extension: str
     display_name: str
-    available_engines: List[str]
-    missing_packages: List[str]
+    available_engines: list[str]
+    missing_packages: list[str]
 
     @property
     def is_supported(self) -> bool:
@@ -401,11 +395,11 @@ class VariableInfo:
 
     name: str
     dtype: str
-    shape: List[int]
-    dimensions: List[str]
+    shape: list[int]
+    dimensions: list[str]
     size_bytes: int
-    attributes: Dict[str, Any]
-    display_value: Optional[str] = None
+    attributes: dict[str, Any]
+    display_value: str | None = None
 
 
 @dataclass(frozen=True)
@@ -432,11 +426,11 @@ class CoordinateInfo:
 
     name: str
     dtype: str
-    shape: List[int]
-    dimensions: List[str]
+    shape: list[int]
+    dimensions: list[str]
     size_bytes: int
-    attributes: Dict[str, Any]
-    display_value: Optional[str] = None
+    attributes: dict[str, Any]
+    display_value: str | None = None
 
 
 @dataclass(frozen=True)
@@ -478,13 +472,13 @@ class FileInfoResult:
     xarray_text_repr: str = field(repr=False)
     xarray_show_versions: str
     # For flattented datatrees
-    dimensions_flattened: Dict[str, Dict[str, int]]
-    variables_flattened: Dict[str, List[VariableInfo]]
-    coordinates_flattened: Dict[str, List[CoordinateInfo]]
-    attributes_flattened: Dict[str, Dict[str, Any]]
-    xarray_html_repr_flattened: Dict[str, str] = field(repr=False)
-    xarray_text_repr_flattened: Dict[str, str] = field(repr=False)
-    datetime_variables: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    dimensions_flattened: dict[str, dict[str, int]]
+    variables_flattened: dict[str, list[VariableInfo]]
+    coordinates_flattened: dict[str, list[CoordinateInfo]]
+    attributes_flattened: dict[str, dict[str, Any]]
+    xarray_html_repr_flattened: dict[str, str] = field(repr=False)
+    xarray_text_repr_flattened: dict[str, str] = field(repr=False)
+    datetime_variables: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     # Format: {group_name: [{"name": var_name, "min": min_value, "max": max_value}, ...]}
 
 
@@ -535,8 +529,8 @@ class CreatePlotResult:
 
     plot_data: str = field(repr=False)
     format_info: FileFormatInfo
-    applied_isel_kwargs: Dict[str, Union[int, str]] = field(default_factory=dict)
-    applied_plot_kwargs: Dict[str, Any] = field(default_factory=dict)
+    applied_isel_kwargs: dict[str, int | str] = field(default_factory=dict)
+    applied_plot_kwargs: dict[str, Any] = field(default_factory=dict)
     matplotlib_style: str = ""
     variable_path: str = ""
 
@@ -572,7 +566,7 @@ def check_package_availability(package_name: str) -> bool:
     return find_spec(package_name) is not None
 
 
-def get_available_engines(file_extension: str) -> List[str]:
+def get_available_engines(file_extension: str) -> list[str]:
     """Get available engines for a file extension.
 
     Parameters
@@ -588,7 +582,7 @@ def get_available_engines(file_extension: str) -> List[str]:
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    available_engines: List[str] = []
+    available_engines: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_availability(package_name):
@@ -597,7 +591,7 @@ def get_available_engines(file_extension: str) -> List[str]:
     return available_engines
 
 
-def get_missing_packages(file_extension: str) -> List[str]:
+def get_missing_packages(file_extension: str) -> list[str]:
     """Get missing packages required for a file extension.
 
     Parameters
@@ -613,7 +607,7 @@ def get_missing_packages(file_extension: str) -> List[str]:
     if file_extension not in FORMAT_ENGINE_MAP:
         return []
 
-    missing_packages: List[str] = []
+    missing_packages: list[str] = []
     for engine in FORMAT_ENGINE_MAP[file_extension]:
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if not check_package_availability(package_name):
@@ -637,8 +631,8 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
     """
     ext: str = file_path.suffix.lower()
     display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
-    available_engines: List[str] = get_available_engines(ext)
-    missing_packages: List[str] = get_missing_packages(ext)
+    available_engines: list[str] = get_available_engines(ext)
+    missing_packages: list[str] = get_missing_packages(ext)
 
     return FileFormatInfo(
         extension=ext,
@@ -652,7 +646,7 @@ def open_datatree_with_fallback(
     file_path: Path,
     file_format_info: FileFormatInfo,
     convert_bands_to_variables: bool = False,
-) -> "tuple[Union[xr.DataTree, DictOfDatasets], str]":
+) -> "tuple[xr.DataTree | DictOfDatasets, str]":
     """Open datatree or dataset with fallback to different engines.
 
     Attempts to open the file as a DataTree first, then falls back to
@@ -825,7 +819,7 @@ def is_spatial_dimension(dim_name: str) -> bool:
     bool
         True if the dimension appears to be spatial, False otherwise
     """
-    spatial_patterns: List[str] = [
+    spatial_patterns: list[str] = [
         "x",
         "y",
         "lon",
@@ -903,7 +897,7 @@ def detect_plotting_strategy(
     return "default"
 
 
-def _parse_dimension_slice_spec(spec: Union[str, int]) -> Union[int, slice]:
+def _parse_dimension_slice_spec(spec: str | int) -> int | slice:
     """Parse a single dimension slice spec (Issue #117). Returns int or slice()."""
     if isinstance(spec, int):
         return spec
@@ -928,12 +922,12 @@ def _parse_dimension_slice_spec(spec: Union[str, int]) -> Union[int, slice]:
 
 
 def _parse_dimension_slices(
-    slices_dict: Optional[Dict[str, Any]],
-) -> Optional[Dict[str, Union[int, slice]]]:
+    slices_dict: dict[str, Any] | None,
+) -> dict[str, int | slice] | None:
     """Parse dimension_slices from JSON/CLI into isel-compatible dict (Issue #117)."""
     if not slices_dict:
         return None
-    out: Dict[str, Union[int, slice]] = {}
+    out: dict[str, int | slice] = {}
     for dim, spec in slices_dict.items():
         if spec is None or (isinstance(spec, str) and not spec.strip()):
             continue
@@ -954,7 +948,7 @@ def _log_plot_route(route: str) -> None:
     print(msg, file=sys.stderr)
 
 
-def _strip_add_legend_unless_hue(plot_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def _strip_add_legend_unless_hue(plot_kwargs: dict[str, Any]) -> dict[str, Any]:
     """xarray ``plot.imshow`` does not accept ``add_legend`` without ``hue`` (can raise)."""
     if plot_kwargs.get("add_legend") and "hue" not in plot_kwargs:
         out = dict(plot_kwargs)
@@ -968,25 +962,25 @@ def _strip_add_legend_unless_hue(plot_kwargs: Dict[str, Any]) -> Dict[str, Any]:
 class PlotKwargsBundle:
     """User-requested plot kwargs. Variants split cmap (imshow-only) from generic .plot()."""
 
-    raw: Dict[str, Any]
+    raw: dict[str, Any]
 
     @staticmethod
     def build(
         *,
-        bins: Optional[int],
-        robust: Optional[bool],
-        xincrease: Optional[bool],
-        yincrease: Optional[bool],
-        aspect: Optional[Union[int, float]],
-        size: Optional[Union[int, float]],
-        cmap: Optional[str],
-        col_wrap: Optional[int],
-        vmin: Optional[Union[int, float]] = None,
-        vmax: Optional[Union[int, float]] = None,
+        bins: int | None,
+        robust: bool | None,
+        xincrease: bool | None,
+        yincrease: bool | None,
+        aspect: int | float | None,
+        size: int | float | None,
+        cmap: str | None,
+        col_wrap: int | None,
+        vmin: int | float | None = None,
+        vmax: int | float | None = None,
         add_colorbar: bool = True,
         add_legend: bool = False,
     ) -> "PlotKwargsBundle":
-        plot_kwargs: Dict[str, Any] = {}
+        plot_kwargs: dict[str, Any] = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
         if robust is True:
@@ -1013,15 +1007,15 @@ class PlotKwargsBundle:
             plot_kwargs["add_legend"] = True
         return PlotKwargsBundle(raw=plot_kwargs)
 
-    def hist_kwargs(self) -> Dict[str, Any]:
+    def hist_kwargs(self) -> dict[str, Any]:
         """Kwargs for .plot.hist(): only keys histograms accept (see xarray hist API)."""
-        out: Dict[str, Any] = {}
+        out: dict[str, Any] = {}
         for k in ("bins", "xincrease", "yincrease"):
             if k in self.raw:
                 out[k] = self.raw[k]
         return out
 
-    def generic_kwargs(self) -> Dict[str, Any]:
+    def generic_kwargs(self) -> dict[str, Any]:
         """Kwargs for .plot(): no cmap / color-only keys (xarray may mis-route them)."""
         out = dict(self.raw)
         out.pop("cmap", None)
@@ -1032,7 +1026,7 @@ class PlotKwargsBundle:
             out.pop("add_legend", None)
         return out
 
-    def imshow_kwargs(self) -> Dict[str, Any]:
+    def imshow_kwargs(self) -> dict[str, Any]:
         """Kwargs for .plot.imshow(): full raw except bins (histogram-only). Includes cmap."""
         out = dict(self.raw)
         out.pop("bins", None)
@@ -1041,20 +1035,20 @@ class PlotKwargsBundle:
     def use_cmap_imshow_path(self) -> bool:
         return "cmap" in self.raw
 
-    def _subset_figure_kw(self, keys: Tuple[str, ...]) -> Dict[str, Any]:
+    def _subset_figure_kw(self, keys: tuple[str, ...]) -> dict[str, Any]:
         return {k: self.raw[k] for k in keys if k in self.raw}
 
-    def user_imshow_merged_kw(self) -> Dict[str, Any]:
+    def user_imshow_merged_kw(self) -> dict[str, Any]:
         """User branch: imshow + aspect/size/col_wrap (single merge; no duplicate ** cmap)."""
         fig = self._subset_figure_kw(("aspect", "size", "col_wrap"))
         return {**self.imshow_kwargs(), **fig}
 
-    def auto_imshow_merged_kw(self) -> Dict[str, Any]:
+    def auto_imshow_merged_kw(self) -> dict[str, Any]:
         """Auto branch: imshow + aspect/size only (col_wrap handled per strategy)."""
         fig = self._subset_figure_kw(("aspect", "size"))
         return {**self.imshow_kwargs(), **fig}
 
-    def auto_figure_defaults(self) -> Dict[str, Any]:
+    def auto_figure_defaults(self) -> dict[str, Any]:
         """Aspect/size subset for strategies that pass explicit defaults."""
         return self._subset_figure_kw(("aspect", "size"))
 
@@ -1078,7 +1072,7 @@ class XarrayPlotDispatcher:
         _log_plot_route(route)
 
 
-def _valid_plot_dim(name: Optional[str], var_arr: xr.DataArray) -> Optional[str]:
+def _valid_plot_dim(name: str | None, var_arr: xr.DataArray) -> str | None:
     if not name or not name.strip():
         return None
     n = name.strip()
@@ -1092,12 +1086,12 @@ def _valid_plot_dim(name: Optional[str], var_arr: xr.DataArray) -> Optional[str]
 def _build_user_facet_plot_kw(
     var: xr.DataArray,
     *,
-    facet_row: Optional[str],
-    facet_col: Optional[str],
-    plot_x: Optional[str],
-    plot_y: Optional[str],
-    plot_hue: Optional[str],
-) -> Dict[str, Any]:
+    facet_row: str | None,
+    facet_col: str | None,
+    plot_x: str | None,
+    plot_y: str | None,
+    plot_hue: str | None,
+) -> dict[str, Any]:
     row_dim = (
         facet_row.strip()
         if (facet_row and facet_row.strip() and facet_row.strip() in var.dims)
@@ -1112,7 +1106,7 @@ def _build_user_facet_plot_kw(
     y_dim = _valid_plot_dim(plot_y, var)
     hue_dim = _valid_plot_dim(plot_hue, var)
 
-    plot_kw: Dict[str, Any] = {}
+    plot_kw: dict[str, Any] = {}
     if row_dim or col_dim:
         if row_dim and col_dim:
             plot_kw = {"row": row_dim, "col": col_dim}
@@ -1134,11 +1128,11 @@ def _build_user_facet_plot_kw(
 class UserProvidedPlotRequest:
     """Facet / x-y-hue names from the user (histogram and slices-only strategies ignore these)."""
 
-    facet_row: Optional[str] = None
-    facet_col: Optional[str] = None
-    plot_x: Optional[str] = None
-    plot_y: Optional[str] = None
-    plot_hue: Optional[str] = None
+    facet_row: str | None = None
+    facet_col: str | None = None
+    plot_x: str | None = None
+    plot_y: str | None = None
+    plot_hue: str | None = None
 
 
 def detect_user_provided_plot_strategy(
@@ -1280,7 +1274,7 @@ class UserProvidedSlicesOnlyStrategy(UserProvidedPlottingStrategy):
             dispatcher.plot(var, "user_provided:DataArray.plot(slices_only)")
 
 
-_USER_PROVIDED_STRATEGY_REGISTRY: Dict[str, UserProvidedPlottingStrategy] = {
+_USER_PROVIDED_STRATEGY_REGISTRY: dict[str, UserProvidedPlottingStrategy] = {
     "histogram": UserProvidedHistogramStrategy(),
     "faceted": UserProvidedFacetedStrategy(),
     "slices_only": UserProvidedSlicesOnlyStrategy(),
@@ -1298,11 +1292,11 @@ class UserProvidedPlotOrchestrator:
         var: xr.DataArray,
         bundle: PlotKwargsBundle,
         *,
-        facet_row: Optional[str],
-        facet_col: Optional[str],
-        plot_x: Optional[str],
-        plot_y: Optional[str],
-        plot_hue: Optional[str],
+        facet_row: str | None,
+        facet_col: str | None,
+        plot_x: str | None,
+        plot_y: str | None,
+        plot_hue: str | None,
     ) -> None:
         request = UserProvidedPlotRequest(
             facet_row=facet_row,
@@ -1320,8 +1314,8 @@ class UserProvidedPlotOrchestrator:
 class AutoDefaultPlotContext:
     """Extra state only needed for the auto `default` plotting strategy."""
 
-    datetime_var: Optional[xr.DataArray]
-    datetime_var_display_name: Optional[str]
+    datetime_var: xr.DataArray | None
+    datetime_var_display_name: str | None
     variable_name: str
 
 
@@ -1523,7 +1517,7 @@ class AutoDefaultStrategy(AutoPlottingStrategy):
         )
 
 
-_AUTO_STRATEGY_REGISTRY: Dict[
+_AUTO_STRATEGY_REGISTRY: dict[
     str,
     AutoPlottingStrategy,
 ] = {
@@ -1569,28 +1563,28 @@ def create_plot(
     plot_type: str = "auto",
     style: str = "auto",
     convert_bands_to_variables: bool = False,
-    datetime_variable_name: Optional[str] = None,
-    start_datetime: Optional[str] = None,
-    end_datetime: Optional[str] = None,
-    dimension_slices: Optional[Dict[str, Union[str, int]]] = None,
-    facet_row: Optional[str] = None,
-    facet_col: Optional[str] = None,
-    col_wrap: Optional[int] = None,
-    plot_x: Optional[str] = None,
-    plot_y: Optional[str] = None,
-    plot_hue: Optional[str] = None,
-    xincrease: Optional[bool] = None,
-    yincrease: Optional[bool] = None,
-    aspect: Optional[Union[int, float]] = None,
-    size: Optional[Union[int, float]] = None,
-    robust: Optional[bool] = None,
-    cmap: Optional[str] = None,
-    bins: Optional[int] = None,
-    vmin: Optional[Union[int, float]] = None,
-    vmax: Optional[Union[int, float]] = None,
+    datetime_variable_name: str | None = None,
+    start_datetime: str | None = None,
+    end_datetime: str | None = None,
+    dimension_slices: dict[str, str | int] | None = None,
+    facet_row: str | None = None,
+    facet_col: str | None = None,
+    col_wrap: int | None = None,
+    plot_x: str | None = None,
+    plot_y: str | None = None,
+    plot_hue: str | None = None,
+    xincrease: bool | None = None,
+    yincrease: bool | None = None,
+    aspect: int | float | None = None,
+    size: int | float | None = None,
+    robust: bool | None = None,
+    cmap: str | None = None,
+    bins: int | None = None,
+    vmin: int | float | None = None,
+    vmax: int | float | None = None,
     add_colorbar: bool = True,
     add_legend: bool = False,
-) -> Union[CreatePlotResult, CreatePlotError]:
+) -> CreatePlotResult | CreatePlotError:
     """Create a plot from a data file variable.
 
     Opens a data file, extracts the specified variable, and creates a
@@ -1716,7 +1710,7 @@ def create_plot(
             )
 
         # Apply dimension slices (Issue #117) before datetime filtering
-        applied_isel: Dict[str, Union[int, slice]] = {}
+        applied_isel: dict[str, int | slice] = {}
         if dimension_slices:
             try:
                 isel_dict = _parse_dimension_slices(dimension_slices)
@@ -2063,7 +2057,7 @@ def create_plot(
 
         logger.info("Plot created successfully")
         # Serialize isel kwargs for result (slice -> str for JSON)
-        applied_isel_serializable: Dict[str, Union[int, str]] = {
+        applied_isel_serializable: dict[str, int | str] = {
             k: v if isinstance(v, int) else str(v) for k, v in applied_isel.items()
         }
         return CreatePlotResult(
@@ -2090,7 +2084,7 @@ def get_file_info(
     convert_bands_to_variables: bool = False,
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
-) -> Union[FileInfoResult, FileInfoError]:
+) -> FileInfoResult | FileInfoError:
     """Extract comprehensive information from a data file.
 
     Analyzes a data file and extracts metadata including format information,

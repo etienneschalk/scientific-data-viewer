@@ -20,7 +20,10 @@ import datetime as dt
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 TARGET_METHODS = {
     "plot",
@@ -55,20 +58,20 @@ EMPTY_SYMBOL = "∅"
 class ParamInfo:
     name: str
     kind: str
-    default: Optional[str]
-    annotation: Optional[str]
+    default: str | None
+    annotation: str | None
 
 
 @dataclass(frozen=True)
 class SignatureInfo:
     method: str
     is_overload: bool
-    params: Tuple[ParamInfo, ...]
-    returns: Optional[str]
+    params: tuple[ParamInfo, ...]
+    returns: str | None
     line: int
 
 
-def _load_source(input_value: str) -> Tuple[str, str]:
+def _load_source(input_value: str) -> tuple[str, str]:
     if input_value.startswith("http://") or input_value.startswith("https://"):
         with urllib.request.urlopen(input_value) as resp:
             data = resp.read().decode("utf-8")
@@ -77,7 +80,7 @@ def _load_source(input_value: str) -> Tuple[str, str]:
     return p.read_text(encoding="utf-8"), str(p.resolve())
 
 
-def _node_text(source: str, node: Optional[ast.AST]) -> Optional[str]:
+def _node_text(source: str, node: ast.AST | None) -> str | None:
     if node is None:
         return None
     seg = ast.get_source_segment(source, node)
@@ -108,14 +111,14 @@ def _is_overload(func: ast.FunctionDef) -> bool:
     return False
 
 
-def _collect_params(source: str, func: ast.FunctionDef) -> Tuple[ParamInfo, ...]:
+def _collect_params(source: str, func: ast.FunctionDef) -> tuple[ParamInfo, ...]:
     args = func.args
-    out: List[ParamInfo] = []
+    out: list[ParamInfo] = []
 
     # positional-only + positional-or-keyword defaults align to the tail
     pos = list(args.posonlyargs) + list(args.args)
     pos_defaults = [None] * (len(pos) - len(args.defaults)) + list(args.defaults)
-    for arg_node, default_node in zip(pos, pos_defaults):
+    for arg_node, default_node in zip(pos, pos_defaults, strict=False):
         out.append(
             ParamInfo(
                 name=arg_node.arg,
@@ -135,7 +138,9 @@ def _collect_params(source: str, func: ast.FunctionDef) -> Tuple[ParamInfo, ...]
             )
         )
 
-    for kwarg_node, default_node in zip(args.kwonlyargs, args.kw_defaults):
+    for kwarg_node, default_node in zip(
+        args.kwonlyargs, args.kw_defaults, strict=False
+    ):
         out.append(
             ParamInfo(
                 name=kwarg_node.arg,
@@ -158,9 +163,9 @@ def _collect_params(source: str, func: ast.FunctionDef) -> Tuple[ParamInfo, ...]
     return tuple(out)
 
 
-def parse_signatures(source: str) -> Dict[str, List[SignatureInfo]]:
+def parse_signatures(source: str) -> dict[str, list[SignatureInfo]]:
     tree = ast.parse(source)
-    out: Dict[str, List[SignatureInfo]] = {m: [] for m in TARGET_METHODS}
+    out: dict[str, list[SignatureInfo]] = {m: [] for m in TARGET_METHODS}
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name in TARGET_METHODS:
             out[node.name].append(
@@ -175,7 +180,7 @@ def parse_signatures(source: str) -> Dict[str, List[SignatureInfo]]:
     return out
 
 
-def _method_kwarg_set(sig: SignatureInfo) -> Set[str]:
+def _method_kwarg_set(sig: SignatureInfo) -> set[str]:
     names = set()
     for p in sig.params:
         if p.name in IGNORE_PARAMS:
@@ -187,17 +192,17 @@ def _method_kwarg_set(sig: SignatureInfo) -> Set[str]:
 
 def _best_impl_signature(
     signatures: Sequence[SignatureInfo],
-) -> Optional[SignatureInfo]:
+) -> SignatureInfo | None:
     impls = [s for s in signatures if not s.is_overload]
     if not impls:
         return None
     return sorted(impls, key=lambda s: len(s.params), reverse=True)[0]
 
 
-def _api_kwarg_set(signatures: Sequence[SignatureInfo]) -> Set[str]:
+def _api_kwarg_set(signatures: Sequence[SignatureInfo]) -> set[str]:
     overloads = [s for s in signatures if s.is_overload]
     if overloads:
-        out: Set[str] = set()
+        out: set[str] = set()
         for ov in overloads:
             out.update(_method_kwarg_set(ov))
         return out
@@ -206,13 +211,13 @@ def _api_kwarg_set(signatures: Sequence[SignatureInfo]) -> Set[str]:
 
 
 def build_markdown(
-    signatures: Dict[str, List[SignatureInfo]],
+    signatures: dict[str, list[SignatureInfo]],
     source_ref: str,
 ) -> str:
     methods = [m for m in sorted(TARGET_METHODS) if signatures.get(m)]
 
-    api_kwargs: Dict[str, Set[str]] = {}
-    overload_counts: Dict[str, int] = {}
+    api_kwargs: dict[str, set[str]] = {}
+    overload_counts: dict[str, int] = {}
     for m in methods:
         overload_counts[m] = sum(1 for s in signatures[m] if s.is_overload)
         api_kwargs[m] = _api_kwarg_set(signatures[m])
@@ -224,7 +229,7 @@ def build_markdown(
         m: sorted(api_kwargs[m] - common_kwargs) for m in methods if api_kwargs[m]
     }
 
-    method_coverage: Dict[str, Set[str]] = {}
+    method_coverage: dict[str, set[str]] = {}
     for kw in union_kwargs:
         owners = {m for m in methods if kw in api_kwargs[m]}
         method_coverage[kw] = owners
@@ -237,7 +242,7 @@ def build_markdown(
         ]
     )
 
-    lines: List[str] = []
+    lines: list[str] = []
     ts = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     lines.append("# Xarray Plot API GUI Design (Generated)\n")
