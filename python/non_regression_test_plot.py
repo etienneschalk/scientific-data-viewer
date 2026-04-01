@@ -336,12 +336,12 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
                     "sub = ds.isel(time=0, rlat=slice(200, 500), "
                     "rlon=slice(2000, 2250))['hs']\n"
                     "plt.figure()\n"
-                    "sub.plot.imshow(cmap='viridis', vmin=0.5, vmax=3.5)"
+                    "sub.plot.imshow(cmap='cividis', vmin=0.5, vmax=3.0)"
                 ),
                 dimension_slices=_merge_slices(b, {"time": 0}),
-                cmap="viridis",
+                cmap="cividis",
                 vmin=0.5,
-                vmax=3.5,
+                vmax=3.0,
             ),
             PlotCase(
                 slug="21_no_colorbar",
@@ -351,10 +351,10 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
                     "sub = ds.isel(time=0, rlat=slice(200, 500), "
                     "rlon=slice(2000, 2250))['hs']\n"
                     "plt.figure()\n"
-                    "sub.plot.imshow(cmap='viridis', add_colorbar=False)"
+                    "sub.plot.imshow(cmap='cividis', add_colorbar=False)"
                 ),
                 dimension_slices=_merge_slices(b, {"time": 0}),
-                cmap="viridis",
+                cmap="cividis",
                 add_colorbar=False,
             ),
             PlotCase(
@@ -412,12 +412,12 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
             title="vmin + vmax with colormap",
             xarray_code=(
                 "plt.figure()\n"
-                "hs.isel(time=0).plot.imshow(cmap='viridis', vmin=0.5, vmax=3.5)"
+                "hs.isel(time=0).plot.imshow(cmap='cividis', vmin=0.5, vmax=3.0)"
             ),
             dimension_slices={"time": 0},
-            cmap="viridis",
+            cmap="cividis",
             vmin=0.5,
-            vmax=3.5,
+            vmax=3.0,
         ),
         PlotCase(
             slug="21_no_colorbar",
@@ -425,10 +425,10 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
             title="Disable colorbar",
             xarray_code=(
                 "plt.figure()\n"
-                "hs.isel(time=0).plot.imshow(cmap='viridis', add_colorbar=False)"
+                "hs.isel(time=0).plot.imshow(cmap='cividis', add_colorbar=False)"
             ),
             dimension_slices={"time": 0},
-            cmap="viridis",
+            cmap="cividis",
             add_colorbar=False,
         ),
         PlotCase(
@@ -481,16 +481,16 @@ def _extended_plot_cases(full_grid: bool) -> list[PlotCase]:
         return [
             PlotCase(
                 slug="10_cmap_imshow_single_time",
-                doc="2D map at t=0 with cmap=viridis (explicit imshow path)",
+                doc="2D map at t=0 with cmap=cividis (explicit imshow path)",
                 title="Colormap on a single-time 2D field",
                 xarray_code=(
                     "sub = ds.isel(time=0, rlat=slice(200, 500), "
                     "rlon=slice(2000, 2250))['hs']\n"
                     "plt.figure()\n"
-                    "sub.plot.imshow(cmap='viridis')"
+                    "sub.plot.imshow(cmap='cividis')"
                 ),
                 dimension_slices=_merge_slices(b, {"time": 0}),
-                cmap="viridis",
+                cmap="cividis",
             ),
             PlotCase(
                 slug="11_robust_color_limits",
@@ -555,17 +555,17 @@ def _extended_plot_cases(full_grid: bool) -> list[PlotCase]:
             ),
             PlotCase(
                 slug="15_plot_x_y_dims",
-                doc="Explicit x=rlon, y=rlat at t=0",
+                doc="Explicit x=rlat, y=rlon at t=0 (reversed lat and lon)",
                 title="plot kwargs x / y dimension names",
                 xarray_code=(
                     "sub = ds.isel(time=0, rlat=slice(200, 500), "
                     "rlon=slice(2000, 2250))['hs']\n"
                     "plt.figure()\n"
-                    'sub.plot(x="rlon", y="rlat")'
+                    'sub.plot(x="rlat", y="rlon")'
                 ),
                 dimension_slices=_merge_slices(b, {"time": 0}),
-                plot_x="rlon",
-                plot_y="rlat",
+                plot_x="rlat",
+                plot_y="rlon",
             ),
             PlotCase(
                 slug="16_timeseries_y_decrease",
@@ -619,11 +619,11 @@ def _extended_plot_cases(full_grid: bool) -> list[PlotCase]:
     return [
         PlotCase(
             slug="10_cmap_imshow_single_time",
-            doc="2D map at t=0 with cmap=viridis (explicit imshow path)",
+            doc="2D map at t=0 with cmap=cividis (explicit imshow path)",
             title="Colormap on a single-time 2D field",
-            xarray_code=("plt.figure()\nhs.isel(time=0).plot.imshow(cmap='viridis')"),
+            xarray_code=("plt.figure()\nhs.isel(time=0).plot.imshow(cmap='cividis')"),
             dimension_slices={"time": 0},
-            cmap="viridis",
+            cmap="cividis",
         ),
         PlotCase(
             slug="11_robust_color_limits",
@@ -669,12 +669,12 @@ def _extended_plot_cases(full_grid: bool) -> list[PlotCase]:
         ),
         PlotCase(
             slug="15_plot_x_y_dims",
-            doc="Explicit x=rlon, y=rlat at t=0",
+            doc="Explicit x=rlat, y=rlon at t=0 (reversed lat and lon)",
             title="plot kwargs x / y dimension names",
-            xarray_code=('plt.figure()\nhs.isel(time=0).plot(x="rlon", y="rlat")'),
+            xarray_code=('plt.figure()\nhs.isel(time=0).plot(x="rlat", y="rlon")'),
             dimension_slices={"time": 0},
-            plot_x="rlon",
-            plot_y="rlat",
+            plot_x="rlat",
+            plot_y="rlon",
         ),
         PlotCase(
             slug="16_timeseries_y_decrease",
