@@ -3,7 +3,7 @@
 Non-regression plot checks for create_plot (Issue #117 workflows).
 
 Exercises Issue #117 scenarios (cases 00-06), combinations (10-18), and
-v0.11+ plot controls (20-24: vmin/vmax maps, colorbar, legend) on the same
+v0.11+ plot controls (20-25: vmin/vmax maps, colorbar, legend, issue #134) on the same
 sample file. See:
 https://github.com/etienneschalk/scientific-data-viewer/issues/117#issuecomment-4025666878
 
@@ -12,7 +12,7 @@ after ``isel(rlat=slice(200,500), rlon=slice(2000,2250))`` on the original grid)
 
 By default, PNG outputs go under
 ``sample-data/non_regression_test_plot/v<version>/`` where ``<version>`` is read
-from the repository ``package.json`` (e.g. ``v0.11.0``). Pass ``--out-dir`` to
+from the repository ``package.json`` (e.g. ``v0.11.1``). Pass ``--out-dir`` to
 override. ``setup.sh`` runs this after ``create_sample_data.py`` for visual checks.
 Also writes ``summary.md`` next to ``summary.txt`` (markdown with embedded PNGs).
 
@@ -77,7 +77,7 @@ def _merge_slices(base: dict[str, str], extra: dict[str, Any] | None) -> dict[st
 
 @dataclass(frozen=True)
 class PlotCase:
-    """One non-regression case: core (00-06), combos (10-18), or vlim/legend (20-24)."""
+    """One non-regression case: core (00-06), combos (10-18), or vlim/legend (20-25)."""
 
     slug: str
     doc: str
@@ -324,7 +324,7 @@ def _plot_cases(full_grid: bool) -> list[PlotCase]:
 
 
 def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
-    """Cases 20+: vmin, vmax, add_colorbar, add_legend (create_plot v0.11+)."""
+    """Cases 20+: vmin, vmax, add_colorbar, add_legend (create_plot v0.11+); 25 = issue #134."""
     if full_grid:
         b = _FULL_GRID_BASE_SLICES
         return [
@@ -403,6 +403,23 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
                 cmap="plasma",
                 vmin=1.0,
             ),
+            PlotCase(
+                slug="25_add_legend_col_wrap_3d",
+                doc=(
+                    "Issue #134: col_wrap forces user_provided + slices_only; 3D subcube "
+                    "without cmap uses DataArray.plot — add_legend must not reach QuadMesh"
+                ),
+                title="add_legend + col_wrap on 3D (generic .plot path)",
+                xarray_code=(
+                    "sub = ds.isel(time=slice(0, 4), rlat=slice(200, 500), "
+                    "rlon=slice(2000, 2250))['hs']\n"
+                    "plt.figure()\n"
+                    "sub.plot(col_wrap=2, add_legend=True)"
+                ),
+                dimension_slices=_merge_slices(b, {"time": "0:4"}),
+                col_wrap=2,
+                add_legend=True,
+            ),
         ]
 
     return [
@@ -470,6 +487,22 @@ def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
             dimension_slices={"time": 0},
             cmap="plasma",
             vmin=1.0,
+        ),
+        PlotCase(
+            slug="25_add_legend_col_wrap_3d",
+            doc=(
+                "Issue #134: col_wrap + add_legend on 3D slice without cmap "
+                "(generic DataArray.plot must not pass add_legend to QuadMesh)"
+            ),
+            title="add_legend + col_wrap on 3D (generic .plot path)",
+            xarray_code=(
+                "plt.figure()\n"
+                "hs.isel(time=slice(0, 4), rlat=slice(0, 80), "
+                "rlon=slice(0, 80)).plot(col_wrap=2, add_legend=True)"
+            ),
+            dimension_slices={"time": "0:4", "rlat": "0:80", "rlon": "0:80"},
+            col_wrap=2,
+            add_legend=True,
         ),
     ]
 
@@ -791,7 +824,8 @@ def _write_summary_md(
         f"Case **00** is the baseline `hs.plot()` with no extra UI/plot kwargs; "
         f"**01-06** follow the [issue comment]({ISSUE_117_COMMENT_URL}); "
         "**10-18** add mixed `create_plot` options (cmap, robust, layout, facets, "
-        "axes); **20-24** cover `vmin`/`vmax`, `add_colorbar`, `add_legend`.\n\n",
+        "axes); **20-25** cover `vmin`/`vmax`, `add_colorbar`, `add_legend` "
+        "(**25** = issue #134).\n\n",
         "## Run parameters\n\n",
         f"- **Data file:** `{data_path}`\n",
         f"- **Variable path:** `{variable_path}`\n",

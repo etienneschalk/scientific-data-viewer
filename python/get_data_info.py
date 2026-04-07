@@ -949,13 +949,18 @@ def _log_plot_route(route: str) -> None:
 
 
 def _strip_add_legend_unless_hue(plot_kwargs: dict[str, Any]) -> dict[str, Any]:
-    """xarray ``plot.imshow`` does not accept ``add_legend`` without ``hue`` (can raise)."""
-    if plot_kwargs.get("add_legend") and "hue" not in plot_kwargs:
-        out = dict(plot_kwargs)
-        out.pop("add_legend", None)
-        logger.info("add_legend omitted for plot.imshow without hue=")
-        return out
-    return plot_kwargs
+    """Omit ``add_legend`` when ``hue`` is absent.
+
+    xarray's generic ``DataArray.plot`` may route to ``pcolormesh`` (``QuadMesh``);
+    those artists do not accept ``add_legend``. The same applies to ``plot.imshow``
+    without ``hue``. See https://github.com/etienneschalk/scientific-data-viewer/issues/134
+    """
+    if "hue" in plot_kwargs or "add_legend" not in plot_kwargs:
+        return plot_kwargs
+    out = dict(plot_kwargs)
+    out.pop("add_legend", None)
+    logger.info("add_legend omitted for plot without hue=")
+    return out
 
 
 @dataclass(frozen=True)
@@ -1062,7 +1067,7 @@ class XarrayPlotDispatcher:
 
     def plot(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
         if kwargs:
-            dataarray.plot(**kwargs)
+            dataarray.plot(**_strip_add_legend_unless_hue(kwargs))
         else:
             dataarray.plot()
         _log_plot_route(route)
@@ -1611,8 +1616,10 @@ def create_plot(
     add_colorbar : bool, optional
         Whether to draw a colorbar for scalar-mappable plots (default True). Ignored for histograms.
     add_legend : bool, optional
-        Whether to add a legend when xarray supports it (e.g. ``hue``); ignored for ``plot.imshow``
-        without ``hue`` (by default False).
+        Whether to add a legend when xarray supports it (e.g. ``hue``). Omitted on generic
+        ``DataArray.plot`` and ``plot.imshow`` when ``hue`` is not set, so kwargs are not
+        forwarded to matplotlib artists that reject ``add_legend`` (e.g. ``QuadMesh``).
+        Default False.
 
     Returns
     -------
