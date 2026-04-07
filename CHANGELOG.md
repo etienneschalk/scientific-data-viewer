@@ -6,6 +6,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.11.1] - 2026-04-07
+
+### Fixed
+
+- **`add_legend` on generic `DataArray.plot`**: When the UI or CLI enabled `add_legend` and parameters such as **`col_wrap`** forced the user-provided **`slices_only`** path, kwargs were passed to xarray’s generic `.plot()`, which can route to **`pcolormesh`** (`QuadMesh`). Matplotlib rejects **`add_legend`** there ([issue #134](https://github.com/etienneschalk/scientific-data-viewer/issues/134)). The dispatcher now strips **`add_legend`** unless **`hue`** is set, matching the existing **`plot.imshow`** guard.
+  - **Files**: `python/get_data_info.py`
+- **Non-regression**: Case **25** in `python/non_regression_test_plot.py` covers **`col_wrap` + `add_legend`** on a **3D** subset without **`cmap`**.
+
 ## [0.11.0] - 2026-03-24
 
 ### Breaking
