@@ -4,16 +4,22 @@
 # Scientific Data Viewer - Manual Publishing Script
 # =============================================================================
 # This script publishes the extension to both VS Code Marketplace and Open VSX
-# with comprehensive version consistency checks.
+# with comprehensive version consistency checks (CHANGELOG, README, release notes, git).
+# After build/package, it creates the git tag vX.Y.Z (if needed), pushes it, and opens a
+# minimal GitHub Release (title X.Y.Z) with a changelog permalink — then publishes to the
+# marketplaces so the release exists before publication.
 #
 # Prerequisites:
 #   - VS Code Marketplace: Run `vsce login <publisher>` with your PAT first
 #   - Open VSX: Set OPENVSX_TOKEN environment variable
+#   - GitHub: GitHub CLI (`gh`) installed and `gh auth login` (for PR/CI verification and releases)
 #
 # Usage:
-#   ./publish.sh              # Full publish to both marketplaces
-#   ./publish.sh --dry-run    # Package only, don't publish
-#   ./publish.sh --skip-tests # Skip tests (use with caution)
+#   ./publish.sh                    # Tag + GitHub release, then both marketplaces
+#   ./publish.sh --dry-run          # Package only, don't publish or create release
+#   ./publish.sh --skip-tests       # Skip tests (use with caution)
+#   ./publish.sh --skip-pr-check    # Skip GitHub PR / CI verification
+#   ./publish.sh --skip-github-release  # Publish marketplaces only; no tag/release automation
 # =============================================================================
 
 set -e  # Exit on error
@@ -30,6 +36,8 @@ DRY_RUN=false
 SKIP_TESTS=false
 SKIP_VSCODE=false
 SKIP_OPENVSX=false
+SKIP_PR_CHECK=false
+SKIP_GITHUB_RELEASE=false
 
 for arg in "$@"; do
     case $arg in
@@ -45,15 +53,23 @@ for arg in "$@"; do
         --skip-openvsx)
             SKIP_OPENVSX=true
             ;;
+        --skip-pr-check)
+            SKIP_PR_CHECK=true
+            ;;
+        --skip-github-release)
+            SKIP_GITHUB_RELEASE=true
+            ;;
         --help|-h)
             echo "Usage: ./publish.sh [options]"
             echo ""
             echo "Options:"
-            echo "  --dry-run      Package only, don't publish"
-            echo "  --skip-tests   Skip running tests"
-            echo "  --skip-vscode  Skip VS Code Marketplace publish"
-            echo "  --skip-openvsx Skip Open VSX publish"
-            echo "  --help, -h     Show this help message"
+            echo "  --dry-run               Package only, don't publish"
+            echo "  --skip-tests            Skip running tests"
+            echo "  --skip-vscode           Skip VS Code Marketplace publish"
+            echo "  --skip-openvsx          Skip Open VSX publish"
+            echo "  --skip-pr-check         Skip GitHub PR / Actions CI verification (gh)"
+            echo "  --skip-github-release   Skip git tag push + gh release create"
+            echo "  --help, -h              Show this help message"
             exit 0
             ;;
     esac
@@ -90,6 +106,176 @@ print_info() {
     echo -e "${BLUE}ℹ $1${NC}"
 }
 
+# Verify GitHub check runs for a commit (REST: check-runs, up to 100).
+verify_commit_check_runs() {
+    local owner=$1 name=$2 sha=$3
+    local total pending failed
+    total=$(gh api "repos/${owner}/${name}/commits/${sha}/check-runs?per_page=100" --jq '.check_runs | length' 2>/dev/null || echo 0)
+    if [ -z "$total" ] || [ "$total" = "null" ]; then
+        total=0
+    fi
+    if [ "$total" -eq 0 ]; then
+        print_error "No GitHub check runs for commit ${sha:0:7}. Push and wait for CI, or use --skip-pr-check"
+        exit 1
+    fi
+    pending=$(gh api "repos/${owner}/${name}/commits/${sha}/check-runs?per_page=100" --jq '[.check_runs[] | select(.status != "completed")] | length' 2>/dev/null || echo 0)
+    if [ "${pending:-0}" -gt 0 ]; then
+        print_error "${pending} check run(s) still in progress for ${sha:0:7}. Wait for CI or use --skip-pr-check"
+        exit 1
+    fi
+    failed=$(gh api "repos/${owner}/${name}/commits/${sha}/check-runs?per_page=100" --jq '[.check_runs[] | select(.status == "completed" and (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' 2>/dev/null || echo 0)
+    if [ "${failed:-0}" -gt 0 ]; then
+        print_error "${failed} check run(s) did not succeed for ${sha:0:7}. See GitHub Actions for details."
+        exit 1
+    fi
+    print_success "All ${total} GitHub check run(s) completed successfully for ${sha:0:7}"
+}
+
+# Ensure CI passed for the PR tied to this branch, or for HEAD on main/master / when no PR exists.
+verify_github_ci() {
+    if [ "$SKIP_PR_CHECK" = true ]; then
+        print_warning "Skipping GitHub PR / CI verification (--skip-pr-check)"
+        return 0
+    fi
+    if [ ! -d ".git" ]; then
+        print_warning "Not a git repository; skipping GitHub CI verification"
+        return 0
+    fi
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI (gh) is required for CI verification. Install: https://cli.github.com/  Or use --skip-pr-check"
+        exit 1
+    fi
+    if ! gh auth status &>/dev/null; then
+        print_error "gh is not authenticated. Run: gh auth login  Or use --skip-pr-check"
+        exit 1
+    fi
+
+    print_step "Verifying GitHub PR / CI status..."
+    local CURRENT_BRANCH REPO_SLUG OWNER REPO_NAME HEAD_SHA PR_NUM
+    CURRENT_BRANCH=$(git branch --show-current)
+    REPO_SLUG=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+    OWNER=${REPO_SLUG%%/*}
+    REPO_NAME=${REPO_SLUG#*/}
+    HEAD_SHA=$(git rev-parse HEAD)
+
+    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+        print_info "On ${CURRENT_BRANCH}; verifying check runs for HEAD..."
+        verify_commit_check_runs "$OWNER" "$REPO_NAME" "$HEAD_SHA"
+        return 0
+    fi
+
+    if gh pr view --json number,url &>/dev/null; then
+        print_info "Pull request: $(gh pr view --json url -q .url)"
+        if gh pr checks; then
+            print_success "All pull request checks passed"
+        else
+            print_error "Pull request checks failed or are still pending. Fix CI or use --skip-pr-check"
+            exit 1
+        fi
+        return 0
+    fi
+
+    PR_NUM=$(gh pr list --head "$CURRENT_BRANCH" --state open --limit 1 --json number --jq '.[0].number // empty')
+    if [ -n "$PR_NUM" ]; then
+        print_info "Open pull request #${PR_NUM}"
+        if gh pr checks "$PR_NUM"; then
+            print_success "All pull request checks passed"
+        else
+            print_error "PR #${PR_NUM} checks failed or are still pending"
+            exit 1
+        fi
+        return 0
+    fi
+
+    PR_NUM=$(gh pr list --head "$CURRENT_BRANCH" --state merged --limit 1 --json number --jq '.[0].number // empty')
+    if [ -n "$PR_NUM" ]; then
+        print_info "Latest merged PR for branch ${CURRENT_BRANCH}: #${PR_NUM}"
+        if gh pr checks "$PR_NUM"; then
+            print_success "All checks passed for PR #${PR_NUM}"
+        else
+            print_error "PR #${PR_NUM} does not have all successful checks (see GitHub). Use --skip-pr-check to override."
+            exit 1
+        fi
+        return 0
+    fi
+
+    print_warning "No pull request found for branch '${CURRENT_BRANCH}'; verifying check runs on HEAD..."
+    verify_commit_check_runs "$OWNER" "$REPO_NAME" "$HEAD_SHA"
+}
+
+create_github_tag_and_release() {
+    local TAG_NAME="v${PACKAGE_VERSION}"
+    local HEAD_COMMIT CHANGELOG_LINK NOTES
+
+    if [ "$SKIP_GITHUB_RELEASE" = true ]; then
+        return 0
+    fi
+    if [ ! -d ".git" ]; then
+        print_warning "Not a git repository; skipping GitHub tag and release"
+        return 0
+    fi
+    if ! command -v gh &> /dev/null || ! gh auth status &>/dev/null; then
+        print_error "gh is required to create the GitHub release. Run: gh auth login  Or use --skip-github-release"
+        exit 1
+    fi
+    if [ -z "$REPO_URL" ]; then
+        print_error "Could not determine GitHub URL (package.json repository or git remote origin)"
+        exit 1
+    fi
+
+    print_header "GitHub tag & release"
+
+    HEAD_COMMIT=$(git rev-parse HEAD)
+
+    if ! git rev-parse "$TAG_NAME^{commit}" &>/dev/null; then
+        if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
+            print_step "Fetching existing tag ${TAG_NAME} from origin..."
+            git fetch -q origin "refs/tags/${TAG_NAME}:refs/tags/${TAG_NAME}" || {
+                print_error "Failed to fetch tag ${TAG_NAME} from origin"
+                exit 1
+            }
+        fi
+    fi
+
+    if git rev-parse "$TAG_NAME^{commit}" &>/dev/null; then
+        local TAG_COMMIT
+        TAG_COMMIT=$(git rev-parse "$TAG_NAME^{commit}")
+        if [ "$TAG_COMMIT" != "$HEAD_COMMIT" ]; then
+            print_error "Tag ${TAG_NAME} points to ${TAG_COMMIT:0:7} but HEAD is ${HEAD_COMMIT:0:7}. Align or delete the tag before publishing."
+            exit 1
+        fi
+    else
+        print_step "Creating local tag ${TAG_NAME}..."
+        git tag "$TAG_NAME"
+        print_success "Created local tag ${TAG_NAME}"
+    fi
+
+    print_step "Pushing tag ${TAG_NAME} to origin..."
+    if ! git push origin "$TAG_NAME"; then
+        print_error "Failed to push ${TAG_NAME}. If the tag exists on the server for another commit, fix it on GitHub first."
+        exit 1
+    fi
+    print_success "Tag ${TAG_NAME} is on origin"
+
+    if gh release view "$TAG_NAME" &>/dev/null; then
+        print_success "GitHub release ${TAG_NAME} already exists"
+        print_info "${REPO_URL}/releases/tag/${TAG_NAME}"
+        return 0
+    fi
+
+    CHANGELOG_LINK="${REPO_URL}/blob/${TAG_NAME}/CHANGELOG.md"
+    NOTES="Changelog for this version: ${CHANGELOG_LINK}"
+
+    print_step "Creating GitHub release (tag ${TAG_NAME}, title ${PACKAGE_VERSION})..."
+    if gh release create "$TAG_NAME" --title "$PACKAGE_VERSION" --notes "$NOTES"; then
+        print_success "GitHub release created"
+        print_info "${REPO_URL}/releases/tag/${TAG_NAME}"
+    else
+        print_error "gh release create failed"
+        exit 1
+    fi
+}
+
 # =============================================================================
 # Pre-flight Checks
 # =============================================================================
@@ -106,6 +292,12 @@ fi
 PACKAGE_VERSION=$(node -p "require('./package.json').version")
 PUBLISHER=$(node -p "require('./package.json').publisher")
 EXTENSION_NAME=$(node -p "require('./package.json').name")
+
+# Public repo URL (release notes link, summary)
+REPO_URL=$(node -p "require('./package.json').repository?.url || ''" 2>/dev/null | sed 's/\.git$//' | sed 's|^git+||')
+if [ -z "$REPO_URL" ] && [ -d ".git" ]; then
+    REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|^git@github.com:|https://github.com/|')
+fi
 
 print_info "Extension: ${EXTENSION_NAME}"
 print_info "Publisher: ${PUBLISHER}"
@@ -181,6 +373,19 @@ else
     exit 1
 fi
 
+if [ "$SKIP_PR_CHECK" = false ] || [ "$SKIP_GITHUB_RELEASE" = false ]; then
+    print_step "Checking GitHub CLI..."
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI (gh) is required unless you pass both --skip-pr-check and --skip-github-release"
+        exit 1
+    fi
+    if ! gh auth status &> /dev/null; then
+        print_error "gh is not authenticated. Run: gh auth login"
+        exit 1
+    fi
+    print_success "gh: $(gh --version | head -n1)"
+fi
+
 # =============================================================================
 # Version Consistency Checks
 # =============================================================================
@@ -246,7 +451,30 @@ else
     fi
 fi
 
-# Check 3: Git working directory is clean
+# Check 3: README.md lists current version and release notes link
+print_step "Checking README.md..."
+if [ -f "README.md" ]; then
+    README_OK=true
+    if ! grep -Fq "Current Version: v${PACKAGE_VERSION}" README.md; then
+        print_error "README.md does not show Current Version: v${PACKAGE_VERSION}"
+        print_info "Update the badge line near the top, e.g. **Current Version: v${PACKAGE_VERSION}**"
+        README_OK=false
+    fi
+    if ! grep -Fq "RELEASE_NOTES_${PACKAGE_VERSION}.md" README.md; then
+        print_error "README.md does not link to docs/RELEASE_NOTES_${PACKAGE_VERSION}.md"
+        print_info "Update the release notes link, e.g. [Release Notes](./docs/RELEASE_NOTES_${PACKAGE_VERSION}.md)"
+        README_OK=false
+    fi
+    if [ "$README_OK" = true ]; then
+        print_success "README.md references version ${PACKAGE_VERSION}"
+    else
+        CHECKS_PASSED=false
+    fi
+else
+    print_warning "README.md not found"
+fi
+
+# Check 4: Git working directory is clean
 print_step "Checking git status..."
 if [ -d ".git" ]; then
     if [ -n "$(git status --porcelain)" ]; then
@@ -263,7 +491,7 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
-    # Check 4: Current branch (check this BEFORE tag operations)
+    # Check 5: Current branch (before tag operations)
     print_step "Checking current branch..."
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
@@ -278,61 +506,64 @@ if [ -d ".git" ]; then
         fi
     fi
 
-    # Check 5: Git tag for this version
+    verify_github_ci
+
+    # Check 6: Git tag alignment (tag/release run after confirm, before marketplaces, unless --skip-github-release)
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
+    HEAD_COMMIT=$(git rev-parse HEAD)
     if git tag -l | grep -q "^${TAG_NAME}$"; then
-        print_success "Git tag ${TAG_NAME} exists locally"
-
-        # Check if we're on the tagged commit
-        TAG_COMMIT=$(git rev-list -n 1 "${TAG_NAME}" 2>/dev/null || echo "")
-        HEAD_COMMIT=$(git rev-parse HEAD)
+        TAG_COMMIT=$(git rev-parse "$TAG_NAME^{commit}")
         if [ "$TAG_COMMIT" != "$HEAD_COMMIT" ]; then
-            print_warning "Current HEAD is not at tag ${TAG_NAME}"
-            print_info "Tag commit: ${TAG_COMMIT:0:8}"
-            print_info "HEAD commit: ${HEAD_COMMIT:0:8}"
-        fi
-
-        # Check if tag is pushed to remote
-        if ! git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
-            print_warning "Git tag ${TAG_NAME} is not pushed to remote"
-            if [ "$DRY_RUN" = true ]; then
-                print_info "Would push tag ${TAG_NAME} in non-dry-run mode"
-            else
-                read -p "Push tag ${TAG_NAME} to origin? (Y/n) " -n 1 -r
-                echo ""
-                if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                    git push origin "${TAG_NAME}"
-                    print_success "Pushed tag ${TAG_NAME} to origin"
-                else
-                    print_warning "Tag not pushed (remember to push it manually)"
-                fi
-            fi
+            print_error "Local tag ${TAG_NAME} points to ${TAG_COMMIT:0:7} but HEAD is ${HEAD_COMMIT:0:7}. Delete or move the tag before publishing."
+            CHECKS_PASSED=false
         else
-            print_success "Git tag ${TAG_NAME} is pushed to origin"
+            print_success "Local tag ${TAG_NAME} matches HEAD"
         fi
     else
-        print_warning "Git tag ${TAG_NAME} does not exist yet"
         if [ "$DRY_RUN" = true ]; then
-            print_info "Would create tag ${TAG_NAME} in non-dry-run mode"
+            print_info "Tag ${TAG_NAME} is not created yet (dry run; a full run would create tag + release then marketplaces unless --skip-github-release)"
         else
-            read -p "Create and push tag ${TAG_NAME}? (Y/n) " -n 1 -r
-            echo ""
-            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                git tag "${TAG_NAME}"
-                print_success "Created tag ${TAG_NAME}"
-                git push origin "${TAG_NAME}"
-                print_success "Pushed tag ${TAG_NAME} to origin"
-            else
-                print_warning "Tag not created (remember to create it manually after publishing)"
-            fi
+            print_info "Tag ${TAG_NAME} will be created and pushed after you confirm, before marketplace publish"
+        fi
+    fi
+
+    if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
+        REMOTE_C=$(git ls-remote origin "refs/tags/${TAG_NAME}^{}" 2>/dev/null | awk '{print $1}')
+        if [ -z "$REMOTE_C" ]; then
+            REMOTE_C=$(git ls-remote origin "refs/tags/${TAG_NAME}" 2>/dev/null | awk 'NR==1 {print $1}')
+        fi
+        if [ -n "$REMOTE_C" ] && [ "$REMOTE_C" != "$HEAD_COMMIT" ]; then
+            print_error "Remote tag ${TAG_NAME} points to ${REMOTE_C:0:7} but HEAD is ${HEAD_COMMIT:0:7}. Fix the remote tag or reset HEAD before publishing."
+            CHECKS_PASSED=false
+        elif [ -n "$REMOTE_C" ]; then
+            print_success "Remote tag ${TAG_NAME} matches HEAD"
         fi
     fi
 fi
 
-# Check 6: Version hasn't been published already
-print_step "Checking if version already published..."
-# This is a best-effort check - may fail if not logged in
+# Check 7: GitHub tag + release already exist for this version (do not re-publish)
+print_step "Checking for existing GitHub tag and release..."
+TAG_NAME="v${PACKAGE_VERSION}"
+if ! command -v gh &> /dev/null; then
+    print_error "Cannot tell if version ${PACKAGE_VERSION} is already released on GitHub without the GitHub CLI."
+    print_info "Install gh from https://cli.github.com/ — this script needs it to detect an existing tag and release before you publish."
+    exit 1
+fi
+if ! gh auth status &>/dev/null; then
+    print_warning "Skipping GitHub duplicate-release check (gh not authenticated — run: gh auth login)"
+else
+    if git ls-remote --tags origin 2>/dev/null | grep -q "refs/tags/${TAG_NAME}$"; then
+        if gh release view "$TAG_NAME" &>/dev/null; then
+            print_error "GitHub already has tag ${TAG_NAME} and a release for version ${PACKAGE_VERSION}."
+            print_info "Nothing to do for this version — bump package.json (and CHANGELOG, README, release notes), commit, then run this script again."
+            exit 1
+        fi
+    fi
+    print_success "No existing GitHub tag+release pair for ${PACKAGE_VERSION}; OK to continue"
+fi
+
+# Resolve expected .vsix filename (vsce package output)
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
 
 if [ "$CHECKS_PASSED" = false ]; then
@@ -454,15 +685,22 @@ print_header "Publishing"
 
 # Confirmation
 echo ""
-echo "Ready to publish version ${PACKAGE_VERSION} to:"
+echo "Ready to release version ${PACKAGE_VERSION}:"
+if [ "$SKIP_GITHUB_RELEASE" = false ]; then
+    echo "  • Git tag v${PACKAGE_VERSION} + GitHub Release (title ${PACKAGE_VERSION})"
+fi
 [ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
 [ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
 echo ""
-read -p "Proceed with publishing? (y/N) " -n 1 -r
+read -p "Proceed with tag/release and publishing? (y/N) " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     print_error "Aborted by user"
     exit 1
+fi
+
+if [ "$SKIP_GITHUB_RELEASE" = false ]; then
+    create_github_tag_and_release
 fi
 
 PUBLISH_SUCCESS=true
@@ -497,28 +735,22 @@ fi
 
 print_header "Summary"
 
-# Get GitHub repo URL from package.json or git remote
-REPO_URL=$(node -p "require('./package.json').repository?.url || ''" 2>/dev/null | sed 's/\.git$//' | sed 's|^git+||')
-if [ -z "$REPO_URL" ]; then
-    REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|^git@github.com:|https://github.com/|')
-fi
-
 if [ "$PUBLISH_SUCCESS" = true ]; then
     print_success "Publishing completed successfully!"
     echo ""
     echo "Next steps:"
-    echo "  1. Verify the extension on the marketplaces"
-
-    # Check if tag exists on remote
     TAG_NAME="v${PACKAGE_VERSION}"
-    if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
-        echo "  2. Tag ${TAG_NAME} is already pushed. View the release:"
-        echo "     ${REPO_URL}/releases/tag/${TAG_NAME}"
-    else
-        echo "  2. Create a GitHub release:"
-        echo "     git tag ${TAG_NAME}"
-        echo "     git push origin ${TAG_NAME}"
-        echo "     gh release create ${TAG_NAME} --generate-notes"
+    STEP=1
+    if [ "$SKIP_GITHUB_RELEASE" = false ] && [ -n "$REPO_URL" ]; then
+        echo "  ${STEP}. Verify GitHub release: ${REPO_URL}/releases/tag/${TAG_NAME}"
+        STEP=$((STEP + 1))
+    fi
+    echo "  ${STEP}. Verify the extension on the marketplaces"
+    STEP=$((STEP + 1))
+    if [ "$SKIP_GITHUB_RELEASE" = true ] && [ -n "$REPO_URL" ]; then
+        echo "  ${STEP}. Create tag & release manually if you still need them:"
+        echo "       git tag ${TAG_NAME} && git push origin ${TAG_NAME}"
+        echo "       gh release create ${TAG_NAME} --title ${PACKAGE_VERSION} --notes \"...\""
     fi
 
     echo ""
