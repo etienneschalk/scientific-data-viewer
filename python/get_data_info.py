@@ -443,6 +443,8 @@ class FileInfoResult:
         Detailed format information
     used_engine : str
         xarray engine used to read the file
+    decode_cf_degraded : bool
+        True when the file was opened with decode_cf=False after a CF time decode failure
     fileSize : int
         File size in bytes
     xarray_html_repr : str
@@ -479,6 +481,7 @@ class FileInfoResult:
     xarray_html_repr_flattened: dict[str, str] = field(repr=False)
     xarray_text_repr_flattened: dict[str, str] = field(repr=False)
     datetime_variables: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    decode_cf_degraded: bool = False
     # Format: {group_name: [{"name": var_name, "min": min_value, "max": max_value}, ...]}
 
 
@@ -642,11 +645,34 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
     )
 
 
+def _is_decode_cf_time_error(exc: BaseException) -> bool:
+    return isinstance(exc, ValueError) and "unable to decode time units" in str(exc)
+
+
+def _open_with_decode_cf_fallback(open_fn: Callable[[bool], Any]) -> tuple[Any, bool]:
+    try:
+        return open_fn(True), False
+    except Exception as exc:
+        if not _is_decode_cf_time_error(exc):
+            raise
+        logger.warning(
+            f"CF time decode failed ({exc!r}); retrying with decode_cf=False"
+        )
+        return open_fn(False), True
+
+
+def _xr_open_kwargs(engine: str, decode_cf: bool) -> dict[str, Any]:
+    kwargs = DEFAULT_XR_OPEN_KWARGS[engine].copy()
+    if "decode_cf" in kwargs:
+        kwargs["decode_cf"] = decode_cf
+    return kwargs
+
+
 def open_datatree_with_fallback(
     file_path: Path,
     file_format_info: FileFormatInfo,
     convert_bands_to_variables: bool = False,
-) -> "tuple[xr.DataTree | DictOfDatasets, str]":
+) -> "tuple[xr.DataTree | DictOfDatasets, str, bool]":
     """Open datatree or dataset with fallback to different engines.
 
     Attempts to open the file as a DataTree first, then falls back to
@@ -662,8 +688,8 @@ def open_datatree_with_fallback(
     Returns
     -------
     tuple
-        Tuple containing (data_structure, engine_name) where data_structure
-        is either a DataTree or DictOfDatasets
+        Tuple containing (data_structure, engine_name, decode_cf_degraded) where
+        data_structure is either a DataTree or DictOfDatasets
 
     Raises
     ------
@@ -688,7 +714,7 @@ def open_datatree_with_fallback(
             xds = cdflib.xarray.cdf_to_xarray(file_path)
             # cdflib returns a Dataset, wrap it in a dict for consistency
             xds_dict: DictOfDatasets = {"/": xds}
-            return xds_dict, "cdflib"
+            return xds_dict, "cdflib", False
         except Exception as exc:
             logger.error(f"Failed to open CDF file with cdflib: {exc!r}")
             # If cdflib fails and it's the only engine, raise the error
@@ -720,13 +746,15 @@ def open_datatree_with_fallback(
                 )
 
             if can_use_datatree(engine):
-                xdt_or_xds = xr.open_datatree(
-                    file_path,
-                    engine=engine,
-                    **DEFAULT_XR_OPEN_KWARGS[engine],
-                    backend_kwargs=backend_kwargs,
+                xdt_or_xds, decode_cf_degraded = _open_with_decode_cf_fallback(
+                    lambda decode_cf, eng=engine, bk=backend_kwargs: xr.open_datatree(
+                        file_path,
+                        engine=eng,
+                        **_xr_open_kwargs(eng, decode_cf),
+                        backend_kwargs=bk,
+                    )
                 )
-                return xdt_or_xds, engine
+                return xdt_or_xds, engine, decode_cf_degraded
             else:
                 # Attempt to replace DataTree by a dict of Datasets
                 if engine == "netcdf4" and check_package_availability("netCDF4"):
@@ -746,39 +774,52 @@ def open_datatree_with_fallback(
                 else:
                     groups = ["/"]
 
-                xds_dict: DictOfDatasets = {
-                    group: (
-                        xr.open_dataset(
+                def open_group(
+                    decode_cf: bool,
+                    group: str = "/",
+                    *,
+                    eng: str = engine,
+                    bk: dict[str, Any] = backend_kwargs,
+                ) -> xr.Dataset:
+                    kwargs = _xr_open_kwargs(eng, decode_cf)
+                    if group == "/":
+                        return xr.open_dataset(
                             file_path,
-                            engine=engine,
-                            **DEFAULT_XR_OPEN_KWARGS[engine],
-                            backend_kwargs=backend_kwargs,
+                            engine=eng,
+                            **kwargs,
+                            backend_kwargs=bk,
                         )
-                        if group == "/"
-                        else xr.open_dataset(
-                            file_path,
-                            engine=engine,
-                            **DEFAULT_XR_OPEN_KWARGS[engine],
-                            backend_kwargs=backend_kwargs,
-                            group=group,
-                        )
+                    return xr.open_dataset(
+                        file_path,
+                        engine=eng,
+                        **kwargs,
+                        backend_kwargs=bk,
+                        group=group,
                     )
-                    for group in groups
-                }
-                return xds_dict, engine
+
+                root_ds, decode_cf_degraded = _open_with_decode_cf_fallback(open_group)
+                xds_dict: DictOfDatasets = {"/": root_ds}
+                decode_cf = not decode_cf_degraded
+                for group in groups:
+                    if group == "/":
+                        continue
+                    xds_dict[group] = open_group(decode_cf, group)
+                return xds_dict, engine, decode_cf_degraded
         except NotImplementedError as exc:
             # Fallback on dataset
             logger.warning(
                 f"Opening file as DataTree is not implemented with engine {engine}: {exc!r}"
             )
             logger.warning("Fallback to opening file as Dataset")
-            xds = xr.open_dataset(
-                file_path,
-                engine=engine,
-                **DEFAULT_XR_OPEN_KWARGS[engine],
-                backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[engine],
+            xds, decode_cf_degraded = _open_with_decode_cf_fallback(
+                lambda decode_cf, eng=engine: xr.open_dataset(
+                    file_path,
+                    engine=eng,
+                    **_xr_open_kwargs(eng, decode_cf),
+                    backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[eng],
+                )
             )
-            return xds, engine
+            return xds, engine, decode_cf_degraded
         except Exception as exc:
             exceptions.append(exc)
             continue
@@ -1673,7 +1714,7 @@ def create_plot(
             plt.style.use("default")
 
         # Open dataset with fallback
-        xds_or_xdt, used_engine = open_datatree_with_fallback(
+        xds_or_xdt, used_engine, _decode_cf_degraded = open_datatree_with_fallback(
             file_path, file_format_info, convert_bands_to_variables
         )
 
@@ -2125,7 +2166,7 @@ def get_file_info(
 
     try:
         # Open dataset with fallback
-        xds_or_xdt, used_engine = open_datatree_with_fallback(
+        xds_or_xdt, used_engine, decode_cf_degraded = open_datatree_with_fallback(
             file_path, file_format_info, convert_bands_to_variables
         )
     except ImportError:
@@ -2198,6 +2239,7 @@ def get_file_info(
         info = FileInfoResult(
             format_info=file_format_info,
             used_engine=used_engine,
+            decode_cf_degraded=decode_cf_degraded,
             fileSize=os.path.getsize(file_path),
             xarray_html_repr=repr_html,
             xarray_text_repr=repr_text,
