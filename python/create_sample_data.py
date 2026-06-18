@@ -1163,6 +1163,36 @@ def create_sample_jp2():
     return output_file
 
 
+def create_sample_netcdf_broken_datetime_variable():
+    """Create a NetCDF file with invalid time units (issue #136 degraded-mode test)."""
+    output_file = "broken_datetime_variable.nc"
+
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    if not _optional_pkg_available("netCDF4"):
+        print("⚠️  netCDF4 not available; skipping broken_datetime_variable.nc")
+        return None
+
+    import netCDF4
+
+    print("🌡️ Creating NetCDF file with broken datetime units...")
+
+    with netCDF4.Dataset(output_file, "w") as ds:
+        ds.createDimension("x", 3)
+        ds.createDimension("y", 2)
+        var = ds.createVariable("delta", "f4", ("y", "x"))
+        var[:] = np.arange(6, dtype=np.float32).reshape(2, 3)
+        var.units = "(days since 2000-01-01 00:00:00)-1"
+        var.long_name = "Variable with invalid CF time units"
+        ds.title = "Broken datetime variable sample (issue #136)"
+
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
 def create_sample_netcdf4():
     """Create a sample NetCDF4 file with advanced features."""
     output_file = "sample_data.nc4"
@@ -5375,6 +5405,12 @@ def main(do_create_disposable_files: bool = False):
         no_attrs_netcdf_file = create_sample_netcdf_no_attributes()
         if no_attrs_netcdf_file:
             created_files.append((no_attrs_netcdf_file, "NetCDF (No Attributes)"))
+
+        broken_datetime_netcdf_file = create_sample_netcdf_broken_datetime_variable()
+        if broken_datetime_netcdf_file:
+            created_files.append(
+                (broken_datetime_netcdf_file, "NetCDF (Broken Datetime Units)")
+            )
 
         print("\n📁 Creating HDF5 files...")
         hdf5_file = create_sample_hdf5()

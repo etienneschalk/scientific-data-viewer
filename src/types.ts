@@ -47,6 +47,7 @@ export interface DataInfoResult {
     format: string;
     format_info: DataInfoFormatInfo;
     used_engine: string;
+    decode_cf_degraded?: boolean;
     fileSize: number;
     xarray_html_repr: string;
     xarray_text_repr: string;
@@ -111,6 +112,7 @@ export interface DataInfoResult {
     format: string;
     format_info: DataInfoFormatInfo;
     used_engine: string;
+    decode_cf_degraded?: boolean;
     fileSize: number;
     xarray_html_repr: string;
     xarray_text_repr: string;

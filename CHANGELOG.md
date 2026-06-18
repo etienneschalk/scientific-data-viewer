@@ -6,6 +6,15 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.11.2] - 2026-06-18
+
+### Added
+
+- **Issue #136**: Degraded mode when CF time decoding fails. `open_datatree` / `open_dataset` first use `decode_cf=True`; on `unable to decode time units`, the extension retries with `decode_cf=False` so NetCDF files with invalid datetime `units` still open.
+  - **Files**: `python/get_data_info.py`, `src/panel/webview/webview-script.js`, `src/types.ts`
+  - **UI**: File Information shows `Mode: degraded (decode_cf=False)` when the fallback was used.
+  - **Sample data**: `python/create_sample_data.py` adds `sample-data/broken_datetime_variable.nc` for manual testing.
+
 ## [0.11.1] - 2026-04-07
 
 ### Fixed

@@ -834,6 +834,9 @@ function renderFileInformation(data) {
             }
         `;
     }
+    if (data.decode_cf_degraded) {
+        formatInfo += /*html*/ ` · <strong>Mode:</strong> degraded (decode_cf=False)`;
+    }
     formatInfo += '</p>';
     return formatInfo;
 }
