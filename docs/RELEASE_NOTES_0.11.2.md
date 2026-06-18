@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.11.2 Release Notes
 
-**TL;DR** — NetCDF files with invalid CF datetime `units` no longer block the viewer: the backend retries with `decode_cf=False` and the File Information section labels degraded mode.
+**TL;DR** — Degraded `decode_cf` fallback for broken CF time units ([#136](https://github.com/etienneschalk/scientific-data-viewer/issues/136)); HTML-escaped attribute values for compound dtypes ([#137](https://github.com/etienneschalk/scientific-data-viewer/issues/137)).
 
 ## Degraded mode for broken CF time units ([#136](https://github.com/etienneschalk/scientific-data-viewer/issues/136))
 
@@ -16,10 +16,12 @@ Some NetCDF files ship variables whose `units` attribute looks like a time axis 
 
 Plotting uses the same open path, so plots work on these files as well (raw numeric values, no decoded datetimes).
 
-## Manual test file
+**Manual test:** `sample-data/broken_datetime_variable.nc`
 
-After running `python/create_sample_data.py` (or `setup.sh`), open:
+## Attribute display: escape HTML special characters ([#137](https://github.com/etienneschalk/scientific-data-viewer/issues/137))
 
-`sample-data/broken_datetime_variable.nc`
+Compound / structured dtypes (NumPy [structured arrays](https://numpy.org/doc/stable/user/basics.rec.html), NetCDF [user-defined types](https://docs.unidata.ucar.edu/netcdf-c/4.9.3/user_defined_types.html)) expose encoding metadata whose string form contains `<` (e.g. `'<i4'`). Unescaped values were parsed as HTML tags, so the visible attribute text was truncated at the first angle bracket while the `title` tooltip stayed correct.
 
-You should see the degraded-mode cue and the `delta` variable metadata.
+Flat attribute rows (group, variable, coordinate) now use the existing webview `escapeHtml()` helper.
+
+**Manual test:** `sample-data/compound_dtype_variable.nc` — expand variable **`pets`** → **`__xarray_encoding.dtype`**; the full dtype string should display.

@@ -526,6 +526,15 @@ function escapeHtml(unsafe) {
         .replaceAll("'", '&#039;');
 }
 
+function attributeValueStrings(value) {
+    const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+    const displayStr =
+        valueStr.length > MAX_ATTR_DISPLAY_STR_LENGTH
+            ? valueStr.slice(0, MAX_ATTR_DISPLAY_STR_LENGTH) + '…'
+            : valueStr;
+    return { valueStr, displayStr };
+}
+
 function showDegradedModeIndicator() {
     // Add a visual indicator that we're in degraded mode
     const indicator = document.createElement('span');
@@ -1209,12 +1218,7 @@ function renderAttributesTree(attrsObj, groupName, idParts) {
                         <div class="attributes-tree-children">${items}</div>
                     </details>`;
             }
-            const valueStr =
-                typeof value === 'string' ? value : JSON.stringify(value);
-            const displayStr =
-                valueStr.length > MAX_ATTR_DISPLAY_STR_LENGTH
-                    ? valueStr.slice(0, MAX_ATTR_DISPLAY_STR_LENGTH) + '…'
-                    : valueStr;
+            const { valueStr, displayStr } = attributeValueStrings(value);
             return /*html*/ `
                 <div class="attribute-item" id="${leafId}">
                     <span class="attribute-name" title="${safeKey}">${safeKey}</span>
@@ -1227,12 +1231,13 @@ function renderAttributesTree(attrsObj, groupName, idParts) {
 
 function renderGroupAttributes(groupName, attrName, value) {
     const attrId = joinId(['data-group', groupName, 'attribute', attrName]);
-    const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+    const safeName = escapeHtml(String(attrName));
+    const { valueStr, displayStr } = attributeValueStrings(value);
 
     return /*html*/ `
         <div class="attribute-item" id="${attrId}">
-            <span class="attribute-name" title="${attrName}">${attrName} : </span>
-            <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
+            <span class="attribute-name" title="${safeName}">${safeName} : </span>
+            <span class="attribute-value muted-text" title="${escapeHtml(valueStr)}">${escapeHtml(displayStr)}</span>
         </div>
     `;
 }
@@ -1377,16 +1382,16 @@ function renderVariableAttributes(attributes, parentId) {
 
     const attributesList = Object.entries(attributes)
         .map(([attrName, value]) => {
-            const valueStr =
-                typeof value === 'string' ? value : JSON.stringify(value);
+            const safeName = escapeHtml(String(attrName));
+            const { valueStr, displayStr } = attributeValueStrings(value);
             return /*html*/ `
             <div class="attribute-item" id="${joinId([
                 parentId,
                 'attribute',
                 attrName,
             ])}">
-                <span class="attribute-name" title="${attrName}">${attrName} : </span>
-                <span class="attribute-value muted-text" title="${valueStr}">${valueStr}</span>
+                <span class="attribute-name" title="${safeName}">${safeName} : </span>
+                <span class="attribute-value muted-text" title="${escapeHtml(valueStr)}">${escapeHtml(displayStr)}</span>
             </div>
         `;
         })

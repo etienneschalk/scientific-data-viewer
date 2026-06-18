@@ -14,6 +14,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/get_data_info.py`, `src/panel/webview/webview-script.js`, `src/types.ts`
   - **UI**: File Information shows `Mode: degraded (decode_cf=False)` when the fallback was used.
   - **Sample data**: `python/create_sample_data.py` adds `sample-data/broken_datetime_variable.nc` for manual testing.
+- **Issue #137**: Escape HTML in flat attribute displays (`renderGroupAttributes`, `renderVariableAttributes`) via existing `escapeHtml()` so values such as compound-dtype `__xarray_encoding.dtype` strings (with `<i4`, `<f4`, etc.) are not truncated by the browser.
+  - **Sample data**: `sample-data/compound_dtype_variable.nc` (NumPy structured-array pets example).
+  - **Files**: `src/panel/webview/webview-script.js`, `python/create_sample_data.py`, `python/test_compound_dtype_sample.py`
 
 ## [0.11.1] - 2026-04-07
 

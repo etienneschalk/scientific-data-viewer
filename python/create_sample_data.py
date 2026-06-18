@@ -1193,6 +1193,43 @@ def create_sample_netcdf_broken_datetime_variable():
     return output_file
 
 
+def create_sample_netcdf_compound_dtype_variable():
+    """Create a NetCDF file with a compound dtype (issue #137 attribute-display repro).
+
+    Based on the NumPy structured-array pets example (basics.rec). netCDF4 compound
+    types use fixed-length bytes (S10) instead of Unicode (U10).
+    """
+    output_file = "compound_dtype_variable.nc"
+
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    if not _optional_pkg_available("netCDF4"):
+        print("⚠️  netCDF4 not available; skipping compound_dtype_variable.nc")
+        return None
+
+    import netCDF4
+
+    print("🐾 Creating NetCDF file with compound dtype (structured array)...")
+
+    # https://numpy.org/doc/stable/user/basics.rec.html — Rex/Fido pets example
+    pet_dtype = np.dtype([("name", "S10"), ("age", "i4"), ("weight", "f4")])
+    pets = np.array([(b"Rex", 9, 81.0), (b"Fido", 3, 27.0)], dtype=pet_dtype)
+
+    with netCDF4.Dataset(output_file, "w") as ds:
+        ds.createDimension("pet", len(pets))
+        pet_record = ds.createCompoundType(pet_dtype, "pet_record")
+        var = ds.createVariable("pets", pet_record, ("pet",))
+        var[:] = pets
+        var.long_name = "Pet records (numpy structured array example, issue #137)"
+        ds.title = "Compound dtype sample (issue #137)"
+
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
 def create_sample_netcdf4():
     """Create a sample NetCDF4 file with advanced features."""
     output_file = "sample_data.nc4"
@@ -5410,6 +5447,12 @@ def main(do_create_disposable_files: bool = False):
         if broken_datetime_netcdf_file:
             created_files.append(
                 (broken_datetime_netcdf_file, "NetCDF (Broken Datetime Units)")
+            )
+
+        compound_dtype_netcdf_file = create_sample_netcdf_compound_dtype_variable()
+        if compound_dtype_netcdf_file:
+            created_files.append(
+                (compound_dtype_netcdf_file, "NetCDF (Compound Dtype)")
             )
 
         print("\n📁 Creating HDF5 files...")
