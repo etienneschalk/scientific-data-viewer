@@ -4,6 +4,7 @@ import { Logger } from './common/Logger';
 import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
+import { getOutlineEnabled } from './common/config';
 import {
     CMD_OPEN_DEVELOPER_TOOLS,
     CMD_SHOW_LOGS,
@@ -280,23 +281,26 @@ export class DataViewerPanel {
      * Notify that this panel has become active
      */
     private notifyPanelActive(): void {
-        if (DataViewerPanel._outlineProvider && this.getId()) {
-            Logger.info(
-                `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
-            );
+        if (
+            !getOutlineEnabled() ||
+            !DataViewerPanel._outlineProvider ||
+            !this.getId()
+        ) {
+            return;
+        }
+        Logger.info(
+            `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
+        );
 
-            // Check if we have headers cached for this file
-            const cachedHeaders =
-                DataViewerPanel._outlineProvider.getHeadersForPanel(
-                    this.getId(),
-                );
-            if (cachedHeaders) {
-                // Switch to the cached headers for this file
-                DataViewerPanel._outlineProvider.switchToPanel(this.getId());
-            } else {
-                // Update outline for this panel
-                this.updateOutline();
-            }
+        // Check if we have headers cached for this file
+        const cachedHeaders =
+            DataViewerPanel._outlineProvider.getHeadersForPanel(this.getId());
+        if (cachedHeaders) {
+            // Switch to the cached headers for this file
+            DataViewerPanel._outlineProvider.switchToPanel(this.getId());
+        } else {
+            // Update outline for this panel
+            this.updateOutline();
         }
     }
 
@@ -304,7 +308,10 @@ export class DataViewerPanel {
      * Update the outline when data is loaded for this panel
      */
     private updateOutline(): void {
-        if (DataViewerPanel._outlineProvider === undefined) {
+        if (
+            !getOutlineEnabled() ||
+            DataViewerPanel._outlineProvider === undefined
+        ) {
             return;
         }
 

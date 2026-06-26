@@ -6,6 +6,27 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.12.0] - 2026-06-26
+
+### Added
+
+- **Issue #131**: Performance improvements for faster file-open readiness (time from opening a scientific file to data displayed).
+  - **Instrumentation**: `PerformanceTimer` logs stage timings (`⏱️`) across the load path — `setHtml`, Python init, `getDataInfo`, `postMessage`, worker spawn/execute, and webview `displayAll` / lazy-repr fetches. Check the **Scientific Data Viewer** output channel and webview DevTools console.
+  - **Persistent Python worker** (default **on**): Long-lived `python/python_worker.py` process with JSON-lines RPC over stdin/stdout; `PythonManager` routes `get_data_info.py` calls through the worker to amortize import cost across file opens. Plots still use one-shot `spawn` for abort support. Falls back to spawn if the worker fails. Setting: `scientificDataViewer.persistentPythonWorker`.
+  - **Lazy repr loading** (default **on**): Initial `info` load passes `--skip-reprs` so metadata (dims, variables, attributes) appears without generating xarray HTML/text reprs. Reprs are fetched on demand when the user expands the corresponding section via new `repr` CLI mode and webview `getRepr` request. Setting: `scientificDataViewer.lazyReprLoading`.
+  - **Outline build toggle** (default **off**): Skips building the **Scientific Data Structure** sidebar tree (`HeaderExtractor` / `OutlineProvider`) when disabled; outline tree view is not registered at activation. Setting: `scientificDataViewer.outlineEnabled`.
+  - **Files**: `src/common/PerformanceTimer.ts`, `src/python/PythonWorkerClient.ts`, `src/python/PythonManager.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/panel/webview/webview-script.js`, `src/panel/HTMLGenerator.ts`, `src/DataViewerPanel.ts`, `src/extension.ts`, `src/common/config.ts`, `python/get_data_info.py`, `python/python_worker.py`, `package.json`
+- **Tests** for the above:
+  - TypeScript: `test/suite/common/PerformanceTimer.test.ts`, extended `config.test.ts` and `dataProcessor.test.ts` (`--skip-reprs`, `getRepr`)
+  - Python: `python/test_performance_features.py` (`dispatch_argv` skip-reprs/repr modes, worker ping/execute)
+  - `setup.sh` runs the new Python performance test suite
+
+### Changed
+
+- Root **Xarray HTML Representation** section is collapsed by default (no longer `open` in the HTML skeleton) so lazy repr loading defers work until expand.
+- `get_file_info()` accepts `skip_reprs`; new helpers `_compute_dataset_reprs`, `_compute_root_reprs`, `get_reprs()`, and `dispatch_argv()` for worker and test reuse.
+- `getExtensionConfigForWebview()` exposes `lazyReprLoading` and `outlineEnabled` to the webview.
+
 ## [0.11.2] - 2026-06-18
 
 ### Added

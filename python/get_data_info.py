@@ -2127,11 +2127,51 @@ def create_plot(
         )
 
 
+def _compute_dataset_reprs(xds: xr.Dataset) -> tuple[str, str]:
+    """Return (text_repr, html_repr) for a single Dataset."""
+    with xr.set_options(**XR_TEXT_OPTIONS):
+        repr_text: str = str(xds)
+    with xr.set_options(**XR_HTML_OPTIONS):
+        repr_html: str = xds._repr_html_()
+    return repr_text, repr_html
+
+
+def _compute_root_reprs(
+    xds_or_xdt: xr.Dataset | xr.DataTree,
+    datatree_flag: bool,
+    flat_dict_of_xds: DictOfDatasets,
+) -> tuple[str, str]:
+    """Return root-level (text_repr, html_repr) for DataTree or Dataset collections."""
+    if datatree_flag:
+        xdt = cast("xr.DataTree", xds_or_xdt)
+        with xr.set_options(**XR_TEXT_OPTIONS):
+            repr_text = str(xdt)
+        with xr.set_options(**XR_HTML_OPTIONS):
+            repr_html = xdt._repr_html_()
+        return repr_text, repr_html
+
+    xds_dict = flat_dict_of_xds
+    if len(xds_dict) == 1 and "/" in xds_dict:
+        return _compute_dataset_reprs(xds_dict["/"])
+
+    with xr.set_options(**XR_TEXT_OPTIONS):
+        repr_text = f"{'-' * 80}\n\n".join(
+            f"Group: {group}\n\n{xds!s}\n\n" for group, xds in xds_dict.items()
+        )
+    with xr.set_options(**XR_HTML_OPTIONS):
+        repr_html = "<br><br>".join(
+            f"<p>Group: {group}</p><br><br>{xds._repr_html_()}"
+            for group, xds in xds_dict.items()
+        )
+    return repr_text, repr_html
+
+
 def get_file_info(
     file_path: Path,
     convert_bands_to_variables: bool = False,
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+    skip_reprs: bool = False,
 ) -> FileInfoResult | FileInfoError:
     """Extract comprehensive information from a data file.
 
@@ -2186,16 +2226,6 @@ def get_file_info(
         )
         if datatree_flag:
             xdt: xr.DataTree = cast("xr.DataTree", xds_or_xdt)
-            # Extract information
-            with xr.set_options(**XR_TEXT_OPTIONS):
-                # Get HTML representation using xarray's built-in HTML representation
-                repr_text: str = str(xdt)
-            with xr.set_options(**XR_HTML_OPTIONS):
-                # Get text representation using xarray's built-in text representation
-                repr_html: str = xdt._repr_html_()
-
-            # logger.info(f"{xdt=}")
-
             flat_dict_of_xds: DictOfDatasets = dict(
                 sorted(xdt.to_dict().items(), key=lambda x: x[0])
             )
@@ -2203,37 +2233,17 @@ def get_file_info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
             )
         else:
-            xds_dict: DictOfDatasets = cast("DictOfDatasets", xds_or_xdt)
-            # For a single root group, display the traditional Dataset reprs
-            if len(xds_dict) == 1 and "/" in xds_dict:
-                xds: xr.Dataset = xds_dict["/"]
-                with xr.set_options(**XR_TEXT_OPTIONS):
-                    # Get HTML representation using xarray's built-in HTML representation
-                    repr_text: str = str(xds)
-                with xr.set_options(**XR_HTML_OPTIONS):
-                    # Get text representation using xarray's built-in text representation
-                    repr_html: str = xds._repr_html_()
-            # Otherwise, need to do a custom repr.
-            else:
-                with xr.set_options(**XR_TEXT_OPTIONS):
-                    repr_text: str = f"{'-' * 80}\n\n".join(
-                        (
-                            f"Group: {group}\n\n{xds!s}\n\n"
-                            for group, xds in xds_dict.items()
-                        )
-                    )
-                with xr.set_options(**XR_HTML_OPTIONS):
-                    repr_html: str = "<br><br>".join(
-                        (
-                            f"<p>Group: {group}</p><br><br>{xds._repr_html_()}"
-                            for group, xds in xds_dict.items()
-                        )
-                    )
-            logger.info(f"{xds_dict=}")
-
-            flat_dict_of_xds: DictOfDatasets = xds_dict
+            flat_dict_of_xds = cast("DictOfDatasets", xds_or_xdt)
             logger.info(
                 f"Processing DictOfDatasets with {len(flat_dict_of_xds.keys())} groups"
+            )
+
+        if skip_reprs:
+            repr_text = ""
+            repr_html = ""
+        else:
+            repr_text, repr_html = _compute_root_reprs(
+                xds_or_xdt, datatree_flag, flat_dict_of_xds
             )
 
         info = FileInfoResult(
@@ -2354,16 +2364,10 @@ def get_file_info(
                         }
                     )
 
-            # Extract information
-            with xr.set_options(**XR_TEXT_OPTIONS):
-                # Get HTML representation using xarray's built-in HTML representation
-                repr_text: str = str(xds)
-            with xr.set_options(**XR_HTML_OPTIONS):
-                # Get text representation using xarray's built-in text representation
-                repr_html: str = xds._repr_html_()
-
-            info.xarray_html_repr_flattened[group] = repr_html
-            info.xarray_text_repr_flattened[group] = repr_text
+            if not skip_reprs:
+                group_repr_text, group_repr_html = _compute_dataset_reprs(xds)
+                info.xarray_html_repr_flattened[group] = group_repr_html
+                info.xarray_text_repr_flattened[group] = group_repr_text
 
         # Close Start
         if datatree_flag:
@@ -2389,6 +2393,105 @@ def get_file_info(
             xarray_show_versions=versions_text,
         )
         return error
+
+
+@dataclass(frozen=True)
+class ReprResult:
+    """Lazy-loaded xarray representations for root or a single group."""
+
+    scope: str
+    group: str | None
+    xarray_html_repr: str = field(repr=False, default="")
+    xarray_text_repr: str = field(repr=False, default="")
+
+
+def get_reprs(
+    file_path: Path,
+    convert_bands_to_variables: bool = False,
+    scope: str = "root",
+    group: str | None = None,
+) -> ReprResult | FileInfoError:
+    """Load xarray HTML/text reprs on demand (root or per-group)."""
+    file_format_info = detect_file_format(file_path)
+    datatree_flag = False
+    xds_or_xdt: xr.Dataset | xr.DataTree | DictOfDatasets | None = None
+
+    try:
+        opened, used_engine, _decode_cf_degraded = open_datatree_with_fallback(
+            file_path, file_format_info, convert_bands_to_variables
+        )
+        xds_or_xdt = opened
+    except ImportError:
+        return FileInfoError(
+            error=f"Missing dependencies for {file_format_info.display_name} files: {', '.join(file_format_info.missing_packages)}",
+            error_type="ImportError",
+            format_info=file_format_info,
+            suggestion=f"Install required packages: pip install {' '.join(file_format_info.missing_packages)}",
+            xarray_show_versions="",
+        )
+
+    try:
+        datatree_flag = can_use_datatree(used_engine) and isinstance(
+            xds_or_xdt, xr.DataTree
+        )
+        if datatree_flag:
+            xdt = cast("xr.DataTree", xds_or_xdt)
+            flat_dict_of_xds = dict(sorted(xdt.to_dict().items(), key=lambda x: x[0]))
+        else:
+            flat_dict_of_xds = cast("DictOfDatasets", xds_or_xdt)
+
+        if scope == "root":
+            repr_text, repr_html = _compute_root_reprs(
+                xds_or_xdt, datatree_flag, flat_dict_of_xds
+            )
+            return ReprResult(
+                scope="root",
+                group=None,
+                xarray_html_repr=repr_html,
+                xarray_text_repr=repr_text,
+            )
+
+        if scope != "group" or not group:
+            return FileInfoError(
+                error="group scope requires a group name",
+                error_type="ValueError",
+                format_info=file_format_info,
+                suggestion="Pass --group with scope group",
+                xarray_show_versions="",
+            )
+
+        if group not in flat_dict_of_xds:
+            return FileInfoError(
+                error=f"Unknown group: {group}",
+                error_type="KeyError",
+                format_info=file_format_info,
+                suggestion="Use a group name from dimensions_flattened",
+                xarray_show_versions="",
+            )
+
+        group_xds = flat_dict_of_xds[group]
+        repr_text, repr_html = _compute_dataset_reprs(group_xds)
+        return ReprResult(
+            scope="group",
+            group=group,
+            xarray_html_repr=repr_html,
+            xarray_text_repr=repr_text,
+        )
+    except Exception as exc:
+        return FileInfoError(
+            error=str(exc),
+            error_type=type(exc).__name__,
+            suggestion="Check if the file is corrupted or in an unsupported format",
+            format_info=file_format_info,
+            xarray_show_versions="",
+        )
+    finally:
+        if xds_or_xdt is not None:
+            if datatree_flag:
+                cast("xr.DataTree", xds_or_xdt).close()
+            else:
+                for _group, xds in cast("DictOfDatasets", xds_or_xdt).items():
+                    xds.close()
 
 
 def create_variable_info(
@@ -2563,250 +2666,142 @@ def create_coord_info(
     )
 
 
-def main() -> int:
-    """Main entry point for the script.
-
-    Parses command line arguments and executes the appropriate mode
-    (info or plot) based on user input.
-    """
+def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="Get data file information and create plots from data file variables",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python get_data_info.py info sample_data.nc
+  python get_data_info.py info sample_data.nc --skip-reprs
+  python get_data_info.py repr sample_data.nc --scope root
   python get_data_info.py plot sample_data.nc temperature
-  python get_data_info.py plot sample_data.nc temperature histogram
-  python get_data_info.py plot sample_data.nc temperature --style dark_background
-  python get_data_info.py plot sample_data.nc temperature --style default
-  python get_data_info.py plot sample_data.nc temperature --style seaborn
         """,
     )
 
-    mode_choices = ["info", "plot"]
+    mode_choices = ["info", "plot", "repr"]
 
     parser.add_argument(
         "mode",
         choices=mode_choices,
-        help="Mode: 'info' to get file information, 'plot' to create plots",
+        help="Mode: 'info', 'repr', or 'plot'",
     )
-
     parser.add_argument("file_path", type=Path, help="Path to the data file")
-
     parser.add_argument(
         "variable_name",
         nargs="?",
         help="Variable name to plot (required for plot mode)",
     )
-
     parser.add_argument(
         "plot_type",
         nargs="?",
         default="auto",
         help="Plot type: 'line' or 'histogram' (optional, default: 'auto')",
     )
-
     parser.add_argument(
         "--style",
         default="",
-        help="Matplotlib plot style. Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)",
+        help="Matplotlib plot style",
     )
-
     parser.add_argument(
         "--convert-bands-to-variables",
         action="store_true",
         help="Convert bands of GeoTIFF rasters to variables for better readability",
     )
-
-    parser.add_argument(
-        "--datetime-variable",
-        default=None,
-        help="Name of datetime variable to use as x-axis",
-    )
-
-    parser.add_argument(
-        "--start-datetime",
-        default=None,
-        help="Start datetime for filtering (ISO format string)",
-    )
-
-    parser.add_argument(
-        "--end-datetime",
-        default=None,
-        help="End datetime for filtering (ISO format string)",
-    )
-
-    parser.add_argument(
-        "--dimension-slices",
-        default=None,
-        help='JSON object of dimension name to index or slice string (e.g. {"time": "0:24:2", "rlat": "100:120", "rlon": 130}) for isel() before plotting (Issue #117)',
-    )
-
-    parser.add_argument(
-        "--facet-row",
-        default=None,
-        help="Dimension name for faceted plot row (Issue #117)",
-    )
-
-    parser.add_argument(
-        "--facet-col",
-        default=None,
-        help="Dimension name for faceted plot col (Issue #117)",
-    )
-
-    parser.add_argument(
-        "--col-wrap",
-        type=int,
-        default=None,
-        help="xarray plot col_wrap: max number of columns in faceted grid (positive integer)",
-    )
-
-    parser.add_argument(
-        "--plot-x",
-        default=None,
-        help="Dimension or coordinate for x-axis (xarray plot x=)",
-    )
-
-    parser.add_argument(
-        "--plot-y",
-        default=None,
-        help="Dimension or coordinate for y-axis (xarray plot y=)",
-    )
-
-    parser.add_argument(
-        "--plot-hue",
-        default=None,
-        help="Dimension or coordinate for hue (xarray plot hue=, e.g. multiple lines)",
-    )
-
+    parser.add_argument("--datetime-variable", default=None)
+    parser.add_argument("--start-datetime", default=None)
+    parser.add_argument("--end-datetime", default=None)
+    parser.add_argument("--dimension-slices", default=None)
+    parser.add_argument("--facet-row", default=None)
+    parser.add_argument("--facet-col", default=None)
+    parser.add_argument("--col-wrap", type=int, default=None)
+    parser.add_argument("--plot-x", default=None)
+    parser.add_argument("--plot-y", default=None)
+    parser.add_argument("--plot-hue", default=None)
     parser.add_argument(
         "--xincrease",
         default=None,
         choices=("true", "false"),
-        help="xarray plot xincrease (axes direction): 'true' or 'false'",
     )
-
     parser.add_argument(
         "--yincrease",
         default=None,
         choices=("true", "false"),
-        help="xarray plot yincrease (axes direction): 'true' or 'false'",
     )
-
-    parser.add_argument(
-        "--aspect",
-        type=float,
-        default=None,
-        help="xarray plot aspect (figure width = aspect * size in inches, float)",
-    )
-
-    parser.add_argument(
-        "--size",
-        type=float,
-        default=None,
-        help="xarray plot size (figure height in inches, float)",
-    )
-
-    parser.add_argument(
-        "--bins",
-        type=int,
-        default=None,
-        help="Number of bins for histogram-style plots (Issue #117; passed as plot kwarg)",
-    )
-
-    parser.add_argument(
-        "--robust",
-        action="store_true",
-        help="xarray plot robust: use 2nd/98th percentiles for color limits (helps with outliers)",
-    )
-
-    parser.add_argument(
-        "--cmap",
-        type=str,
-        default=None,
-        help="Matplotlib colormap name (user must provide a valid existing cmap). See https://matplotlib.org/stable/users/explain/colors/colormaps.html",
-    )
-
-    parser.add_argument(
-        "--vmin",
-        type=float,
-        default=None,
-        help="Lower bound for colormap scaling (colormap plots only; not histograms)",
-    )
-    parser.add_argument(
-        "--vmax",
-        type=float,
-        default=None,
-        help="Upper bound for colormap scaling (colormap plots only; not histograms)",
-    )
-    parser.add_argument(
-        "--no-add-colorbar",
-        action="store_true",
-        help="Disable the colorbar on scalar-mappable plots (default is to show one)",
-    )
-    parser.add_argument(
-        "--add-legend",
-        action="store_true",
-        help="Request a legend when xarray supports it (e.g. with hue); ignored for imshow without hue",
-    )
-
+    parser.add_argument("--aspect", type=float, default=None)
+    parser.add_argument("--size", type=float, default=None)
+    parser.add_argument("--bins", type=int, default=None)
+    parser.add_argument("--robust", action="store_true")
+    parser.add_argument("--cmap", type=str, default=None)
+    parser.add_argument("--vmin", type=float, default=None)
+    parser.add_argument("--vmax", type=float, default=None)
+    parser.add_argument("--no-add-colorbar", action="store_true")
+    parser.add_argument("--add-legend", action="store_true")
     parser.add_argument(
         "--small-variable-bytes",
         type=int,
         default=DEFAULT_SMALL_VARIABLE_BYTES,
-        help="Max size in bytes for variables/coordinates to load and display values (Issue #102). Set to 0 to disable.",
     )
-
     parser.add_argument(
         "--small-value-display-max-len",
         type=int,
         default=DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
-        help="Max character length for displayed small variable/coordinate values (truncation).",
     )
+    parser.add_argument(
+        "--skip-reprs",
+        action="store_true",
+        help="Skip xarray HTML/text repr generation in info mode.",
+    )
+    parser.add_argument(
+        "--scope",
+        choices=["root", "group"],
+        default="root",
+        help="Repr scope for repr mode.",
+    )
+    parser.add_argument(
+        "--group",
+        default=None,
+        help="Group name when --scope group (repr mode).",
+    )
+    return parser
 
-    args = parser.parse_args()
 
-    # Validate arguments based on mode
-    if args.mode not in mode_choices:
-        print(to_json_best_effort({"error": f"Invalid mode: {args.mode}"}))
-        return 1
-
+def dispatch_parsed_args(args: argparse.Namespace) -> dict[str, Any]:
+    """Execute CLI mode and return the JSON payload."""
     if args.mode == "plot" and not args.variable_name:
-        print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
-        return 1
+        return {"error": "Variable name is required for plot mode"}
 
-    # Dispatch based on mode
     if args.mode == "info":
-        # Get file information
         result = get_file_info(
             args.file_path,
             args.convert_bands_to_variables,
             small_variable_bytes=args.small_variable_bytes,
             small_value_display_max_len=args.small_value_display_max_len,
+            skip_reprs=args.skip_reprs,
         )
         ok = isinstance(result, FileInfoResult)
+
+    elif args.mode == "repr":
+        result = get_reprs(
+            args.file_path,
+            args.convert_bands_to_variables,
+            scope=args.scope,
+            group=args.group,
+        )
+        ok = isinstance(result, ReprResult)
 
     elif args.mode == "plot":
         dimension_slices_dict = None
         if args.dimension_slices and args.dimension_slices.strip():
             try:
                 dimension_slices_dict = json.loads(args.dimension_slices)
-            except json.JSONDecodeError as e:
-                print(
-                    to_json_best_effort(
-                        {"error": f"Invalid --dimension-slices JSON: {e}"}
-                    )
-                )
-                return 1
-        # Parse xincrease/yincrease from CLI ('true'/'false' strings)
-        xincrease_arg = None
-        if args.xincrease is not None:
-            xincrease_arg = args.xincrease == "true"
-        yincrease_arg = None
-        if args.yincrease is not None:
-            yincrease_arg = args.yincrease == "true"
+            except json.JSONDecodeError as exc:
+                return {"error": f"Invalid --dimension-slices JSON: {exc}"}
 
-        # Create plot
+        xincrease_arg = args.xincrease == "true" if args.xincrease is not None else None
+        yincrease_arg = args.yincrease == "true" if args.yincrease is not None else None
+
         result = create_plot(
             args.file_path,
             args.variable_name,
@@ -2837,10 +2832,25 @@ Examples:
         )
         ok = isinstance(result, CreatePlotResult)
 
-    # Log and print result
+    else:
+        return {"error": f"Invalid mode: {args.mode}"}
+
     logger.info(f"{args.mode} Result: {result}")
-    print(to_json_best_effort({"result" if ok else "error": asdict(result)}))
-    return 0
+    return {"result" if ok else "error": asdict(result)}
+
+
+def dispatch_argv(argv: list[str]) -> dict[str, Any]:
+    """Parse argv and return the JSON payload (for worker and tests)."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return dispatch_parsed_args(args)
+
+
+def main() -> int:
+    """Main entry point for the script."""
+    payload = dispatch_argv(sys.argv[1:])
+    print(to_json_best_effort(payload))
+    return 0 if "result" in payload else 1
 
 
 if __name__ == "__main__":

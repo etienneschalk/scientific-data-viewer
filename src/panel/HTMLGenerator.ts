@@ -134,7 +134,7 @@ export class HTMLGenerator {
     static generateHtmlRepresentation(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" open id="section-html-representation"> <summary><h3>Xarray HTML Representation</h3></summary>
+            <details class="sticky-group-details" id="section-html-representation"> <summary><h3>Xarray HTML Representation</h3></summary>
                 <div id="htmlRepresentation" class="html-representation"></div>
             </details>
         </div>`;

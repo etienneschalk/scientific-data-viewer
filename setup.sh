@@ -89,6 +89,17 @@ else
     echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
 fi
 
+echo "   Running Python performance feature tests (Issue #131)..."
+set +e
+python3 -m pytest python/test_performance_features.py -v
+PERF_PYTEST_EXIT_CODE=$?
+set -e
+if [ $PERF_PYTEST_EXIT_CODE -eq 0 ]; then
+    echo "✅ Python performance feature tests passed"
+else
+    echo "⚠️  Python performance feature tests failed (non-fatal, exit code: $PERF_PYTEST_EXIT_CODE)"
+fi
+
 echo ""
 echo "🎉 Setup complete!"
 echo ""

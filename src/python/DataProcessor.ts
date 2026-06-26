@@ -6,8 +6,10 @@ import {
     getMatplotlibStyle,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
+    getLazyReprLoading,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
+import { PerformanceTimer } from '../common/PerformanceTimer';
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -35,6 +37,7 @@ export class DataProcessor {
         uri: vscode.Uri,
         convertBandsToVariables: boolean = false,
     ): Promise<DataInfoPythonResponse | null> {
+        const timer = new PerformanceTimer('getDataInfo');
         Logger.debug(
             `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`,
         );
@@ -49,10 +52,12 @@ export class DataProcessor {
         );
 
         try {
-            // Use the new merged CLI with 'info' mode
             const args = ['info', filePath];
             if (convertBandsToVariables) {
                 args.push('--convert-bands-to-variables');
+            }
+            if (getLazyReprLoading()) {
+                args.push('--skip-reprs');
             }
             const smallVariableBytes = getSmallVariableBytes();
             const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
@@ -62,17 +67,59 @@ export class DataProcessor {
                 String(smallValueDisplayMaxLen),
             );
 
+            timer.mark('python-args-ready');
             const pythonResponse = await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true,
             );
-            // Return the result even if it contains an error field
-            // The caller can check for result.error to handle errors
+            timer.mark('python-complete');
+            timer.finish('getDataInfo');
             return pythonResponse as DataInfoPythonResponse;
         } catch (error) {
             Logger.error(
                 `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`,
+            );
+            return null;
+        }
+    }
+
+    async getRepr(
+        uri: vscode.Uri,
+        scope: 'root' | 'group',
+        group: string | undefined,
+        convertBandsToVariables: boolean = false,
+    ): Promise<DataInfoPythonResponse | null> {
+        const timer = new PerformanceTimer(`getRepr:${scope}`);
+        if (!this.pythonManager.ready) {
+            throw new Error('Python environment not ready');
+        }
+
+        const scriptPath = path.join(
+            this.pythonScriptsHomeDir,
+            'get_data_info.py',
+        );
+        const args = ['repr', uri.fsPath, '--scope', scope];
+        if (convertBandsToVariables) {
+            args.push('--convert-bands-to-variables');
+        }
+        if (scope === 'group' && group) {
+            args.push('--group', group);
+        }
+
+        try {
+            timer.mark('python-args-ready');
+            const pythonResponse = await this.pythonManager.executePythonFile(
+                scriptPath,
+                args,
+                true,
+            );
+            timer.mark('python-complete');
+            timer.finish('getRepr');
+            return pythonResponse as DataInfoPythonResponse;
+        } catch (error) {
+            Logger.error(
+                `[DataProcessor] [getRepr] 🐍 ❌ Error loading repr: ${error}`,
             );
             return null;
         }

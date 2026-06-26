@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.11.2",
+    "version": "0.12.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -545,6 +545,27 @@
                     "order": 1008,
                     "description": "Timeout in milliseconds for matplotlib plot generation (Issue #126).",
                     "markdownDescription": "Maximum time in **milliseconds** to wait for a plot before it is cancelled and the backend process is terminated. Use a higher value (e.g. 120000 for 2 minutes) for large datasets when you want a quicklook without slicing first. Minimum 1000 (1s), maximum 600000 (10 min). Default: 20000 (20s)."
+                },
+                "scientificDataViewer.persistentPythonWorker": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1009,
+                    "description": "Keep a long-lived Python process for data operations (faster repeated file opens).",
+                    "markdownDescription": "When enabled, the extension reuses a persistent Python worker instead of spawning a new interpreter for each operation. **On by default.** Disable if you hit worker stability issues."
+                },
+                "scientificDataViewer.lazyReprLoading": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1010,
+                    "description": "Load xarray HTML/text reprs on demand when their section is expanded.",
+                    "markdownDescription": "Skips expensive xarray repr generation during the initial file load and fetches reprs when you expand the corresponding section. **On by default.**"
+                },
+                "scientificDataViewer.outlineEnabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 1011,
+                    "description": "Build the Scientific Data Structure outline sidebar.",
+                    "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the sidebar. **Off by default** for faster loads; enable if you use outline navigation."
                 }
             }
         }

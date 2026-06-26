@@ -478,4 +478,119 @@ suite('DataProcessor Test Suite', () => {
             'lon',
         );
     });
+
+    test('should pass --skip-reprs to info mode when lazy repr loading is enabled', async () => {
+        let capturedArgs: string[] = [];
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async (
+                _scriptPath: string,
+                args: string[],
+                _enableLogs: boolean = false,
+            ) => {
+                capturedArgs = args;
+                return {
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        xarray_html_repr: '',
+                        xarray_text_repr: '',
+                        xarray_show_versions: '',
+                        format_info: {
+                            extension: 'nc',
+                            available_engines: [],
+                            missing_packages: [],
+                            is_supported: true,
+                        },
+                        used_engine: 'netcdf4',
+                        dimensions_flattened: {},
+                        coordinates_flattened: {},
+                        variables_flattened: {},
+                        attributes_flattened: {},
+                        xarray_html_repr_flattened: {},
+                        xarray_text_repr_flattened: {},
+                    },
+                };
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/test.nc');
+
+        await processor.getDataInfo(mockUri);
+
+        assert.strictEqual(capturedArgs[0], 'info');
+        assert.ok(
+            capturedArgs.includes('--skip-reprs'),
+            `expected --skip-reprs in args, got: ${capturedArgs.join(' ')}`,
+        );
+    });
+
+    test('should call repr mode with scope and group for lazy repr loading', async () => {
+        let capturedArgs: string[] = [];
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async (
+                _scriptPath: string,
+                args: string[],
+                _enableLogs: boolean = false,
+            ) => {
+                capturedArgs = args;
+                return {
+                    result: {
+                        scope: 'group',
+                        group: '/sub',
+                        xarray_html_repr: '<div>html</div>',
+                        xarray_text_repr: 'text repr',
+                    },
+                };
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/test.nc');
+
+        const reprResponse = await processor.getRepr(mockUri, 'group', '/sub');
+
+        assert.strictEqual(capturedArgs[0], 'repr');
+        assert.ok(capturedArgs.includes('--scope'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--scope') + 1],
+            'group',
+        );
+        assert.ok(capturedArgs.includes('--group'));
+        assert.strictEqual(
+            capturedArgs[capturedArgs.indexOf('--group') + 1],
+            '/sub',
+        );
+        assert.ok(reprResponse);
+        assert.strictEqual(
+            (reprResponse?.result as { group?: string })?.group,
+            '/sub',
+        );
+        assert.ok(
+            (
+                reprResponse?.result as { xarray_html_repr?: string }
+            )?.xarray_html_repr?.includes('html'),
+        );
+    });
+
+    test('should return null when getRepr python call fails', async () => {
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async () => {
+                throw new Error('repr failed');
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/test.nc');
+
+        const reprResponse = await processor.getRepr(
+            mockUri,
+            'root',
+            undefined,
+        );
+        assert.strictEqual(reprResponse, null);
+    });
 });

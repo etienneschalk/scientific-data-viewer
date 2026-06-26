@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as os from 'os';
+import * as path from 'path';
 import { StateManager, AppState } from './state/AppState';
 import { MessageBus } from './communication/MessageBus';
 import { ErrorBoundary } from '../common/ErrorBoundary';
@@ -18,9 +19,11 @@ import {
     getPlotTimeoutMs,
     getWebviewExportTheme,
     getConvertBandsToVariables,
+    getOutlineEnabled,
 } from '../common/config';
 import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
+import { PerformanceTimer } from '../common/PerformanceTimer';
 
 export class UIController {
     private id: number;
@@ -182,6 +185,14 @@ export class UIController {
                 return this.handleExportWebview(payload.htmlContent);
             },
         );
+
+        this.messageBus.registerRequestHandler('getRepr', async (payload) => {
+            return this.handleGetRepr(
+                payload.scope,
+                payload.group,
+                payload.reprKind,
+            );
+        });
     }
 
     private setupStateSubscription(): void {
@@ -229,6 +240,7 @@ export class UIController {
     }
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
+        const timer = new PerformanceTimer(`load:${path.basename(filePath)}`);
         const context: ErrorContext = {
             component: this.getComponentName(),
             operation: 'getDataInfo',
@@ -243,6 +255,7 @@ export class UIController {
                 // Wait for Python initialization to complete first
                 // This ensures we don't check Python environment before it's ready
                 await this.dataProcessor.pythonManagerInstance.waitForInitialization();
+                timer.mark('python-init');
 
                 // Check Python environment
                 if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
@@ -271,6 +284,7 @@ export class UIController {
                     fileUri,
                     convertBandsToVariables,
                 );
+                timer.mark('getDataInfo');
 
                 if (!dataInfo) {
                     throw new Error(
@@ -302,14 +316,17 @@ export class UIController {
 
                 // Emit data loaded event to webview
                 this.messageBus.emitDataLoaded(this.stateManager.getState());
+                timer.mark('postMessage');
 
                 // Notify the panel about the success
                 this.onSuccessPanelCallback('Data loaded successfully');
 
                 // Update outline if callback is provided
-                if (this.onOutlineUpdateCallback) {
+                if (this.onOutlineUpdateCallback && getOutlineEnabled()) {
                     this.onOutlineUpdateCallback();
                 }
+
+                timer.finish('load complete');
 
                 return {
                     data: dataInfo.result,
@@ -334,6 +351,45 @@ export class UIController {
                     throw error;
                 }
             }
+        }, context);
+    }
+
+    private async handleGetRepr(
+        scope: 'root' | 'group',
+        group: string | undefined,
+        reprKind: 'html' | 'text' | 'both',
+    ): Promise<any> {
+        const context: ErrorContext = {
+            component: this.getComponentName(),
+            operation: 'getRepr',
+            data: { scope, group, reprKind },
+        };
+
+        return this.errorBoundary.wrapAsync(async () => {
+            const state = this.stateManager.getState();
+            if (!state.data.currentFile) {
+                throw new Error('No file loaded');
+            }
+
+            const fileUri = vscode.Uri.file(state.data.currentFile);
+            const convertBandsToVariables = this.shouldConvertBandsToVariables(
+                state.data.currentFile,
+            );
+            const reprResponse = await this.dataProcessor.getRepr(
+                fileUri,
+                scope,
+                group,
+                convertBandsToVariables,
+            );
+
+            if (!reprResponse) {
+                throw new Error('Failed to load representation');
+            }
+            if (reprResponse.error) {
+                throw new Error(reprResponse.error.error);
+            }
+
+            return reprResponse.result;
         }, context);
     }
 
@@ -902,7 +958,9 @@ export class UIController {
     }
 
     public setHtml(): void {
+        const timer = new PerformanceTimer(`setHtml:<${this.getId()}>`);
         this.webview.html = this.getHtmlForWebview();
+        timer.finish('setHtml');
     }
 
     private getHtmlForWebview() {

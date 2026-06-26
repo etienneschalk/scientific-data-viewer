@@ -680,25 +680,48 @@ function setupMessageHandlers() {
 }
 
 function displayAll(state) {
+    const displayStart = performance.now();
+    const lazyReprLoading =
+        state.extension?.extensionConfig?.lazyReprLoading !== false;
+
     displayDataInfo(
         state.data.dataInfo,
         state.data.currentFile,
         state.extension.extensionConfig,
     );
-    displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
-    displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
-    displayHtmlRepresentation(
-        state.data.dataInfo.xarray_html_repr_flattened,
-        true,
-    );
-    displayTextRepresentation(
-        state.data.dataInfo.xarray_text_repr_flattened,
-        true,
-    );
+
+    if (lazyReprLoading) {
+        setupLazyReprSections(state.data.dataInfo);
+    } else {
+        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
+        displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
+        displayHtmlRepresentation(
+            state.data.dataInfo.xarray_html_repr_flattened,
+            true,
+        );
+        displayTextRepresentation(
+            state.data.dataInfo.xarray_text_repr_flattened,
+            true,
+        );
+    }
+
     displayPythonPath(state.python.pythonPath);
     displayExtensionConfig(state.extension.extensionConfig);
     displayShowVersions(state.data.dataInfo.xarray_show_versions);
     displayTimestamp(state.data.lastLoadTime);
+
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+    if (loading) {
+        loading.classList.add('hidden');
+    }
+    if (content) {
+        content.classList.remove('hidden');
+    }
+
+    console.log(
+        `⏱️ displayAll completed in ${(performance.now() - displayStart).toFixed(1)}ms (lazyRepr=${lazyReprLoading})`,
+    );
 }
 
 function displayTimestamp(isoString, isLoading = false) {
@@ -1428,6 +1451,199 @@ function renderVariablePlotControls(variableName) {
 }
 
 // Representation display functions
+const loadedReprKeys = new Set();
+
+function reprKey(scope, group, kind) {
+    return `${scope}:${group || 'root'}:${kind}`;
+}
+
+function isReprLoaded(scope, group, kind) {
+    return loadedReprKeys.has(reprKey(scope, group, kind));
+}
+
+function markReprLoaded(scope, group, kind) {
+    loadedReprKeys.add(reprKey(scope, group, kind));
+}
+
+function setupLazyReprSections(dataInfo) {
+    loadedReprKeys.clear();
+    setupLazyRootReprSection(
+        'html',
+        'section-html-representation',
+        'htmlRepresentation',
+    );
+    setupLazyRootReprSection(
+        'text',
+        'section-text-representation',
+        'textRepresentation',
+    );
+
+    const groups = Object.keys(dataInfo?.dimensions_flattened || {});
+    const hasPerGroupRepr =
+        groups.length > 1 || (groups.length === 1 && groups[0] !== '/');
+    if (hasPerGroupRepr) {
+        setupLazyGroupReprSections(groups);
+    } else {
+        hideReprSection('section-html-representation-for-groups');
+        hideReprSection('section-text-representation-for-groups');
+    }
+}
+
+function hideReprSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section?.parentElement) {
+        section.parentElement.classList.add('hidden');
+    }
+}
+
+function setupLazyRootReprSection(kind, sectionId, containerId) {
+    const section = document.getElementById(sectionId);
+    const container = document.getElementById(containerId);
+    if (!section || !container) {
+        return;
+    }
+
+    section.open = false;
+    section.parentElement.classList.remove('hidden');
+    container.innerHTML =
+        '<p class="muted-text">Expand to load representation…</p>';
+
+    section.addEventListener('toggle', async () => {
+        if (!section.open || isReprLoaded('root', null, kind)) {
+            return;
+        }
+        container.innerHTML =
+            '<p class="muted-text">Loading representation…</p>';
+        const loadStart = performance.now();
+        try {
+            const result = await messageBus.sendRequest('getRepr', {
+                scope: 'root',
+                reprKind: kind,
+            });
+            if (kind === 'html') {
+                displayHtmlRepresentation(result.xarray_html_repr, false);
+            } else {
+                displayTextRepresentation(result.xarray_text_repr, false);
+            }
+            markReprLoaded('root', null, kind);
+            console.log(
+                `⏱️ lazy repr root:${kind} in ${(performance.now() - loadStart).toFixed(1)}ms`,
+            );
+        } catch (error) {
+            container.innerHTML = `<p class="muted-text">Failed to load representation: ${escapeHtml(String(error.message || error))}</p>`;
+        }
+    });
+}
+
+function setupLazyGroupReprSections(groups) {
+    const htmlSection = document.getElementById(
+        'section-html-representation-for-groups',
+    );
+    const htmlContainer = document.getElementById(
+        'htmlRepresentationForGroups',
+    );
+    const textSection = document.getElementById(
+        'section-text-representation-for-groups',
+    );
+    const textContainer = document.getElementById(
+        'textRepresentationForGroups',
+    );
+
+    if (htmlSection && htmlContainer) {
+        htmlSection.open = false;
+        htmlSection.parentElement.classList.remove('hidden');
+        htmlContainer.innerHTML = groups
+            .map((groupName) =>
+                renderLazyGroupReprPlaceholder(
+                    'html',
+                    'section-html-representation-for-groups',
+                    groupName,
+                ),
+            )
+            .join('');
+        attachLazyGroupReprListeners(htmlContainer, 'html');
+    }
+
+    if (textSection && textContainer) {
+        textSection.open = false;
+        textSection.parentElement.classList.remove('hidden');
+        textContainer.innerHTML = groups
+            .map((groupName) =>
+                renderLazyGroupReprPlaceholder(
+                    'text',
+                    'section-text-representation-for-groups',
+                    groupName,
+                ),
+            )
+            .join('');
+        attachLazyGroupReprListeners(textContainer, 'text');
+    }
+}
+
+function renderLazyGroupReprPlaceholder(kind, prefixId, groupName) {
+    const containerId =
+        kind === 'html'
+            ? joinId(['lazyGroupHtmlRepr', groupName])
+            : joinId(['lazyGroupTextRepr', groupName]);
+    return /*html*/ `
+    <div class="info-section" id="${joinId([prefixId, groupName])}">
+        <details data-lazy-repr-group="${escapeHtml(groupName)}" data-lazy-repr-kind="${kind}">
+            <summary>${escapeHtml(groupName)}</summary>
+            <div id="${containerId}" class="muted-text">Expand to load representation…</div>
+        </details>
+    </div>`;
+}
+
+function attachLazyGroupReprListeners(container, kind) {
+    container
+        .querySelectorAll('details[data-lazy-repr-group]')
+        .forEach((details) => {
+            details.addEventListener('toggle', async () => {
+                const groupName = details.getAttribute('data-lazy-repr-group');
+                const reprKind =
+                    details.getAttribute('data-lazy-repr-kind') || kind;
+                const targetId =
+                    reprKind === 'html'
+                        ? joinId(['lazyGroupHtmlRepr', groupName])
+                        : joinId(['lazyGroupTextRepr', groupName]);
+                const target = document.getElementById(targetId);
+                if (
+                    !details.open ||
+                    !groupName ||
+                    !target ||
+                    isReprLoaded('group', groupName, reprKind)
+                ) {
+                    return;
+                }
+
+                target.textContent = 'Loading representation…';
+                const loadStart = performance.now();
+                try {
+                    const result = await messageBus.sendRequest('getRepr', {
+                        scope: 'group',
+                        group: groupName,
+                        reprKind: reprKind,
+                    });
+                    if (reprKind === 'html') {
+                        target.innerHTML =
+                            result.xarray_html_repr ||
+                            '<p class="muted-text">No HTML representation available</p>';
+                        target.classList.add('html-representation');
+                    } else {
+                        target.textContent = result.xarray_text_repr || '';
+                        target.classList.remove('muted-text');
+                    }
+                    markReprLoaded('group', groupName, reprKind);
+                    console.log(
+                        `⏱️ lazy repr group:${groupName}:${reprKind} in ${(performance.now() - loadStart).toFixed(1)}ms`,
+                    );
+                } catch (error) {
+                    target.textContent = `Failed to load representation: ${error.message || error}`;
+                }
+            });
+        });
+}
+
 function displayHtmlRepresentation(htmlData, isDatatree) {
     const container = isDatatree
         ? document.getElementById('htmlRepresentationForGroups')
