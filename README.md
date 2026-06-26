@@ -563,7 +563,8 @@ scientific-data-viewer/
 │   ├── GITHUB_ACTIONS_SETUP.md             # CI / GitHub Actions setup
 │   ├── WEBVIEW_EXPORT_CONTENT.md           # Webview export (HTML report) documentation
 │   ├── IMPLEMENTATION_PROPOSAL_ISSUE_106.md # Implementation proposals
-│   ├── RELEASE_NOTES_0.3.0.md … 0.11.0.md  # Release notes per version
+│   ├── RELEASE_NOTES_0.3.0.md … 0.12.0.md  # Release notes per version
+│   ├── PERFORMANCE_ROADMAP.md              # Post-v0.12.0 performance backlog (#131)
 │   ├── RELEASE_CHECKLIST_0.7.0.md          # Release checklist example
 │   └── PR_SUMMARY_*.md                     # Pull request summaries
 ├── media/                                  # Media assets

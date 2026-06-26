@@ -229,7 +229,7 @@ All performance settings are under **Settings → Scientific Data Viewer** (orde
 
 ## What is not in v0.12.0
 
-These were identified during the [#131](https://github.com/etienneschalk/scientific-data-viewer/issues/131) investigation but deferred:
+These were identified during the [#131](https://github.com/etienneschalk/scientific-data-viewer/issues/131) investigation but deferred. See **[PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md)** for the full post-v0.12.0 backlog and suggested priority.
 
 | Item                               | Notes                                                               |
 | ---------------------------------- | ------------------------------------------------------------------- |
