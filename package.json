@@ -182,7 +182,7 @@
             "view/title": [
                 {
                     "command": "scientificDataViewer.expandAll",
-                    "when": "view == scientificDataViewer.outline",
+                    "when": "config.scientificDataViewer.outlineEnabled && view == scientificDataViewer.outline",
                     "group": "navigation@2"
                 }
             ]
@@ -291,7 +291,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                    "when": "config.scientificDataViewer.outlineEnabled && (activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor')"
                 }
             ]
         },
@@ -564,8 +564,8 @@
                     "type": "boolean",
                     "default": false,
                     "order": 1011,
-                    "description": "Build the Scientific Data Structure outline sidebar.",
-                    "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the sidebar. **Off by default** for faster loads; enable if you use outline navigation."
+                    "description": "Build the Scientific Data Structure outline sidebar. Reload the window after changing this setting.",
+                    "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **Off by default** for faster loads.\n\n**Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation."
                 }
             }
         }
