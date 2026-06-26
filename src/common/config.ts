@@ -52,6 +52,7 @@ const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 const PERSISTENT_PYTHON_WORKER = 'persistentPythonWorker';
 const LAZY_REPR_LOADING = 'lazyReprLoading';
 const OUTLINE_ENABLED = 'outlineEnabled';
+const DATA_INFO_CACHE_MAX_ENTRIES = 'dataInfoCacheMaxEntries';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -76,6 +77,7 @@ const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 const DEFAULT_PERSISTENT_PYTHON_WORKER = true;
 const DEFAULT_LAZY_REPR_LOADING = true;
 const DEFAULT_OUTLINE_ENABLED = false;
+const DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES = 8;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -229,6 +231,17 @@ export function getOutlineEnabled(): boolean {
         OUTLINE_ENABLED,
         DEFAULT_OUTLINE_ENABLED,
     );
+}
+
+export function getDataInfoCacheMaxEntries(): number {
+    const raw = getWorkspaceConfig().get<number>(
+        DATA_INFO_CACHE_MAX_ENTRIES,
+        DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES,
+    );
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) {
+        return DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES;
+    }
+    return Math.floor(raw);
 }
 
 /**

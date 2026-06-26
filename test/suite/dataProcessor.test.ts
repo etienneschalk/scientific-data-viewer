@@ -2,10 +2,15 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { DataProcessor } from '../../src/python/DataProcessor';
 import { PythonManager } from '../../src/python/PythonManager';
+import { DataInfoCache } from '../../src/python/DataInfoCache';
 
 suite('DataProcessor Test Suite', () => {
     let dataProcessor: DataProcessor;
     let pythonManager: PythonManager;
+
+    setup(() => {
+        DataInfoCache.clear();
+    });
 
     suiteSetup(() => {
         // Mock PythonManager for testing
@@ -592,5 +597,96 @@ suite('DataProcessor Test Suite', () => {
             undefined,
         );
         assert.strictEqual(reprResponse, null);
+    });
+
+    test('should return cached getDataInfo without calling Python twice', async () => {
+        let pythonCalls = 0;
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async () => {
+                pythonCalls++;
+                return {
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        xarray_html_repr: '',
+                        xarray_text_repr: '',
+                        xarray_show_versions: '',
+                        format_info: {
+                            extension: 'nc',
+                            available_engines: [],
+                            missing_packages: [],
+                            is_supported: true,
+                        },
+                        used_engine: 'netcdf4',
+                        dimensions_flattened: {},
+                        coordinates_flattened: {},
+                        variables_flattened: {},
+                        attributes_flattened: {},
+                        xarray_html_repr_flattened: {},
+                        xarray_text_repr_flattened: {},
+                    },
+                };
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/cached.nc');
+        const mtimeMs = 1234567890;
+
+        const first = await processor.getDataInfo(mockUri, false, {
+            mtimeMs,
+        });
+        const second = await processor.getDataInfo(mockUri, false, {
+            mtimeMs,
+        });
+
+        assert.ok(first);
+        assert.deepStrictEqual(second, first);
+        assert.strictEqual(pythonCalls, 1);
+    });
+
+    test('should bypass cache when forceRefresh is true', async () => {
+        let pythonCalls = 0;
+        const mockPythonManager = {
+            ready: true,
+            executePythonFile: async () => {
+                pythonCalls++;
+                return {
+                    result: {
+                        format: 'NetCDF',
+                        fileSize: 1024,
+                        xarray_html_repr: '',
+                        xarray_text_repr: '',
+                        xarray_show_versions: '',
+                        format_info: {
+                            extension: 'nc',
+                            available_engines: [],
+                            missing_packages: [],
+                            is_supported: true,
+                        },
+                        used_engine: 'netcdf4',
+                        dimensions_flattened: {},
+                        coordinates_flattened: {},
+                        variables_flattened: {},
+                        attributes_flattened: {},
+                        xarray_html_repr_flattened: {},
+                        xarray_text_repr_flattened: {},
+                    },
+                };
+            },
+        } as any;
+
+        const processor = new DataProcessor(mockPythonManager);
+        const mockUri = vscode.Uri.file('/path/to/refresh.nc');
+        const mtimeMs = 9876543210;
+
+        await processor.getDataInfo(mockUri, false, { mtimeMs });
+        await processor.getDataInfo(mockUri, false, {
+            mtimeMs,
+            forceRefresh: true,
+        });
+
+        assert.strictEqual(pythonCalls, 2);
     });
 });

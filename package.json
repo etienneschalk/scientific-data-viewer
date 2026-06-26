@@ -566,6 +566,14 @@
                     "order": 1011,
                     "description": "Build the Scientific Data Structure outline sidebar. Reload the window after changing this setting.",
                     "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **Off by default** for faster loads.\n\n**Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation."
+                },
+                "scientificDataViewer.dataInfoCacheMaxEntries": {
+                    "type": "number",
+                    "default": 8,
+                    "minimum": 0,
+                    "order": 1012,
+                    "description": "Maximum number of file metadata results to keep in the LRU cache (0 disables caching).",
+                    "markdownDescription": "How many recent `getDataInfo` results to cache in memory, keyed by file path, modification time, and relevant settings. **Default: 8.** Set to **0** to disable the metadata cache entirely."
                 }
             }
         }

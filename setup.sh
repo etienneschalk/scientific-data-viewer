@@ -100,6 +100,17 @@ else
     echo "⚠️  Python performance feature tests failed (non-fatal, exit code: $PERF_PYTEST_EXIT_CODE)"
 fi
 
+echo "   Running Python datetime min/max helper tests..."
+set +e
+python3 -m pytest python/test_datetime_min_max.py -v
+DATETIME_MINMAX_EXIT_CODE=$?
+set -e
+if [ $DATETIME_MINMAX_EXIT_CODE -eq 0 ]; then
+    echo "✅ Python datetime min/max helper tests passed"
+else
+    echo "⚠️  Python datetime min/max helper tests failed (non-fatal, exit code: $DATETIME_MINMAX_EXIT_CODE)"
+fi
+
 echo ""
 echo "🎉 Setup complete!"
 echo ""

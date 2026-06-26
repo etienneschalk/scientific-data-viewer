@@ -18,6 +18,7 @@ export class DataViewerPanel {
 
     // Map of id to panel
     private static _outlineProvider?: OutlineProvider;
+    private static _extensionUri?: vscode.Uri;
     private static readonly _panels: Map<number, DataViewerPanel> = new Map();
     private static _createdCount = 0; // Used for identifying the panel
 
@@ -31,6 +32,14 @@ export class DataViewerPanel {
 
     public static setOutlineProvider(outlineProvider: OutlineProvider): void {
         DataViewerPanel._outlineProvider = outlineProvider;
+    }
+
+    public static setExtensionUri(extensionUri: vscode.Uri): void {
+        DataViewerPanel._extensionUri = extensionUri;
+    }
+
+    public static getExtensionUri(): vscode.Uri | undefined {
+        return DataViewerPanel._extensionUri;
     }
 
     public static getPanel(panelId: number): DataViewerPanel | undefined {
@@ -247,6 +256,7 @@ export class DataViewerPanel {
                 // Also notify that the panel is active to ensure proper outline display
                 this.notifyPanelActive();
             },
+            DataViewerPanel._extensionUri,
         );
 
         // Set initial HTML first

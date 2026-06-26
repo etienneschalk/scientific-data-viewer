@@ -1,6 +1,12 @@
 import { getDisplayName, getVersion } from '../common/vscodeutils';
 import { CSSGenerator } from './CSSGenerator';
 import { JavaScriptGenerator } from './JavaScriptGenerator';
+import * as vscode from 'vscode';
+
+export interface WebviewAssetOptions {
+    webview: vscode.Webview;
+    extensionUri: vscode.Uri;
+}
 
 function escapeHtml(unsafe: string): string {
     return unsafe
@@ -31,26 +37,86 @@ export class HTMLGenerator {
         devMode: boolean,
         lastLoadTime: string | null,
         panelId: number,
+        assetOptions?: WebviewAssetOptions,
     ): string {
+        const cssBlock = this.getStylesheetBlock(devMode, assetOptions);
+        const scriptBlock = this.getScriptBlock(devMode, assetOptions);
+
         return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${getDisplayName()}</title>
-    <style id="scientific-data-viewer-style">
-        ${this.getCSS(devMode)}
-    </style>
+    ${cssBlock}
 </head>
 <body>
     ${this.generateHeader(devMode, lastLoadTime, panelId)}
     ${this.generateLoadingAndError()}
     ${this.generateContent()}
-    <script>
-        ${this.getJavaScriptCode(devMode)}
-    </script>
+    ${scriptBlock}
 </body>
 </html>`;
+    }
+
+    private static getWebviewAssetUri(
+        assetOptions: WebviewAssetOptions,
+        ...pathSegments: string[]
+    ): vscode.Uri {
+        return assetOptions.webview.asWebviewUri(
+            vscode.Uri.joinPath(assetOptions.extensionUri, ...pathSegments),
+        );
+    }
+
+    private static canUseExternalAssets(
+        assetOptions?: WebviewAssetOptions,
+    ): assetOptions is WebviewAssetOptions {
+        return (
+            !!assetOptions &&
+            typeof assetOptions.webview.asWebviewUri === 'function'
+        );
+    }
+
+    private static getStylesheetBlock(
+        devMode: boolean,
+        assetOptions?: WebviewAssetOptions,
+    ): string {
+        if (this.canUseExternalAssets(assetOptions)) {
+            const cssUri = this.getWebviewAssetUri(
+                assetOptions,
+                'src',
+                'panel',
+                'webview',
+                'styles.css',
+            );
+            const cacheBuster = devMode ? `?v=${Date.now()}` : '';
+            return `<link rel="stylesheet" href="${cssUri}${cacheBuster}">`;
+        }
+
+        return `<style id="scientific-data-viewer-style">
+        ${this.getCSS(devMode)}
+    </style>`;
+    }
+
+    private static getScriptBlock(
+        devMode: boolean,
+        assetOptions?: WebviewAssetOptions,
+    ): string {
+        if (this.canUseExternalAssets(assetOptions)) {
+            const scriptUri = this.getWebviewAssetUri(
+                assetOptions,
+                'src',
+                'panel',
+                'webview',
+                'webview-script.js',
+            );
+            const cacheBuster = devMode ? `?v=${Date.now()}` : '';
+            return `<script src="${scriptUri}${cacheBuster}"></script>`;
+        }
+
+        return `<script>
+        ${this.getJavaScriptCode(devMode)}
+    </script>`;
     }
 
     static generateHeader(

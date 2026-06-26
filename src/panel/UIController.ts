@@ -32,6 +32,7 @@ export class UIController {
     private errorBoundary: ErrorBoundary;
     private dataProcessor: DataProcessor;
     private webview: vscode.Webview;
+    private readonly extensionUri?: vscode.Uri;
     private unsubscribeState?: () => void;
     private onErrorPanelCallback: (error: Error) => void;
     private onSuccessPanelCallback: (success: string) => void;
@@ -43,9 +44,11 @@ export class UIController {
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void,
         onOutlineUpdateCallback?: () => void,
+        extensionUri?: vscode.Uri,
     ) {
         this.id = id;
         this.webview = webview;
+        this.extensionUri = extensionUri;
         this.dataProcessor = DataProcessor.getInstance();
         this.onErrorPanelCallback = onErrorCallback;
         this.onSuccessPanelCallback = onSuccessCallback;
@@ -239,7 +242,10 @@ export class UIController {
         }
     }
 
-    private async handleGetDataInfo(filePath: string): Promise<any> {
+    private async handleGetDataInfo(
+        filePath: string,
+        options?: { forceRefresh?: boolean },
+    ): Promise<any> {
         const timer = new PerformanceTimer(`load:${path.basename(filePath)}`);
         const context: ErrorContext = {
             component: this.getComponentName(),
@@ -283,6 +289,10 @@ export class UIController {
                 const dataInfo = await this.dataProcessor.getDataInfo(
                     fileUri,
                     convertBandsToVariables,
+                    {
+                        forceRefresh: options?.forceRefresh,
+                        mtimeMs: stat.mtime,
+                    },
                 );
                 timer.mark('getDataInfo');
 
@@ -721,7 +731,9 @@ export class UIController {
             this.errorBoundary.wrapAsync(async () => {
                 const state = this.stateManager.getState();
                 if (state.data.currentFile) {
-                    await this.handleGetDataInfo(state.data.currentFile);
+                    await this.handleGetDataInfo(state.data.currentFile, {
+                        forceRefresh: true,
+                    });
                 }
             }, context) || undefined
         );
@@ -968,10 +980,12 @@ export class UIController {
         const lastLoadTime =
             this.stateManager.getState().data.lastLoadTime?.toISOString() ||
             null;
+        const extensionUri = this.extensionUri;
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
             this.getId(),
+            extensionUri ? { webview: this.webview, extensionUri } : undefined,
         );
     }
 

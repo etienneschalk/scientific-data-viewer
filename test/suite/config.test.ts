@@ -13,6 +13,7 @@ import {
     getPersistentPythonWorker,
     getLazyReprLoading,
     getOutlineEnabled,
+    getDataInfoCacheMaxEntries,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -89,6 +90,12 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof getOutlineEnabled(), 'boolean');
     });
 
+    test('getDataInfoCacheMaxEntries returns a non-negative number', () => {
+        const value = getDataInfoCacheMaxEntries();
+        assert.strictEqual(typeof value, 'number');
+        assert.ok(value >= 0);
+    });
+
     test('package.json declares expected performance feature defaults', () => {
         const properties = getPackageJsonDefaults();
         assert.strictEqual(
@@ -102,6 +109,10 @@ suite('Config Test Suite', () => {
         assert.strictEqual(
             properties['scientificDataViewer.outlineEnabled'].default,
             false,
+        );
+        assert.strictEqual(
+            properties['scientificDataViewer.dataInfoCacheMaxEntries'].default,
+            8,
         );
     });
 });

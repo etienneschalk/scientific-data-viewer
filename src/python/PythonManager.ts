@@ -12,6 +12,7 @@ import {
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 import path from 'path';
 import { PythonWorkerClient } from './PythonWorkerClient';
+import { DataInfoCache } from './DataInfoCache';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
 /**
@@ -121,6 +122,7 @@ export class PythonManager {
      */
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
+        DataInfoCache.clear();
         await this.shutdownWorker();
         this._initializationPromise = null; // Reset any existing initialization
         await this.initializeIfNotInitializing();

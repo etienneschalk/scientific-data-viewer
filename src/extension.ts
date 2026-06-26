@@ -51,6 +51,7 @@ import { HealthcheckManager } from './common/HealthcheckManager';
 
 export function activate(context: vscode.ExtensionContext) {
     setPackageJson(getPackageJsonFromExtensionContext(context));
+    DataViewerPanel.setExtensionUri(context.extensionUri);
 
     Logger.initialize();
 
@@ -823,6 +824,7 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
         localResourceRoots: [
             vscode.Uri.joinPath(extensionUri, 'media'),
             vscode.Uri.joinPath(extensionUri, 'out'),
+            vscode.Uri.joinPath(extensionUri, 'src', 'panel', 'webview'),
         ],
     };
 }

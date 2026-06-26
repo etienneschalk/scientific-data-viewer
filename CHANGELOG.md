@@ -15,11 +15,15 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Persistent Python worker** (default **on**): Long-lived `python/python_worker.py` process with JSON-lines RPC over stdin/stdout; `PythonManager` routes `get_data_info.py` calls through the worker to amortize import cost across file opens. Plots still use one-shot `spawn` for abort support. Falls back to spawn if the worker fails. Setting: `scientificDataViewer.persistentPythonWorker`.
   - **Lazy repr loading** (default **on**): Initial `info` load passes `--skip-reprs` so metadata (dims, variables, attributes) appears without generating xarray HTML/text reprs. Reprs are fetched on demand when the user expands the corresponding section via new `repr` CLI mode and webview `getRepr` request. Setting: `scientificDataViewer.lazyReprLoading`.
   - **Outline build toggle** (default **off**): Skips building the **Scientific Data Structure** sidebar tree (`HeaderExtractor` / `OutlineProvider`) when disabled; outline tree view is hidden via `config.scientificDataViewer.outlineEnabled` in `package.json` (no empty pane / data-provider error). Setting: `scientificDataViewer.outlineEnabled`.
-  - **Files**: `src/common/PerformanceTimer.ts`, `src/python/PythonWorkerClient.ts`, `src/python/PythonManager.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/panel/webview/webview-script.js`, `src/panel/HTMLGenerator.ts`, `src/DataViewerPanel.ts`, `src/extension.ts`, `src/common/config.ts`, `python/get_data_info.py`, `python/python_worker.py`, `package.json`
+  - **Metadata cache**: `DataInfoCache` (LRU) reuses `getDataInfo` results for the same file when `(path, mtime, config)` is unchanged — skips Python on re-open of an unmodified file. Cleared on Python environment refresh; **Refresh** in the webview bypasses the cache. Setting: `scientificDataViewer.dataInfoCacheMaxEntries` (default **8**; **0** disables caching). Each store logs payload size (e.g. `1.24 MB`) to the output channel.
+  - **External webview assets**: Webview JS and CSS are loaded via `asWebviewUri` from `src/panel/webview/` instead of being inlined in every panel HTML document (~174 KB), so the browser can cache script/styles across panel opens. Dev mode appends a cache-buster query param. Falls back to inline when `asWebviewUri` is unavailable (e.g. unit tests).
+  - **Efficient datetime bounds**: `datetime_min_max_iso()` in `get_data_info.py` uses xarray `.min()` / `.max()` instead of loading full coordinate `.values` when detecting time variables — better for large or chunked time dimensions.
+  - **Release notes**: `docs/RELEASE_NOTES_0.12.0.md` (lazy-repr and per-group repr behaviour); linked from `README.md`.
+  - **Files**: `src/common/PerformanceTimer.ts`, `src/python/PythonWorkerClient.ts`, `src/python/PythonManager.ts`, `src/python/DataProcessor.ts`, `src/python/DataInfoCache.ts`, `src/panel/UIController.ts`, `src/panel/webview/webview-script.js`, `src/panel/HTMLGenerator.ts`, `src/DataViewerPanel.ts`, `src/extension.ts`, `src/common/config.ts`, `python/get_data_info.py`, `python/python_worker.py`, `package.json`, `docs/RELEASE_NOTES_0.12.0.md`
 - **Tests** for the above:
-  - TypeScript: `test/suite/common/PerformanceTimer.test.ts`, extended `config.test.ts` and `dataProcessor.test.ts` (`--skip-reprs`, `getRepr`)
-  - Python: `python/test_performance_features.py` (`dispatch_argv` skip-reprs/repr modes, worker ping/execute)
-  - `setup.sh` runs the new Python performance test suite
+  - TypeScript: `test/suite/common/PerformanceTimer.test.ts`, `test/suite/python/DataInfoCache.test.ts`, extended `config.test.ts` and `dataProcessor.test.ts` (`--skip-reprs`, `getRepr`, cache hit/bypass)
+  - Python: `python/test_performance_features.py` (`dispatch_argv` skip-reprs/repr modes, worker ping/execute), `python/test_datetime_min_max.py` (`datetime_min_max_iso`)
+  - `setup.sh` runs the new Python performance and datetime min/max test suites
 
 ### Fixed
 
@@ -30,6 +34,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - Root **Xarray HTML Representation** section is collapsed by default (no longer `open` in the HTML skeleton) so lazy repr loading defers work until expand.
 - `get_file_info()` accepts `skip_reprs`; new helpers `_compute_dataset_reprs`, `_compute_root_reprs`, `get_reprs()`, and `dispatch_argv()` for worker and test reuse.
 - `getExtensionConfigForWebview()` exposes `lazyReprLoading` and `outlineEnabled` to the webview.
+- **`outlineEnabled` setting**: Description states that a **window reload** is required after toggling (sidebar pane and tree provider register at activation).
+- **`DataProcessor.getDataInfo()`**: Accepts optional `forceRefresh` and `mtimeMs`; cache key includes `convertBandsToVariables`, `lazyReprLoading`, `smallVariableBytes`, and `smallValueDisplayMaxLen`.
+- **`HTMLGenerator`**: Serves external `<link>` / `<script src>` when the webview supports `asWebviewUri`; `localResourceRoots` includes `src/panel/webview`.
 
 ## [0.11.2] - 2026-06-18
 

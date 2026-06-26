@@ -2295,22 +2295,7 @@ def get_file_info(
                         f"Found datetime coordinate: {group}/{coord_name} (dtype: {coord.dtype})"
                     )
                     # Compute min and max values
-                    try:
-                        import pandas as pd
-
-                        coord_values = coord.values
-                        if coord_values.size > 0:
-                            min_val = pd.Timestamp(coord_values.min()).isoformat()
-                            max_val = pd.Timestamp(coord_values.max()).isoformat()
-                        else:
-                            min_val = None
-                            max_val = None
-                    except Exception as exc:
-                        logger.warning(
-                            f"Could not compute min/max for datetime coordinate {coord_name}: {exc!r}"
-                        )
-                        min_val = None
-                        max_val = None
+                    min_val, max_val = datetime_min_max_iso(coord)
 
                     info.datetime_variables.setdefault(group, []).append(
                         {
@@ -2339,22 +2324,7 @@ def get_file_info(
                         f"Found datetime data variable: {group}/{var_name} (dtype: {var.dtype})"
                     )
                     # Compute min and max values
-                    try:
-                        import pandas as pd
-
-                        var_values = var.values
-                        if var_values.size > 0:
-                            min_val = pd.Timestamp(var_values.min()).isoformat()
-                            max_val = pd.Timestamp(var_values.max()).isoformat()
-                        else:
-                            min_val = None
-                            max_val = None
-                    except Exception as exc:
-                        logger.warning(
-                            f"Could not compute min/max for datetime variable {var_name}: {exc!r}"
-                        )
-                        min_val = None
-                        max_val = None
+                    min_val, max_val = datetime_min_max_iso(var)
 
                     info.datetime_variables.setdefault(group, []).append(
                         {
@@ -2537,6 +2507,26 @@ def create_variable_info(
         },
         display_value=display_value,
     )
+
+
+def datetime_min_max_iso(var: xr.DataArray) -> tuple[str | None, str | None]:
+    """Compute ISO min/max for a datetime variable without loading full `.values`.
+
+    Uses xarray reductions so chunked/dask-backed arrays can stay lazy.
+    """
+    try:
+        import pandas as pd
+
+        if var.size == 0:
+            return None, None
+        min_val = pd.Timestamp(var.min().values).isoformat()
+        max_val = pd.Timestamp(var.max().values).isoformat()
+        return min_val, max_val
+    except Exception as exc:
+        logger.warning(
+            f"Could not compute min/max for datetime variable {getattr(var, 'name', '?')}: {exc!r}"
+        )
+        return None, None
 
 
 def is_datetime_variable(var: xr.DataArray) -> bool:
