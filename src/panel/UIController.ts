@@ -255,6 +255,7 @@ export class UIController {
         };
 
         return this.errorBoundary.wrapAsync(async () => {
+            this.stateManager.setCurrentFile(filePath);
             this.stateManager.setLoading(true);
             this.stateManager.setError(null);
 

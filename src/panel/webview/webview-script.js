@@ -25,6 +25,9 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
 
 const MAX_ATTR_DISPLAY_STR_LENGTH = 999999;
 
+/** Render groups in rAF batches when there are many (Issue #131). */
+const INCREMENTAL_GROUP_RENDER_THRESHOLD = 4;
+
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -479,6 +482,9 @@ const globalState = {
     plotTimeoutMs: 20000,
 };
 
+let refreshInProgress = false;
+let exportWebviewInProgress = false;
+
 // Track active plot operations for cancel functionality
 const activePlotOperations = new Set();
 
@@ -641,7 +647,12 @@ function setupMessageHandlers() {
     // Set up event listeners for new message system
     messageBus.onDataLoaded((state) => {
         console.log('📊 Data loaded event received:', state);
-        displayAll(state);
+        displayAll(state).catch((error) => {
+            console.error('Failed to display loaded data:', error);
+            displayGlobalError(
+                'Failed to display data: ' + (error.message || error),
+            );
+        });
     });
 
     messageBus.onError((error) => {
@@ -655,7 +666,12 @@ function setupMessageHandlers() {
     });
 
     messageBus.onUIStateChanged((state) => {
-        console.log('🔄 UI state changed:', state);
+        if (state?.data?.isLoading) {
+            showLoadingSkeleton(
+                state.data.currentFile,
+                state.data.dataInfo ? 'Refreshing data…' : 'Loading data…',
+            );
+        }
     });
 
     // When the user clicks on a TreeItem from the Data Structure TreeView
@@ -669,7 +685,9 @@ function setupMessageHandlers() {
     });
 
     messageBus.onRefreshStarting(() => {
-        resetViewForRefresh();
+        if (beginRefreshUi()) {
+            resetViewForRefresh();
+        }
     });
 
     // Add debugging for all message bus communications
@@ -687,12 +705,12 @@ function setupMessageHandlers() {
     };
 }
 
-function displayAll(state) {
+async function displayAll(state) {
     const displayStart = performance.now();
     const lazyReprLoading =
         state.extension?.extensionConfig?.lazyReprLoading !== false;
 
-    displayDataInfo(
+    await displayDataInfo(
         state.data.dataInfo,
         state.data.currentFile,
         state.extension.extensionConfig,
@@ -718,11 +736,9 @@ function displayAll(state) {
     displayShowVersions(state.data.dataInfo.xarray_show_versions);
     displayTimestamp(state.data.lastLoadTime);
 
-    const loading = document.getElementById('loading');
+    hideLoadingSkeleton();
+
     const content = document.getElementById('content');
-    if (loading) {
-        loading.classList.add('hidden');
-    }
     if (content) {
         content.classList.remove('hidden');
     }
@@ -730,6 +746,8 @@ function displayAll(state) {
     console.log(
         `⏱️ displayAll completed in ${(performance.now() - displayStart).toFixed(1)}ms (lazyRepr=${lazyReprLoading})`,
     );
+
+    endRefreshUi();
 }
 
 function displayTimestamp(isoString, isLoading = false) {
@@ -750,7 +768,7 @@ function displayTimestamp(isoString, isLoading = false) {
 }
 
 // Display functions
-function displayDataInfo(data, filePath, extensionConfig) {
+async function displayDataInfo(data, filePath, extensionConfig) {
     if (!data) {
         displayGlobalError('No data available');
         return;
@@ -802,40 +820,15 @@ function displayDataInfo(data, filePath, extensionConfig) {
         data.coordinates_flattened &&
         data.variables_flattened
     ) {
-        // Display dimensions, coordinates, and variables for each group (with optional Group Plot Controls)
-        groupInfoContainer.innerHTML = groups
-            .map((groupName, index) =>
-                renderGroup(data, groupName, {
-                    groupTimeControls,
-                    groupDimensionSlices,
-                    nestedAttributesView,
-                    isFirstRootGroup: index === 0,
-                }),
-            )
-            .join('');
-        // Open the first group by default
-        groupInfoContainer
-            .querySelector('details')
-            .setAttribute('open', 'open');
-
-        // Enable buttons for datatree variables
-        Object.keys(data.variables_flattened).forEach((groupName) => {
-            data.variables_flattened[groupName].forEach((variable) => {
-                const fullVariableName = `${
-                    groupName === '/' ? '' : groupName
-                }/${variable.name}`;
-                const createButton = document.querySelector(
-                    `.create-plot-button[data-variable="${fullVariableName}"]`,
-                );
-                if (createButton) {
-                    createButton.disabled = false;
-                }
-            });
+        await renderGroupsIntoContainer(groupInfoContainer, groups, data, {
+            groupTimeControls,
+            groupDimensionSlices,
+            nestedAttributesView,
         });
 
         setupGroupPlotControlsListeners();
     } else {
-        contentContainer.innerHTML = '<p>No data available</p>';
+        groupInfoContainer.innerHTML = '<p>No data available</p>';
     }
 
     // Populate datetime variables (respects globalTimeControls flag)
@@ -844,9 +837,101 @@ function displayDataInfo(data, filePath, extensionConfig) {
     // Populate dimension slices (respects globalDimensionSlices flag, merges all groups)
     populateDimensionSlices(data, { globalDimensionSlices });
 
-    // Show content
-    document.getElementById('loading').classList.add('hidden');
+    hideLoadingSkeleton();
     document.getElementById('content').classList.remove('hidden');
+}
+
+async function renderGroupsIntoContainer(
+    container,
+    groups,
+    data,
+    renderOptions,
+) {
+    container.innerHTML = '';
+
+    const renderBatch = (startIndex, endIndex) => {
+        const html = groups
+            .slice(startIndex, endIndex)
+            .map((groupName, offset) =>
+                renderGroup(data, groupName, {
+                    ...renderOptions,
+                    isFirstRootGroup: startIndex + offset === 0,
+                }),
+            )
+            .join('');
+        container.insertAdjacentHTML('beforeend', html);
+    };
+
+    if (groups.length <= INCREMENTAL_GROUP_RENDER_THRESHOLD) {
+        renderBatch(0, groups.length);
+    } else {
+        const batchSize = 2;
+        for (let i = 0; i < groups.length; i += batchSize) {
+            renderBatch(i, Math.min(i + batchSize, groups.length));
+            if (i + batchSize < groups.length) {
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+        }
+        console.log(
+            `⏱️ incremental group render: ${groups.length} groups in batches of ${batchSize}`,
+        );
+    }
+
+    finalizeGroupContainer(container, data);
+}
+
+function finalizeGroupContainer(container, data) {
+    const firstDetails = container.querySelector('details');
+    if (firstDetails) {
+        firstDetails.setAttribute('open', 'open');
+    }
+
+    Object.keys(data.variables_flattened).forEach((groupName) => {
+        data.variables_flattened[groupName].forEach((variable) => {
+            const fullVariableName = `${
+                groupName === '/' ? '' : groupName
+            }/${variable.name}`;
+            const createButton = container.querySelector(
+                `.create-plot-button[data-variable="${fullVariableName}"]`,
+            );
+            if (createButton) {
+                createButton.disabled = false;
+            }
+        });
+    });
+}
+
+function showLoadingSkeleton(filePath, statusText = 'Loading data…') {
+    hideGlobalError();
+
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+    const status = document.getElementById('loadingStatus');
+    const pathEl = document.getElementById('loadingFilePath');
+
+    if (loading) {
+        loading.classList.remove('hidden');
+    }
+    if (content) {
+        content.classList.add('hidden');
+    }
+    if (status) {
+        status.textContent = statusText;
+    }
+    if (pathEl) {
+        const label = filePath ? filePath.split(/[/\\]/).pop() || filePath : '';
+        pathEl.textContent = label;
+        pathEl.classList.toggle('hidden', !label);
+    }
+
+    displayTimestamp(null, true);
+}
+
+function hideLoadingSkeleton() {
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.classList.add('hidden');
+    }
 }
 
 function renderFileInformation(data) {
@@ -1870,8 +1955,9 @@ function displayGlobalError(
         </div>
     `;
     errorDiv.classList.remove('hidden');
-    document.getElementById('loading').classList.add('hidden');
+    hideLoadingSkeleton();
     document.getElementById('content').classList.add('hidden');
+    endRefreshUi();
 
     // Hide header controls when error is displayed
     const headerControls = document.getElementById('header-controls');
@@ -3242,7 +3328,12 @@ async function handleRefresh() {
         return;
     }
 
+    if (!beginRefreshUi()) {
+        return;
+    }
+
     resetViewForRefresh();
+
     try {
         await messageBus.refresh();
     } catch (error) {
@@ -3251,21 +3342,37 @@ async function handleRefresh() {
     }
 }
 
+function beginRefreshUi() {
+    if (refreshInProgress) {
+        return false;
+    }
+    refreshInProgress = true;
+    setRefreshButtonEnabled(false);
+    return true;
+}
+
+function endRefreshUi() {
+    if (!refreshInProgress) {
+        return;
+    }
+    refreshInProgress = false;
+    setRefreshButtonEnabled(true);
+}
+
+function setRefreshButtonEnabled(enabled) {
+    const button = document.getElementById('refreshButton');
+    if (!button) {
+        return;
+    }
+    button.disabled = !enabled;
+    button.title = enabled ? 'Refresh' : 'Refreshing…';
+    button.classList.toggle('refresh-in-progress', !enabled);
+}
+
 function resetViewForRefresh() {
     loadedReprKeys.clear();
-    hideGlobalError();
 
-    const loading = document.getElementById('loading');
-    const content = document.getElementById('content');
-    if (loading) {
-        loading.textContent = 'Refreshing data...';
-        loading.classList.remove('hidden');
-    }
-    if (content) {
-        content.classList.add('hidden');
-    }
-
-    displayTimestamp(null, true);
+    showLoadingSkeleton(globalState.currentDatasetFilePath, 'Refreshing data…');
 
     const fileInfo = document.getElementById('fileInfo');
     if (fileInfo) {
@@ -3363,6 +3470,10 @@ async function handleExportWebview() {
         return;
     }
 
+    if (!beginExportWebviewUi()) {
+        return;
+    }
+
     console.log('🖼️ Exporting webview content...');
     const htmlContent = captureWebviewContent();
     try {
@@ -3383,7 +3494,38 @@ async function handleExportWebview() {
         displayGlobalError(
             'Failed to export webview content: ' + error.message,
         );
+    } finally {
+        endExportWebviewUi();
     }
+}
+
+function beginExportWebviewUi() {
+    if (exportWebviewInProgress) {
+        return false;
+    }
+    exportWebviewInProgress = true;
+    setExportWebviewButtonEnabled(false);
+    return true;
+}
+
+function endExportWebviewUi() {
+    if (!exportWebviewInProgress) {
+        return;
+    }
+    exportWebviewInProgress = false;
+    setExportWebviewButtonEnabled(true);
+}
+
+function setExportWebviewButtonEnabled(enabled) {
+    const button = document.getElementById('exportWebviewButton');
+    if (!button) {
+        return;
+    }
+    button.disabled = !enabled;
+    button.title = enabled
+        ? 'Export Webview Content'
+        : 'Exporting webview content…';
+    button.classList.toggle('export-in-progress', !enabled);
 }
 
 /**

@@ -275,6 +275,7 @@ The extension allows you to export complete data viewer content as self-containe
 1. **Using the Export Button**:
    - Open a scientific data file in the Scientific Data Viewer
    - Click the export button (🖼️) in the header controls
+   - The button is disabled while an export is in progress (rapid clicks are ignored)
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 
@@ -298,6 +299,8 @@ The extension allows you to export complete data viewer content as self-containe
 - Create documentation for datasets
 - Archive data viewer sessions
 - Generate reports for presentations or publications
+
+**Header controls:** The **Refresh** (🔄) button performs a full webview reload (bypasses metadata cache). Both **Refresh** and **Export** (🖼️) buttons are disabled while their operation is in progress to prevent duplicate requests.
 
 ## ⚙️ Settings
 
@@ -523,6 +526,8 @@ scientific-data-viewer/
 │   ├── sample_data.geotiff                 # GeoTIFF (alternate extension)
 │   ├── sample_data.jpeg2000                # JPEG-2000 (alternate extension)
 │   ├── sample_data_multiple_groups.nc      # NetCDF with multiple groups
+│   ├── sample_data_many_groups_light.nc    # NetCDF: 28 lightweight groups (Issue #131 load testing)
+│   ├── sample_data_many_groups_light_x5.nc # NetCDF: 140 lightweight groups (5× load testing)
 │   ├── sample_data_many_vars.nc            # NetCDF with many variables
 │   ├── sample_data_no_attributes.nc        # NetCDF without attributes
 │   ├── sample_data_long_variable_names.nc  # NetCDF with long variable names

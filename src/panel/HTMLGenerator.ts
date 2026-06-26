@@ -154,7 +154,10 @@ export class HTMLGenerator {
 
     static generateLoadingAndError(): string {
         return /*html*/ `
-    <div id="loading" class="loading">Loading data...</div>
+    <div id="loading" class="loading">
+        <p id="loadingStatus" class="loading-status">Loading data...</p>
+        <p id="loadingFilePath" class="loading-file-path hidden"></p>
+    </div>
     <div id="error" class="error hidden"></div>
     `;
     }

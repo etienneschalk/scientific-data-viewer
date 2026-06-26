@@ -3017,6 +3017,141 @@ def create_sample_netcdf_multiple_groups():
     return output_file
 
 
+def _create_sample_netcdf_many_groups_light_file(
+    output_file: str,
+    num_groups: int,
+    *,
+    seed: int = 131,
+    title: str | None = None,
+) -> str | None:
+    """Write a lightweight multi-group NetCDF for load/UI testing (Issue #131)."""
+    vars_per_group = 2
+    time_len = 3
+    nx, ny = 4, 4
+
+    if os.path.exists(output_file):
+        print(
+            f"📁 NetCDF many-groups light file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print(
+        f"📁 Creating lightweight NetCDF {output_file} with {num_groups} groups "
+        f"({vars_per_group} vars each, {time_len}×{nx}×{ny} grid) for load-time testing..."
+    )
+
+    try:
+        import netCDF4 as nc
+    except ImportError:
+        print(
+            "  ❌ netCDF4 not available, skipping many-groups light NetCDF file creation."
+        )
+        return None
+
+    np.random.seed(seed)
+    group_name_width = max(2, len(str(num_groups)))
+    display_title = title or f"Sample NetCDF — {num_groups} lightweight groups"
+
+    with nc.Dataset(output_file, "w", format="NETCDF4") as rootgrp:
+        rootgrp.title = display_title
+        rootgrp.description = (
+            "Many small groups for Scientific Data Viewer load-time and UI testing "
+            "(Issue #131). File size stays small; cost is in group/metadata handling."
+        )
+        rootgrp.institution = "Test Institute"
+        rootgrp.source = "Generated for testing"
+        rootgrp.history = f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        rootgrp.Conventions = "CF-1.6"
+        rootgrp.number_of_groups = num_groups
+        rootgrp.vars_per_group = vars_per_group
+        rootgrp.grid_shape = f"time={time_len}, x={nx}, y={ny}"
+
+        rootgrp.createDimension("time", time_len)
+        rootgrp.createDimension("x", nx)
+        rootgrp.createDimension("y", ny)
+
+        time_vals = np.arange(time_len, dtype=np.float32)
+        x_vals = np.linspace(0, 1, nx, dtype=np.float32)
+        y_vals = np.linspace(0, 1, ny, dtype=np.float32)
+
+        time_var = rootgrp.createVariable("time", "f4", ("time",))
+        time_var[:] = time_vals
+        time_var.long_name = "Time"
+        time_var.units = "days since 2020-01-01"
+
+        x_var = rootgrp.createVariable("x", "f4", ("x",))
+        x_var[:] = x_vals
+        x_var.long_name = "X index"
+        x_var.units = "1"
+
+        y_var = rootgrp.createVariable("y", "f4", ("y",))
+        y_var[:] = y_vals
+        y_var.long_name = "Y index"
+        y_var.units = "1"
+
+        root_summary = np.zeros((time_len, nx, ny), dtype=np.float32)
+        root_var = rootgrp.createVariable("root_summary", "f4", ("time", "x", "y"))
+        root_var[:] = root_summary
+        root_var.long_name = "Root summary (zeros)"
+        root_var.units = "1"
+
+        for i in range(1, num_groups + 1):
+            gname = f"sector_{i:0{group_name_width}d}"
+            grp = rootgrp.createGroup(gname)
+            grp.description = f"Lightweight sector {i} for multi-group load testing"
+            grp.group_index = i
+            grp.region = f"region-{i % 7}"
+            grp.instrument = f"sensor-{i % 5}"
+            grp.processing_level = "L1" if i % 2 else "L2"
+
+            for v in range(vars_per_group):
+                vname = f"value_{v}"
+                data = np.full(
+                    (time_len, nx, ny),
+                    i + v * 0.25,
+                    dtype=np.float32,
+                ) + np.random.normal(0, 0.01, (time_len, nx, ny)).astype(np.float32)
+                var = grp.createVariable(vname, "f4", ("time", "x", "y"))
+                var[:] = data
+                var.long_name = f"Sector {i} measurement {v}"
+                var.units = "1"
+                var.coordinates = "time x y"
+
+        group_count = len(rootgrp.groups)
+
+    file_size_kb = os.path.getsize(output_file) / 1024
+    print(
+        f"✅ Created {output_file} with {group_count} top-level groups "
+        f"({file_size_kb:.1f} KiB on disk)"
+    )
+    return output_file
+
+
+def create_sample_netcdf_many_groups_light():
+    """Create a lightweight NetCDF with many groups for load/UI testing (Issue #131).
+
+    Many small groups exercise incremental DOM rendering and multi-group metadata
+    paths without large on-disk payload or heavy array I/O.
+    """
+    return _create_sample_netcdf_many_groups_light_file(
+        "sample_data_many_groups_light.nc",
+        28,
+        seed=131,
+        title="Sample NetCDF — many lightweight groups",
+    )
+
+
+def create_sample_netcdf_many_groups_light_x5():
+    """Create a 5× larger lightweight multi-group NetCDF (140 groups) for stress testing."""
+    return _create_sample_netcdf_many_groups_light_file(
+        "sample_data_many_groups_light_x5.nc",
+        28 * 5,
+        seed=1315,
+        title="Sample NetCDF — 140 lightweight groups (5× many-groups light)",
+    )
+
+
 def create_broken_files():
     """Create broken files for all supported extensions to test error handling."""
     print("💥 Creating broken files for error handling testing...")
@@ -5415,6 +5550,25 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((multigroup_netcdf_file, "NetCDF Multiple Groups"))
         else:
             skipped_files.append("NetCDF Multiple Groups (netCDF4 not available)")
+
+        many_groups_light_file = create_sample_netcdf_many_groups_light()
+        if many_groups_light_file:
+            created_files.append(
+                (many_groups_light_file, "NetCDF Many Groups Light (Issue #131)")
+            )
+        else:
+            skipped_files.append("NetCDF Many Groups Light (netCDF4 not available)")
+
+        many_groups_light_x5_file = create_sample_netcdf_many_groups_light_x5()
+        if many_groups_light_x5_file:
+            created_files.append(
+                (
+                    many_groups_light_x5_file,
+                    "NetCDF Many Groups Light 5× (140 groups, Issue #131)",
+                )
+            )
+        else:
+            skipped_files.append("NetCDF Many Groups Light 5× (netCDF4 not available)")
 
         long_names_netcdf_file = create_sample_netcdf_long_variable_names()
         if long_names_netcdf_file:

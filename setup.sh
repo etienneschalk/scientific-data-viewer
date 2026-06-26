@@ -111,6 +111,17 @@ else
     echo "⚠️  Python datetime min/max helper tests failed (non-fatal, exit code: $DATETIME_MINMAX_EXIT_CODE)"
 fi
 
+echo "   Running Python many-groups light sample tests..."
+set +e
+python3 -m pytest python/test_many_groups_light_sample.py -v
+MANY_GROUPS_LIGHT_EXIT_CODE=$?
+set -e
+if [ $MANY_GROUPS_LIGHT_EXIT_CODE -eq 0 ]; then
+    echo "✅ Python many-groups light sample tests passed"
+else
+    echo "⚠️  Python many-groups light sample tests failed (non-fatal, exit code: $MANY_GROUPS_LIGHT_EXIT_CODE)"
+fi
+
 echo ""
 echo "🎉 Setup complete!"
 echo ""

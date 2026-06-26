@@ -32,6 +32,23 @@ body {
     color: var(--vscode-descriptionForeground);
 }
 
+.loading-status {
+    margin: 0;
+    font-weight: 600;
+}
+
+.loading-file-path {
+    margin: 8px 0 0;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    word-break: break-all;
+}
+
+.loading-file-path.hidden {
+    display: none;
+}
+
 .error {
     color: var(--vscode-foreground);
     border: 2px solid var(--vscode-errorForeground);
@@ -668,6 +685,20 @@ button:active {
 
 .header-control-button:active {
     background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.header-control-button:disabled,
+.header-control-button.refresh-in-progress,
+.header-control-button.export-in-progress {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.header-control-button:disabled:hover,
+.header-control-button.refresh-in-progress:hover,
+.header-control-button.export-in-progress:hover {
+    background-color: var(--vscode-button-secondaryBackground);
 }
 
 .plot-error {
