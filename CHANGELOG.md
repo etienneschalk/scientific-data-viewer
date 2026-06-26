@@ -28,6 +28,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 ### Fixed
 
 - **Persistent Python worker / NetCDF `.nc` files**: Worker responses used plain `json.dumps`, emitting bare `NaN` for attributes such as `__xarray_encoding._FillValue`. Node's `JSON.parse` rejects that token, so file opens failed with `Invalid JSON line` in the logs. Worker stdout now uses `to_json_best_effort` (same as the spawn path).
+- **Issue #139 — Refresh button**: Full reload now resets the webview (groups, repr sections, plots, global plot controls), bypasses and invalidates the metadata cache, cancels in-flight plots, and avoids duplicate lazy-repr listeners on repeated refresh.
 
 ### Changed
 

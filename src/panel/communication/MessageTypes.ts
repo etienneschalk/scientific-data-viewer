@@ -247,6 +247,7 @@ export const EVENTS = {
     UI_STATE_CHANGED: 'uiStateChanged',
     SCROLL_TO_HEADER_EVENT_COMMAND: 'scrollToHeaderCommandEvent',
     EXPORT_WEBVIEW_COMMAND_EVENT: 'exportWebviewCommandEvent',
+    REFRESH_STARTING: 'refreshStarting',
 } as const;
 
 export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];

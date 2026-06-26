@@ -98,6 +98,21 @@ export class DataInfoCache {
         );
     }
 
+    static invalidateFile(filePath: string): void {
+        let removed = 0;
+        for (const key of [...this.cache.keys()]) {
+            if (key.startsWith(`${filePath}\0`)) {
+                this.cache.delete(key);
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            Logger.debug(
+                `[DataInfoCache] invalidated ${removed} entr${removed === 1 ? 'y' : 'ies'} for ${filePath}`,
+            );
+        }
+    }
+
     static clear(): void {
         this.cache.clear();
         Logger.debug('[DataInfoCache] cleared');

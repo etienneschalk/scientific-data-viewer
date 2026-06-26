@@ -145,4 +145,32 @@ suite('DataInfoCache Test Suite', () => {
             undefined,
         );
     });
+
+    test('should invalidate all entries for a file path', () => {
+        const configKey = DataInfoCache.buildConfigKey({
+            convertBandsToVariables: false,
+            lazyReprLoading: true,
+            smallVariableBytes: 1000,
+            smallValueDisplayMaxLen: 500,
+        });
+        const response = {
+            result: { format: 'NetCDF' },
+        } as DataInfoPythonResponse;
+
+        DataInfoCache.set('/tmp/test.nc', 1000, configKey, response, 8);
+        DataInfoCache.set('/tmp/test.nc', 2000, configKey, response, 8);
+        DataInfoCache.set('/tmp/other.nc', 1000, configKey, response, 8);
+
+        DataInfoCache.invalidateFile('/tmp/test.nc');
+
+        assert.strictEqual(
+            DataInfoCache.get('/tmp/test.nc', 1000, configKey, 8),
+            undefined,
+        );
+        assert.strictEqual(
+            DataInfoCache.get('/tmp/test.nc', 2000, configKey, 8),
+            undefined,
+        );
+        assert.ok(DataInfoCache.get('/tmp/other.nc', 1000, configKey, 8));
+    });
 });

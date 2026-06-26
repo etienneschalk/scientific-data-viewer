@@ -24,6 +24,7 @@ import {
 import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
 import { PerformanceTimer } from '../common/PerformanceTimer';
+import { DataInfoCache } from '../python/DataInfoCache';
 
 export class UIController {
     private id: number;
@@ -731,6 +732,8 @@ export class UIController {
             this.errorBoundary.wrapAsync(async () => {
                 const state = this.stateManager.getState();
                 if (state.data.currentFile) {
+                    this.messageBus.emitRefreshStarting();
+                    DataInfoCache.invalidateFile(state.data.currentFile);
                     await this.handleGetDataInfo(state.data.currentFile, {
                         forceRefresh: true,
                     });
@@ -918,6 +921,10 @@ export class UIController {
         await this.errorBoundary.wrapAsync(async () => {
             await this.handleGetDataInfo(filePath);
         }, context);
+    }
+
+    public async refresh(): Promise<void> {
+        await this.handleRefresh();
     }
 
     public getState(): AppState {

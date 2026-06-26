@@ -335,13 +335,10 @@ export class DataViewerPanel {
     }
 
     private async refresh() {
-        // Use UI controller to refresh data
         Logger.debug(
-            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panel: ${
-                this.getFileUri().fsPath
-            }`,
+            `[DataViewerPanel] Refreshing panel: ${this.getFileUri().fsPath}`,
         );
-        await this._uiController.loadFile(this.getFileUri().fsPath);
+        await this._uiController.refresh();
     }
 
     private disposePanel() {

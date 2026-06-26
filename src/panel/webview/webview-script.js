@@ -444,6 +444,10 @@ class WebviewMessageBus {
     onExportWebviewCommand(callback) {
         return this.onEvent('exportWebviewCommandEvent', callback);
     }
+
+    onRefreshStarting(callback) {
+        return this.onEvent('refreshStarting', callback);
+    }
 }
 
 // Do not use vscode directly ; communicate with vscode through messageBus
@@ -662,6 +666,10 @@ function setupMessageHandlers() {
     // When the user trigger the 'Export Wevbiew Content' command
     messageBus.onExportWebviewCommand(() => {
         handleExportWebview();
+    });
+
+    messageBus.onRefreshStarting(() => {
+        resetViewForRefresh();
     });
 
     // Add debugging for all message bus communications
@@ -1507,6 +1515,11 @@ function setupLazyRootReprSection(kind, sectionId, containerId) {
     section.parentElement.classList.remove('hidden');
     container.innerHTML =
         '<p class="muted-text">Expand to load representation…</p>';
+
+    if (section.dataset.lazyReprBound === '1') {
+        return;
+    }
+    section.dataset.lazyReprBound = '1';
 
     section.addEventListener('toggle', async () => {
         if (!section.open || isReprLoaded('root', null, kind)) {
@@ -3229,12 +3242,118 @@ async function handleRefresh() {
         return;
     }
 
-    displayTimestamp(null, true);
+    resetViewForRefresh();
     try {
         await messageBus.refresh();
     } catch (error) {
         console.error('Failed to refresh data:', error);
         displayGlobalError('Failed to refresh data: ' + error.message);
+    }
+}
+
+function resetViewForRefresh() {
+    loadedReprKeys.clear();
+    hideGlobalError();
+
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+    if (loading) {
+        loading.textContent = 'Refreshing data...';
+        loading.classList.remove('hidden');
+    }
+    if (content) {
+        content.classList.add('hidden');
+    }
+
+    displayTimestamp(null, true);
+
+    const fileInfo = document.getElementById('fileInfo');
+    if (fileInfo) {
+        fileInfo.innerHTML = '';
+    }
+
+    const groupInfoContainer = document.getElementById('group-info-container');
+    if (groupInfoContainer) {
+        groupInfoContainer.innerHTML = '';
+        groupInfoContainer.classList.add('hidden');
+    }
+
+    resetStaticReprSection(
+        'htmlRepresentation',
+        'section-html-representation',
+        true,
+    );
+    resetStaticReprSection(
+        'textRepresentation',
+        'section-text-representation',
+        false,
+    );
+    resetStaticReprSection(
+        'htmlRepresentationForGroups',
+        'section-html-representation-for-groups',
+        true,
+    );
+    resetStaticReprSection(
+        'textRepresentationForGroups',
+        'section-text-representation-for-groups',
+        false,
+    );
+
+    resetGlobalPlotControlInputs();
+    handleResetAllPlots();
+
+    for (const operationId of [...messageBus.getActiveOperationIds()]) {
+        messageBus.abortPlot(operationId).catch((error) => {
+            console.warn(
+                `Failed to abort plot ${operationId} during refresh:`,
+                error,
+            );
+        });
+    }
+}
+
+function resetStaticReprSection(containerId, sectionId, useInnerHtml) {
+    const container = document.getElementById(containerId);
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.open = false;
+        if (section.parentElement) {
+            section.parentElement.classList.remove('hidden');
+        }
+    }
+    if (!container) {
+        return;
+    }
+    if (useInnerHtml) {
+        container.innerHTML = '';
+    } else {
+        container.textContent = '';
+    }
+}
+
+function resetGlobalPlotControlInputs() {
+    const datetimeSelect = document.getElementById('datetimeVariableSelect');
+    if (datetimeSelect) {
+        datetimeSelect.selectedIndex = 0;
+    }
+
+    for (const id of [
+        'startDatetimeInput',
+        'endDatetimeInput',
+        'startDatetimeTextInput',
+        'endDatetimeTextInput',
+    ]) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = '';
+        }
+    }
+
+    const dimensionSlicesContainer = document.getElementById(
+        'dimensionSlicesContainer',
+    );
+    if (dimensionSlicesContainer) {
+        dimensionSlicesContainer.innerHTML = '';
     }
 }
 
