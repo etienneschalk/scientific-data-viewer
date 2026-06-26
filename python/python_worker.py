@@ -17,7 +17,13 @@ WORKER_DIR = Path(__file__).resolve().parent
 
 
 def _write_message(payload: dict[str, Any]) -> None:
-    sys.stdout.write(json.dumps(payload, default=str) + "\n")
+    if str(WORKER_DIR) not in sys.path:
+        sys.path.insert(0, str(WORKER_DIR))
+
+    from get_data_info import to_json_best_effort
+
+    # Must match spawn/CLI serialization: bare NaN/Infinity break JSON.parse in Node.
+    sys.stdout.write(to_json_best_effort(payload) + "\n")
     sys.stdout.flush()
 
 

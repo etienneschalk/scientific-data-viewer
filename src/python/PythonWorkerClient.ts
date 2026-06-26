@@ -243,7 +243,11 @@ export class PythonWorkerClient {
         try {
             message = JSON.parse(line) as Record<string, unknown>;
         } catch (error) {
-            Logger.warn(`🐍 [worker] Invalid JSON line: ${line.slice(0, 200)}`);
+            const message =
+                error instanceof Error ? error.message : String(error);
+            Logger.warn(
+                `🐍 [worker] Invalid JSON line (${message}): ${line.slice(0, 200)}`,
+            );
             return;
         }
 

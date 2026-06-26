@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,16 @@ from get_data_info import dispatch_argv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKER_SCRIPT = REPO_ROOT / "python" / "python_worker.py"
+
+# JavaScript JSON.parse rejects bare NaN/Infinity tokens (Python json.loads accepts them).
+_BARE_NON_JSON_NUMBER = re.compile(r"(?<=[:\[,])\s*(NaN|-?Infinity)\s*(?=[,\]}])")
+
+
+def assert_strict_json_line(line: str) -> dict:
+    """Fail if payload is not valid for JSON.parse in Node (Issue #131 worker bug)."""
+    if _BARE_NON_JSON_NUMBER.search(line):
+        raise AssertionError("JSON line contains bare NaN/Infinity")
+    return json.loads(line)
 
 
 def _write_minimal_netcdf(path: Path) -> None:
@@ -162,7 +173,7 @@ class TestPythonWorker:
             proc.stdin.write(json.dumps(request) + "\n")
             proc.stdin.flush()
             response_line = proc.stdout.readline()
-            response = json.loads(response_line)
+            response = assert_strict_json_line(response_line)
             assert response.get("id") == "exec-1"
             assert "result" in response
             result = response["result"]["result"]

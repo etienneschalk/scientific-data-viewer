@@ -21,6 +21,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - Python: `python/test_performance_features.py` (`dispatch_argv` skip-reprs/repr modes, worker ping/execute)
   - `setup.sh` runs the new Python performance test suite
 
+### Fixed
+
+- **Persistent Python worker / NetCDF `.nc` files**: Worker responses used plain `json.dumps`, emitting bare `NaN` for attributes such as `__xarray_encoding._FillValue`. Node's `JSON.parse` rejects that token, so file opens failed with `Invalid JSON line` in the logs. Worker stdout now uses `to_json_best_effort` (same as the spawn path).
+
 ### Changed
 
 - Root **Xarray HTML Representation** section is collapsed by default (no longer `open` in the HTML skeleton) so lazy repr loading defers work until expand.
