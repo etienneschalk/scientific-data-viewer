@@ -1,8 +1,5 @@
 export type EnvironmentSource =
-    | 'override'
-    | 'own-uv-env'
-    | 'python-extension'
-    | 'system';
+    'override' | 'own-uv-env' | 'python-extension' | 'system';
 
 export interface EnvironmentInfo {
     initialized: boolean;
