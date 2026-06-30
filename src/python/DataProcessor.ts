@@ -6,12 +6,9 @@ import {
     getMatplotlibStyle,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
-    getLazyReprLoading,
-    getDataInfoCacheMaxEntries,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
-import { DataInfoCache } from './DataInfoCache';
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -38,7 +35,6 @@ export class DataProcessor {
     async getDataInfo(
         uri: vscode.Uri,
         convertBandsToVariables: boolean = false,
-        options?: { forceRefresh?: boolean; mtimeMs?: number },
     ): Promise<DataInfoPythonResponse | null> {
         const timer = new PerformanceTimer('getDataInfo');
         Logger.debug(
@@ -55,52 +51,12 @@ export class DataProcessor {
         );
 
         try {
-            const smallVariableBytes = getSmallVariableBytes();
-            const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
-            const lazyReprLoading = getLazyReprLoading();
-            const cacheMaxEntries = getDataInfoCacheMaxEntries();
-            const configKey = DataInfoCache.buildConfigKey({
-                convertBandsToVariables,
-                lazyReprLoading,
-                smallVariableBytes,
-                smallValueDisplayMaxLen,
-            });
-
-            let mtimeMs: number | undefined = options?.mtimeMs;
-            if (mtimeMs === undefined) {
-                try {
-                    const stat = await vscode.workspace.fs.stat(uri);
-                    mtimeMs = stat.mtime;
-                } catch {
-                    mtimeMs = undefined;
-                }
-            }
-
-            if (
-                cacheMaxEntries > 0 &&
-                mtimeMs !== undefined &&
-                !options?.forceRefresh
-            ) {
-                const cached = DataInfoCache.get(
-                    filePath,
-                    mtimeMs,
-                    configKey,
-                    cacheMaxEntries,
-                );
-                if (cached) {
-                    timer.mark('cache-hit');
-                    timer.finish('getDataInfo');
-                    return cached;
-                }
-            }
-
             const args = ['info', filePath];
             if (convertBandsToVariables) {
                 args.push('--convert-bands-to-variables');
             }
-            if (lazyReprLoading) {
-                args.push('--skip-reprs');
-            }
+            const smallVariableBytes = getSmallVariableBytes();
+            const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
             args.push('--small-variable-bytes', String(smallVariableBytes));
             args.push(
                 '--small-value-display-max-len',
@@ -114,68 +70,11 @@ export class DataProcessor {
                 true,
             )) as DataInfoPythonResponse;
             timer.mark('python-complete');
-
-            if (
-                pythonResponse &&
-                !pythonResponse.error &&
-                mtimeMs !== undefined &&
-                cacheMaxEntries > 0
-            ) {
-                DataInfoCache.set(
-                    filePath,
-                    mtimeMs,
-                    configKey,
-                    pythonResponse,
-                    cacheMaxEntries,
-                );
-            }
-
             timer.finish('getDataInfo');
             return pythonResponse;
         } catch (error) {
             Logger.error(
                 `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`,
-            );
-            return null;
-        }
-    }
-
-    async getRepr(
-        uri: vscode.Uri,
-        scope: 'root' | 'group',
-        group: string | undefined,
-        convertBandsToVariables: boolean = false,
-    ): Promise<DataInfoPythonResponse | null> {
-        const timer = new PerformanceTimer(`getRepr:${scope}`);
-        if (!this.pythonManager.ready) {
-            throw new Error('Python environment not ready');
-        }
-
-        const scriptPath = path.join(
-            this.pythonScriptsHomeDir,
-            'get_data_info.py',
-        );
-        const args = ['repr', uri.fsPath, '--scope', scope];
-        if (convertBandsToVariables) {
-            args.push('--convert-bands-to-variables');
-        }
-        if (scope === 'group' && group) {
-            args.push('--group', group);
-        }
-
-        try {
-            timer.mark('python-args-ready');
-            const pythonResponse = await this.pythonManager.executePythonFile(
-                scriptPath,
-                args,
-                true,
-            );
-            timer.mark('python-complete');
-            timer.finish('getRepr');
-            return pythonResponse as DataInfoPythonResponse;
-        } catch (error) {
-            Logger.error(
-                `[DataProcessor] [getRepr] 🐍 ❌ Error loading repr: ${error}`,
             );
             return null;
         }

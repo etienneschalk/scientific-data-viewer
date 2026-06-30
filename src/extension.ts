@@ -283,9 +283,6 @@ export function deactivate() {
                 `🧩 🧹 Aborted ${abortedCount} active Python process(es) during deactivation`,
             );
         }
-        dataProcessor.pythonManagerInstance.shutdownWorker().catch((error) => {
-            Logger.warn(`🧩 ⚠️ Failed to shut down Python worker: ${error}`);
-        });
     }
 
     // Dispose of data viewer panel static resources

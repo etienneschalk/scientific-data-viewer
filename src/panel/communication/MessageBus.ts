@@ -285,10 +285,6 @@ export class MessageBus {
         this.sendEvent(EVENTS.EXPORT_WEBVIEW_COMMAND_EVENT, {});
     }
 
-    emitRefreshStarting(): void {
-        this.sendEvent(EVENTS.REFRESH_STARTING, {});
-    }
-
     // Cleanup
     dispose(): void {
         this.pendingRequests.clear();

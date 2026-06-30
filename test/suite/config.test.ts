@@ -10,10 +10,7 @@ import {
     getSmallValueDisplayMaxLen,
     getNestedAttributesView,
     getExtensionConfigForWebview,
-    getPersistentPythonWorker,
-    getLazyReprLoading,
     getOutlineEnabled,
-    getDataInfoCacheMaxEntries,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -79,40 +76,19 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof config.groupTimeControls, 'boolean');
         assert.strictEqual(typeof config.groupDimensionSlices, 'boolean');
         assert.strictEqual(typeof config.nestedAttributesView, 'boolean');
-        assert.strictEqual(typeof config.lazyReprLoading, 'boolean');
         assert.strictEqual(typeof config.outlineEnabled, 'boolean');
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
     });
 
-    test('performance feature config getters return booleans', () => {
-        assert.strictEqual(typeof getPersistentPythonWorker(), 'boolean');
-        assert.strictEqual(typeof getLazyReprLoading(), 'boolean');
+    test('getOutlineEnabled returns a boolean', () => {
         assert.strictEqual(typeof getOutlineEnabled(), 'boolean');
     });
 
-    test('getDataInfoCacheMaxEntries returns a non-negative number', () => {
-        const value = getDataInfoCacheMaxEntries();
-        assert.strictEqual(typeof value, 'number');
-        assert.ok(value >= 0);
-    });
-
-    test('package.json declares expected performance feature defaults', () => {
+    test('package.json declares outlineEnabled default true', () => {
         const properties = getPackageJsonDefaults();
         assert.strictEqual(
-            properties['scientificDataViewer.persistentPythonWorker'].default,
-            true,
-        );
-        assert.strictEqual(
-            properties['scientificDataViewer.lazyReprLoading'].default,
-            true,
-        );
-        assert.strictEqual(
             properties['scientificDataViewer.outlineEnabled'].default,
-            false,
-        );
-        assert.strictEqual(
-            properties['scientificDataViewer.dataInfoCacheMaxEntries'].default,
-            8,
+            true,
         );
     });
 });

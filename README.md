@@ -275,7 +275,6 @@ The extension allows you to export complete data viewer content as self-containe
 1. **Using the Export Button**:
    - Open a scientific data file in the Scientific Data Viewer
    - Click the export button (🖼️) in the header controls
-   - The button is disabled while an export is in progress (rapid clicks are ignored)
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 
@@ -299,8 +298,6 @@ The extension allows you to export complete data viewer content as self-containe
 - Create documentation for datasets
 - Archive data viewer sessions
 - Generate reports for presentations or publications
-
-**Header controls:** The **Refresh** (🔄) button performs a full webview reload (bypasses metadata cache). Both **Refresh** and **Export** (🖼️) buttons are disabled while their operation is in progress to prevent duplicate requests.
 
 ## ⚙️ Settings
 
@@ -526,8 +523,6 @@ scientific-data-viewer/
 │   ├── sample_data.geotiff                 # GeoTIFF (alternate extension)
 │   ├── sample_data.jpeg2000                # JPEG-2000 (alternate extension)
 │   ├── sample_data_multiple_groups.nc      # NetCDF with multiple groups
-│   ├── sample_data_many_groups_light.nc    # NetCDF: 28 lightweight groups (Issue #131 load testing)
-│   ├── sample_data_many_groups_light_x5.nc # NetCDF: 140 lightweight groups (5× load testing)
 │   ├── sample_data_many_vars.nc            # NetCDF with many variables
 │   ├── sample_data_no_attributes.nc        # NetCDF without attributes
 │   ├── sample_data_long_variable_names.nc  # NetCDF with long variable names
@@ -564,7 +559,6 @@ scientific-data-viewer/
 │   ├── WEBVIEW_EXPORT_CONTENT.md           # Webview export (HTML report) documentation
 │   ├── IMPLEMENTATION_PROPOSAL_ISSUE_106.md # Implementation proposals
 │   ├── RELEASE_NOTES_0.3.0.md … 0.12.0.md  # Release notes per version
-│   ├── PERFORMANCE_ROADMAP.md              # Post-v0.12.0 performance backlog (#131)
 │   ├── RELEASE_CHECKLIST_0.7.0.md          # Release checklist example
 │   └── PR_SUMMARY_*.md                     # Pull request summaries
 ├── media/                                  # Media assets

@@ -49,10 +49,7 @@ const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
 const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
-const PERSISTENT_PYTHON_WORKER = 'persistentPythonWorker';
-const LAZY_REPR_LOADING = 'lazyReprLoading';
 const OUTLINE_ENABLED = 'outlineEnabled';
-const DATA_INFO_CACHE_MAX_ENTRIES = 'dataInfoCacheMaxEntries';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -74,10 +71,7 @@ const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
 // Default plot timeout (ms); server and client use this so the process is killed and UX is consistent
 const DEFAULT_PLOT_TIMEOUT_MS = 20000;
-const DEFAULT_PERSISTENT_PYTHON_WORKER = true;
-const DEFAULT_LAZY_REPR_LOADING = true;
-const DEFAULT_OUTLINE_ENABLED = false;
-const DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES = 8;
+const DEFAULT_OUTLINE_ENABLED = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -212,36 +206,11 @@ export function getPlotTimeoutMs(): number {
     return Math.min(Math.floor(raw), 600000); // cap at 10 minutes
 }
 
-export function getPersistentPythonWorker(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        PERSISTENT_PYTHON_WORKER,
-        DEFAULT_PERSISTENT_PYTHON_WORKER,
-    );
-}
-
-export function getLazyReprLoading(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        LAZY_REPR_LOADING,
-        DEFAULT_LAZY_REPR_LOADING,
-    );
-}
-
 export function getOutlineEnabled(): boolean {
     return getWorkspaceConfig().get<boolean>(
         OUTLINE_ENABLED,
         DEFAULT_OUTLINE_ENABLED,
     );
-}
-
-export function getDataInfoCacheMaxEntries(): number {
-    const raw = getWorkspaceConfig().get<number>(
-        DATA_INFO_CACHE_MAX_ENTRIES,
-        DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES,
-    );
-    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) {
-        return DEFAULT_DATA_INFO_CACHE_MAX_ENTRIES;
-    }
-    return Math.floor(raw);
 }
 
 /**
@@ -256,7 +225,6 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
         plotTimeoutMs: getPlotTimeoutMs(),
-        lazyReprLoading: getLazyReprLoading(),
         outlineEnabled: getOutlineEnabled(),
     };
 }

@@ -7,12 +7,9 @@ import { getPythonInterpreterFromPythonExtension } from './officialPythonExtensi
 import {
     getOverridePythonInterpreter,
     getUseExtensionOwnEnvironment,
-    getPersistentPythonWorker,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 import path from 'path';
-import { PythonWorkerClient } from './PythonWorkerClient';
-import { DataInfoCache } from './DataInfoCache';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
 /**
@@ -65,7 +62,6 @@ export class PythonManager {
 
     // Track active processes for timeout/abort handling
     private _activeProcesses: Map<string, ActiveProcess> = new Map();
-    private readonly _workerClient = new PythonWorkerClient();
 
     // Core packages required for basic functionality
     private readonly corePackages = ['xarray'];
@@ -122,14 +118,8 @@ export class PythonManager {
      */
     async forceInitialize(): Promise<void> {
         Logger.info('🐍 🔄 Force initializing Python environment...');
-        DataInfoCache.clear();
-        await this.shutdownWorker();
         this._initializationPromise = null; // Reset any existing initialization
         await this.initializeIfNotInitializing();
-    }
-
-    async shutdownWorker(): Promise<void> {
-        await this._workerClient.shutdown();
     }
 
     /**
@@ -167,27 +157,6 @@ export class PythonManager {
         );
         timer.mark('start');
 
-        if (
-            getPersistentPythonWorker() &&
-            !operationId &&
-            this.isWorkerScript(scriptPath)
-        ) {
-            try {
-                await this._workerClient.ensureStarted(this._pythonPath);
-                timer.mark('worker-ready');
-                const argv = this.buildWorkerArgv(scriptPath, args);
-                const result = await this._workerClient.execute(argv);
-                timer.mark('worker-execute');
-                timer.finish('worker');
-                return result;
-            } catch (error) {
-                Logger.warn(
-                    `🐍 ⚠️ Persistent worker failed, falling back to spawn: ${error}`,
-                );
-                await this.shutdownWorker();
-            }
-        }
-
         const result = await this.executePythonFileUnchecked(
             this._pythonPath,
             scriptPath,
@@ -199,18 +168,6 @@ export class PythonManager {
         timer.mark('spawn-complete');
         timer.finish('spawn');
         return result;
-    }
-
-    private isWorkerScript(scriptPath: string): boolean {
-        const baseName = path.basename(scriptPath);
-        return baseName === 'get_data_info.py';
-    }
-
-    private buildWorkerArgv(scriptPath: string, args: string[]): string[] {
-        if (path.basename(scriptPath) === 'get_data_info.py') {
-            return args;
-        }
-        return args;
     }
 
     private async executePythonFileUnchecked(

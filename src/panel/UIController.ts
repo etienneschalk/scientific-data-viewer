@@ -24,7 +24,6 @@ import {
 import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
 import { PerformanceTimer } from '../common/PerformanceTimer';
-import { DataInfoCache } from '../python/DataInfoCache';
 
 export class UIController {
     private id: number;
@@ -189,14 +188,6 @@ export class UIController {
                 return this.handleExportWebview(payload.htmlContent);
             },
         );
-
-        this.messageBus.registerRequestHandler('getRepr', async (payload) => {
-            return this.handleGetRepr(
-                payload.scope,
-                payload.group,
-                payload.reprKind,
-            );
-        });
     }
 
     private setupStateSubscription(): void {
@@ -243,10 +234,7 @@ export class UIController {
         }
     }
 
-    private async handleGetDataInfo(
-        filePath: string,
-        options?: { forceRefresh?: boolean },
-    ): Promise<any> {
+    private async handleGetDataInfo(filePath: string): Promise<any> {
         const timer = new PerformanceTimer(`load:${path.basename(filePath)}`);
         const context: ErrorContext = {
             component: this.getComponentName(),
@@ -255,7 +243,6 @@ export class UIController {
         };
 
         return this.errorBoundary.wrapAsync(async () => {
-            this.stateManager.setCurrentFile(filePath);
             this.stateManager.setLoading(true);
             this.stateManager.setError(null);
 
@@ -291,10 +278,6 @@ export class UIController {
                 const dataInfo = await this.dataProcessor.getDataInfo(
                     fileUri,
                     convertBandsToVariables,
-                    {
-                        forceRefresh: options?.forceRefresh,
-                        mtimeMs: stat.mtime,
-                    },
                 );
                 timer.mark('getDataInfo');
 
@@ -363,45 +346,6 @@ export class UIController {
                     throw error;
                 }
             }
-        }, context);
-    }
-
-    private async handleGetRepr(
-        scope: 'root' | 'group',
-        group: string | undefined,
-        reprKind: 'html' | 'text' | 'both',
-    ): Promise<any> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'getRepr',
-            data: { scope, group, reprKind },
-        };
-
-        return this.errorBoundary.wrapAsync(async () => {
-            const state = this.stateManager.getState();
-            if (!state.data.currentFile) {
-                throw new Error('No file loaded');
-            }
-
-            const fileUri = vscode.Uri.file(state.data.currentFile);
-            const convertBandsToVariables = this.shouldConvertBandsToVariables(
-                state.data.currentFile,
-            );
-            const reprResponse = await this.dataProcessor.getRepr(
-                fileUri,
-                scope,
-                group,
-                convertBandsToVariables,
-            );
-
-            if (!reprResponse) {
-                throw new Error('Failed to load representation');
-            }
-            if (reprResponse.error) {
-                throw new Error(reprResponse.error.error);
-            }
-
-            return reprResponse.result;
         }, context);
     }
 
@@ -733,11 +677,7 @@ export class UIController {
             this.errorBoundary.wrapAsync(async () => {
                 const state = this.stateManager.getState();
                 if (state.data.currentFile) {
-                    this.messageBus.emitRefreshStarting();
-                    DataInfoCache.invalidateFile(state.data.currentFile);
-                    await this.handleGetDataInfo(state.data.currentFile, {
-                        forceRefresh: true,
-                    });
+                    await this.handleGetDataInfo(state.data.currentFile);
                 }
             }, context) || undefined
         );

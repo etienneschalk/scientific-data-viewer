@@ -154,10 +154,7 @@ export class HTMLGenerator {
 
     static generateLoadingAndError(): string {
         return /*html*/ `
-    <div id="loading" class="loading">
-        <p id="loadingStatus" class="loading-status">Loading data...</p>
-        <p id="loadingFilePath" class="loading-file-path hidden"></p>
-    </div>
+    <div id="loading" class="loading">Loading data...</div>
     <div id="error" class="error hidden"></div>
     `;
     }
@@ -203,7 +200,7 @@ export class HTMLGenerator {
     static generateHtmlRepresentation(): string {
         return /*html*/ `
         <div class="info-section">
-            <details class="sticky-group-details" id="section-html-representation"> <summary><h3>Xarray HTML Representation</h3></summary>
+            <details class="sticky-group-details" open id="section-html-representation"> <summary><h3>Xarray HTML Representation</h3></summary>
                 <div id="htmlRepresentation" class="html-representation"></div>
             </details>
         </div>`;

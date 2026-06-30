@@ -11,7 +11,6 @@ Webview Export Button (🖼️):
 - Added to header controls next to the existing export button
 - Captures the current rendered webview state
 - Includes all plots, expanded sections, and user interactions
-- Disabled while an export is in progress (rapid clicks and repeated command invocations are ignored)
 
 New Command:
 

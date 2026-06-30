@@ -89,39 +89,6 @@ else
     echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
 fi
 
-echo "   Running Python performance feature tests (Issue #131)..."
-set +e
-python3 -m pytest python/test_performance_features.py -v
-PERF_PYTEST_EXIT_CODE=$?
-set -e
-if [ $PERF_PYTEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python performance feature tests passed"
-else
-    echo "⚠️  Python performance feature tests failed (non-fatal, exit code: $PERF_PYTEST_EXIT_CODE)"
-fi
-
-echo "   Running Python datetime min/max helper tests..."
-set +e
-python3 -m pytest python/test_datetime_min_max.py -v
-DATETIME_MINMAX_EXIT_CODE=$?
-set -e
-if [ $DATETIME_MINMAX_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python datetime min/max helper tests passed"
-else
-    echo "⚠️  Python datetime min/max helper tests failed (non-fatal, exit code: $DATETIME_MINMAX_EXIT_CODE)"
-fi
-
-echo "   Running Python many-groups light sample tests..."
-set +e
-python3 -m pytest python/test_many_groups_light_sample.py -v
-MANY_GROUPS_LIGHT_EXIT_CODE=$?
-set -e
-if [ $MANY_GROUPS_LIGHT_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python many-groups light sample tests passed"
-else
-    echo "⚠️  Python many-groups light sample tests failed (non-fatal, exit code: $MANY_GROUPS_LIGHT_EXIT_CODE)"
-fi
-
 echo ""
 echo "🎉 Setup complete!"
 echo ""

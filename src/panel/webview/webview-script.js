@@ -25,9 +25,6 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
 
 const MAX_ATTR_DISPLAY_STR_LENGTH = 999999;
 
-/** Render groups in rAF batches when there are many (Issue #131). */
-const INCREMENTAL_GROUP_RENDER_THRESHOLD = 4;
-
 class WebviewMessageBus {
     constructor(vscode) {
         this.vscode = vscode;
@@ -447,10 +444,6 @@ class WebviewMessageBus {
     onExportWebviewCommand(callback) {
         return this.onEvent('exportWebviewCommandEvent', callback);
     }
-
-    onRefreshStarting(callback) {
-        return this.onEvent('refreshStarting', callback);
-    }
 }
 
 // Do not use vscode directly ; communicate with vscode through messageBus
@@ -481,9 +474,6 @@ const globalState = {
     /** Plot timeout in ms (from extension config); used by createPlot */
     plotTimeoutMs: 20000,
 };
-
-let refreshInProgress = false;
-let exportWebviewInProgress = false;
 
 // Track active plot operations for cancel functionality
 const activePlotOperations = new Set();
@@ -647,12 +637,7 @@ function setupMessageHandlers() {
     // Set up event listeners for new message system
     messageBus.onDataLoaded((state) => {
         console.log('📊 Data loaded event received:', state);
-        displayAll(state).catch((error) => {
-            console.error('Failed to display loaded data:', error);
-            displayGlobalError(
-                'Failed to display data: ' + (error.message || error),
-            );
-        });
+        displayAll(state);
     });
 
     messageBus.onError((error) => {
@@ -666,12 +651,7 @@ function setupMessageHandlers() {
     });
 
     messageBus.onUIStateChanged((state) => {
-        if (state?.data?.isLoading) {
-            showLoadingSkeleton(
-                state.data.currentFile,
-                state.data.dataInfo ? 'Refreshing data…' : 'Loading data…',
-            );
-        }
+        console.log('🔄 UI state changed:', state);
     });
 
     // When the user clicks on a TreeItem from the Data Structure TreeView
@@ -682,12 +662,6 @@ function setupMessageHandlers() {
     // When the user trigger the 'Export Wevbiew Content' command
     messageBus.onExportWebviewCommand(() => {
         handleExportWebview();
-    });
-
-    messageBus.onRefreshStarting(() => {
-        if (beginRefreshUi()) {
-            resetViewForRefresh();
-        }
     });
 
     // Add debugging for all message bus communications
@@ -705,49 +679,26 @@ function setupMessageHandlers() {
     };
 }
 
-async function displayAll(state) {
-    const displayStart = performance.now();
-    const lazyReprLoading =
-        state.extension?.extensionConfig?.lazyReprLoading !== false;
-
-    await displayDataInfo(
+function displayAll(state) {
+    displayDataInfo(
         state.data.dataInfo,
         state.data.currentFile,
         state.extension.extensionConfig,
     );
-
-    if (lazyReprLoading) {
-        setupLazyReprSections(state.data.dataInfo);
-    } else {
-        displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
-        displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
-        displayHtmlRepresentation(
-            state.data.dataInfo.xarray_html_repr_flattened,
-            true,
-        );
-        displayTextRepresentation(
-            state.data.dataInfo.xarray_text_repr_flattened,
-            true,
-        );
-    }
-
+    displayHtmlRepresentation(state.data.dataInfo.xarray_html_repr, false);
+    displayTextRepresentation(state.data.dataInfo.xarray_text_repr, false);
+    displayHtmlRepresentation(
+        state.data.dataInfo.xarray_html_repr_flattened,
+        true,
+    );
+    displayTextRepresentation(
+        state.data.dataInfo.xarray_text_repr_flattened,
+        true,
+    );
     displayPythonPath(state.python.pythonPath);
     displayExtensionConfig(state.extension.extensionConfig);
     displayShowVersions(state.data.dataInfo.xarray_show_versions);
     displayTimestamp(state.data.lastLoadTime);
-
-    hideLoadingSkeleton();
-
-    const content = document.getElementById('content');
-    if (content) {
-        content.classList.remove('hidden');
-    }
-
-    console.log(
-        `⏱️ displayAll completed in ${(performance.now() - displayStart).toFixed(1)}ms (lazyRepr=${lazyReprLoading})`,
-    );
-
-    endRefreshUi();
 }
 
 function displayTimestamp(isoString, isLoading = false) {
@@ -768,7 +719,7 @@ function displayTimestamp(isoString, isLoading = false) {
 }
 
 // Display functions
-async function displayDataInfo(data, filePath, extensionConfig) {
+function displayDataInfo(data, filePath, extensionConfig) {
     if (!data) {
         displayGlobalError('No data available');
         return;
@@ -820,15 +771,40 @@ async function displayDataInfo(data, filePath, extensionConfig) {
         data.coordinates_flattened &&
         data.variables_flattened
     ) {
-        await renderGroupsIntoContainer(groupInfoContainer, groups, data, {
-            groupTimeControls,
-            groupDimensionSlices,
-            nestedAttributesView,
+        // Display dimensions, coordinates, and variables for each group (with optional Group Plot Controls)
+        groupInfoContainer.innerHTML = groups
+            .map((groupName, index) =>
+                renderGroup(data, groupName, {
+                    groupTimeControls,
+                    groupDimensionSlices,
+                    nestedAttributesView,
+                    isFirstRootGroup: index === 0,
+                }),
+            )
+            .join('');
+        // Open the first group by default
+        groupInfoContainer
+            .querySelector('details')
+            .setAttribute('open', 'open');
+
+        // Enable buttons for datatree variables
+        Object.keys(data.variables_flattened).forEach((groupName) => {
+            data.variables_flattened[groupName].forEach((variable) => {
+                const fullVariableName = `${
+                    groupName === '/' ? '' : groupName
+                }/${variable.name}`;
+                const createButton = document.querySelector(
+                    `.create-plot-button[data-variable="${fullVariableName}"]`,
+                );
+                if (createButton) {
+                    createButton.disabled = false;
+                }
+            });
         });
 
         setupGroupPlotControlsListeners();
     } else {
-        groupInfoContainer.innerHTML = '<p>No data available</p>';
+        contentContainer.innerHTML = '<p>No data available</p>';
     }
 
     // Populate datetime variables (respects globalTimeControls flag)
@@ -837,101 +813,9 @@ async function displayDataInfo(data, filePath, extensionConfig) {
     // Populate dimension slices (respects globalDimensionSlices flag, merges all groups)
     populateDimensionSlices(data, { globalDimensionSlices });
 
-    hideLoadingSkeleton();
+    // Show content
+    document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.remove('hidden');
-}
-
-async function renderGroupsIntoContainer(
-    container,
-    groups,
-    data,
-    renderOptions,
-) {
-    container.innerHTML = '';
-
-    const renderBatch = (startIndex, endIndex) => {
-        const html = groups
-            .slice(startIndex, endIndex)
-            .map((groupName, offset) =>
-                renderGroup(data, groupName, {
-                    ...renderOptions,
-                    isFirstRootGroup: startIndex + offset === 0,
-                }),
-            )
-            .join('');
-        container.insertAdjacentHTML('beforeend', html);
-    };
-
-    if (groups.length <= INCREMENTAL_GROUP_RENDER_THRESHOLD) {
-        renderBatch(0, groups.length);
-    } else {
-        const batchSize = 2;
-        for (let i = 0; i < groups.length; i += batchSize) {
-            renderBatch(i, Math.min(i + batchSize, groups.length));
-            if (i + batchSize < groups.length) {
-                await new Promise((resolve) => requestAnimationFrame(resolve));
-            }
-        }
-        console.log(
-            `⏱️ incremental group render: ${groups.length} groups in batches of ${batchSize}`,
-        );
-    }
-
-    finalizeGroupContainer(container, data);
-}
-
-function finalizeGroupContainer(container, data) {
-    const firstDetails = container.querySelector('details');
-    if (firstDetails) {
-        firstDetails.setAttribute('open', 'open');
-    }
-
-    Object.keys(data.variables_flattened).forEach((groupName) => {
-        data.variables_flattened[groupName].forEach((variable) => {
-            const fullVariableName = `${
-                groupName === '/' ? '' : groupName
-            }/${variable.name}`;
-            const createButton = container.querySelector(
-                `.create-plot-button[data-variable="${fullVariableName}"]`,
-            );
-            if (createButton) {
-                createButton.disabled = false;
-            }
-        });
-    });
-}
-
-function showLoadingSkeleton(filePath, statusText = 'Loading data…') {
-    hideGlobalError();
-
-    const loading = document.getElementById('loading');
-    const content = document.getElementById('content');
-    const status = document.getElementById('loadingStatus');
-    const pathEl = document.getElementById('loadingFilePath');
-
-    if (loading) {
-        loading.classList.remove('hidden');
-    }
-    if (content) {
-        content.classList.add('hidden');
-    }
-    if (status) {
-        status.textContent = statusText;
-    }
-    if (pathEl) {
-        const label = filePath ? filePath.split(/[/\\]/).pop() || filePath : '';
-        pathEl.textContent = label;
-        pathEl.classList.toggle('hidden', !label);
-    }
-
-    displayTimestamp(null, true);
-}
-
-function hideLoadingSkeleton() {
-    const loading = document.getElementById('loading');
-    if (loading) {
-        loading.classList.add('hidden');
-    }
 }
 
 function renderFileInformation(data) {
@@ -1544,204 +1428,6 @@ function renderVariablePlotControls(variableName) {
 }
 
 // Representation display functions
-const loadedReprKeys = new Set();
-
-function reprKey(scope, group, kind) {
-    return `${scope}:${group || 'root'}:${kind}`;
-}
-
-function isReprLoaded(scope, group, kind) {
-    return loadedReprKeys.has(reprKey(scope, group, kind));
-}
-
-function markReprLoaded(scope, group, kind) {
-    loadedReprKeys.add(reprKey(scope, group, kind));
-}
-
-function setupLazyReprSections(dataInfo) {
-    loadedReprKeys.clear();
-    setupLazyRootReprSection(
-        'html',
-        'section-html-representation',
-        'htmlRepresentation',
-    );
-    setupLazyRootReprSection(
-        'text',
-        'section-text-representation',
-        'textRepresentation',
-    );
-
-    const groups = Object.keys(dataInfo?.dimensions_flattened || {});
-    const hasPerGroupRepr =
-        groups.length > 1 || (groups.length === 1 && groups[0] !== '/');
-    if (hasPerGroupRepr) {
-        setupLazyGroupReprSections(groups);
-    } else {
-        hideReprSection('section-html-representation-for-groups');
-        hideReprSection('section-text-representation-for-groups');
-    }
-}
-
-function hideReprSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    if (section?.parentElement) {
-        section.parentElement.classList.add('hidden');
-    }
-}
-
-function setupLazyRootReprSection(kind, sectionId, containerId) {
-    const section = document.getElementById(sectionId);
-    const container = document.getElementById(containerId);
-    if (!section || !container) {
-        return;
-    }
-
-    section.open = false;
-    section.parentElement.classList.remove('hidden');
-    container.innerHTML =
-        '<p class="muted-text">Expand to load representation…</p>';
-
-    if (section.dataset.lazyReprBound === '1') {
-        return;
-    }
-    section.dataset.lazyReprBound = '1';
-
-    section.addEventListener('toggle', async () => {
-        if (!section.open || isReprLoaded('root', null, kind)) {
-            return;
-        }
-        container.innerHTML =
-            '<p class="muted-text">Loading representation…</p>';
-        const loadStart = performance.now();
-        try {
-            const result = await messageBus.sendRequest('getRepr', {
-                scope: 'root',
-                reprKind: kind,
-            });
-            if (kind === 'html') {
-                displayHtmlRepresentation(result.xarray_html_repr, false);
-            } else {
-                displayTextRepresentation(result.xarray_text_repr, false);
-            }
-            markReprLoaded('root', null, kind);
-            console.log(
-                `⏱️ lazy repr root:${kind} in ${(performance.now() - loadStart).toFixed(1)}ms`,
-            );
-        } catch (error) {
-            container.innerHTML = `<p class="muted-text">Failed to load representation: ${escapeHtml(String(error.message || error))}</p>`;
-        }
-    });
-}
-
-function setupLazyGroupReprSections(groups) {
-    const htmlSection = document.getElementById(
-        'section-html-representation-for-groups',
-    );
-    const htmlContainer = document.getElementById(
-        'htmlRepresentationForGroups',
-    );
-    const textSection = document.getElementById(
-        'section-text-representation-for-groups',
-    );
-    const textContainer = document.getElementById(
-        'textRepresentationForGroups',
-    );
-
-    if (htmlSection && htmlContainer) {
-        htmlSection.open = false;
-        htmlSection.parentElement.classList.remove('hidden');
-        htmlContainer.innerHTML = groups
-            .map((groupName) =>
-                renderLazyGroupReprPlaceholder(
-                    'html',
-                    'section-html-representation-for-groups',
-                    groupName,
-                ),
-            )
-            .join('');
-        attachLazyGroupReprListeners(htmlContainer, 'html');
-    }
-
-    if (textSection && textContainer) {
-        textSection.open = false;
-        textSection.parentElement.classList.remove('hidden');
-        textContainer.innerHTML = groups
-            .map((groupName) =>
-                renderLazyGroupReprPlaceholder(
-                    'text',
-                    'section-text-representation-for-groups',
-                    groupName,
-                ),
-            )
-            .join('');
-        attachLazyGroupReprListeners(textContainer, 'text');
-    }
-}
-
-function renderLazyGroupReprPlaceholder(kind, prefixId, groupName) {
-    const containerId =
-        kind === 'html'
-            ? joinId(['lazyGroupHtmlRepr', groupName])
-            : joinId(['lazyGroupTextRepr', groupName]);
-    return /*html*/ `
-    <div class="info-section" id="${joinId([prefixId, groupName])}">
-        <details data-lazy-repr-group="${escapeHtml(groupName)}" data-lazy-repr-kind="${kind}">
-            <summary>${escapeHtml(groupName)}</summary>
-            <div id="${containerId}" class="muted-text">Expand to load representation…</div>
-        </details>
-    </div>`;
-}
-
-function attachLazyGroupReprListeners(container, kind) {
-    container
-        .querySelectorAll('details[data-lazy-repr-group]')
-        .forEach((details) => {
-            details.addEventListener('toggle', async () => {
-                const groupName = details.getAttribute('data-lazy-repr-group');
-                const reprKind =
-                    details.getAttribute('data-lazy-repr-kind') || kind;
-                const targetId =
-                    reprKind === 'html'
-                        ? joinId(['lazyGroupHtmlRepr', groupName])
-                        : joinId(['lazyGroupTextRepr', groupName]);
-                const target = document.getElementById(targetId);
-                if (
-                    !details.open ||
-                    !groupName ||
-                    !target ||
-                    isReprLoaded('group', groupName, reprKind)
-                ) {
-                    return;
-                }
-
-                target.textContent = 'Loading representation…';
-                const loadStart = performance.now();
-                try {
-                    const result = await messageBus.sendRequest('getRepr', {
-                        scope: 'group',
-                        group: groupName,
-                        reprKind: reprKind,
-                    });
-                    if (reprKind === 'html') {
-                        target.innerHTML =
-                            result.xarray_html_repr ||
-                            '<p class="muted-text">No HTML representation available</p>';
-                        target.classList.add('html-representation');
-                    } else {
-                        target.textContent = result.xarray_text_repr || '';
-                        target.classList.remove('muted-text');
-                    }
-                    markReprLoaded('group', groupName, reprKind);
-                    console.log(
-                        `⏱️ lazy repr group:${groupName}:${reprKind} in ${(performance.now() - loadStart).toFixed(1)}ms`,
-                    );
-                } catch (error) {
-                    target.textContent = `Failed to load representation: ${error.message || error}`;
-                }
-            });
-        });
-}
-
 function displayHtmlRepresentation(htmlData, isDatatree) {
     const container = isDatatree
         ? document.getElementById('htmlRepresentationForGroups')
@@ -1955,9 +1641,8 @@ function displayGlobalError(
         </div>
     `;
     errorDiv.classList.remove('hidden');
-    hideLoadingSkeleton();
+    document.getElementById('loading').classList.add('hidden');
     document.getElementById('content').classList.add('hidden');
-    endRefreshUi();
 
     // Hide header controls when error is displayed
     const headerControls = document.getElementById('header-controls');
@@ -3328,12 +3013,7 @@ async function handleRefresh() {
         return;
     }
 
-    if (!beginRefreshUi()) {
-        return;
-    }
-
-    resetViewForRefresh();
-
+    displayTimestamp(null, true);
     try {
         await messageBus.refresh();
     } catch (error) {
@@ -3342,135 +3022,9 @@ async function handleRefresh() {
     }
 }
 
-function beginRefreshUi() {
-    if (refreshInProgress) {
-        return false;
-    }
-    refreshInProgress = true;
-    setRefreshButtonEnabled(false);
-    return true;
-}
-
-function endRefreshUi() {
-    if (!refreshInProgress) {
-        return;
-    }
-    refreshInProgress = false;
-    setRefreshButtonEnabled(true);
-}
-
-function setRefreshButtonEnabled(enabled) {
-    const button = document.getElementById('refreshButton');
-    if (!button) {
-        return;
-    }
-    button.disabled = !enabled;
-    button.title = enabled ? 'Refresh' : 'Refreshing…';
-    button.classList.toggle('refresh-in-progress', !enabled);
-}
-
-function resetViewForRefresh() {
-    loadedReprKeys.clear();
-
-    showLoadingSkeleton(globalState.currentDatasetFilePath, 'Refreshing data…');
-
-    const fileInfo = document.getElementById('fileInfo');
-    if (fileInfo) {
-        fileInfo.innerHTML = '';
-    }
-
-    const groupInfoContainer = document.getElementById('group-info-container');
-    if (groupInfoContainer) {
-        groupInfoContainer.innerHTML = '';
-        groupInfoContainer.classList.add('hidden');
-    }
-
-    resetStaticReprSection(
-        'htmlRepresentation',
-        'section-html-representation',
-        true,
-    );
-    resetStaticReprSection(
-        'textRepresentation',
-        'section-text-representation',
-        false,
-    );
-    resetStaticReprSection(
-        'htmlRepresentationForGroups',
-        'section-html-representation-for-groups',
-        true,
-    );
-    resetStaticReprSection(
-        'textRepresentationForGroups',
-        'section-text-representation-for-groups',
-        false,
-    );
-
-    resetGlobalPlotControlInputs();
-    handleResetAllPlots();
-
-    for (const operationId of [...messageBus.getActiveOperationIds()]) {
-        messageBus.abortPlot(operationId).catch((error) => {
-            console.warn(
-                `Failed to abort plot ${operationId} during refresh:`,
-                error,
-            );
-        });
-    }
-}
-
-function resetStaticReprSection(containerId, sectionId, useInnerHtml) {
-    const container = document.getElementById(containerId);
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.open = false;
-        if (section.parentElement) {
-            section.parentElement.classList.remove('hidden');
-        }
-    }
-    if (!container) {
-        return;
-    }
-    if (useInnerHtml) {
-        container.innerHTML = '';
-    } else {
-        container.textContent = '';
-    }
-}
-
-function resetGlobalPlotControlInputs() {
-    const datetimeSelect = document.getElementById('datetimeVariableSelect');
-    if (datetimeSelect) {
-        datetimeSelect.selectedIndex = 0;
-    }
-
-    for (const id of [
-        'startDatetimeInput',
-        'endDatetimeInput',
-        'startDatetimeTextInput',
-        'endDatetimeTextInput',
-    ]) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.value = '';
-        }
-    }
-
-    const dimensionSlicesContainer = document.getElementById(
-        'dimensionSlicesContainer',
-    );
-    if (dimensionSlicesContainer) {
-        dimensionSlicesContainer.innerHTML = '';
-    }
-}
-
 async function handleExportWebview() {
     if (messageBus.isDegradedMode) {
         console.warn('⚠️ Export webview not available in degraded mode');
-        return;
-    }
-
-    if (!beginExportWebviewUi()) {
         return;
     }
 
@@ -3494,38 +3048,7 @@ async function handleExportWebview() {
         displayGlobalError(
             'Failed to export webview content: ' + error.message,
         );
-    } finally {
-        endExportWebviewUi();
     }
-}
-
-function beginExportWebviewUi() {
-    if (exportWebviewInProgress) {
-        return false;
-    }
-    exportWebviewInProgress = true;
-    setExportWebviewButtonEnabled(false);
-    return true;
-}
-
-function endExportWebviewUi() {
-    if (!exportWebviewInProgress) {
-        return;
-    }
-    exportWebviewInProgress = false;
-    setExportWebviewButtonEnabled(true);
-}
-
-function setExportWebviewButtonEnabled(enabled) {
-    const button = document.getElementById('exportWebviewButton');
-    if (!button) {
-        return;
-    }
-    button.disabled = !enabled;
-    button.title = enabled
-        ? 'Export Webview Content'
-        : 'Exporting webview content…';
-    button.classList.toggle('export-in-progress', !enabled);
 }
 
 /**

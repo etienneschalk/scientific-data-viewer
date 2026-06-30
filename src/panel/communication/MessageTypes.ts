@@ -230,7 +230,6 @@ export function isEventMessage(message: Message): message is EventMessage {
 // Command constants
 export const COMMANDS = {
     GET_DATA_INFO: 'getDataInfo',
-    GET_REPR: 'getRepr',
     CREATE_PLOT: 'createPlot',
     SAVE_PLOT: 'savePlot',
     SAVE_PLOT_AS: 'savePlotAs',
@@ -247,7 +246,6 @@ export const EVENTS = {
     UI_STATE_CHANGED: 'uiStateChanged',
     SCROLL_TO_HEADER_EVENT_COMMAND: 'scrollToHeaderCommandEvent',
     EXPORT_WEBVIEW_COMMAND_EVENT: 'exportWebviewCommandEvent',
-    REFRESH_STARTING: 'refreshStarting',
 } as const;
 
 export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];

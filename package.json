@@ -546,34 +546,12 @@
                     "description": "Timeout in milliseconds for matplotlib plot generation (Issue #126).",
                     "markdownDescription": "Maximum time in **milliseconds** to wait for a plot before it is cancelled and the backend process is terminated. Use a higher value (e.g. 120000 for 2 minutes) for large datasets when you want a quicklook without slicing first. Minimum 1000 (1s), maximum 600000 (10 min). Default: 20000 (20s)."
                 },
-                "scientificDataViewer.persistentPythonWorker": {
+                "scientificDataViewer.outlineEnabled": {
                     "type": "boolean",
                     "default": true,
                     "order": 1009,
-                    "description": "Keep a long-lived Python process for data operations (faster repeated file opens).",
-                    "markdownDescription": "When enabled, the extension reuses a persistent Python worker instead of spawning a new interpreter for each operation. **On by default.** Disable if you hit worker stability issues."
-                },
-                "scientificDataViewer.lazyReprLoading": {
-                    "type": "boolean",
-                    "default": true,
-                    "order": 1010,
-                    "description": "Load xarray HTML/text reprs on demand when their section is expanded.",
-                    "markdownDescription": "Skips expensive xarray repr generation during the initial file load and fetches reprs when you expand the corresponding section. **On by default.**"
-                },
-                "scientificDataViewer.outlineEnabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "order": 1011,
                     "description": "Build the Scientific Data Structure outline sidebar. Reload the window after changing this setting.",
-                    "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **Off by default** for faster loads.\n\n**Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation."
-                },
-                "scientificDataViewer.dataInfoCacheMaxEntries": {
-                    "type": "number",
-                    "default": 8,
-                    "minimum": 0,
-                    "order": 1012,
-                    "description": "Maximum number of file metadata results to keep in the LRU cache (0 disables caching).",
-                    "markdownDescription": "How many recent `getDataInfo` results to cache in memory, keyed by file path, modification time, and relevant settings. **Default: 8.** Set to **0** to disable the metadata cache entirely."
+                    "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.\n\n**Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation."
                 }
             }
         }
