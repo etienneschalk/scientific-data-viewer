@@ -212,14 +212,14 @@ The data viewer editor shows:
 
 - **File Information**: Path, size, format, and basic metadata
 - **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
-- **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened (using a sorted [`DataTree.to_dict()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dict.html)). Dataset representations are always used for groups.
+- **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dict()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dict.html). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups.
 - **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
 - **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
   - **Dimensions**: Dataset dimensions and their sizes
   - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a coordinate..
   - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a variable.
     - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
-  - **Attributes**: Show group's attributes.
+  - **Attributes**: Show group's attributes. Coordinate and variable attributes may include `__xarray_encoding.*` entries when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
 
 ### 📐 Dimension Slices
 
@@ -361,8 +361,14 @@ The extension includes configuration options that act as feature flags to contro
   - (type: `boolean`, default: `true`)
   - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group’s Plot Controls section. Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
 
-**Display (attributes)**
+**Display**
 
+- **`scientificDataViewer.orderGroupsAlphabetically`**
+  - (type: `boolean`, default: `true`)
+  - Sort multi-group NetCDF / DataTree paths **alphabetically** in the data viewer. **On by default.** Set to `false` to show groups in the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Use **Refresh** (🔄) after changing.
+- **`scientificDataViewer.showXarrayEncodingAttributes`**
+  - (type: `boolean`, default: `true`)
+  - Include xarray **encoding** metadata in attribute tables as `__xarray_encoding.*` keys (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. **On by default.** Set to `false` to hide these entries. Use **Refresh** (🔄) after changing.
 - **`scientificDataViewer.nestedAttributesView`**
   - (type: `boolean`, default: `true`)
   - When on (default), group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar) where attributes are stored as nested JSON (e.g. `.zattrs`). Set to `false` to opt out and use the flat list. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120).

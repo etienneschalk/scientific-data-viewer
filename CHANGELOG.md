@@ -18,7 +18,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **External webview assets**: Webview JS and CSS loaded via `asWebviewUri` from `src/panel/webview/` instead of inlined in every panel HTML document (~174 KB). Dev mode appends a cache-buster query param. Falls back to inline when `asWebviewUri` is unavailable (e.g. unit tests).
   - **Release notes**: `docs/RELEASE_NOTES_0.12.0.md`; linked from `README.md`.
   - **Files**: `src/common/PerformanceTimer.ts`, `src/python/PythonManager.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/panel/HTMLGenerator.ts`, `src/DataViewerPanel.ts`, `src/common/config.ts`, `package.json`, `docs/RELEASE_NOTES_0.12.0.md`
-  - **Tests**: `test/suite/common/PerformanceTimer.test.ts`, `config.test.ts`, `python/test_display_feature_flags.py`
+  - **Tests**: `test/suite/common/PerformanceTimer.test.ts`, `test/suite/python/displayFeatureFlags.test.ts`, `config.test.ts`, `python/test_display_feature_flags.py`
 
 ### Changed
 

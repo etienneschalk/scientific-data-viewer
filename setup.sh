@@ -89,6 +89,17 @@ else
     echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
 fi
 
+echo "   Running Python display feature flag tests..."
+set +e
+python3 -m pytest python/test_display_feature_flags.py -v
+DISPLAY_FLAGS_PYTEST_EXIT_CODE=$?
+set -e
+if [ $DISPLAY_FLAGS_PYTEST_EXIT_CODE -eq 0 ]; then
+    echo "✅ Python display feature flag tests passed"
+else
+    echo "⚠️  Python display feature flag tests failed (non-fatal, exit code: $DISPLAY_FLAGS_PYTEST_EXIT_CODE)"
+fi
+
 echo ""
 echo "🎉 Setup complete!"
 echo ""

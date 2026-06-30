@@ -122,4 +122,4 @@ These can be revisited once timing logs show where time is spent for real worklo
 | **Extension**     | `PerformanceTimer`, external webview assets, outline toggle, group order and encoding attribute flags ([#140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)) |
 | **Webview**       | External JS/CSS via `asWebviewUri`                                                                                                                                                 |
 | **UI / Explorer** | Outline hidden when disabled; no data-provider error                                                                                                                               |
-| **Tests**         | `PerformanceTimer`, `config.test.ts`, `python/test_display_feature_flags.py`                                                                                                       |
+| **Tests**         | `PerformanceTimer`, `config.test.ts`, `displayFeatureFlags.test.ts`, `python/test_display_feature_flags.py`                                                                        |
