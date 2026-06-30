@@ -46,6 +46,22 @@ When disabled:
 
 ---
 
+## Order groups alphabetically ([#140](https://github.com/etienneschalk/scientific-data-viewer/issues/140))
+
+**Setting:** `scientificDataViewer.orderGroupsAlphabetically` (default: **true**)
+
+Multi-group NetCDF / DataTree files are flattened for display in the viewer. When enabled (**default**), group paths are sorted alphabetically. Disable to preserve the order from the file.
+
+---
+
+## Show xarray encoding attributes
+
+**Setting:** `scientificDataViewer.showXarrayEncodingAttributes` (default: **true**)
+
+When enabled (**default**), group, coordinate, and variable attribute tables include xarray encoding metadata as `__xarray_encoding.*` keys (for example `_FillValue`, `dtype`, chunking). Disable to hide these entries.
+
+---
+
 ## External webview assets
 
 Previously, every new panel inlined ~**174 KB** of JS and CSS into the HTML document.
@@ -68,9 +84,11 @@ v0.12.0 serves assets from `src/panel/webview/` via **`asWebviewUri`**:
 
 ## New settings (summary)
 
-| Setting          | Default | Effect                                                                                                     |
-| ---------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `outlineEnabled` | `true`  | Build Scientific Data Structure sidebar; set `false` to skip for faster loads (reload window after toggle) |
+| Setting                        | Default | Effect                                                                                                                                         |
+| ------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `outlineEnabled`               | `true`  | Build Scientific Data Structure sidebar; set `false` to skip for faster loads (reload window after toggle)                                     |
+| `orderGroupsAlphabetically`    | `true`  | Sort multi-group paths alphabetically; set `false` for file order ([#140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)) |
+| `showXarrayEncodingAttributes` | `true`  | Show `__xarray_encoding.*` in attribute tables; set `false` to hide encoding metadata                                                          |
 
 Performance logging has no user-facing setting — it is always on in the extension host for instrumented stages.
 
@@ -99,9 +117,9 @@ These can be revisited once timing logs show where time is spent for real worklo
 
 ## Summary of changes
 
-| Area              | Change                                                                                              |
-| ----------------- | --------------------------------------------------------------------------------------------------- |
-| **Extension**     | `PerformanceTimer`, external webview assets, `outlineEnabled` toggle with hidden pane when disabled |
-| **Webview**       | External JS/CSS via `asWebviewUri`                                                                  |
-| **UI / Explorer** | Outline hidden when disabled; no data-provider error                                                |
-| **Tests**         | `test/suite/common/PerformanceTimer.test.ts`, `config.test.ts` outline default                      |
+| Area              | Change                                                                                                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Extension**     | `PerformanceTimer`, external webview assets, outline toggle, group order and encoding attribute flags ([#140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)) |
+| **Webview**       | External JS/CSS via `asWebviewUri`                                                                                                                                                 |
+| **UI / Explorer** | Outline hidden when disabled; no data-provider error                                                                                                                               |
+| **Tests**         | `PerformanceTimer`, `config.test.ts`, `python/test_display_feature_flags.py`                                                                                                       |

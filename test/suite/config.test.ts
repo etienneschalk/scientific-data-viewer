@@ -11,6 +11,8 @@ import {
     getNestedAttributesView,
     getExtensionConfigForWebview,
     getOutlineEnabled,
+    getOrderGroupsAlphabetically,
+    getShowXarrayEncodingAttributes,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -77,7 +79,17 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof config.groupDimensionSlices, 'boolean');
         assert.strictEqual(typeof config.nestedAttributesView, 'boolean');
         assert.strictEqual(typeof config.outlineEnabled, 'boolean');
+        assert.strictEqual(typeof config.orderGroupsAlphabetically, 'boolean');
+        assert.strictEqual(
+            typeof config.showXarrayEncodingAttributes,
+            'boolean',
+        );
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
+    });
+
+    test('display feature config getters return booleans', () => {
+        assert.strictEqual(typeof getOrderGroupsAlphabetically(), 'boolean');
+        assert.strictEqual(typeof getShowXarrayEncodingAttributes(), 'boolean');
     });
 
     test('getOutlineEnabled returns a boolean', () => {
@@ -88,6 +100,16 @@ suite('Config Test Suite', () => {
         const properties = getPackageJsonDefaults();
         assert.strictEqual(
             properties['scientificDataViewer.outlineEnabled'].default,
+            true,
+        );
+        assert.strictEqual(
+            properties['scientificDataViewer.orderGroupsAlphabetically']
+                .default,
+            true,
+        );
+        assert.strictEqual(
+            properties['scientificDataViewer.showXarrayEncodingAttributes']
+                .default,
             true,
         );
     });

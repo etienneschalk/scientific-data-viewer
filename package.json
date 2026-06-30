@@ -552,6 +552,20 @@
                     "order": 1009,
                     "description": "Build the Scientific Data Structure outline sidebar. Reload the window after changing this setting.",
                     "markdownDescription": "When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.\n\n**Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation."
+                },
+                "scientificDataViewer.orderGroupsAlphabetically": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1010,
+                    "description": "Sort multi-group datasets alphabetically by group path in the data viewer.",
+                    "markdownDescription": "When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140))."
+                },
+                "scientificDataViewer.showXarrayEncodingAttributes": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1011,
+                    "description": "Show __xarray_encoding.* attributes for groups, coordinates, and variables.",
+                    "markdownDescription": "When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking). Disable to hide these from group, coordinate, and variable attribute tables."
                 }
             }
         }

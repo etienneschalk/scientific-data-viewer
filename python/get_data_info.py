@@ -33,7 +33,6 @@ import argparse
 import base64
 import datetime
 import io
-import itertools
 import json
 import logging
 import os
@@ -2127,11 +2126,39 @@ def create_plot(
         )
 
 
+def _collect_dataarray_attributes(
+    data_array: xr.DataArray | xr.Dataset,
+    *,
+    show_xarray_encoding_attributes: bool,
+) -> dict[str, Any]:
+    """Merge attrs and optional xarray encoding metadata for UI display."""
+    items: list[tuple[str, Any]] = [(str(k), v) for k, v in data_array.attrs.items()]
+    if show_xarray_encoding_attributes:
+        items.extend(
+            ("__xarray_encoding." + str(k), v) for k, v in data_array.encoding.items()
+        )
+    return dict(items)
+
+
+def _flatten_datatree_groups(
+    xdt: xr.DataTree,
+    *,
+    order_groups_alphabetically: bool,
+) -> DictOfDatasets:
+    """Flatten a DataTree to datasets, optionally sorting group paths."""
+    items = list(xdt.to_dict().items())
+    if order_groups_alphabetically:
+        items.sort(key=lambda item: item[0])
+    return dict(items)
+
+
 def get_file_info(
     file_path: Path,
     convert_bands_to_variables: bool = False,
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+    order_groups_alphabetically: bool = True,
+    show_xarray_encoding_attributes: bool = True,
 ) -> FileInfoResult | FileInfoError:
     """Extract comprehensive information from a data file.
 
@@ -2149,6 +2176,10 @@ def get_file_info(
         Max size in bytes for variables/coordinates to load and display values (Issue #102). If 0, disabled.
     small_value_display_max_len : int
         Max character length for displayed small values (truncation).
+    order_groups_alphabetically : bool
+        When True, sort flattened DataTree group paths alphabetically (Issue #140).
+    show_xarray_encoding_attributes : bool
+        When True, include ``__xarray_encoding.*`` entries from xarray encoding metadata.
 
     Returns
     -------
@@ -2196,8 +2227,9 @@ def get_file_info(
 
             # logger.info(f"{xdt=}")
 
-            flat_dict_of_xds: DictOfDatasets = dict(
-                sorted(xdt.to_dict().items(), key=lambda x: x[0])
+            flat_dict_of_xds: DictOfDatasets = _flatten_datatree_groups(
+                xdt,
+                order_groups_alphabetically=order_groups_alphabetically,
             )
             logger.info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
@@ -2259,16 +2291,10 @@ def get_file_info(
             xds = flat_dict_of_xds[group]
 
             # Add attributes for group
-            info.attributes_flattened[group] = {
-                str(k): v
-                for k, v in itertools.chain(
-                    xds.attrs.items(),
-                    (
-                        ("__xarray_encoding." + str(k), v)
-                        for k, v in xds.encoding.items()
-                    ),
-                )
-            }
+            info.attributes_flattened[group] = _collect_dataarray_attributes(
+                xds,
+                show_xarray_encoding_attributes=show_xarray_encoding_attributes,
+            )
             info.dimensions_flattened[group] = {str(k): v for k, v in xds.dims.items()}
             # Add coordinate variables for group
             for coord_name, coord in xds.coords.items():
@@ -2277,6 +2303,7 @@ def get_file_info(
                     coord,
                     small_variable_bytes=small_variable_bytes,
                     small_value_display_max_len=small_value_display_max_len,
+                    show_xarray_encoding_attributes=show_xarray_encoding_attributes,
                 )
                 info.coordinates_flattened.setdefault(group, []).append(coord_info)
                 # Check if coordinate is a datetime variable
@@ -2317,6 +2344,7 @@ def get_file_info(
                     var,
                     small_variable_bytes=small_variable_bytes,
                     small_value_display_max_len=small_value_display_max_len,
+                    show_xarray_encoding_attributes=show_xarray_encoding_attributes,
                 )
                 logger.info(
                     f"Processing group and var: {group=}  {var_name=} {var_info=}"
@@ -2396,6 +2424,7 @@ def create_variable_info(
     var: xr.DataArray,
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+    show_xarray_encoding_attributes: bool = True,
 ) -> VariableInfo:
     """Create VariableInfo from a DataArray.
 
@@ -2409,6 +2438,8 @@ def create_variable_info(
         Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
     small_value_display_max_len : int
         Max character length for display (truncation).
+    show_xarray_encoding_attributes : bool
+        When True, include ``__xarray_encoding.*`` entries from encoding metadata.
 
     Returns
     -------
@@ -2425,13 +2456,10 @@ def create_variable_info(
         shape=list(var.shape),
         dimensions=[str(d) for d in var.dims],
         size_bytes=var.nbytes,
-        attributes={
-            str(k): v
-            for k, v in itertools.chain(
-                var.attrs.items(),
-                (("__xarray_encoding." + str(k), v) for k, v in var.encoding.items()),
-            )
-        },
+        attributes=_collect_dataarray_attributes(
+            var,
+            show_xarray_encoding_attributes=show_xarray_encoding_attributes,
+        ),
         display_value=display_value,
     )
 
@@ -2523,6 +2551,7 @@ def create_coord_info(
     coord: xr.DataArray,
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
+    show_xarray_encoding_attributes: bool = True,
 ) -> CoordinateInfo:
     """Create CoordinateInfo from a DataArray.
 
@@ -2536,6 +2565,8 @@ def create_coord_info(
         Max size in bytes to load and display values (Issue #102). If 0, feature disabled.
     small_value_display_max_len : int
         Max character length for display (truncation).
+    show_xarray_encoding_attributes : bool
+        When True, include ``__xarray_encoding.*`` entries from encoding metadata.
 
     Returns
     -------
@@ -2552,13 +2583,10 @@ def create_coord_info(
         shape=list(coord.shape),
         dimensions=[str(d) for d in coord.dims],
         size_bytes=coord.nbytes,
-        attributes={
-            str(k): v
-            for k, v in itertools.chain(
-                coord.attrs.items(),
-                (("__xarray_encoding." + str(k), v) for k, v in coord.encoding.items()),
-            )
-        },
+        attributes=_collect_dataarray_attributes(
+            coord,
+            show_xarray_encoding_attributes=show_xarray_encoding_attributes,
+        ),
         display_value=display_value,
     )
 
@@ -2764,6 +2792,18 @@ Examples:
         help="Max character length for displayed small variable/coordinate values (truncation).",
     )
 
+    parser.add_argument(
+        "--no-order-groups-alphabetically",
+        action="store_true",
+        help="Preserve DataTree group order from the file instead of sorting paths alphabetically (Issue #140)",
+    )
+
+    parser.add_argument(
+        "--no-show-xarray-encoding-attributes",
+        action="store_true",
+        help="Omit __xarray_encoding.* attribute entries from group, coordinate, and variable metadata",
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -2783,6 +2823,8 @@ Examples:
             args.convert_bands_to_variables,
             small_variable_bytes=args.small_variable_bytes,
             small_value_display_max_len=args.small_value_display_max_len,
+            order_groups_alphabetically=not args.no_order_groups_alphabetically,
+            show_xarray_encoding_attributes=not args.no_show_xarray_encoding_attributes,
         )
         ok = isinstance(result, FileInfoResult)
 

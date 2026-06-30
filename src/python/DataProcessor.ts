@@ -6,6 +6,8 @@ import {
     getMatplotlibStyle,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
+    getOrderGroupsAlphabetically,
+    getShowXarrayEncodingAttributes,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
@@ -62,6 +64,12 @@ export class DataProcessor {
                 '--small-value-display-max-len',
                 String(smallValueDisplayMaxLen),
             );
+            if (!getOrderGroupsAlphabetically()) {
+                args.push('--no-order-groups-alphabetically');
+            }
+            if (!getShowXarrayEncodingAttributes()) {
+                args.push('--no-show-xarray-encoding-attributes');
+            }
 
             timer.mark('python-args-ready');
             const pythonResponse = (await this.pythonManager.executePythonFile(
