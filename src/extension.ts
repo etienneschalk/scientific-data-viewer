@@ -700,6 +700,7 @@ function commandHandlerOpenViewer(
                 canSelectMany: true,
                 filters: getShowDialogFilters([
                     'netcdf',
+                    'cdf',
                     'hdf5',
                     'grib',
                     'geotiff',
@@ -785,6 +786,7 @@ function registerCustomEditorProviders(
     };
     const editorRegistrations = [
         'netcdfEditor',
+        'cdfEditor',
         'hdf5Editor',
         'zarrEditor',
         'gribEditor',

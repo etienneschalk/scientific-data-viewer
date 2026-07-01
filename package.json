@@ -32,6 +32,7 @@
     ],
     "activationEvents": [
         "onLanguage:netcdf",
+        "onLanguage:cdf",
         "onLanguage:hdf5",
         "onLanguage:grib",
         "onLanguage:geotiff",
@@ -164,7 +165,7 @@
                 },
                 {
                     "command": "scientificDataViewer.exportWebview",
-                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
                 },
                 {
                     "command": "scientificDataViewer.openViewerMultiple",
@@ -193,12 +194,25 @@
                 "extensions": [
                     ".nc",
                     ".netcdf",
-                    ".nc4",
-                    ".cdf"
+                    ".nc4"
                 ],
                 "aliases": [
                     "NetCDF",
                     "netcdf"
+                ],
+                "icon": {
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                }
+            },
+            {
+                "id": "cdf",
+                "extensions": [
+                    ".cdf"
+                ],
+                "aliases": [
+                    "CDF (NASA)",
+                    "cdf"
                 ],
                 "icon": {
                     "light": "./media/icon_viridis_bold_monochromatic.svg",
@@ -291,7 +305,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "config.scientificDataViewer.outlineEnabled && (activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor')"
+                    "when": "config.scientificDataViewer.outlineEnabled && (activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor')"
                 }
             ]
         },
@@ -308,7 +322,17 @@
                     },
                     {
                         "filenamePattern": "*.nc4"
-                    },
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                }
+            },
+            {
+                "viewType": "cdfEditor",
+                "displayName": "CDF (NASA) Data Viewer",
+                "selector": [
                     {
                         "filenamePattern": "*.cdf"
                     }

@@ -31,12 +31,6 @@
         "**Error Handling**: Robust error handling with user-friendly messages",
         "**Experimental Features**: Configurable experimental features with clear warnings"
     ],
-    "formatTableOverrides": {
-        "CDF (NASA)": {
-            "extensions": [".cdf"],
-            "languageIds": ["netcdf"]
-        }
-    },
     "screenshots": [
         {
             "title": "Data Visualization and Plotting",
