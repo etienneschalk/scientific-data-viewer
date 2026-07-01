@@ -78,7 +78,7 @@ export class ExtensionVirtualEnvironmentManager {
         this.extensionEnv!.isInitialized = false;
 
         // Install required packages
-        await this.uvInstallRequiredPackages();
+        await this.uvInstallRequiredPackages({ upgrade: false });
 
         this.extensionEnv!.isInitialized = true;
         this.extensionEnv!.lastUpdated = new Date();
@@ -86,6 +86,163 @@ export class ExtensionVirtualEnvironmentManager {
         Logger.info(
             '[uv] ✅ Extension virtual environment created successfully',
         );
+    }
+
+    /**
+     * Get installed package versions from the extension virtual environment.
+     * Uses pip's JSON output and matches against ALL_PACKAGES.
+     */
+    async getInstalledPackageVersions(): Promise<
+        Array<{ name: string; version: string | null }>
+    > {
+        if (
+            !this.extensionEnv?.isCreated ||
+            !fs.existsSync(this.extensionEnv.pythonPath)
+        ) {
+            return this.ALL_PACKAGES.map((name) => ({ name, version: null }));
+        }
+
+        const installedByName = await this.queryInstalledPackageVersions();
+        return this.ALL_PACKAGES.map((name) => ({
+            name,
+            version:
+                installedByName.get(name.toLowerCase()) ??
+                installedByName.get(name) ??
+                null,
+        }));
+    }
+
+    private async queryInstalledPackageVersions(): Promise<
+        Map<string, string>
+    > {
+        const uvVersions = await this.queryUvPipListVersions();
+        if (uvVersions.size > 0) {
+            return uvVersions;
+        }
+        return this.queryPythonModulePipListVersions();
+    }
+
+    private async queryUvPipListVersions(): Promise<Map<string, string>> {
+        const uvAvailable = await this.uvCheckAvailability();
+        if (!uvAvailable) {
+            return new Map();
+        }
+
+        return new Promise((resolve) => {
+            const uvProcess = spawn(
+                'uv',
+                [
+                    'pip',
+                    'list',
+                    '--format',
+                    'json',
+                    '--python',
+                    quoteIfNeeded(this.extensionEnv!.pythonPath),
+                ],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                },
+            );
+
+            let stdout = '';
+            let stderr = '';
+
+            uvProcess.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+
+            uvProcess.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            uvProcess.on('close', (code) => {
+                if (code !== 0) {
+                    Logger.warn(
+                        `[uv] Failed to list installed packages with uv pip (exit code ${code}): ${
+                            stderr || stdout
+                        }`,
+                    );
+                    resolve(new Map());
+                    return;
+                }
+
+                resolve(this.parsePipListJson(stdout));
+            });
+
+            uvProcess.on('error', (error) => {
+                Logger.warn(
+                    `[uv] Failed to execute uv pip list: ${error.message}`,
+                );
+                resolve(new Map());
+            });
+        });
+    }
+
+    private parsePipListJson(stdout: string): Map<string, string> {
+        try {
+            const entries = JSON.parse(stdout) as Array<{
+                name: string;
+                version: string;
+            }>;
+            const versions = new Map<string, string>();
+            for (const entry of entries) {
+                versions.set(entry.name.toLowerCase(), entry.version);
+            }
+            return versions;
+        } catch (error) {
+            Logger.warn(`[uv] Failed to parse pip list JSON: ${error}`);
+            return new Map();
+        }
+    }
+
+    /** Fallback when uv is unavailable; uv-created venvs often have no pip module. */
+    private async queryPythonModulePipListVersions(): Promise<
+        Map<string, string>
+    > {
+        return new Promise((resolve) => {
+            const pythonPath = quoteIfNeeded(this.extensionEnv!.pythonPath);
+            const pipProcess = spawn(
+                pythonPath,
+                ['-m', 'pip', 'list', '--format=json'],
+                {
+                    shell: true,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                },
+            );
+
+            let stdout = '';
+            let stderr = '';
+
+            pipProcess.stdout.on('data', (data) => {
+                stdout += data.toString();
+            });
+
+            pipProcess.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            pipProcess.on('close', (code) => {
+                if (code !== 0) {
+                    Logger.warn(
+                        `[uv] Failed to list installed packages with python -m pip (exit code ${code}): ${
+                            stderr || stdout
+                        }`,
+                    );
+                    resolve(new Map());
+                    return;
+                }
+
+                resolve(this.parsePipListJson(stdout));
+            });
+
+            pipProcess.on('error', (error) => {
+                Logger.warn(
+                    `[uv] Failed to execute python -m pip list: ${error.message}`,
+                );
+                resolve(new Map());
+            });
+        });
     }
 
     /**
@@ -110,7 +267,7 @@ export class ExtensionVirtualEnvironmentManager {
             Logger.info(
                 '[uv] 📦 Updating packages in extension virtual environment...',
             );
-            await this.uvInstallRequiredPackages();
+            await this.uvInstallRequiredPackages({ upgrade: true });
             this.extensionEnv!.lastUpdated = new Date();
             Logger.info('[uv] ✅ Packages updated successfully');
             return true;
@@ -187,6 +344,141 @@ export class ExtensionVirtualEnvironmentManager {
         }
     }
 
+    private formatUvCommand(args: string[]): string {
+        return `uv ${args.join(' ')}`;
+    }
+
+    private logUvOutput(
+        label: string,
+        stream: 'stdout' | 'stderr',
+        text: string,
+    ): void {
+        const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+        for (const line of lines) {
+            Logger.info(`[uv] ${label} ${stream}: ${line}`);
+        }
+    }
+
+    private spawnUv(
+        args: string[],
+        options?: { verbose?: boolean; label?: string },
+    ): Promise<{ code: number; stdout: string; stderr: string }> {
+        const verbose = options?.verbose ?? false;
+        const label = options?.label ?? '📦';
+        const spawnArgs = verbose ? ['-v', ...args] : args;
+
+        Logger.info(`[uv] Executing: ${this.formatUvCommand(spawnArgs)}`);
+
+        return new Promise((resolve, reject) => {
+            const child = spawn('uv', spawnArgs, {
+                shell: true,
+                stdio: ['pipe', 'pipe', 'pipe'],
+            });
+
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout.on('data', (data) => {
+                const chunk = data.toString();
+                stdout += chunk;
+                if (verbose) {
+                    this.logUvOutput(label, 'stdout', chunk);
+                }
+            });
+
+            child.stderr.on('data', (data) => {
+                const chunk = data.toString();
+                stderr += chunk;
+                if (verbose) {
+                    this.logUvOutput(label, 'stderr', chunk);
+                }
+            });
+
+            child.on('close', (code) => {
+                resolve({
+                    code: code ?? 1,
+                    stdout,
+                    stderr,
+                });
+            });
+
+            child.on('error', (error) => {
+                reject(error);
+            });
+        });
+    }
+
+    private async logRequiredPackageVersions(heading: string): Promise<void> {
+        const versions = await this.getInstalledPackageVersions();
+        Logger.info(`[uv] ${heading}`);
+        for (const pkg of versions) {
+            Logger.info(
+                `[uv]   - ${pkg.name}: ${pkg.version ?? 'not installed'}`,
+            );
+        }
+    }
+
+    private async logOutdatedRequiredPackages(): Promise<void> {
+        if (
+            !this.extensionEnv?.isCreated ||
+            !fs.existsSync(this.extensionEnv.pythonPath)
+        ) {
+            return;
+        }
+
+        try {
+            const { code, stdout, stderr } = await this.spawnUv(
+                [
+                    'pip',
+                    'list',
+                    '--outdated',
+                    '--format',
+                    'json',
+                    '--python',
+                    quoteIfNeeded(this.extensionEnv.pythonPath),
+                ],
+                { verbose: true, label: '📋' },
+            );
+
+            if (code !== 0) {
+                Logger.warn(
+                    `[uv] Could not check outdated packages (exit code ${code}): ${
+                        stderr || stdout
+                    }`,
+                );
+                return;
+            }
+
+            const outdated = JSON.parse(stdout || '[]') as Array<{
+                name: string;
+                version: string;
+                latest_version?: string;
+            }>;
+
+            const requiredOutdated = outdated.filter((entry) =>
+                this.ALL_PACKAGES.some(
+                    (pkg) => pkg.toLowerCase() === entry.name.toLowerCase(),
+                ),
+            );
+
+            if (requiredOutdated.length === 0) {
+                Logger.info(
+                    '[uv] No required packages are reported as outdated (uv may still upgrade transitive dependencies with --upgrade).',
+                );
+                return;
+            }
+
+            Logger.info('[uv] Outdated required packages:');
+            for (const entry of requiredOutdated) {
+                Logger.info(
+                    `[uv]   - ${entry.name}: ${entry.version} → ${entry.latest_version ?? 'unknown'}`,
+                );
+            }
+        } catch (error) {
+            Logger.warn(`[uv] Failed to check outdated packages: ${error}`);
+        }
+    }
+
     /**
      * Check if uv is available and can be used to create virtual environments
      */
@@ -225,74 +517,46 @@ export class ExtensionVirtualEnvironmentManager {
      * Install Python using uv
      */
     private async uvInstallPython(): Promise<void> {
-        return new Promise((resolve) => {
+        try {
             Logger.info(
                 `[uv] 🔧 Installing Python ${this.PYTHON_VERSION} with uv...`,
             );
 
-            const process = spawn(
-                'uv',
+            const { code, stdout, stderr } = await this.spawnUv(
                 ['python', 'install', this.PYTHON_VERSION],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                },
+                { verbose: true, label: '🔧' },
             );
 
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`[uv] 🔧 uv python install stdout: ${output}`);
-            });
-
-            process.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.debug(`[uv] 🔧 uv python install stderr: ${output}`);
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    Logger.info(
-                        `[uv] ✅ Python ${this.PYTHON_VERSION} installed successfully with uv`,
-                    );
-                    resolve();
-                } else {
-                    Logger.warn(
-                        `[uv] ⚠️ Failed to install Python ${
-                            this.PYTHON_VERSION
-                        } with uv (exit code ${code}): ${stderr || stdout}`,
-                    );
-                    // Don't reject - continue with system Python
-                    resolve();
-                }
-            });
-
-            process.on('error', (error) => {
-                Logger.warn(
-                    `[uv] ⚠️ Failed to execute uv python install: ${error.message}`,
+            if (code === 0) {
+                Logger.info(
+                    `[uv] ✅ Python ${this.PYTHON_VERSION} installed successfully with uv`,
                 );
-                // Don't reject - continue with system Python
-                resolve();
-            });
-        });
+            } else {
+                Logger.warn(
+                    `[uv] ⚠️ Failed to install Python ${
+                        this.PYTHON_VERSION
+                    } with uv (exit code ${code}): ${stderr || stdout}`,
+                );
+            }
+        } catch (error) {
+            Logger.warn(
+                `[uv] ⚠️ Failed to execute uv python install: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+        }
     }
 
     /**
      * Create a virtual environment using uv
      */
     private async uvCreateVirtualEnvironment(envPath: string): Promise<void> {
-        return new Promise((resolve) => {
-            Logger.info(
-                `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`,
-            );
+        Logger.info(
+            `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`,
+        );
 
-            // Try to use Python specifically. --clear replaces existing env (e.g. after uninstall/reinstall).
-            const process = spawn(
-                'uv',
+        try {
+            const { code, stdout, stderr } = await this.spawnUv(
                 [
                     'venv',
                     '--clear',
@@ -300,58 +564,41 @@ export class ExtensionVirtualEnvironmentManager {
                     this.PYTHON_VERSION,
                     quoteIfNeeded(envPath),
                 ],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                },
+                { verbose: true, label: '🔧' },
             );
 
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`[uv] 🔧 uv venv stdout: ${output}`);
-            });
-
-            process.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.debug(`[uv] 🔧 uv venv stderr: ${output}`);
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    Logger.info(
-                        `[uv] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`,
-                    );
-                    resolve();
-                } else {
-                    // If Python failed, try with system Python
-                    Logger.warn(
-                        `[uv] ⚠️ Failed to create environment with Python ${
-                            this.PYTHON_VERSION
-                        }: code: ${code}: ${stderr || stdout}`,
-                    );
-                }
-            });
-
-            process.on('error', (error) => {
-                Logger.warn(
-                    `[uv] ⚠️ Failed to execute uv venv with Python ${this.PYTHON_VERSION}: ${error.message}`,
+            if (code === 0) {
+                Logger.info(
+                    `[uv] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`,
                 );
-            });
-        });
+            } else {
+                Logger.warn(
+                    `[uv] ⚠️ Failed to create environment with Python ${
+                        this.PYTHON_VERSION
+                    }: exit code ${code}: ${stderr || stdout}`,
+                );
+            }
+        } catch (error) {
+            Logger.warn(
+                `[uv] ⚠️ Failed to execute uv venv with Python ${
+                    this.PYTHON_VERSION
+                }: ${error instanceof Error ? error.message : String(error)}`,
+            );
+        }
     }
 
     /**
-     * Install required packages in the extension virtual environment
+     * Install or upgrade required packages in the extension virtual environment.
+     * Use upgrade: true when refreshing an existing env (--upgrade asks uv to pull newer versions).
      */
-    private async uvInstallRequiredPackages(): Promise<void> {
+    private async uvInstallRequiredPackages(options?: {
+        upgrade?: boolean;
+    }): Promise<void> {
         if (!this.extensionEnv || !this.extensionEnv.isCreated) {
             throw new Error('Extension virtual environment not created');
         }
+
+        const upgrade = options?.upgrade ?? false;
 
         // Check if uv is available for package installation
         const uvAvailable = await this.uvCheckAvailability();
@@ -361,67 +608,57 @@ export class ExtensionVirtualEnvironmentManager {
             return;
         }
 
-        return new Promise((resolve, reject) => {
-            Logger.info(
-                '[uv] 📦 Installing required packages in extension virtual environment with uv...',
+        Logger.info(
+            upgrade
+                ? '[uv] 📦 Upgrading required packages in extension virtual environment with uv...'
+                : '[uv] 📦 Installing required packages in extension virtual environment with uv...',
+        );
+        Logger.info(
+            `[uv] Target packages (${this.ALL_PACKAGES.length}): ${this.ALL_PACKAGES.join(', ')}`,
+        );
+
+        if (upgrade) {
+            await this.logRequiredPackageVersions(
+                'Package versions before upgrade:',
             );
+            await this.logOutdatedRequiredPackages();
+        }
 
-            // Use the environment's Python path
-            const uvProcess = spawn(
-                'uv',
-                [
-                    'pip',
-                    'install',
-                    '--python',
-                    quoteIfNeeded(this.extensionEnv!.pythonPath),
-                    ...this.ALL_PACKAGES,
-                ],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                },
-            );
+        const installArgs = [
+            'pip',
+            'install',
+            '--python',
+            quoteIfNeeded(this.extensionEnv!.pythonPath),
+        ];
+        if (upgrade) {
+            installArgs.push('--upgrade');
+        }
+        installArgs.push(...this.ALL_PACKAGES);
 
-            let stdout = '';
-            let stderr = '';
-
-            uvProcess.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`[uv] 📦 uv pip stdout: ${output}`);
-            });
-
-            uvProcess.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.debug(`[uv] 📦 uv pip stderr: ${output}`);
-            });
-
-            uvProcess.on('close', (code) => {
-                if (code === 0) {
-                    Logger.info(
-                        '[uv] ✅ Required packages installed successfully with uv',
-                    );
-                    this.extensionEnv!.packages = [...this.ALL_PACKAGES];
-                    resolve();
-                } else {
-                    reject(
-                        new Error(
-                            `[uv] Failed to install packages with uv (exit code ${code}): ${
-                                stderr || stdout
-                            }`,
-                        ),
-                    );
-                }
-            });
-
-            uvProcess.on('error', (error) => {
-                reject(
-                    new Error(
-                        `[uv] Failed to execute uv pip: ${error.message}`,
-                    ),
-                );
-            });
+        const { code, stdout, stderr } = await this.spawnUv(installArgs, {
+            verbose: true,
+            label: '📦',
         });
+
+        if (code === 0) {
+            Logger.info(
+                upgrade
+                    ? '[uv] ✅ Required packages upgraded successfully with uv'
+                    : '[uv] ✅ Required packages installed successfully with uv',
+            );
+            await this.logRequiredPackageVersions(
+                upgrade
+                    ? 'Package versions after upgrade:'
+                    : 'Package versions after install:',
+            );
+            this.extensionEnv!.packages = [...this.ALL_PACKAGES];
+            return;
+        }
+
+        throw new Error(
+            `[uv] Failed to ${upgrade ? 'upgrade' : 'install'} packages with uv (exit code ${code}): ${
+                stderr || stdout
+            }`,
+        );
     }
 }
