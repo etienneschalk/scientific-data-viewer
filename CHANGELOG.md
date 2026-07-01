@@ -10,6 +10,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Added
 
+- **README generator**: `scripts/generate_readme.py` builds `README.md` from `package.json` (commands, settings, languages, version) and prose in `docs/documentation.json` (features, usage, troubleshooting). Settings tables use each setting’s `markdownDescription` (fallback `description`) from the manifest. Regenerate with `python scripts/generate_readme.py --no-timestamp` before commit/publish; banner records generation time unless `--no-timestamp` is passed.
+  - **Files**: `scripts/generate_readme.py`, `docs/documentation.json`, `README.md`
+- **NASA CDF as its own language**: `.cdf` files use language id `cdf` and custom editor `cdfEditor` instead of sharing the NetCDF language/editor, matching `cdflib` handling in `get_data_info.py`.
+  - **Files**: `package.json`, `src/extension.ts`, `test/suite/extension.test.ts`
+- **Extension virtual environment — package visibility and verbose uv logging**: Information view lists installed package versions (`name: version`) via `uv pip list --format=json`. Package updates pass `--upgrade` to `uv pip install`. uv commands run with `-v`; the output channel logs the full command, streamed stdout/stderr, versions before/after install or upgrade, and outdated required packages (`uv pip list --outdated`).
+  - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/ExtensionVirtualEnvironmentManagerUI.ts`
+- **Sample data**: `sample-data/unordered_groups.nc` (unordered dimension groups for Issue #140 / `orderGroupsAlphabetically` testing).
+  - **Files**: `python/create_sample_data.py`
 - **Issue #131** (focused scope): Observability and lighter defaults without persistent worker, lazy reprs, or metadata cache.
   - **Performance logging**: `PerformanceTimer` logs stage timings (`⏱️`) across the load path — `setHtml`, Python init, `getDataInfo`, `python-exec`, `postMessage`. Check the **Scientific Data Viewer** output channel.
   - **Outline toggle**: `scientificDataViewer.outlineEnabled` (default **on**); Explorer pane hidden via `package.json` `when` clause when disabled (no empty pane / data-provider error). **Reload the window** after toggling.
@@ -22,9 +30,19 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Changed
 
+- **Outline group order**: Explorer outline group headers follow the same order as the webview Data Groups table (`dimensions_flattened`), including when `scientificDataViewer.orderGroupsAlphabetically` is toggled.
+  - **Files**: `src/outline/HeaderExtractor.ts`, `test/suite/outline/HeaderExtractor.test.ts`
+- **Settings documentation**: Removed `settingNotes` from `docs/documentation.json`; enriched `markdownDescription` in `package.json` for settings that lacked detail (e.g. `globalDimensionSlices`, `groupDimensionSlices`, plot controls).
 - **`outlineEnabled` setting**: Description states that a **window reload** is required after toggling (sidebar pane and tree provider register at activation).
 - **`getExtensionConfigForWebview()`**: Exposes `outlineEnabled` to the webview.
 - **`HTMLGenerator`**: Serves external `<link>` / `<script src>` when the webview supports `asWebviewUri`; `localResourceRoots` includes `src/panel/webview`.
+
+### Fixed
+
+- **Outline refresh on panel activation**: After data reload or settings change, activating a viewer panel rebuilds the outline from fresh `dataInfo` instead of only switching cached headers.
+  - **Files**: `src/DataViewerPanel.ts`
+- **Healthcheck — open panes**: Zero open Scientific Data Viewer panes is reported as **healthy** (informational), not a warning.
+  - **Files**: `src/common/HealthcheckManager.ts`
 
 ## [0.11.2] - 2026-06-18
 

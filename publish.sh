@@ -54,6 +54,9 @@ for arg in "$@"; do
             echo "  --skip-vscode  Skip VS Code Marketplace publish"
             echo "  --skip-openvsx Skip Open VSX publish"
             echo "  --help, -h     Show this help message"
+            echo ""
+            echo "Before publishing, documentation is regenerated and compared to"
+            echo "README.md (use generate_readme.py --no-timestamp when committing)."
             exit 0
             ;;
     esac
@@ -375,10 +378,73 @@ if [ "$SKIP_VSCODE" = false ]; then
 fi
 
 # =============================================================================
+# Documentation Generation Check
+# =============================================================================
+
+check_generated_documentation() {
+    local doc_file="README.md"
+    local temp_doc
+
+    print_header "Documentation Generation Check"
+
+    print_step "Regenerating ${doc_file} (dry run)..."
+    if [ ! -f "scripts/generate_readme.py" ]; then
+        print_error "scripts/generate_readme.py not found"
+        exit 1
+    fi
+
+    temp_doc=$(mktemp)
+
+    if ! python3 scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
+        rm -f "$temp_doc"
+        print_error "Documentation generation failed"
+        exit 1
+    fi
+
+    if [ ! -f "$doc_file" ]; then
+        rm -f "$temp_doc"
+        print_error "${doc_file} is missing"
+        print_info "Generate it with: python3 scripts/generate_readme.py --no-timestamp"
+        exit 1
+    fi
+
+    if cmp -s "$temp_doc" "$doc_file"; then
+        rm -f "$temp_doc"
+        print_success "${doc_file} matches generated output"
+        return 0
+    fi
+
+    print_error "${doc_file} differs from freshly generated documentation"
+    print_info "Sources may be out of sync with ${doc_file} (package.json, docs/documentation.json)"
+    print_info "Review the diff:"
+    echo ""
+    diff_output=$(diff -u "$doc_file" "$temp_doc" || true)
+    echo "$diff_output" | head -80
+    if [ "$(echo "$diff_output" | wc -l)" -gt 80 ]; then
+        print_info "(diff truncated — run: diff -u ${doc_file} ${temp_doc})"
+    fi
+    echo ""
+    print_warning "Update sources and regenerate before publishing:"
+    print_info "  python3 scripts/generate_readme.py --no-timestamp"
+    echo ""
+    read -p "Continue publish after manual review? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        rm -f "$temp_doc"
+        print_error "Aborted — please reconcile ${doc_file} with generated output"
+        exit 1
+    fi
+    rm -f "$temp_doc"
+    print_warning "Continuing after manual confirmation"
+}
+
+# =============================================================================
 # Build & Test
 # =============================================================================
 
 print_header "Build & Test"
+
+check_generated_documentation
 
 print_step "Installing dependencies..."
 npm ci

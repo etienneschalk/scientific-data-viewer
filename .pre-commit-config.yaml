@@ -12,7 +12,7 @@ repos:
         files: \.(ts|tsx|js|jsx|json|md)$
         args: [--write]
         types: [file]
-        exclude: ^(out/|node_modules/|\.vscode-test/)
+        exclude: ^(out/|node_modules/|\.vscode-test/|README\.md)$
 
   - repo: local
     hooks:
