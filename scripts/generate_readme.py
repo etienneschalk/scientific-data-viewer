@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -646,10 +647,35 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
     return content, warnings
 
 
+def format_with_prettier(content: str, output_path: Path, root: Path) -> str:
+    """Format generated markdown with Prettier (matches pre-commit on *.md)."""
+    local_prettier = root / "node_modules" / ".bin" / "prettier"
+    cmd = [str(local_prettier)] if local_prettier.is_file() else ["npx", "prettier"]
+    cmd.extend(["--parser", "markdown", "--stdin-filepath", output_path.name])
+
+    try:
+        completed = subprocess.run(
+            cmd,
+            input=content,
+            capture_output=True,
+            text=True,
+            cwd=root,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"warning: could not format with Prettier: {exc}", file=sys.stderr)
+        if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
+            print(exc.stderr.strip(), file=sys.stderr)
+        return content
+
+    return completed.stdout
+
+
 def main(argv: list[str] | None = None) -> int:
     paths = parse_args(argv)
     try:
         content, warnings = generate(paths)
+        content = format_with_prettier(content, paths.output, paths.root)
     except (OSError, json.JSONDecodeError, ValueError, KeyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
