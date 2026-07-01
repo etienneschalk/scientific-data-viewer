@@ -55,8 +55,8 @@ for arg in "$@"; do
             echo "  --skip-openvsx Skip Open VSX publish"
             echo "  --help, -h     Show this help message"
             echo ""
-            echo "Before publishing, documentation is regenerated and compared to"
-            echo "README.md (use generate_readme.py --no-timestamp when committing)."
+            echo "Before publishing, README.md is checked against generate_readme.py;"
+            echo "you will be prompted to regenerate it if out of sync."
             exit 0
             ;;
     esac
@@ -136,18 +136,30 @@ check_generated_documentation() {
         print_info "(diff truncated — run: diff -u ${doc_file} ${temp_doc})"
     fi
     echo ""
-    print_warning "Update sources and regenerate before publishing:"
-    print_info "  python3 scripts/generate_readme.py --no-timestamp"
+    read -p "Regenerate ${doc_file} now? (Y/n) " -n 1 -r
     echo ""
-    read -p "Continue publish after manual review? (y/N) " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
         rm -f "$temp_doc"
-        print_error "Aborted — please reconcile ${doc_file} with generated output"
+        print_error "Aborted — ${doc_file} is out of sync with package.json and docs/documentation.json"
         exit 1
     fi
+
+    print_step "Regenerating ${doc_file}..."
+    if ! python3 scripts/generate_readme.py --no-timestamp; then
+        rm -f "$temp_doc"
+        print_error "Documentation generation failed"
+        exit 1
+    fi
+
+    if ! cmp -s "$temp_doc" "$doc_file"; then
+        rm -f "$temp_doc"
+        print_error "${doc_file} still differs after regeneration — review sources manually"
+        exit 1
+    fi
+
     rm -f "$temp_doc"
-    print_warning "Continuing after manual confirmation"
+    print_success "${doc_file} regenerated and matches expected output"
+    print_warning "Remember to commit ${doc_file} before publishing if it was not already committed"
 }
 
 # =============================================================================

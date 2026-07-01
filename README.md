@@ -4,7 +4,6 @@
   Sources: package.json, docs/documentation.json
 -->
 
-
 # Scientific Data Viewer - VSCode Extension
 
 <div align="center">
@@ -15,7 +14,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.12.0** • [Changelog](./CHANGELOG.md#0120---2026-06-26) • [v0.12.0 release notes](./docs/RELEASE_NOTES_0.12.0.md)
+**Current Version: v0.12.0** • [Changelog](./CHANGELOG.md#0120---2026-07-01) • [v0.12.0 release notes](./docs/RELEASE_NOTES_0.12.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -28,15 +27,16 @@ Available on:
 
 - **Multi-format Support**:
 
-| Format | File Extension |
-| ------ | -------------- |
-| NetCDF | .nc, .netcdf, .nc4 |
-| CDF (NASA) | .cdf |
-| HDF5 | .h5, .hdf5 |
-| Zarr | .zarr |
-| GRIB | .grib, .grib2, .grb, .grb2 |
-| GeoTIFF | .tif, .tiff, .geotiff |
-| JPEG-2000 | .jp2, .jpeg2000 |
+| Format     | File Extension             |
+| ---------- | -------------------------- |
+| NetCDF     | .nc, .netcdf, .nc4         |
+| CDF (NASA) | .cdf                       |
+| HDF5       | .h5, .hdf5                 |
+| Zarr       | .zarr                      |
+| GRIB       | .grib, .grib2, .grb, .grb2 |
+| GeoTIFF    | .tif, .tiff, .geotiff      |
+| JPEG-2000  | .jp2, .jpeg2000            |
+
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
 - **Custom Editors**: Direct file opening with dedicated editors
@@ -284,18 +284,18 @@ The extension allows you to export complete data viewer content as self-containe
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command | Description |
-| ------- | ----------- |
+| Command                                                        | Description                                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
-| `Scientific Data Viewer: Open Scientific Data Viewer` | Opens the Scientific Data Viewer for a file |
-| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr) |
-| `Scientific Data Viewer: Refresh Python Environment` | Refreshes the Python environment used by the extension |
-| `Scientific Data Viewer: Show Extension Logs` | Opens the extension's log output for debugging |
-| `Scientific Data Viewer: Show Settings` | Opens the extension settings |
-| `Scientific Data Viewer: Open Developer Tools` | Opens the developer tools for the webview |
-| `Scientific Data Viewer: Export Webview Content` | Export the active Scientific Data Viewer as a self-contained HTML report |
-| `Scientific Data Viewer: Toggle Dev Mode` | Quickly enable/disable dev mode without navigating settings |
-| `Scientific Data Viewer: Run Healthcheck` | Run a health check on the Python environment and required packages |
+| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                     |
+| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                     |
+| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                          |
+| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                  |
+| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
+| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
+| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
+| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                     |
+| `Scientific Data Viewer: Run Healthcheck`                      | Run a health check on the Python environment and required packages              |
 
 ### 🖱️ Context Menu Commands
 
