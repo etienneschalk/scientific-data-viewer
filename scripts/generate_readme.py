@@ -246,16 +246,34 @@ def validate_settings_groups(
     return warnings
 
 
-def render_setting(key: str, schema: dict[str, Any], notes: dict[str, str]) -> str:
+def setting_description(schema: dict[str, Any]) -> str:
+    markdown = schema.get("markdownDescription")
+    if isinstance(markdown, str) and markdown.strip():
+        return markdown.strip()
+    description = schema.get("description", "")
+    return description.strip() if isinstance(description, str) else ""
+
+
+def format_setting_description_lines(description: str) -> list[str]:
+    paragraphs = [part.strip() for part in description.split("\n\n") if part.strip()]
+    lines: list[str] = []
+    for paragraph in paragraphs:
+        flattened = " ".join(
+            line.strip() for line in paragraph.splitlines() if line.strip()
+        )
+        if flattened:
+            lines.append(f"  - {flattened}")
+    return lines
+
+
+def render_setting(key: str, schema: dict[str, Any]) -> str:
     setting_type = schema.get("type", "unknown")
     default = format_default(schema.get("default"))
-    description = notes.get(key) or schema.get("description", "")
     lines = [
         f"- **`{key}`**",
         f"  - (type: `{setting_type}`, default: {default})",
     ]
-    if description:
-        lines.append(f"  - {description}")
+    lines.extend(format_setting_description_lines(setting_description(schema)))
     return "\n".join(lines)
 
 
@@ -416,7 +434,6 @@ Right-click on supported file types in the Explorer to access:
 def render_settings(
     settings_groups: list[dict[str, Any]],
     properties: dict[str, Any],
-    setting_notes: dict[str, str],
 ) -> str:
     groups: list[str] = []
     for group in settings_groups:
@@ -427,7 +444,7 @@ def render_settings(
                 "management:\n\n"
             )
         settings = "\n".join(
-            render_setting(key, properties[key], setting_notes)
+            render_setting(key, properties[key])
             for key in group.get("keys", [])
             if key in properties
         )
@@ -521,7 +538,6 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
     }
 
     settings_groups = doc.get("settingsGroups", [])
-    setting_notes = doc.get("settingNotes", {})
     properties = (
         package.get("contributes", {}).get("configuration", {}).get("properties", {})
     )
@@ -546,7 +562,7 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
         render_usage(doc.get("usageSections", [])),
         render_commands(doc_commands, commands_by_id),
         render_context_menus(doc.get("contextMenus", []), commands_by_id),
-        render_settings(settings_groups, properties, setting_notes),
+        render_settings(settings_groups, properties),
         render_troubleshooting(doc.get("troubleshooting", {})),
         render_contributing(doc.get("contributing", {})),
         render_footer(doc.get("development", {}), doc.get("acknowledgments", [])),

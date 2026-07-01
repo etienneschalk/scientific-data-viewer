@@ -436,7 +436,8 @@
                     "type": "number",
                     "default": 1000000000000,
                     "order": 1000,
-                    "description": "Maximum file size in MB to load automatically"
+                    "description": "Maximum file size in MB to load automatically",
+                    "markdownDescription": "Maximum file size in **MB** to load automatically. Files above this limit are not loaded."
                 },
                 "scientificDataViewer.defaultView": {
                     "type": "string",
@@ -519,33 +520,35 @@
                     "default": false,
                     "order": 1001,
                     "description": "Enable Global Time Controls (datetime variable, start/end) in the plot controls area",
-                    "markdownDescription": "When enabled, shows datetime variable selection and start/end time inputs. **Off by default:** Dimension Slices (isel) is easier to maintain and data-agnostic—any dimension (including time) can be sliced by index (e.g. `0:24:2`) without handling labels. A future **sel** (label-based) feature could complement **isel** (position-based) for datetime and other coordinates, making the feature complete."
+                    "markdownDescription": "When enabled, shows datetime variable selection and start/end time inputs in the plot area. **Off by default** — use **Global Dimension Slices** to subset time by index (e.g. `0:24:2`) instead.\n\nDimension Slices (isel) is data-agnostic; a future **sel** (label-based) feature could complement isel for datetime and other coordinates."
                 },
                 "scientificDataViewer.globalDimensionSlices": {
                     "type": "boolean",
                     "default": true,
                     "order": 1002,
-                    "description": "Enable Global Dimension Slices in the plot controls area"
+                    "description": "Enable Global Dimension Slices in the plot controls area",
+                    "markdownDescription": "Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**"
                 },
                 "scientificDataViewer.groupTimeControls": {
                     "type": "boolean",
                     "default": false,
                     "order": 1003,
                     "description": "Enable Group Time Controls (per-group datetime selection and start/end)",
-                    "markdownDescription": "When enabled, each group gets its own time/datetime controls. **Off by default:** same rationale as Global Time Controls—Dimension Slices (isel) is data-agnostic; a future sel-based feature could cover datetime and other dimension coordinates uniformly."
+                    "markdownDescription": "Show **Group Time Controls** per group (datetime, start/end) in each group's Plot Controls section. **Off by default** — use **Group Dimension Slices** to subset time by index instead (e.g. `0:24:2`).\n\nWhen enabled, each group gets its own time/datetime controls."
                 },
                 "scientificDataViewer.groupDimensionSlices": {
                     "type": "boolean",
                     "default": true,
                     "order": 1004,
-                    "description": "Enable Group Dimension Slices (per-group dimension slice inputs)"
+                    "description": "Enable Group Dimension Slices (per-group dimension slice inputs)",
+                    "markdownDescription": "Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global)."
                 },
                 "scientificDataViewer.smallVariableBytes": {
                     "type": "number",
                     "default": 1000,
                     "order": 1005,
                     "description": "Max size in bytes for variables/coordinates to load and display values (Issue #102). Set to 0 to disable.",
-                    "markdownDescription": "Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI. Variables/coordinates at or below this size get a **display_value** (scalar or small array). If set to **0**, the whole small-value display feature (Issue #102) is disabled and no variables/coordinates will show loaded values."
+                    "markdownDescription": "Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI (scalar and small array display, [Issue #102](https://github.com/etienneschalk/scientific-data-viewer/issues/102)). Variables/coordinates at or below this size get a **display_value** in the variable/coordinate details. If set to **0**, the whole small-value display feature (Issue #102) is disabled and no variables/coordinates will show loaded values."
                 },
                 "scientificDataViewer.smallValueDisplayMaxLen": {
                     "type": "number",
@@ -559,7 +562,7 @@
                     "default": true,
                     "order": 1007,
                     "description": "Show attributes as a collapsible tree (for Zarr and other formats with nested JSON attributes). On by default.",
-                    "markdownDescription": "When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar formats) where attributes are stored as nested JSON (e.g. `.zattrs`). **On by default.** See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)."
+                    "markdownDescription": "When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar formats) where attributes are stored as nested JSON (e.g. `.zattrs`). **On by default.** Set to `false` to opt out and use the flat list. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120)."
                 },
                 "scientificDataViewer.plotTimeoutMs": {
                     "type": "number",
@@ -582,14 +585,14 @@
                     "default": true,
                     "order": 1010,
                     "description": "Sort multi-group datasets alphabetically by group path in the data viewer.",
-                    "markdownDescription": "When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140))."
+                    "markdownDescription": "When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Use **Refresh** (🔄) after changing."
                 },
                 "scientificDataViewer.showXarrayEncodingAttributes": {
                     "type": "boolean",
                     "default": true,
                     "order": 1011,
                     "description": "Show __xarray_encoding.* attributes for groups, coordinates, and variables.",
-                    "markdownDescription": "When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking). Disable to hide these from group, coordinate, and variable attribute tables."
+                    "markdownDescription": "When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. Disable to hide these from attribute tables. Use **Refresh** (🔄) after changing."
                 }
             }
         }
