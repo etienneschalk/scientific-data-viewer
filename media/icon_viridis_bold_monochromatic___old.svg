@@ -1,0 +1,43 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Viridis color gradients -->
+    <linearGradient id="viridisPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6a1b9a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8e24aa;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="viridisTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f9e89;stop-opacity:1" />
+      <!-- <stop offset="100%" style="stop-color:#35b779;stop-opacity:1" /> -->
+    </linearGradient>
+    
+    <linearGradient id="viridisGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6ece58;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b6de2b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- <circle cx="64" cy="64" r="50" fill="url(#viridisTeal" stroke="url(#viridisTeal)" stroke-width="8"/> -->
+
+  <!-- Central data core - smaller to show bold cross -->
+  <circle cx="64" cy="64" r="12" fill="none" stroke="url(#viridisTeal)" stroke-width="6"/>
+  
+  <!-- Symmetric data streams -->
+
+  <!-- Diagonal directions (thinner) -->
+  <line x1="24" y1="24" x2="48" y2="48" stroke="url(#viridisTeal)" stroke-width="8"/>
+  <line x1="104" y1="24" x2="80" y2="48" stroke="url(#viridisTeal)" stroke-width="8"/>
+  <line x1="24" y1="104" x2="48" y2="80" stroke="url(#viridisTeal)" stroke-width="8"/>
+  <line x1="104" y1="104" x2="80" y2="80" stroke="url(#viridisTeal)" stroke-width="8"/>
+  
+  <!-- Data nodes -->
+  <!-- Primary nodes (larger) -->
+  <circle cx="36" cy="64" r="8" fill="url(#viridisTeal)"/>
+  <circle cx="92" cy="64" r="8" fill="url(#viridisTeal)"/>
+  <circle cx="64" cy="36" r="8" fill="url(#viridisTeal)"/>
+  <circle cx="64" cy="92" r="8" fill="url(#viridisTeal)"/>
+  
+  <!-- Outer border ring - BOLDER -->
+  <!-- <circle cx="64" cy="64" r="56" fill="none" stroke="url(#viridisTeal)" stroke-width="8"/> -->
+  
+</svg>
