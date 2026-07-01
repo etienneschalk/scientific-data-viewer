@@ -240,11 +240,13 @@ suite('Extension Test Suite', () => {
             // Check for expected activation events
             const expectedEvents = [
                 'onLanguage:netcdf',
+                'onLanguage:cdf',
                 'onLanguage:hdf5',
                 'onCommand:scientificDataViewer.openViewer',
                 'onFileSystem:netcdf',
                 'onFileSystem:zarr',
                 'onCustomEditor:netcdfEditor',
+                'onCustomEditor:cdfEditor',
                 'onCustomEditor:hdf5Editor',
             ];
 
@@ -300,6 +302,20 @@ suite('Extension Test Suite', () => {
             assert.ok(
                 netcdfLanguage.extensions.includes('.netcdf'),
                 'NetCDF should support .netcdf files',
+            );
+            assert.ok(
+                !netcdfLanguage.extensions.includes('.cdf'),
+                'NetCDF should not include .cdf (NASA CDF uses language id cdf)',
+            );
+
+            const cdfLanguage = languages.find(
+                (lang: any) => lang.id === 'cdf',
+            );
+            assert.ok(cdfLanguage, 'Should have CDF (NASA) language');
+            assert.ok(cdfLanguage.extensions, 'CDF should have extensions');
+            assert.ok(
+                cdfLanguage.extensions.includes('.cdf'),
+                'CDF should support .cdf files',
             );
 
             const hdf5Language = languages.find(
@@ -364,6 +380,30 @@ suite('Extension Test Suite', () => {
             assert.ok(
                 netcdfEditor.selector,
                 'NetCDF editor should have selector',
+            );
+            const netcdfPatterns = netcdfEditor.selector.map(
+                (s: { filenamePattern: string }) => s.filenamePattern,
+            );
+            assert.ok(
+                !netcdfPatterns.includes('*.cdf'),
+                'NetCDF editor should not handle .cdf files',
+            );
+
+            const cdfEditor = customEditors.find(
+                (editor: any) => editor.viewType === 'cdfEditor',
+            );
+            assert.ok(cdfEditor, 'Should have CDF editor');
+            assert.ok(
+                cdfEditor.displayName,
+                'CDF editor should have display name',
+            );
+            assert.ok(cdfEditor.selector, 'CDF editor should have selector');
+            assert.ok(
+                cdfEditor.selector.some(
+                    (s: { filenamePattern: string }) =>
+                        s.filenamePattern === '*.cdf',
+                ),
+                'CDF editor should handle .cdf files',
             );
 
             const hdf5Editor = customEditors.find(

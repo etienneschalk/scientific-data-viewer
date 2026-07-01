@@ -211,6 +211,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
     ): Promise<void> {
         try {
             const lastUpdated = envInfo.lastUpdated.toLocaleString();
+            const packageVersions =
+                await this.extensionEnvManager.getInstalledPackageVersions();
+            const installedCount = packageVersions.filter(
+                (pkg) => pkg.version !== null,
+            ).length;
 
             const toolUsed = envInfo.createdWithUv
                 ? `uv (Python ${quoteIfNeeded(
@@ -218,23 +223,30 @@ export class ExtensionVirtualEnvironmentManagerUI {
                   )})`
                 : 'Unknown';
 
+            const packageLines =
+                packageVersions.length > 0
+                    ? packageVersions
+                          .map((pkg) =>
+                              pkg.version
+                                  ? `  - ${pkg.name}: ${pkg.version}`
+                                  : `  - ${pkg.name}: _not installed_`,
+                          )
+                          .join('\n')
+                    : 'No packages installed';
+
             const envInfoContent = `
 # Extension Virtual Environment Information
 
 - 📁 Path: ${envInfo.path}
 - 🐍 Python: ${envInfo.pythonPath}
 - 🔧 Created with: ${toolUsed}
-- 📦 Packages: ${envInfo.packages.length} installed
+- 📦 Packages: ${installedCount} of ${packageVersions.length} installed
 - 📅 Last Updated: ${lastUpdated}
 - ${envInfo.isInitialized ? '✅ Status: Ready' : '❌ Status: Not Initialized'}
 
 - 📦 Installed Packages:
 
-${
-    envInfo.packages.length > 0
-        ? envInfo.packages.map((pkg: any) => `  - ${pkg}`).join('\n')
-        : 'No packages installed'
-}
+${packageLines}
 
 
 

@@ -146,6 +146,74 @@ suite('HeaderExtractor Test Suite', () => {
         assert.ok(dataGroupsHeader.children.length > 0);
     });
 
+    test('should order outline groups from dimensions_flattened', () => {
+        const dataInfo: DataInfoResult = {
+            format: 'NetCDF',
+            fileSize: 1024,
+            xarray_html_repr: '',
+            xarray_text_repr: '',
+            xarray_show_versions: '',
+            format_info: {
+                extension: 'nc',
+                display_name: 'NetCDF',
+                available_engines: [],
+                missing_packages: [],
+                is_supported: true,
+            },
+            used_engine: 'netcdf4',
+            dimensions_flattened: {
+                '/': { x: 1 },
+                '/sector_a': { x: 1 },
+                '/sector_b': { x: 1 },
+            },
+            coordinates_flattened: {
+                '/': [],
+                '/sector_a': [],
+                '/sector_b': [],
+            },
+            variables_flattened: {
+                '/': [],
+                '/sector_a': [],
+                '/sector_b': [],
+            },
+            attributes_flattened: {
+                '/': {},
+                '/sector_a': {},
+                '/sector_b': {},
+            },
+            // Different key order than dimensions_flattened (stale/wrong source).
+            xarray_html_repr_flattened: {
+                '/sector_b': '<div>b</div>',
+                '/': '<div>root</div>',
+                '/sector_a': '<div>a</div>',
+            },
+            xarray_text_repr_flattened: {
+                '/sector_b': 'b',
+                '/': 'root',
+                '/sector_a': 'a',
+            },
+        };
+
+        const headers =
+            HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
+
+        const dataGroupsHeader = headers.find((h) => h.label === 'Data Groups');
+        assert.ok(dataGroupsHeader);
+        assert.deepStrictEqual(
+            dataGroupsHeader.children.map((c) => c.label),
+            ['/', '/sector_a', '/sector_b'],
+        );
+
+        const htmlReprHeader = headers.find(
+            (h) => h.label === 'Xarray HTML Representation (for each group)',
+        );
+        assert.ok(htmlReprHeader);
+        assert.deepStrictEqual(
+            htmlReprHeader.children.map((c) => c.label),
+            ['/', '/sector_a', '/sector_b'],
+        );
+    });
+
     test('should handle empty HTML content', () => {
         const headers = HeaderExtractor.extractHeaders('');
 

@@ -10,6 +10,7 @@ import {
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
 import path from 'path';
+import { PerformanceTimer } from '../common/PerformanceTimer';
 
 /**
  * Represents an active Python process that can be tracked and aborted
@@ -151,7 +152,12 @@ export class PythonManager {
             );
         }
 
-        return await this.executePythonFileUnchecked(
+        const timer = new PerformanceTimer(
+            `python-exec:${path.basename(scriptPath)}`,
+        );
+        timer.mark('start');
+
+        const result = await this.executePythonFileUnchecked(
             this._pythonPath,
             scriptPath,
             args,
@@ -159,6 +165,9 @@ export class PythonManager {
             operationId,
             timeoutMs,
         );
+        timer.mark('spawn-complete');
+        timer.finish('spawn');
+        return result;
     }
 
     private async executePythonFileUnchecked(

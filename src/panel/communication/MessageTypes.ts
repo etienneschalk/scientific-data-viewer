@@ -28,9 +28,7 @@ export interface EventMessage<T = any> extends BaseMessage {
 }
 
 export type Message<T = any> =
-    | RequestMessage<T>
-    | ResponseMessage<T>
-    | EventMessage<T>;
+    RequestMessage<T> | ResponseMessage<T> | EventMessage<T>;
 
 // Specific message types
 export interface DataInfoRequest {

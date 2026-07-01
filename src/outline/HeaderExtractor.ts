@@ -148,19 +148,26 @@ export class HeaderExtractor {
             return baseHeaders;
         }
 
+        // Match webview Data Groups order (dimensions_flattened); respects
+        // scientificDataViewer.orderGroupsAlphabetically via Python get_data_info.
+        const groupNames = Object.keys(
+            dataInfo.dimensions_flattened || {},
+        ).filter((groupName) => groupName && groupName.trim() !== '');
+
+        const reprGroupNames = groupNames.filter(
+            (groupName) =>
+                groupName in (dataInfo.xarray_html_repr_flattened || {}),
+        );
+
         // Find sections that should be enriched with group information
         const enrichedHeaders = baseHeaders.map((header) => {
-            const groupNames = Object.keys(
-                dataInfo.xarray_html_repr_flattened || {},
-            ).filter((groupName) => groupName && groupName.trim() !== ''); // Filter out empty group names
-
             // Enrich group representation sections
             if (
                 header.id === 'section-html-representation-for-groups' ||
                 header.id === 'section-text-representation-for-groups'
             ) {
-                if (groupNames.length > 0) {
-                    const groupHeaders: HeaderItem[] = groupNames.map(
+                if (reprGroupNames.length > 0) {
+                    const groupHeaders: HeaderItem[] = reprGroupNames.map(
                         (groupName) => ({
                             label: groupName || 'Unnamed Group',
                             level: 2,

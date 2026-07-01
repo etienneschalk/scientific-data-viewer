@@ -381,10 +381,8 @@ export class HealthcheckManager {
 
         if (paneCount === 0) {
             return {
-                status: 'warning',
+                status: 'healthy',
                 message: 'No data viewer panes are currently open',
-                details:
-                    'Consider opening a scientific data file to test the extension functionality.',
                 timestamp: new Date(),
             };
         }

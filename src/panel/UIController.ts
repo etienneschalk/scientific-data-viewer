@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as os from 'os';
+import * as path from 'path';
 import { StateManager, AppState } from './state/AppState';
 import { MessageBus } from './communication/MessageBus';
 import { ErrorBoundary } from '../common/ErrorBoundary';
@@ -18,9 +19,11 @@ import {
     getPlotTimeoutMs,
     getWebviewExportTheme,
     getConvertBandsToVariables,
+    getOutlineEnabled,
 } from '../common/config';
 import { ErrorContext } from '../types';
 import { ThemeManager } from './ThemeManager';
+import { PerformanceTimer } from '../common/PerformanceTimer';
 
 export class UIController {
     private id: number;
@@ -29,6 +32,7 @@ export class UIController {
     private errorBoundary: ErrorBoundary;
     private dataProcessor: DataProcessor;
     private webview: vscode.Webview;
+    private readonly extensionUri?: vscode.Uri;
     private unsubscribeState?: () => void;
     private onErrorPanelCallback: (error: Error) => void;
     private onSuccessPanelCallback: (success: string) => void;
@@ -40,9 +44,11 @@ export class UIController {
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void,
         onOutlineUpdateCallback?: () => void,
+        extensionUri?: vscode.Uri,
     ) {
         this.id = id;
         this.webview = webview;
+        this.extensionUri = extensionUri;
         this.dataProcessor = DataProcessor.getInstance();
         this.onErrorPanelCallback = onErrorCallback;
         this.onSuccessPanelCallback = onSuccessCallback;
@@ -229,6 +235,7 @@ export class UIController {
     }
 
     private async handleGetDataInfo(filePath: string): Promise<any> {
+        const timer = new PerformanceTimer(`load:${path.basename(filePath)}`);
         const context: ErrorContext = {
             component: this.getComponentName(),
             operation: 'getDataInfo',
@@ -243,6 +250,7 @@ export class UIController {
                 // Wait for Python initialization to complete first
                 // This ensures we don't check Python environment before it's ready
                 await this.dataProcessor.pythonManagerInstance.waitForInitialization();
+                timer.mark('python-init');
 
                 // Check Python environment
                 if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
@@ -271,6 +279,7 @@ export class UIController {
                     fileUri,
                     convertBandsToVariables,
                 );
+                timer.mark('getDataInfo');
 
                 if (!dataInfo) {
                     throw new Error(
@@ -302,14 +311,17 @@ export class UIController {
 
                 // Emit data loaded event to webview
                 this.messageBus.emitDataLoaded(this.stateManager.getState());
+                timer.mark('postMessage');
 
                 // Notify the panel about the success
                 this.onSuccessPanelCallback('Data loaded successfully');
 
                 // Update outline if callback is provided
-                if (this.onOutlineUpdateCallback) {
+                if (this.onOutlineUpdateCallback && getOutlineEnabled()) {
                     this.onOutlineUpdateCallback();
                 }
+
+                timer.finish('load complete');
 
                 return {
                     data: dataInfo.result,
@@ -852,6 +864,10 @@ export class UIController {
         }, context);
     }
 
+    public async refresh(): Promise<void> {
+        await this.handleRefresh();
+    }
+
     public getState(): AppState {
         return this.stateManager.getState();
     }
@@ -902,7 +918,9 @@ export class UIController {
     }
 
     public setHtml(): void {
+        const timer = new PerformanceTimer(`setHtml:<${this.getId()}>`);
         this.webview.html = this.getHtmlForWebview();
+        timer.finish('setHtml');
     }
 
     private getHtmlForWebview() {
@@ -910,10 +928,12 @@ export class UIController {
         const lastLoadTime =
             this.stateManager.getState().data.lastLoadTime?.toISOString() ||
             null;
+        const extensionUri = this.extensionUri;
         return HTMLGenerator.generateMainHTML(
             devMode,
             lastLoadTime,
             this.getId(),
+            extensionUri ? { webview: this.webview, extensionUri } : undefined,
         );
     }
 

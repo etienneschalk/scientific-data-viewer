@@ -6,8 +6,42 @@ import {
     getMatplotlibStyle,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
+    getOrderGroupsAlphabetically,
+    getShowXarrayEncodingAttributes,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
+import { PerformanceTimer } from '../common/PerformanceTimer';
+
+export interface GetDataInfoCliOptions {
+    convertBandsToVariables?: boolean;
+    smallVariableBytes: number;
+    smallValueDisplayMaxLen: number;
+    orderGroupsAlphabetically: boolean;
+    showXarrayEncodingAttributes: boolean;
+}
+
+/** Build argv for `get_data_info.py info` (exported for unit tests). */
+export function buildGetDataInfoCliArgs(
+    filePath: string,
+    options: GetDataInfoCliOptions,
+): string[] {
+    const args = ['info', filePath];
+    if (options.convertBandsToVariables) {
+        args.push('--convert-bands-to-variables');
+    }
+    args.push('--small-variable-bytes', String(options.smallVariableBytes));
+    args.push(
+        '--small-value-display-max-len',
+        String(options.smallValueDisplayMaxLen),
+    );
+    if (!options.orderGroupsAlphabetically) {
+        args.push('--no-order-groups-alphabetically');
+    }
+    if (!options.showXarrayEncodingAttributes) {
+        args.push('--no-show-xarray-encoding-attributes');
+    }
+    return args;
+}
 
 export class DataProcessor {
     private static instance: DataProcessor;
@@ -35,6 +69,7 @@ export class DataProcessor {
         uri: vscode.Uri,
         convertBandsToVariables: boolean = false,
     ): Promise<DataInfoPythonResponse | null> {
+        const timer = new PerformanceTimer('getDataInfo');
         Logger.debug(
             `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`,
         );
@@ -49,27 +84,23 @@ export class DataProcessor {
         );
 
         try {
-            // Use the new merged CLI with 'info' mode
-            const args = ['info', filePath];
-            if (convertBandsToVariables) {
-                args.push('--convert-bands-to-variables');
-            }
-            const smallVariableBytes = getSmallVariableBytes();
-            const smallValueDisplayMaxLen = getSmallValueDisplayMaxLen();
-            args.push('--small-variable-bytes', String(smallVariableBytes));
-            args.push(
-                '--small-value-display-max-len',
-                String(smallValueDisplayMaxLen),
-            );
+            const args = buildGetDataInfoCliArgs(filePath, {
+                convertBandsToVariables,
+                smallVariableBytes: getSmallVariableBytes(),
+                smallValueDisplayMaxLen: getSmallValueDisplayMaxLen(),
+                orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
+                showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+            });
 
-            const pythonResponse = await this.pythonManager.executePythonFile(
+            timer.mark('python-args-ready');
+            const pythonResponse = (await this.pythonManager.executePythonFile(
                 scriptPath,
                 args,
                 true,
-            );
-            // Return the result even if it contains an error field
-            // The caller can check for result.error to handle errors
-            return pythonResponse as DataInfoPythonResponse;
+            )) as DataInfoPythonResponse;
+            timer.mark('python-complete');
+            timer.finish('getDataInfo');
+            return pythonResponse;
         } catch (error) {
             Logger.error(
                 `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`,

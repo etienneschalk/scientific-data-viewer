@@ -43,6 +43,7 @@ import {
     getOverridePythonInterpreterConfigFullKey,
     getUseExtensionOwnEnvironment,
     getUseExtensionOwnEnvironmentConfigFullKey,
+    getOutlineEnabled,
     updateDevMode,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
@@ -50,6 +51,7 @@ import { HealthcheckManager } from './common/HealthcheckManager';
 
 export function activate(context: vscode.ExtensionContext) {
     setPackageJson(getPackageJsonFromExtensionContext(context));
+    DataViewerPanel.setExtensionUri(context.extensionUri);
 
     Logger.initialize();
 
@@ -113,8 +115,14 @@ export function activate(context: vscode.ExtensionContext) {
     // The outline will be updated automatically when DataViewerPanels become active
     // via the onDidChangeViewState listener in DataViewerPanel
     Logger.info(`🧩 🔧 Creating outline provider...`);
-    const outlineProvider = createOutlineProvider();
-    Logger.info(`🧩 🚀 Outline provider created successfully`);
+    const outlineProvider = getOutlineEnabled()
+        ? createOutlineProvider()
+        : undefined;
+    if (outlineProvider) {
+        Logger.info(`🧩 🚀 Outline provider created successfully`);
+    } else {
+        Logger.info(`🧩 ⏭️ Outline provider disabled by configuration`);
+    }
 
     Logger.info(`🧩 🔧 Registering commands...`);
     context.subscriptions.push(
@@ -504,8 +512,14 @@ function commandHandlerHealthcheck(pythonManager: PythonManager): () => void {
     };
 }
 
-function commandHandlerExpandAll(outlineProvider: OutlineProvider): () => void {
+function commandHandlerExpandAll(
+    outlineProvider: OutlineProvider | undefined,
+): () => void {
     return () => {
+        if (!outlineProvider) {
+            Logger.info('🎮 📋 Command: Expand all skipped (outline disabled)');
+            return;
+        }
         Logger.info('🎮 📋 Command: Expanding all outline items');
         outlineProvider.expandAll();
     };
@@ -581,9 +595,15 @@ function commandHandlerPythonInstallPackages(
 }
 
 function commandHandlerScrollToHeader(
-    outlineProvider: OutlineProvider,
+    outlineProvider: OutlineProvider | undefined,
 ): (headerId: string, headerLabel: string) => void {
     return (headerId: string, headerLabel: string) => {
+        if (!outlineProvider) {
+            Logger.info(
+                '🎮 ↕️ Command: Scroll to header skipped (outline disabled)',
+            );
+            return;
+        }
         // We can only manage one file at a time, so we need to get the current file from the outline provider
         let currentPanelId = outlineProvider.getCurrentPanelId();
 
@@ -680,6 +700,7 @@ function commandHandlerOpenViewer(
                 canSelectMany: true,
                 filters: getShowDialogFilters([
                     'netcdf',
+                    'cdf',
                     'hdf5',
                     'grib',
                     'geotiff',
@@ -765,6 +786,7 @@ function registerCustomEditorProviders(
     };
     const editorRegistrations = [
         'netcdfEditor',
+        'cdfEditor',
         'hdf5Editor',
         'zarrEditor',
         'gribEditor',
@@ -801,6 +823,7 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
         localResourceRoots: [
             vscode.Uri.joinPath(extensionUri, 'media'),
             vscode.Uri.joinPath(extensionUri, 'out'),
+            vscode.Uri.joinPath(extensionUri, 'src', 'panel', 'webview'),
         ],
     };
 }

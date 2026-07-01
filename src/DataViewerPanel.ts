@@ -4,6 +4,7 @@ import { Logger } from './common/Logger';
 import { UIController } from './panel/UIController';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
+import { getOutlineEnabled } from './common/config';
 import {
     CMD_OPEN_DEVELOPER_TOOLS,
     CMD_SHOW_LOGS,
@@ -17,6 +18,7 @@ export class DataViewerPanel {
 
     // Map of id to panel
     private static _outlineProvider?: OutlineProvider;
+    private static _extensionUri?: vscode.Uri;
     private static readonly _panels: Map<number, DataViewerPanel> = new Map();
     private static _createdCount = 0; // Used for identifying the panel
 
@@ -30,6 +32,14 @@ export class DataViewerPanel {
 
     public static setOutlineProvider(outlineProvider: OutlineProvider): void {
         DataViewerPanel._outlineProvider = outlineProvider;
+    }
+
+    public static setExtensionUri(extensionUri: vscode.Uri): void {
+        DataViewerPanel._extensionUri = extensionUri;
+    }
+
+    public static getExtensionUri(): vscode.Uri | undefined {
+        return DataViewerPanel._extensionUri;
     }
 
     public static getPanel(panelId: number): DataViewerPanel | undefined {
@@ -243,9 +253,12 @@ export class DataViewerPanel {
                 this._hasError = false;
             },
             () => {
-                // Also notify that the panel is active to ensure proper outline display
+                // Rebuild outline from fresh dataInfo (e.g. after refresh or
+                // orderGroupsAlphabetically change); then show this panel's tree.
+                this.updateOutline();
                 this.notifyPanelActive();
             },
+            DataViewerPanel._extensionUri,
         );
 
         // Set initial HTML first
@@ -280,23 +293,22 @@ export class DataViewerPanel {
      * Notify that this panel has become active
      */
     private notifyPanelActive(): void {
-        if (DataViewerPanel._outlineProvider && this.getId()) {
-            Logger.info(
-                `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
-            );
+        if (!DataViewerPanel._outlineProvider || !this.getId()) {
+            return;
+        }
+        Logger.info(
+            `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
+        );
+        if (!getOutlineEnabled()) {
+            return;
+        }
 
-            // Check if we have headers cached for this file
-            const cachedHeaders =
-                DataViewerPanel._outlineProvider.getHeadersForPanel(
-                    this.getId(),
-                );
-            if (cachedHeaders) {
-                // Switch to the cached headers for this file
-                DataViewerPanel._outlineProvider.switchToPanel(this.getId());
-            } else {
-                // Update outline for this panel
-                this.updateOutline();
-            }
+        const cachedHeaders =
+            DataViewerPanel._outlineProvider.getHeadersForPanel(this.getId());
+        if (cachedHeaders) {
+            DataViewerPanel._outlineProvider.switchToPanel(this.getId());
+        } else if (this._uiController.getDataInfo()) {
+            this.updateOutline();
         }
     }
 
@@ -304,7 +316,10 @@ export class DataViewerPanel {
      * Update the outline when data is loaded for this panel
      */
     private updateOutline(): void {
-        if (DataViewerPanel._outlineProvider === undefined) {
+        if (
+            !getOutlineEnabled() ||
+            DataViewerPanel._outlineProvider === undefined
+        ) {
             return;
         }
 
@@ -318,13 +333,10 @@ export class DataViewerPanel {
     }
 
     private async refresh() {
-        // Use UI controller to refresh data
         Logger.debug(
-            `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panel: ${
-                this.getFileUri().fsPath
-            }`,
+            `[DataViewerPanel] Refreshing panel: ${this.getFileUri().fsPath}`,
         );
-        await this._uiController.loadFile(this.getFileUri().fsPath);
+        await this._uiController.refresh();
     }
 
     private disposePanel() {

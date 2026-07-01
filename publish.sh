@@ -54,6 +54,9 @@ for arg in "$@"; do
             echo "  --skip-vscode  Skip VS Code Marketplace publish"
             echo "  --skip-openvsx Skip Open VSX publish"
             echo "  --help, -h     Show this help message"
+            echo ""
+            echo "Before publishing, README.md is checked against generate_readme.py;"
+            echo "you will be prompted to regenerate it if out of sync."
             exit 0
             ;;
     esac
@@ -88,6 +91,75 @@ print_success() {
 
 print_info() {
     echo -e "${BLUE}ℹ $1${NC}"
+}
+
+check_generated_documentation() {
+    local doc_file="README.md"
+    local temp_doc
+
+    print_header "Documentation Generation Check"
+
+    print_step "Regenerating ${doc_file} (dry run)..."
+    if [ ! -f "scripts/generate_readme.py" ]; then
+        print_error "scripts/generate_readme.py not found"
+        exit 1
+    fi
+
+    temp_doc=$(mktemp)
+
+    if ! python3 scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
+        rm -f "$temp_doc"
+        print_error "Documentation generation failed"
+        exit 1
+    fi
+
+    if [ ! -f "$doc_file" ]; then
+        rm -f "$temp_doc"
+        print_error "${doc_file} is missing"
+        print_info "Generate it with: python3 scripts/generate_readme.py --no-timestamp"
+        exit 1
+    fi
+
+    if cmp -s "$temp_doc" "$doc_file"; then
+        rm -f "$temp_doc"
+        print_success "${doc_file} matches generated output"
+        return 0
+    fi
+
+    print_error "${doc_file} differs from freshly generated documentation"
+    print_info "Sources may be out of sync with ${doc_file} (package.json, docs/documentation.json)"
+    print_info "Review the diff:"
+    echo ""
+    diff_output=$(diff -u "$doc_file" "$temp_doc" || true)
+    echo "$diff_output" | head -80
+    if [ "$(echo "$diff_output" | wc -l)" -gt 80 ]; then
+        print_info "(diff truncated — run: diff -u ${doc_file} ${temp_doc})"
+    fi
+    echo ""
+    read -p "Regenerate ${doc_file} now? (Y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        rm -f "$temp_doc"
+        print_error "Aborted — ${doc_file} is out of sync with package.json and docs/documentation.json"
+        exit 1
+    fi
+
+    print_step "Regenerating ${doc_file}..."
+    if ! python3 scripts/generate_readme.py --no-timestamp; then
+        rm -f "$temp_doc"
+        print_error "Documentation generation failed"
+        exit 1
+    fi
+
+    if ! cmp -s "$temp_doc" "$doc_file"; then
+        rm -f "$temp_doc"
+        print_error "${doc_file} still differs after regeneration — review sources manually"
+        exit 1
+    fi
+
+    rm -f "$temp_doc"
+    print_success "${doc_file} regenerated and matches expected output"
+    print_warning "Remember to commit ${doc_file} before publishing if it was not already committed"
 }
 
 # =============================================================================
@@ -246,7 +318,10 @@ else
     fi
 fi
 
-# Check 3: Git working directory is clean
+# Check 3: README matches generated documentation
+check_generated_documentation
+
+# Check 4: Git working directory is clean
 print_step "Checking git status..."
 if [ -d ".git" ]; then
     if [ -n "$(git status --porcelain)" ]; then
@@ -263,7 +338,7 @@ if [ -d ".git" ]; then
         print_success "Git working directory is clean"
     fi
 
-    # Check 4: Current branch (check this BEFORE tag operations)
+    # Check 5: Current branch (check this BEFORE tag operations)
     print_step "Checking current branch..."
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
@@ -278,7 +353,7 @@ if [ -d ".git" ]; then
         fi
     fi
 
-    # Check 5: Git tag for this version
+    # Check 6: Git tag for this version
     print_step "Checking git tags..."
     TAG_NAME="v${PACKAGE_VERSION}"
     if git tag -l | grep -q "^${TAG_NAME}$"; then
@@ -330,7 +405,7 @@ if [ -d ".git" ]; then
     fi
 fi
 
-# Check 6: Version hasn't been published already
+# Check 7: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
 VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"

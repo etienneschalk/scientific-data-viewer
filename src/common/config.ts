@@ -49,6 +49,9 @@ const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
 const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
+const OUTLINE_ENABLED = 'outlineEnabled';
+const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
+const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -70,6 +73,9 @@ const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
 // Default plot timeout (ms); server and client use this so the process is killed and UX is consistent
 const DEFAULT_PLOT_TIMEOUT_MS = 20000;
+const DEFAULT_OUTLINE_ENABLED = true;
+const DEFAULT_ORDER_GROUPS_ALPHABETICALLY = true;
+const DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -204,6 +210,27 @@ export function getPlotTimeoutMs(): number {
     return Math.min(Math.floor(raw), 600000); // cap at 10 minutes
 }
 
+export function getOutlineEnabled(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        OUTLINE_ENABLED,
+        DEFAULT_OUTLINE_ENABLED,
+    );
+}
+
+export function getOrderGroupsAlphabetically(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        ORDER_GROUPS_ALPHABETICALLY,
+        DEFAULT_ORDER_GROUPS_ALPHABETICALLY,
+    );
+}
+
+export function getShowXarrayEncodingAttributes(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        SHOW_XARRAY_ENCODING_ATTRIBUTES,
+        DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES,
+    );
+}
+
 /**
  * Plain object of extension config flags for the webview (feature flags and display options).
  * Use this instead of passing WorkspaceConfiguration so the webview receives a predictable object.
@@ -216,6 +243,9 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
         plotTimeoutMs: getPlotTimeoutMs(),
+        outlineEnabled: getOutlineEnabled(),
+        orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
+        showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
     };
 }
 
