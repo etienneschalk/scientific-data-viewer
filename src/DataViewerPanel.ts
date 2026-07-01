@@ -253,7 +253,9 @@ export class DataViewerPanel {
                 this._hasError = false;
             },
             () => {
-                // Also notify that the panel is active to ensure proper outline display
+                // Rebuild outline from fresh dataInfo (e.g. after refresh or
+                // orderGroupsAlphabetically change); then show this panel's tree.
+                this.updateOutline();
                 this.notifyPanelActive();
             },
             DataViewerPanel._extensionUri,
@@ -302,14 +304,11 @@ export class DataViewerPanel {
             `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
         );
 
-        // Check if we have headers cached for this file
         const cachedHeaders =
             DataViewerPanel._outlineProvider.getHeadersForPanel(this.getId());
         if (cachedHeaders) {
-            // Switch to the cached headers for this file
             DataViewerPanel._outlineProvider.switchToPanel(this.getId());
-        } else {
-            // Update outline for this panel
+        } else if (this._uiController.getDataInfo()) {
             this.updateOutline();
         }
     }

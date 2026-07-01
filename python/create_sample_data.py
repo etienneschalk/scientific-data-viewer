@@ -3017,6 +3017,60 @@ def create_sample_netcdf_multiple_groups():
     return output_file
 
 
+def create_sample_netcdf_unordered_groups():
+    """Create a NetCDF file with groups in non-alphabetical file order (Issue #140)."""
+    output_file = "sample_data_unordered_groups.nc"
+
+    if os.path.exists(output_file):
+        print(
+            f"📁 NetCDF unordered-groups file {output_file} already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("📁 Creating sample NetCDF file with non-alphabetically ordered groups...")
+
+    try:
+        import netCDF4 as nc
+    except ImportError:
+        print(
+            "  ❌ netCDF4 not available, skipping unordered-groups NetCDF file creation."
+        )
+        return None
+
+    np.random.seed(789)
+    x = np.arange(5, dtype=np.float32)
+
+    # Create groups in file order: zozo, abba, tutu (not alphabetical).
+    with nc.Dataset(output_file, "w", format="NETCDF4") as rootgrp:
+        rootgrp.title = "Sample NetCDF with Non-Alphabetical Group Order"
+        rootgrp.description = (
+            "Groups zozo, abba, tutu are stored in file order (not alphabetical)"
+        )
+        rootgrp.Conventions = "CF-1.6"
+
+        rootgrp.createDimension("x", len(x))
+        root_value = rootgrp.createVariable("root_value", "f4", ("x",))
+        root_value[:] = np.zeros(len(x), dtype=np.float32)
+        root_value.long_name = "Root level values"
+
+        group_specs = [
+            ("zozo", "zozo_var", 1.0),
+            ("abba", "abba_var", 2.0),
+            ("tutu", "tutu_var", 3.0),
+        ]
+        for group_name, var_name, mean in group_specs:
+            group = rootgrp.createGroup(group_name)
+            group.group_name = group_name
+            data = np.random.normal(mean, 0.1, len(x)).astype(np.float32)
+            var = group.createVariable(var_name, "f4", ("x",))
+            var[:] = data
+            var.long_name = f"Data in group {group_name}"
+
+    print(f"✅ Created {output_file} with groups in file order: zozo, abba, tutu")
+    return output_file
+
+
 def create_broken_files():
     """Create broken files for all supported extensions to test error handling."""
     print("💥 Creating broken files for error handling testing...")
@@ -5415,6 +5469,14 @@ def main(do_create_disposable_files: bool = False):
             created_files.append((multigroup_netcdf_file, "NetCDF Multiple Groups"))
         else:
             skipped_files.append("NetCDF Multiple Groups (netCDF4 not available)")
+
+        unordered_groups_netcdf_file = create_sample_netcdf_unordered_groups()
+        if unordered_groups_netcdf_file:
+            created_files.append(
+                (unordered_groups_netcdf_file, "NetCDF (Unordered Groups)")
+            )
+        else:
+            skipped_files.append("NetCDF Unordered Groups (netCDF4 not available)")
 
         long_names_netcdf_file = create_sample_netcdf_long_variable_names()
         if long_names_netcdf_file:
