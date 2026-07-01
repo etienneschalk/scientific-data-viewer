@@ -286,13 +286,13 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 
 | Command | Description |
 | ------- | ----------- |
+| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
 | `Scientific Data Viewer: Open Scientific Data Viewer` | Opens the Scientific Data Viewer for a file |
 | `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr) |
 | `Scientific Data Viewer: Refresh Python Environment` | Refreshes the Python environment used by the extension |
 | `Scientific Data Viewer: Show Extension Logs` | Opens the extension's log output for debugging |
 | `Scientific Data Viewer: Show Settings` | Opens the extension settings |
 | `Scientific Data Viewer: Open Developer Tools` | Opens the developer tools for the webview |
-| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
 | `Scientific Data Viewer: Export Webview Content` | Export the active Scientific Data Viewer as a self-contained HTML report |
 | `Scientific Data Viewer: Toggle Dev Mode` | Quickly enable/disable dev mode without navigating settings |
 | `Scientific Data Viewer: Run Healthcheck` | Run a health check on the Python environment and required packages |
@@ -325,6 +325,14 @@ The extension can be configured through VSCode settings:
   - (type: `string`, default: `""` (empty string))
   - Theme to use when exporting webview content to HTML files. If empty, uses the current VS Code theme variables. If set, overrides with the specified theme for exports.
   - **Note:** Only affects exported HTML files, not the live webview display.
+  - Values:
+    - `""` (empty string): Use the current VS Code theme
+    - `"Default Dark+"`: Default Dark+ theme
+    - `"Default Light+"`: Default Light+ theme
+    - `"Solarized Dark"`: Solarized Dark theme
+    - `"Solarized Light"`: Solarized Light theme
+    - `"High Contrast Dark"`: High Contrast Dark theme
+    - `"High Contrast Light"`: High Contrast Light theme
 - **`scientificDataViewer.smallVariableBytes`**
   - (type: `number`, default: `1000`)
   - Maximum size in bytes for variables and coordinates to have their values loaded and displayed in the UI (scalar and small array display, [Issue #102](https://github.com/etienneschalk/scientific-data-viewer/issues/102)). Variables/coordinates at or below this size get a **display_value** in the variable/coordinate details. If set to **0**, the whole small-value display feature (Issue #102) is disabled and no variables/coordinates will show loaded values.
@@ -334,10 +342,6 @@ The extension can be configured through VSCode settings:
 - **`scientificDataViewer.plotTimeoutMs`**
   - (type: `number`, default: `20000`)
   - Maximum time in **milliseconds** to wait for a plot before it is cancelled and the backend process is terminated. Use a higher value (e.g. 120000 for 2 minutes) for large datasets when you want a quicklook without slicing first. Minimum 1000 (1s), maximum 600000 (10 min). Default: 20000 (20s).
-- **`scientificDataViewer.outlineEnabled`**
-  - (type: `boolean`, default: `true`)
-  - When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.
-  - **Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation.
 
 **🐍 Virtual Environment Settings**
 
@@ -368,6 +372,10 @@ The extension includes specific settings for virtual environment management:
   - When enabled, multi-band GeoTIFF files will have their bands converted to separate variables instead of a single 3D DataArray. This improves readability and plotting capabilities by treating each band as an individual variable.
   - **Supported formats:** GeoTIFF (.tif, .tiff, .geotiff)
   - **Benefits:** - Better color scale readability for different bands - Individual band plotting and analysis - Improved data structure visualization - Each band treated as a separate variable
+- **`scientificDataViewer.outlineEnabled`**
+  - (type: `boolean`, default: `true`)
+  - When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.
+  - **Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation.
 
 **Plot controls (Global and Group)**
 

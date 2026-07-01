@@ -49,68 +49,81 @@
             {
                 "command": "scientificDataViewer.manageExtensionOwnEnvironment",
                 "title": "Manage Extension Virtual Environment",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "View status and manage the extension environment (create, update, delete, info)"
             },
             {
                 "command": "scientificDataViewer.openViewer",
                 "title": "Open Scientific Data Viewer",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens the Scientific Data Viewer for a file"
             },
             {
                 "command": "scientificDataViewer.openViewerMultiple",
                 "title": "Open Scientific Data Viewer for Selection",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens all selected supported files or folders in the Scientific Data Viewer"
             },
             {
                 "command": "scientificDataViewer.openViewerFolder",
                 "title": "Open Scientific Data Viewer (Folder)",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens the Scientific Data Viewer for a folder (eg for Zarr)"
             },
             {
                 "command": "scientificDataViewer.refreshPythonEnvironment",
                 "title": "Refresh Python Environment",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Refreshes the Python environment used by the extension"
             },
             {
                 "command": "scientificDataViewer.showLogs",
                 "title": "Show Extension Logs",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens the extension's log output for debugging"
             },
             {
                 "command": "scientificDataViewer.showSettings",
                 "title": "Show Settings",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens the extension settings"
             },
             {
                 "command": "scientificDataViewer.openDeveloperTools",
                 "title": "Open Developer Tools",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Opens the developer tools for the webview"
             },
             {
                 "command": "scientificDataViewer.expandAll",
                 "title": "Expand All",
                 "category": "Scientific Data Viewer",
-                "icon": "$(expand-all)"
+                "icon": "$(expand-all)",
+                "description": "Expand all sections in the Scientific Data Viewer outline"
             },
             {
                 "command": "scientificDataViewer.python.installPackages",
                 "title": "Install Python Packages",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Install required Python packages for the extension"
             },
             {
                 "command": "scientificDataViewer.exportWebview",
                 "title": "Export Webview Content",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Export the active Scientific Data Viewer as a self-contained HTML report"
             },
             {
                 "command": "scientificDataViewer.toggleDevMode",
                 "title": "Toggle Dev Mode",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Quickly enable/disable dev mode without navigating settings"
             },
             {
                 "command": "scientificDataViewer.healthcheck",
                 "title": "Run Healthcheck",
-                "category": "Scientific Data Viewer"
+                "category": "Scientific Data Viewer",
+                "description": "Run a health check on the Python environment and required packages"
             }
         ],
         "menus": {
@@ -118,12 +131,14 @@
                 {
                     "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewer",
-                    "group": "navigation"
+                    "group": "navigation",
+                    "description": "Opens the file in the Scientific Data Viewer"
                 },
                 {
                     "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .safe || resourceExtname == .nc4 || resourceExtname == .cdf",
                     "command": "scientificDataViewer.openViewerMultiple",
-                    "group": "navigation"
+                    "group": "navigation",
+                    "description": "Opens all selected supported files or folders in the Scientific Data Viewer"
                 }
             ],
             "commandPalette": [

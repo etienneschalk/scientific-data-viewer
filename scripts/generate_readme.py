@@ -156,6 +156,68 @@ def command_palette_title(command: dict[str, Any]) -> str:
     return title
 
 
+def command_description(command: dict[str, Any]) -> str:
+    description = command.get("description", "")
+    return description.strip() if isinstance(description, str) else ""
+
+
+def menu_description(menu_entry: dict[str, Any], command: dict[str, Any]) -> str:
+    menu_desc = menu_entry.get("description", "")
+    if isinstance(menu_desc, str) and menu_desc.strip():
+        return menu_desc.strip()
+    return command_description(command)
+
+
+def commands_by_id(package: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        cmd["command"]: cmd
+        for cmd in package.get("contributes", {}).get("commands", [])
+    }
+
+
+def command_palette_commands(package: dict[str, Any]) -> list[dict[str, Any]]:
+    palette = package.get("contributes", {}).get("menus", {}).get("commandPalette", [])
+    by_id = commands_by_id(package)
+    commands: list[dict[str, Any]] = []
+    for entry in palette:
+        if entry.get("when") == "false":
+            continue
+        command = by_id.get(entry["command"])
+        if command is not None:
+            commands.append(command)
+    return commands
+
+
+def explorer_context_menu_entries(package: dict[str, Any]) -> list[dict[str, Any]]:
+    return package.get("contributes", {}).get("menus", {}).get("explorer/context", [])
+
+
+def validate_command_documentation(
+    package: dict[str, Any],
+) -> list[str]:
+    warnings: list[str] = []
+    for command in command_palette_commands(package):
+        if not command_description(command):
+            warnings.append(
+                f"command '{command['command']}' is in the command palette but has no description"
+            )
+
+    by_id = commands_by_id(package)
+    for menu_entry in explorer_context_menu_entries(package):
+        command_id = menu_entry.get("command", "")
+        command = by_id.get(command_id)
+        if command is None:
+            warnings.append(
+                f"explorer/context menu references unknown command: {command_id}"
+            )
+            continue
+        if not menu_description(menu_entry, command):
+            warnings.append(
+                f"explorer/context menu for '{command_id}' has no description"
+            )
+    return warnings
+
+
 def build_format_table(
     package: dict[str, Any], doc: dict[str, Any]
 ) -> tuple[list[str], list[list[str]]]:
@@ -216,20 +278,6 @@ def render_screenshots(sections: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def validate_command_ids(
-    package: dict[str, Any], doc_commands: list[dict[str, str]]
-) -> None:
-    defined = {
-        cmd["command"] for cmd in package.get("contributes", {}).get("commands", [])
-    }
-    for entry in doc_commands:
-        command_id = entry["id"]
-        if command_id not in defined:
-            raise ValueError(
-                f"documentation.json references unknown command: {command_id}"
-            )
-
-
 def validate_settings_groups(
     package: dict[str, Any], groups: list[dict[str, Any]]
 ) -> list[str]:
@@ -251,6 +299,22 @@ def validate_settings_groups(
                 f"setting '{key}' is not listed in any settingsGroups entry"
             )
     return warnings
+
+
+def render_enum_description_lines(schema: dict[str, Any]) -> list[str]:
+    enum = schema.get("enum")
+    descriptions = schema.get("enumDescriptions")
+    if not isinstance(enum, list) or not isinstance(descriptions, list):
+        return []
+    if not enum or len(enum) != len(descriptions):
+        return []
+
+    lines = ["  - Values:"]
+    lines.extend(
+        f"    - {format_default(value)}: {description}"
+        for value, description in zip(enum, descriptions, strict=True)
+    )
+    return lines
 
 
 def setting_description(schema: dict[str, Any]) -> str:
@@ -281,6 +345,7 @@ def render_setting(key: str, schema: dict[str, Any]) -> str:
         f"  - (type: `{setting_type}`, default: {default})",
     ]
     lines.extend(format_setting_description_lines(setting_description(schema)))
+    lines.extend(render_enum_description_lines(schema))
     return "\n".join(lines)
 
 
@@ -413,12 +478,10 @@ def render_usage(usage_sections: list[dict[str, str]]) -> str:
 {sections}"""
 
 
-def render_commands(
-    doc_commands: list[dict[str, str]], commands_by_id: dict[str, dict[str, Any]]
-) -> str:
+def render_commands(commands: list[dict[str, Any]]) -> str:
     rows = "\n".join(
-        f"| `{command_palette_title(commands_by_id[entry['id']])}` | {entry['description']} |"
-        for entry in doc_commands
+        f"| `{command_palette_title(command)}` | {command_description(command)} |"
+        for command in commands
     )
     return f"""### 🎮 Available Commands
 
@@ -430,11 +493,12 @@ Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+
 
 
 def render_context_menus(
-    context_menus: list[dict[str, str]], commands_by_id: dict[str, dict[str, Any]]
+    menu_entries: list[dict[str, Any]], by_id: dict[str, dict[str, Any]]
 ) -> str:
     items = "\n".join(
-        f"- **{command_palette_title(commands_by_id[menu_entry['commandId']])}** - {menu_entry['description']}"
-        for menu_entry in context_menus
+        f"- **{command_palette_title(by_id[menu_entry['command']])}** - {menu_description(menu_entry, by_id[menu_entry['command']])}"
+        for menu_entry in menu_entries
+        if menu_entry.get("command") in by_id
     )
     return f"""### 🖱️ Context Menu Commands
 
@@ -542,12 +606,10 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
     required = python_packages.get("required", [])
     optional = python_packages.get("optional", [])
 
-    doc_commands = doc.get("commands", [])
-    validate_command_ids(package, doc_commands)
-    commands_by_id = {
-        cmd["command"]: cmd
-        for cmd in package.get("contributes", {}).get("commands", [])
-    }
+    palette_commands = command_palette_commands(package)
+    by_id = commands_by_id(package)
+    context_menu_entries = explorer_context_menu_entries(package)
+    warnings.extend(validate_command_documentation(package))
 
     settings_groups = doc.get("settingsGroups", [])
     properties = (
@@ -572,8 +634,8 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
         render_installation(required, optional),
         render_prerequisites(doc.get("prerequisites", {}), required, optional),
         render_usage(doc.get("usageSections", [])),
-        render_commands(doc_commands, commands_by_id),
-        render_context_menus(doc.get("contextMenus", []), commands_by_id),
+        render_commands(palette_commands),
+        render_context_menus(context_menu_entries, by_id),
         render_settings(settings_groups, properties),
         render_troubleshooting(doc.get("troubleshooting", {})),
         render_contributing(doc.get("contributing", {})),

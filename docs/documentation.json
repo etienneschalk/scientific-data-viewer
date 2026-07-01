@@ -97,60 +97,6 @@
             "markdown": "The extension allows you to export complete data viewer content as self-contained HTML reports:\n\n1. **Using the Export Button**:\n   - Open a scientific data file in the Scientific Data Viewer\n   - Click the export button (🖼️) in the header controls\n   - Choose a location and filename for the HTML report\n   - The report will be generated and you can choose to open it or reveal it in explorer\n\n2. **Using the Command Palette**:\n   - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)\n   - Type \"Scientific Data Viewer: Export Webview Content\"\n   - Choose a location and filename for the HTML report\n\n**Report Contents**:\n\n- Complete file information (path, size, format, engines)\n- Xarray HTML and text representations\n- Data structure (dimensions, coordinates, variables, attributes)\n- Technical information (Python path, extension configuration, versions)\n- All content is self-contained with embedded CSS and JavaScript\n- Professional layout with copy buttons for easy data extraction\n\n**Use Cases**:\n\n- Share data analysis results with colleagues\n- Create documentation for datasets\n- Archive data viewer sessions\n- Generate reports for presentations or publications"
         }
     ],
-    "commands": [
-        {
-            "id": "scientificDataViewer.openViewer",
-            "description": "Opens the Scientific Data Viewer for a file"
-        },
-        {
-            "id": "scientificDataViewer.openViewerFolder",
-            "description": "Opens the Scientific Data Viewer for a folder (eg for Zarr)"
-        },
-        {
-            "id": "scientificDataViewer.refreshPythonEnvironment",
-            "description": "Refreshes the Python environment used by the extension"
-        },
-        {
-            "id": "scientificDataViewer.showLogs",
-            "description": "Opens the extension's log output for debugging"
-        },
-        {
-            "id": "scientificDataViewer.showSettings",
-            "description": "Opens the extension settings"
-        },
-        {
-            "id": "scientificDataViewer.openDeveloperTools",
-            "description": "Opens the developer tools for the webview"
-        },
-        {
-            "id": "scientificDataViewer.manageExtensionOwnEnvironment",
-            "description": "View status and manage the extension environment (create, update, delete, info)"
-        },
-        {
-            "id": "scientificDataViewer.exportWebview",
-            "description": "Export the active Scientific Data Viewer as a self-contained HTML report"
-        },
-        {
-            "id": "scientificDataViewer.toggleDevMode",
-            "description": "Quickly enable/disable dev mode without navigating settings"
-        },
-        {
-            "id": "scientificDataViewer.healthcheck",
-            "description": "Run a health check on the Python environment and required packages"
-        }
-    ],
-    "contextMenus": [
-        {
-            "menu": "explorer/context",
-            "commandId": "scientificDataViewer.openViewer",
-            "description": "Opens the file in the Scientific Data Viewer"
-        },
-        {
-            "menu": "explorer/context",
-            "commandId": "scientificDataViewer.openViewerMultiple",
-            "description": "Opens all selected supported files or folders in the Scientific Data Viewer"
-        }
-    ],
     "settingsGroups": [
         {
             "title": "General Settings",
@@ -161,8 +107,7 @@
                 "scientificDataViewer.webviewExportTheme",
                 "scientificDataViewer.smallVariableBytes",
                 "scientificDataViewer.smallValueDisplayMaxLen",
-                "scientificDataViewer.plotTimeoutMs",
-                "scientificDataViewer.outlineEnabled"
+                "scientificDataViewer.plotTimeoutMs"
             ]
         },
         {
@@ -177,7 +122,8 @@
             "keys": [
                 "scientificDataViewer.allowMultipleTabsForSameFile",
                 "scientificDataViewer.devMode",
-                "scientificDataViewer.convertBandsToVariables"
+                "scientificDataViewer.convertBandsToVariables",
+                "scientificDataViewer.outlineEnabled"
             ]
         },
         {
