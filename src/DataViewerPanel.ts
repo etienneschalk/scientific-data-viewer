@@ -293,16 +293,15 @@ export class DataViewerPanel {
      * Notify that this panel has become active
      */
     private notifyPanelActive(): void {
-        if (
-            !getOutlineEnabled() ||
-            !DataViewerPanel._outlineProvider ||
-            !this.getId()
-        ) {
+        if (!DataViewerPanel._outlineProvider || !this.getId()) {
             return;
         }
         Logger.info(
             `[DataViewerPanel] <${this.getId()}> 🗂️ Panel became active`,
         );
+        if (!getOutlineEnabled()) {
+            return;
+        }
 
         const cachedHeaders =
             DataViewerPanel._outlineProvider.getHeadersForPanel(this.getId());
