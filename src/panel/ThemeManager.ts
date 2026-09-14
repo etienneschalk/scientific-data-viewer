@@ -29,59 +29,161 @@ interface ThemeColors {
  * Theme manager for handling VS Code theme operations
  */
 export class ThemeManager {
+    private static readonly HTML_OPEN_TAG_PATTERN = /<html\b[^>]*>/i;
+    private static readonly BODY_OPEN_TAG_PATTERN = /<body\b[^>]*>/i;
+    private static readonly STYLE_ATTRIBUTE_PATTERN = /\sstyle="([^"]*)"/i;
+    private static readonly CLASS_ATTRIBUTE_PATTERN = /\sclass="([^"]*)"/i;
+
     /**
-     * Apply theme overrides to webview HTML content
+     * Theme kind classes VS Code puts on <body>. Only one is active at a time,
+     * so all of them are dropped before the exported kind is added.
+     */
+    private static readonly THEME_KIND_CLASSES = [
+        'vscode-light',
+        'vscode-dark',
+        'vscode-high-contrast',
+        'vscode-high-contrast-light',
+    ];
+
+    /**
+     * Emitted first so captured values override them. Only takes effect when
+     * the capture carries no font variables of its own, which cannot happen in
+     * a live webview but can in a hand-built document.
+     */
+    private static readonly FONT_FALLBACK_DECLARATIONS = [
+        "--vscode-editor-font-family: 'Consolas', 'Monaco', 'Courier New', monospace",
+        "--vscode-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+        '--vscode-font-size: 13px',
+        '--vscode-font-weight: normal',
+    ].join('; ');
+
+    /**
+     * Apply theme overrides to webview HTML content.
+     *
+     * The captured content is `document.documentElement.outerHTML` of the live
+     * webview. VS Code exposes the active theme as `--vscode-*` custom
+     * properties in the inline `style` attribute of <html>, and as theme kind
+     * classes / `data-vscode-theme-*` attributes on <body>. The xarray HTML
+     * repr keys off `body.vscode-dark`, so both have to stay consistent.
      */
     static applyThemeToWebviewContent(
         htmlContent: string,
         exportTheme: string,
     ): string {
-        // If no theme is specified, don't apply any theme
-        if (!exportTheme || exportTheme.trim() === '') {
+        const openTagMatch =
+            ThemeManager.HTML_OPEN_TAG_PATTERN.exec(htmlContent);
+        if (!openTagMatch) {
+            Logger.warn(
+                'Captured webview content has no <html> tag, exporting it unchanged',
+            );
             return htmlContent;
         }
 
-        // I am not really proud of this part, but it works for now
-        // String replacement does the job to fix the HTML theme.
+        // Carry the live variables over rather than regenerating them: VS Code
+        // exports one custom property per registered color and size, and that
+        // set keeps growing across releases.
+        const liveDeclarations =
+            ThemeManager.STYLE_ATTRIBUTE_PATTERN.exec(openTagMatch[0])?.[1] ??
+            '';
 
-        // Maybe in the future we will have a true webview export by creating one from scratch
-        // and not revealing the webview panel
-
-        // Implementations notes
-        // - Remove existing style in the html tag
-        // - Insert the theme CSS at the beginning of the SDV's style tag
-        // The SDV CSS code does not use the vscode-dark or vscode-light indicators.
-        // However xarray does:
-        // >   body.vscode-dark -> overrides xarray CSS variables to use dark mode
-        // So, we must artificially set the class to the actual theme being exported.
-        // > <body role="document" class="vscode-light" data-vscode-theme-kind="vscode-light" data-vscode-theme-name="Solarized Light" data-vscode-theme-id="Solarized Light">
-        // > <body role="document" class="vscode-dark" data-vscode-theme-kind="vscode-dark" data-vscode-theme-name="Monokai" data-vscode-theme-id="Monokai">
-        // We can ignore data-vscode-theme-name and data-vscode-theme-id when replacing the body tag.
-        // They will be irrelevant. They can be removed at some point if this causes issues.
-
-        // Generate theme-specific CSS variables
-        const themeCSS = ThemeManager.generateThemeCSSVariables(exportTheme);
-        const themeMode = ThemeManager.getThemeMode(exportTheme);
-        const sdvStyleTag = '<style id="scientific-data-viewer-style">';
-        return (
-            '<!DOCTYPE html><html lang="en">' +
-            htmlContent
-                .substring(htmlContent.indexOf('<head>')) // just after the html tag
-                .replace(sdvStyleTag, sdvStyleTag + '\n' + themeCSS)
-                .replaceAll(
-                    '"vscode-dark"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`,
-                )
-                .replaceAll(
-                    '"vscode-light"', // quotes are needed to not overwrite the xarray body.vscode-dark section
-                    `"vscode-${themeMode}"`,
-                )
+        let body = htmlContent.slice(
+            openTagMatch.index + openTagMatch[0].length,
         );
+
+        // Appending to the same inline declaration is what makes an override
+        // win: an inline style on <html> outranks any `:root` rule.
+        const declarations = ThemeManager.mergeDeclarations(
+            ThemeManager.FONT_FALLBACK_DECLARATIONS,
+            liveDeclarations,
+            ThemeManager.generateThemeCSSVariables(exportTheme),
+        );
+
+        if (exportTheme && exportTheme.trim() !== '') {
+            body = ThemeManager.applyThemeKindToBody(body, exportTheme);
+        }
+
+        const styleAttribute = declarations.trim()
+            ? ` style="${declarations.trim()}"`
+            : '';
+        return `<!DOCTYPE html>\n<html lang="en"${styleAttribute}>${body}`;
+    }
+
+    /** Later declarations win, so pass them in increasing order of priority. */
+    private static mergeDeclarations(...blocks: string[]): string {
+        return blocks
+            .map((block) => block.trim().replace(/;$/, '').trim())
+            .filter(Boolean)
+            .join('; ');
     }
 
     /**
-     * Generate CSS variables for a specific theme
-     * Uses predefined color sets for common VS Code themes
+     * Rewrite the theme kind class and `data-vscode-theme-*` attributes on the
+     * <body> tag so theme-kind-aware CSS (notably the xarray repr) matches the
+     * exported theme instead of the one that was active during capture.
+     */
+    private static applyThemeKindToBody(
+        htmlBody: string,
+        themeName: string,
+    ): string {
+        const kindClass = `vscode-${ThemeManager.getThemeMode(themeName)}`;
+
+        return htmlBody.replace(
+            ThemeManager.BODY_OPEN_TAG_PATTERN,
+            (bodyTag) => {
+                let updated = ThemeManager.CLASS_ATTRIBUTE_PATTERN.test(bodyTag)
+                    ? bodyTag.replace(
+                          ThemeManager.CLASS_ATTRIBUTE_PATTERN,
+                          (_match, classes: string) => {
+                              const preserved = classes
+                                  .split(/\s+/)
+                                  .filter(
+                                      (name) =>
+                                          name &&
+                                          !ThemeManager.THEME_KIND_CLASSES.includes(
+                                              name,
+                                          ),
+                                  );
+                              return ` class="${[kindClass, ...preserved].join(' ')}"`;
+                          },
+                      )
+                    : bodyTag.replace(
+                          /^<body/i,
+                          () => `<body class="${kindClass}"`,
+                      );
+
+                updated = ThemeManager.setAttribute(
+                    updated,
+                    'data-vscode-theme-kind',
+                    kindClass,
+                );
+                updated = ThemeManager.setAttribute(
+                    updated,
+                    'data-vscode-theme-name',
+                    themeName,
+                );
+                return ThemeManager.setAttribute(
+                    updated,
+                    'data-vscode-theme-id',
+                    themeName,
+                );
+            },
+        );
+    }
+
+    private static setAttribute(
+        tag: string,
+        name: string,
+        value: string,
+    ): string {
+        const pattern = new RegExp(`\\s${name}="[^"]*"`, 'i');
+        return pattern.test(tag)
+            ? tag.replace(pattern, () => ` ${name}="${value}"`)
+            : tag.replace(/^<body/i, () => `<body ${name}="${value}"`);
+    }
+
+    /**
+     * Generate the `--vscode-*` declarations for a specific theme.
+     * Uses predefined color sets for common VS Code themes.
      */
     private static generateThemeCSSVariables(themeName: string): string {
         if (!themeName || themeName.trim() === '') {
@@ -98,34 +200,27 @@ export class ThemeManager {
 
         Logger.debug(`Generating CSS variables for theme: ${themeName}`);
 
-        return `
-    /* Theme override for: ${themeName} */
-    :root {
-        --vscode-foreground: ${themeColors.foreground};
-        --vscode-editor-background: ${themeColors.editorBackground};
-        --vscode-editor-foreground: ${themeColors.editorForeground};
-        --vscode-panel-background: ${themeColors.panelBackground};
-        --vscode-panel-border: ${themeColors.panelBorder};
-        --vscode-button-background: ${themeColors.buttonBackground};
-        --vscode-button-foreground: ${themeColors.buttonForeground};
-        --vscode-input-background: ${themeColors.inputBackground};
-        --vscode-input-foreground: ${themeColors.inputForeground};
-        --vscode-input-border: ${themeColors.inputBorder};
-        --vscode-list-hoverBackground: ${themeColors.listHoverBackground};
-        --vscode-list-activeSelectionBackground: ${themeColors.listActiveSelectionBackground};
-        --vscode-list-activeSelectionForeground: ${themeColors.listActiveSelectionForeground};
-        --vscode-list-inactiveSelectionBackground: ${themeColors.listInactiveSelectionBackground};
-        --vscode-list-inactiveSelectionForeground: ${themeColors.listInactiveSelectionForeground};
-        --vscode-errorForeground: ${themeColors.errorForeground};
-        --vscode-descriptionForeground: ${themeColors.descriptionForeground};
-        --vscode-textCodeBlock-background: ${themeColors.textCodeBlockBackground};
-        --vscode-textPreformat-foreground: ${themeColors.textPreformatForeground};
-        --vscode-editor-font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        --vscode-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-        --vscode-font-size: 13px;
-        --vscode-font-weight: normal;
-    }
-    `;
+        return [
+            `--vscode-foreground: ${themeColors.foreground}`,
+            `--vscode-editor-background: ${themeColors.editorBackground}`,
+            `--vscode-editor-foreground: ${themeColors.editorForeground}`,
+            `--vscode-panel-background: ${themeColors.panelBackground}`,
+            `--vscode-panel-border: ${themeColors.panelBorder}`,
+            `--vscode-button-background: ${themeColors.buttonBackground}`,
+            `--vscode-button-foreground: ${themeColors.buttonForeground}`,
+            `--vscode-input-background: ${themeColors.inputBackground}`,
+            `--vscode-input-foreground: ${themeColors.inputForeground}`,
+            `--vscode-input-border: ${themeColors.inputBorder}`,
+            `--vscode-list-hoverBackground: ${themeColors.listHoverBackground}`,
+            `--vscode-list-activeSelectionBackground: ${themeColors.listActiveSelectionBackground}`,
+            `--vscode-list-activeSelectionForeground: ${themeColors.listActiveSelectionForeground}`,
+            `--vscode-list-inactiveSelectionBackground: ${themeColors.listInactiveSelectionBackground}`,
+            `--vscode-list-inactiveSelectionForeground: ${themeColors.listInactiveSelectionForeground}`,
+            `--vscode-errorForeground: ${themeColors.errorForeground}`,
+            `--vscode-descriptionForeground: ${themeColors.descriptionForeground}`,
+            `--vscode-textCodeBlock-background: ${themeColors.textCodeBlockBackground}`,
+            `--vscode-textPreformat-foreground: ${themeColors.textPreformatForeground}`,
+        ].join('; ');
     }
 
     private static getThemeMode(themeName: string): 'dark' | 'light' {

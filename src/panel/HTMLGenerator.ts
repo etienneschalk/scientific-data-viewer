@@ -93,9 +93,7 @@ export class HTMLGenerator {
             return `<link rel="stylesheet" href="${cssUri}${cacheBuster}">`;
         }
 
-        return `<style id="scientific-data-viewer-style">
-        ${this.getCSS(devMode)}
-    </style>`;
+        return this.getInlineStylesheetBlock(devMode);
     }
 
     private static getScriptBlock(
@@ -114,9 +112,44 @@ export class HTMLGenerator {
             return `<script src="${scriptUri}${cacheBuster}"></script>`;
         }
 
+        return this.getInlineScriptBlock(devMode);
+    }
+
+    static getInlineStylesheetBlock(devMode: boolean): string {
+        return `<style id="scientific-data-viewer-style">
+        ${this.getCSS(devMode)}
+    </style>`;
+    }
+
+    static getInlineScriptBlock(devMode: boolean): string {
         return `<script>
         ${this.getJavaScriptCode(devMode)}
     </script>`;
+    }
+
+    private static readonly EXTERNAL_STYLESHEET_PATTERN =
+        /<link\b[^>]*\bhref="[^"]*\/styles\.css(?:\?[^"]*)?"[^>]*>/i;
+
+    private static readonly EXTERNAL_SCRIPT_PATTERN =
+        /<script\b[^>]*\bsrc="[^"]*\/webview-script\.js(?:\?[^"]*)?"[^>]*>\s*<\/script>/i;
+
+    /**
+     * Replace `asWebviewUri` asset references with their inline equivalents.
+     *
+     * The live webview loads styles.css and webview-script.js over
+     * `vscode-resource` URIs, which resolve to nothing outside VS Code. Any
+     * document meant to be read standalone (exported HTML) must carry them
+     * inline instead.
+     */
+    static inlineWebviewAssets(htmlContent: string, devMode: boolean): string {
+        // Function replacers keep `$`-sequences in the CSS/JS literal.
+        return htmlContent
+            .replace(this.EXTERNAL_STYLESHEET_PATTERN, () =>
+                this.getInlineStylesheetBlock(devMode),
+            )
+            .replace(this.EXTERNAL_SCRIPT_PATTERN, () =>
+                this.getInlineScriptBlock(devMode),
+            );
     }
 
     static generateHeader(
