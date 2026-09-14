@@ -200,7 +200,6 @@ SupportedExtensionType = Literal[
     ".geotiff",
     ".jp2",
     ".jpeg2000",
-    ".safe",
 ]
 EngineType = Literal[
     "netcdf4",

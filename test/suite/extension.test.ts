@@ -463,6 +463,10 @@ suite('Extension Test Suite', () => {
 
             assert.ok(menus, 'Should have menus');
             assert.ok(
+                !packageJson.keywords.includes('sentinel'),
+                'Marketplace keywords should not advertise unsupported Sentinel data',
+            );
+            assert.ok(
                 menus['explorer/context'],
                 'Should have explorer context menu',
             );
@@ -475,6 +479,13 @@ suite('Extension Test Suite', () => {
             assert.ok(
                 Array.isArray(explorerContext),
                 'Explorer context should be an array',
+            );
+            assert.ok(
+                explorerContext.every(
+                    (menuItem: { when?: string }) =>
+                        !menuItem.when?.includes('resourceExtname == .safe'),
+                ),
+                'Explorer context should not advertise unsupported SAFE files',
             );
 
             const commandPalette = menus['commandPalette'];

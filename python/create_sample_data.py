@@ -3076,12 +3076,12 @@ def create_broken_files():
     print("💥 Creating broken files for error handling testing...")
 
     broken_files = []
-    file_extensions = [".nc", ".nc4", ".h5", ".grib", ".tif", ".jp2", ".zarr", ".safe"]
+    file_extensions = [".nc", ".nc4", ".h5", ".grib", ".tif", ".jp2", ".zarr"]
 
     for ext in file_extensions:
         filename = f"broken_file{ext}"
-        if ext == ".zarr" or ext == ".safe":
-            # Create empty directory for zarr/safe
+        if ext == ".zarr":
+            # Create empty directory for Zarr
             os.makedirs(filename, exist_ok=True)
         else:
             # Create empty file for other formats
