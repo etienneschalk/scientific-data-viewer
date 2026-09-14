@@ -725,6 +725,12 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
         logger.info(f"Detected Zarr store without a .zarr suffix: {file_path}")
         ext = ".zarr"
     display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
+    if ext == ".zarr":
+        # Zarr v2 and v3 differ in metadata, sharding and codecs, so report
+        # which one is on disk rather than a bare "Zarr".
+        zarr_version = detect_zarr_format_version(file_path)
+        if zarr_version is not None:
+            display_name = f"{display_name} v{zarr_version}"
     available_engines: list[str] = get_available_engines(ext)
     missing_packages: list[str] = get_missing_packages(ext)
 
@@ -758,6 +764,32 @@ def is_zarr_store(path: Path) -> bool:
         return False
 
     return any((path / marker).exists() for marker in ZARR_STORE_MARKERS)
+
+
+def detect_zarr_format_version(path: Path) -> int | None:
+    """Detect whether a Zarr store uses the v3 or v2 layout.
+
+    The metadata layout is the only reliable signal: v3 stores carry a
+    ``zarr.json`` document, v2 stores ``.zgroup`` / ``.zarray``.
+
+    Parameters
+    ----------
+    path : Path
+        Path to a Zarr store
+
+    Returns
+    -------
+    int or None
+        3, 2, or None when the version cannot be determined
+    """
+    if not path.is_dir():
+        return None
+    if (path / "zarr.json").exists():
+        return 3
+    if (path / ".zgroup").exists() or (path / ".zarray").exists():
+        return 2
+
+    return None
 
 
 def resolve_store_path(path: Path) -> Path:
@@ -2269,6 +2301,45 @@ def create_plot(
         )
 
 
+def _describe_codec(value: Any) -> Any:
+    """Describe a Zarr codec by name, leaving other values untouched.
+
+    Zarr v3 codecs (``compressors``, ``filters``, ``serializer`` in the
+    encoding) are dataclasses, so the ``asdict`` applied to the result would
+    keep their configuration but drop their identity: ``ZstdCodec(level=0)``
+    would reach the UI as ``{"level": 0, "checksum": false}``, which does not
+    say which codec was used. Zarr's own ``to_dict`` keeps the
+    ``{"name", "configuration"}`` form from the store metadata, and numcodecs
+    (Zarr v2) exposes the equivalent through ``get_config``.
+
+    Parameters
+    ----------
+    value
+        A single encoding value, or a codec
+
+    Returns
+    -------
+    Any
+        Zarr's mapping for a codec, else ``value`` unchanged
+    """
+    if isinstance(value, tuple):
+        return tuple(_describe_codec(item) for item in value)
+    if isinstance(value, list):
+        return [_describe_codec(item) for item in value]
+
+    for method_name in ("to_dict", "get_config"):
+        method = getattr(value, method_name, None)
+        if not callable(method):
+            continue
+        try:
+            return method()
+        except Exception as exc:
+            logger.warning(f"Could not describe codec {value!r}: {exc!r}")
+            return repr(value)
+
+    return value
+
+
 def _collect_dataarray_attributes(
     data_array: xr.DataArray | xr.Dataset,
     *,
@@ -2278,7 +2349,8 @@ def _collect_dataarray_attributes(
     items: list[tuple[str, Any]] = [(str(k), v) for k, v in data_array.attrs.items()]
     if show_xarray_encoding_attributes:
         items.extend(
-            ("__xarray_encoding." + str(k), v) for k, v in data_array.encoding.items()
+            ("__xarray_encoding." + str(k), _describe_codec(v))
+            for k, v in data_array.encoding.items()
         )
     return dict(items)
 

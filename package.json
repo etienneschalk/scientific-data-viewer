@@ -138,6 +138,12 @@
                     "command": "scientificDataViewer.openViewerMultiple",
                     "group": "navigation",
                     "description": "Opens all selected supported files or folders in the Scientific Data Viewer"
+                },
+                {
+                    "when": "explorerResourceIsFolder",
+                    "command": "scientificDataViewer.openViewerFolder",
+                    "group": "navigation",
+                    "description": "Opens a folder in the Scientific Data Viewer. Shown on every folder because Zarr stores are identified by their metadata rather than by name, which a menu 'when' clause cannot inspect"
                 }
             ],
             "commandPalette": [

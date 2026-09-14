@@ -8,7 +8,9 @@ import numpy as np
 import pytest
 import xarray as xr
 from get_data_info import (
+    _collect_dataarray_attributes,
     detect_file_format,
+    detect_zarr_format_version,
     is_zarr_store,
     resolve_store_path,
 )
@@ -36,7 +38,7 @@ def test_store_without_zarr_suffix_is_detected(
 
     format_info = detect_file_format(store)
     assert format_info.extension == ".zarr"
-    assert format_info.display_name == "Zarr"
+    assert format_info.display_name == f"Zarr v{zarr_format}"
 
 
 def test_store_with_zarr_suffix_still_detected(tmp_path: Path) -> None:
@@ -80,6 +82,61 @@ def test_resolve_store_path_leaves_other_paths_untouched(tmp_path: Path) -> None
 
     store = _write_store(tmp_path / "ocean", zarr_format=3)
     assert resolve_store_path(store) == store
+
+
+@pytest.mark.parametrize(("zarr_format", "expected"), [(2, 2), (3, 3)])
+def test_detect_zarr_format_version(
+    tmp_path: Path, zarr_format: int, expected: int
+) -> None:
+    store = _write_store(tmp_path / "store", zarr_format)
+
+    assert detect_zarr_format_version(store) == expected
+
+
+def test_detect_zarr_format_version_is_none_for_non_store(tmp_path: Path) -> None:
+    plain = tmp_path / "plain"
+    plain.mkdir()
+
+    assert detect_zarr_format_version(plain) is None
+
+
+def test_encoding_reports_codec_names_and_shards(tmp_path: Path) -> None:
+    # Zarr v3 codecs are dataclasses, so without describing them by name the
+    # UI would show a bare configuration such as {"level": 0}.
+    store = tmp_path / "sharded"
+    ds = xr.Dataset(
+        {"temp": (("t", "x"), np.zeros((8, 8), dtype="float32"))},
+        coords={"t": np.arange(8), "x": np.arange(8)},
+    )
+    ds.to_zarr(
+        store,
+        zarr_format=3,
+        consolidated=False,
+        encoding={"temp": {"chunks": (2, 2), "shards": (4, 4)}},
+    )
+
+    opened = xr.open_dataset(store, engine="zarr", consolidated=False)
+    attributes = _collect_dataarray_attributes(
+        opened["temp"], show_xarray_encoding_attributes=True
+    )
+
+    assert attributes["__xarray_encoding.shards"] == (4, 4)
+    compressors = attributes["__xarray_encoding.compressors"]
+    assert [codec["name"] for codec in compressors] == ["zstd"]
+    assert attributes["__xarray_encoding.serializer"]["name"] == "bytes"
+
+
+def test_encoding_values_that_are_not_codecs_are_untouched() -> None:
+    variable = xr.DataArray([1, 2], dims=("x",), name="a")
+    variable.encoding["chunks"] = (2,)
+    variable.encoding["dtype"] = "int32"
+
+    attributes = _collect_dataarray_attributes(
+        variable, show_xarray_encoding_attributes=True
+    )
+
+    assert attributes["__xarray_encoding.chunks"] == (2,)
+    assert attributes["__xarray_encoding.dtype"] == "int32"
 
 
 def test_unrelated_json_file_is_not_resolved_to_its_directory(tmp_path: Path) -> None:
