@@ -388,7 +388,7 @@ export class PythonManager {
                     if (errorMessage.includes('ModuleNotFoundError')) {
                         reject(
                             new Error(
-                                `Missing Python package: ${errorMessage}. Please install required packages with: pip install xarray netCDF4 zarr h5py numpy matplotlib`,
+                                `Missing Python package: ${errorMessage}. Please install required packages with: pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib`,
                             ),
                         );
                     } else if (errorMessage.includes('PermissionError')) {

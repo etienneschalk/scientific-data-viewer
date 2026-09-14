@@ -5,6 +5,14 @@ import { Logger } from '../common/Logger';
 import { quoteIfNeeded } from '../common/utils';
 import { ExtensionVirtualEnvironment } from '../types';
 
+/**
+ * Strip the version specifier from a pip requirement.
+ * `zarr>=3` becomes `zarr`, while `h5py` is returned unchanged.
+ */
+export function requirementPackageName(requirement: string): string {
+    return requirement.split(/[<>=!~[\s]/)[0];
+}
+
 export class ExtensionVirtualEnvironmentManager {
     public readonly PYTHON_VERSION = '3.13';
     public readonly UV_INSTALLATION_URL =
@@ -13,18 +21,26 @@ export class ExtensionVirtualEnvironmentManager {
     private readonly ENV_FOLDER_NAME = 'python-environment';
     // TODO: more fine grain control over uv-envs packages
     // current approach is to install everything in one go
-    private readonly ALL_PACKAGES = [
-        'xarray',
+    // xarray 2026.04.0 raised its minimum zarr to 3.0 and dropped zarr-python 2
+    // (Zarr v2 *data* stays readable through zarr-python 3), so both are pinned
+    // together to keep the environment self-consistent.
+    private readonly ALL_REQUIREMENTS = [
+        'xarray>=2026.4.0',
         'matplotlib',
         'netCDF4',
         'h5netcdf',
-        'zarr',
+        'zarr>=3',
         'h5py',
         'scipy',
         'cfgrib',
         'rioxarray',
         'cdflib',
     ];
+    // Distribution names without version specifiers, for reporting and for
+    // matching against `pip list` output.
+    private readonly ALL_PACKAGES = this.ALL_REQUIREMENTS.map((requirement) =>
+        requirementPackageName(requirement),
+    );
 
     /**
      * Check if the extension virtual environment is ready to use
@@ -614,7 +630,7 @@ export class ExtensionVirtualEnvironmentManager {
                 : '[uv] 📦 Installing required packages in extension virtual environment with uv...',
         );
         Logger.info(
-            `[uv] Target packages (${this.ALL_PACKAGES.length}): ${this.ALL_PACKAGES.join(', ')}`,
+            `[uv] Target packages (${this.ALL_REQUIREMENTS.length}): ${this.ALL_REQUIREMENTS.join(', ')}`,
         );
 
         if (upgrade) {
@@ -633,7 +649,7 @@ export class ExtensionVirtualEnvironmentManager {
         if (upgrade) {
             installArgs.push('--upgrade');
         }
-        installArgs.push(...this.ALL_PACKAGES);
+        installArgs.push(...this.ALL_REQUIREMENTS);
 
         const { code, stdout, stderr } = await this.spawnUv(installArgs, {
             verbose: true,
