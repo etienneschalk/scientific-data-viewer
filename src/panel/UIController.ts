@@ -787,12 +787,16 @@ export class UIController {
                     };
                 }
 
-                // Apply theme overrides to the HTML content if configured
-                const processedHtmlContent =
+                // The live webview loads its CSS/JS over vscode-resource URIs,
+                // which resolve to nothing in a browser. Inline them so the
+                // exported file is self-contained, then apply theme overrides.
+                const processedHtmlContent = HTMLGenerator.inlineWebviewAssets(
                     ThemeManager.applyThemeToWebviewContent(
                         htmlContent,
                         getWebviewExportTheme(),
-                    );
+                    ),
+                    getDevMode(),
+                );
 
                 // Write the file
                 await vscode.workspace.fs.writeFile(

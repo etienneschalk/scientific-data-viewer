@@ -6,6 +6,19 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.12.1] - 2026-09-14
+
+### Fixed
+
+- **Export Webview Content — unstyled output**: Exported HTML was rendered without any styling (default serif font on a white background) and ignored `webviewExportTheme`. Since v0.12.0 the webview loads its CSS/JS over `asWebviewUri` (`vscode-resource`) URLs, which resolve to nothing outside VS Code, and `ThemeManager` still looked for the now-absent `<style id="scientific-data-viewer-style">` anchor to inject theme variables. The export now inlines `styles.css` and `webview-script.js` before writing the file.
+  - **Files**: `src/panel/HTMLGenerator.ts`, `src/panel/ThemeManager.ts`, `src/panel/UIController.ts`
+  - **Tests**: `test/suite/ui/webviewExport.test.ts`
+  - **Release notes**: `docs/RELEASE_NOTES_0.12.1.md`
+- **Export Webview Content — dropped theme variables**: The exporter discarded the `<html>` inline style holding VS Code's `--vscode-*` custom properties and replaced it with a hardcoded set of 19 colors. Every other variable — including the sizes VS Code added with its size registry — was lost. The captured variables are now carried over and the selected export theme is merged on top of them.
+  - **Files**: `src/panel/ThemeManager.ts`
+- **Export Webview Content — theme kind rewriting**: The `vscode-dark` / `vscode-light` swap used quoted string replacement over the whole document. It missed `<body>` tags carrying extra classes (`vscode-reduce-motion`, `vscode-using-screen-reader`) and left `vscode-high-contrast` untouched. The theme kind class and `data-vscode-theme-*` attributes are now rewritten on the `<body>` tag only, so the xarray repr follows the exported theme.
+  - **Files**: `src/panel/ThemeManager.ts`
+
 ## [0.12.0] - 2026-07-01
 
 ### Added

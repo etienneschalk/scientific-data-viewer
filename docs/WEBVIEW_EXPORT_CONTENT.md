@@ -47,7 +47,9 @@ Content Capture Process:
 2. Webview captures document.documentElement.outerHTML
 3. Webview sends captured content back to extension
 4. Extension refines the HTML to ensure correct theme usage
-5. Extension saves the content as HTML file
+5. Extension inlines the webview CSS and JS, which the live panel loads over
+   `vscode-resource` URIs that only resolve inside VS Code
+6. Extension saves the content as HTML file
 
 ## 🌐 Degraded browser mode
 
@@ -156,14 +158,28 @@ When you export webview content using the "Export Webview Content" command, the 
 
 ### How It Works
 
-The extension generates CSS variables that override the default VS Code theme variables in the exported HTML files. This ensures that:
+VS Code exposes the active theme to a webview as `--vscode-*` custom properties
+in the inline `style` attribute of `<html>`, plus a theme kind class and
+`data-vscode-theme-*` attributes on `<body>`.
+
+The export carries those captured variables over as-is, then appends the
+configured theme's colors to the same inline declaration — later declarations
+win, and an inline style on `<html>` outranks any `:root` rule. Variables the
+theme set does not cover keep their captured value, so the export stays correct
+as VS Code keeps adding new theme variables between releases.
+
+The theme kind class and `data-vscode-theme-*` attributes are rewritten to match,
+because the xarray HTML repr styles itself from `body.vscode-dark`.
+
+This ensures that:
 
 1. **Live webview** - Always uses your current VS Code theme
 2. **Exported files** - Use the theme specified in the configuration
 
 ### Theme Variables
 
-The following CSS variables are overridden when a theme is selected:
+The following CSS variables are overridden when a theme is selected. All other
+`--vscode-*` variables keep the value captured from the live webview:
 
 - `--vscode-foreground`
 - `--vscode-editor-background`
@@ -206,6 +222,6 @@ The following CSS variables are overridden when a theme is selected:
 ### Notes
 
 - This setting only affects exported HTML files, not the live webview display
-- If an invalid theme name is provided, the extension falls back to "Default Dark+"
+- If an invalid theme name is provided, the extension logs a warning and keeps the theme captured from the live webview
 - The theme colors are predefined and may not exactly match all VS Code theme variations
 - This feature is particularly useful for creating consistent documentation or reports with a specific color scheme
