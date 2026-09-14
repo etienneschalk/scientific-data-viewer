@@ -282,6 +282,14 @@ ENGINE_PACKAGES: dict[EngineType, str] = {
 PACKAGE_MINIMUM_MAJOR_VERSIONS: dict[str, int] = {
     "zarr": 3,
 }
+# Metadata entries that identify a directory as a Zarr store: "zarr.json" for
+# v3, the others for v2 (".zmetadata" being consolidated metadata).
+ZARR_STORE_MARKERS: tuple[str, ...] = (
+    "zarr.json",
+    ".zgroup",
+    ".zarray",
+    ".zmetadata",
+)
 # Default backend kwargs for each engine
 DEFAULT_XR_OPEN_KWARGS: dict[EngineType, dict[str, Any]] = {
     "netcdf4": {
@@ -713,6 +721,9 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
         Information about the detected file format including available engines
     """
     ext: str = file_path.suffix.lower()
+    if ext not in FORMAT_ENGINE_MAP and is_zarr_store(file_path):
+        logger.info(f"Detected Zarr store without a .zarr suffix: {file_path}")
+        ext = ".zarr"
     display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
     available_engines: list[str] = get_available_engines(ext)
     missing_packages: list[str] = get_missing_packages(ext)
@@ -723,6 +734,57 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
         available_engines=available_engines,
         missing_packages=missing_packages,
     )
+
+
+def is_zarr_store(path: Path) -> bool:
+    """Check whether a directory is a Zarr store, regardless of its name.
+
+    Zarr identifies a store by metadata files, not by a ``.zarr`` suffix:
+    v3 stores carry ``zarr.json``, v2 stores ``.zgroup`` / ``.zarray``
+    (or consolidated ``.zmetadata``). Stores produced by pipelines and by
+    Icechunk are often plain directories.
+
+    Parameters
+    ----------
+    path : Path
+        Path to inspect
+
+    Returns
+    -------
+    bool
+        True if the path is a directory holding Zarr metadata
+    """
+    if not path.is_dir():
+        return False
+
+    return any((path / marker).exists() for marker in ZARR_STORE_MARKERS)
+
+
+def resolve_store_path(path: Path) -> Path:
+    """Resolve a Zarr metadata file to the store directory that contains it.
+
+    Opening ``zarr.json`` (or a v2 equivalent) should open the store it
+    belongs to, since the metadata file on its own is not readable by xarray.
+
+    Parameters
+    ----------
+    path : Path
+        Path provided by the caller
+
+    Returns
+    -------
+    Path
+        The store directory when ``path`` is Zarr metadata, else ``path``
+    """
+    if (
+        path.is_file()
+        and path.name in ZARR_STORE_MARKERS
+        and is_zarr_store(path.parent)
+    ):
+        logger.info(f"Resolving Zarr metadata file {path.name} to store {path.parent}")
+        return path.parent
+
+    return path
 
 
 def _is_decode_cf_time_error(exc: BaseException) -> bool:
@@ -2895,6 +2957,9 @@ Examples:
     if args.mode == "plot" and not args.variable_name:
         print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
         return 1
+
+    # Opening a Zarr metadata file should open the store that contains it
+    args.file_path = resolve_store_path(args.file_path)
 
     # Dispatch based on mode
     if args.mode == "info":
