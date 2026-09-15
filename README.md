@@ -345,6 +345,9 @@ The extension can be configured through VSCode settings:
 - **`scientificDataViewer.smallValueDisplayMaxLen`**
   - (type: `number`, default: `500`)
   - Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with "...". Only used when **smallVariableBytes** is greater than 0.
+- **`scientificDataViewer.facetgridFigsize`**
+  - (type: `array`, default: `[]`)
+  - Optional `[width, height]` in **inches** passed to xarray `set_options(facetgrid_figsize=...)` for **faceted** plots only (when facet row/col is used). Leave empty to use xarray defaults. Example: `[4, 3]`.
 - **`scientificDataViewer.plotTimeoutMs`**
   - (type: `number`, default: `20000`)
   - Maximum time in **milliseconds** to wait for a plot before it is cancelled and the backend process is terminated. Use a higher value (e.g. 120000 for 2 minutes) for large datasets when you want a quicklook without slicing first. Minimum 1000 (1s), maximum 600000 (10 min). Default: 20000 (20s).

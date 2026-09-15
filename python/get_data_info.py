@@ -31,6 +31,7 @@ Author: Scientific Data Viewer Extension
 
 import argparse
 import base64
+import contextlib
 import datetime
 import io
 import json
@@ -1495,6 +1496,24 @@ def parse_col_wrap(value: str) -> int | Literal["auto"]:
     return parsed
 
 
+def parse_facetgrid_figsize(value: str) -> tuple[float, float]:
+    """Parse ``--facetgrid-figsize WIDTH,HEIGHT`` for xarray faceted plot panels."""
+    parts = [part.strip() for part in value.split(",")]
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError(
+            "facetgrid_figsize must be two comma-separated numbers (width,height)"
+        )
+    try:
+        width, height = float(parts[0]), float(parts[1])
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "facetgrid_figsize must be two numbers"
+        ) from exc
+    if width <= 0 or height <= 0:
+        raise argparse.ArgumentTypeError("facetgrid_figsize values must be > 0")
+    return (width, height)
+
+
 def xarray_supports_col_wrap_auto() -> bool:
     """xarray 2026.04.0 added ``col_wrap='auto'`` for faceted plots."""
     parts = xr.__version__.split(".")
@@ -2168,6 +2187,7 @@ def create_plot(
     netcdf_engine_order: Sequence[str] | str | None = None,
     show_inherited_coordinates: bool = True,
     open_as_kerchunk: bool = False,
+    facetgrid_figsize: tuple[float, float] | None = None,
 ) -> CreatePlotResult | CreatePlotError:
     """Create a plot from a data file variable.
 
@@ -2575,7 +2595,12 @@ def create_plot(
         # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
         plt.close("all")
 
-        with mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
+        xarray_plot_ctx = (
+            xr.set_options(facetgrid_figsize=facetgrid_figsize)
+            if facetgrid_figsize is not None
+            else contextlib.nullcontext()
+        )
+        with xarray_plot_ctx, mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
             if user_provided:
                 logger.info(
                     "User provided dimension/facet/bins params: building plot from user input only"
@@ -3572,6 +3597,16 @@ Examples:
         ),
     )
 
+    parser.add_argument(
+        "--facetgrid-figsize",
+        type=parse_facetgrid_figsize,
+        default=None,
+        help=(
+            "xarray facetgrid_figsize as WIDTH,HEIGHT in inches for faceted plots "
+            "(xarray 2026.04+ set_options)"
+        ),
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -3653,6 +3688,7 @@ Examples:
             netcdf_engine_order=args.netcdf_engine_order,
             show_inherited_coordinates=not args.no_show_inherited_coordinates,
             open_as_kerchunk=args.open_as_kerchunk,
+            facetgrid_figsize=args.facetgrid_figsize,
         )
         ok = isinstance(result, CreatePlotResult)
 

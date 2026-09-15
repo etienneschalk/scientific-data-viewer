@@ -15,6 +15,7 @@ import {
     getShowXarrayEncodingAttributes,
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
+    getFacetgridFigsize,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -96,6 +97,11 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof getShowXarrayEncodingAttributes(), 'boolean');
         assert.ok(Array.isArray(getNetcdfEngineOrder()));
         assert.strictEqual(typeof getShowInheritedCoordinates(), 'boolean');
+        assert.ok(
+            getFacetgridFigsize() === null ||
+                (Array.isArray(getFacetgridFigsize()) &&
+                    getFacetgridFigsize()!.length === 2),
+        );
     });
 
     test('getOutlineEnabled returns a boolean', () => {

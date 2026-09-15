@@ -10,6 +10,7 @@ import {
     getShowXarrayEncodingAttributes,
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
+    getFacetgridFigsize,
     uriRequestsKerchunkOpen,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
@@ -262,6 +263,13 @@ export class DataProcessor {
         }
         if (uriRequestsKerchunkOpen(uri)) {
             args.push('--open-as-kerchunk');
+        }
+        const facetgridFigsize = getFacetgridFigsize();
+        if (facetgridFigsize) {
+            args.push(
+                '--facetgrid-figsize',
+                `${facetgridFigsize[0]},${facetgridFigsize[1]}`,
+            );
         }
 
         try {

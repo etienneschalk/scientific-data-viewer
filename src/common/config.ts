@@ -55,6 +55,7 @@ const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
 const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
 const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
 const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
+const FACETGRID_FIGSIZE = 'facetgridFigsize';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -86,6 +87,7 @@ const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
 ];
 const ALLOWED_NETCDF_ENGINES = new Set(DEFAULT_NETCDF_ENGINE_ORDER);
 const DEFAULT_SHOW_INHERITED_COORDINATES = true;
+const DEFAULT_FACETGRID_FIGSIZE: readonly number[] = [];
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -272,6 +274,29 @@ export function getShowInheritedCoordinates(): boolean {
         SHOW_INHERITED_COORDINATES,
         DEFAULT_SHOW_INHERITED_COORDINATES,
     );
+}
+
+/** FacetGrid panel size (width, height) in inches, or null when unset. */
+export function getFacetgridFigsize(): [number, number] | null {
+    const raw = getWorkspaceConfig().get<number[]>(FACETGRID_FIGSIZE, [
+        ...DEFAULT_FACETGRID_FIGSIZE,
+    ]);
+    if (!Array.isArray(raw) || raw.length !== 2) {
+        return null;
+    }
+    const width = raw[0];
+    const height = raw[1];
+    if (
+        typeof width !== 'number' ||
+        typeof height !== 'number' ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width <= 0 ||
+        height <= 0
+    ) {
+        return null;
+    }
+    return [width, height];
 }
 
 /** Query flag used when a generic JSON/Parquet file is opened as Kerchunk. */

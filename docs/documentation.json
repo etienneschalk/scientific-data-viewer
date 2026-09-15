@@ -108,6 +108,7 @@
                 "scientificDataViewer.webviewExportTheme",
                 "scientificDataViewer.smallVariableBytes",
                 "scientificDataViewer.smallValueDisplayMaxLen",
+                "scientificDataViewer.facetgridFigsize",
                 "scientificDataViewer.plotTimeoutMs"
             ]
         },
