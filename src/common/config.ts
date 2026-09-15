@@ -52,6 +52,8 @@ const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 const OUTLINE_ENABLED = 'outlineEnabled';
 const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
 const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
+const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
+const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -76,6 +78,13 @@ const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 const DEFAULT_OUTLINE_ENABLED = true;
 const DEFAULT_ORDER_GROUPS_ALPHABETICALLY = true;
 const DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES = true;
+const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
+    'netcdf4',
+    'h5netcdf',
+    'scipy',
+];
+const ALLOWED_NETCDF_ENGINES = new Set(DEFAULT_NETCDF_ENGINE_ORDER);
+const DEFAULT_SHOW_INHERITED_COORDINATES = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -231,6 +240,39 @@ export function getShowXarrayEncodingAttributes(): boolean {
     );
 }
 
+export function getNetcdfEngineOrder(): string[] {
+    const raw = getWorkspaceConfig().get<string[]>(NETCDF_ENGINE_ORDER, [
+        ...DEFAULT_NETCDF_ENGINE_ORDER,
+    ]);
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+    if (Array.isArray(raw)) {
+        for (const engine of raw) {
+            if (
+                typeof engine === 'string' &&
+                ALLOWED_NETCDF_ENGINES.has(engine) &&
+                !seen.has(engine)
+            ) {
+                ordered.push(engine);
+                seen.add(engine);
+            }
+        }
+    }
+    for (const engine of DEFAULT_NETCDF_ENGINE_ORDER) {
+        if (!seen.has(engine)) {
+            ordered.push(engine);
+        }
+    }
+    return ordered;
+}
+
+export function getShowInheritedCoordinates(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        SHOW_INHERITED_COORDINATES,
+        DEFAULT_SHOW_INHERITED_COORDINATES,
+    );
+}
+
 /**
  * Plain object of extension config flags for the webview (feature flags and display options).
  * Use this instead of passing WorkspaceConfiguration so the webview receives a predictable object.
@@ -246,6 +288,8 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         outlineEnabled: getOutlineEnabled(),
         orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
         showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+        netcdfEngineOrder: getNetcdfEngineOrder(),
+        showInheritedCoordinates: getShowInheritedCoordinates(),
     };
 }
 

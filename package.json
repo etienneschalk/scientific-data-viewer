@@ -613,6 +613,33 @@
                     "order": 1011,
                     "description": "Show __xarray_encoding.* attributes for groups, coordinates, and variables.",
                     "markdownDescription": "When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. Disable to hide these from attribute tables. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.netcdfEngineOrder": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "netcdf4",
+                            "h5netcdf",
+                            "scipy"
+                        ]
+                    },
+                    "uniqueItems": true,
+                    "default": [
+                        "netcdf4",
+                        "h5netcdf",
+                        "scipy"
+                    ],
+                    "order": 1012,
+                    "description": "Engine try-order for NetCDF (.nc, .nc4, .netcdf). Does not apply to NASA CDF (.cdf).",
+                    "markdownDescription": "Order of xarray engines to try when opening **NetCDF** files (`.nc`, `.nc4`, `.netcdf`). Default matches xarray: `netcdf4`, then `h5netcdf`, then `scipy`. **Does not apply to NASA CDF (`.cdf`)**, which always uses `cdflib`. Missing engines are skipped. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.showInheritedCoordinates": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1013,
+                    "description": "Show parent DataTree coordinates on child groups.",
+                    "markdownDescription": "When enabled (**default**), child groups in multi-group NetCDF / Zarr DataTrees include coordinates inherited from parent nodes (`DataTree.to_dataset(inherit='all_coords')`). Inherited coordinates are tagged with an `inherited_from` attribute. Disable to list only coordinates stored on that group. Use **Refresh** (🔄) after changing."
                 }
             }
         }

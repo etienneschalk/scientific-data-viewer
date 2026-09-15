@@ -13,6 +13,8 @@ import {
     getOutlineEnabled,
     getOrderGroupsAlphabetically,
     getShowXarrayEncodingAttributes,
+    getNetcdfEngineOrder,
+    getShowInheritedCoordinates,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -84,12 +86,16 @@ suite('Config Test Suite', () => {
             typeof config.showXarrayEncodingAttributes,
             'boolean',
         );
+        assert.ok(Array.isArray(config.netcdfEngineOrder));
+        assert.strictEqual(typeof config.showInheritedCoordinates, 'boolean');
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
     });
 
     test('display feature config getters return booleans', () => {
         assert.strictEqual(typeof getOrderGroupsAlphabetically(), 'boolean');
         assert.strictEqual(typeof getShowXarrayEncodingAttributes(), 'boolean');
+        assert.ok(Array.isArray(getNetcdfEngineOrder()));
+        assert.strictEqual(typeof getShowInheritedCoordinates(), 'boolean');
     });
 
     test('getOutlineEnabled returns a boolean', () => {
@@ -110,6 +116,14 @@ suite('Config Test Suite', () => {
         assert.strictEqual(
             properties['scientificDataViewer.showXarrayEncodingAttributes']
                 .default,
+            true,
+        );
+        assert.deepStrictEqual(
+            properties['scientificDataViewer.netcdfEngineOrder'].default,
+            ['netcdf4', 'h5netcdf', 'scipy'],
+        );
+        assert.strictEqual(
+            properties['scientificDataViewer.showInheritedCoordinates'].default,
             true,
         );
     });

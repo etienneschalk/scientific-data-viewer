@@ -28,7 +28,7 @@ export class ExtensionVirtualEnvironmentManager {
         'xarray>=2026.4.0',
         'matplotlib',
         'netCDF4',
-        'h5netcdf',
+        'h5netcdf>=1.8',
         'zarr>=3',
         'h5py',
         'scipy',

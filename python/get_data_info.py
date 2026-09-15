@@ -39,7 +39,7 @@ import os
 import sys
 import zipfile
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field, is_dataclass
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as package_version
@@ -239,6 +239,22 @@ FORMAT_ENGINE_MAP: dict[SupportedExtensionType, list[EngineType]] = {
     ".jp2": ["rasterio"],
     ".jpeg2000": ["rasterio"],
 }
+
+# User-configurable try-order for classic NetCDF suffixes only (not NASA .cdf).
+NETCDF_ENGINE_ORDER_EXTENSIONS: frozenset[str] = frozenset({".nc", ".nc4", ".netcdf"})
+DEFAULT_NETCDF_ENGINE_ORDER: tuple[str, ...] = ("netcdf4", "h5netcdf", "scipy")
+ALLOWED_NETCDF_ENGINES: frozenset[str] = frozenset(DEFAULT_NETCDF_ENGINE_ORDER)
+# Compression / checksum keys that netCDF4-python and h5netcdf Variable.filters() share.
+HDF5_FILTER_ENCODING_KEYS: tuple[str, ...] = (
+    "zlib",
+    "szip",
+    "zstd",
+    "bzip2",
+    "blosc",
+    "shuffle",
+    "fletcher32",
+    "complevel",
+)
 
 # Format display names
 FORMAT_DISPLAY_NAMES: dict[SupportedExtensionType, str] = {
@@ -658,24 +674,73 @@ def check_package_is_usable(package_name: str) -> bool:
     return True
 
 
-def get_available_engines(file_extension: str) -> list[str]:
+def normalize_netcdf_engine_order(
+    netcdf_engine_order: Sequence[str] | str | None = None,
+) -> list[str]:
+    """Return a validated NetCDF engine try-order.
+
+    Unknown names are dropped. Engines omitted from the user list are appended
+    in the xarray default order so files still open when a preferred engine is
+    missing.
+    """
+    if netcdf_engine_order is None:
+        parts: list[str] = []
+    elif isinstance(netcdf_engine_order, str):
+        parts = [
+            item.strip() for item in netcdf_engine_order.split(",") if item.strip()
+        ]
+    else:
+        parts = [str(item).strip() for item in netcdf_engine_order if str(item).strip()]
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for engine in parts:
+        if engine in ALLOWED_NETCDF_ENGINES and engine not in seen:
+            ordered.append(engine)
+            seen.add(engine)
+    for engine in DEFAULT_NETCDF_ENGINE_ORDER:
+        if engine not in seen:
+            ordered.append(engine)
+    return ordered
+
+
+def _engines_for_extension(
+    file_extension: str,
+    netcdf_engine_order: Sequence[str] | str | None = None,
+) -> list[str]:
+    """Engine try-order for a suffix, applying netcdfEngineOrder when relevant."""
+    mapped = list(FORMAT_ENGINE_MAP.get(file_extension, []))
+    if file_extension not in NETCDF_ENGINE_ORDER_EXTENSIONS:
+        return mapped
+    preferred = [
+        engine
+        for engine in normalize_netcdf_engine_order(netcdf_engine_order)
+        if engine in mapped
+    ]
+    remainder = [engine for engine in mapped if engine not in preferred]
+    return preferred + remainder
+
+
+def get_available_engines(
+    file_extension: str,
+    netcdf_engine_order: Sequence[str] | str | None = None,
+) -> list[str]:
     """Get available engines for a file extension.
 
     Parameters
     ----------
     file_extension : str
         File extension (e.g., '.nc', '.zarr')
+    netcdf_engine_order : sequence of str or str, optional
+        Preferred order for ``.nc`` / ``.nc4`` / ``.netcdf`` only.
 
     Returns
     -------
     List[str]
         List of available xarray engines for the file extension
     """
-    if file_extension not in FORMAT_ENGINE_MAP:
-        return []
-
     available_engines: list[str] = []
-    for engine in FORMAT_ENGINE_MAP[file_extension]:
+    for engine in _engines_for_extension(file_extension, netcdf_engine_order):
         package_name: str = ENGINE_PACKAGES.get(engine, engine)
         if check_package_is_usable(package_name):
             available_engines.append(engine)
@@ -708,13 +773,18 @@ def get_missing_packages(file_extension: str) -> list[str]:
     return missing_packages
 
 
-def detect_file_format(file_path: Path) -> FileFormatInfo:
+def detect_file_format(
+    file_path: Path,
+    netcdf_engine_order: Sequence[str] | str | None = None,
+) -> FileFormatInfo:
     """Detect file format and return format information.
 
     Parameters
     ----------
     file_path : Path
         Path to the data file
+    netcdf_engine_order : sequence of str or str, optional
+        Preferred NetCDF engine order for ``.nc`` / ``.nc4`` / ``.netcdf``.
 
     Returns
     -------
@@ -751,7 +821,7 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
             display_name = f"{display_name} v{zarr_version}"
         if zip_store:
             display_name = f"{display_name} (ZIP)"
-    available_engines: list[str] = get_available_engines(ext)
+    available_engines: list[str] = get_available_engines(ext, netcdf_engine_order)
     missing_packages: list[str] = get_missing_packages(ext)
 
     return FileFormatInfo(
@@ -1980,6 +2050,8 @@ def create_plot(
     vmax: int | float | None = None,
     add_colorbar: bool = True,
     add_legend: bool = False,
+    netcdf_engine_order: Sequence[str] | str | None = None,
+    show_inherited_coordinates: bool = True,
 ) -> CreatePlotResult | CreatePlotError:
     """Create a plot from a data file variable.
 
@@ -2023,7 +2095,9 @@ def create_plot(
             raise ValueError(f"Invalid plot type: {plot_type}")
 
         # Detect file format and available engines
-        file_format_info = detect_file_format(file_path)
+        file_format_info = detect_file_format(
+            file_path, netcdf_engine_order=netcdf_engine_order
+        )
 
         if not file_format_info.is_supported:
             logger.error(
@@ -2078,10 +2152,11 @@ def create_plot(
             path.name
         )  # Use .name instead of .stem to preserve dots in variable names
 
+        plot_inherit = _datatree_inherit_mode(show_inherited_coordinates)
         if can_use_datatree(used_engine) and isinstance(xds_or_xdt, xr.DataTree):
             xdt = cast("xr.DataTree", xds_or_xdt)
 
-            group = xdt[str(group_name)].to_dataset()
+            group = xdt[str(group_name)].to_dataset(inherit=plot_inherit)
         else:
             xds_dict = cast("DictOfDatasets", xds_or_xdt)
 
@@ -2163,7 +2238,9 @@ def create_plot(
                         xds_or_xdt, xr.DataTree
                     ):
                         xdt = cast("xr.DataTree", xds_or_xdt)
-                        datetime_group = xdt[str(datetime_group_name)].to_dataset()
+                        datetime_group = xdt[str(datetime_group_name)].to_dataset(
+                            inherit=plot_inherit
+                        )
                     else:
                         xds_dict = cast("DictOfDatasets", xds_or_xdt)
                         datetime_group = xds_dict[str(datetime_group_name)]
@@ -2516,6 +2593,26 @@ def _describe_codec(value: Any) -> Any:
     return value
 
 
+def _hdf5_filters_from_encoding(
+    data_array: xr.DataArray | xr.Dataset,
+) -> dict[str, Any]:
+    """Build a filters() -shaped mapping from xarray encoding keys.
+
+    h5netcdf 1.8 exposes ``Variable.filters()``; netCDF4-python already copies
+    the same keys onto ``DataArray.encoding``. Reconstructing from encoding
+    avoids reopening the file per variable and stays silent when filters() is
+    missing.
+    """
+    try:
+        encoding = getattr(data_array, "encoding", None) or {}
+        return {
+            key: encoding[key] for key in HDF5_FILTER_ENCODING_KEYS if key in encoding
+        }
+    except Exception as exc:
+        logger.debug("Could not collect HDF5 filter encoding: %r", exc)
+        return {}
+
+
 def _collect_dataarray_attributes(
     data_array: xr.DataArray | xr.Dataset,
     *,
@@ -2528,16 +2625,81 @@ def _collect_dataarray_attributes(
             ("__xarray_encoding." + str(k), _describe_codec(v))
             for k, v in data_array.encoding.items()
         )
+        items.extend(
+            ("__xarray_encoding.filters." + str(k), v)
+            for k, v in _hdf5_filters_from_encoding(data_array).items()
+        )
     return dict(items)
+
+
+def _datatree_inherit_mode(
+    show_inherited_coordinates: bool,
+) -> bool | Literal["all_coords"]:
+    """xarray DataTree.to_dataset inherit argument for the viewer setting."""
+    return "all_coords" if show_inherited_coordinates else False
+
+
+def _datatree_node_path(node: xr.DataTree) -> str:
+    """Absolute group path as used in flattened viewer keys (``/``, ``/group``)."""
+    path = getattr(node, "path", None) or "/"
+    if path in (".", ""):
+        return "/"
+    if not str(path).startswith("/"):
+        return "/" + str(path)
+    return str(path)
+
+
+def _coord_defined_at(node: xr.DataTree, coord_name: str) -> str:
+    """Path of the nearest ancestor (or self) that defines ``coord_name``."""
+    local = node.to_dataset(inherit=False)
+    if coord_name in local.coords:
+        return _datatree_node_path(node)
+    for ancestor in node.parents:
+        if coord_name in ancestor.to_dataset(inherit=False).coords:
+            return _datatree_node_path(ancestor)
+    return "/"
+
+
+def inherited_coord_sources(
+    xdt: xr.DataTree,
+    *,
+    show_inherited_coordinates: bool,
+) -> dict[str, dict[str, str]]:
+    """Map group path → {coord name → defining group path} for inherited coords."""
+    if not show_inherited_coordinates:
+        return {}
+    sources: dict[str, dict[str, str]] = {}
+    for _key, node in xdt.subtree_with_keys:
+        group = _datatree_node_path(node)
+        local_names = set(node.to_dataset(inherit=False).coords)
+        inherited = node.to_dataset(inherit="all_coords")
+        mapping: dict[str, str] = {}
+        for name in inherited.coords:
+            coord_name = str(name)
+            if coord_name in local_names:
+                continue
+            mapping[coord_name] = _coord_defined_at(node, coord_name)
+        if mapping:
+            sources[group] = mapping
+    return sources
 
 
 def _flatten_datatree_groups(
     xdt: xr.DataTree,
     *,
     order_groups_alphabetically: bool,
+    show_inherited_coordinates: bool = True,
 ) -> DictOfDatasets:
-    """Flatten a DataTree to datasets, optionally sorting group paths."""
-    items = list(xdt.to_dict().items())
+    """Flatten a DataTree to datasets, optionally sorting group paths.
+
+    Uses ``DataTree.to_dataset(inherit=...)`` so child groups can include
+    parent coordinates (``inherit='all_coords'``, xarray 2026.04+).
+    """
+    inherit = _datatree_inherit_mode(show_inherited_coordinates)
+    items: list[tuple[str, xr.Dataset]] = [
+        (_datatree_node_path(node), node.to_dataset(inherit=inherit))
+        for _key, node in xdt.subtree_with_keys
+    ]
     if order_groups_alphabetically:
         items.sort(key=lambda item: item[0])
     return dict(items)
@@ -2550,6 +2712,8 @@ def get_file_info(
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     order_groups_alphabetically: bool = True,
     show_xarray_encoding_attributes: bool = True,
+    netcdf_engine_order: Sequence[str] | str | None = None,
+    show_inherited_coordinates: bool = True,
 ) -> FileInfoResult | FileInfoError:
     """Extract comprehensive information from a data file.
 
@@ -2571,6 +2735,11 @@ def get_file_info(
         When True, sort flattened DataTree group paths alphabetically (Issue #140).
     show_xarray_encoding_attributes : bool
         When True, include ``__xarray_encoding.*`` entries from xarray encoding metadata.
+    netcdf_engine_order : sequence of str or str, optional
+        Preferred engines for ``.nc`` / ``.nc4`` / ``.netcdf`` (not NASA ``.cdf``).
+    show_inherited_coordinates : bool
+        When True, child DataTree groups include parent coordinates via
+        ``to_dataset(inherit='all_coords')``.
 
     Returns
     -------
@@ -2584,7 +2753,9 @@ def get_file_info(
     versions_text = output.getvalue()
 
     # Detect file format and available engines
-    file_format_info = detect_file_format(file_path)
+    file_format_info = detect_file_format(
+        file_path, netcdf_engine_order=netcdf_engine_order
+    )
 
     try:
         # Open dataset with fallback
@@ -2636,6 +2807,11 @@ def get_file_info(
             flat_dict_of_xds: DictOfDatasets = _flatten_datatree_groups(
                 xdt,
                 order_groups_alphabetically=order_groups_alphabetically,
+                show_inherited_coordinates=show_inherited_coordinates,
+            )
+            inherited_sources = inherited_coord_sources(
+                xdt,
+                show_inherited_coordinates=show_inherited_coordinates,
             )
             logger.info(
                 f"Processing DataTree with {len(flat_dict_of_xds.keys())} groups"
@@ -2670,6 +2846,7 @@ def get_file_info(
             logger.info(f"{xds_dict=}")
 
             flat_dict_of_xds: DictOfDatasets = xds_dict
+            inherited_sources = {}
             logger.info(
                 f"Processing DictOfDatasets with {len(flat_dict_of_xds.keys())} groups"
             )
@@ -2710,6 +2887,9 @@ def get_file_info(
                     small_variable_bytes=small_variable_bytes,
                     small_value_display_max_len=small_value_display_max_len,
                     show_xarray_encoding_attributes=show_xarray_encoding_attributes,
+                    inherited_from=inherited_sources.get(group, {}).get(
+                        str(coord_name)
+                    ),
                 )
                 info.coordinates_flattened.setdefault(group, []).append(coord_info)
                 # Check if coordinate is a datetime variable
@@ -2958,6 +3138,7 @@ def create_coord_info(
     small_variable_bytes: int = 0,
     small_value_display_max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     show_xarray_encoding_attributes: bool = True,
+    inherited_from: str | None = None,
 ) -> CoordinateInfo:
     """Create CoordinateInfo from a DataArray.
 
@@ -2983,16 +3164,20 @@ def create_coord_info(
     if small_variable_bytes > 0 and coord.nbytes <= small_variable_bytes:
         display_value = _format_small_value(coord, max_len=small_value_display_max_len)
 
+    attributes = _collect_dataarray_attributes(
+        coord,
+        show_xarray_encoding_attributes=show_xarray_encoding_attributes,
+    )
+    if inherited_from:
+        attributes = {**attributes, "inherited_from": inherited_from}
+
     return CoordinateInfo(
         name=str(coord_name),
         dtype=str(coord.dtype),
         shape=list(coord.shape),
         dimensions=[str(d) for d in coord.dims],
         size_bytes=coord.nbytes,
-        attributes=_collect_dataarray_attributes(
-            coord,
-            show_xarray_encoding_attributes=show_xarray_encoding_attributes,
-        ),
+        attributes=attributes,
         display_value=display_value,
     )
 
@@ -3210,6 +3395,24 @@ Examples:
         help="Omit __xarray_encoding.* attribute entries from group, coordinate, and variable metadata",
     )
 
+    parser.add_argument(
+        "--netcdf-engine-order",
+        default=None,
+        help=(
+            "Comma-separated NetCDF engine try-order for .nc/.nc4/.netcdf "
+            "(netcdf4,h5netcdf,scipy). Does not apply to NASA .cdf files."
+        ),
+    )
+
+    parser.add_argument(
+        "--no-show-inherited-coordinates",
+        action="store_true",
+        help=(
+            "Do not merge parent DataTree coordinates onto child groups "
+            "(xarray to_dataset inherit=False)"
+        ),
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -3234,6 +3437,8 @@ Examples:
             small_value_display_max_len=args.small_value_display_max_len,
             order_groups_alphabetically=not args.no_order_groups_alphabetically,
             show_xarray_encoding_attributes=not args.no_show_xarray_encoding_attributes,
+            netcdf_engine_order=args.netcdf_engine_order,
+            show_inherited_coordinates=not args.no_show_inherited_coordinates,
         )
         ok = isinstance(result, FileInfoResult)
 
@@ -3285,6 +3490,8 @@ Examples:
             vmax=args.vmax,
             add_colorbar=not args.no_add_colorbar,
             add_legend=args.add_legend,
+            netcdf_engine_order=args.netcdf_engine_order,
+            show_inherited_coordinates=not args.no_show_inherited_coordinates,
         )
         ok = isinstance(result, CreatePlotResult)
 

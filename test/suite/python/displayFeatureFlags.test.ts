@@ -6,6 +6,8 @@ const baseOptions = {
     smallValueDisplayMaxLen: 500,
     orderGroupsAlphabetically: true,
     showXarrayEncodingAttributes: true,
+    netcdfEngineOrder: ['netcdf4', 'h5netcdf', 'scipy'],
+    showInheritedCoordinates: true,
 };
 
 suite('Display feature flags CLI args', () => {
@@ -19,6 +21,8 @@ suite('Display feature flags CLI args', () => {
             '1000',
             '--small-value-display-max-len',
             '500',
+            '--netcdf-engine-order',
+            'netcdf4,h5netcdf,scipy',
         ]);
     });
 
@@ -51,6 +55,27 @@ suite('Display feature flags CLI args', () => {
 
         assert.ok(args.includes('--no-order-groups-alphabetically'));
         assert.ok(args.includes('--no-show-xarray-encoding-attributes'));
+        assert.ok(!args.includes('--no-show-inherited-coordinates'));
+    });
+
+    test('buildGetDataInfoCliArgs passes a custom netcdf engine order', () => {
+        const args = buildGetDataInfoCliArgs('/data/test.nc', {
+            ...baseOptions,
+            netcdfEngineOrder: ['h5netcdf', 'netcdf4', 'scipy'],
+        });
+
+        const orderIndex = args.indexOf('--netcdf-engine-order');
+        assert.ok(orderIndex >= 0);
+        assert.strictEqual(args[orderIndex + 1], 'h5netcdf,netcdf4,scipy');
+    });
+
+    test('buildGetDataInfoCliArgs adds --no-show-inherited-coordinates when off', () => {
+        const args = buildGetDataInfoCliArgs('/data/test.nc', {
+            ...baseOptions,
+            showInheritedCoordinates: false,
+        });
+
+        assert.ok(args.includes('--no-show-inherited-coordinates'));
     });
 
     test('buildGetDataInfoCliArgs still passes convert-bands-to-variables', () => {

@@ -8,6 +8,8 @@ import {
     getSmallValueDisplayMaxLen,
     getOrderGroupsAlphabetically,
     getShowXarrayEncodingAttributes,
+    getNetcdfEngineOrder,
+    getShowInheritedCoordinates,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
@@ -18,6 +20,8 @@ export interface GetDataInfoCliOptions {
     smallValueDisplayMaxLen: number;
     orderGroupsAlphabetically: boolean;
     showXarrayEncodingAttributes: boolean;
+    netcdfEngineOrder: string[];
+    showInheritedCoordinates: boolean;
 }
 
 /** Build argv for `get_data_info.py info` (exported for unit tests). */
@@ -39,6 +43,10 @@ export function buildGetDataInfoCliArgs(
     }
     if (!options.showXarrayEncodingAttributes) {
         args.push('--no-show-xarray-encoding-attributes');
+    }
+    args.push('--netcdf-engine-order', options.netcdfEngineOrder.join(','));
+    if (!options.showInheritedCoordinates) {
+        args.push('--no-show-inherited-coordinates');
     }
     return args;
 }
@@ -90,6 +98,8 @@ export class DataProcessor {
                 smallValueDisplayMaxLen: getSmallValueDisplayMaxLen(),
                 orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
                 showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+                netcdfEngineOrder: getNetcdfEngineOrder(),
+                showInheritedCoordinates: getShowInheritedCoordinates(),
             });
 
             timer.mark('python-args-ready');
@@ -239,6 +249,10 @@ export class DataProcessor {
         }
         if (addLegend === true) {
             args.push('--add-legend');
+        }
+        args.push('--netcdf-engine-order', getNetcdfEngineOrder().join(','));
+        if (!getShowInheritedCoordinates()) {
+            args.push('--no-show-inherited-coordinates');
         }
 
         try {
