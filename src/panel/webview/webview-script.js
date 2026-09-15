@@ -229,12 +229,7 @@ class WebviewMessageBus {
         if (facetCol !== null && facetCol !== undefined && facetCol !== '') {
             payload.facetCol = facetCol;
         }
-        if (
-            colWrap !== null &&
-            colWrap !== undefined &&
-            Number.isInteger(colWrap) &&
-            colWrap >= 1
-        ) {
+        if (isColWrapValueSet(colWrap)) {
             payload.colWrap = colWrap;
         }
         if (plotX !== null && plotX !== undefined && plotX !== '') {
@@ -524,6 +519,45 @@ function escapeHtml(unsafe) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+}
+
+function isColWrapValueSet(colWrap) {
+    return colWrap === 'auto' || (Number.isInteger(colWrap) && colWrap >= 1);
+}
+
+function readColWrapFromControls(autoCheckbox, numberInput) {
+    if (autoCheckbox && autoCheckbox.checked) {
+        return 'auto';
+    }
+    if (numberInput && numberInput.value && numberInput.value.trim() !== '') {
+        const n = parseInt(numberInput.value.trim(), 10);
+        if (Number.isInteger(n) && n >= 1) {
+            return n;
+        }
+    }
+    return undefined;
+}
+
+function colWrapNumberInputForAutoCheckbox(autoCheckbox) {
+    if (!autoCheckbox) {
+        return null;
+    }
+    if (autoCheckbox.id === 'plotColWrapAutoCheckbox') {
+        return document.getElementById('plotColWrapInput');
+    }
+    const groupName = autoCheckbox.dataset.group;
+    if (!groupName) {
+        return null;
+    }
+    const safeId = joinId(['group-plot', groupName]);
+    return document.getElementById(`group-plot-col-wrap-${safeId}`);
+}
+
+function syncColWrapAutoCheckbox(autoCheckbox) {
+    const numberInput = colWrapNumberInputForAutoCheckbox(autoCheckbox);
+    if (numberInput) {
+        numberInput.disabled = Boolean(autoCheckbox && autoCheckbox.checked);
+    }
 }
 
 function attributeValueStrings(value) {
@@ -1055,6 +1089,8 @@ function renderGroupPlotControls(data, groupName, flags) {
                             </select>
                             <label for="group-plot-col-wrap-${safeId}">col_wrap:</label>
                             <input type="number" id="group-plot-col-wrap-${safeId}" class="plot-col-wrap-input group-plot-col-wrap-input" min="1" placeholder="e.g. 4" data-group="${escapeHtml(groupName)}" title="xarray col_wrap" />
+                            <label for="group-plot-col-wrap-auto-${safeId}" class="plot-checkbox-label">auto</label>
+                            <input type="checkbox" id="group-plot-col-wrap-auto-${safeId}" class="plot-checkbox plot-col-wrap-auto group-plot-col-wrap-auto" data-group="${escapeHtml(groupName)}" title="xarray col_wrap='auto'" />
                         </div>
                         <div class="dimension-slices-row">
                             <label for="group-plot-x-${safeId}">x:</label>
@@ -1983,6 +2019,9 @@ function getGroupDimensionSlicesState(groupName) {
     const facetRowEl = document.getElementById(`group-facet-row-${safeId}`);
     const facetColEl = document.getElementById(`group-facet-col-${safeId}`);
     const colWrapEl = document.getElementById(`group-plot-col-wrap-${safeId}`);
+    const colWrapAutoEl = document.getElementById(
+        `group-plot-col-wrap-auto-${safeId}`,
+    );
     const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
     const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
     const plotHueEl = document.getElementById(`group-plot-hue-${safeId}`);
@@ -2001,13 +2040,7 @@ function getGroupDimensionSlicesState(groupName) {
     const cmapEl = document.getElementById(`group-plot-cmap-${safeId}`);
     const facetRow = facetRowEl && facetRowEl.value ? facetRowEl.value : '';
     const facetCol = facetColEl && facetColEl.value ? facetColEl.value : '';
-    let colWrap = undefined;
-    if (colWrapEl && colWrapEl.value && colWrapEl.value.trim() !== '') {
-        const n = parseInt(colWrapEl.value.trim(), 10);
-        if (Number.isInteger(n) && n >= 1) {
-            colWrap = n;
-        }
-    }
+    const colWrap = readColWrapFromControls(colWrapAutoEl, colWrapEl);
     const plotX = plotXEl && plotXEl.value ? plotXEl.value : '';
     const plotY = plotYEl && plotYEl.value ? plotYEl.value : '';
     const plotHue = plotHueEl && plotHueEl.value ? plotHueEl.value : '';
@@ -2237,6 +2270,9 @@ function setupGroupPlotControlsListeners() {
             const colWrapEl = document.getElementById(
                 `group-plot-col-wrap-${safeId}`,
             );
+            const colWrapAutoEl = document.getElementById(
+                `group-plot-col-wrap-auto-${safeId}`,
+            );
             const plotXEl = document.getElementById(`group-plot-x-${safeId}`);
             const plotYEl = document.getElementById(`group-plot-y-${safeId}`);
             const plotHueEl = document.getElementById(
@@ -2271,6 +2307,10 @@ function setupGroupPlotControlsListeners() {
             }
             if (colWrapEl) {
                 colWrapEl.value = '';
+                colWrapEl.disabled = false;
+            }
+            if (colWrapAutoEl) {
+                colWrapAutoEl.checked = false;
             }
             if (plotXEl) {
                 plotXEl.value = '';
@@ -2451,6 +2491,9 @@ function getDimensionSlicesState() {
     const facetRowSelect = document.getElementById('facetRowSelect');
     const facetColSelect = document.getElementById('facetColSelect');
     const plotColWrapInput = document.getElementById('plotColWrapInput');
+    const plotColWrapAutoCheckbox = document.getElementById(
+        'plotColWrapAutoCheckbox',
+    );
     const plotXSelect = document.getElementById('plotXSelect');
     const plotYSelect = document.getElementById('plotYSelect');
     const plotHueSelect = document.getElementById('plotHueSelect');
@@ -2502,19 +2545,10 @@ function getDimensionSlicesState() {
             facetRowSelect && facetRowSelect.value ? facetRowSelect.value : '',
         facetCol:
             facetColSelect && facetColSelect.value ? facetColSelect.value : '',
-        colWrap: (() => {
-            if (
-                plotColWrapInput &&
-                plotColWrapInput.value &&
-                plotColWrapInput.value.trim() !== ''
-            ) {
-                const n = parseInt(plotColWrapInput.value.trim(), 10);
-                if (Number.isInteger(n) && n >= 1) {
-                    return n;
-                }
-            }
-            return undefined;
-        })(),
+        colWrap: readColWrapFromControls(
+            plotColWrapAutoCheckbox,
+            plotColWrapInput,
+        ),
         plotX: plotXSelect && plotXSelect.value ? plotXSelect.value : '',
         plotY: plotYSelect && plotYSelect.value ? plotYSelect.value : '',
         plotHue:
@@ -2805,6 +2839,9 @@ function setupTimeControlsEventListeners() {
             const facetColSelect = document.getElementById('facetColSelect');
             const plotColWrapInput =
                 document.getElementById('plotColWrapInput');
+            const plotColWrapAutoCheckbox = document.getElementById(
+                'plotColWrapAutoCheckbox',
+            );
             const plotXSelect = document.getElementById('plotXSelect');
             const plotYSelect = document.getElementById('plotYSelect');
             const plotHueSelect = document.getElementById('plotHueSelect');
@@ -2831,6 +2868,10 @@ function setupTimeControlsEventListeners() {
             }
             if (plotColWrapInput) {
                 plotColWrapInput.value = '';
+                plotColWrapInput.disabled = false;
+            }
+            if (plotColWrapAutoCheckbox) {
+                plotColWrapAutoCheckbox.checked = false;
             }
             if (plotXSelect) {
                 plotXSelect.value = '';
@@ -2974,6 +3015,9 @@ function setupEventListeners() {
         }
     });
     document.addEventListener('change', async (e) => {
+        if (e.target.classList.contains('plot-col-wrap-auto')) {
+            syncColWrapAutoCheckbox(e.target);
+        }
         // Change event listeners for plot type select
         for (const [className, handler] of Object.entries(
             changeEventMappingClassToHandler,

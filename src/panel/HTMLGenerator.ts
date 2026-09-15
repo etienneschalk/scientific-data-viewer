@@ -368,6 +368,8 @@ export class HTMLGenerator {
                             </select>
                             <label for="plotColWrapInput">col_wrap:</label>
                             <input type="number" id="plotColWrapInput" class="plot-col-wrap-input" min="1" placeholder="e.g. 4" title="xarray col_wrap: max columns in faceted grid (positive integer)" />
+                            <label for="plotColWrapAutoCheckbox" class="plot-checkbox-label">auto</label>
+                            <input type="checkbox" id="plotColWrapAutoCheckbox" class="plot-checkbox plot-col-wrap-auto" title="xarray col_wrap='auto' (wrap facets automatically; xarray 2026.04+)" />
                         </div>
                         <div class="dimension-slices-row">
                             <label for="plotXSelect">x:</label>

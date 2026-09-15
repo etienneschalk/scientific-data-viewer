@@ -53,8 +53,8 @@ export interface CreatePlotRequest {
     facetRow?: string;
     /** Dimension name for faceted plot col (Issue #117) */
     facetCol?: string;
-    /** xarray plot col_wrap: max number of columns in faceted grid (positive integer) */
-    colWrap?: number;
+    /** xarray plot col_wrap: max columns, or 'auto' (xarray 2026.04+) */
+    colWrap?: number | 'auto';
     /** Dimension or coordinate for x-axis (xarray plot x=, e.g. line/2D) */
     plotX?: string;
     /** Dimension or coordinate for y-axis (xarray plot y=, e.g. 2D) */

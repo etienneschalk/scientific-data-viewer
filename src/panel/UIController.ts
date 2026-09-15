@@ -358,7 +358,7 @@ export class UIController {
         dimensionSlices?: Record<string, string | number>,
         facetRow?: string,
         facetCol?: string,
-        colWrap?: number,
+        colWrap?: number | 'auto',
         plotX?: string,
         plotY?: string,
         plotHue?: string,

@@ -29,7 +29,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 # Run from repo: python/python is on path
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -87,7 +87,7 @@ class PlotCase:
     bins: int | None = None
     facet_row: str | None = None
     facet_col: str | None = None
-    col_wrap: int | None = None
+    col_wrap: int | Literal["auto"] | None = None
     plot_x: str | None = None
     plot_y: str | None = None
     plot_hue: str | None = None

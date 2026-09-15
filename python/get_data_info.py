@@ -1291,6 +1291,38 @@ def _parse_dimension_slices(
 
 # --- Plot execution: kwargs bundle, dispatcher, and strategies (create_plot) ---
 
+ColWrap = int | Literal["auto"] | None
+
+
+def parse_col_wrap(value: str) -> int | Literal["auto"]:
+    """Parse ``--col-wrap``: a positive integer or the token ``auto``."""
+    text = str(value).strip()
+    if text.lower() == "auto":
+        return "auto"
+    try:
+        parsed = int(text)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "col_wrap must be a positive integer or 'auto'"
+        ) from exc
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("col_wrap must be >= 1")
+    return parsed
+
+
+def xarray_supports_col_wrap_auto() -> bool:
+    """xarray 2026.04.0 added ``col_wrap='auto'`` for faceted plots."""
+    parts = xr.__version__.split(".")
+    try:
+        year, month = int(parts[0]), int(parts[1])
+    except (ValueError, IndexError):
+        return False
+    return (year, month) >= (2026, 4)
+
+
+def col_wrap_is_set(col_wrap: ColWrap) -> bool:
+    return col_wrap == "auto" or (isinstance(col_wrap, int) and col_wrap >= 1)
+
 
 def _log_plot_route(route: str) -> None:
     """Record which plot entry point ran. Stdout is reserved for JSON; print to stderr."""
@@ -1330,7 +1362,7 @@ class PlotKwargsBundle:
         aspect: int | float | None,
         size: int | float | None,
         cmap: str | None,
-        col_wrap: int | None,
+        col_wrap: ColWrap,
         vmin: int | float | None = None,
         vmax: int | float | None = None,
         add_colorbar: bool = True,
@@ -1351,7 +1383,15 @@ class PlotKwargsBundle:
             plot_kwargs["size"] = float(size)
         if cmap is not None and cmap.strip():
             plot_kwargs["cmap"] = cmap.strip()
-        if col_wrap is not None and col_wrap >= 1:
+        if col_wrap == "auto":
+            if xarray_supports_col_wrap_auto():
+                plot_kwargs["col_wrap"] = "auto"
+            else:
+                logger.warning(
+                    "col_wrap='auto' requires xarray 2026.04+; "
+                    f"installed {xr.__version__}, omitting col_wrap"
+                )
+        elif col_wrap is not None and col_wrap >= 1:
             plot_kwargs["col_wrap"] = int(col_wrap)
         if vmin is not None:
             plot_kwargs["vmin"] = float(vmin)
@@ -1925,7 +1965,7 @@ def create_plot(
     dimension_slices: dict[str, str | int] | None = None,
     facet_row: str | None = None,
     facet_col: str | None = None,
-    col_wrap: int | None = None,
+    col_wrap: ColWrap = None,
     plot_x: str | None = None,
     plot_y: str | None = None,
     plot_hue: str | None = None,
@@ -2275,7 +2315,7 @@ def create_plot(
             (dimension_slices and len(dimension_slices) > 0)
             or (facet_row and facet_row.strip())
             or (facet_col and facet_col.strip())
-            or (col_wrap is not None and col_wrap >= 1)
+            or col_wrap_is_set(col_wrap)
             or (plot_x and plot_x.strip())
             or (plot_y and plot_y.strip())
             or (plot_hue and plot_hue.strip())
@@ -3050,9 +3090,9 @@ Examples:
 
     parser.add_argument(
         "--col-wrap",
-        type=int,
+        type=parse_col_wrap,
         default=None,
-        help="xarray plot col_wrap: max number of columns in faceted grid (positive integer)",
+        help="xarray plot col_wrap: positive integer or 'auto' (xarray 2026.04+)",
     )
 
     parser.add_argument(

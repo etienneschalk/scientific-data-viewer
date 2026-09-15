@@ -125,7 +125,7 @@ export class DataProcessor {
         dimensionSlices?: Record<string, string | number>,
         facetRow?: string,
         facetCol?: string,
-        colWrap?: number,
+        colWrap?: number | 'auto',
         plotX?: string,
         plotY?: string,
         plotHue?: string,
@@ -183,7 +183,9 @@ export class DataProcessor {
         if (facetCol && facetCol.trim() !== '') {
             args.push('--facet-col', facetCol);
         }
-        if (
+        if (colWrap === 'auto') {
+            args.push('--col-wrap', 'auto');
+        } else if (
             colWrap !== null &&
             colWrap !== undefined &&
             Number.isInteger(colWrap) &&
