@@ -37,6 +37,7 @@ import json
 import logging
 import os
 import sys
+import zipfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, is_dataclass
@@ -721,7 +722,24 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
         Information about the detected file format including available engines
     """
     ext: str = file_path.suffix.lower()
-    if ext not in FORMAT_ENGINE_MAP and is_zarr_store(file_path):
+    zip_store = looks_like_zip(file_path)
+    if zip_store:
+        prefix = zip_zarr_root_prefix(file_path)
+        if prefix is None:
+            # Explorer offers Open on every .zip (VS Code cannot sniff archives).
+            # Distinguish "not a Zarr store" from "missing zarr package".
+            return FileFormatInfo(
+                extension=".zip",
+                display_name="ZIP",
+                available_engines=[],
+                missing_packages=[],
+            )
+        logger.info(
+            f"Detected Zarr store inside ZIP {file_path}"
+            + (f" at prefix {prefix!r}" if prefix else " (archive root)")
+        )
+        ext = ".zarr"
+    elif ext not in FORMAT_ENGINE_MAP and is_zarr_store(file_path):
         logger.info(f"Detected Zarr store without a .zarr suffix: {file_path}")
         ext = ".zarr"
     display_name: str = FORMAT_DISPLAY_NAMES.get(ext, "Unknown")
@@ -731,6 +749,8 @@ def detect_file_format(file_path: Path) -> FileFormatInfo:
         zarr_version = detect_zarr_format_version(file_path)
         if zarr_version is not None:
             display_name = f"{display_name} v{zarr_version}"
+        if zip_store:
+            display_name = f"{display_name} (ZIP)"
     available_engines: list[str] = get_available_engines(ext)
     missing_packages: list[str] = get_missing_packages(ext)
 
@@ -766,6 +786,55 @@ def is_zarr_store(path: Path) -> bool:
     return any((path / marker).exists() for marker in ZARR_STORE_MARKERS)
 
 
+def looks_like_zip(path: Path) -> bool:
+    """True when the path is a file whose name claims to be a ZIP archive."""
+    if not path.is_file():
+        return False
+    name = path.name.lower()
+    return name.endswith(".zip")
+
+
+def zip_zarr_root_prefix(path: Path) -> str | None:
+    """Return the zip-internal prefix of a Zarr store, or None if none is found.
+
+    An empty string means the store is at the archive root. A nested store
+    such as ``ocean.zarr/zarr.json`` returns ``ocean.zarr``. Only metadata
+    members are inspected; array chunks are not read.
+
+    When several markers exist (root ``zarr.json`` plus per-array
+    ``temperature/zarr.json``), the shortest prefix wins so the store root
+    is selected rather than a child array.
+    """
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+    except zipfile.BadZipFile:
+        logger.warning(f"{path} is not a valid ZIP archive")
+        return None
+    except OSError as exc:
+        logger.warning(f"Could not read ZIP archive {path}: {exc!r}")
+        return None
+
+    prefixes: list[str] = []
+    for raw_name in names:
+        name = raw_name.replace("\\", "/")
+        if name.startswith("./"):
+            name = name[2:]
+        # Array-level ``.zarray`` / per-array ``zarr.json`` would point at
+        # children; only group metadata identifies the store root.
+        for marker in ("zarr.json", ".zgroup", ".zmetadata"):
+            if name == marker:
+                prefixes.append("")
+            elif name.endswith(f"/{marker}"):
+                prefixes.append(name[: -len(marker)].rstrip("/"))
+
+    if not prefixes:
+        return None
+
+    prefixes.sort(key=lambda prefix: (prefix.count("/"), len(prefix)))
+    return prefixes[0]
+
+
 def detect_zarr_format_version(path: Path) -> int | None:
     """Detect whether a Zarr store uses the v3 or v2 layout.
 
@@ -782,6 +851,23 @@ def detect_zarr_format_version(path: Path) -> int | None:
     int or None
         3, 2, or None when the version cannot be determined
     """
+    if looks_like_zip(path):
+        prefix = zip_zarr_root_prefix(path)
+        if prefix is None:
+            return None
+        v3_member = "zarr.json" if prefix == "" else f"{prefix}/zarr.json"
+        v2_member = ".zgroup" if prefix == "" else f"{prefix}/.zgroup"
+        try:
+            with zipfile.ZipFile(path) as archive:
+                names = {name.replace("\\", "/") for name in archive.namelist()}
+        except (zipfile.BadZipFile, OSError):
+            return None
+        if v3_member in names:
+            return 3
+        if v2_member in names:
+            return 2
+        return None
+
     if not path.is_dir():
         return None
     if (path / "zarr.json").exists():
@@ -817,6 +903,33 @@ def resolve_store_path(path: Path) -> Path:
         return path.parent
 
     return path
+
+
+def zarr_open_location(file_path: Path) -> tuple[Any, dict[str, Any]]:
+    """Return the object and extra kwargs xarray needs to open a Zarr store.
+
+    Directory stores are passed through as paths. ZIP archives must go through
+    ``zarr.storage.ZipStore``; zarr-python 3 no longer treats ``*.zip`` paths
+    as stores. A nested store (``ocean.zarr/zarr.json`` inside the archive)
+    is selected with xarray's ``group`` argument.
+    """
+    if not looks_like_zip(file_path):
+        return file_path, {}
+
+    prefix = zip_zarr_root_prefix(file_path)
+    if prefix is None:
+        return file_path, {}
+
+    from zarr.storage import ZipStore
+
+    extra: dict[str, Any] = {"consolidated": False}
+    if prefix:
+        extra["group"] = prefix
+    logger.info(
+        f"Opening ZIP Zarr store {file_path}"
+        + (f" group={prefix!r}" if prefix else " at archive root")
+    )
+    return ZipStore(str(file_path), mode="r"), extra
 
 
 def _is_decode_cf_time_error(exc: BaseException) -> bool:
@@ -919,13 +1032,25 @@ def open_datatree_with_fallback(
                     f"Using band_as_variable=True for {file_format_info.extension} file"
                 )
 
+            open_location: Any = file_path
+            open_extra: dict[str, Any] = {}
+            if engine == "zarr":
+                open_location, open_extra = zarr_open_location(file_path)
+
             if can_use_datatree(engine):
                 xdt_or_xds, decode_cf_degraded = _open_with_decode_cf_fallback(
-                    lambda decode_cf, eng=engine, bk=backend_kwargs: xr.open_datatree(
-                        file_path,
-                        engine=eng,
-                        **_xr_open_kwargs(eng, decode_cf),
-                        backend_kwargs=bk,
+                    lambda decode_cf,
+                    loc=open_location,
+                    extra=open_extra,
+                    eng=engine,
+                    bk=backend_kwargs: (
+                        xr.open_datatree(
+                            loc,
+                            engine=eng,
+                            **_xr_open_kwargs(eng, decode_cf),
+                            **extra,
+                            backend_kwargs=bk,
+                        )
                     )
                 )
                 return xdt_or_xds, engine, decode_cf_degraded
@@ -952,21 +1077,29 @@ def open_datatree_with_fallback(
                     decode_cf: bool,
                     group: str = "/",
                     *,
+                    loc: Any = open_location,
+                    extra: dict[str, Any] = open_extra,
                     eng: str = engine,
                     bk: dict[str, Any] = backend_kwargs,
                 ) -> xr.Dataset:
                     kwargs = _xr_open_kwargs(eng, decode_cf)
+                    if extra.get("group") and group != "/":
+                        raise NotImplementedError(
+                            "Nested ZIP Zarr group listing is not implemented"
+                        )
                     if group == "/":
                         return xr.open_dataset(
-                            file_path,
+                            loc,
                             engine=eng,
                             **kwargs,
+                            **extra,
                             backend_kwargs=bk,
                         )
                     return xr.open_dataset(
-                        file_path,
+                        loc,
                         engine=eng,
                         **kwargs,
+                        **extra,
                         backend_kwargs=bk,
                         group=group,
                     )
@@ -986,11 +1119,14 @@ def open_datatree_with_fallback(
             )
             logger.warning("Fallback to opening file as Dataset")
             xds, decode_cf_degraded = _open_with_decode_cf_fallback(
-                lambda decode_cf, eng=engine: xr.open_dataset(
-                    file_path,
-                    engine=eng,
-                    **_xr_open_kwargs(eng, decode_cf),
-                    backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[eng],
+                lambda decode_cf, loc=open_location, extra=open_extra, eng=engine: (
+                    xr.open_dataset(
+                        loc,
+                        engine=eng,
+                        **_xr_open_kwargs(eng, decode_cf),
+                        **extra,
+                        backend_kwargs=DEFAULT_ENGINE_BACKEND_KWARGS[eng],
+                    )
                 )
             )
             return xds, engine, decode_cf_degraded
@@ -2416,6 +2552,21 @@ def get_file_info(
             file_path, file_format_info, convert_bands_to_variables
         )
     except ImportError:
+        if file_format_info.extension == ".zip":
+            error = FileInfoError(
+                error=(
+                    "This ZIP archive is not a Zarr store "
+                    "(no zarr.json or .zgroup found)."
+                ),
+                error_type="ValueError",
+                format_info=file_format_info,
+                suggestion=(
+                    "The archive must contain a Zarr store at its root or in a "
+                    "subdirectory. Ordinary ZIP files cannot be opened as scientific data."
+                ),
+                xarray_show_versions=versions_text,
+            )
+            return error
         # Handle missing dependencies
         error = FileInfoError(
             error=f"Missing dependencies for {file_format_info.display_name} files: {', '.join(file_format_info.missing_packages)}",

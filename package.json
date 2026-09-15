@@ -128,13 +128,13 @@
         "menus": {
             "explorer/context": [
                 {
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .nc4 || resourceExtname == .cdf || resourceExtname == .zip",
                     "command": "scientificDataViewer.openViewer",
                     "group": "navigation",
                     "description": "Opens the file in the Scientific Data Viewer"
                 },
                 {
-                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .nc4 || resourceExtname == .cdf",
+                    "when": "resourceExtname == .nc || resourceExtname == .netcdf || resourceExtname == .zarr || resourceExtname == .h5 || resourceExtname == .hdf5 || resourceExtname == .grib || resourceExtname == .grib2 || resourceExtname == .grb || resourceExtname == .grb2 || resourceExtname == .tif || resourceExtname == .tiff || resourceExtname == .geotiff || resourceExtname == .jp2 || resourceExtname == .jpeg2000 || resourceExtname == .nc4 || resourceExtname == .cdf || resourceExtname == .zip",
                     "command": "scientificDataViewer.openViewerMultiple",
                     "group": "navigation",
                     "description": "Opens all selected supported files or folders in the Scientific Data Viewer"

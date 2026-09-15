@@ -20,6 +20,7 @@ const SUPPORTED_EXTENSIONS_HARDOCDED = [
     '.geotiff',
     '.jp2',
     '.jpeg2000',
+    '.zip',
 ];
 
 const MAX_ATTR_DISPLAY_STR_LENGTH = 999999;
