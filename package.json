@@ -36,6 +36,7 @@
         "onLanguage:grib",
         "onLanguage:geotiff",
         "onLanguage:jp2",
+        "onLanguage:kerchunk",
         "onFileSystem:netcdf",
         "onFileSystem:zarr",
         "onFileSystem:grib",
@@ -68,6 +69,12 @@
                 "title": "Open Scientific Data Viewer (Folder)",
                 "category": "Scientific Data Viewer",
                 "description": "Opens the Scientific Data Viewer for a folder (eg for Zarr)"
+            },
+            {
+                "command": "scientificDataViewer.openAsKerchunk",
+                "title": "Open as Kerchunk / virtual Zarr",
+                "category": "Scientific Data Viewer",
+                "description": "Experimental: open a Kerchunk JSON or Parquet reference file as virtual Zarr (does not steal ordinary JSON editors)"
             },
             {
                 "command": "scientificDataViewer.refreshPythonEnvironment",
@@ -144,6 +151,12 @@
                     "command": "scientificDataViewer.openViewerFolder",
                     "group": "navigation",
                     "description": "Opens a folder in the Scientific Data Viewer. Shown on every folder because Zarr stores are identified by their metadata rather than by name, which a menu 'when' clause cannot inspect"
+                },
+                {
+                    "when": "resourceExtname == .json || resourceExtname == .parquet || resourceExtname == .parq",
+                    "command": "scientificDataViewer.openAsKerchunk",
+                    "group": "navigation",
+                    "description": "Experimental: open Kerchunk JSON/Parquet references as virtual Zarr. Ordinary JSON is not a custom editor."
                 }
             ],
             "commandPalette": [
@@ -157,6 +170,10 @@
                 },
                 {
                     "command": "scientificDataViewer.openViewerFolder",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openAsKerchunk",
                     "when": "true"
                 },
                 {
@@ -185,7 +202,7 @@
                 },
                 {
                     "command": "scientificDataViewer.exportWebview",
-                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor'"
+                    "when": "activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor' || activeCustomEditorId == 'kerchunkEditor'"
                 },
                 {
                     "command": "scientificDataViewer.openViewerMultiple",
@@ -315,6 +332,21 @@
                     "light": "./media/icon_viridis_bold_monochromatic.svg",
                     "dark": "./media/icon_viridis_bold_monochromatic.svg"
                 }
+            },
+            {
+                "id": "kerchunk",
+                "extensions": [
+                    ".kerchunk.json",
+                    ".ref.json"
+                ],
+                "aliases": [
+                    "Kerchunk",
+                    "virtual Zarr"
+                ],
+                "icon": {
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                }
             }
         ],
         "views": {
@@ -325,7 +357,7 @@
                     "type": "tree",
                     "accessibilityHelpContent": "Scientific Data Viewer - Data Structure for the currently opened file",
                     "visibility": "visible",
-                    "when": "config.scientificDataViewer.outlineEnabled && (activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor')"
+                    "when": "config.scientificDataViewer.outlineEnabled && (activeWebviewPanelId == 'scientificDataViewer.defaultWebviewPanel' || activeCustomEditorId == 'netcdfEditor' || activeCustomEditorId == 'cdfEditor' || activeCustomEditorId == 'hdf5Editor' || activeCustomEditorId == 'zarrEditor' || activeCustomEditorId == 'gribEditor' || activeCustomEditorId == 'geotiffEditor' || activeCustomEditorId == 'jp2Editor' || activeCustomEditorId == 'kerchunkEditor')"
                 }
             ]
         },
@@ -441,6 +473,22 @@
                     },
                     {
                         "filenamePattern": "*.jpeg2000"
+                    }
+                ],
+                "icon": {
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                }
+            },
+            {
+                "viewType": "kerchunkEditor",
+                "displayName": "Kerchunk (virtual Zarr) Data Viewer",
+                "selector": [
+                    {
+                        "filenamePattern": "*.kerchunk.json"
+                    },
+                    {
+                        "filenamePattern": "*.ref.json"
                     }
                 ],
                 "icon": {

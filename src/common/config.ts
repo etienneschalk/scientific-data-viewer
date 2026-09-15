@@ -9,6 +9,7 @@ export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';
 export const CMD_OPEN_VIEWER_MULTIPLE =
     'scientificDataViewer.openViewerMultiple';
 export const CMD_OPEN_VIEWER_FOLDER = 'scientificDataViewer.openViewerFolder';
+export const CMD_OPEN_AS_KERCHUNK = 'scientificDataViewer.openAsKerchunk';
 export const CMD_REFRESH_PYTHON_ENVIRONMENT =
     'scientificDataViewer.refreshPythonEnvironment';
 export const CMD_SHOW_LOGS = 'scientificDataViewer.showLogs';
@@ -271,6 +272,23 @@ export function getShowInheritedCoordinates(): boolean {
         SHOW_INHERITED_COORDINATES,
         DEFAULT_SHOW_INHERITED_COORDINATES,
     );
+}
+
+/** Query flag used when a generic JSON/Parquet file is opened as Kerchunk. */
+export const KERCHUNK_OPEN_QUERY = 'openAs=kerchunk';
+
+export function uriRequestsKerchunkOpen(uri: vscode.Uri): boolean {
+    return new URLSearchParams(uri.query).get('openAs') === 'kerchunk';
+}
+
+export function withKerchunkOpenQuery(uri: vscode.Uri): vscode.Uri {
+    if (uriRequestsKerchunkOpen(uri)) {
+        return uri;
+    }
+    const query = uri.query
+        ? `${uri.query}&${KERCHUNK_OPEN_QUERY}`
+        : KERCHUNK_OPEN_QUERY;
+    return uri.with({ query });
 }
 
 /**

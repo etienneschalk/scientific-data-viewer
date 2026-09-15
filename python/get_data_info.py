@@ -203,6 +203,7 @@ SupportedExtensionType = Literal[
     ".geotiff",
     ".jp2",
     ".jpeg2000",
+    ".kerchunk",
 ]
 EngineType = Literal[
     "netcdf4",
@@ -213,6 +214,7 @@ EngineType = Literal[
     "cfgrib",
     "rasterio",
     "cdflib",
+    "kerchunk",
 ]
 # Format to engine mapping based on xarray documentation
 FORMAT_ENGINE_MAP: dict[SupportedExtensionType, list[EngineType]] = {
@@ -238,6 +240,10 @@ FORMAT_ENGINE_MAP: dict[SupportedExtensionType, list[EngineType]] = {
     #
     ".jp2": ["rasterio"],
     ".jpeg2000": ["rasterio"],
+    #
+    # Synthetic extension: never from a lone `.json` suffix. Set when the
+    # filename is `*.kerchunk.json` / `*.ref.json`, or `--open-as-kerchunk`.
+    ".kerchunk": ["kerchunk"],
 }
 
 # User-configurable try-order for classic NetCDF suffixes only (not NASA .cdf).
@@ -279,6 +285,7 @@ FORMAT_DISPLAY_NAMES: dict[SupportedExtensionType, str] = {
     #
     ".jp2": "JPEG-2000",
     ".jpeg2000": "JPEG-2000",
+    ".kerchunk": "Kerchunk (virtual Zarr)",
 }
 
 # Required packages for each engine
@@ -291,6 +298,7 @@ ENGINE_PACKAGES: dict[EngineType, str] = {
     "cfgrib": "cfgrib",
     "rasterio": "rioxarray",
     "cdflib": "cdflib",
+    "kerchunk": "kerchunk",
 }
 # Minimum major version required per package, when the installed package can be
 # importable but too old to work with the xarray version we target.
@@ -347,6 +355,9 @@ DEFAULT_XR_OPEN_KWARGS: dict[EngineType, dict[str, Any]] = {
     },
     "rasterio": {},
     "cdflib": {},  # cdflib uses its own API, not xr.open_dataset
+    "kerchunk": {
+        "decode_cf": True,
+    },
 }
 # Default backend kwargs for each engine
 DEFAULT_ENGINE_BACKEND_KWARGS: dict[EngineType, dict[str, Any] | None] = {
@@ -358,6 +369,7 @@ DEFAULT_ENGINE_BACKEND_KWARGS: dict[EngineType, dict[str, Any] | None] = {
     "cfgrib": {"indexpath": ""},  # Avoid intempestive .idx file creation
     "rasterio": {"mask_and_scale": False},
     "cdflib": None,  # cdflib uses its own API, not xr.open_dataset
+    "kerchunk": None,
 }
 
 
@@ -368,6 +380,7 @@ DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = dict.fromkeys(
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
 DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cdflib"] = True  # cdflib uses its own API
+DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["kerchunk"] = True  # no DataTree backend
 
 
 @dataclass(frozen=True)
@@ -776,6 +789,7 @@ def get_missing_packages(file_extension: str) -> list[str]:
 def detect_file_format(
     file_path: Path,
     netcdf_engine_order: Sequence[str] | str | None = None,
+    open_as_kerchunk: bool = False,
 ) -> FileFormatInfo:
     """Detect file format and return format information.
 
@@ -785,6 +799,8 @@ def detect_file_format(
         Path to the data file
     netcdf_engine_order : sequence of str or str, optional
         Preferred NetCDF engine order for ``.nc`` / ``.nc4`` / ``.netcdf``.
+    open_as_kerchunk : bool
+        Treat JSON/Parquet as Kerchunk virtual Zarr even without a special name.
 
     Returns
     -------
@@ -809,6 +825,22 @@ def detect_file_format(
             + (f" at prefix {prefix!r}" if prefix else " (archive root)")
         )
         ext = ".zarr"
+    elif open_as_kerchunk or looks_like_kerchunk_filename(file_path):
+        if looks_like_kerchunk_parquet(file_path):
+            ext = ".kerchunk"
+            logger.info(f"Opening Parquet as Kerchunk references: {file_path}")
+        else:
+            invalid = kerchunk_json_error(file_path)
+            if invalid is not None:
+                logger.info(invalid)
+                return FileFormatInfo(
+                    extension=".kerchunk",
+                    display_name="Kerchunk (virtual Zarr)",
+                    available_engines=[],
+                    missing_packages=[],
+                )
+            ext = ".kerchunk"
+            logger.info(f"Detected Kerchunk reference JSON: {file_path}")
     elif ext not in FORMAT_ENGINE_MAP and is_zarr_store(file_path):
         logger.info(f"Detected Zarr store without a .zarr suffix: {file_path}")
         ext = ".zarr"
@@ -854,6 +886,47 @@ def is_zarr_store(path: Path) -> bool:
         return False
 
     return any((path / marker).exists() for marker in ZARR_STORE_MARKERS)
+
+
+KERCHUNK_JSON_NAME_SUFFIXES: tuple[str, ...] = (
+    ".kerchunk.json",
+    ".ref.json",
+)
+
+
+def looks_like_kerchunk_filename(path: Path) -> bool:
+    """True for names that opt in to Kerchunk without a context-menu command.
+
+    Ordinary ``.json`` files are not treated as scientific data. Only
+    ``*.kerchunk.json`` and ``*.ref.json`` auto-open.
+    """
+    name = path.name.lower()
+    return any(name.endswith(suffix) for suffix in KERCHUNK_JSON_NAME_SUFFIXES)
+
+
+def looks_like_kerchunk_parquet(path: Path) -> bool:
+    """True when the path looks like a Parquet Kerchunk reference file."""
+    name = path.name.lower()
+    return name.endswith(".parquet") or name.endswith(".parq")
+
+
+def kerchunk_json_error(path: Path) -> str | None:
+    """Return an error if ``path`` is not Kerchunk JSON with a ``refs`` object.
+
+    ``None`` means the document looks like a reference store and may be opened.
+    """
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return f"This file is not valid JSON Kerchunk references: {exc}"
+    if not isinstance(payload, dict) or "refs" not in payload:
+        return (
+            "This JSON file is not a Kerchunk / virtual Zarr reference "
+            "(expected a mapping with a 'refs' key)."
+        )
+    if not isinstance(payload["refs"], dict):
+        return "Kerchunk 'refs' must be a JSON object."
+    return None
 
 
 def looks_like_zip(path: Path) -> bool:
@@ -1106,6 +1179,9 @@ def open_datatree_with_fallback(
             open_extra: dict[str, Any] = {}
             if engine == "zarr":
                 open_location, open_extra = zarr_open_location(file_path)
+            elif engine == "kerchunk":
+                # kerchunk's xarray backend expects a string path, not pathlib.
+                open_location = str(file_path)
 
             if can_use_datatree(engine):
                 xdt_or_xds, decode_cf_degraded = _open_with_decode_cf_fallback(
@@ -2052,6 +2128,7 @@ def create_plot(
     add_legend: bool = False,
     netcdf_engine_order: Sequence[str] | str | None = None,
     show_inherited_coordinates: bool = True,
+    open_as_kerchunk: bool = False,
 ) -> CreatePlotResult | CreatePlotError:
     """Create a plot from a data file variable.
 
@@ -2096,7 +2173,9 @@ def create_plot(
 
         # Detect file format and available engines
         file_format_info = detect_file_format(
-            file_path, netcdf_engine_order=netcdf_engine_order
+            file_path,
+            netcdf_engine_order=netcdf_engine_order,
+            open_as_kerchunk=open_as_kerchunk,
         )
 
         if not file_format_info.is_supported:
@@ -2714,6 +2793,7 @@ def get_file_info(
     show_xarray_encoding_attributes: bool = True,
     netcdf_engine_order: Sequence[str] | str | None = None,
     show_inherited_coordinates: bool = True,
+    open_as_kerchunk: bool = False,
 ) -> FileInfoResult | FileInfoError:
     """Extract comprehensive information from a data file.
 
@@ -2740,6 +2820,8 @@ def get_file_info(
     show_inherited_coordinates : bool
         When True, child DataTree groups include parent coordinates via
         ``to_dataset(inherit='all_coords')``.
+    open_as_kerchunk : bool
+        Open JSON/Parquet as Kerchunk virtual Zarr (experimental).
 
     Returns
     -------
@@ -2754,7 +2836,9 @@ def get_file_info(
 
     # Detect file format and available engines
     file_format_info = detect_file_format(
-        file_path, netcdf_engine_order=netcdf_engine_order
+        file_path,
+        netcdf_engine_order=netcdf_engine_order,
+        open_as_kerchunk=open_as_kerchunk,
     )
 
     try:
@@ -2774,6 +2858,26 @@ def get_file_info(
                 suggestion=(
                     "The archive must contain a Zarr store at its root or in a "
                     "subdirectory. Ordinary ZIP files cannot be opened as scientific data."
+                ),
+                xarray_show_versions=versions_text,
+            )
+            return error
+        if (
+            file_format_info.extension == ".kerchunk"
+            and not file_format_info.missing_packages
+        ):
+            error = FileInfoError(
+                error=(
+                    "This file is not a Kerchunk / virtual Zarr reference "
+                    "(no 'refs' mapping)."
+                ),
+                error_type="ValueError",
+                format_info=file_format_info,
+                suggestion=(
+                    "Use a Kerchunk JSON file (typically named *.kerchunk.json "
+                    "or *.ref.json) or right-click → Open as Kerchunk / virtual Zarr. "
+                    "Ordinary JSON is not opened automatically. Requires the "
+                    "optional kerchunk package."
                 ),
                 xarray_show_versions=versions_text,
             )
@@ -3413,6 +3517,15 @@ Examples:
         ),
     )
 
+    parser.add_argument(
+        "--open-as-kerchunk",
+        action="store_true",
+        help=(
+            "Open the path as Kerchunk / virtual Zarr references (JSON or Parquet). "
+            "Do not use for ordinary JSON."
+        ),
+    )
+
     args = parser.parse_args()
 
     # Validate arguments based on mode
@@ -3439,6 +3552,7 @@ Examples:
             show_xarray_encoding_attributes=not args.no_show_xarray_encoding_attributes,
             netcdf_engine_order=args.netcdf_engine_order,
             show_inherited_coordinates=not args.no_show_inherited_coordinates,
+            open_as_kerchunk=args.open_as_kerchunk,
         )
         ok = isinstance(result, FileInfoResult)
 
@@ -3492,6 +3606,7 @@ Examples:
             add_legend=args.add_legend,
             netcdf_engine_order=args.netcdf_engine_order,
             show_inherited_coordinates=not args.no_show_inherited_coordinates,
+            open_as_kerchunk=args.open_as_kerchunk,
         )
         ok = isinstance(result, CreatePlotResult)
 

@@ -36,6 +36,7 @@ Available on:
 | GRIB       | .grib, .grib2, .grb, .grb2 |
 | GeoTIFF    | .tif, .tiff, .geotiff      |
 | JPEG-2000  | .jp2, .jpeg2000            |
+| Kerchunk   | .kerchunk.json, .ref.json  |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
@@ -52,6 +53,7 @@ Available on:
 - **Easy Settings Access**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> ➜ _Scientific Data Viewer: Show Settings_
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
+- **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
 
 ## 📸 Screenshot Gallery
 
@@ -197,6 +199,7 @@ The extension supports multiple ways to configure your Python environment:
    - Select "Open Scientific Data Viewer" for single file or folder
    - Select "Open Scientific Data Viewer for Selection" to open multiple selected files or folders
    - Command "View: Split Editor" is NOT supported
+   - **Kerchunk / virtual Zarr** (:warning: experimental): files named `*.kerchunk.json` or `*.ref.json` open in a dedicated editor. For other `.json` / `.parquet` / `.parq` files, use **Open as Kerchunk / virtual Zarr**. Ordinary JSON is not hijacked. Requires the optional `kerchunk` package (`pip install kerchunk`). Not installed in the extension uv environment by default.
 
 4. **From command palette**:
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
@@ -284,18 +287,19 @@ The extension allows you to export complete data viewer content as self-containe
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command                                                        | Description                                                                     |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
-| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                     |
-| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                     |
-| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                          |
-| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                  |
-| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
-| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
-| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
-| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                     |
-| `Scientific Data Viewer: Run Healthcheck`                      | Run a health check on the Python environment and required packages              |
+| Command                                                        | Description                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info)                                     |
+| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                                                         |
+| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                                                         |
+| `Scientific Data Viewer: Open as Kerchunk / virtual Zarr`      | Experimental: open a Kerchunk JSON or Parquet reference file as virtual Zarr (does not steal ordinary JSON editors) |
+| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                                                              |
+| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                                                      |
+| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                                                        |
+| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                                                           |
+| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report                                            |
+| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                                                         |
+| `Scientific Data Viewer: Run Healthcheck`                      | Run a health check on the Python environment and required packages                                                  |
 
 ### 🖱️ Context Menu Commands
 
@@ -304,6 +308,7 @@ Right-click on supported file types in the Explorer to access:
 - **Scientific Data Viewer: Open Scientific Data Viewer** - Opens the file in the Scientific Data Viewer
 - **Scientific Data Viewer: Open Scientific Data Viewer for Selection** - Opens all selected supported files or folders in the Scientific Data Viewer
 - **Scientific Data Viewer: Open Scientific Data Viewer (Folder)** - Opens a folder in the Scientific Data Viewer. Shown on every folder because Zarr stores are identified by their metadata rather than by name, which a menu 'when' clause cannot inspect
+- **Scientific Data Viewer: Open as Kerchunk / virtual Zarr** - Experimental: open Kerchunk JSON/Parquet references as virtual Zarr. Ordinary JSON is not a custom editor.
 
 ## ⚙️ Settings
 

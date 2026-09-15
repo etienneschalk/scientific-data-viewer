@@ -26,6 +26,7 @@ import {
     CMD_OPEN_VIEWER,
     CMD_OPEN_VIEWER_MULTIPLE,
     CMD_OPEN_VIEWER_FOLDER,
+    CMD_OPEN_AS_KERCHUNK,
     CMD_REFRESH_PYTHON_ENVIRONMENT,
     CMD_SHOW_LOGS,
     CMD_SHOW_SETTINGS,
@@ -45,6 +46,7 @@ import {
     getUseExtensionOwnEnvironmentConfigFullKey,
     getOutlineEnabled,
     updateDevMode,
+    withKerchunkOpenQuery,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
 import { HealthcheckManager } from './common/HealthcheckManager';
@@ -147,6 +149,15 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER_FOLDER,
             commandHandlerOpenViewerFolder(
+                iconPath,
+                webviewOptions,
+                webviewPanelOptions,
+                pythonManager,
+            ),
+        ),
+        vscode.commands.registerCommand(
+            CMD_OPEN_AS_KERCHUNK,
+            commandHandlerOpenAsKerchunk(
                 iconPath,
                 webviewOptions,
                 webviewPanelOptions,
@@ -628,6 +639,44 @@ function commandHandlerScrollToHeader(
     };
 }
 
+function commandHandlerOpenAsKerchunk(
+    iconPath: vscode.Uri,
+    webviewOptions: vscode.WebviewOptions,
+    webviewPanelOptions: vscode.WebviewPanelOptions,
+    pythonManager: PythonManager,
+): (uri?: vscode.Uri) => void {
+    return async (uri?: vscode.Uri) => {
+        Logger.info('🎮 👁️ 🔗 Command: Open as Kerchunk / virtual Zarr...');
+        if (uri) {
+            await waitThenCreateOrRevealPanel(
+                withKerchunkOpenQuery(uri),
+                iconPath,
+                webviewOptions,
+                webviewPanelOptions,
+                pythonManager,
+            );
+            return;
+        }
+        const fileUriList = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: true,
+            filters: {
+                'Kerchunk references': ['json', 'parquet', 'parq'],
+            },
+        });
+        for (const selected of fileUriList ?? []) {
+            await waitThenCreateOrRevealPanel(
+                withKerchunkOpenQuery(selected),
+                iconPath,
+                webviewOptions,
+                webviewPanelOptions,
+                pythonManager,
+            );
+        }
+    };
+}
+
 function commandHandlerOpenViewerFolder(
     iconPath: vscode.Uri,
     webviewOptions: vscode.WebviewOptions,
@@ -792,6 +841,7 @@ function registerCustomEditorProviders(
         'gribEditor',
         'geotiffEditor',
         'jp2Editor',
+        'kerchunkEditor',
     ].map((viewType) =>
         vscode.window.registerCustomEditorProvider(
             viewType,

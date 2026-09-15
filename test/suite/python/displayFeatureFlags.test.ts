@@ -85,5 +85,15 @@ suite('Display feature flags CLI args', () => {
         });
 
         assert.ok(args.includes('--convert-bands-to-variables'));
+        assert.ok(!args.includes('--open-as-kerchunk'));
+    });
+
+    test('buildGetDataInfoCliArgs adds --open-as-kerchunk when requested', () => {
+        const args = buildGetDataInfoCliArgs('/data/refs.json', {
+            ...baseOptions,
+            openAsKerchunk: true,
+        });
+
+        assert.ok(args.includes('--open-as-kerchunk'));
     });
 });

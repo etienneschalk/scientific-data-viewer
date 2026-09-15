@@ -10,6 +10,7 @@ import {
     getShowXarrayEncodingAttributes,
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
+    uriRequestsKerchunkOpen,
 } from '../common/config';
 import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
@@ -22,6 +23,7 @@ export interface GetDataInfoCliOptions {
     showXarrayEncodingAttributes: boolean;
     netcdfEngineOrder: string[];
     showInheritedCoordinates: boolean;
+    openAsKerchunk?: boolean;
 }
 
 /** Build argv for `get_data_info.py info` (exported for unit tests). */
@@ -47,6 +49,9 @@ export function buildGetDataInfoCliArgs(
     args.push('--netcdf-engine-order', options.netcdfEngineOrder.join(','));
     if (!options.showInheritedCoordinates) {
         args.push('--no-show-inherited-coordinates');
+    }
+    if (options.openAsKerchunk) {
+        args.push('--open-as-kerchunk');
     }
     return args;
 }
@@ -100,6 +105,7 @@ export class DataProcessor {
                 showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
                 netcdfEngineOrder: getNetcdfEngineOrder(),
                 showInheritedCoordinates: getShowInheritedCoordinates(),
+                openAsKerchunk: uriRequestsKerchunkOpen(uri),
             });
 
             timer.mark('python-args-ready');
@@ -253,6 +259,9 @@ export class DataProcessor {
         args.push('--netcdf-engine-order', getNetcdfEngineOrder().join(','));
         if (!getShowInheritedCoordinates()) {
             args.push('--no-show-inherited-coordinates');
+        }
+        if (uriRequestsKerchunkOpen(uri)) {
+            args.push('--open-as-kerchunk');
         }
 
         try {
