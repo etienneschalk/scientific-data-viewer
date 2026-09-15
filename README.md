@@ -37,6 +37,7 @@ Available on:
 | GeoTIFF    | .tif, .tiff, .geotiff      |
 | JPEG-2000  | .jp2, .jpeg2000            |
 | Kerchunk   | .kerchunk.json, .ref.json  |
+| Zarr (ZIP) | .zip, .zarr.zip            |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
@@ -53,6 +54,7 @@ Available on:
 - **Easy Settings Access**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> ➜ _Scientific Data Viewer: Show Settings_
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
+- **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and `.zip` / `.zarr.zip` archives; requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
 
 ## 📸 Screenshot Gallery
@@ -113,7 +115,7 @@ Available on:
 3. **Install optional Python dependencies**: (prompted by extension)
 
    ```bash
-   pip install netCDF4 h5py rioxarray cfgrib zarr cdflib
+   pip install netCDF4 h5py rioxarray cfgrib zarr>=3 h5netcdf>=1.8 cdflib
    ```
 
 4. **Open a supported file 🎉**
@@ -136,10 +138,11 @@ The extension will prompt you to install the following packages if they are not 
    - h5py
    - rioxarray
    - cfgrib
-   - zarr
+   - zarr>=3
+   - h5netcdf>=1.8
    - cdflib (for NASA CDF files)
 
-Note: Former Python versions may work, but it is not guaranteed nor supported.
+Note: Former Python versions may work, but it is not guaranteed nor supported. **xarray 2026.4+ requires zarr-python ≥ 3** — upgrade with `pip install "zarr>=3"` if you still have zarr 2.x.
 
 ---
 
@@ -435,12 +438,15 @@ The extension includes specific settings for virtual environment management:
    - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/). Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`. If uv is not installed, the extension will fall back to using the Python extension's interpreter.
 
 4. **Missing packages**:
-   - Install required packages: `pip install xarray matplotlib`. Install per-format packages: `pip install netCDF4 zarr h5py numpy rioxarray`. Or let the extension install them automatically (prompt when opening a file).
+   - Install required packages: `pip install xarray matplotlib`. Install per-format packages: `pip install netCDF4 "zarr>=3" h5netcdf h5py numpy rioxarray`. Or let the extension install them automatically (prompt when opening a file). If xarray is 2026.4+ but zarr is still 2.x, upgrade with `pip install "zarr>=3"`.
 
-5. **Large files not loading**:
+5. **zarr 2.x reported as missing or too old**:
+   - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, run **Manage Extension Virtual Environment → Update** after upgrading the extension.
+
+6. **Large files not loading**:
    - Increase the `maxFileSize` setting. Consider using data slicing for very large datasets.
 
-6. **Permission errors**:
+7. **Permission errors**:
    - Ensure the extension has permission to read your data files. Check file permissions and VSCode workspace settings.
 
 ### 💬 Getting Help

@@ -1,5 +1,7 @@
 # v0.13 — implementation phases
 
+**Status:** Shipped as **v0.13.0** (2026-09-15). See [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) and [`docs/PR_SUMMARY_0.13.0.md`](../PR_SUMMARY_0.13.0.md).
+
 Work through phases in order. Later phases may be cut from the release; **Phase 0 + Phase 1** are the intended v0.13 core. Phase 2 items are individually optional (see [TO_IMPLEMENT.md](./TO_IMPLEMENT.md) P2 and [OUT_OF_SCOPE.md](./OUT_OF_SCOPE.md)).
 
 ---
@@ -8,11 +10,11 @@ Work through phases in order. Later phases may be cut from the release; **Phase 
 
 **Must ship with any v0.13**, even if no new formats land.
 
-| ID | Work | Doc |
-| -- | ---- | --- |
-| R1 | Strip `.safe` from menus, keywords, Python Literal, sample generator, webview comment | [TO_REMOVE.md](./TO_REMOVE.md) |
-| R5 | Grep alignment of extension lists | TO_REMOVE |
-| R2/R3 | Docs: zarr 2 package unsupported; no timedelta-units decode | TO_REMOVE |
+| ID    | Work                                                                                  | Doc                            |
+| ----- | ------------------------------------------------------------------------------------- | ------------------------------ |
+| R1    | Strip `.safe` from menus, keywords, Python Literal, sample generator, webview comment | [TO_REMOVE.md](./TO_REMOVE.md) |
+| R5    | Grep alignment of extension lists                                                     | TO_REMOVE                      |
+| R2/R3 | Docs: zarr 2 package unsupported; no timedelta-units decode                           | TO_REMOVE                      |
 
 **Exit.** Marketplace and context menus match engines that actually run.
 
@@ -20,13 +22,13 @@ Work through phases in order. Later phases may be cut from the release; **Phase 
 
 ## Phase 1 — Xarray 2026 / Zarr 3 (implement P0)
 
-| ID | Work | Depends on |
-| -- | ---- | ---------- |
-| P0.1 | Pin `zarr>=3` (and xarray floor) in uv env + user-facing install strings | — |
-| P0.2 | Detect Zarr stores without `.zarr` suffix; folder + `zarr.json` | P0.1 |
-| P0.4 | Surface v3 encoding (shards, codecs, fill_value, format) | P0.1; sample v3 store |
-| P0.3 | ZipStore / `.zarr.zip` | P0.1, detection helpers from P0.2 |
-| P0.5 | Plot `col_wrap="auto"` | Independent; can parallelize |
+| ID   | Work                                                                     | Depends on                        |
+| ---- | ------------------------------------------------------------------------ | --------------------------------- |
+| P0.1 | Pin `zarr>=3` (and xarray floor) in uv env + user-facing install strings | —                                 |
+| P0.2 | Detect Zarr stores without `.zarr` suffix; folder + `zarr.json`          | P0.1                              |
+| P0.4 | Surface v3 encoding (shards, codecs, fill_value, format)                 | P0.1; sample v3 store             |
+| P0.3 | ZipStore / `.zarr.zip`                                                   | P0.1, detection helpers from P0.2 |
+| P0.5 | Plot `col_wrap="auto"`                                                   | Independent; can parallelize      |
 
 **Suggested samples** (generate in `python/create_sample_data.py`, do not commit huge binaries):
 
@@ -41,11 +43,11 @@ Work through phases in order. Later phases may be cut from the release; **Phase 
 
 ## Phase 2 — NetCDF / DataTree quality (P1.1–P1.3)
 
-| ID | Work |
-| -- | ---- |
-| P1.1 | Setting `netcdfEngineOrder` |
+| ID   | Work                                             |
+| ---- | ------------------------------------------------ |
+| P1.1 | Setting `netcdfEngineOrder`                      |
 | P1.2 | `filters()` in encoding tables (`h5netcdf>=1.8`) |
-| P1.3 | Inherited DataTree coordinates |
+| P1.3 | Inherited DataTree coordinates                   |
 
 P1.4 (pyfive) only if P1.2 is done and an extra optional dependency is acceptable.
 
@@ -103,15 +105,21 @@ User-managed interpreters: keep prompting for missing engines; add a **zarr majo
 
 ## Testing checklist (per phase)
 
-- [ ] `python/` unit tests for open/flatten/encoding
-- [ ] Plot non-regression when plot CLI changes (P0.5)
-- [ ] `test/suite/extension.test.ts` contributions (menus, editors)
+- [x] `python/` unit tests for open/flatten/encoding
+- [x] Plot non-regression when plot CLI changes (P0.5)
+- [x] `test/suite/extension.test.ts` contributions (menus, editors)
 - [ ] Manual: dark/light webview on a v3 store (encoding table, groups)
 - [ ] Manual: zip that is not Zarr → error message
-- [ ] README / `docs/documentation.json` regenerated if format table changes
+- [x] README / `docs/documentation.json` regenerated if format table changes
 
 ---
 
-## Release notes later
+## Release notes (shipped)
 
-When v0.13 is cut, write `docs/RELEASE_NOTES_0.13.0.md` from **what actually merged**, not from this folder’s full wishlist. Point the changelog at Phase 0+1 for sure, and list Phase 2–4 only if present.
+- [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) — what merged + manual verification guide
+- [`docs/PR_SUMMARY_0.13.0.md`](../PR_SUMMARY_0.13.0.md) — merge request description
+- [`CHANGELOG.md`](../../CHANGELOG.md#0130---2026-09-15) — detailed [0.13.0] entry
+
+**Shipped:** Phase 0; P0.1–P0.5; P1.1–P1.3; P1.5 (Kerchunk); P2.3 (COG); P2.7 (`facetgridFigsize`); v0.13 sample data generators.
+
+**Deferred:** P1.4 (pyfive), P2.1 (OME-Zarr), P2.2 (SAFE), P2.4 (HDF4), and items in [OUT_OF_SCOPE.md](./OUT_OF_SCOPE.md).

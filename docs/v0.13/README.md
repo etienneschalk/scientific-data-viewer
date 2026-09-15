@@ -15,17 +15,18 @@ These files are **specifications**, not release notes. They describe what to imp
 
 Stay aligned with the 2026 xarray/Zarr stack **without** turning the extension into a general remote-data or bioinformatics IDE. Prefer work that reuses `open_datatree` / `open_dataset` in `python/get_data_info.py` and the existing webview (groups, encoding attrs, experimental plots).
 
-## Current format surface (v0.12.1)
+## Current format surface (v0.13.0)
 
-| Format    | Extensions                         | Engine(s)                        |
-| --------- | ---------------------------------- | -------------------------------- |
-| NetCDF    | `.nc`, `.netcdf`, `.nc4`           | `netcdf4`, `h5netcdf`, `scipy`   |
-| NASA CDF  | `.cdf`                             | `cdflib` (not `xr.open_dataset`) |
-| HDF5      | `.h5`, `.hdf5`                     | `h5netcdf`, `h5py`, `netcdf4`    |
-| Zarr      | `.zarr` folders                    | `zarr`                           |
-| GRIB      | `.grib`, `.grib2`, `.grb`, `.grb2` | `cfgrib` (`open_dataset` only)   |
-| GeoTIFF   | `.tif`, `.tiff`, `.geotiff`        | `rasterio` / rioxarray           |
-| JPEG-2000 | `.jp2`, `.jpeg2000`                | `rasterio` / rioxarray           |
+| Format    | Extensions / paths                                                       | Engine(s)                                                   |
+| --------- | ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| NetCDF    | `.nc`, `.netcdf`, `.nc4`                                                 | configurable order (default `netcdf4`, `h5netcdf`, `scipy`) |
+| NASA CDF  | `.cdf`                                                                   | `cdflib` (not `xr.open_dataset`)                            |
+| HDF5      | `.h5`, `.hdf5`                                                           | `h5netcdf`, `h5py`, `netcdf4`                               |
+| Zarr      | `.zarr` folders; dirs with `zarr.json` / `.zgroup`; `.zip` / `.zarr.zip` | `zarr` (≥ 3)                                                |
+| Kerchunk  | `*.kerchunk.json`, `*.ref.json` (+ command on JSON/Parquet)              | `kerchunk` (opt-in)                                         |
+| GRIB      | `.grib`, `.grib2`, `.grb`, `.grb2`                                       | `cfgrib` (`open_dataset` only)                              |
+| GeoTIFF   | `.tif`, `.tiff`, `.geotiff` (COG labelled when detected)                 | `rasterio` / rioxarray                                      |
+| JPEG-2000 | `.jp2`, `.jpeg2000`                                                      | `rasterio` / rioxarray                                      |
 
 Opening prefers `xr.open_datatree` except for GRIB, rasters, and CDF. Encoding metadata is already shown as `__xarray_encoding.*` when `scientificDataViewer.showXarrayEncodingAttributes` is on.
 

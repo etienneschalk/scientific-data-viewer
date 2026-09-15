@@ -316,7 +316,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                            |
 | **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus                                                                                                                              |
-| **Docs**      | `docs/v0.13/` planning; README regenerated; this release note                                                                                                                        |
+| **Docs**      | `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                           |
+| **Samples**   | `python/create_sample_data.py` generators (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref) — run `cd python && python create_sample_data.py`             |
 | **Tests**     | `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |
 
 ---
@@ -324,5 +325,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 ## Links
 
 - [Changelog](../CHANGELOG.md#0130---2026-09-15)
+- [Pull request summary / MR description](./PR_SUMMARY_0.13.0.md)
 - [v0.13 planning folder](./v0.13/README.md)
 - [Previous release: v0.12.1](./RELEASE_NOTES_0.12.1.md)

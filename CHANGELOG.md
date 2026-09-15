@@ -34,6 +34,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/get_data_info.py`, `python/test_facetgrid_figsize.py`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `package.json`, `docs/documentation.json`
 - **v0.13 planning documentation**: `docs/v0.13/` (README, TO_IMPLEMENT, TO_REMOVE, OUT_OF_SCOPE, PHASES).
   - **Release notes**: `docs/RELEASE_NOTES_0.13.0.md`
+  - **Pull request summary**: `docs/PR_SUMMARY_0.13.0.md`
 - **v0.13 sample data generators** in `python/create_sample_data.py`: unsuffixed Zarr v3 directory, sharded Zarr v3, Zarr v3 ZIP, gzip NetCDF (filters), COG GeoTIFF, Kerchunk reference JSON (`sample_data.kerchunk.json`).
 
 ### Changed
