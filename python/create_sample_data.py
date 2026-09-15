@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
 Script to create sample scientific data files for testing the VSCode extension.
-This script creates sample files for all supported formats: NetCDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000.
+
+Creates samples for NetCDF, HDF5, Zarr (v2/v3, unsuffixed dirs, ZIP), Kerchunk
+references, GRIB, GeoTIFF (including COG), and JPEG-2000.
 """
 
 import importlib.util
+import json
 import os
 import warnings
+import zipfile
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -2881,6 +2885,269 @@ def create_sample_zarr_inherited_coords():
     return output_file
 
 
+def create_sample_zarr_v3_plain_directory():
+    """Create a Zarr v3 store in a directory without a ``.zarr`` suffix (v0.13 P0.2)."""
+    output_dir = "sample_ocean_grid_v3"
+
+    if os.path.exists(output_dir):
+        print(
+            f"📦 Zarr v3 plain directory {output_dir}/ already exists. Skipping creation."
+        )
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_dir
+
+    print("🌊 Creating Zarr v3 store without .zarr suffix...")
+
+    if not _optional_pkg_available("zarr"):
+        print("  ❌ zarr not available, skipping plain-directory Zarr v3 sample.")
+        return None
+
+    x = np.arange(24, dtype="float32")
+    y = np.arange(16, dtype="float32")
+    temp = np.random.default_rng(42).normal(18, 2, (16, 24)).astype(np.float32)
+
+    ds = xr.Dataset(
+        {
+            "sea_surface_temperature": (
+                ["y", "x"],
+                temp,
+                {
+                    "long_name": "Sea surface temperature",
+                    "units": "degC",
+                    "description": "Small grid for unsuffixed Zarr v3 detection",
+                },
+            ),
+        },
+        coords={
+            "x": (["x"], x, {"long_name": "X index", "units": "1"}),
+            "y": (["y"], y, {"long_name": "Y index", "units": "1"}),
+        },
+    )
+    ds.attrs = {
+        "title": "Unsuffixed Zarr v3 sample",
+        "description": "Directory has zarr.json but no .zarr in the name (v0.13)",
+        "zarr_format": 3,
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    ds.to_zarr(output_dir, mode="w", zarr_format=3)
+    print(f"✅ Created {output_dir}/ (Zarr v3, no .zarr suffix)")
+    return output_dir
+
+
+def create_sample_zarr_v3_sharded():
+    """Create a small Zarr v3 store with sharded arrays (v0.13 P0.4 encoding metadata)."""
+    output_file = "sample_zarr_v3_sharded.zarr"
+
+    if os.path.exists(output_file):
+        print(f"📦 Zarr file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing directory first.")
+        return output_file
+
+    print("🧱 Creating Zarr v3 store with sharded encoding...")
+
+    if not _optional_pkg_available("zarr"):
+        print("  ❌ zarr not available, skipping sharded Zarr v3 sample.")
+        return None
+
+    data = np.random.default_rng(7).random((48, 48), dtype=np.float32)
+    ds = xr.Dataset(
+        {
+            "reflectance": (
+                ["y", "x"],
+                data,
+                {
+                    "long_name": "Surface reflectance",
+                    "units": "1",
+                },
+            ),
+        },
+        coords={
+            "x": np.arange(48, dtype="float32"),
+            "y": np.arange(48, dtype="float32"),
+        },
+    )
+    ds.attrs = {
+        "title": "Zarr v3 sharded sample",
+        "description": "Exercises shard/codec metadata in __xarray_encoding.* tables",
+        "zarr_format": 3,
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    ds.to_zarr(
+        output_file,
+        mode="w",
+        zarr_format=3,
+        encoding={
+            "reflectance": {
+                "chunks": (16, 16),
+                "shards": (32, 32),
+                "compressors": "auto",
+            },
+        },
+    )
+    print(f"✅ Created {output_file} with Zarr v3 sharding")
+    return output_file
+
+
+def create_sample_zarr_v3_zip_archive():
+    """Package a Zarr v3 store as a ZIP archive (v0.13 P0.3 ZipStore)."""
+    store_dir = "sample_zarr_v3_zip_inner.zarr"
+    output_zip = "sample_zarr_v3.zarr.zip"
+
+    if os.path.exists(output_zip):
+        print(f"📦 ZIP archive {output_zip} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_zip
+
+    print("🗜️ Creating Zarr v3 ZIP archive sample...")
+
+    if not _optional_pkg_available("zarr"):
+        print("  ❌ zarr not available, skipping Zarr ZIP sample.")
+        return None
+
+    if not os.path.exists(store_dir):
+        ds = xr.Dataset(
+            {"chlorophyll": (("x",), np.linspace(0.1, 2.0, 12, dtype=np.float32))},
+            coords={"x": np.arange(12)},
+        )
+        ds.attrs = {
+            "title": "Zarr v3 store packaged as ZIP",
+            "description": "Inner store for sample_zarr_v3.zarr.zip",
+            "zarr_format": 3,
+        }
+        ds.to_zarr(store_dir, mode="w", zarr_format=3)
+
+    from pathlib import Path
+
+    store_path = Path(store_dir)
+    with zipfile.ZipFile(output_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for file_path in sorted(store_path.rglob("*")):
+            if file_path.is_file():
+                archive.write(file_path, file_path.as_posix())
+
+    print(f"✅ Created {output_zip} (Zarr v3 inside ZIP, prefix {store_dir}/)")
+    return output_zip
+
+
+def create_sample_netcdf_gzip():
+    """Create a gzip-compressed NetCDF4 file (v0.13 P1.2 HDF5 filter metadata)."""
+    output_file = "sample_netcdf_gzip.nc"
+
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🗜️ Creating gzip-compressed NetCDF sample...")
+
+    ds = xr.Dataset(
+        {
+            "air_temperature": (
+                ["time", "station"],
+                np.random.default_rng(11).normal(15, 3, (24, 4)).astype(np.float32),
+                {"long_name": "Air temperature", "units": "degC"},
+            ),
+        },
+        coords={
+            "time": np.arange(24),
+            "station": np.arange(4),
+        },
+    )
+    ds.attrs = {
+        "title": "Gzip NetCDF sample",
+        "description": "Shows __xarray_encoding.filters.* in the viewer (v0.13)",
+        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    }
+
+    ds.to_netcdf(
+        output_file,
+        encoding={
+            "air_temperature": {"zlib": True, "complevel": 4, "shuffle": True},
+        },
+    )
+    print(f"✅ Created {output_file} with zlib compression")
+    return output_file
+
+
+def create_sample_geotiff_cog():
+    """Create a Cloud Optimized GeoTIFF (v0.13 P2.3 COG label)."""
+    output_file = "sample_data_cog.tif"
+
+    if os.path.exists(output_file):
+        print(f"🛰️ COG file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("☁️ Creating Cloud Optimized GeoTIFF (COG) sample...")
+
+    if not _optional_pkg_available("rasterio"):
+        print("  ❌ rasterio not available, skipping COG sample.")
+        return None
+
+    import rasterio
+    from rasterio.transform import from_origin
+
+    height, width = 64, 64
+    data = np.random.default_rng(99).integers(0, 255, (height, width), dtype=np.uint8)
+
+    with rasterio.open(
+        output_file,
+        "w",
+        driver="COG",
+        height=height,
+        width=width,
+        count=1,
+        dtype="uint8",
+        crs="EPSG:4326",
+        transform=from_origin(-1.0, 1.0, 2.0 / width, 2.0 / height),
+        compress="deflate",
+    ) as dst:
+        dst.write(data, 1)
+        dst.update_tags(title="Sample COG", description="v0.13 COG format label test")
+
+    print(f"✅ Created {output_file} (Cloud Optimized GeoTIFF)")
+    return output_file
+
+
+def create_sample_kerchunk_reference(
+    netcdf_path: str = "sample_data.nc",
+    output_file: str = "sample_data.kerchunk.json",
+):
+    """Create a Kerchunk JSON reference to a local NetCDF file (v0.13 P1.5)."""
+    if os.path.exists(output_file):
+        print(f"🔗 Kerchunk reference {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🔗 Creating Kerchunk / virtual Zarr reference JSON...")
+
+    if not _optional_pkg_available("kerchunk"):
+        print("  ❌ kerchunk not available, skipping Kerchunk reference sample.")
+        print("     Install with: pip install kerchunk")
+        return None
+
+    if not os.path.exists(netcdf_path):
+        print(
+            f"  ❌ Target NetCDF {netcdf_path} not found; create NetCDF samples first."
+        )
+        return None
+
+    from kerchunk.hdf import SingleHdf5ToZarr
+
+    refs = SingleHdf5ToZarr(
+        netcdf_path,
+        netcdf_path,
+        inline_threshold=4096,
+    ).translate()
+
+    with open(output_file, "w", encoding="utf-8") as handle:
+        json.dump(refs, handle)
+
+    print(f"✅ Created {output_file} → {netcdf_path}")
+    return output_file
+
+
 def create_sample_netcdf_multiple_groups():
     """Create a sample NetCDF file with multiple groups."""
     output_file = "sample_data_multiple_groups.nc"
@@ -5517,6 +5784,10 @@ def main(do_create_disposable_files: bool = False):
                 (compound_dtype_netcdf_file, "NetCDF (Compound Dtype)")
             )
 
+        gzip_netcdf_file = create_sample_netcdf_gzip()
+        if gzip_netcdf_file:
+            created_files.append((gzip_netcdf_file, "NetCDF (gzip / filters)"))
+
         print("\n📁 Creating HDF5 files...")
         hdf5_file = create_sample_hdf5()
         if hdf5_file:
@@ -5576,6 +5847,12 @@ def main(do_create_disposable_files: bool = False):
         else:
             skipped_files.append("Multi-band GeoTIFF (rioxarray not available)")
 
+        cog_geotiff_file = create_sample_geotiff_cog()
+        if cog_geotiff_file:
+            created_files.append((cog_geotiff_file, "Cloud Optimized GeoTIFF (COG)"))
+        else:
+            skipped_files.append("COG GeoTIFF (rasterio not available)")
+
         print("\n📁 Creating JPEG-2000 files...")
         jp2_file = create_sample_jp2()
         if jp2_file:
@@ -5627,6 +5904,31 @@ def main(do_create_disposable_files: bool = False):
             )
         else:
             skipped_files.append("Zarr deeply nested attrs (zarr not available)")
+
+        print("\n📁 Creating v0.13 Zarr / Kerchunk samples...")
+        zarr_v3_plain_dir = create_sample_zarr_v3_plain_directory()
+        if zarr_v3_plain_dir:
+            created_files.append((zarr_v3_plain_dir, "Zarr v3 (unsuffixed directory)"))
+        else:
+            skipped_files.append("Zarr v3 unsuffixed directory (zarr not available)")
+
+        zarr_v3_sharded_file = create_sample_zarr_v3_sharded()
+        if zarr_v3_sharded_file:
+            created_files.append((zarr_v3_sharded_file, "Zarr v3 (sharded)"))
+        else:
+            skipped_files.append("Zarr v3 sharded (zarr not available)")
+
+        zarr_v3_zip_file = create_sample_zarr_v3_zip_archive()
+        if zarr_v3_zip_file:
+            created_files.append((zarr_v3_zip_file, "Zarr v3 (ZIP archive)"))
+        else:
+            skipped_files.append("Zarr v3 ZIP (zarr not available)")
+
+        kerchunk_ref_file = create_sample_kerchunk_reference()
+        if kerchunk_ref_file:
+            created_files.append((kerchunk_ref_file, "Kerchunk (virtual Zarr)"))
+        else:
+            skipped_files.append("Kerchunk reference (kerchunk not available)")
 
         print("\n📄 Creating file with spaces in name...")
         spaces_file = create_sample_file_with_spaces()

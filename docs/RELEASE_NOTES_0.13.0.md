@@ -91,6 +91,14 @@ python -m pytest python/ -q
 npm run compile && npm test
 ```
 
+**Regenerate v0.13 sample files** (written under `sample-data/`):
+
+```bash
+cd python && python create_sample_data.py
+```
+
+New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_v3_sharded.zarr`, `sample_zarr_v3.zarr.zip`, `sample_netcdf_gzip.nc`, `sample_data_cog.tif`, and `sample_data.kerchunk.json` (requires `pip install kerchunk`).
+
 ---
 
 ### 1. Zarr 3 / dependency pins (P0.1)
