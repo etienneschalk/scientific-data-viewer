@@ -6,6 +6,58 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.13.0] - 2026-09-15
+
+### Added
+
+- **xarray 2026 / zarr 3 stack (P0.1)**: Extension uv environment and install hints pin **`xarray>=2026.4.0`** and **`zarr>=3`** together. `check_package_is_usable()` rejects importable but too-old **zarr 2.x**; missing-package strings use `zarr>=3`. **`h5netcdf>=1.8`** pinned in the isolated env for filter metadata support.
+  - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `python/get_data_info.py`, `python/test_package_requirements.py`
+- **Zarr stores without `.zarr` suffix (P0.2)**: Detect v2/v3 stores via `zarr.json`, `.zgroup`, `.zarray`, `.zmetadata` regardless of directory name. **`resolve_store_path`** opens the parent store when a metadata file is clicked. Explorer **Open (Folder)** remains on all folders (Zarr cannot be sniffed in `when` clauses).
+  - **Files**: `python/get_data_info.py`, `package.json`, `python/test_zarr_store_detection.py`
+- **Zarr v3 encoding in attribute tables (P0.4)**: When **`showXarrayEncodingAttributes`** is on, Zarr v3 **codecs**, **shards**, and related encoding appear as `__xarray_encoding.*`. Format label distinguishes **Zarr v2** vs **Zarr v3** (and **(ZIP)** when applicable). Codec dataclasses serialized via `_describe_codec()` at collection time (not in `ComplexEncoder`, which is bypassed by `default=str`).
+  - **Files**: `python/get_data_info.py`, `python/test_zarr_store_detection.py`
+- **Zarr ZipStore (P0.3)**: Open `.zip` archives whose contents include a Zarr store (root or nested prefix) via `zarr.storage.ZipStore`. Non-Zarr ZIP → clear **ValueError**, not a missing-package error. Prefix detection uses `removeprefix("./")` (not `lstrip`, which broke `.zgroup`).
+  - **Files**: `python/get_data_info.py`, `package.json`, `python/test_zarr_store_detection.py`
+- **Plot `col_wrap='auto'` (P0.5)**: xarray 2026.04+ **`col_wrap='auto'`** in plot controls (Global and Group): **auto** checkbox disables the numeric input; Python omits the kwarg with a warning on older xarray.
+  - **Files**: `python/get_data_info.py`, `python/test_col_wrap.py`, `src/panel/webview/webview-script.js`, `src/python/DataProcessor.ts`, `docs/documentation.json`
+- **NetCDF engine order (P1.1)**: Setting **`scientificDataViewer.netcdfEngineOrder`** (default `netcdf4`, `h5netcdf`, `scipy`) controls try-order for **`.nc` / `.nc4` / `.netcdf` only**; NASA **`.cdf`** unchanged (`cdflib`).
+  - **Files**: `python/get_data_info.py`, `python/test_netcdf_datatree_quality.py`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `package.json`
+- **HDF5 filter metadata (P1.2)**: For NetCDF4/HDF5 variables, **`__xarray_encoding.filters.*`** keys (e.g. `zlib`, `complevel`) derived from xarray encoding when **`showXarrayEncodingAttributes`** is on.
+  - **Files**: `python/get_data_info.py`, `python/test_netcdf_datatree_quality.py`
+- **Inherited DataTree coordinates (P1.3)**: Setting **`scientificDataViewer.showInheritedCoordinates`** (default **on**). Flattening uses **`DataTree.to_dataset(inherit='all_coords')`**; inherited coords tagged with **`inherited_from`** attribute. Plotting uses the same inherit mode for DataTree nodes.
+  - **Files**: `python/get_data_info.py`, `python/test_netcdf_datatree_quality.py`, `python/create_sample_data.py` (`sample_zarr_inherited_coords.zarr`), `src/common/config.ts`, `src/python/DataProcessor.ts`, `package.json`, `docs/documentation.json`
+- **Kerchunk / virtual Zarr (P1.5, experimental)**: Custom editor for **`*.kerchunk.json`** and **`*.ref.json`**. Command and context menu **Open as Kerchunk / virtual Zarr** on `.json` / `.parquet` / `.parq` (query flag `openAs=kerchunk`). **`kerchunk`** xarray engine; JSON validated for a **`refs`** object before open. **Not** in default uv **`ALL_REQUIREMENTS`** — user installs `pip install kerchunk`.
+  - **Files**: `python/get_data_info.py`, `python/test_kerchunk_references.py`, `src/extension.ts`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `package.json`, `docs/documentation.json`, `test/suite/extension.test.ts`
+- **Cloud Optimized GeoTIFF label (P2.3)**: After successful **rasterio** open, File Information shows **Cloud Optimized GeoTIFF (COG)** when GDAL reports **`LAYOUT=COG`** (profile or `IMAGE_STRUCTURE` tags) or tiled GeoTIFF with overviews; otherwise **GeoTIFF**.
+  - **Files**: `python/get_data_info.py`, `python/test_cog_detection.py`, `docs/documentation.json`
+- **FacetGrid panel size (P2.7)**: Setting **`scientificDataViewer.facetgridFigsize`** (`[width, height]` inches) passed to plot subprocess as **`xr.set_options(facetgrid_figsize=...)`** for faceted plots.
+  - **Files**: `python/get_data_info.py`, `python/test_facetgrid_figsize.py`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `package.json`, `docs/documentation.json`
+- **v0.13 planning documentation**: `docs/v0.13/` (README, TO_IMPLEMENT, TO_REMOVE, OUT_OF_SCOPE, PHASES).
+  - **Release notes**: `docs/RELEASE_NOTES_0.13.0.md`
+
+### Changed
+
+- **DataTree flattening documentation**: README / exploring-data prose now describes **`DataTree.to_dataset(inherit='all_coords')`** instead of bare **`to_dict()`** for per-group views.
+  - **Files**: `docs/documentation.json`, generated `README.md`
+- **Supported formats table**: Adds **Kerchunk** row (`*.kerchunk.json`, `*.ref.json`); GeoTIFF row unchanged (COG is a runtime label).
+  - **Files**: `package.json`, `docs/documentation.json`, `README.md`
+
+### Removed
+
+- **Stale Sentinel-1 SAFE support claims (Phase 0)**: **`.safe`** removed from explorer context menu filters, `package.json` keywords, Python **`SupportedExtensionType`**, sample generator hooks, and webview comments. Historical CHANGELOG entries for v0.5 SAFE removal are unchanged.
+  - **Files**: `package.json`, `python/get_data_info.py`, `python/create_sample_data.py`, `test/suite/extension.test.ts`
+
+### Upgrade / breaking notes
+
+- **Requires zarr-python ≥ 3** when using **xarray ≥ 2026.4.0**. Users on **zarr 2.x** must upgrade (`pip install "zarr>=3"`) or pin an older xarray — the extension surfaces **`zarr>=3`** in missing-package messages.
+- **Extension uv environment** should be **updated** after upgrade if **`useExtensionOwnEnvironment`** is enabled (new pins: xarray, zarr, h5netcdf).
+- **Kerchunk** is opt-in (`pip install kerchunk`); ordinary JSON editors are unaffected.
+- **No** webview message contract breaks for existing plot flows; new CLI flags (`--netcdf-engine-order`, `--open-as-kerchunk`, `--facetgrid-figsize`, etc.) are additive.
+
+### Not shipped (see `docs/v0.13/OUT_OF_SCOPE.md`)
+
+- pyfive last-resort HDF5 reader (P1.4), OME-Zarr (P2.1), Sentinel SAFE re-implementation (P2.2), HDF4 `.hdf` (P2.4), NWB/FITS, STAC/OPeNDAP, Icechunk UX, Dask/expression arrays.
+
 ## [0.12.1] - 2026-09-14
 
 ### Fixed

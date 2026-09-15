@@ -1,15 +1,15 @@
 # Scientific Data Viewer v0.13 — planning
 
-Planning notes for **v0.13**, based on a technology watch of xarray **2026.04.0** / **2026.07.0**, zarr-python 3, and related scientific formats (September 2026). Current shipped version: **v0.12.1**.
+Planning notes for **v0.13**, based on a technology watch of xarray **2026.04.0** / **2026.07.0**, zarr-python 3, and related scientific formats (September 2026). **Shipped as v0.13.0** — see [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md).
 
 These files are **specifications**, not release notes. They describe what to implement, what to remove, and what to leave out of v0.13.
 
-| Document | Contents |
-| -------- | -------- |
+| Document                             | Contents                                                                   |
+| ------------------------------------ | -------------------------------------------------------------------------- |
 | [TO_IMPLEMENT.md](./TO_IMPLEMENT.md) | Features and format work to add, with files, APIs, and acceptance criteria |
-| [TO_REMOVE.md](./TO_REMOVE.md) | Dead or misleading surface area to delete or stop advertising |
-| [OUT_OF_SCOPE.md](./OUT_OF_SCOPE.md) | Formats and capabilities explicitly **not** in v0.13 |
-| [PHASES.md](./PHASES.md) | Suggested implementation order and dependency pins |
+| [TO_REMOVE.md](./TO_REMOVE.md)       | Dead or misleading surface area to delete or stop advertising              |
+| [OUT_OF_SCOPE.md](./OUT_OF_SCOPE.md) | Formats and capabilities explicitly **not** in v0.13                       |
+| [PHASES.md](./PHASES.md)             | Suggested implementation order and dependency pins                         |
 
 ## Goal
 
@@ -17,21 +17,21 @@ Stay aligned with the 2026 xarray/Zarr stack **without** turning the extension i
 
 ## Current format surface (v0.12.1)
 
-| Format | Extensions | Engine(s) |
-| ------ | ---------- | --------- |
-| NetCDF | `.nc`, `.netcdf`, `.nc4` | `netcdf4`, `h5netcdf`, `scipy` |
-| NASA CDF | `.cdf` | `cdflib` (not `xr.open_dataset`) |
-| HDF5 | `.h5`, `.hdf5` | `h5netcdf`, `h5py`, `netcdf4` |
-| Zarr | `.zarr` folders | `zarr` |
-| GRIB | `.grib`, `.grib2`, `.grb`, `.grb2` | `cfgrib` (`open_dataset` only) |
-| GeoTIFF | `.tif`, `.tiff`, `.geotiff` | `rasterio` / rioxarray |
-| JPEG-2000 | `.jp2`, `.jpeg2000` | `rasterio` / rioxarray |
+| Format    | Extensions                         | Engine(s)                        |
+| --------- | ---------------------------------- | -------------------------------- |
+| NetCDF    | `.nc`, `.netcdf`, `.nc4`           | `netcdf4`, `h5netcdf`, `scipy`   |
+| NASA CDF  | `.cdf`                             | `cdflib` (not `xr.open_dataset`) |
+| HDF5      | `.h5`, `.hdf5`                     | `h5netcdf`, `h5py`, `netcdf4`    |
+| Zarr      | `.zarr` folders                    | `zarr`                           |
+| GRIB      | `.grib`, `.grib2`, `.grb`, `.grb2` | `cfgrib` (`open_dataset` only)   |
+| GeoTIFF   | `.tif`, `.tiff`, `.geotiff`        | `rasterio` / rioxarray           |
+| JPEG-2000 | `.jp2`, `.jpeg2000`                | `rasterio` / rioxarray           |
 
 Opening prefers `xr.open_datatree` except for GRIB, rasters, and CDF. Encoding metadata is already shown as `__xarray_encoding.*` when `scientificDataViewer.showXarrayEncodingAttributes` is on.
 
 ## Ecosystem facts that drive v0.13
 
-- xarray **2026.04.0** requires **`zarr>=3.0`**. Zarr v2 *data* remains readable through zarr-python 3; zarr-python 2 is unsupported.
+- xarray **2026.04.0** requires **`zarr>=3.0`**. Zarr v2 _data_ remains readable through zarr-python 3; zarr-python 2 is unsupported.
 - Plotting gained `col_wrap="auto"` and `set_options(facetgrid_figsize=...)`.
 - `DataTree.to_dataset(inherit="all_coords")` exists; inherited coordinates are now a first-class DataTree feature.
 - Timedelta decoding via units is fully removed; the existing `decode_cf=False` retry (issue #136) stays the safety net.
