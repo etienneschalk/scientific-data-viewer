@@ -216,7 +216,7 @@ You can explore the data via the editor itself, or via the _Data Structure_ tree
 
 The data viewer editor shows:
 
-- **File Information**: Path, size, format, and basic metadata
+- **File Information**: Path, size, format, and basic metadata. GeoTIFF files (`.tif` / `.tiff`) opened via rasterio are labeled **Cloud Optimized GeoTIFF (COG)** when GDAL reports `LAYOUT=COG` or tiled overviews; plain striped TIFFs stay **GeoTIFF**.
 - **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
 - **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dataset()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dataset.html) (`inherit='all_coords'` by default). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups. Parent coordinates appear on child groups when **`scientificDataViewer.showInheritedCoordinates`** is enabled (default); they are marked with an `inherited_from` attribute.
 - **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.

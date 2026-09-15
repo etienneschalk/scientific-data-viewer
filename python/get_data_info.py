@@ -40,7 +40,7 @@ import sys
 import zipfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as package_version
 from importlib.util import find_spec
@@ -287,6 +287,9 @@ FORMAT_DISPLAY_NAMES: dict[SupportedExtensionType, str] = {
     ".jpeg2000": "JPEG-2000",
     ".kerchunk": "Kerchunk (virtual Zarr)",
 }
+
+GEOTIFF_EXTENSIONS: frozenset[str] = frozenset({".tif", ".tiff", ".geotiff"})
+COG_DISPLAY_NAME = "Cloud Optimized GeoTIFF (COG)"
 
 # Required packages for each engine
 ENGINE_PACKAGES: dict[EngineType, str] = {
@@ -927,6 +930,42 @@ def kerchunk_json_error(path: Path) -> str | None:
     if not isinstance(payload["refs"], dict):
         return "Kerchunk 'refs' must be a JSON object."
     return None
+
+
+def looks_like_cloud_optimized_geotiff(path: Path) -> bool:
+    """Return True when GDAL/rasterio reports a Cloud Optimized GeoTIFF.
+
+    Detection is best-effort: ``LAYOUT=COG`` (profile or IMAGE_STRUCTURE tags),
+    or a tiled GeoTIFF with internal overviews. Failures fall back to GeoTIFF.
+    """
+    if path.suffix.lower() not in GEOTIFF_EXTENSIONS:
+        return False
+    try:
+        import rasterio
+    except ImportError:
+        return False
+    try:
+        with rasterio.open(path) as src:
+            if src.driver != "GTiff":
+                return False
+            if src.profile.get("layout") == "COG":
+                return True
+            image_structure = src.tags(ns="IMAGE_STRUCTURE")
+            if image_structure.get("LAYOUT") == "COG":
+                return True
+            return bool(src.profile.get("tiled") and src.overviews(1))
+    except Exception as exc:
+        logger.debug("Could not inspect GeoTIFF for COG layout: %r", exc)
+        return False
+
+
+def refine_geotiff_display_name(path: Path, display_name: str) -> str:
+    """Upgrade generic GeoTIFF label to COG when rasterio detects one."""
+    if display_name != "GeoTIFF":
+        return display_name
+    if looks_like_cloud_optimized_geotiff(path):
+        return COG_DISPLAY_NAME
+    return display_name
 
 
 def looks_like_zip(path: Path) -> bool:
@@ -2891,6 +2930,13 @@ def get_file_info(
             xarray_show_versions=versions_text,
         )
         return error
+
+    if used_engine == "rasterio":
+        refined_name = refine_geotiff_display_name(
+            file_path, file_format_info.display_name
+        )
+        if refined_name != file_format_info.display_name:
+            file_format_info = replace(file_format_info, display_name=refined_name)
 
     try:
         datatree_flag: bool = can_use_datatree(used_engine) and isinstance(
