@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 import xarray as xr
-from create_sample_data import create_sample_netcdf_compound_dtype_variable
+from sample_data.netcdf import create_sample_netcdf_compound_dtype_variable
 
 from sdv_backend.info.extract import get_file_info
 
