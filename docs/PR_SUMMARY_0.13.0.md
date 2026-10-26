@@ -2,7 +2,7 @@
 
 ## Summary
 
-Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI.
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots).
 
 **Version:** `0.13.0` in `package.json` / `package-lock.json`
 
@@ -49,9 +49,20 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | P2.3 | **Cloud Optimized GeoTIFF (COG)** label in File Information |
 | P2.7 | Setting `scientificDataViewer.facetgridFigsize`             |
 
+### Phase 5 — Backend restructuring (maintainability)
+
+| Work          | Detail                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net    | Golden snapshot harness `python/tools/golden_snapshots.py` (82 info/plot cases, frozen clock) recorded before any move                                                                              |
+| Package split | `python/get_data_info.py` (3,700 lines) → `python/sdv_backend/`; `get_data_info.py` kept as entry point                                                                                             |
+| Decomposition | `create_plot` ~540 → ~110 lines (`selection.py`, `render.py`, `PlotOptions`); `get_file_info` split into steps (`InfoOptions`); shared `OpenedData`; CLI `build_parser`                             |
+| Fixes         | Unsupported `plot_type` crash; empty selection `ZeroDivisionError`; files left open on plot errors                                                                                                  |
+| Sample data   | `create_sample_data.py` (6,000 lines) → `python/sample_data/`; table-driven `main`; reproducible; `--overwrite`, `--disposable`; `.geotiff` generator fix (all v0.13 fixtures were never generated) |
+| Tests         | Moved to `python/tests/`; `python/pyproject.toml`; new `test_empty_selection.py`                                                                                                                    |
+
 ### Sample data & docs
 
-- `python/create_sample_data.py` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
+- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 
@@ -86,12 +97,12 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 
 ## Key files
 
-| Area      | Files                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------- |
-| Python    | `python/get_data_info.py`, `python/create_sample_data.py`, tests under `python/test_*.py` |
-| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `package.json` |
-| Webview   | `src/panel/webview/webview-script.js` (col_wrap auto)                                     |
-| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                |
+| Area      | Files                                                                                                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py` |
+| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `package.json`                                                                                  |
+| Webview   | `src/panel/webview/webview-script.js` (col_wrap auto)                                                                                                                      |
+| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                 |
 
 ---
 
@@ -101,17 +112,18 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 
 ```bash
 source .venv/bin/activate   # or extension interpreter
-python -m pytest python/ -q
+python -m pytest python/tests -q
+python python/tools/golden_snapshots.py check   # after `record` on a known-good commit
 npm run compile && npm test
 ```
 
 **Sample data** (written under `sample-data/`):
 
 ```bash
-cd python && python create_sample_data.py
+python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** See [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§12.
+**Manual:** See [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§13.
 
 ---
 
@@ -124,6 +136,8 @@ cd python && python create_sample_data.py
 - [x] `README.md` — regenerated (`python scripts/generate_readme.py --no-timestamp`)
 - [x] `docs/documentation.json` — prose, format table, troubleshooting
 - [x] Version `0.13.0` in `package.json`
+- [x] `docs/DEVELOPMENT.md` — backend package layout, sample data commands
+- [x] `CLAUDE.md` — commands and architecture for AI-assisted development
 
 ---
 
@@ -142,3 +156,22 @@ cd python && python create_sample_data.py
 11. `6acf9cb` — feat: add facetgridFigsize setting for faceted xarray plots
 12. `ad77254` — chore: release v0.13.0 with changelog and release notes
 13. `4fdd8d0` — feat: add v0.13 sample data generators for new formats
+14. `0d885bf` — docs: complete v0.13.0 release and MR documentation
+
+Backend restructuring (branch `eschalk/backend-package`):
+
+15. `cb4ad47` — test: add golden snapshot harness for Python backend refactoring
+16. `104e1c3` — refactor: split get_data_info.py into the sdv_backend package
+17. `f7a6001` — fix: return a JSON error instead of crashing on unsupported plot types
+18. `89d0808` — refactor: decompose create_plot into a selection/render pipeline
+19. `ebaef98` — refactor: decompose get_file_info and the CLI; share OpenedData
+20. `b7b38c5` — docs: describe the sdv_backend package layout
+21. `81c482f` — fix: explain empty plot selections instead of failing in xarray
+22. `0b083ee` — refactor: make helpers shared across backend modules public
+23. `6fcaef2` — refactor: split create_sample_data.py into the sample_data package
+24. `e375411` — fix(sample-data): write sample_data.geotiff with an explicit GTiff driver
+25. `02d6246` — docs: mention the sample_data package
+26. `d2a6211` — feat(sample-data): reproducible generation; table-driven main
+27. `f0a8ff7` — test: cover v0.13 sample formats in the golden snapshot harness
+28. `111d674` — feat(sample-data): add --overwrite and --disposable flags
+29. `c4bb9c5` — docs: add CLAUDE.md with project commands and architecture

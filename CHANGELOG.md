@@ -36,6 +36,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Release notes**: `docs/RELEASE_NOTES_0.13.0.md`
   - **Pull request summary**: `docs/PR_SUMMARY_0.13.0.md`
 - **v0.13 sample data generators** in `python/create_sample_data.py`: unsuffixed Zarr v3 directory, sharded Zarr v3, Zarr v3 ZIP, gzip NetCDF (filters), COG GeoTIFF, Kerchunk reference JSON (`sample_data.kerchunk.json`).
+- **Golden snapshot harness**: `python/tools/golden_snapshots.py record|check` runs the backend CLI on local `sample-data/` files (info and plot cases, incl. v0.13 formats) and compares normalized JSON output, plot PNGs by hash with a frozen clock. Snapshots live in git-ignored `python/.golden/`.
+  - **Files**: `python/tools/golden_snapshots.py`, `python/tools/_frozen_clock_entry.py`, `.gitignore`
+- **Sample data `--overwrite` / `--disposable` flags**: `python python/create_sample_data.py --overwrite` regenerates existing files through an empty staging directory, leaving files no generator produces untouched; `--disposable` creates the deletion-test files.
+  - **Files**: `python/sample_data/main.py`, `python/create_sample_data.py`, `docs/DEVELOPMENT.md`
 
 ### Changed
 
@@ -44,16 +48,38 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Supported formats table**: Adds **Kerchunk** row (`*.kerchunk.json`, `*.ref.json`); GeoTIFF row unchanged (COG is a runtime label).
   - **Files**: `package.json`, `docs/documentation.json`, `README.md`
 
+- **Python backend split into the `sdv_backend` package**: the 3,700-line `python/get_data_info.py` becomes `python/sdv_backend/` (`cli`, `results`, `serialization`, `environment/`, `formats/`, `opening`, `info/`, `plotting/`), with one-way imports `cli → info/plotting → opening → formats → environment`. Code was moved verbatim, then `create_plot` (~540 → ~110 lines) and `get_file_info` were decomposed; they take `PlotOptions` / `InfoOptions` dataclasses. `OpenedData` (in `opening.py`) wraps the DataTree / dict-of-Datasets duality for both modes. `python/get_data_info.py` remains a thin entry point, so the TypeScript side is unchanged; `python -m sdv_backend` also works. Golden snapshots were identical before and after.
+  - **Files**: `python/sdv_backend/**`, `python/get_data_info.py`, `python/non_regression_test_plot.py`, `docs/DEVELOPMENT.md`, `CLAUDE.md`
+- **Python tests moved** to `python/tests/` with `python/pyproject.toml` (package metadata, pytest config); run `pytest python/tests`.
+  - **Files**: `python/tests/**`, `python/pyproject.toml`, `setup.sh`
+- **Sample generators split into the `sample_data` package**: the 6,000-line `python/create_sample_data.py` becomes one module per format family under `python/sample_data/`; `main.py` is table-driven and a failing generator no longer stops the others. Generation is reproducible (numpy seeded per generator, fixed creation timestamps and ZIP entry dates). The package is now linted by ruff.
+  - **Files**: `python/sample_data/**`, `python/create_sample_data.py`, `.pre-commit-config.yaml`, `python/tests/test_compound_dtype_sample.py`
+- **VSIX contents**: nested `__pycache__`, `python/tests/`, `python/tools/`, `python/.golden/` and pytest caches are excluded.
+  - **Files**: `.vscodeignore`
+
 ### Removed
 
 - **Stale Sentinel-1 SAFE support claims (Phase 0)**: **`.safe`** removed from explorer context menu filters, `package.json` keywords, Python **`SupportedExtensionType`**, sample generator hooks, and webview comments. Historical CHANGELOG entries for v0.5 SAFE removal are unchanged.
   - **Files**: `package.json`, `python/get_data_info.py`, `python/create_sample_data.py`, `test/suite/extension.test.ts`
+
+### Fixed
+
+- **Unsupported plot type crashed the backend**: `create_plot` validated `plot_type` before detecting the file format, so the error handler hit `UnboundLocalError` and printed no JSON. It now returns a JSON error; CLI help no longer advertises `line` / `histogram`.
+  - **Files**: `python/sdv_backend/plotting/api.py`, `python/sdv_backend/cli.py`
+- **Empty plot selections**: a datetime range or dimension slice selecting no values failed in xarray (`ZeroDivisionError` on an empty facet grid). The error now names the empty dimensions and the time range / slices.
+  - **Files**: `python/sdv_backend/plotting/selection.py`, `python/sdv_backend/plotting/api.py`
+  - **Tests**: `python/tests/test_empty_selection.py`
+- **Files left open on plot errors**: opened datasets are now closed on every path (`contextlib.closing(OpenedData)`).
+  - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/plotting/api.py`, `python/sdv_backend/info/extract.py`
+- **Sample generation aborted at `sample_data.geotiff`**: GDAL cannot infer a driver from the `.geotiff` extension, and the abort skipped every later generator (all v0.13 fixtures). The file is written with `driver="GTiff"`.
+  - **Files**: `python/sample_data/geotiff.py`
 
 ### Upgrade / breaking notes
 
 - **Requires zarr-python ≥ 3** when using **xarray ≥ 2026.4.0**. Users on **zarr 2.x** must upgrade (`pip install "zarr>=3"`) or pin an older xarray — the extension surfaces **`zarr>=3`** in missing-package messages.
 - **Extension uv environment** should be **updated** after upgrade if **`useExtensionOwnEnvironment`** is enabled (new pins: xarray, zarr, h5netcdf).
 - **Kerchunk** is opt-in (`pip install kerchunk`); ordinary JSON editors are unaffected.
+- **Python imports**: code importing from `get_data_info` must use the `sdv_backend` modules; `create_plot` / `get_file_info` take `PlotOptions` / `InfoOptions`. The CLI (`python/get_data_info.py info|plot ...`) and its JSON output are unchanged.
 - **No** webview message contract breaks for existing plot flows; new CLI flags (`--netcdf-engine-order`, `--open-as-kerchunk`, `--facetgrid-figsize`, etc.) are additive.
 
 ### Not shipped (see `docs/v0.13/OUT_OF_SCOPE.md`)

@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI.
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**.
 
 **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -10,15 +10,16 @@
 
 v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its minimum **zarr** to **3.x** and added DataTree/plotting improvements the extension now surfaces. The viewer stays **metadata-first** (no Dask clusters, no cloud auth, no write/convert pipelines).
 
-| Area                  | What v0.13 adds                                                                                                                  |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env; rejects zarr 2.x as “too old”                                         |
-| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables |
-| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                               |
-| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                   |
-| **Rasters**           | **COG** label in File Information after rasterio open                                                                            |
-| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                         |
-| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                         |
+| Area                  | What v0.13 adds                                                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env; rejects zarr 2.x as “too old”                                                                         |
+| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                 |
+| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                               |
+| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                   |
+| **Rasters**           | **COG** label in File Information after rasterio open                                                                                                            |
+| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                                                         |
+| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                         |
+| **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring)) |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -49,6 +50,52 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 ### Outline / sidebar
 
 - Kerchunk editor id **`kerchunkEditor`** is included in outline `when` clauses (same as other custom editors).
+
+### Python backend location (contributors)
+
+- The backend moved from `python/get_data_info.py` to the **`python/sdv_backend/`** package. `python/get_data_info.py` is kept as a thin entry point, so the extension, its logged "copy-paste" command and existing scripts keep working; `python -m sdv_backend` (from `python/`) is equivalent.
+- Python tests moved from `python/test_*.py` to **`python/tests/`** (`pytest python/tests`).
+- Code that imported from `get_data_info` must import from the package modules instead (e.g. `from sdv_backend.info.extract import get_file_info`). `create_plot` / `get_file_info` now take a **`PlotOptions`** / **`InfoOptions`** dataclass instead of 30 / 9 keyword arguments.
+
+---
+
+## Python backend restructuring
+
+### Why
+
+`python/get_data_info.py` had grown to ~3,700 lines mixing JSON serialization, package checks, format detection, file opening, metadata extraction, plotting and the CLI, with a 540-line `create_plot` and a 330-line `get_file_info`. It had become hard to understand and risky to change. `python/create_sample_data.py` (~6,000 lines) had the same problem.
+
+### What changed
+
+The backend is now the **`python/sdv_backend/`** package; imports flow one way: `cli → info / plotting → opening → formats → environment`.
+
+| Module                           | Responsibility                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `cli.py`                         | Argument parsing; builds `InfoOptions` / `PlotOptions`; prints the single JSON line                     |
+| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                             |
+| `environment/`                   | Installed packages and xarray engine selection per extension                                            |
+| `formats/`                       | Format detection: Zarr (incl. ZIP), Kerchunk, GeoTIFF / COG                                             |
+| `opening.py`                     | Opening with engine and `decode_cf` fallback; `OpenedData` hides the DataTree-vs-dict-of-Datasets split |
+| `info/`                          | `get_file_info`, now split into small steps (reprs, per-group metadata, datetime ranges)                |
+| `plotting/`                      | `create_plot` (~110 lines): `selection.py` (variable, slices, datetime filter), strategies, `render.py` |
+
+Sample generators moved to **`python/sample_data/`** (one module per format family); `python/create_sample_data.py` remains the entry point.
+
+### How behaviour was preserved
+
+Before any code moved, a **golden snapshot harness** (`python/tools/golden_snapshots.py`) recorded the backend's JSON output for 74 `info` / `plot` invocations on `sample-data/` (plot images compared by hash, with a frozen clock). Each refactoring step was checked against it; the code was moved verbatim first and only then decomposed. Snapshots stayed identical except where a bug fix below intentionally changed the output.
+
+### Bugs found and fixed along the way
+
+- **Unsupported plot type crashed the backend:** `plot <file> <var> histogram` died with `UnboundLocalError` and printed no JSON. It now returns a JSON error. The CLI help no longer advertises `line` / `histogram` (only `auto` exists; the extension always sends `auto`).
+- **Empty plot selections:** a datetime range or dimension slice matching no values failed inside xarray with `ZeroDivisionError`. The plot now fails with _"No data to plot: dimension(s) time are empty after selection. Check the time range […] on 'time'."_
+- **Open files leaked on plot errors:** files were closed only on success; they are now closed on every path.
+- **Sample generation always aborted:** writing `sample_data.geotiff` failed (GDAL cannot infer a driver from `.geotiff`), and `main()` stopped at the first error, so the v0.13 fixtures (Zarr v3, Kerchunk, COG, JPEG-2000, broken files, temporal datasets) were never generated. Fixed, and a failing generator no longer stops the others.
+
+### Sample data is reproducible
+
+- Random data is seeded per generator and creation timestamps are fixed (2025-01-01), so regenerating gives the same data every time (byte-identical except HDF5 / CDF library header timestamps).
+- **`python python/create_sample_data.py --overwrite`** regenerates existing files (by default existing files are kept); files no generator produces are left untouched. **`--disposable`** also creates the deletion-test files.
 
 ---
 
@@ -87,14 +134,14 @@ Expect **xarray ≥ 2026.4** and **zarr ≥ 3** for full v0.13 behaviour.
 
 ```bash
 source .venv/bin/activate   # or your interpreter
-python -m pytest python/ -q
+python -m pytest python/tests -q
 npm run compile && npm test
 ```
 
-**Regenerate v0.13 sample files** (written under `sample-data/`):
+**Regenerate v0.13 sample files** (written under `sample-data/`, run from the repository root):
 
 ```bash
-cd python && python create_sample_data.py
+python python/create_sample_data.py --overwrite
 ```
 
 New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_v3_sharded.zarr`, `sample_zarr_v3.zarr.zip`, `sample_netcdf_gzip.nc`, `sample_data_cog.tif`, and `sample_data.kerchunk.json` (requires `pip install kerchunk`).
@@ -107,7 +154,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. With a **current** env, open any existing `.zarr` sample (e.g. run `python/create_sample_data.py` in `python/` to generate under that directory).
+1. With a **current** env, open any existing `.zarr` sample (generate samples with `python python/create_sample_data.py` from the repository root).
 2. File Information should show format **Zarr v2** or **Zarr v3** (see §4).
 3. _(Optional)_ In a throwaway venv with `zarr==2.18`, confirm `.zarr` is reported as missing **`zarr>=3`**.
 
@@ -207,13 +254,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Generate sample (from repo `python/` directory):
-
-   ```bash
-   python -c "from create_sample_data import create_sample_zarr_inherited_coords; create_sample_zarr_inherited_coords()"
-   ```
-
-2. Open **`sample_zarr_inherited_coords.zarr`** as a folder.
+1. Generate samples (from the repository root): `python python/create_sample_data.py`.
+2. Open **`sample-data/sample_zarr_inherited_coords.zarr`** as a folder.
 3. Navigate to a child group (e.g. under `root/temperature`) → **Coordinates** should include inherited dims.
 4. Click a coordinate → attributes show `inherited_from`.
 5. Set **`showInheritedCoordinates`** to `false` → Refresh → child groups show **only** locally defined coordinates.
@@ -300,25 +342,46 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
+### 13. Python backend restructuring (no behaviour change expected)
+
+**Expect:** Every viewer feature behaves exactly as before; only the two error messages below are new.
+
+**Test:**
+
+1. Run the snapshot check (needs `sample-data/`; record a baseline first if `python/.golden/` is empty):
+
+   ```bash
+   python python/tools/golden_snapshots.py record   # on a known-good commit
+   python python/tools/golden_snapshots.py check    # after changes: expect "0 failing"
+   ```
+
+2. Open a few files of different formats (NetCDF with groups, Zarr, GeoTIFF, Kerchunk) and create plots with facets and dimension slices: results should match v0.13 before the restructuring.
+3. Plot with a datetime range that matches no data → clear _"No data to plot"_ error instead of a `ZeroDivisionError`.
+4. `python python/create_sample_data.py --overwrite` completes with exit code 0 and rewrites the generated files; running it twice yields the same snapshots.
+
+---
+
 ## Known limitations (unchanged or noted)
 
 - **Plotting** remains **experimental** (timeout, auto strategy only).
 - **`fileSize`** for directory stores is still `os.path.getsize` on the directory inode (rough size, not store bytes).
 - **Unsupported paths** may still show “Missing dependencies for Unknown files:” with an empty package list (pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing — treat as experimental.
+- **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                            |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus                                                                                                                              |
-| **Docs**      | `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                           |
-| **Samples**   | `python/create_sample_data.py` generators (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref) — run `cd python && python create_sample_data.py`             |
-| **Tests**     | `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |
+| Area          | Change                                                                                                                                                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                     |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                      |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus                                                                                                                                                                                       |
+| **Docs**      | `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                    |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                 |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |
 
 ---
 
