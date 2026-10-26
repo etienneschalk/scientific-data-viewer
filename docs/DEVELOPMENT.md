@@ -279,9 +279,14 @@ npx mocha out/test/suite/extension.test.js
 1. **Create sample data**:
 
    ```bash
-   cd sample-data
+   # from the repository root; existing files are kept
    python python/create_sample_data.py
+   # regenerate everything (files no generator produces are left untouched)
+   python python/create_sample_data.py --overwrite
    ```
+
+   Generation is reproducible: random data is seeded per generator and
+   timestamps are fixed, so `--overwrite` yields the same data every time.
 
 2. **Test with sample files**:
    - Open sample NetCDF, Zarr, or HDF5 files

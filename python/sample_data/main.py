@@ -1,10 +1,14 @@
 """Entry point: create every sample file under sample-data/."""
 
+import argparse
 import os
+import shutil
+import tempfile
 import traceback
 import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -297,14 +301,46 @@ class Report:
             self.created.append((filename, generator.label))
 
 
-def main(do_create_disposable_files: bool = False) -> int:
-    """Create all sample data files; returns 1 if any generator failed."""
+OUTPUT_DIR = Path("sample-data")
+
+
+def main(do_create_disposable_files: bool = False, overwrite: bool = False) -> int:
+    """Create all sample data files under ``sample-data/``.
+
+    Existing files are kept (each generator skips files that exist) unless
+    ``overwrite`` is set: then everything is generated into an empty staging
+    directory and each produced entry replaces its counterpart in
+    ``sample-data/``. Entries no generator produces are left untouched.
+
+    Returns 1 if any generator failed.
+    """
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
     print("=" * 80)
 
-    os.makedirs("sample-data", exist_ok=True)
-    os.chdir("sample-data")
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    work_dir = (
+        Path(tempfile.mkdtemp(prefix=".sample-data-staging-", dir=OUTPUT_DIR.parent))
+        if overwrite
+        else OUTPUT_DIR
+    )
+    cwd = Path.cwd()
+    os.chdir(work_dir)
+    try:
+        report = _run_all(do_create_disposable_files)
+    finally:
+        os.chdir(cwd)
 
+    if overwrite:
+        replaced = _replace_entries(work_dir, OUTPUT_DIR)
+        shutil.rmtree(work_dir)
+        print(f"\n♻️  Overwrote {replaced} entries in {OUTPUT_DIR}/")
+
+    report.print_summary()
+    return 1 if report.failed else 0
+
+
+def _run_all(do_create_disposable_files: bool) -> Report:
+    """Run every generator in the current directory."""
     report = Report()
     for title, generators in SECTIONS:
         print(f"\n{title}")
@@ -318,6 +354,36 @@ def main(do_create_disposable_files: bool = False) -> int:
             report.run(generator)
     else:
         print("\n🗑️ Skipping disposable files for deletion testing...")
+    return report
 
-    report.print_summary()
-    return 1 if report.failed else 0
+
+def _replace_entries(source: Path, target: Path) -> int:
+    """Move each top-level entry of ``source`` into ``target``, replacing it."""
+    count = 0
+    for entry in sorted(source.iterdir()):
+        destination = target / entry.name
+        if destination.is_dir() and not destination.is_symlink():
+            shutil.rmtree(destination)
+        elif destination.exists() or destination.is_symlink():
+            destination.unlink()
+        shutil.move(str(entry), destination)
+        count += 1
+    return count
+
+
+def cli(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Create sample scientific data files in ./sample-data/"
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Regenerate files that already exist (default: keep existing files)",
+    )
+    parser.add_argument(
+        "--disposable",
+        action="store_true",
+        help="Also create disposable files used to test file deletion",
+    )
+    args = parser.parse_args(argv)
+    return main(do_create_disposable_files=args.disposable, overwrite=args.overwrite)

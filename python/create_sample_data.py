@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from sample_data.main import main
+from sample_data.main import cli
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(cli())

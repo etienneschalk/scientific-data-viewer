@@ -1,5 +1,5 @@
 import sys
 
-from sample_data.main import main
+from sample_data.main import cli
 
-sys.exit(main())
+sys.exit(cli())
