@@ -77,16 +77,35 @@ Recommended VSCode extension: [es6-string-html](https://marketplace.visualstudio
 
 ### 📜 Python Scripts
 
-The extension uses several Python scripts for data processing:
+The Python backend lives in the `python/sdv_backend/` package. The extension runs it
+through the thin `python/get_data_info.py` entry point (equivalent to
+`python -m sdv_backend` from the `python/` directory), which prints one JSON line:
 
-- **`get_data_info.py`**:
-  - Extracts file metadata, dimensions, variables, and their properties,
-  - Creates HTML representation of xarray datasets
-  - Creates text representation of datasets
-  - Generates visualizations using matplotlib
-  - Shows Python package versions for debugging
-- **`create_sample_data.py`**:
-  - Generates sample data files for testing
+```bash
+python python/get_data_info.py info sample-data/sample_data.nc
+python python/get_data_info.py plot sample-data/sample_data.nc /temperature --style default
+```
+
+| Module                           | Responsibility                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope               |
+| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                    |
+| `environment/`                   | Installed packages, xarray engine selection per extension                                      |
+| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                    |
+| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)               |
+| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges            |
+| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, plot strategies, PNG rendering |
+
+Dependencies point one way: `cli → info / plotting → opening → formats → environment`.
+
+Other scripts in `python/`:
+
+- **`create_sample_data.py`**: generates sample data files for testing
+- **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks
+- **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `sample-data/`
+  (`record` before a refactoring, `check` after it)
+
+Run the Python tests with `pytest python/tests` (pytest config is in `python/pyproject.toml`).
 
 Disclaimer: most visualization scripts are experimental and can produce unusable plots!
 
