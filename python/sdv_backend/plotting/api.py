@@ -31,6 +31,7 @@ from sdv_backend.plotting.selection import (
     PlotInputError,
     apply_datetime_filter,
     apply_dimension_slices,
+    ensure_not_empty,
     get_variable,
     split_variable_path,
 )
@@ -115,6 +116,7 @@ def create_plot(
                 selection = apply_datetime_filter(
                     var, variable_name, group, group_name, opened, options
                 )
+                ensure_not_empty(selection.var, options)
             except PlotInputError as exc:
                 return CreatePlotError(error=str(exc), format_info=file_format_info)
             var = selection.var

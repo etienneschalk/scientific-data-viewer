@@ -216,3 +216,29 @@ def apply_datetime_filter(
     return DatetimeSelection(
         var=var, datetime_var=datetime_var, datetime_var_name=datetime_var_name
     )
+
+
+def ensure_not_empty(var: xr.DataArray, options: PlotOptions) -> None:
+    """Fail clearly when slicing/time filtering left no values to plot.
+
+    Without this, xarray fails deep inside plotting (e.g. ZeroDivisionError
+    while laying out an empty facet grid).
+    """
+    empty_dims = [str(d) for d, n in var.sizes.items() if n == 0]
+    if not empty_dims:
+        return
+    causes = []
+    if options.datetime_variable_name and (
+        options.start_datetime or options.end_datetime
+    ):
+        causes.append(
+            f"time range [{options.start_datetime or '…'}, "
+            f"{options.end_datetime or '…'}] on '{options.datetime_variable_name}'"
+        )
+    if options.dimension_slices:
+        causes.append(f"dimension slices {options.dimension_slices}")
+    hint = f" Check the {' and '.join(causes)}." if causes else ""
+    raise PlotInputError(
+        f"No data to plot: dimension(s) {', '.join(empty_dims)} are empty after "
+        f"selection.{hint}"
+    )
