@@ -103,15 +103,15 @@ def create_plot(
     """
 
     try:
-        if plot_type != "auto":
-            raise ValueError(f"Invalid plot type: {plot_type}")
-
         # Detect file format and available engines
         file_format_info = detect_file_format(
             file_path,
             netcdf_engine_order=netcdf_engine_order,
             open_as_kerchunk=open_as_kerchunk,
         )
+
+        if plot_type != "auto":
+            raise ValueError(f"Invalid plot type: {plot_type}")
 
         if not file_format_info.is_supported:
             logger.error(

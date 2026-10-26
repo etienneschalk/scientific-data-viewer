@@ -31,7 +31,6 @@ def main() -> int:
 Examples:
   python get_data_info.py info sample_data.nc
   python get_data_info.py plot sample_data.nc temperature
-  python get_data_info.py plot sample_data.nc temperature histogram
   python get_data_info.py plot sample_data.nc temperature --style dark_background
   python get_data_info.py plot sample_data.nc temperature --style default
   python get_data_info.py plot sample_data.nc temperature --style seaborn
@@ -58,7 +57,7 @@ Examples:
         "plot_type",
         nargs="?",
         default="auto",
-        help="Plot type: 'line' or 'histogram' (optional, default: 'auto')",
+        help="Plot type: only 'auto' is supported (optional, default: 'auto')",
     )
 
     parser.add_argument(
