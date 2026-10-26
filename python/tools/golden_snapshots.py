@@ -88,6 +88,13 @@ INFO_FILES = [
     "sample_zarr_deeply_nested_attrs.zarr",
     "sample_zarr_inherited_coords.zarr",
     "sample_zarr_nested_groups_from_datatree.zarr",
+    # v0.13 formats
+    "sample_data_cog.tif",
+    "sample_data.kerchunk.json",
+    "sample_netcdf_gzip.nc",
+    "sample_ocean_grid_v3",
+    "sample_zarr_v3_sharded.zarr",
+    "sample_zarr_v3.zarr.zip",
     "temporal-datasets/temporal_cdf_datetime_coord.cdf",
     "temporal-datasets/temporal_cdf_datetime_data.cdf",
 ]
@@ -290,6 +297,8 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "auto",
         ["--datetime-variable", "time", "--start-datetime", "not-a-date"],
     ),
+    ("cog", "sample_data_cog.tif", "/band_data", "auto", []),
+    ("zarr_v3_zip", "sample_zarr_v3.zarr.zip", "/chlorophyll", "auto", []),
     ("err_missing_var", NC, "/does_not_exist", "auto", []),
     (
         "err_bad_slices",
