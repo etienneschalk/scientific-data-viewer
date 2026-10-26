@@ -1,10 +1,11 @@
 """NetCDF samples stressing variable counts and long/complex names."""
 
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
+
+from sample_data.common import CREATION_DATETIME
 
 
 def create_sample_netcdf_many_vars():
@@ -157,7 +158,7 @@ def create_sample_netcdf_many_vars():
         "description": "Test dataset with 100+ variables and 100+ attributes for stress testing the VSCode extension",
         "institution": "Scientific Data Viewer Test Center",
         "source": "Generated for testing purposes",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.8",
         "featureType": "grid",
         "data_type": "scientific_test_data",
@@ -196,7 +197,7 @@ def create_sample_netcdf_many_vars():
         "processing_level": "L1",
         "processing_software": "Python xarray",
         "processing_version": "0.20.0",
-        "processing_date": datetime.now().strftime("%Y-%m-%d"),
+        "processing_date": CREATION_DATETIME.strftime("%Y-%m-%d"),
         "processing_center": "Test Processing Center",
         "processing_algorithm": "random_generation",
         # Quality information
@@ -498,7 +499,7 @@ def create_sample_netcdf_long_variable_names():
         "description": "Test dataset with extremely long variable names for testing UI handling and display",
         "institution": "Scientific Data Viewer Test Center",
         "source": "Generated for testing long variable name handling",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.8",
         "featureType": "grid",
         "data_type": "test_data_long_names",
@@ -781,7 +782,7 @@ def create_sample_netcdf_complex_long_names():
         "description": "Test dataset with extremely long names for dimensions, coordinates, variables, and complex data types for comprehensive UI testing",
         "institution": "Scientific Data Viewer Test Center",
         "source": "Generated for testing complex long name handling",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.8",
         "featureType": "grid",
         "data_type": "complex_test_data_long_names",

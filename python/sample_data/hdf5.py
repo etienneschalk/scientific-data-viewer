@@ -1,10 +1,11 @@
 """HDF5 samples."""
 
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
+
+from sample_data.common import CREATION_DATETIME
 
 
 def create_sample_hdf5():
@@ -75,7 +76,7 @@ def create_sample_hdf5():
         "description": "Sample HDF5 file for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -143,7 +144,7 @@ def create_sample_hdf5_hdf5():
         "description": "Sample HDF5 file with .hdf5 extension for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 

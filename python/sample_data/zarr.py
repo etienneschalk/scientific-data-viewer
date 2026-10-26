@@ -2,12 +2,11 @@
 
 import os
 import zipfile
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
 
-from sample_data.common import optional_pkg_available
+from sample_data.common import CREATION_DATETIME, optional_pkg_available
 
 
 def create_sample_zarr_single_group_from_dataset():
@@ -91,7 +90,7 @@ def create_sample_zarr_single_group_from_dataset():
         "description": "Sample Zarr file for testing VSCode extension",
         "institution": "Ocean Test Institute",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Save to Zarr
@@ -167,7 +166,7 @@ def create_sample_zarr_with_nested_groups_from_datatree():
         "description": "Sample xr.DataTree Zarr file for testing VSCode extension",
         "institution": "Ocean Test Institute",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -377,7 +376,7 @@ def create_sample_zarr_with_nested_groups_from_zarr():
             "description": "Sample Zarr file with nested groups for testing VSCode extension",
             "institution": "Ocean Test Institute",
             "source": "Generated for testing",
-            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
             "Conventions": "CF-1.6",
         }
     )
@@ -681,7 +680,7 @@ def create_sample_zarr_arborescence():
         "description": "Zarr file with many subgroups for testing tree navigation",
         "institution": "Test Institute",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Create DataTree structure
@@ -884,7 +883,7 @@ def create_sample_zarr_inherited_coords():
         "description": "Zarr file demonstrating coordinate inheritance",
         "institution": "Test Institute",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Create DataTree structure
@@ -997,7 +996,7 @@ def create_sample_zarr_v3_plain_directory():
         "title": "Unsuffixed Zarr v3 sample",
         "description": "Directory has zarr.json but no .zarr in the name (v0.13)",
         "zarr_format": 3,
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     ds.to_zarr(output_dir, mode="w", zarr_format=3)
@@ -1041,7 +1040,7 @@ def create_sample_zarr_v3_sharded():
         "title": "Zarr v3 sharded sample",
         "description": "Exercises shard/codec metadata in __xarray_encoding.* tables",
         "zarr_format": 3,
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     ds.to_zarr(
@@ -1094,7 +1093,12 @@ def create_sample_zarr_v3_zip_archive():
     with zipfile.ZipFile(output_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for file_path in sorted(store_path.rglob("*")):
             if file_path.is_file():
-                archive.write(file_path, file_path.as_posix())
+                # Fixed entry timestamp so the archive is byte-reproducible
+                info = zipfile.ZipInfo(
+                    file_path.as_posix(), date_time=CREATION_DATETIME.timetuple()[:6]
+                )
+                info.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(info, file_path.read_bytes())
 
     print(f"✅ Created {output_zip} (Zarr v3 inside ZIP, prefix {store_dir}/)")
     return output_zip

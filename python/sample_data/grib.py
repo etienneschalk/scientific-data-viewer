@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
 
+from sample_data.common import CREATION_DATETIME
+
 
 def create_sample_grib():
     """Create a sample GRIB file with weather data."""
@@ -90,7 +92,7 @@ def create_sample_grib():
         "description": "Sample GRIB file for testing VSCode extension",
         "institution": "Weather Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -223,7 +225,7 @@ def create_sample_grib_grib2():
         "description": "Sample GRIB2 file for testing VSCode extension",
         "institution": "Weather Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -348,7 +350,7 @@ def create_sample_grib_grb():
         "description": "Sample GRIB file with .grb extension for testing VSCode extension",
         "institution": "Weather Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -473,7 +475,7 @@ def create_sample_grib_grb2_file():
         "description": "Sample GRIB file with .grb2 extension for testing VSCode extension",
         "institution": "Weather Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 

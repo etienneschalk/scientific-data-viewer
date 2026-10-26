@@ -1,9 +1,10 @@
 """NetCDF samples with groups (ordered and unordered)."""
 
 import os
-from datetime import datetime
 
 import numpy as np
+
+from sample_data.common import CREATION_DATETIME
 
 
 def create_sample_netcdf_multiple_groups():
@@ -41,7 +42,9 @@ def create_sample_netcdf_multiple_groups():
         rootgrp.description = "NetCDF file with multiple groups for testing"
         rootgrp.institution = "Test Institute"
         rootgrp.source = "Generated for testing"
-        rootgrp.history = f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        rootgrp.history = (
+            f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         rootgrp.Conventions = "CF-1.6"
 
         # Create dimensions

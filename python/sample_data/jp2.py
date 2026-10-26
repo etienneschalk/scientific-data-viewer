@@ -2,12 +2,11 @@
 
 import importlib.util
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
 
-from sample_data.common import optional_pkg_available
+from sample_data.common import CREATION_DATETIME, optional_pkg_available
 
 
 def create_sample_jp2():
@@ -71,7 +70,7 @@ def create_sample_jp2():
         "description": "Sample JPEG-2000 file for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Save to JPEG-2000
@@ -145,7 +144,7 @@ def create_sample_jp2_jpeg2000():
         "description": "Sample JPEG-2000 file with .jpeg2000 extension for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Save to JPEG-2000

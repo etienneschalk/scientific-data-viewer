@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
 
-from sample_data.common import optional_pkg_available
+from sample_data.common import CREATION_DATETIME, optional_pkg_available
 
 
 def create_sample_netcdf():
@@ -95,7 +95,7 @@ def create_sample_netcdf():
         "description": "Sample NetCDF file for testing VSCode extension",
         "institution": "Test Institution",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 
@@ -229,7 +229,7 @@ def create_sample_netcdf4():
         "description": "Sample NetCDF4 file for testing VSCode extension",
         "institution": "Climate Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.7",
         "featureType": "timeSeries",
     }
@@ -375,7 +375,7 @@ def create_sample_netcdf_cdf():
             "INSTITUTION": {0: "Climate Test Center"},
             "SOURCE": {0: "Generated for testing"},
             "HISTORY": {
-                0: f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                0: f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}"
             },
         }
         cdf_file.write_globalattrs(global_attrs)
@@ -441,7 +441,7 @@ def create_sample_netcdf_netcdf():
         "description": "Sample NetCDF file with .netcdf extension for testing VSCode extension",
         "institution": "Climate Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.7",
         "featureType": "timeSeries",
     }
@@ -505,7 +505,7 @@ def create_sample_file_with_spaces():
         "description": "Test file with spaces in the filename for testing VSCode extension",
         "institution": "Test Center",
         "source": "Generated for testing filename handling",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
         "test_purpose": "filename_with_spaces",
     }
@@ -543,7 +543,7 @@ def create_sample_netcdf_gzip():
     ds.attrs = {
         "title": "Gzip NetCDF sample",
         "description": "Shows __xarray_encoding.filters.* in the viewer (v0.13)",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     ds.to_netcdf(
@@ -737,7 +737,7 @@ def create_sample_netcdf_large_4d():
         "issue": "https://github.com/etienneschalk/scientific-data-viewer/issues/97",
         "purpose": "Test that resource-intensive plotting processes are properly killed on timeout",
         "total_elements": str(time_dim * y_dim * x_dim * level_dim),
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
     }
 

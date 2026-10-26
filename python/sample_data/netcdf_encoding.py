@@ -1,10 +1,11 @@
 """NetCDF sample exercising many encoding options."""
 
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
+
+from sample_data.common import CREATION_DATETIME
 
 
 def create_sample_netcdf_many_encoding():
@@ -548,7 +549,7 @@ def create_sample_netcdf_many_encoding():
         "description": "Test dataset with various encoding combinations to test CF attributes handling in the VSCode extension",
         "institution": "Scientific Data Viewer Test Center",
         "source": "Generated for testing encoding combinations",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.8",
         "featureType": "grid",
         "data_type": "test_data_encoding",

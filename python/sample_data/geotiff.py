@@ -2,12 +2,11 @@
 
 import importlib.util
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
 
-from sample_data.common import optional_pkg_available
+from sample_data.common import CREATION_DATETIME, optional_pkg_available
 
 
 def create_sample_geotiff():
@@ -121,7 +120,7 @@ def create_sample_geotiff():
         "description": "Sample GeoTIFF file for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
         "spatial_resolution": "1 degree",
         "temporal_coverage": "2020-01-01",
@@ -202,7 +201,7 @@ def create_sample_geotiff_tiff():
         "description": "Sample GeoTIFF file with .tiff extension for testing VSCode extension",
         "institution": "Satellite Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
     }
 
     # Save to GeoTIFF
@@ -276,7 +275,7 @@ def create_sample_geotiff_geotiff():
         "description": "Sample GeoTIFF file for testing VSCode extension",
         "institution": "Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
         "spatial_resolution": "0.1 degrees",
         "temporal_coverage": "2020-01-01",
@@ -384,7 +383,7 @@ def create_sample_multiband_geotiff():
         "description": "Sample multi-band GeoTIFF file for testing band-to-variables conversion",
         "institution": "Test Center",
         "source": "Generated for testing",
-        "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
         "Conventions": "CF-1.6",
         "spatial_resolution": "0.2 degrees",
         "temporal_coverage": "2020-01-01",

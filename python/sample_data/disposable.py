@@ -1,12 +1,11 @@
 """Disposable files used to test file deletion."""
 
 import os
-from datetime import datetime
 
 import numpy as np
 import xarray as xr
 
-from sample_data.common import optional_pkg_available
+from sample_data.common import CREATION_DATETIME, optional_pkg_available
 
 
 def cleanup_disposable_files():
@@ -100,7 +99,7 @@ def create_disposable_netcdf_files():
             "description": f"Small disposable NetCDF file {i:02d} for testing file deletion",
             "institution": "Test Center",
             "source": "Generated for testing deletion",
-            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
             "Conventions": "CF-1.6",
             "test_purpose": "disposable_deletion_testing",
             "file_number": i,
@@ -197,7 +196,7 @@ def create_disposable_zarr_files():
             "description": f"Small disposable Zarr file {i:02d} for testing file deletion",
             "institution": "Test Center",
             "source": "Generated for testing deletion",
-            "history": f"Created on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
             "Conventions": "CF-1.6",
             "test_purpose": "disposable_deletion_testing",
             "file_number": i,

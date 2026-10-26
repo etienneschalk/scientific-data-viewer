@@ -1,6 +1,12 @@
 """Entry point: create every sample file under sample-data/."""
 
 import os
+import traceback
+import zlib
+from collections.abc import Callable
+from dataclasses import dataclass
+
+import numpy as np
 
 from sample_data.broken import create_broken_files
 from sample_data.disposable import (
@@ -60,295 +66,258 @@ from sample_data.zarr import (
 )
 
 
-def main(do_create_disposable_files: bool = False):
-    """Create all sample data files."""
-    print("🔬 Creating sample scientific data files for VSCode extension testing...")
-    print("=" * 80)
+@dataclass(frozen=True)
+class Generator:
+    """One sample generator.
 
-    # Create output directory
-    os.makedirs("sample-data", exist_ok=True)
-    os.chdir("sample-data")
+    ``create`` returns the created file name, a list of names, or a falsy value
+    when an optional dependency is missing (then ``skipped`` is reported, if set).
+    """
 
-    created_files = []
-    skipped_files = []
+    create: Callable[[], str | list[str] | None]
+    label: str
+    skipped: str | None = None
 
-    try:
-        # Create sample files for all supported formats
-        print("\n📁 Creating NetCDF files...")
-        netcdf_file = create_sample_netcdf()
-        if netcdf_file:
-            created_files.append((netcdf_file, "NetCDF"))
 
-        netcdf4_file = create_sample_netcdf4()
-        if netcdf4_file:
-            created_files.append((netcdf4_file, "NetCDF4"))
+G = Generator
+SECTIONS: list[tuple[str, list[Generator]]] = [
+    (
+        "📁 Creating NetCDF files...",
+        [
+            G(create_sample_netcdf, "NetCDF"),
+            G(create_sample_netcdf4, "NetCDF4"),
+            G(create_sample_netcdf_cdf, "CDF (NASA)"),
+            G(create_sample_netcdf_netcdf, "NetCDF NETCDF"),
+            G(create_sample_netcdf_many_vars, "NetCDF (Many Variables)"),
+            G(
+                create_sample_netcdf_multiple_groups,
+                "NetCDF Multiple Groups",
+                "NetCDF Multiple Groups (netCDF4 not available)",
+            ),
+            G(
+                create_sample_netcdf_unordered_groups,
+                "NetCDF (Unordered Groups)",
+                "NetCDF Unordered Groups (netCDF4 not available)",
+            ),
+            G(create_sample_netcdf_long_variable_names, "NetCDF (Long Variable Names)"),
+            G(create_sample_netcdf_complex_long_names, "NetCDF (Complex Long Names)"),
+            # Large 4D dataset for timeout testing (issue #97)
+            G(create_sample_netcdf_large_4d, "NetCDF (Large 4D - Timeout Test)"),
+            G(create_sample_netcdf_many_encoding, "NetCDF (Many Encoding)"),
+            G(create_sample_netcdf_no_attributes, "NetCDF (No Attributes)"),
+            G(
+                create_sample_netcdf_broken_datetime_variable,
+                "NetCDF (Broken Datetime Units)",
+            ),
+            G(create_sample_netcdf_compound_dtype_variable, "NetCDF (Compound Dtype)"),
+            G(create_sample_netcdf_gzip, "NetCDF (gzip / filters)"),
+        ],
+    ),
+    (
+        "📁 Creating HDF5 files...",
+        [
+            G(create_sample_hdf5, "HDF5"),
+            G(create_sample_hdf5_hdf5, "HDF5 HDF5"),
+        ],
+    ),
+    (
+        "📁 Creating GRIB files...",
+        [
+            G(create_sample_grib, "GRIB", "GRIB (cfgrib not available)"),
+            G(create_sample_grib_grib2, "GRIB2", "GRIB2 (eccodes not available)"),
+            G(create_sample_grib_grb, "GRIB GRB", "GRIB GRB (eccodes not available)"),
+            G(
+                create_sample_grib_grb2_file,
+                "GRIB GRB2",
+                "GRIB GRB2 (eccodes not available)",
+            ),
+        ],
+    ),
+    (
+        "📁 Creating GeoTIFF files...",
+        [
+            G(create_sample_geotiff, "GeoTIFF", "GeoTIFF (rioxarray not available)"),
+            G(
+                create_sample_geotiff_tiff,
+                "GeoTIFF TIFF",
+                "GeoTIFF TIFF (rioxarray not available)",
+            ),
+            G(
+                create_sample_geotiff_geotiff,
+                "GeoTIFF GEOTIFF",
+                "GeoTIFF GEOTIFF (rioxarray not available)",
+            ),
+            G(
+                create_sample_multiband_geotiff,
+                "Multi-band GeoTIFF",
+                "Multi-band GeoTIFF (rioxarray not available)",
+            ),
+            G(
+                create_sample_geotiff_cog,
+                "Cloud Optimized GeoTIFF (COG)",
+                "COG GeoTIFF (rasterio not available)",
+            ),
+        ],
+    ),
+    (
+        "📁 Creating JPEG-2000 files...",
+        [
+            G(create_sample_jp2, "JPEG-2000", "JPEG-2000 (rioxarray not available)"),
+            G(
+                create_sample_jp2_jpeg2000,
+                "JPEG-2000 JPEG2000",
+                "JPEG-2000 JPEG2000 (rioxarray not available)",
+            ),
+        ],
+    ),
+    (
+        "📁 Creating Zarr files...",
+        [
+            G(
+                create_sample_zarr_single_group_from_dataset,
+                "Zarr",
+                "Zarr (zarr not available)",
+            ),
+            G(
+                create_sample_zarr_with_nested_groups_from_zarr,
+                "Nested Zarr",
+                "Nested Zarr (zarr not available)",
+            ),
+            G(
+                create_sample_zarr_with_nested_groups_from_datatree,
+                "xr.DataTree Zarr",
+                "xr.DataTree Zarr (zarr or datatree not available)",
+            ),
+            G(
+                create_sample_zarr_arborescence,
+                "Zarr Arborescence",
+                "Zarr Arborescence (zarr or xarray not available)",
+            ),
+            G(
+                create_sample_zarr_inherited_coords,
+                "Zarr Inherited Coords",
+                "Zarr Inherited Coords (zarr or xarray not available)",
+            ),
+            G(
+                create_sample_zarr_deeply_nested_attributes,
+                "Zarr deeply nested attrs (Issue #120)",
+                "Zarr deeply nested attrs (zarr not available)",
+            ),
+        ],
+    ),
+    (
+        "📁 Creating v0.13 Zarr / Kerchunk samples...",
+        [
+            G(
+                create_sample_zarr_v3_plain_directory,
+                "Zarr v3 (unsuffixed directory)",
+                "Zarr v3 unsuffixed directory (zarr not available)",
+            ),
+            G(
+                create_sample_zarr_v3_sharded,
+                "Zarr v3 (sharded)",
+                "Zarr v3 sharded (zarr not available)",
+            ),
+            G(
+                create_sample_zarr_v3_zip_archive,
+                "Zarr v3 (ZIP archive)",
+                "Zarr v3 ZIP (zarr not available)",
+            ),
+            G(
+                create_sample_kerchunk_reference,
+                "Kerchunk (virtual Zarr)",
+                "Kerchunk reference (kerchunk not available)",
+            ),
+        ],
+    ),
+    (
+        "📄 Creating file with spaces in name...",
+        [G(create_sample_file_with_spaces, "File with Spaces")],
+    ),
+    (
+        "💥 Creating broken files for error handling...",
+        [G(create_broken_files, "Broken File")],
+    ),
+    (
+        "📅 Creating temporal test datasets (temporal-datasets/)...",
+        [G(create_temporal_datasets, "Temporal")],
+    ),
+]
 
-        netcdf_cdf_file = create_sample_netcdf_cdf()
-        if netcdf_cdf_file:
-            created_files.append((netcdf_cdf_file, "CDF (NASA)"))
+DISPOSABLE = [
+    G(create_disposable_netcdf_files, "Disposable NetCDF"),
+    G(create_disposable_zarr_files, "Disposable Zarr"),
+]
 
-        netcdf_netcdf_file = create_sample_netcdf_netcdf()
-        if netcdf_netcdf_file:
-            created_files.append((netcdf_netcdf_file, "NetCDF NETCDF"))
 
-        many_vars_netcdf_file = create_sample_netcdf_many_vars()
-        if many_vars_netcdf_file:
-            created_files.append((many_vars_netcdf_file, "NetCDF (Many Variables)"))
+def seed_for(generator: Generator) -> int:
+    """Stable numpy seed per generator, so each file is reproducible on its own
+    (independent of which generators ran before it)."""
+    return zlib.crc32(generator.create.__name__.encode())
 
-        multigroup_netcdf_file = create_sample_netcdf_multiple_groups()
-        if multigroup_netcdf_file:
-            created_files.append((multigroup_netcdf_file, "NetCDF Multiple Groups"))
-        else:
-            skipped_files.append("NetCDF Multiple Groups (netCDF4 not available)")
 
-        unordered_groups_netcdf_file = create_sample_netcdf_unordered_groups()
-        if unordered_groups_netcdf_file:
-            created_files.append(
-                (unordered_groups_netcdf_file, "NetCDF (Unordered Groups)")
-            )
-        else:
-            skipped_files.append("NetCDF Unordered Groups (netCDF4 not available)")
+class Report:
+    def __init__(self) -> None:
+        self.created: list[tuple[str, str]] = []
+        self.skipped: list[str] = []
+        self.failed: list[str] = []
 
-        long_names_netcdf_file = create_sample_netcdf_long_variable_names()
-        if long_names_netcdf_file:
-            created_files.append(
-                (long_names_netcdf_file, "NetCDF (Long Variable Names)")
-            )
-
-        complex_long_names_netcdf_file = create_sample_netcdf_complex_long_names()
-        if complex_long_names_netcdf_file:
-            created_files.append(
-                (complex_long_names_netcdf_file, "NetCDF (Complex Long Names)")
-            )
-
-        # Large 4D dataset for timeout testing (issue #97)
-        large_4d_netcdf_file = create_sample_netcdf_large_4d()
-        if large_4d_netcdf_file:
-            created_files.append(
-                (large_4d_netcdf_file, "NetCDF (Large 4D - Timeout Test)")
-            )
-
-        many_encoding_netcdf_file = create_sample_netcdf_many_encoding()
-        if many_encoding_netcdf_file:
-            created_files.append((many_encoding_netcdf_file, "NetCDF (Many Encoding)"))
-
-        no_attrs_netcdf_file = create_sample_netcdf_no_attributes()
-        if no_attrs_netcdf_file:
-            created_files.append((no_attrs_netcdf_file, "NetCDF (No Attributes)"))
-
-        broken_datetime_netcdf_file = create_sample_netcdf_broken_datetime_variable()
-        if broken_datetime_netcdf_file:
-            created_files.append(
-                (broken_datetime_netcdf_file, "NetCDF (Broken Datetime Units)")
-            )
-
-        compound_dtype_netcdf_file = create_sample_netcdf_compound_dtype_variable()
-        if compound_dtype_netcdf_file:
-            created_files.append(
-                (compound_dtype_netcdf_file, "NetCDF (Compound Dtype)")
-            )
-
-        gzip_netcdf_file = create_sample_netcdf_gzip()
-        if gzip_netcdf_file:
-            created_files.append((gzip_netcdf_file, "NetCDF (gzip / filters)"))
-
-        print("\n📁 Creating HDF5 files...")
-        hdf5_file = create_sample_hdf5()
-        if hdf5_file:
-            created_files.append((hdf5_file, "HDF5"))
-
-        hdf5_hdf5_file = create_sample_hdf5_hdf5()
-        if hdf5_hdf5_file:
-            created_files.append((hdf5_hdf5_file, "HDF5 HDF5"))
-
-        print("\n📁 Creating GRIB files...")
-        grib_file = create_sample_grib()
-        if grib_file:
-            created_files.append((grib_file, "GRIB"))
-        else:
-            skipped_files.append("GRIB (cfgrib not available)")
-
-        grib2_file = create_sample_grib_grib2()
-        if grib2_file:
-            created_files.append((grib2_file, "GRIB2"))
-        else:
-            skipped_files.append("GRIB2 (eccodes not available)")
-
-        grib_grb_file = create_sample_grib_grb()
-        if grib_grb_file:
-            created_files.append((grib_grb_file, "GRIB GRB"))
-        else:
-            skipped_files.append("GRIB GRB (eccodes not available)")
-
-        grib_grb2_file = create_sample_grib_grb2_file()
-        if grib_grb2_file:
-            created_files.append((grib_grb2_file, "GRIB GRB2"))
-        else:
-            skipped_files.append("GRIB GRB2 (eccodes not available)")
-
-        print("\n📁 Creating GeoTIFF files...")
-        geotiff_file = create_sample_geotiff()
-        if geotiff_file:
-            created_files.append((geotiff_file, "GeoTIFF"))
-        else:
-            skipped_files.append("GeoTIFF (rioxarray not available)")
-
-        geotiff_tiff_file = create_sample_geotiff_tiff()
-        if geotiff_tiff_file:
-            created_files.append((geotiff_tiff_file, "GeoTIFF TIFF"))
-        else:
-            skipped_files.append("GeoTIFF TIFF (rioxarray not available)")
-
-        geotiff_geotiff_file = create_sample_geotiff_geotiff()
-        if geotiff_geotiff_file:
-            created_files.append((geotiff_geotiff_file, "GeoTIFF GEOTIFF"))
-        else:
-            skipped_files.append("GeoTIFF GEOTIFF (rioxarray not available)")
-
-        multiband_geotiff_file = create_sample_multiband_geotiff()
-        if multiband_geotiff_file:
-            created_files.append((multiband_geotiff_file, "Multi-band GeoTIFF"))
-        else:
-            skipped_files.append("Multi-band GeoTIFF (rioxarray not available)")
-
-        cog_geotiff_file = create_sample_geotiff_cog()
-        if cog_geotiff_file:
-            created_files.append((cog_geotiff_file, "Cloud Optimized GeoTIFF (COG)"))
-        else:
-            skipped_files.append("COG GeoTIFF (rasterio not available)")
-
-        print("\n📁 Creating JPEG-2000 files...")
-        jp2_file = create_sample_jp2()
-        if jp2_file:
-            created_files.append((jp2_file, "JPEG-2000"))
-        else:
-            skipped_files.append("JPEG-2000 (rioxarray not available)")
-
-        jp2_jpeg2000_file = create_sample_jp2_jpeg2000()
-        if jp2_jpeg2000_file:
-            created_files.append((jp2_jpeg2000_file, "JPEG-2000 JPEG2000"))
-        else:
-            skipped_files.append("JPEG-2000 JPEG2000 (rioxarray not available)")
-
-        print("\n📁 Creating Zarr files...")
-        zarr_file = create_sample_zarr_single_group_from_dataset()
-        if zarr_file:
-            created_files.append((zarr_file, "Zarr"))
-        else:
-            skipped_files.append("Zarr (zarr not available)")
-
-        nested_zarr_file = create_sample_zarr_with_nested_groups_from_zarr()
-        if nested_zarr_file:
-            created_files.append((nested_zarr_file, "Nested Zarr"))
-        else:
-            skipped_files.append("Nested Zarr (zarr not available)")
-
-        datatree_zarr_file = create_sample_zarr_with_nested_groups_from_datatree()
-        if datatree_zarr_file:
-            created_files.append((datatree_zarr_file, "xr.DataTree Zarr"))
-        else:
-            skipped_files.append("xr.DataTree Zarr (zarr or datatree not available)")
-
-        arborescence_zarr_file = create_sample_zarr_arborescence()
-        if arborescence_zarr_file:
-            created_files.append((arborescence_zarr_file, "Zarr Arborescence"))
-        else:
-            skipped_files.append("Zarr Arborescence (zarr or xarray not available)")
-
-        inherited_coords_zarr_file = create_sample_zarr_inherited_coords()
-        if inherited_coords_zarr_file:
-            created_files.append((inherited_coords_zarr_file, "Zarr Inherited Coords"))
-        else:
-            skipped_files.append("Zarr Inherited Coords (zarr or xarray not available)")
-
-        deeply_nested_attrs_zarr_file = create_sample_zarr_deeply_nested_attributes()
-        if deeply_nested_attrs_zarr_file:
-            created_files.append(
-                (deeply_nested_attrs_zarr_file, "Zarr deeply nested attrs (Issue #120)")
-            )
-        else:
-            skipped_files.append("Zarr deeply nested attrs (zarr not available)")
-
-        print("\n📁 Creating v0.13 Zarr / Kerchunk samples...")
-        zarr_v3_plain_dir = create_sample_zarr_v3_plain_directory()
-        if zarr_v3_plain_dir:
-            created_files.append((zarr_v3_plain_dir, "Zarr v3 (unsuffixed directory)"))
-        else:
-            skipped_files.append("Zarr v3 unsuffixed directory (zarr not available)")
-
-        zarr_v3_sharded_file = create_sample_zarr_v3_sharded()
-        if zarr_v3_sharded_file:
-            created_files.append((zarr_v3_sharded_file, "Zarr v3 (sharded)"))
-        else:
-            skipped_files.append("Zarr v3 sharded (zarr not available)")
-
-        zarr_v3_zip_file = create_sample_zarr_v3_zip_archive()
-        if zarr_v3_zip_file:
-            created_files.append((zarr_v3_zip_file, "Zarr v3 (ZIP archive)"))
-        else:
-            skipped_files.append("Zarr v3 ZIP (zarr not available)")
-
-        kerchunk_ref_file = create_sample_kerchunk_reference()
-        if kerchunk_ref_file:
-            created_files.append((kerchunk_ref_file, "Kerchunk (virtual Zarr)"))
-        else:
-            skipped_files.append("Kerchunk reference (kerchunk not available)")
-
-        print("\n📄 Creating file with spaces in name...")
-        spaces_file = create_sample_file_with_spaces()
-        if spaces_file:
-            created_files.append((spaces_file, "File with Spaces"))
-
-        print("\n💥 Creating broken files for error handling...")
-        broken_files = create_broken_files()
-        if broken_files:
-            for broken_file in broken_files:
-                created_files.append((broken_file, "Broken File"))
-
-        if do_create_disposable_files:
-            print("\n🗑️ Creating disposable files for deletion testing...")
-            cleanup_disposable_files()
-
-            disposable_netcdf_files = create_disposable_netcdf_files()
-            if disposable_netcdf_files:
-                for disposable_file in disposable_netcdf_files:
-                    created_files.append((disposable_file, "Disposable NetCDF"))
-
-            disposable_zarr_files = create_disposable_zarr_files()
-            if disposable_zarr_files:
-                for disposable_file in disposable_zarr_files:
-                    created_files.append((disposable_file, "Disposable Zarr"))
-        else:
-            print("\n🗑️ Skipping disposable files for deletion testing...")
-
+    def print_summary(self) -> None:
         print("\n" + "=" * 80)
-        print("✅ Sample data files created successfully!")
-        print(f"\n📊 Created {len(created_files)} files:")
-        for filename, format_name in created_files:
+        print(f"\n📊 Created {len(self.created)} files:")
+        for filename, format_name in self.created:
             print(f"  • {filename} ({format_name} format)")
-
-        if skipped_files:
-            print(f"\n⚠️  Skipped {len(skipped_files)} formats (missing dependencies):")
-            for format_name in skipped_files:
+        if self.skipped:
+            print(f"\n⚠️  Skipped {len(self.skipped)} formats (missing dependencies):")
+            for format_name in self.skipped:
                 print(f"  • {format_name}")
-
+        if self.failed:
+            print(f"\n❌ {len(self.failed)} generator(s) failed:")
+            for name in self.failed:
+                print(f"  • {name}")
+            return
+        print("\n✅ Sample data files created successfully!")
         print("\n🎯 You can now test the VSCode extension with these files!")
         print("   Right-click on any file in VS Code and select 'Open in Data Viewer'")
 
-        # Create temporal datasets
-        print("\n" + "=" * 80)
-        print("📅 Creating temporal test datasets...")
-        temporal_files = create_temporal_datasets()
-        if temporal_files:
-            print(
-                f"\n✅ Created {len(temporal_files)} temporal test datasets in temporal-datasets/"
-            )
+    def run(self, generator: Generator) -> None:
+        np.random.seed(seed_for(generator))
+        try:
+            result = generator.create()
+        except Exception:
+            name = generator.create.__name__
+            print(f"\n❌ {name} failed:\n{traceback.format_exc()}")
+            self.failed.append(f"{generator.label} ({name})")
+            return
+        if not result:
+            if generator.skipped:
+                self.skipped.append(generator.skipped)
+            return
+        for filename in result if isinstance(result, list) else [result]:
+            self.created.append((filename, generator.label))
 
-    except Exception as e:
-        print(f"\n❌ Error creating sample data: {e}")
-        import traceback
 
-        print(traceback.format_exc())
-        return 1
+def main(do_create_disposable_files: bool = False) -> int:
+    """Create all sample data files; returns 1 if any generator failed."""
+    print("🔬 Creating sample scientific data files for VSCode extension testing...")
+    print("=" * 80)
 
-    return 0
+    os.makedirs("sample-data", exist_ok=True)
+    os.chdir("sample-data")
+
+    report = Report()
+    for title, generators in SECTIONS:
+        print(f"\n{title}")
+        for generator in generators:
+            report.run(generator)
+
+    if do_create_disposable_files:
+        print("\n🗑️ Creating disposable files for deletion testing...")
+        cleanup_disposable_files()
+        for generator in DISPOSABLE:
+            report.run(generator)
+    else:
+        print("\n🗑️ Skipping disposable files for deletion testing...")
+
+    report.print_summary()
+    return 1 if report.failed else 0
