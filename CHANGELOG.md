@@ -71,6 +71,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Tests**: `python/tests/test_empty_selection.py`
 - **Files left open on plot errors**: opened datasets are now closed on every path (`contextlib.closing(OpenedData)`).
   - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/plotting/api.py`, `python/sdv_backend/info/extract.py`
+- **Kerchunk plots failed with relative references**: chunk targets such as `"sample_data.nc"` were resolved against the Python process working directory instead of the reference file's folder, so reading data (plots) failed with `ReferenceNotReachable` while File Information still worked. JSON references are now loaded with relative targets resolved against their folder.
+  - **Files**: `python/sdv_backend/formats/kerchunk.py`, `python/sdv_backend/opening.py`, `python/tools/golden_snapshots.py`
+  - **Tests**: `python/tests/test_kerchunk_references.py`
 - **Sample generation aborted at `sample_data.geotiff`**: GDAL cannot infer a driver from the `.geotiff` extension, and the abort skipped every later generator (all v0.13 fixtures). The file is written with `driver="GTiff"`.
   - **Files**: `python/sample_data/geotiff.py`
 

@@ -56,7 +56,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Safety net    | Golden snapshot harness `python/tools/golden_snapshots.py` (82 info/plot cases, frozen clock) recorded before any move                                                                              |
 | Package split | `python/get_data_info.py` (3,700 lines) → `python/sdv_backend/`; `get_data_info.py` kept as entry point                                                                                             |
 | Decomposition | `create_plot` ~540 → ~110 lines (`selection.py`, `render.py`, `PlotOptions`); `get_file_info` split into steps (`InfoOptions`); shared `OpenedData`; CLI `build_parser`                             |
-| Fixes         | Unsupported `plot_type` crash; empty selection `ZeroDivisionError`; files left open on plot errors                                                                                                  |
+| Fixes         | Unsupported `plot_type` crash; empty selection `ZeroDivisionError`; files left open on plot errors; Kerchunk relative references unreachable when plotting                                          |
 | Sample data   | `create_sample_data.py` (6,000 lines) → `python/sample_data/`; table-driven `main`; reproducible; `--overwrite`, `--disposable`; `.geotiff` generator fix (all v0.13 fixtures were never generated) |
 | Tests         | Moved to `python/tests/`; `python/pyproject.toml`; new `test_empty_selection.py`                                                                                                                    |
 

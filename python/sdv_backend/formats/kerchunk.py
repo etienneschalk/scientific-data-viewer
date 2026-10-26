@@ -42,3 +42,30 @@ def kerchunk_json_error(path: Path) -> str | None:
     if not isinstance(payload["refs"], dict):
         return "Kerchunk 'refs' must be a JSON object."
     return None
+
+
+def kerchunk_refs_with_absolute_paths(path: Path) -> dict:
+    """Load Kerchunk JSON references, resolving relative target paths.
+
+    References may point at their source files with relative paths
+    (``["sample_data.nc", offset, length]``). fsspec resolves those against the
+    process working directory, which is not the reference file's folder when the
+    extension runs the backend, so reading data fails with
+    ``ReferenceNotReachable``. Resolve them against ``path``'s folder instead.
+    URLs (``scheme://``), absolute paths and templated targets are kept.
+    """
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    base = path.resolve().parent
+    for key, value in payload["refs"].items():
+        if not (isinstance(value, list) and value and isinstance(value[0], str)):
+            continue
+        target = value[0]
+        if (
+            not target
+            or "://" in target
+            or "{{" in target
+            or Path(target).is_absolute()
+        ):
+            continue
+        payload["refs"][key] = [str(base / target), *value[1:]]
+    return payload

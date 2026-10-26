@@ -10,6 +10,7 @@ import xarray as xr
 from sdv_backend._bootstrap import logger
 from sdv_backend.environment.engines import can_use_datatree
 from sdv_backend.environment.packages import check_package_availability
+from sdv_backend.formats.kerchunk import kerchunk_refs_with_absolute_paths
 from sdv_backend.formats.zarr import zarr_open_location
 from sdv_backend.results import FileFormatInfo
 from sdv_backend.types import DictOfDatasets, EngineType
@@ -179,8 +180,14 @@ def open_datatree_with_fallback(
             if engine == "zarr":
                 open_location, open_extra = zarr_open_location(file_path)
             elif engine == "kerchunk":
-                # kerchunk's xarray backend expects a string path, not pathlib.
-                open_location = str(file_path)
+                # JSON references: resolve relative target paths against the
+                # reference file's folder. Otherwise kerchunk's xarray backend
+                # expects a string path, not pathlib.
+                open_location = (
+                    kerchunk_refs_with_absolute_paths(file_path)
+                    if file_path.suffix.lower() == ".json"
+                    else str(file_path)
+                )
 
             if can_use_datatree(engine):
                 xdt_or_xds, decode_cf_degraded = _open_with_decode_cf_fallback(

@@ -89,6 +89,7 @@ Before any code moved, a **golden snapshot harness** (`python/tools/golden_snaps
 
 - **Unsupported plot type crashed the backend:** `plot <file> <var> histogram` died with `UnboundLocalError` and printed no JSON. It now returns a JSON error. The CLI help no longer advertises `line` / `histogram` (only `auto` exists; the extension always sends `auto`).
 - **Empty plot selections:** a datetime range or dimension slice matching no values failed inside xarray with `ZeroDivisionError`. The plot now fails with _"No data to plot: dimension(s) time are empty after selection. Check the time range […] on 'time'."_
+- **Kerchunk plots failed with relative references:** a reference pointing at `sample_data.nc` (no folder) was looked up in the backend's working directory, not next to the `.kerchunk.json`, so plotting failed while File Information worked. Relative targets are now resolved from the reference file's folder (JSON references).
 - **Open files leaked on plot errors:** files were closed only on success; they are now closed on every path.
 - **Sample generation always aborted:** writing `sample_data.geotiff` failed (GDAL cannot infer a driver from `.geotiff`), and `main()` stopped at the first error, so the v0.13 fixtures (Zarr v3, Kerchunk, COG, JPEG-2000, broken files, temporal datasets) were never generated. Fixed, and a failing generator no longer stops the others.
 
@@ -366,7 +367,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **Plotting** remains **experimental** (timeout, auto strategy only).
 - **`fileSize`** for directory stores is still `os.path.getsize` on the directory inode (rough size, not store bytes).
 - **Unsupported paths** may still show “Missing dependencies for Unknown files:” with an empty package list (pre-existing).
-- **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing — treat as experimental.
+- **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 

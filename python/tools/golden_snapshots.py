@@ -299,6 +299,13 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
     ),
     ("cog", "sample_data_cog.tif", "/band_data", "auto", []),
     ("zarr_v3_zip", "sample_zarr_v3.zarr.zip", "/chlorophyll", "auto", []),
+    (
+        "kerchunk",
+        "sample_data.kerchunk.json",
+        "/temperature",
+        "auto",
+        ["--dimension-slices", '{"time": 0}'],
+    ),
     ("err_missing_var", NC, "/does_not_exist", "auto", []),
     (
         "err_bad_slices",

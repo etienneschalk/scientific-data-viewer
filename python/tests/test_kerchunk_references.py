@@ -82,3 +82,32 @@ def test_unnamed_json_opens_with_open_as_kerchunk_flag(tmp_path) -> None:
     )
     assert isinstance(with_flag, FileInfoResult)
     assert with_flag.used_engine == "kerchunk"
+
+
+def test_relative_reference_paths_resolve_from_reference_folder(
+    tmp_path, monkeypatch
+) -> None:
+    """Relative targets ("src.nc") are read from the JSON's folder, whatever the cwd."""
+    pytest.importorskip("kerchunk")
+    from kerchunk.hdf import SingleHdf5ToZarr
+
+    from sdv_backend.plotting.api import create_plot
+    from sdv_backend.results import CreatePlotResult
+
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    nc_path = data_dir / "src.nc"
+    xr.Dataset(
+        {"temp": (("y", "x"), np.arange(64, dtype="float32").reshape(8, 8))}
+    ).to_netcdf(nc_path)
+    # Built from inside data/ (like create_sample_data.py) so the stored target
+    # is the relative "src.nc"; inline_threshold=0 keeps chunks as references.
+    monkeypatch.chdir(data_dir)
+    refs = SingleHdf5ToZarr("src.nc", "src.nc", inline_threshold=0).translate()
+    assert refs["refs"]["temp/0.0"][0] == "src.nc"
+    ref_path = data_dir / "src.kerchunk.json"
+    ref_path.write_text(json.dumps(refs))
+
+    monkeypatch.chdir(tmp_path)  # not the reference folder
+    result = create_plot(ref_path, "/temp")
+    assert isinstance(result, CreatePlotResult), result
