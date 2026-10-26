@@ -7,6 +7,7 @@ import xarray as xr
 from sdv_backend.info.datatree import _flatten_datatree_groups
 from sdv_backend.info.encoding import _collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.options import InfoOptions
 from sdv_backend.info.variables import create_coord_info, create_variable_info
 from sdv_backend.results import FileInfoResult
 
@@ -88,14 +89,10 @@ def test_get_file_info_group_order_flag(tmp_path) -> None:
     xdt.to_netcdf(nc_path)
 
     sorted_result = get_file_info(
-        nc_path,
-        small_variable_bytes=0,
-        order_groups_alphabetically=True,
+        nc_path, InfoOptions(small_variable_bytes=0, order_groups_alphabetically=True)
     )
     file_order_result = get_file_info(
-        nc_path,
-        small_variable_bytes=0,
-        order_groups_alphabetically=False,
+        nc_path, InfoOptions(small_variable_bytes=0, order_groups_alphabetically=False)
     )
 
     assert isinstance(sorted_result, FileInfoResult)
@@ -129,13 +126,11 @@ def test_get_file_info_hides_encoding_attributes_when_disabled(
 
     with_encoding = get_file_info(
         nc_path,
-        small_variable_bytes=0,
-        show_xarray_encoding_attributes=True,
+        InfoOptions(small_variable_bytes=0, show_xarray_encoding_attributes=True),
     )
     without_encoding = get_file_info(
         nc_path,
-        small_variable_bytes=0,
-        show_xarray_encoding_attributes=False,
+        InfoOptions(small_variable_bytes=0, show_xarray_encoding_attributes=False),
     )
 
     assert isinstance(with_encoding, FileInfoResult)

@@ -1,8 +1,9 @@
 """Opening files as xarray DataTree/Dataset, with decode_cf fallback."""
 
 from collections.abc import Callable
-from pathlib import Path
-from typing import Any
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from typing import Any, Literal, cast
 
 import xarray as xr
 
@@ -280,3 +281,56 @@ def open_datatree_with_fallback(
 
     # If all engines failed, raise the last error
     raise exceptions[-1]
+
+
+@dataclass
+class OpenedData:
+    """A file opened either as a DataTree or as a dict of per-group Datasets.
+
+    Use with ``contextlib.closing`` so the underlying files are always closed.
+    """
+
+    data: xr.DataTree | DictOfDatasets
+    used_engine: str
+    decode_cf_degraded: bool
+
+    @classmethod
+    def open(
+        cls,
+        file_path: Path,
+        file_format_info: FileFormatInfo,
+        convert_bands_to_variables: bool = False,
+    ) -> "OpenedData":
+        """Open with engine fallback (see ``open_datatree_with_fallback``)."""
+        data, used_engine, decode_cf_degraded = open_datatree_with_fallback(
+            file_path, file_format_info, convert_bands_to_variables
+        )
+        return cls(data, used_engine, decode_cf_degraded)
+
+    @property
+    def is_tree(self) -> bool:
+        return can_use_datatree(self.used_engine) and isinstance(self.data, xr.DataTree)
+
+    @property
+    def tree(self) -> xr.DataTree:
+        return cast("xr.DataTree", self.data)
+
+    @property
+    def datasets(self) -> DictOfDatasets:
+        return cast("DictOfDatasets", self.data)
+
+    def group(
+        self, group_name: PurePosixPath | str, inherit: bool | Literal["all_coords"]
+    ) -> xr.Dataset:
+        """Dataset of one group; ``inherit`` is DataTree ``to_dataset(inherit=...)``."""
+        if self.is_tree:
+            return self.tree[str(group_name)].to_dataset(inherit=inherit)
+        return self.datasets[str(group_name)]
+
+    def close(self) -> None:
+        if self.is_tree:
+            self.tree.close()
+            return
+        for group, xds in self.datasets.items():
+            logger.info(f"Close {group=}")
+            xds.close()

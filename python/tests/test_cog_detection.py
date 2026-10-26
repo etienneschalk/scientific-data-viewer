@@ -12,6 +12,7 @@ from sdv_backend.formats.geotiff import (
     refine_geotiff_display_name,
 )
 from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.options import InfoOptions
 from sdv_backend.results import FileInfoResult
 
 
@@ -77,8 +78,8 @@ def test_get_file_info_labels_cog_after_rasterio_open(tmp_path) -> None:
     _write_cog(cog_path)
     _write_plain_geotiff(plain_path)
 
-    cog_result = get_file_info(cog_path, small_variable_bytes=0)
-    plain_result = get_file_info(plain_path, small_variable_bytes=0)
+    cog_result = get_file_info(cog_path, InfoOptions(small_variable_bytes=0))
+    plain_result = get_file_info(plain_path, InfoOptions(small_variable_bytes=0))
     assert isinstance(cog_result, FileInfoResult)
     assert isinstance(plain_result, FileInfoResult)
     assert cog_result.format_info.display_name == COG_DISPLAY_NAME

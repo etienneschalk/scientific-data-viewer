@@ -1,72 +1,19 @@
 """Selecting the data to plot: open file, find variable, slice and time-filter."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
-from typing import Any, cast
+from pathlib import PurePosixPath
 
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
-from sdv_backend.environment.engines import can_use_datatree
 from sdv_backend.info.datatree import _datatree_inherit_mode
 from sdv_backend.info.variables import check_monotonicity
-from sdv_backend.opening import open_datatree_with_fallback
+from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.options import PlotOptions, _parse_dimension_slices
-from sdv_backend.results import FileFormatInfo
-from sdv_backend.types import DictOfDatasets
 
 
 class PlotInputError(Exception):
     """Expected, user-facing failure; the message becomes ``CreatePlotError.error``."""
-
-
-@dataclass
-class OpenedData:
-    """A file opened either as a DataTree or as a dict of per-group Datasets."""
-
-    data: xr.DataTree | DictOfDatasets
-    used_engine: str
-    inherit: Any  # DataTree ``to_dataset(inherit=...)`` mode
-
-    @property
-    def is_tree(self) -> bool:
-        return can_use_datatree(self.used_engine) and isinstance(self.data, xr.DataTree)
-
-    def group(self, group_name: PurePosixPath) -> xr.Dataset:
-        if self.is_tree:
-            xdt = cast("xr.DataTree", self.data)
-            return xdt[str(group_name)].to_dataset(inherit=self.inherit)
-        xds_dict = cast("DictOfDatasets", self.data)
-        return xds_dict[str(group_name)]
-
-    def close(self) -> None:
-        if self.is_tree:
-            cast("xr.DataTree", self.data).close()
-            return
-        for group, xds in cast("DictOfDatasets", self.data).items():
-            logger.info(f"Close {group=}")
-            xds.close()
-
-
-@contextmanager
-def open_for_plot(
-    file_path: Path, file_format_info: FileFormatInfo, options: PlotOptions
-) -> Iterator[OpenedData]:
-    """Open the file with engine fallback and close it on exit."""
-    xds_or_xdt, used_engine, _decode_cf_degraded = open_datatree_with_fallback(
-        file_path, file_format_info, options.convert_bands_to_variables
-    )
-    opened = OpenedData(
-        data=xds_or_xdt,
-        used_engine=used_engine,
-        inherit=_datatree_inherit_mode(options.show_inherited_coordinates),
-    )
-    try:
-        yield opened
-    finally:
-        opened.close()
 
 
 def split_variable_path(variable_path: str) -> tuple[PurePosixPath, str]:
@@ -192,7 +139,10 @@ def apply_datetime_filter(
         )
         datetime_group = group
         if str(datetime_group_name) not in (str(group_name), "."):
-            datetime_group = opened.group(datetime_group_name)
+            datetime_group = opened.group(
+                datetime_group_name,
+                _datatree_inherit_mode(options.show_inherited_coordinates),
+            )
 
         if (
             datetime_var_name not in datetime_group.coords

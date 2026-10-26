@@ -12,6 +12,7 @@ from sdv_backend.environment.engines import (
 from sdv_backend.info.datatree import _flatten_datatree_groups, inherited_coord_sources
 from sdv_backend.info.encoding import _collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.options import InfoOptions
 from sdv_backend.results import FileInfoResult
 
 
@@ -45,11 +46,12 @@ def test_get_file_info_used_engine_follows_netcdf_order(tmp_path) -> None:
     nc_path = tmp_path / "engine_order.nc"
     xr.Dataset({"temp": ("x", np.arange(4))}).to_netcdf(nc_path)
 
-    netcdf4_first = get_file_info(nc_path, small_variable_bytes=0)
+    netcdf4_first = get_file_info(nc_path, InfoOptions(small_variable_bytes=0))
     h5_first = get_file_info(
         nc_path,
-        small_variable_bytes=0,
-        netcdf_engine_order=["h5netcdf", "netcdf4", "scipy"],
+        InfoOptions(
+            small_variable_bytes=0, netcdf_engine_order=["h5netcdf", "netcdf4", "scipy"]
+        ),
     )
     assert isinstance(netcdf4_first, FileInfoResult)
     assert isinstance(h5_first, FileInfoResult)
@@ -65,7 +67,7 @@ def test_gzip_netcdf_exposes_complevel_filters(tmp_path) -> None:
         encoding={"temp": {"zlib": True, "complevel": 4}},
     )
 
-    result = get_file_info(nc_path, small_variable_bytes=0)
+    result = get_file_info(nc_path, InfoOptions(small_variable_bytes=0))
     assert isinstance(result, FileInfoResult)
     attrs = result.variables_flattened["/"][0].attributes
     assert attrs["__xarray_encoding.filters.zlib"] is True
@@ -92,14 +94,10 @@ def test_inherited_coordinates_on_child_groups(tmp_path) -> None:
     xdt.to_zarr(zarr_path)
 
     shown = get_file_info(
-        zarr_path,
-        small_variable_bytes=0,
-        show_inherited_coordinates=True,
+        zarr_path, InfoOptions(small_variable_bytes=0, show_inherited_coordinates=True)
     )
     hidden = get_file_info(
-        zarr_path,
-        small_variable_bytes=0,
-        show_inherited_coordinates=False,
+        zarr_path, InfoOptions(small_variable_bytes=0, show_inherited_coordinates=False)
     )
     assert isinstance(shown, FileInfoResult)
     assert isinstance(hidden, FileInfoResult)

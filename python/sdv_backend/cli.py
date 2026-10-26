@@ -12,6 +12,7 @@ from sdv_backend.info.display import (
     DEFAULT_SMALL_VARIABLE_BYTES,
 )
 from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.options import InfoOptions
 from sdv_backend.plotting.api import create_plot
 from sdv_backend.plotting.options import (
     PlotOptions,
@@ -23,11 +24,44 @@ from sdv_backend.serialization import to_json_best_effort
 
 
 def main() -> int:
-    """Main entry point for the script.
+    """Main entry point: parse arguments, run info or plot mode, print one JSON line."""
+    parser = build_parser()
+    args = parser.parse_args()
 
-    Parses command line arguments and executes the appropriate mode
-    (info or plot) based on user input.
-    """
+    if args.mode == "plot" and not args.variable_name:
+        print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
+        return 1
+
+    # Opening a Zarr metadata file should open the store that contains it
+    args.file_path = resolve_store_path(args.file_path)
+
+    if args.mode == "info":
+        result = get_file_info(args.file_path, _info_options(args))
+        ok = isinstance(result, FileInfoResult)
+    else:
+        dimension_slices = None
+        if args.dimension_slices and args.dimension_slices.strip():
+            try:
+                dimension_slices = json.loads(args.dimension_slices)
+            except json.JSONDecodeError as e:
+                print(
+                    to_json_best_effort(
+                        {"error": f"Invalid --dimension-slices JSON: {e}"}
+                    )
+                )
+                return 1
+        result = create_plot(
+            args.file_path, args.variable_name, _plot_options(args, dimension_slices)
+        )
+        ok = isinstance(result, CreatePlotResult)
+
+    logger.info(f"{args.mode} Result: {result}")
+    print(to_json_best_effort({"result" if ok else "error": asdict(result)}))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Argument parser for ``info`` and ``plot`` modes (see module docstring)."""
     parser = argparse.ArgumentParser(
         description="Get data file information and create plots from data file variables",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -270,95 +304,57 @@ Examples:
             "(xarray 2026.04+ set_options)"
         ),
     )
+    return parser
 
-    args = parser.parse_args()
 
-    # Validate arguments based on mode
-    if args.mode not in mode_choices:
-        print(to_json_best_effort({"error": f"Invalid mode: {args.mode}"}))
-        return 1
+def _info_options(args: argparse.Namespace) -> InfoOptions:
+    return InfoOptions(
+        convert_bands_to_variables=args.convert_bands_to_variables,
+        small_variable_bytes=args.small_variable_bytes,
+        small_value_display_max_len=args.small_value_display_max_len,
+        order_groups_alphabetically=not args.no_order_groups_alphabetically,
+        show_xarray_encoding_attributes=not args.no_show_xarray_encoding_attributes,
+        netcdf_engine_order=args.netcdf_engine_order,
+        show_inherited_coordinates=not args.no_show_inherited_coordinates,
+        open_as_kerchunk=args.open_as_kerchunk,
+    )
 
-    if args.mode == "plot" and not args.variable_name:
-        print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
-        return 1
 
-    # Opening a Zarr metadata file should open the store that contains it
-    args.file_path = resolve_store_path(args.file_path)
+def _parse_bool_flag(value: str | None) -> bool | None:
+    """'true'/'false' CLI strings -> bool; None when the flag is omitted."""
+    return None if value is None else value == "true"
 
-    # Dispatch based on mode
-    if args.mode == "info":
-        # Get file information
-        result = get_file_info(
-            args.file_path,
-            args.convert_bands_to_variables,
-            small_variable_bytes=args.small_variable_bytes,
-            small_value_display_max_len=args.small_value_display_max_len,
-            order_groups_alphabetically=not args.no_order_groups_alphabetically,
-            show_xarray_encoding_attributes=not args.no_show_xarray_encoding_attributes,
-            netcdf_engine_order=args.netcdf_engine_order,
-            show_inherited_coordinates=not args.no_show_inherited_coordinates,
-            open_as_kerchunk=args.open_as_kerchunk,
-        )
-        ok = isinstance(result, FileInfoResult)
 
-    elif args.mode == "plot":
-        dimension_slices_dict = None
-        if args.dimension_slices and args.dimension_slices.strip():
-            try:
-                dimension_slices_dict = json.loads(args.dimension_slices)
-            except json.JSONDecodeError as e:
-                print(
-                    to_json_best_effort(
-                        {"error": f"Invalid --dimension-slices JSON: {e}"}
-                    )
-                )
-                return 1
-        # Parse xincrease/yincrease from CLI ('true'/'false' strings)
-        xincrease_arg = None
-        if args.xincrease is not None:
-            xincrease_arg = args.xincrease == "true"
-        yincrease_arg = None
-        if args.yincrease is not None:
-            yincrease_arg = args.yincrease == "true"
-
-        # Create plot
-        result = create_plot(
-            args.file_path,
-            args.variable_name,
-            PlotOptions(
-                plot_type=args.plot_type,
-                style=args.style,
-                convert_bands_to_variables=args.convert_bands_to_variables,
-                datetime_variable_name=args.datetime_variable,
-                start_datetime=args.start_datetime,
-                end_datetime=args.end_datetime,
-                dimension_slices=dimension_slices_dict,
-                facet_row=args.facet_row,
-                facet_col=args.facet_col,
-                col_wrap=args.col_wrap,
-                plot_x=args.plot_x,
-                plot_y=args.plot_y,
-                plot_hue=args.plot_hue,
-                xincrease=xincrease_arg,
-                yincrease=yincrease_arg,
-                aspect=args.aspect,
-                size=args.size,
-                robust=args.robust,
-                cmap=args.cmap,
-                bins=args.bins,
-                vmin=args.vmin,
-                vmax=args.vmax,
-                add_colorbar=not args.no_add_colorbar,
-                add_legend=args.add_legend,
-                netcdf_engine_order=args.netcdf_engine_order,
-                show_inherited_coordinates=not args.no_show_inherited_coordinates,
-                open_as_kerchunk=args.open_as_kerchunk,
-                facetgrid_figsize=args.facetgrid_figsize,
-            ),
-        )
-        ok = isinstance(result, CreatePlotResult)
-
-    # Log and print result
-    logger.info(f"{args.mode} Result: {result}")
-    print(to_json_best_effort({"result" if ok else "error": asdict(result)}))
-    return 0
+def _plot_options(
+    args: argparse.Namespace, dimension_slices: dict[str, str | int] | None
+) -> PlotOptions:
+    return PlotOptions(
+        plot_type=args.plot_type,
+        style=args.style,
+        convert_bands_to_variables=args.convert_bands_to_variables,
+        datetime_variable_name=args.datetime_variable,
+        start_datetime=args.start_datetime,
+        end_datetime=args.end_datetime,
+        dimension_slices=dimension_slices,
+        facet_row=args.facet_row,
+        facet_col=args.facet_col,
+        col_wrap=args.col_wrap,
+        plot_x=args.plot_x,
+        plot_y=args.plot_y,
+        plot_hue=args.plot_hue,
+        xincrease=_parse_bool_flag(args.xincrease),
+        yincrease=_parse_bool_flag(args.yincrease),
+        aspect=args.aspect,
+        size=args.size,
+        robust=args.robust,
+        cmap=args.cmap,
+        bins=args.bins,
+        vmin=args.vmin,
+        vmax=args.vmax,
+        add_colorbar=not args.no_add_colorbar,
+        add_legend=args.add_legend,
+        netcdf_engine_order=args.netcdf_engine_order,
+        show_inherited_coordinates=not args.no_show_inherited_coordinates,
+        open_as_kerchunk=args.open_as_kerchunk,
+        facetgrid_figsize=args.facetgrid_figsize,
+    )

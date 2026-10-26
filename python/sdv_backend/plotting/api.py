@@ -6,6 +6,7 @@ Pipeline: detect format -> open file -> pick variable -> apply dimension slices
 """
 
 import contextlib
+from contextlib import closing
 from pathlib import Path
 
 import xarray as xr
@@ -13,6 +14,8 @@ import xarray as xr
 from sdv_backend._bootstrap import logger
 from sdv_backend.environment.packages import check_package_availability
 from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.info.datatree import _datatree_inherit_mode
+from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.dispatcher import (
     XarrayPlotDispatcher,
     detect_plotting_strategy,
@@ -29,7 +32,6 @@ from sdv_backend.plotting.selection import (
     apply_datetime_filter,
     apply_dimension_slices,
     get_variable,
-    open_for_plot,
     split_variable_path,
 )
 from sdv_backend.plotting.strategies.auto import (
@@ -96,10 +98,16 @@ def create_plot(
 
         mpl, plt = setup_pyplot(options.style)
 
-        with open_for_plot(file_path, file_format_info, options) as opened:
+        opened = OpenedData.open(
+            file_path, file_format_info, options.convert_bands_to_variables
+        )
+        with closing(opened):
             try:
                 group_name, variable_name = split_variable_path(variable_path)
-                group = opened.group(group_name)
+                group = opened.group(
+                    group_name,
+                    _datatree_inherit_mode(options.show_inherited_coordinates),
+                )
                 var = get_variable(group, variable_name)
                 var, applied_isel = apply_dimension_slices(
                     var, options.dimension_slices
