@@ -7,13 +7,11 @@ import json
 import numpy as np
 import pytest
 import xarray as xr
-from get_data_info import (
-    FileInfoError,
-    FileInfoResult,
-    detect_file_format,
-    get_file_info,
-    looks_like_kerchunk_filename,
-)
+
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.formats.kerchunk import looks_like_kerchunk_filename
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.results import FileInfoError, FileInfoResult
 
 
 def test_ordinary_json_is_not_treated_as_kerchunk(tmp_path) -> None:

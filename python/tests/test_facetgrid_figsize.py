@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 
 import pytest
-from get_data_info import parse_facetgrid_figsize
+
+from sdv_backend.plotting.options import parse_facetgrid_figsize
 
 
 def test_parse_facetgrid_figsize_accepts_width_height() -> None:

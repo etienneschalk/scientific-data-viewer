@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import numpy as np
 import xarray as xr
-from get_data_info import (
-    FileInfoResult,
-    _collect_dataarray_attributes,
+
+from sdv_backend.environment.engines import (
     _engines_for_extension,
-    _flatten_datatree_groups,
-    get_file_info,
-    inherited_coord_sources,
     normalize_netcdf_engine_order,
 )
+from sdv_backend.info.datatree import _flatten_datatree_groups, inherited_coord_sources
+from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.results import FileInfoResult
 
 
 def test_normalize_netcdf_engine_order_fills_defaults() -> None:

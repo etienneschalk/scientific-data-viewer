@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError
 
-import get_data_info
 import pytest
-from get_data_info import (
+
+from sdv_backend.environment import packages
+from sdv_backend.environment.engines import get_available_engines, get_missing_packages
+from sdv_backend.environment.packages import (
     check_package_is_usable,
-    get_available_engines,
-    get_missing_packages,
     get_package_requirement,
 )
 
@@ -26,7 +26,7 @@ def test_get_package_requirement_without_minimum_is_bare_name() -> None:
 def test_zarr_below_minimum_is_not_usable(
     monkeypatch: pytest.MonkeyPatch, installed: str
 ) -> None:
-    monkeypatch.setattr(get_data_info, "package_version", lambda _name: installed)
+    monkeypatch.setattr(packages, "package_version", lambda _name: installed)
 
     assert check_package_is_usable("zarr") is False
     assert get_available_engines(".zarr") == []
@@ -37,7 +37,7 @@ def test_zarr_below_minimum_is_not_usable(
 def test_zarr_at_or_above_minimum_is_usable(
     monkeypatch: pytest.MonkeyPatch, installed: str
 ) -> None:
-    monkeypatch.setattr(get_data_info, "package_version", lambda _name: installed)
+    monkeypatch.setattr(packages, "package_version", lambda _name: installed)
 
     assert check_package_is_usable("zarr") is True
     assert get_available_engines(".zarr") == ["zarr"]
@@ -47,7 +47,7 @@ def test_zarr_at_or_above_minimum_is_usable(
 def test_unparseable_version_is_assumed_usable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(get_data_info, "package_version", lambda _name: "unknown")
+    monkeypatch.setattr(packages, "package_version", lambda _name: "unknown")
 
     assert check_package_is_usable("zarr") is True
 
@@ -58,12 +58,12 @@ def test_missing_distribution_metadata_is_assumed_usable(
     def raise_not_found(_name: str) -> str:
         raise PackageNotFoundError(_name)
 
-    monkeypatch.setattr(get_data_info, "package_version", raise_not_found)
+    monkeypatch.setattr(packages, "package_version", raise_not_found)
 
     assert check_package_is_usable("zarr") is True
 
 
 def test_uninstalled_package_is_not_usable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(get_data_info, "find_spec", lambda _name: None)
+    monkeypatch.setattr(packages, "find_spec", lambda _name: None)
 
     assert check_package_is_usable("zarr") is False

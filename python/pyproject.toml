@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdv-backend"
+version = "0.13.0"
+description = "Python backend of the Scientific Data Viewer VSCode extension"
+requires-python = ">=3.13"
+dependencies = ["xarray", "numpy", "matplotlib"]
+
+[project.optional-dependencies]
+netcdf = ["netCDF4", "h5netcdf", "scipy"]
+zarr = ["zarr>=3", "fsspec"]
+grib = ["cfgrib"]
+geotiff = ["rioxarray"]
+cdf = ["cdflib"]
+kerchunk = ["kerchunk"]
+dev = ["pytest"]
+
+[project.scripts]
+sdv-backend = "sdv_backend.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sdv_backend*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

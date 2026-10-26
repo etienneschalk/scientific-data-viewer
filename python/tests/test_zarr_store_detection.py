@@ -8,17 +8,17 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 import xarray as xr
-from get_data_info import (
-    FileInfoError,
-    FileInfoResult,
-    _collect_dataarray_attributes,
-    detect_file_format,
+
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.formats.zarr import (
     detect_zarr_format_version,
-    get_file_info,
     is_zarr_store,
     resolve_store_path,
     zip_zarr_root_prefix,
 )
+from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.results import FileInfoError, FileInfoResult
 
 if TYPE_CHECKING:
     from pathlib import Path

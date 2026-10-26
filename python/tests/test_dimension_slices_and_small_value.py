@@ -11,9 +11,8 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-sys.path.insert(0, str(Path(__file__).parent))
-from get_data_info import (
-    _format_small_value,
+from sdv_backend.info.display import _format_small_value
+from sdv_backend.plotting.options import (
     _parse_dimension_slice_spec,
     _parse_dimension_slices,
 )
@@ -147,7 +146,7 @@ class TestPlotXyHueCLI:
 
     def test_cli_accepts_plot_x_y_hue(self):
         # Run script with plot mode and plot x/y/hue args; should not get "unrecognized arguments"
-        script = Path(__file__).parent / "get_data_info.py"
+        script = Path(__file__).parents[1] / "get_data_info.py"
         result = subprocess.run(
             [
                 sys.executable,

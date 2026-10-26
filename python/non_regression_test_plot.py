@@ -37,7 +37,8 @@ _REPO_ROOT = _SCRIPT_DIR.parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from get_data_info import CreatePlotError, CreatePlotResult, create_plot  # noqa: E402
+from sdv_backend.plotting.api import create_plot  # noqa: E402
+from sdv_backend.results import CreatePlotError, CreatePlotResult  # noqa: E402
 
 DEFAULT_DATA_REL = Path("sample-data") / "hs-issue-0117.nc"
 DEFAULT_OUT_BASE_REL = Path("sample-data") / "non_regression_test_plot"
@@ -802,7 +803,7 @@ def _write_summary_md(
     )
     parts: list[str] = [
         "# Non-regression plot report (Issue #117)\n\n",
-        f"_Generated {now} with `create_plot` from `get_data_info.py`._\n\n",
+        f"_Generated {now} with `create_plot` from `sdv_backend`._\n\n",
         "## Background\n\n",
         "This report mirrors the workflows discussed in "
         f"[Issue #117]({ISSUE_117_URL}) "

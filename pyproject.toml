@@ -94,7 +94,7 @@ docstring-code-format = false
 docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.isort]
-known-first-party = ["scientific_data_viewer"]
+known-first-party = ["sdv_backend"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"

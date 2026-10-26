@@ -5,11 +5,9 @@ from __future__ import annotations
 import argparse
 
 import pytest
-from get_data_info import (
-    PlotKwargsBundle,
-    parse_col_wrap,
-    xarray_supports_col_wrap_auto,
-)
+
+from sdv_backend.plotting.kwargs import PlotKwargsBundle
+from sdv_backend.plotting.options import parse_col_wrap, xarray_supports_col_wrap_auto
 
 
 def test_parse_col_wrap_accepts_auto() -> None:
@@ -28,7 +26,9 @@ def test_parse_col_wrap_rejects_invalid(value: str) -> None:
 
 
 def test_plot_kwargs_include_col_wrap_auto(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("get_data_info.xarray_supports_col_wrap_auto", lambda: True)
+    monkeypatch.setattr(
+        "sdv_backend.plotting.kwargs.xarray_supports_col_wrap_auto", lambda: True
+    )
     bundle = PlotKwargsBundle.build(
         bins=None,
         robust=None,
@@ -43,7 +43,9 @@ def test_plot_kwargs_include_col_wrap_auto(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_plot_kwargs_omit_auto_on_old_xarray(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("get_data_info.xarray_supports_col_wrap_auto", lambda: False)
+    monkeypatch.setattr(
+        "sdv_backend.plotting.kwargs.xarray_supports_col_wrap_auto", lambda: False
+    )
     bundle = PlotKwargsBundle.build(
         bins=None,
         robust=None,

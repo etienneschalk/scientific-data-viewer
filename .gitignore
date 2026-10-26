@@ -10,4 +10,6 @@ sample-data/
 **/*.pyc
 .venv/
 venv/
-blog-article.mdpython/.golden/
+blog-article.md
+python/.golden/
+.pytest_cache/

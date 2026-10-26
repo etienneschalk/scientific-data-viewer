@@ -10,12 +10,10 @@ import netCDF4
 import numpy as np
 import pytest
 import xarray as xr
-from get_data_info import (
-    _is_decode_cf_time_error,
-    detect_file_format,
-    get_file_info,
-    open_datatree_with_fallback,
-)
+
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.opening import _is_decode_cf_time_error, open_datatree_with_fallback
 
 
 def _write_broken_time_units_nc(path: Path) -> None:

@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import xarray as xr
-from get_data_info import (
-    FileInfoResult,
-    _collect_dataarray_attributes,
-    _flatten_datatree_groups,
-    create_coord_info,
-    create_variable_info,
-    get_file_info,
-)
+
+from sdv_backend.info.datatree import _flatten_datatree_groups
+from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.variables import create_coord_info, create_variable_info
+from sdv_backend.results import FileInfoResult
 
 
 def test_collect_dataarray_attributes_omits_encoding_when_disabled() -> None:

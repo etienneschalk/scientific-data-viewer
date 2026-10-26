@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from get_data_info import (
+
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.formats.geotiff import (
     COG_DISPLAY_NAME,
-    FileInfoResult,
-    detect_file_format,
-    get_file_info,
     looks_like_cloud_optimized_geotiff,
     refine_geotiff_display_name,
 )
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.results import FileInfoResult
 
 
 def _write_plain_geotiff(path) -> None:

@@ -8,7 +8,8 @@ from pathlib import Path
 
 import xarray as xr
 from create_sample_data import create_sample_netcdf_compound_dtype_variable
-from get_data_info import get_file_info
+
+from sdv_backend.info.extract import get_file_info
 
 
 def test_compound_dtype_sample_opens_and_encoding_dtype_has_angle_brackets() -> None:

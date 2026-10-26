@@ -19,7 +19,12 @@ chats/**
 !media/**
 
 # Exclude Python cache and temporary files
-python/__pycache__/**
+python/**/__pycache__/**
+python/tests/**
+python/tools/**
+python/.golden/**
+python/.pytest_cache/**
+python/*.egg-info/**
 *.pyc
 *.pyo
 *.pyd

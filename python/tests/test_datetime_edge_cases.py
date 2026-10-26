@@ -8,7 +8,6 @@ This test suite covers all edge cases mentioned in IMPLEMENTATION_PROPOSAL_ISSUE
 import os
 
 # Import functions to test
-import sys
 import tempfile
 from pathlib import Path
 
@@ -17,15 +16,10 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-sys.path.insert(0, str(Path(__file__).parent))
-from get_data_info import (
-    CreatePlotError,
-    CreatePlotResult,
-    check_monotonicity,
-    create_plot,
-    get_file_info,
-    is_datetime_variable,
-)
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.info.variables import check_monotonicity, is_datetime_variable
+from sdv_backend.plotting.api import create_plot
+from sdv_backend.results import CreatePlotError, CreatePlotResult
 
 
 class TestIsDatetimeVariable:

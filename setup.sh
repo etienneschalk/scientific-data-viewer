@@ -80,7 +80,7 @@ npm test
 # XXX No venv is used ; requires pytest to be installed globally.
 echo "   Running Python datetime edge case tests..."
 set +e  # Temporarily disable exit on error for test execution
-python3 -m pytest python/test_datetime_edge_cases.py -v
+python3 -m pytest python/tests/test_datetime_edge_cases.py -v
 PYTEST_EXIT_CODE=$?
 set -e  # Re-enable exit on error
 if [ $PYTEST_EXIT_CODE -eq 0 ]; then
@@ -91,7 +91,7 @@ fi
 
 echo "   Running Python display feature flag tests..."
 set +e
-python3 -m pytest python/test_display_feature_flags.py -v
+python3 -m pytest python/tests/test_display_feature_flags.py -v
 DISPLAY_FLAGS_PYTEST_EXIT_CODE=$?
 set -e
 if [ $DISPLAY_FLAGS_PYTEST_EXIT_CODE -eq 0 ]; then
