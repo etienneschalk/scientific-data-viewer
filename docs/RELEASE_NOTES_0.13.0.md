@@ -114,7 +114,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 
 ## Manual verification guide
 
-Use this checklist if you have **not** reviewed every commit on the branch. Each section states **what to expect**, **how to test**, and **common failure modes**.
+Use this checklist if you have **not** reviewed every commit on the branch. For a click-by-click version written for testers who don't know the formats (with a results sheet), see [`MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md). Each section states **what to expect**, **how to test**, and **common failure modes**.
 
 ### 0. Environment setup
 
@@ -390,5 +390,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 - [Changelog](../CHANGELOG.md#0130---2026-09-15)
 - [Pull request summary / MR description](./PR_SUMMARY_0.13.0.md)
+- [Manual test plan (step by step, with results sheet)](./MANUAL_TEST_PLAN_0.13.0.md)
 - [v0.13 planning folder](./v0.13/README.md)
 - [Previous release: v0.12.1](./RELEASE_NOTES_0.12.1.md)

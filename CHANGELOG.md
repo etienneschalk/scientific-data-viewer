@@ -35,6 +35,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **v0.13 planning documentation**: `docs/v0.13/` (README, TO_IMPLEMENT, TO_REMOVE, OUT_OF_SCOPE, PHASES).
   - **Release notes**: `docs/RELEASE_NOTES_0.13.0.md`
   - **Pull request summary**: `docs/PR_SUMMARY_0.13.0.md`
+  - **Manual test plan**: `docs/MANUAL_TEST_PLAN_0.13.0.md` (step-by-step validation of every v0.13 feature for non-expert testers, with a results sheet)
 - **v0.13 sample data generators** in `python/create_sample_data.py`: unsuffixed Zarr v3 directory, sharded Zarr v3, Zarr v3 ZIP, gzip NetCDF (filters), COG GeoTIFF, Kerchunk reference JSON (`sample_data.kerchunk.json`).
 - **Golden snapshot harness**: `python/tools/golden_snapshots.py record|check` runs the backend CLI on local `sample-data/` files (info and plot cases, incl. v0.13 formats) and compares normalized JSON output, plot PNGs by hash with a frozen clock. Snapshots live in git-ignored `python/.golden/`.
   - **Files**: `python/tools/golden_snapshots.py`, `python/tools/_frozen_clock_entry.py`, `.gitignore`

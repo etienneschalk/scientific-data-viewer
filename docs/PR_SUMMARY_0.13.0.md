@@ -123,7 +123,7 @@ npm run compile && npm test
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** See [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§13.
+**Manual:** Follow [`docs/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§13.
 
 ---
 
@@ -132,6 +132,8 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `CHANGELOG.md` — [0.13.0] entry
 - [x] `docs/RELEASE_NOTES_0.13.0.md` — release notes + verification guide
 - [x] `docs/PR_SUMMARY_0.13.0.md` — this file (MR description)
+- [x] `docs/MANUAL_TEST_PLAN_0.13.0.md` — click-by-click manual test plan with results sheet
+- [ ] Manual test plan executed, results sheet pasted in the MR
 - [x] `docs/v0.13/` — planning docs (shipped vs deferred)
 - [x] `README.md` — regenerated (`python scripts/generate_readme.py --no-timestamp`)
 - [x] `docs/documentation.json` — prose, format table, troubleshooting
