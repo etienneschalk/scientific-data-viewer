@@ -282,13 +282,13 @@ def create_sample_geotiff_geotiff():
         "temporal_coverage": "2020-01-01",
     }
 
-    # Save to GeoTIFF
+    # Save to GeoTIFF; GDAL cannot infer the driver from the ".geotiff" extension
     try:
-        ds.rio.to_raster(output_file, compress="lzw")
+        ds.rio.to_raster(output_file, driver="GTiff", compress="lzw")
         print(f"✅ Created {output_file} (compressed GeoTIFF)")
     except Exception:
         # Fallback to uncompressed if compression fails
-        ds.rio.to_raster(output_file)
+        ds.rio.to_raster(output_file, driver="GTiff")
         print(f"✅ Created {output_file} (uncompressed GeoTIFF)")
 
     return output_file
