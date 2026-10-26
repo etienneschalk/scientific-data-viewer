@@ -6,10 +6,10 @@ from pathlib import PurePosixPath
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
-from sdv_backend.info.datatree import _datatree_inherit_mode
+from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.info.variables import check_monotonicity
 from sdv_backend.opening import OpenedData
-from sdv_backend.plotting.options import PlotOptions, _parse_dimension_slices
+from sdv_backend.plotting.options import PlotOptions, parse_dimension_slices
 
 
 class PlotInputError(Exception):
@@ -40,7 +40,7 @@ def apply_dimension_slices(
     if not dimension_slices:
         return var, applied_isel
     try:
-        isel_dict = _parse_dimension_slices(dimension_slices)
+        isel_dict = parse_dimension_slices(dimension_slices)
         if isel_dict:
             # Only apply isel for dimensions that exist on this variable
             var_dims = set(var.dims)
@@ -141,7 +141,7 @@ def apply_datetime_filter(
         if str(datetime_group_name) not in (str(group_name), "."):
             datetime_group = opened.group(
                 datetime_group_name,
-                _datatree_inherit_mode(options.show_inherited_coordinates),
+                datatree_inherit_mode(options.show_inherited_coordinates),
             )
 
         if (

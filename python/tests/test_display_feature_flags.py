@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import xarray as xr
 
-from sdv_backend.info.datatree import _flatten_datatree_groups
-from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.datatree import flatten_datatree_groups
+from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.info.variables import create_coord_info, create_variable_info
@@ -21,10 +21,10 @@ def test_collect_dataarray_attributes_omits_encoding_when_disabled() -> None:
     )
     var.encoding["_FillValue"] = -999
 
-    with_encoding = _collect_dataarray_attributes(
+    with_encoding = collect_dataarray_attributes(
         var, show_xarray_encoding_attributes=True
     )
-    without_encoding = _collect_dataarray_attributes(
+    without_encoding = collect_dataarray_attributes(
         var, show_xarray_encoding_attributes=False
     )
 
@@ -67,8 +67,8 @@ def test_flatten_datatree_groups_alphabetical_vs_file_order() -> None:
         }
     )
 
-    alphabetical = _flatten_datatree_groups(xdt, order_groups_alphabetically=True)
-    file_order = _flatten_datatree_groups(xdt, order_groups_alphabetically=False)
+    alphabetical = flatten_datatree_groups(xdt, order_groups_alphabetically=True)
+    file_order = flatten_datatree_groups(xdt, order_groups_alphabetically=False)
 
     assert list(alphabetical.keys()) == ["/", "/a_group", "/z_group"]
     assert list(file_order.keys()) == ["/", "/z_group", "/a_group"]

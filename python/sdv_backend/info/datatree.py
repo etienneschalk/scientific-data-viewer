@@ -7,7 +7,7 @@ import xarray as xr
 from sdv_backend.types import DictOfDatasets
 
 
-def _datatree_inherit_mode(
+def datatree_inherit_mode(
     show_inherited_coordinates: bool,
 ) -> bool | Literal["all_coords"]:
     """xarray DataTree.to_dataset inherit argument for the viewer setting."""
@@ -59,7 +59,7 @@ def inherited_coord_sources(
     return sources
 
 
-def _flatten_datatree_groups(
+def flatten_datatree_groups(
     xdt: xr.DataTree,
     *,
     order_groups_alphabetically: bool,
@@ -70,7 +70,7 @@ def _flatten_datatree_groups(
     Uses ``DataTree.to_dataset(inherit=...)`` so child groups can include
     parent coordinates (``inherit='all_coords'``, xarray 2026.04+).
     """
-    inherit = _datatree_inherit_mode(show_inherited_coordinates)
+    inherit = datatree_inherit_mode(show_inherited_coordinates)
     items: list[tuple[str, xr.Dataset]] = [
         (_datatree_node_path(node), node.to_dataset(inherit=inherit))
         for _key, node in xdt.subtree_with_keys

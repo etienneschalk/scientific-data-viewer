@@ -14,7 +14,7 @@ import xarray as xr
 from sdv_backend._bootstrap import logger
 from sdv_backend.environment.packages import check_package_availability
 from sdv_backend.formats.detect import detect_file_format
-from sdv_backend.info.datatree import _datatree_inherit_mode
+from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.dispatcher import (
     XarrayPlotDispatcher,
@@ -107,7 +107,7 @@ def create_plot(
                 group_name, variable_name = split_variable_path(variable_path)
                 group = opened.group(
                     group_name,
-                    _datatree_inherit_mode(options.show_inherited_coordinates),
+                    datatree_inherit_mode(options.show_inherited_coordinates),
                 )
                 var = get_variable(group, variable_name)
                 var, applied_isel = apply_dimension_slices(

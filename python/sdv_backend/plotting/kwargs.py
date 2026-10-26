@@ -10,7 +10,7 @@ from sdv_backend.plotting.options import xarray_supports_col_wrap_auto
 from sdv_backend.types import ColWrap
 
 
-def _strip_add_legend_unless_hue(plot_kwargs: dict[str, Any]) -> dict[str, Any]:
+def strip_add_legend_unless_hue(plot_kwargs: dict[str, Any]) -> dict[str, Any]:
     """Omit ``add_legend`` when ``hue`` is absent.
 
     xarray's generic ``DataArray.plot`` may route to ``pcolormesh`` (``QuadMesh``);
@@ -139,7 +139,7 @@ def _valid_plot_dim(name: str | None, var_arr: xr.DataArray) -> str | None:
     return None
 
 
-def _build_user_facet_plot_kw(
+def build_user_facet_plot_kw(
     var: xr.DataArray,
     *,
     facet_row: str | None,

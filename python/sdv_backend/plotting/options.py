@@ -34,7 +34,7 @@ def _parse_dimension_slice_spec(spec: str | int) -> int | slice:
     raise ValueError(f"Invalid slice spec: {s!r}")
 
 
-def _parse_dimension_slices(
+def parse_dimension_slices(
     slices_dict: dict[str, Any] | None,
 ) -> dict[str, int | slice] | None:
     """Parse dimension_slices from JSON/CLI into isel-compatible dict (Issue #117)."""

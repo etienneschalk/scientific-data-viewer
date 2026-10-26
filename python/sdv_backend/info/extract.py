@@ -17,9 +17,9 @@ import xarray as xr
 from sdv_backend._bootstrap import logger
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.formats.geotiff import refine_geotiff_display_name
-from sdv_backend.info.datatree import _flatten_datatree_groups, inherited_coord_sources
+from sdv_backend.info.datatree import flatten_datatree_groups, inherited_coord_sources
 from sdv_backend.info.display import XR_HTML_OPTIONS, XR_TEXT_OPTIONS
-from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.info.variables import (
     create_coord_info,
@@ -191,7 +191,7 @@ def _flatten_groups(
     """Group path -> Dataset, and group -> {coord name: defining group} for
     inherited coordinates (DataTree only)."""
     if opened.is_tree:
-        groups = _flatten_datatree_groups(
+        groups = flatten_datatree_groups(
             opened.tree,
             order_groups_alphabetically=options.order_groups_alphabetically,
             show_inherited_coordinates=options.show_inherited_coordinates,
@@ -216,7 +216,7 @@ def _add_group_info(
 ) -> None:
     """Fill every ``*_flattened`` entry of ``info`` for one group."""
     logger.info(f"Processing group: {group}")
-    info.attributes_flattened[group] = _collect_dataarray_attributes(
+    info.attributes_flattened[group] = collect_dataarray_attributes(
         xds,
         show_xarray_encoding_attributes=options.show_xarray_encoding_attributes,
     )

@@ -9,8 +9,8 @@ from sdv_backend.environment.engines import (
     _engines_for_extension,
     normalize_netcdf_engine_order,
 )
-from sdv_backend.info.datatree import _flatten_datatree_groups, inherited_coord_sources
-from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.datatree import flatten_datatree_groups, inherited_coord_sources
+from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.results import FileInfoResult
@@ -73,7 +73,7 @@ def test_gzip_netcdf_exposes_complevel_filters(tmp_path) -> None:
     assert attrs["__xarray_encoding.filters.zlib"] is True
     assert attrs["__xarray_encoding.filters.complevel"] == 4
 
-    hidden = _collect_dataarray_attributes(
+    hidden = collect_dataarray_attributes(
         xr.open_dataset(nc_path)["temp"],
         show_xarray_encoding_attributes=False,
     )
@@ -118,10 +118,10 @@ def test_flatten_inherit_modes_match_xarray() -> None:
     child = xr.Dataset({"temp": (("time", "x"), np.zeros((3, 2)))})
     xdt = xr.DataTree.from_dict({"/": root, "/temp": child})
 
-    inherited = _flatten_datatree_groups(
+    inherited = flatten_datatree_groups(
         xdt, order_groups_alphabetically=True, show_inherited_coordinates=True
     )
-    local_only = _flatten_datatree_groups(
+    local_only = flatten_datatree_groups(
         xdt, order_groups_alphabetically=True, show_inherited_coordinates=False
     )
     assert set(inherited["/temp"].coords) == {"time", "x", "label"}

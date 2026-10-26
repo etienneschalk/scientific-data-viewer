@@ -27,7 +27,7 @@ DEFAULT_SMALL_VARIABLE_BYTES = 1000
 DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500
 
 
-def _format_small_value(
+def format_small_value(
     var: xr.DataArray,
     max_len: int = DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
 ) -> str:

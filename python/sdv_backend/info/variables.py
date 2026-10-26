@@ -7,9 +7,9 @@ import xarray as xr
 
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
-    _format_small_value,
+    format_small_value,
 )
-from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.results import CoordinateInfo, VariableInfo
 
 
@@ -42,7 +42,7 @@ def create_variable_info(
     """
     display_value = None
     if small_variable_bytes > 0 and var.nbytes <= small_variable_bytes:
-        display_value = _format_small_value(var, max_len=small_value_display_max_len)
+        display_value = format_small_value(var, max_len=small_value_display_max_len)
 
     return VariableInfo(
         name=str(var_name),
@@ -50,7 +50,7 @@ def create_variable_info(
         shape=list(var.shape),
         dimensions=[str(d) for d in var.dims],
         size_bytes=var.nbytes,
-        attributes=_collect_dataarray_attributes(
+        attributes=collect_dataarray_attributes(
             var,
             show_xarray_encoding_attributes=show_xarray_encoding_attributes,
         ),
@@ -170,9 +170,9 @@ def create_coord_info(
     """
     display_value = None
     if small_variable_bytes > 0 and coord.nbytes <= small_variable_bytes:
-        display_value = _format_small_value(coord, max_len=small_value_display_max_len)
+        display_value = format_small_value(coord, max_len=small_value_display_max_len)
 
-    attributes = _collect_dataarray_attributes(
+    attributes = collect_dataarray_attributes(
         coord,
         show_xarray_encoding_attributes=show_xarray_encoding_attributes,
     )

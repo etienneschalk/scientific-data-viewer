@@ -8,7 +8,7 @@ import xarray as xr
 
 from sdv_backend._bootstrap import logger
 from sdv_backend.plotting.dispatcher import XarrayPlotDispatcher
-from sdv_backend.plotting.kwargs import PlotKwargsBundle, _build_user_facet_plot_kw
+from sdv_backend.plotting.kwargs import PlotKwargsBundle, build_user_facet_plot_kw
 
 
 @dataclass(frozen=True)
@@ -80,7 +80,7 @@ class UserProvidedFacetedStrategy(UserProvidedPlottingStrategy):
         dispatcher: XarrayPlotDispatcher,
         request: UserProvidedPlotRequest,
     ) -> None:
-        plot_kw = _build_user_facet_plot_kw(
+        plot_kw = build_user_facet_plot_kw(
             var,
             facet_row=request.facet_row,
             facet_col=request.facet_col,

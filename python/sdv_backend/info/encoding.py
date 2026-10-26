@@ -78,7 +78,7 @@ def _hdf5_filters_from_encoding(
         return {}
 
 
-def _collect_dataarray_attributes(
+def collect_dataarray_attributes(
     data_array: xr.DataArray | xr.Dataset,
     *,
     show_xarray_encoding_attributes: bool,

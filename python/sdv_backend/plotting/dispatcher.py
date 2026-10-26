@@ -6,7 +6,7 @@ from typing import Any, Literal
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
-from sdv_backend.plotting.kwargs import _strip_add_legend_unless_hue
+from sdv_backend.plotting.kwargs import strip_add_legend_unless_hue
 
 
 def is_spatial_dimension(dim_name: str) -> bool:
@@ -111,12 +111,12 @@ class XarrayPlotDispatcher:
     """Single place for DataArray.plot / .plot.imshow / .plot.hist (reduces scattered calls)."""
 
     def imshow(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
-        dataarray.plot.imshow(**_strip_add_legend_unless_hue(kwargs))
+        dataarray.plot.imshow(**strip_add_legend_unless_hue(kwargs))
         _log_plot_route(route)
 
     def plot(self, dataarray: xr.DataArray, route: str, **kwargs: Any) -> None:
         if kwargs:
-            dataarray.plot(**_strip_add_legend_unless_hue(kwargs))
+            dataarray.plot(**strip_add_legend_unless_hue(kwargs))
         else:
             dataarray.plot()
         _log_plot_route(route)

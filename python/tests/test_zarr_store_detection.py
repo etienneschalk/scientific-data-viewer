@@ -16,7 +16,7 @@ from sdv_backend.formats.zarr import (
     resolve_store_path,
     zip_zarr_root_prefix,
 )
-from sdv_backend.info.encoding import _collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.results import FileInfoError, FileInfoResult
 
@@ -131,7 +131,7 @@ def test_encoding_reports_codec_names_and_shards(tmp_path: Path) -> None:
     )
 
     opened = xr.open_dataset(store, engine="zarr", consolidated=False)
-    attributes = _collect_dataarray_attributes(
+    attributes = collect_dataarray_attributes(
         opened["temp"], show_xarray_encoding_attributes=True
     )
 
@@ -146,7 +146,7 @@ def test_encoding_values_that_are_not_codecs_are_untouched() -> None:
     variable.encoding["chunks"] = (2,)
     variable.encoding["dtype"] = "int32"
 
-    attributes = _collect_dataarray_attributes(
+    attributes = collect_dataarray_attributes(
         variable, show_xarray_encoding_attributes=True
     )
 
