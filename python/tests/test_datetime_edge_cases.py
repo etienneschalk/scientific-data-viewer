@@ -19,6 +19,7 @@ import xarray as xr
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.variables import check_monotonicity, is_datetime_variable
 from sdv_backend.plotting.api import create_plot
+from sdv_backend.plotting.options import PlotOptions
 from sdv_backend.results import CreatePlotError, CreatePlotResult
 
 
@@ -184,9 +185,10 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="invalid-datetime",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time", start_datetime="invalid-datetime"
+                ),
             )
             assert isinstance(result, CreatePlotError)
             assert (
@@ -205,8 +207,8 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/nonexistent_time",
+                "/temperature",
+                PlotOptions(datetime_variable_name="/nonexistent_time"),
             )
             assert isinstance(result, CreatePlotError)
             assert "not found" in result.error.lower()
@@ -224,8 +226,8 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time_var",
+                "/temperature",
+                PlotOptions(datetime_variable_name="/time_var"),
             )
             # Should succeed but not use datetime (datetime_var = None)
             assert isinstance(result, CreatePlotResult)
@@ -246,8 +248,8 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time_var",
+                "/temperature",
+                PlotOptions(datetime_variable_name="/time_var"),
             )
             # Should succeed but fall back to default plotting
             assert isinstance(result, CreatePlotResult)
@@ -263,10 +265,12 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="2020-01-05T00:00:00",
-                end_datetime="2020-01-10T00:00:00",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time",
+                    start_datetime="2020-01-05T00:00:00",
+                    end_datetime="2020-01-10T00:00:00",
+                ),
             )
             assert isinstance(result, CreatePlotResult)
         finally:
@@ -285,10 +289,12 @@ class TestCreatePlotEdgeCases:
             # So if we want data from 2020-01-05 to 2020-01-10, we provide them in reverse
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="2020-01-10T00:00:00",
-                end_datetime="2020-01-05T00:00:00",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time",
+                    start_datetime="2020-01-10T00:00:00",
+                    end_datetime="2020-01-05T00:00:00",
+                ),
             )
             # Result could be CreatePlotResult or CreatePlotError (if empty range)
             assert isinstance(result, (CreatePlotResult, CreatePlotError))
@@ -308,10 +314,12 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="2020-01-05T00:00:00",
-                end_datetime="2020-01-10T00:00:00",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time",
+                    start_datetime="2020-01-05T00:00:00",
+                    end_datetime="2020-01-10T00:00:00",
+                ),
             )
             # Should use boolean indexing instead of slice
             assert isinstance(result, CreatePlotResult)
@@ -327,10 +335,12 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="2025-01-01T00:00:00",
-                end_datetime="2025-01-10T00:00:00",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time",
+                    start_datetime="2025-01-01T00:00:00",
+                    end_datetime="2025-01-10T00:00:00",
+                ),
             )
             # Should return empty plot (no crash) - could be CreatePlotResult or CreatePlotError
             assert isinstance(result, (CreatePlotResult, CreatePlotError))
@@ -351,10 +361,12 @@ class TestCreatePlotEdgeCases:
             # This should select data from 2020-01-05 to 2020-01-10 in the decreasing sequence
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="/time",
-                start_datetime="2020-01-10T00:00:00",
-                end_datetime="2020-01-05T00:00:00",
+                "/temperature",
+                PlotOptions(
+                    datetime_variable_name="/time",
+                    start_datetime="2020-01-10T00:00:00",
+                    end_datetime="2020-01-05T00:00:00",
+                ),
             )
             # Result could be CreatePlotResult or CreatePlotError (if empty range)
             assert isinstance(result, (CreatePlotResult, CreatePlotError))
@@ -393,8 +405,8 @@ class TestCreatePlotEdgeCases:
 
             result = create_plot(
                 temp_file,
-                "/temperature",  # Use absolute path
-                datetime_variable_name="subgroup/time",
+                "/temperature",
+                PlotOptions(datetime_variable_name="subgroup/time"),
             )
             # Should handle cross-group datetime
             assert isinstance(result, (CreatePlotResult, CreatePlotError))
@@ -411,8 +423,8 @@ class TestCreatePlotEdgeCases:
         try:
             result = create_plot(
                 temp_file,
-                "/temperature.hourly",  # Use absolute path
-                datetime_variable_name="/time",
+                "/temperature.hourly",
+                PlotOptions(datetime_variable_name="/time"),
             )
             assert isinstance(result, CreatePlotResult)
         finally:

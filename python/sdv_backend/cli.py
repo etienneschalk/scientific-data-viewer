@@ -13,7 +13,11 @@ from sdv_backend.info.display import (
 )
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.plotting.api import create_plot
-from sdv_backend.plotting.options import parse_col_wrap, parse_facetgrid_figsize
+from sdv_backend.plotting.options import (
+    PlotOptions,
+    parse_col_wrap,
+    parse_facetgrid_figsize,
+)
 from sdv_backend.results import CreatePlotResult, FileInfoResult
 from sdv_backend.serialization import to_json_best_effort
 
@@ -321,34 +325,36 @@ Examples:
         result = create_plot(
             args.file_path,
             args.variable_name,
-            args.plot_type,
-            args.style,
-            args.convert_bands_to_variables,
-            args.datetime_variable,
-            args.start_datetime,
-            args.end_datetime,
-            dimension_slices=dimension_slices_dict,
-            facet_row=args.facet_row,
-            facet_col=args.facet_col,
-            col_wrap=args.col_wrap,
-            plot_x=args.plot_x,
-            plot_y=args.plot_y,
-            plot_hue=args.plot_hue,
-            xincrease=xincrease_arg,
-            yincrease=yincrease_arg,
-            aspect=args.aspect,
-            size=args.size,
-            robust=args.robust,
-            cmap=args.cmap,
-            bins=args.bins,
-            vmin=args.vmin,
-            vmax=args.vmax,
-            add_colorbar=not args.no_add_colorbar,
-            add_legend=args.add_legend,
-            netcdf_engine_order=args.netcdf_engine_order,
-            show_inherited_coordinates=not args.no_show_inherited_coordinates,
-            open_as_kerchunk=args.open_as_kerchunk,
-            facetgrid_figsize=args.facetgrid_figsize,
+            PlotOptions(
+                plot_type=args.plot_type,
+                style=args.style,
+                convert_bands_to_variables=args.convert_bands_to_variables,
+                datetime_variable_name=args.datetime_variable,
+                start_datetime=args.start_datetime,
+                end_datetime=args.end_datetime,
+                dimension_slices=dimension_slices_dict,
+                facet_row=args.facet_row,
+                facet_col=args.facet_col,
+                col_wrap=args.col_wrap,
+                plot_x=args.plot_x,
+                plot_y=args.plot_y,
+                plot_hue=args.plot_hue,
+                xincrease=xincrease_arg,
+                yincrease=yincrease_arg,
+                aspect=args.aspect,
+                size=args.size,
+                robust=args.robust,
+                cmap=args.cmap,
+                bins=args.bins,
+                vmin=args.vmin,
+                vmax=args.vmax,
+                add_colorbar=not args.no_add_colorbar,
+                add_legend=args.add_legend,
+                netcdf_engine_order=args.netcdf_engine_order,
+                show_inherited_coordinates=not args.no_show_inherited_coordinates,
+                open_as_kerchunk=args.open_as_kerchunk,
+                facetgrid_figsize=args.facetgrid_figsize,
+            ),
         )
         ok = isinstance(result, CreatePlotResult)
 

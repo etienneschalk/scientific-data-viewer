@@ -38,6 +38,7 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from sdv_backend.plotting.api import create_plot  # noqa: E402
+from sdv_backend.plotting.options import PlotOptions  # noqa: E402
 from sdv_backend.results import CreatePlotError, CreatePlotResult  # noqa: E402
 
 DEFAULT_DATA_REL = Path("sample-data") / "hs-issue-0117.nc"
@@ -962,26 +963,28 @@ def main() -> int:
         result = create_plot(
             data_path,
             args.variable_path,
-            plot_type="auto",
-            style=args.style,
-            dimension_slices=case.dimension_slices,
-            facet_row=case.facet_row,
-            facet_col=case.facet_col,
-            col_wrap=case.col_wrap,
-            plot_x=case.plot_x,
-            plot_y=case.plot_y,
-            plot_hue=case.plot_hue,
-            xincrease=case.xincrease,
-            yincrease=case.yincrease,
-            aspect=case.aspect,
-            size=case.size,
-            robust=case.robust,
-            cmap=case.cmap,
-            bins=case.bins,
-            vmin=case.vmin,
-            vmax=case.vmax,
-            add_colorbar=(True if case.add_colorbar is None else case.add_colorbar),
-            add_legend=(False if case.add_legend is None else case.add_legend),
+            PlotOptions(
+                plot_type="auto",
+                style=args.style,
+                dimension_slices=case.dimension_slices,
+                facet_row=case.facet_row,
+                facet_col=case.facet_col,
+                col_wrap=case.col_wrap,
+                plot_x=case.plot_x,
+                plot_y=case.plot_y,
+                plot_hue=case.plot_hue,
+                xincrease=case.xincrease,
+                yincrease=case.yincrease,
+                aspect=case.aspect,
+                size=case.size,
+                robust=case.robust,
+                cmap=case.cmap,
+                bins=case.bins,
+                vmin=case.vmin,
+                vmax=case.vmax,
+                add_colorbar=True if case.add_colorbar is None else case.add_colorbar,
+                add_legend=False if case.add_legend is None else case.add_legend,
+            ),
         )
 
         if isinstance(result, CreatePlotError):
