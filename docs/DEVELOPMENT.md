@@ -100,7 +100,8 @@ Dependencies point one way: `cli → info / plotting → opening → formats →
 
 Other scripts in `python/`:
 
-- **`create_sample_data.py`**: generates sample data files for testing
+- **`create_sample_data.py`**: generates the files in `sample-data/`; the generators live in
+  the `python/sample_data/` package (one module per format family: `netcdf`, `zarr`, `geotiff`, …)
 - **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks
 - **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `sample-data/`
   (`record` before a refactoring, `check` after it)
