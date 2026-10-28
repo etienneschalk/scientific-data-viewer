@@ -11,9 +11,14 @@ import {
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
     getFacetgridFigsize,
+    getPlotTimeoutMs,
     uriRequestsKerchunkOpen,
 } from '../common/config';
-import { DataInfoPythonResponse, CreatePlotPythonResponse } from '../types';
+import {
+    DataInfoPythonResponse,
+    CreatePlotPythonResponse,
+    PlotOptions,
+} from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
 export interface GetDataInfoCliOptions {
@@ -57,32 +62,148 @@ export function buildGetDataInfoCliArgs(
     return args;
 }
 
+export interface CreatePlotCliOptions {
+    style: string;
+    convertBandsToVariables?: boolean;
+    netcdfEngineOrder: string[];
+    showInheritedCoordinates: boolean;
+    openAsKerchunk?: boolean;
+    facetgridFigsize?: [number, number] | null;
+}
+
+function isNonEmpty(value: string | null | undefined): value is string {
+    return value !== undefined && value !== null && value.trim() !== '';
+}
+
+function isPositiveInteger(value: number | null | undefined): value is number {
+    return (
+        value !== undefined &&
+        value !== null &&
+        Number.isInteger(value) &&
+        value >= 1
+    );
+}
+
+function isFiniteNumber(value: number | null | undefined): value is number {
+    return value !== undefined && value !== null && Number.isFinite(value);
+}
+
+/** Build argv for `get_data_info.py plot` (exported for unit tests). */
+export function buildCreatePlotCliArgs(
+    filePath: string,
+    plot: PlotOptions,
+    options: CreatePlotCliOptions,
+): string[] {
+    const args = [
+        'plot',
+        filePath,
+        plot.variable,
+        plot.plotType ?? 'auto',
+        '--style',
+        options.style,
+    ];
+    if (options.convertBandsToVariables) {
+        args.push('--convert-bands-to-variables');
+    }
+    const stringFlags: Array<[string, string | null | undefined]> = [
+        ['--datetime-variable', plot.datetimeVariableName],
+        ['--start-datetime', plot.startDatetime],
+        ['--end-datetime', plot.endDatetime],
+        ['--facet-row', plot.facetRow],
+        ['--facet-col', plot.facetCol],
+        ['--plot-x', plot.plotX],
+        ['--plot-y', plot.plotY],
+        ['--plot-hue', plot.plotHue],
+        ['--cmap', plot.cmap?.trim()],
+    ];
+    for (const [flag, value] of stringFlags) {
+        if (isNonEmpty(value)) {
+            args.push(flag, value);
+        }
+    }
+    if (plot.dimensionSlices && Object.keys(plot.dimensionSlices).length > 0) {
+        args.push('--dimension-slices', JSON.stringify(plot.dimensionSlices));
+    }
+    if (plot.colWrap === 'auto') {
+        args.push('--col-wrap', 'auto');
+    } else if (isPositiveInteger(plot.colWrap)) {
+        args.push('--col-wrap', String(plot.colWrap));
+    }
+    if (plot.xincrease !== undefined && plot.xincrease !== null) {
+        args.push('--xincrease', plot.xincrease ? 'true' : 'false');
+    }
+    if (plot.yincrease !== undefined && plot.yincrease !== null) {
+        args.push('--yincrease', plot.yincrease ? 'true' : 'false');
+    }
+    if (isFiniteNumber(plot.aspect) && plot.aspect > 0) {
+        args.push('--aspect', String(plot.aspect));
+    }
+    if (isFiniteNumber(plot.size) && plot.size > 0) {
+        args.push('--size', String(plot.size));
+    }
+    if (plot.robust === true) {
+        args.push('--robust');
+    }
+    if (isPositiveInteger(plot.bins)) {
+        args.push('--bins', String(plot.bins));
+    }
+    if (isFiniteNumber(plot.vmin)) {
+        args.push('--vmin', String(plot.vmin));
+    }
+    if (isFiniteNumber(plot.vmax)) {
+        args.push('--vmax', String(plot.vmax));
+    }
+    if (plot.addColorbar === false) {
+        args.push('--no-add-colorbar');
+    }
+    if (plot.addLegend === true) {
+        args.push('--add-legend');
+    }
+    args.push('--netcdf-engine-order', options.netcdfEngineOrder.join(','));
+    if (!options.showInheritedCoordinates) {
+        args.push('--no-show-inherited-coordinates');
+    }
+    if (options.openAsKerchunk) {
+        args.push('--open-as-kerchunk');
+    }
+    if (options.facetgridFigsize) {
+        args.push(
+            '--facetgrid-figsize',
+            `${options.facetgridFigsize[0]},${options.facetgridFigsize[1]}`,
+        );
+    }
+    return args;
+}
+
+/**
+ * Upper bound for one `info` subprocess. Loading has no user setting (unlike
+ * plotting); this only guards against a hung interpreter or remote store.
+ */
+export const DATA_INFO_TIMEOUT_MS = 5 * 60 * 1000;
+
 export class DataProcessor {
-    private static instance: DataProcessor;
-
-    static getInstance(): DataProcessor {
-        return DataProcessor.instance;
-    }
-
-    static createInstance(pythonManager: PythonManager): DataProcessor {
-        DataProcessor.instance = new DataProcessor(pythonManager);
-        return DataProcessor.instance;
-    }
-
-    private readonly pythonScriptsHomeDir: string;
+    private readonly scriptPath: string;
 
     constructor(private pythonManager: PythonManager) {
-        this.pythonScriptsHomeDir = path.join(__dirname, '../../../python');
+        this.scriptPath = path.join(
+            __dirname,
+            '../../../python',
+            'get_data_info.py',
+        );
     }
 
     get pythonManagerInstance(): PythonManager {
         return this.pythonManager;
     }
 
+    /**
+     * Run `get_data_info.py info`. Resolves with the backend response, which
+     * may carry a structured `error`; rejects when the subprocess fails.
+     */
     async getDataInfo(
         uri: vscode.Uri,
         convertBandsToVariables: boolean = false,
-    ): Promise<DataInfoPythonResponse | null> {
+    ): Promise<DataInfoPythonResponse> {
         const timer = new PerformanceTimer('getDataInfo');
         Logger.debug(
             `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`,
@@ -91,218 +212,71 @@ export class DataProcessor {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(
-            this.pythonScriptsHomeDir,
-            'get_data_info.py',
-        );
+        const args = buildGetDataInfoCliArgs(uri.fsPath, {
+            convertBandsToVariables,
+            smallVariableBytes: getSmallVariableBytes(),
+            smallValueDisplayMaxLen: getSmallValueDisplayMaxLen(),
+            orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
+            showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+            netcdfEngineOrder: getNetcdfEngineOrder(),
+            showInheritedCoordinates: getShowInheritedCoordinates(),
+            openAsKerchunk: uriRequestsKerchunkOpen(uri),
+        });
+        timer.mark('python-args-ready');
 
         try {
-            const args = buildGetDataInfoCliArgs(filePath, {
-                convertBandsToVariables,
-                smallVariableBytes: getSmallVariableBytes(),
-                smallValueDisplayMaxLen: getSmallValueDisplayMaxLen(),
-                orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
-                showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
-                netcdfEngineOrder: getNetcdfEngineOrder(),
-                showInheritedCoordinates: getShowInheritedCoordinates(),
-                openAsKerchunk: uriRequestsKerchunkOpen(uri),
-            });
-
-            timer.mark('python-args-ready');
             const pythonResponse = (await this.pythonManager.executePythonFile(
-                scriptPath,
+                this.scriptPath,
                 args,
                 true,
+                undefined,
+                DATA_INFO_TIMEOUT_MS,
             )) as DataInfoPythonResponse;
-            timer.mark('python-complete');
             timer.finish('getDataInfo');
             return pythonResponse;
         } catch (error) {
             Logger.error(
                 `[DataProcessor] [getDataInfo] 🐍 ❌ Error processing data file: ${error}`,
             );
-            return null;
+            throw error;
         }
     }
 
-    // Default server-side timeout for plot operations: 2 minutes
-    // This timeout is independent of the webview and will kill the process
-    // even if the user closes the tab before the webview timeout fires.
-    private static readonly DEFAULT_PLOT_TIMEOUT_MS = 20000;
-
+    /**
+     * Run `get_data_info.py plot`. `timeoutMs` kills the subprocess even if
+     * the webview that asked for the plot is closed.
+     */
     async createPlot(
         uri: vscode.Uri,
-        variable: string,
-        plotType: string = 'auto',
+        plot: PlotOptions,
         convertBandsToVariables: boolean = false,
-        datetimeVariableName?: string,
-        startDatetime?: string,
-        endDatetime?: string,
-        dimensionSlices?: Record<string, string | number>,
-        facetRow?: string,
-        facetCol?: string,
-        colWrap?: number | 'auto',
-        plotX?: string,
-        plotY?: string,
-        plotHue?: string,
-        xincrease?: boolean,
-        yincrease?: boolean,
-        aspect?: number,
-        size?: number,
-        robust?: boolean,
-        cmap?: string,
-        bins?: number,
-        vmin?: number,
-        vmax?: number,
-        /** When false, passes --no-add-colorbar (default true: show colorbar when applicable). */
-        addColorbar?: boolean,
-        /** When true, passes --add-legend (webview defaults on; Python `create_plot` still defaults false when the flag is omitted from CLI). */
-        addLegend?: boolean,
-        operationId?: string,
-        timeoutMs: number = DataProcessor.DEFAULT_PLOT_TIMEOUT_MS,
-    ): Promise<CreatePlotPythonResponse | null> {
+        timeoutMs: number = getPlotTimeoutMs(),
+    ): Promise<CreatePlotPythonResponse> {
         if (!this.pythonManager.ready) {
             throw new Error('Python environment not ready');
         }
 
-        const filePath = uri.fsPath;
-        const scriptPath = path.join(
-            this.pythonScriptsHomeDir,
-            'get_data_info.py',
-        );
-
-        // Get the matplotlib style (either from user setting or auto-detected)
         const style = getMatplotlibStyle();
+        const args = buildCreatePlotCliArgs(uri.fsPath, plot, {
+            style,
+            convertBandsToVariables,
+            netcdfEngineOrder: getNetcdfEngineOrder(),
+            showInheritedCoordinates: getShowInheritedCoordinates(),
+            openAsKerchunk: uriRequestsKerchunkOpen(uri),
+            facetgridFigsize: getFacetgridFigsize(),
+        });
 
-        // Use the new merged CLI with 'plot' mode and style parameter
-        const args = ['plot', filePath, variable, plotType, '--style', style];
-
-        if (convertBandsToVariables) {
-            args.push('--convert-bands-to-variables');
-        }
-
-        if (datetimeVariableName && datetimeVariableName.trim() !== '') {
-            args.push('--datetime-variable', datetimeVariableName);
-        }
-        if (startDatetime && startDatetime.trim() !== '') {
-            args.push('--start-datetime', startDatetime);
-        }
-        if (endDatetime && endDatetime.trim() !== '') {
-            args.push('--end-datetime', endDatetime);
-        }
-        if (dimensionSlices && Object.keys(dimensionSlices).length > 0) {
-            args.push('--dimension-slices', JSON.stringify(dimensionSlices));
-        }
-        if (facetRow && facetRow.trim() !== '') {
-            args.push('--facet-row', facetRow);
-        }
-        if (facetCol && facetCol.trim() !== '') {
-            args.push('--facet-col', facetCol);
-        }
-        if (colWrap === 'auto') {
-            args.push('--col-wrap', 'auto');
-        } else if (
-            colWrap !== null &&
-            colWrap !== undefined &&
-            Number.isInteger(colWrap) &&
-            colWrap >= 1
-        ) {
-            args.push('--col-wrap', String(colWrap));
-        }
-        if (plotX && plotX.trim() !== '') {
-            args.push('--plot-x', plotX);
-        }
-        if (plotY && plotY.trim() !== '') {
-            args.push('--plot-y', plotY);
-        }
-        if (plotHue && plotHue.trim() !== '') {
-            args.push('--plot-hue', plotHue);
-        }
-        if (xincrease !== undefined) {
-            args.push('--xincrease', xincrease ? 'true' : 'false');
-        }
-        if (yincrease !== undefined) {
-            args.push('--yincrease', yincrease ? 'true' : 'false');
-        }
-        if (aspect !== undefined && Number.isFinite(aspect) && aspect > 0) {
-            args.push('--aspect', String(aspect));
-        }
-        if (size !== undefined && Number.isFinite(size) && size > 0) {
-            args.push('--size', String(size));
-        }
-        if (robust === true) {
-            args.push('--robust');
-        }
-        if (cmap && cmap.trim() !== '') {
-            args.push('--cmap', cmap.trim());
-        }
-        if (
-            bins !== null &&
-            bins !== undefined &&
-            Number.isInteger(bins) &&
-            bins >= 1
-        ) {
-            args.push('--bins', String(bins));
-        }
-        if (vmin !== undefined && Number.isFinite(vmin)) {
-            args.push('--vmin', String(vmin));
-        }
-        if (vmax !== undefined && Number.isFinite(vmax)) {
-            args.push('--vmax', String(vmax));
-        }
-        if (addColorbar === false) {
-            args.push('--no-add-colorbar');
-        }
-        if (addLegend === true) {
-            args.push('--add-legend');
-        }
-        args.push('--netcdf-engine-order', getNetcdfEngineOrder().join(','));
-        if (!getShowInheritedCoordinates()) {
-            args.push('--no-show-inherited-coordinates');
-        }
-        if (uriRequestsKerchunkOpen(uri)) {
-            args.push('--open-as-kerchunk');
-        }
-        const facetgridFigsize = getFacetgridFigsize();
-        if (facetgridFigsize) {
-            args.push(
-                '--facetgrid-figsize',
-                `${facetgridFigsize[0]},${facetgridFigsize[1]}`,
-            );
-        }
-
+        Logger.info(
+            `[DataProcessor] [createPlot] Creating plot for variable '${plot.variable}' with style '${style}' (operation: ${plot.operationId ?? 'none'}, timeout: ${timeoutMs}ms)`,
+        );
         try {
-            Logger.info(
-                `[DataProcessor] [createPlot] Creating plot for variable '${variable}' with type '${plotType}' and style '${style}'`,
-            );
-            Logger.info(
-                `[DataProcessor] [createPlot] Time controls: datetimeVariableName='${datetimeVariableName}', startDatetime='${startDatetime}', endDatetime='${endDatetime}'`,
-            );
-            if (cmap && cmap.trim() !== '') {
-                Logger.info(
-                    `[DataProcessor] [createPlot] Colormap: ${cmap.trim()}`,
-                );
-            }
-            if (operationId) {
-                Logger.info(
-                    `[DataProcessor] [createPlot] Operation ID: ${operationId}, Server timeout: ${timeoutMs}ms`,
-                );
-            }
-
-            // Execute Python script and capture both stdout and stderr
-            // Pass the operation ID for tracking and potential abort
-            // Pass the server-side timeout that will kill the process even if webview is closed
-            const pythonResponse = await this.pythonManager.executePythonFile(
-                scriptPath,
+            return (await this.pythonManager.executePythonFile(
+                this.scriptPath,
                 args,
                 true,
-                operationId,
+                plot.operationId,
                 timeoutMs,
-            );
-            // Return the result even if it contains an error field
-            // The caller can check for result.error to handle errors
-            return pythonResponse as CreatePlotPythonResponse;
+            )) as CreatePlotPythonResponse;
         } catch (error) {
             Logger.error(
                 `[DataProcessor] [createPlot] Error creating plot: ${error}`,
@@ -313,7 +287,6 @@ export class DataProcessor {
 
     /**
      * Abort an active plot operation
-     * @param operationId The ID of the plot operation to abort
      * @returns true if the operation was aborted, false otherwise
      */
     abortPlot(operationId: string): boolean {
@@ -321,14 +294,5 @@ export class DataProcessor {
             `[DataProcessor] [abortPlot] Aborting plot operation: ${operationId}`,
         );
         return this.pythonManager.abortProcess(operationId);
-    }
-
-    /**
-     * Check if a plot operation is currently active
-     * @param operationId The ID of the plot operation to check
-     * @returns true if the operation is active, false otherwise
-     */
-    isPlotOperationActive(operationId: string): boolean {
-        return this.pythonManager.isOperationActive(operationId);
     }
 }

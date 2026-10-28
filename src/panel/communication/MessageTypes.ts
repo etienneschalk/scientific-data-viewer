@@ -1,250 +1,89 @@
 /**
- * Type-safe communication system for VSCode extension
+ * Wire protocol between the webview script and the extension host.
+ *
+ * The webview sends requests and receives responses; the extension host only
+ * emits events. Keep these maps in sync with `src/panel/webview/`.
  */
 
-export interface BaseMessage {
-    id: string;
-    timestamp: number;
-}
+import { DataInfoResult, PlotOptions } from '../../types';
 
-export interface RequestMessage<T = any> extends BaseMessage {
+export interface RequestMessage {
     type: 'request';
+    id: string;
     command: string;
-    payload: T;
+    payload: unknown;
 }
 
-export interface ResponseMessage<T = any> extends BaseMessage {
+export interface ResponseMessage {
     type: 'response';
     requestId: string;
     success: boolean;
-    payload?: T;
+    payload?: unknown;
     error?: string;
 }
 
-export interface EventMessage<T = any> extends BaseMessage {
+export interface EventMessage {
     type: 'event';
     event: string;
-    payload: T;
+    payload: unknown;
 }
 
-export type Message<T = any> =
-    RequestMessage<T> | ResponseMessage<T> | EventMessage<T>;
-
-// Specific message types
-export interface DataInfoRequest {
-    filePath: string;
-}
-
-export interface DataInfoResponse {
-    data: any;
-    filePath: string;
-    lastLoadTime: string;
-}
-
-export interface CreatePlotRequest {
-    variable: string;
-    plotType: string;
-    datetimeVariableName?: string;
-    startDatetime?: string;
-    endDatetime?: string;
-    /** Dimension index/slice per dimension (Issue #117). e.g. { time: "0:24:2", rlat: "100:120", rlon: 130 } */
-    dimensionSlices?: Record<string, string | number>;
-    /** Dimension name for faceted plot row (Issue #117) */
-    facetRow?: string;
-    /** Dimension name for faceted plot col (Issue #117) */
-    facetCol?: string;
-    /** xarray plot col_wrap: max columns, or 'auto' (xarray 2026.04+) */
-    colWrap?: number | 'auto';
-    /** Dimension or coordinate for x-axis (xarray plot x=, e.g. line/2D) */
-    plotX?: string;
-    /** Dimension or coordinate for y-axis (xarray plot y=, e.g. 2D) */
-    plotY?: string;
-    /** Dimension or coordinate for hue (xarray plot hue=, e.g. multiple lines) */
-    plotHue?: string;
-    /** xarray plot xincrease (axes direction); when set, passed to plot */
-    xincrease?: boolean;
-    /** xarray plot yincrease (axes direction); when set, passed to plot */
-    yincrease?: boolean;
-    /** xarray plot aspect (figure size: width = aspect * size); float */
-    aspect?: number;
-    /** xarray plot size (figure size: height = size in inches); float */
-    size?: number;
-    /** xarray plot robust (use 2nd/98th percentiles for color limits; helps with outliers) */
-    robust?: boolean;
-    /** Matplotlib colormap name (cmap kwarg); user must provide a valid existing cmap */
-    cmap?: string;
-    /** Number of bins for histogram-style plots (Issue #117; passed as plot kwarg) */
-    bins?: number;
-    /** Lower color scale limit (scalar-mappable plots) */
-    vmin?: number;
-    /** Upper color scale limit (scalar-mappable plots) */
-    vmax?: number;
-    /** When false, passes --no-add-colorbar (default true in UI) */
-    addColorbar?: boolean;
-    /** When true, passes --add-legend (default true in UI, aligned with typical xarray plot defaults) */
-    addLegend?: boolean;
-}
-
-export interface CreatePlotResponse {
-    data: any;
-}
-
-export interface SavePlotRequest {
-    plotData: string; // Base64 encoded image
-    variable: string;
-    fileName: string;
-}
-
-export interface SavePlotResponse {
+export interface SaveResult {
     success: boolean;
     filePath?: string;
     error?: string;
 }
 
-export interface OpenPlotRequest {
-    plotData: string; // Base64 encoded image
+export interface PlotFilePayload {
+    /** Base64 encoded PNG */
+    plotData: string;
     variable: string;
+    /** Path relative to the data file's folder (save) or the temp folder (open) */
     fileName: string;
 }
 
-export interface SavePlotAsRequest {
-    plotData: string; // Base64 encoded image
-    variable: string;
+/** Requests sent by the webview: command → [payload, result]. */
+export interface Requests {
+    createPlot: [PlotOptions, string | undefined];
+    abortPlot: [{ operationId: string }, { success: boolean; message: string }];
+    savePlot: [PlotFilePayload, SaveResult];
+    savePlotAs: [{ plotData: string; variable: string }, SaveResult];
+    openPlot: [PlotFilePayload, void];
+    refresh: [unknown, void];
+    showNotification: [
+        { message: string; type: 'info' | 'warning' | 'error' },
+        void,
+    ];
+    executeCommand: [{ command: string; args?: unknown[] }, unknown];
+    exportWebview: [{ htmlContent: string }, SaveResult];
 }
 
-export interface PythonPathResponse {
-    pythonPath: string;
+export type RequestCommand = keyof Requests;
+
+export interface DataLoadedPayload {
+    data: {
+        currentFile: string;
+        dataInfo: DataInfoResult;
+        lastLoadTime: string;
+    };
+    python: { pythonPath: string | null };
+    extension: { extensionConfig: Record<string, unknown> };
 }
 
-export interface ExtensionConfigResponse {
-    config: Record<string, any>;
+/** Events emitted by the extension host: event → payload. */
+export interface Events {
+    dataLoaded: DataLoadedPayload;
+    error: { message: string; details?: string; errorType?: string };
+    scrollToHeaderCommandEvent: { headerId: string; headerLabel: string };
+    exportWebviewCommandEvent: Record<string, never>;
 }
 
-export interface ShowNotificationRequest {
-    message: string;
-    type: 'info' | 'warning' | 'error';
+export function isRequestMessage(message: unknown): message is RequestMessage {
+    return (
+        typeof message === 'object' &&
+        message !== null &&
+        (message as RequestMessage).type === 'request' &&
+        typeof (message as RequestMessage).id === 'string' &&
+        typeof (message as RequestMessage).command === 'string'
+    );
 }
-
-export interface HeaderUpdateRequest {
-    headers: Array<{
-        label: string;
-        level: number;
-        id?: string;
-        line?: number;
-        children: any[];
-    }>;
-}
-
-export interface ScrollToHeaderRequest {
-    headerId: string;
-    headerLabel: string;
-}
-
-export interface ErrorResponse {
-    message: string;
-    details?: string;
-    errorType?: string;
-    formatInfo?: any;
-}
-
-// Event types
-export interface DataLoadedEvent {
-    state: any;
-}
-
-export interface ErrorEvent {
-    message: string;
-    details?: string;
-    errorType?: string;
-    formatInfo?: any;
-}
-
-export interface PythonEnvironmentChangedEvent {
-    isReady: boolean;
-    pythonPath: string | null;
-}
-
-// Message factory functions
-export class MessageFactory {
-    private static generateId(): string {
-        return (
-            Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
-        );
-    }
-
-    static createRequest<T>(command: string, payload: T): RequestMessage<T> {
-        return {
-            id: this.generateId(),
-            timestamp: Date.now(),
-            type: 'request',
-            command,
-            payload,
-        };
-    }
-
-    static createResponse<T>(
-        requestId: string,
-        success: boolean,
-        payload?: T,
-        error?: string,
-    ): ResponseMessage<T> {
-        return {
-            id: this.generateId(),
-            timestamp: Date.now(),
-            type: 'response',
-            requestId,
-            success,
-            payload,
-            error,
-        };
-    }
-
-    static createEvent<T>(event: string, payload: T): EventMessage<T> {
-        return {
-            id: this.generateId(),
-            timestamp: Date.now(),
-            type: 'event',
-            event,
-            payload,
-        };
-    }
-}
-
-// Message type guards
-export function isRequestMessage(message: Message): message is RequestMessage {
-    return message.type === 'request';
-}
-
-export function isResponseMessage(
-    message: Message,
-): message is ResponseMessage {
-    return message.type === 'response';
-}
-
-export function isEventMessage(message: Message): message is EventMessage {
-    return message.type === 'event';
-}
-
-// Command constants
-export const COMMANDS = {
-    GET_DATA_INFO: 'getDataInfo',
-    CREATE_PLOT: 'createPlot',
-    SAVE_PLOT: 'savePlot',
-    SAVE_PLOT_AS: 'savePlotAs',
-    OPEN_PLOT: 'openPlot',
-    REFRESH: 'refresh',
-    SHOW_NOTIFICATION: 'showNotification',
-    UPDATE_HEADERS: 'updateHeaders',
-} as const;
-
-export const EVENTS = {
-    DATA_LOADED: 'dataLoaded',
-    ERROR: 'error',
-    PYTHON_ENVIRONMENT_CHANGED: 'pythonEnvironmentChanged',
-    UI_STATE_CHANGED: 'uiStateChanged',
-    SCROLL_TO_HEADER_EVENT_COMMAND: 'scrollToHeaderCommandEvent',
-    EXPORT_WEBVIEW_COMMAND_EVENT: 'exportWebviewCommandEvent',
-} as const;
-
-export type Command = (typeof COMMANDS)[keyof typeof COMMANDS];
-export type Event = (typeof EVENTS)[keyof typeof EVENTS];

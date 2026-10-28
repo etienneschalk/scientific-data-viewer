@@ -75,6 +75,7 @@ suite('Integration Test Suite', () => {
             ),
         );
         dataProcessor = new DataProcessor(pythonManager);
+        DataViewerPanel.setDataProcessor(dataProcessor);
     });
 
     teardown(() => {
@@ -96,7 +97,6 @@ suite('Integration Test Suite', () => {
                 if (args[0] === 'info') {
                     return {
                         result: {
-                            format: 'NetCDF',
                             fileSize: 1024,
                         },
                     };
@@ -130,14 +130,12 @@ suite('Integration Test Suite', () => {
         // Test data processing
         const dataInfo = await processor.getDataInfo(mockUri);
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
 
         // Test plot creation
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'line',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'line',
+        });
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
@@ -160,7 +158,7 @@ suite('Integration Test Suite', () => {
         }
 
         try {
-            await processor.createPlot(mockUri, 'temperature');
+            await processor.createPlot(mockUri, { variable: 'temperature' });
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
@@ -220,7 +218,6 @@ suite('Integration Test Suite', () => {
                 if (args[0] === 'info') {
                     return {
                         result: {
-                            format: 'NetCDF',
                             fileSize: 1024,
                         },
                         error: 'File corrupted or unsupported format',
@@ -256,11 +253,10 @@ suite('Integration Test Suite', () => {
         assert.ok(dataInfo?.error);
 
         // Test plot creation with error - should return error in response
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'line',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'line',
+        });
         assert.ok(plotData);
         assert.ok(plotData?.error);
         assert.strictEqual(
@@ -289,12 +285,17 @@ suite('Integration Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
         // Test data info with execution error
-        const dataInfo = await processor.getDataInfo(mockUri);
-        assert.strictEqual(dataInfo, null);
+        await assert.rejects(
+            processor.getDataInfo(mockUri),
+            /Python script execution failed/,
+        );
 
         // Test plot creation with execution error - should throw because createPlot throws on error
         try {
-            await processor.createPlot(mockUri, 'temperature', 'line');
+            await processor.createPlot(mockUri, {
+                variable: 'temperature',
+                plotType: 'line',
+            });
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
@@ -415,7 +416,6 @@ suite('Integration Test Suite', () => {
                 if (args[0] === 'info') {
                     return {
                         result: {
-                            format: 'NetCDF',
                             fileSize: 1024,
                         },
                     };
@@ -496,13 +496,11 @@ suite('Integration Test Suite', () => {
                 vscode.Uri.file('/path/to/test.nc'),
             );
             assert.ok(dataInfo);
-            assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
 
             // Test plot creation
             const plotData = await processor.createPlot(
                 vscode.Uri.file('/path/to/test.nc'),
-                'temperature',
-                'line',
+                { variable: 'temperature', plotType: 'line' },
             );
             assert.ok(plotData);
             assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -523,7 +521,6 @@ suite('Integration Test Suite', () => {
                 args: string[],
                 enableLogs: boolean = false,
             ) => ({
-                format: 'NetCDF',
                 fileSize: 1024,
             }),
             executePythonScript: async () => ({}),
@@ -567,7 +564,6 @@ suite('Integration Test Suite', () => {
                 }
                 return {
                     result: {
-                        format: 'NetCDF',
                         fileSize: 1024,
                     },
                 };
@@ -581,16 +577,14 @@ suite('Integration Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
 
         // First attempt should fail
-        const firstResult = await processor.getDataInfo(
-            vscode.Uri.file('/path/to/test.nc'),
+        await assert.rejects(
+            processor.getDataInfo(vscode.Uri.file('/path/to/test.nc')),
         );
-        assert.strictEqual(firstResult, null); // Should return null due to error
 
         // Second attempt should succeed
         const dataInfo = await processor.getDataInfo(
             vscode.Uri.file('/path/to/test.nc'),
         );
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
     });
 });

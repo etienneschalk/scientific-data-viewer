@@ -115,6 +115,7 @@ suite('DataViewerPanel Test Suite', () => {
             getHtmlRepresentation: async () => '<div>Test HTML</div>',
             getTextRepresentation: async () => 'Test text representation',
         } as any;
+        DataViewerPanel.setDataProcessor(mockDataProcessor);
 
         // Mock WebviewPanel
         mockWebviewPanel = {
@@ -264,6 +265,40 @@ suite('DataViewerPanel Test Suite', () => {
         }
     });
 
+    test('should open "Open as Kerchunk" next to an already open plain view', async () => {
+        const plainUri = vscode.Uri.file('/path/to/refs.json');
+        DataViewerPanel.createFromWebviewPanel(
+            plainUri,
+            mockWebviewPanel,
+            mockWebviewOptions,
+        );
+        let created = 0;
+        const originalCreateWebviewPanel = vscode.window.createWebviewPanel;
+        vscode.window.createWebviewPanel = () => {
+            created++;
+            return mockWebviewPanel;
+        };
+        try {
+            await DataViewerPanel.createOrReveal(
+                plainUri,
+                mockContext.extensionUri,
+                mockWebviewOptions,
+                mockWebviewPanelOptions,
+            );
+            assert.strictEqual(created, 0, 'plain view is only revealed');
+
+            await DataViewerPanel.createOrReveal(
+                plainUri.with({ query: 'openAs=kerchunk' }),
+                mockContext.extensionUri,
+                mockWebviewOptions,
+                mockWebviewPanelOptions,
+            );
+            assert.strictEqual(created, 1, 'kerchunk view gets its own panel');
+        } finally {
+            vscode.window.createWebviewPanel = originalCreateWebviewPanel;
+        }
+    });
+
     test('should revive panel', () => {
         DataViewerPanel.createFromWebviewPanel(
             mockContext.extensionUri,
@@ -282,87 +317,6 @@ suite('DataViewerPanel Test Suite', () => {
         assert.ok(true);
     });
 
-    test('should handle get data info when Python not ready', async () => {
-        // This test is skipped because the _handleGetDataInfo method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _handleGetDataInfo method was removed from DataViewerPanel',
-        );
-    });
-
-    test('should handle get data info when file too large', async () => {
-        // This test is skipped because we cannot mock fs.stat due to read-only property restrictions
-        // The functionality is tested in integration tests with real file system operations
-        assert.ok(
-            true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
-        );
-    });
-
-    test('should handle get data info when data processing fails', async () => {
-        // This test is skipped because we cannot mock fs.stat due to read-only property restrictions
-        // The functionality is tested in integration tests with real file system operations
-        assert.ok(
-            true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
-        );
-    });
-
-    test('should handle get data info when data has error field', async () => {
-        // This test is skipped because we cannot mock fs.stat due to read-only property restrictions
-        // The functionality is tested in integration tests with real file system operations
-        assert.ok(
-            true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
-        );
-    });
-
-    test('should handle get data info successfully', async () => {
-        // This test is skipped because we cannot mock fs.stat due to read-only property restrictions
-        // The functionality is tested in integration tests with real file system operations
-        assert.ok(
-            true,
-            'Test skipped - fs.stat cannot be mocked due to read-only property restrictions',
-        );
-    });
-
-    test('should handle create plot', async () => {
-        // This test is skipped because the _handleCreatePlot method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel',
-        );
-    });
-
-    test('should handle create plot error', async () => {
-        // This test is skipped because the _handleCreatePlot method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _handleCreatePlot method was removed from DataViewerPanel',
-        );
-    });
-
-    test('should handle get Python path', async () => {
-        // This test is skipped because the _handleGetPythonPath method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _handleGetPythonPath method was removed from DataViewerPanel',
-        );
-    });
-
-    test('should handle get extension config', async () => {
-        // This test is skipped because the _handleGetExtensionConfig method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _handleGetExtensionConfig method was removed from DataViewerPanel',
-        );
-    });
-
     test('should dispose panel', () => {
         const panel = DataViewerPanel.createFromWebviewPanel(
             vscode.Uri.file('/path/to/test.nc'),
@@ -374,23 +328,5 @@ suite('DataViewerPanel Test Suite', () => {
 
         // Should be removed from active panels
         assert.ok(!DataViewerPanel.getPanel(panel.getId()));
-    });
-
-    test('should generate HTML for webview', () => {
-        // This test is skipped because the _getHtmlForWebview method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel',
-        );
-    });
-
-    test('should generate HTML for webview without plotting capabilities', () => {
-        // This test is skipped because the _getHtmlForWebview method was removed from DataViewerPanel
-        // The functionality is now handled by UIController
-        assert.ok(
-            true,
-            'Test skipped - _getHtmlForWebview method was removed from DataViewerPanel',
-        );
     });
 });

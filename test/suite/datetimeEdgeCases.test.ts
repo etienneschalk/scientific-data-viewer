@@ -19,7 +19,6 @@ suite('Datetime Edge Cases Test Suite', () => {
                 if (args[0] === 'info') {
                     return {
                         result: {
-                            format: 'NetCDF',
                             fileSize: 1024,
                             xarray_html_repr: '',
                             xarray_text_repr: '',
@@ -95,15 +94,13 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should create plot with datetime variable', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            '2020-01-01T00:00:00',
-            '2020-01-10T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            startDatetime: '2020-01-01T00:00:00',
+            endDatetime: '2020-01-10T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -111,13 +108,11 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should create plot with only datetime variable (no time range)', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -125,14 +120,12 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should create plot with only start datetime', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            '2020-01-01T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            startDatetime: '2020-01-01T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -140,15 +133,12 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should create plot with only end datetime', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            undefined,
-            '2020-01-10T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            endDatetime: '2020-01-10T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -156,13 +146,11 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle empty datetime variable name', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            '',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: '',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -170,13 +158,11 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle whitespace-only datetime variable name', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            '   ',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: '   ',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -184,15 +170,13 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle empty start datetime', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            '',
-            '2020-01-10T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            startDatetime: '',
+            endDatetime: '2020-01-10T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -200,15 +184,13 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle empty end datetime', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            '2020-01-01T00:00:00',
-            '',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            startDatetime: '2020-01-01T00:00:00',
+            endDatetime: '',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -216,15 +198,13 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle datetime variable with dots in name', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature.hourly',
-            'auto',
-            false,
-            'time.stamp',
-            '2020-01-01T00:00:00',
-            '2020-01-10T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature.hourly',
+            plotType: 'auto',
+            datetimeVariableName: 'time.stamp',
+            startDatetime: '2020-01-01T00:00:00',
+            endDatetime: '2020-01-10T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -232,15 +212,13 @@ suite('Datetime Edge Cases Test Suite', () => {
 
     test('should handle cross-group datetime variable', async () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
-        const plotData = await dataProcessor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'subgroup/time',
-            '2020-01-01T00:00:00',
-            '2020-01-10T00:00:00',
-        );
+        const plotData = await dataProcessor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'subgroup/time',
+            startDatetime: '2020-01-01T00:00:00',
+            endDatetime: '2020-01-10T00:00:00',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data);
@@ -266,7 +244,6 @@ suite('Datetime Edge Cases Test Suite', () => {
             ready: true,
             executePythonFile: async () => ({
                 result: {
-                    format: 'NetCDF',
                     fileSize: 1024,
                     xarray_html_repr: '',
                     xarray_text_repr: '',
@@ -321,14 +298,12 @@ suite('Datetime Edge Cases Test Suite', () => {
         const processor = new DataProcessor(mockPythonManagerError);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'time',
-            'invalid-datetime',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'time',
+            startDatetime: 'invalid-datetime',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.error);
@@ -355,13 +330,11 @@ suite('Datetime Edge Cases Test Suite', () => {
         const processor = new DataProcessor(mockPythonManagerError);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            'nonexistent_time',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotType: 'auto',
+            datetimeVariableName: 'nonexistent_time',
+        });
 
         assert.ok(plotData);
         assert.ok(plotData?.error);

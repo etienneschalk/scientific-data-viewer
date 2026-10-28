@@ -5,7 +5,6 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
-import { StateManager, AppState } from './state/AppState';
 import { MessageBus } from './communication/MessageBus';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import { DataProcessor } from '../python/DataProcessor';
@@ -13,867 +12,537 @@ import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import { showErrorMessage } from '../common/vscodeutils';
 import {
+    CMD_PYTHON_INSTALL_PACKAGES,
+    CMD_SHOW_LOGS,
+    CMD_SHOW_SETTINGS,
     getDevMode,
     getMaxSize,
     getExtensionConfigForWebview,
-    getPlotTimeoutMs,
     getWebviewExportTheme,
     getConvertBandsToVariables,
     getOutlineEnabled,
 } from '../common/config';
-import { ErrorContext } from '../types';
+import { DataInfoResult, PlotOptions } from '../types';
+import { SaveResult } from './communication/MessageTypes';
 import { ThemeManager } from './ThemeManager';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
+/** Commands the webview may run through `executeCommand`. */
+export const WEBVIEW_ALLOWED_COMMANDS: ReadonlySet<string> = new Set([
+    CMD_SHOW_LOGS,
+    CMD_SHOW_SETTINGS,
+    CMD_PYTHON_INSTALL_PACKAGES,
+]);
+
+const GEOTIFF_EXTENSIONS = ['.tif', '.tiff', '.geotiff'];
+
+/**
+ * Resolve a file name sent by the webview below `baseDir`. Only relative paths
+ * without `..` segments are accepted, so the webview cannot write elsewhere.
+ */
+export function resolveWebviewFileName(
+    baseDir: string,
+    fileName: string,
+): string {
+    if (
+        !fileName ||
+        path.isAbsolute(fileName) ||
+        path.win32.isAbsolute(fileName) ||
+        fileName.split(/[\\/]/).includes('..')
+    ) {
+        throw new Error(`Invalid plot file name: ${fileName}`);
+    }
+    return path.join(baseDir, fileName);
+}
+
+/** Backend error with the suggestion and type reported by `get_data_info.py`. */
+class BackendLoadError extends Error {
+    constructor(
+        message: string,
+        readonly details?: string,
+        readonly errorType?: string,
+    ) {
+        super(message);
+    }
+}
+
+function timestampForFileName(): string {
+    return new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+}
+
 export class UIController {
-    private id: number;
-    private stateManager: StateManager;
-    private messageBus: MessageBus;
-    private errorBoundary: ErrorBoundary;
-    private dataProcessor: DataProcessor;
-    private webview: vscode.Webview;
+    private readonly id: number;
+    private readonly messageBus: MessageBus;
+    private readonly errorBoundary: ErrorBoundary;
+    private readonly dataProcessor: DataProcessor;
+    private readonly webview: vscode.Webview;
     private readonly extensionUri?: vscode.Uri;
-    private unsubscribeState?: () => void;
-    private onErrorPanelCallback: (error: Error) => void;
-    private onSuccessPanelCallback: (success: string) => void;
-    private onOutlineUpdateCallback?: () => void;
+    private readonly onErrorPanelCallback: (error: Error) => void;
+    private readonly onSuccessPanelCallback: (success: string) => void;
+    private readonly onOutlineUpdateCallback?: () => void;
+
+    /** File shown by this panel; may carry a query such as `openAs=kerchunk`. */
+    private fileUri?: vscode.Uri;
+    private dataInfo: DataInfoResult | null = null;
+    private lastLoadTime: Date | null = null;
 
     constructor(
         id: number,
         webview: vscode.Webview,
         onErrorCallback: (error: Error) => void,
         onSuccessCallback: (success: string) => void,
+        dataProcessor: DataProcessor,
         onOutlineUpdateCallback?: () => void,
         extensionUri?: vscode.Uri,
     ) {
         this.id = id;
         this.webview = webview;
         this.extensionUri = extensionUri;
-        this.dataProcessor = DataProcessor.getInstance();
+        this.dataProcessor = dataProcessor;
         this.onErrorPanelCallback = onErrorCallback;
         this.onSuccessPanelCallback = onSuccessCallback;
         this.onOutlineUpdateCallback = onOutlineUpdateCallback;
 
-        this.stateManager = new StateManager();
         this.messageBus = new MessageBus(webview);
         this.errorBoundary = ErrorBoundary.getInstance();
 
-        this.setupErrorHandling();
+        this.errorBoundary.registerHandler(this.getComponentName(), (error) => {
+            this.messageBus.emit('error', {
+                message: error.message,
+                details:
+                    error instanceof BackendLoadError
+                        ? error.details
+                        : 'An error occurred in the data viewer panel. Please check the output panel for details.',
+                errorType:
+                    error instanceof BackendLoadError
+                        ? error.errorType
+                        : undefined,
+            });
+        });
         this.setupMessageHandlers();
-        this.setupStateSubscription();
     }
 
     private getComponentName(): string {
         return `${this.constructor.name}-<${this.id}>`;
     }
-    private setupErrorHandling(): void {
-        this.errorBoundary.registerHandler(this.getComponentName(), (error) => {
-            this.messageBus.emitError(
-                error.message,
-                'An error occurred in the UI. Please check the output panel for details.',
-                'UIError',
-            );
-        });
-    }
 
     private setupMessageHandlers(): void {
-        // Register request handlers
-        this.messageBus.registerRequestHandler(
-            'getDataInfo',
-            async (payload) => {
-                return this.handleGetDataInfo(payload.filePath);
-            },
+        const bus = this.messageBus;
+        bus.handle('createPlot', (plot) => this.handleCreatePlot(plot));
+        bus.handle('abortPlot', async ({ operationId }) =>
+            this.handleAbortPlot(operationId),
         );
-
-        this.messageBus.registerRequestHandler(
-            'createPlot',
-            async (payload) => {
-                return this.handleCreatePlot(
-                    payload.variable,
-                    payload.plotType,
-                    payload.datetimeVariableName,
-                    payload.startDatetime,
-                    payload.endDatetime,
-                    payload.dimensionSlices,
-                    payload.facetRow,
-                    payload.facetCol,
-                    payload.colWrap,
-                    payload.plotX,
-                    payload.plotY,
-                    payload.plotHue,
-                    payload.xincrease,
-                    payload.yincrease,
-                    payload.aspect,
-                    payload.size,
-                    payload.robust,
-                    payload.cmap,
-                    payload.bins,
-                    payload.vmin,
-                    payload.vmax,
-                    payload.addColorbar,
-                    payload.addLegend,
-                    payload.operationId,
-                );
-            },
-        );
-
-        this.messageBus.registerRequestHandler('abortPlot', async (payload) => {
-            return this.handleAbortPlot(payload.operationId);
-        });
-
-        this.messageBus.registerRequestHandler('savePlot', async (payload) => {
-            return this.handleSavePlot(
+        bus.handle('savePlot', (payload) =>
+            this.handleSavePlot(
                 payload.plotData,
                 payload.variable,
                 payload.fileName,
-            );
-        });
-
-        this.messageBus.registerRequestHandler(
-            'savePlotAs',
-            async (payload) => {
-                return this.handleSavePlotAs(
-                    payload.plotData,
-                    payload.variable,
-                );
-            },
+            ),
         );
-
-        this.messageBus.registerRequestHandler('openPlot', async (payload) => {
-            return this.handleOpenPlot(
-                payload.plotData,
-                payload.variable,
-                payload.fileName,
-            );
-        });
-
-        this.messageBus.registerRequestHandler('refresh', async () => {
-            return this.handleRefresh();
-        });
-
-        this.messageBus.registerRequestHandler(
-            'getCurrentFilePath',
-            async () => {
-                return this.handleGetCurrentFilePath();
-            },
+        bus.handle('savePlotAs', (payload) =>
+            this.handleSavePlotAs(payload.plotData, payload.variable),
         );
-
-        this.messageBus.registerRequestHandler(
-            'showNotification',
-            async (payload) => {
-                return this.handleShowNotification(
-                    payload.message,
-                    payload.type,
-                );
-            },
+        bus.handle('openPlot', (payload) =>
+            this.handleOpenPlot(payload.plotData, payload.fileName),
         );
-
-        this.messageBus.registerRequestHandler(
-            'executeCommand',
-            async (payload) => {
-                return this.handleExecuteCommand(payload.command, payload.args);
-            },
+        bus.handle('refresh', () => this.refresh());
+        bus.handle('showNotification', async ({ message, type }) =>
+            this.handleShowNotification(message, type),
         );
-
-        this.messageBus.registerRequestHandler(
-            'updateHeaders',
-            async (payload) => {
-                return this.handleUpdateHeaders(payload.headers);
-            },
+        bus.handle('executeCommand', ({ command, args }) =>
+            this.handleExecuteCommand(command, args),
         );
-
-        this.messageBus.registerRequestHandler(
-            'exportWebview',
-            async (payload) => {
-                return this.handleExportWebview(payload.htmlContent);
-            },
+        bus.handle('exportWebview', ({ htmlContent }) =>
+            this.handleExportWebview(htmlContent),
         );
     }
 
-    private setupStateSubscription(): void {
-        this.unsubscribeState = this.stateManager.subscribe((state) => {
-            Logger.debug(
-                `[UIController] [setupStateSubscription] State changed`,
-            );
-            this.updateUI(state);
-        });
+    private requireCurrentFile(): string {
+        if (!this.fileUri) {
+            throw new Error('No file loaded');
+        }
+        return this.fileUri.fsPath;
     }
 
     /**
-     * Shows a file action dialog with options to open file, open in browser, or reveal in explorer
-     * @param message The success message to display
-     * @param fileUri The URI of the file to perform actions on
+     * Shows a file action dialog with options to open file, open in browser,
+     * or reveal in explorer. Not awaited by request handlers: the notification
+     * stays open until the user acts, longer than the webview request timeout
+     * (Issue #101).
      */
-    private async showFileActionDialog(
-        message: string,
-        fileUri: vscode.Uri,
-    ): Promise<void> {
-        const action = await vscode.window.showInformationMessage(
-            message,
-            'Open File',
-            'Open in Browser',
-            'Reveal in Explorer',
-        );
-
-        // Handle user action
-        if (action === 'Open File') {
-            try {
-                await vscode.commands.executeCommand(
-                    'vscode.open',
-                    fileUri,
-                    vscode.ViewColumn.Beside,
-                );
-            } catch (error) {
+    private showFileActionDialog(message: string, fileUri: vscode.Uri): void {
+        const run = async () => {
+            const action = await vscode.window.showInformationMessage(
+                message,
+                'Open File',
+                'Open in Browser',
+                'Reveal in Explorer',
+            );
+            if (action === 'Open File') {
+                try {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        fileUri,
+                        vscode.ViewColumn.Beside,
+                    );
+                } catch {
+                    await vscode.env.openExternal(fileUri);
+                }
+            } else if (action === 'Open in Browser') {
                 await vscode.env.openExternal(fileUri);
+            } else if (action === 'Reveal in Explorer') {
+                await vscode.commands.executeCommand('revealFileInOS', fileUri);
             }
-        } else if (action === 'Open in Browser') {
-            // Open the file in the default web browser
-            await vscode.env.openExternal(fileUri);
-        } else if (action === 'Reveal in Explorer') {
-            await vscode.commands.executeCommand('revealFileInOS', fileUri);
-        }
+        };
+        run().catch((error) => {
+            Logger.error(`[UIController] File action failed: ${error}`);
+        });
     }
 
-    private async handleGetDataInfo(filePath: string): Promise<any> {
-        const timer = new PerformanceTimer(`load:${path.basename(filePath)}`);
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'getDataInfo',
-            data: { filePath },
-        };
+    /** Run the `info` backend for `fileUri`; throws with a user-facing message. */
+    private async fetchDataInfo(fileUri: vscode.Uri): Promise<DataInfoResult> {
+        const pythonManager = this.dataProcessor.pythonManagerInstance;
+        await pythonManager.waitForInitialization();
+        if (!pythonManager.pythonPath) {
+            throw new Error(
+                'Python path not found. Please configure Python interpreter first.',
+            );
+        }
 
-        return this.errorBoundary.wrapAsync(async () => {
-            this.stateManager.setLoading(true);
-            this.stateManager.setError(null);
+        const stat = await vscode.workspace.fs.stat(
+            vscode.Uri.file(fileUri.fsPath),
+        );
+        const maxSizeMB = getMaxSize();
+        if (stat.size > maxSizeMB * 1024 * 1024) {
+            throw new Error(
+                `File too large (${Math.round(
+                    stat.size / 1024 / 1024,
+                )}MB). Maximum allowed: ${maxSizeMB}MB`,
+            );
+        }
 
-            try {
-                // Wait for Python initialization to complete first
-                // This ensures we don't check Python environment before it's ready
-                await this.dataProcessor.pythonManagerInstance.waitForInitialization();
-                timer.mark('python-init');
-
-                // Check Python environment
-                if (!this.dataProcessor.pythonManagerInstance.pythonPath) {
-                    throw new Error(
-                        'Python path not found. Please configure Python interpreter first.',
-                    );
-                }
-
-                // Check file size
-                const fileUri = vscode.Uri.file(filePath);
-                const stat = await vscode.workspace.fs.stat(fileUri);
-                const maxSize = getMaxSize() * 1024 * 1024;
-
-                if (stat.size > maxSize) {
-                    throw new Error(
-                        `File too large (${Math.round(
-                            stat.size / 1024 / 1024,
-                        )}MB). Maximum allowed: ${maxSize}MB`,
-                    );
-                }
-
-                // Get data info with band conversion configuration
-                const convertBandsToVariables =
-                    this.shouldConvertBandsToVariables(filePath);
-                const dataInfo = await this.dataProcessor.getDataInfo(
-                    fileUri,
-                    convertBandsToVariables,
-                );
-                timer.mark('getDataInfo');
-
-                if (!dataInfo) {
-                    throw new Error(
-                        `Failed to load data file. The file might be corrupted or in an unsupported format. File: ${filePath}`,
-                    );
-                }
-
-                if (dataInfo.error) {
-                    throw new Error(
-                        `Data processing error: ${dataInfo.error.error}`,
-                    );
-                }
-
-                // Update state
-                this.stateManager.setCurrentFile(filePath);
-                this.stateManager.setLastLoadTime(new Date());
-                this.stateManager.setLoading(false);
-                this.stateManager.setError(null);
-                this.stateManager.setPythonPath(
-                    this.dataProcessor.pythonManagerInstance.pythonPath || null,
-                );
-                this.stateManager.setPythonReady(
-                    this.dataProcessor.pythonManagerInstance.ready,
-                );
-                this.stateManager.setExtension(
-                    await this.handleGetExtensionConfig(),
-                );
-                this.stateManager.setDataInfo(dataInfo.result);
-
-                // Emit data loaded event to webview
-                this.messageBus.emitDataLoaded(this.stateManager.getState());
-                timer.mark('postMessage');
-
-                // Notify the panel about the success
-                this.onSuccessPanelCallback('Data loaded successfully');
-
-                // Update outline if callback is provided
-                if (this.onOutlineUpdateCallback && getOutlineEnabled()) {
-                    this.onOutlineUpdateCallback();
-                }
-
-                timer.finish('load complete');
-
-                return {
-                    data: dataInfo.result,
-                };
-            } catch (error) {
-                if (error instanceof Error) {
-                    this.stateManager.setLoading(false);
-                    this.stateManager.setError(
-                        error instanceof Error ? error.message : String(error),
-                    );
-
-                    // Notify the panel about the error so it can be added to error state
-                    this.onErrorPanelCallback(error);
-
-                    this.webview.postMessage({
-                        command: 'error',
-                        message: error.message,
-                        details:
-                            'An error occurred in the data viewer panel. Please check the output panel for more details.',
-                    });
-
-                    throw error;
-                }
-            }
-        }, context);
+        const response = await this.dataProcessor.getDataInfo(
+            fileUri,
+            this.shouldConvertBandsToVariables(fileUri.fsPath),
+        );
+        if (response.error) {
+            throw new BackendLoadError(
+                response.error.error,
+                response.error.suggestion,
+                response.error.error_type,
+            );
+        }
+        if (!response.result) {
+            throw new Error(
+                `Failed to load data file. The file might be corrupted or in an unsupported format. File: ${fileUri.fsPath}`,
+            );
+        }
+        return response.result;
     }
 
     private async handleCreatePlot(
-        variable: string,
-        plotType: string,
-        datetimeVariableName?: string,
-        startDatetime?: string,
-        endDatetime?: string,
-        dimensionSlices?: Record<string, string | number>,
-        facetRow?: string,
-        facetCol?: string,
-        colWrap?: number | 'auto',
-        plotX?: string,
-        plotY?: string,
-        plotHue?: string,
-        xincrease?: boolean,
-        yincrease?: boolean,
-        aspect?: number,
-        size?: number,
-        robust?: boolean,
-        cmap?: string,
-        bins?: number,
-        vmin?: number,
-        vmax?: number,
-        addColorbar?: boolean,
-        addLegend?: boolean,
-        operationId?: string,
+        plot: PlotOptions,
     ): Promise<string | undefined> {
-        try {
-            const state = this.stateManager.getState();
-
-            if (!state.data.currentFile) {
-                throw new Error('No file loaded');
-            }
-
-            const fileUri = vscode.Uri.file(state.data.currentFile);
-
-            const convertBandsToVariables = this.shouldConvertBandsToVariables(
-                state.data.currentFile,
-            );
-            const plotData = await this.dataProcessor.createPlot(
-                fileUri,
-                variable,
-                plotType,
-                convertBandsToVariables,
-                datetimeVariableName,
-                startDatetime,
-                endDatetime,
-                dimensionSlices,
-                facetRow,
-                facetCol,
-                colWrap,
-                plotX,
-                plotY,
-                plotHue,
-                xincrease,
-                yincrease,
-                aspect,
-                size,
-                robust,
-                cmap,
-                bins,
-                vmin,
-                vmax,
-                addColorbar,
-                addLegend,
-                operationId,
-                getPlotTimeoutMs(),
-            );
-
-            if (!plotData) {
-                throw new Error('Failed to create plot');
-            }
-
-            if (plotData.error) {
-                const msg = `Data processing error: ${plotData.error.error}`;
-                Logger.error(`[UIController] [createPlot] ${msg}`);
-                throw new Error(msg);
-            }
-
-            return plotData?.result?.plot_data;
-        } catch (error) {
-            // For plot creation errors, we want to let the webview handle them locally
-            // instead of sending a global error. We'll re-throw the error so the MessageBus
-            // can send it as a failed response that the webview can catch.
-            throw error;
+        if (!this.fileUri) {
+            throw new Error('No file loaded');
         }
+        const response = await this.dataProcessor.createPlot(
+            this.fileUri,
+            plot,
+            this.shouldConvertBandsToVariables(this.fileUri.fsPath),
+        );
+        if (response.error) {
+            const msg = `Data processing error: ${response.error.error}`;
+            Logger.error(`[UIController] [createPlot] ${msg}`);
+            throw new Error(msg);
+        }
+        if (!response.result) {
+            throw new Error('Failed to create plot');
+        }
+        return response.result.plot_data;
     }
 
-    private async handleAbortPlot(
-        operationId: string,
-    ): Promise<{ success: boolean; message: string }> {
+    private handleAbortPlot(operationId: string): {
+        success: boolean;
+        message: string;
+    } {
         Logger.info(
             `[UIController] [handleAbortPlot] Aborting plot operation: ${operationId}`,
         );
-
-        try {
-            const wasAborted = this.dataProcessor.abortPlot(operationId);
-            if (wasAborted) {
-                return {
-                    success: true,
-                    message: `Plot operation ${operationId} was aborted successfully`,
-                };
-            } else {
-                return {
-                    success: false,
-                    message: `No active plot operation found with ID: ${operationId}`,
-                };
-            }
-        } catch (error) {
-            Logger.error(
-                `[UIController] [handleAbortPlot] Error aborting plot: ${error}`,
-            );
-            return {
-                success: false,
-                message: `Failed to abort plot operation: ${error instanceof Error ? error.message : String(error)}`,
-            };
-        }
+        return this.dataProcessor.abortPlot(operationId)
+            ? {
+                  success: true,
+                  message: `Plot operation ${operationId} was aborted successfully`,
+              }
+            : {
+                  success: false,
+                  message: `No active plot operation found with ID: ${operationId}`,
+              };
     }
 
     private async handleSavePlot(
         plotData: string,
         variable: string,
         fileName: string,
-    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'savePlot',
-            data: { variable, fileName },
-        };
-
-        const result = await this.errorBoundary.wrapAsync(async () => {
-            try {
-                // Convert base64 to buffer
-                const buffer = Buffer.from(plotData, 'base64');
-
-                // Get the current file path to determine save location
-                const state = this.stateManager.getState();
-                if (!state.data.currentFile) {
-                    throw new Error('No current file available');
-                }
-
-                const currentFileDir = vscode.Uri.file(state.data.currentFile)
-                    .fsPath.split('/')
-                    .slice(0, -1)
-                    .join('/');
-                const savePath = vscode.Uri.file(
-                    `${currentFileDir}/${fileName}`,
-                );
-
-                // Write the file
-                await vscode.workspace.fs.writeFile(savePath, buffer);
-
-                // Show success notification
-                await this.showFileActionDialog(
-                    `Plot saved successfully: ${fileName}`,
-                    savePath,
-                );
-
-                Logger.info(
-                    `[UIController] Plot saved successfully: ${savePath.fsPath}`,
-                );
-                return { success: true, filePath: savePath.fsPath };
-            } catch (error) {
-                Logger.error(`[UIController] Error saving plot: ${error}`);
-                return {
-                    success: false,
-                    error:
-                        error instanceof Error ? error.message : String(error),
-                };
-            }
-        }, context);
-
-        return result ?? { success: false, error: 'Unknown error' };
+    ): Promise<SaveResult> {
+        try {
+            const savePath = vscode.Uri.file(
+                resolveWebviewFileName(
+                    path.dirname(this.requireCurrentFile()),
+                    fileName,
+                ),
+            );
+            await vscode.workspace.fs.writeFile(
+                savePath,
+                Buffer.from(plotData, 'base64'),
+            );
+            this.showFileActionDialog(
+                `Plot saved successfully: ${fileName}`,
+                savePath,
+            );
+            Logger.info(
+                `[UIController] Plot of ${variable} saved: ${savePath.fsPath}`,
+            );
+            return { success: true, filePath: savePath.fsPath };
+        } catch (error) {
+            Logger.error(`[UIController] Error saving plot: ${error}`);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
     }
 
     private async handleSavePlotAs(
         plotData: string,
         variable: string,
-    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'savePlotAs',
-            data: { variable },
-        };
+    ): Promise<SaveResult> {
+        try {
+            const currentFile = this.requireCurrentFile();
+            const variableParts = variable.split('/').filter(Boolean);
+            const lastPart = variableParts.pop() ?? 'plot';
+            const defaultPath = path.join(
+                path.dirname(currentFile),
+                'sdv-plots',
+                path.basename(currentFile),
+                ...variableParts,
+                `${lastPart}_${timestampForFileName()}.png`,
+            );
 
-        const result = await this.errorBoundary.wrapAsync(async () => {
-            try {
-                // Convert base64 to buffer
-                const buffer = Buffer.from(plotData, 'base64');
-
-                // Generate default filename
-                const state = this.stateManager.getState();
-                const currentFile = state.data.currentFile || 'unknown_file';
-                const fileName = currentFile.split('/').pop() || 'plot';
-                let defaultFileName: string;
-                if (variable.includes('/')) {
-                    // Variable is a full path starting with /
-                    defaultFileName = `sdv-plots/${fileName}${variable}_${new Date()
-                        .toISOString()
-                        .slice(0, 19)
-                        .replace(/:/g, '-')}.png`;
-                } else {
-                    defaultFileName = `sdv-plots/${fileName}/${variable}_${new Date()
-                        .toISOString()
-                        .slice(0, 19)
-                        .replace(/:/g, '-')}.png`;
-                }
-
-                // Show save dialog
-                const saveUri = await vscode.window.showSaveDialog({
-                    defaultUri: vscode.Uri.file(defaultFileName),
-                    filters: {
-                        'PNG Images': ['png'],
-                        'All Files': ['*'],
-                    },
-                    title: 'Save Plot As',
-                });
-
-                if (!saveUri) {
-                    return { success: true, error: 'Save cancelled by user' };
-                }
-
-                // Write the file
-                await vscode.workspace.fs.writeFile(saveUri, buffer);
-
-                // Show success notification
-                await this.showFileActionDialog(
-                    `Plot saved successfully: ${saveUri.fsPath
-                        .split('/')
-                        .pop()}`,
-                    saveUri,
-                );
-
-                Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
-                return { success: true, filePath: saveUri.fsPath };
-            } catch (error) {
-                Logger.error(`[UIController] Error saving plot as: ${error}`);
-                return {
-                    success: false,
-                    error:
-                        error instanceof Error ? error.message : String(error),
-                };
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(defaultPath),
+                filters: {
+                    'PNG Images': ['png'],
+                    'All Files': ['*'],
+                },
+                title: 'Save Plot As',
+            });
+            if (!saveUri) {
+                return { success: false, error: 'Save cancelled by user' };
             }
-        }, context);
 
-        return result ?? { success: false, error: 'Unknown error' };
+            await vscode.workspace.fs.writeFile(
+                saveUri,
+                Buffer.from(plotData, 'base64'),
+            );
+            this.showFileActionDialog(
+                `Plot saved successfully: ${path.basename(saveUri.fsPath)}`,
+                saveUri,
+            );
+            Logger.info(`[UIController] Plot saved as: ${saveUri.fsPath}`);
+            return { success: true, filePath: saveUri.fsPath };
+        } catch (error) {
+            Logger.error(`[UIController] Error saving plot as: ${error}`);
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
     }
 
     private async handleOpenPlot(
         plotData: string,
-        variable: string,
         fileName: string,
     ): Promise<void> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'openPlot',
-            data: { variable, fileName },
-        };
-
-        await this.errorBoundary.wrapAsync(async () => {
-            // Convert base64 to buffer
-            const buffer = Buffer.from(plotData, 'base64');
-
-            // Create a temporary file
-            const tempDir = vscode.Uri.file(os.tmpdir());
-            const tempFile = vscode.Uri.joinPath(tempDir, fileName);
-
-            // Write the temporary file
-            await vscode.workspace.fs.writeFile(tempFile, buffer);
-
-            // Immediately try to open in VSCode first, fallback to external app
-            try {
-                await vscode.commands.executeCommand(
-                    'vscode.open',
-                    tempFile,
-                    vscode.ViewColumn.Beside,
-                );
-                Logger.info(
-                    `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`,
-                );
-            } catch (vscodeError) {
-                // If opening in VSCode fails, open with external application
-                try {
-                    await vscode.env.openExternal(tempFile);
-                    Logger.info(
-                        `[UIController] Plot opened with external app: ${tempFile.fsPath}`,
-                    );
-                } catch (externalError) {
-                    Logger.error(
-                        `[UIController] Failed to open plot with both VSCode and external app: ${externalError}`,
-                    );
-                    throw new Error(
-                        `Failed to open plot: ${
-                            externalError instanceof Error
-                                ? externalError.message
-                                : String(externalError)
-                        }`,
-                    );
-                }
-            }
-        }, context);
-    }
-
-    private async handleGetExtensionConfig(): Promise<Record<
-        string,
-        any
-    > | null> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'getExtensionConfig',
-        };
-
-        return (
-            this.errorBoundary.wrapAsync(async () => {
-                return getExtensionConfigForWebview();
-            }, context) || {}
+        const tempFile = vscode.Uri.file(
+            resolveWebviewFileName(os.tmpdir(), fileName),
         );
-    }
-
-    private async handleRefresh(): Promise<void | null> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'refresh',
-        };
-
-        return (
-            this.errorBoundary.wrapAsync(async () => {
-                const state = this.stateManager.getState();
-                if (state.data.currentFile) {
-                    await this.handleGetDataInfo(state.data.currentFile);
-                }
-            }, context) || undefined
+        await vscode.workspace.fs.writeFile(
+            tempFile,
+            Buffer.from(plotData, 'base64'),
         );
+        try {
+            await vscode.commands.executeCommand(
+                'vscode.open',
+                tempFile,
+                vscode.ViewColumn.Beside,
+            );
+            Logger.info(
+                `[UIController] Plot opened in VSCode: ${tempFile.fsPath}`,
+            );
+        } catch {
+            await vscode.env.openExternal(tempFile);
+            Logger.info(
+                `[UIController] Plot opened with external app: ${tempFile.fsPath}`,
+            );
+        }
     }
 
-    private async handleGetCurrentFilePath(): Promise<{ filePath: string }> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'getCurrentFilePath',
-        };
-
-        const result = await this.errorBoundary.wrapAsync(async () => {
-            const state = this.stateManager.getState();
-            if (!state.data.currentFile) {
-                throw new Error('No current file available');
-            }
-            return { filePath: state.data.currentFile };
-        }, context);
-
-        return result || { filePath: '' };
-    }
-
-    private async handleShowNotification(
+    private handleShowNotification(
         message: string,
         type: 'info' | 'warning' | 'error',
-    ): Promise<void> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'showNotification',
-        };
-
-        await this.errorBoundary.wrapAsync(async () => {
-            switch (type) {
-                case 'info':
-                    vscode.window.showInformationMessage(message);
-                    break;
-                case 'warning':
-                    vscode.window.showWarningMessage(message);
-                    break;
-                case 'error':
-                    showErrorMessage(message);
-                    break;
-            }
-        }, context);
+    ): void {
+        switch (type) {
+            case 'info':
+                vscode.window.showInformationMessage(message);
+                break;
+            case 'warning':
+                vscode.window.showWarningMessage(message);
+                break;
+            case 'error':
+                showErrorMessage(message);
+                break;
+        }
     }
 
-    private async handleUpdateHeaders(headers: any[]): Promise<void> {
-        try {
-            // This will be handled by the outline provider when we register it
-            Logger.info(
-                `[UIController] 📋 Received header update with ${headers.length} headers`,
-            );
-            // The actual outline update will be handled by the DataViewerPanel
-        } catch (error) {
-            Logger.error(
-                `[UIController] ❌ Error handling header update: ${error}`,
-            );
-            throw error;
+    private async handleExecuteCommand(
+        command: string,
+        args?: unknown[],
+    ): Promise<unknown> {
+        if (!WEBVIEW_ALLOWED_COMMANDS.has(command)) {
+            throw new Error(`Command not allowed from the webview: ${command}`);
         }
+        Logger.info(`[UIController] 🔧 Executing command: ${command}`);
+        return vscode.commands.executeCommand(command, ...(args ?? []));
     }
 
     private async handleExportWebview(
         htmlContent: string,
-    ): Promise<{ success: boolean; filePath?: string; error?: string }> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'exportWebview',
-        };
+    ): Promise<SaveResult> {
+        try {
+            const currentFile = this.requireCurrentFile();
+            const defaultFileName = `${path.basename(
+                currentFile,
+            )}_webview_${timestampForFileName()}.html`;
 
-        const result = await this.errorBoundary.wrapAsync(async () => {
-            try {
-                const state = this.stateManager.getState();
-                if (!state.data.currentFile) {
-                    throw new Error('No current file available');
-                }
-
-                // Get the current file path to determine save location
-                const currentFileDir = vscode.Uri.file(state.data.currentFile)
-                    .fsPath.split('/')
-                    .slice(0, -1)
-                    .join('/');
-                const fileName =
-                    vscode.Uri.file(state.data.currentFile)
-                        .fsPath.split('/')
-                        .pop() || 'data';
-                const defaultFileName = `${fileName}_webview_${new Date()
-                    .toISOString()
-                    .slice(0, 19)
-                    .replace(/:/g, '-')}.html`;
-
-                // Show save dialog
-                const saveUri = await vscode.window.showSaveDialog({
-                    defaultUri: vscode.Uri.file(
-                        `${currentFileDir}/${defaultFileName}`,
-                    ),
-                    filters: {
-                        'HTML Files': ['html'],
-                        'All Files': ['*'],
-                    },
-                    title: 'Export Webview Content',
-                });
-
-                if (!saveUri) {
-                    return {
-                        success: true,
-                        error: 'Export cancelled by user',
-                    };
-                }
-
-                // The live webview loads its CSS/JS over vscode-resource URIs,
-                // which resolve to nothing in a browser. Inline them so the
-                // exported file is self-contained, then apply theme overrides.
-                const processedHtmlContent = HTMLGenerator.inlineWebviewAssets(
-                    ThemeManager.applyThemeToWebviewContent(
-                        htmlContent,
-                        getWebviewExportTheme(),
-                    ),
-                    getDevMode(),
-                );
-
-                // Write the file
-                await vscode.workspace.fs.writeFile(
-                    saveUri,
-                    Buffer.from(processedHtmlContent, 'utf8'),
-                );
-
-                // Show success notification without awaiting (Issue #101: if user ignores
-                // the popup, the webview request must not stay open and later timeout)
-                this.showFileActionDialog(
-                    `Webview content exported successfully: ${saveUri.fsPath
-                        .split('/')
-                        .pop()}`,
-                    saveUri,
-                ).catch((err) => {
-                    Logger.error(
-                        `[UIController] showFileActionDialog after export: ${err}`,
-                    );
-                });
-
-                Logger.info(
-                    `[UIController] Webview content exported: ${saveUri.fsPath}`,
-                );
-                return { success: true, filePath: saveUri.fsPath };
-            } catch (error) {
-                Logger.error(
-                    `[UIController] Error exporting webview content: ${error}`,
-                );
-                return {
-                    success: false,
-                    error:
-                        error instanceof Error ? error.message : String(error),
-                };
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(
+                    path.join(path.dirname(currentFile), defaultFileName),
+                ),
+                filters: {
+                    'HTML Files': ['html'],
+                    'All Files': ['*'],
+                },
+                title: 'Export Webview Content',
+            });
+            if (!saveUri) {
+                return { success: true, error: 'Export cancelled by user' };
             }
-        }, context);
 
-        return result || { success: false, error: 'Unknown error' };
-    }
+            // The live webview loads its CSS/JS over vscode-resource URIs,
+            // which resolve to nothing in a browser. Inline them so the
+            // exported file is self-contained, then apply theme overrides.
+            const processedHtmlContent = HTMLGenerator.inlineWebviewAssets(
+                ThemeManager.applyThemeToWebviewContent(
+                    htmlContent,
+                    getWebviewExportTheme(),
+                ),
+                getDevMode(),
+            );
+            await vscode.workspace.fs.writeFile(
+                saveUri,
+                Buffer.from(processedHtmlContent, 'utf8'),
+            );
 
-    private updateUI(state: AppState): void {
-        // Always emit state change event for content updates
-        this.messageBus.emitUIStateChanged(state);
+            this.showFileActionDialog(
+                `Webview content exported successfully: ${path.basename(
+                    saveUri.fsPath,
+                )}`,
+                saveUri,
+            );
+            Logger.info(
+                `[UIController] Webview content exported: ${saveUri.fsPath}`,
+            );
+            return { success: true, filePath: saveUri.fsPath };
+        } catch (error) {
+            Logger.error(
+                `[UIController] Error exporting webview content: ${error}`,
+            );
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
     }
 
     public emitCommandScrollToHeader(
         headerId: string,
         headerLabel: string,
     ): void {
-        this.messageBus.emitCommandScrollToHeader(headerId, headerLabel);
+        this.messageBus.emit('scrollToHeaderCommandEvent', {
+            headerId,
+            headerLabel,
+        });
     }
 
     /**
      * Export webview content (what the user currently sees)
      */
     public emitCommandExportWebview(): void {
-        this.messageBus.emitCommandExportWebview();
+        this.messageBus.emit('exportWebviewCommandEvent', {});
     }
 
-    // Public methods for external control
-    public async loadFile(filePath: string): Promise<void> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'loadFile',
-            data: { filePath },
-        };
+    /**
+     * Load `fileUri` and send its data to the webview. Errors are shown in the
+     * webview (through the ErrorBoundary handler) and never rethrown.
+     */
+    public async loadFile(fileUri: vscode.Uri): Promise<void> {
+        const timer = new PerformanceTimer(
+            `load:${path.basename(fileUri.fsPath)}`,
+        );
+        this.fileUri = fileUri;
+        try {
+            const dataInfo = await this.fetchDataInfo(fileUri);
+            timer.mark('getDataInfo');
 
-        await this.errorBoundary.wrapAsync(async () => {
-            await this.handleGetDataInfo(filePath);
-        }, context);
+            this.dataInfo = dataInfo;
+            this.lastLoadTime = new Date();
+            this.messageBus.emit('dataLoaded', {
+                data: {
+                    currentFile: fileUri.fsPath,
+                    dataInfo,
+                    lastLoadTime: this.lastLoadTime.toISOString(),
+                },
+                python: {
+                    pythonPath:
+                        this.dataProcessor.pythonManagerInstance.pythonPath ??
+                        null,
+                },
+                extension: { extensionConfig: getExtensionConfigForWebview() },
+            });
+            timer.mark('postMessage');
+
+            this.onSuccessPanelCallback('Data loaded successfully');
+            if (this.onOutlineUpdateCallback && getOutlineEnabled()) {
+                this.onOutlineUpdateCallback();
+            }
+            timer.finish('load complete');
+        } catch (caught) {
+            const error =
+                caught instanceof Error ? caught : new Error(String(caught));
+            this.onErrorPanelCallback(error);
+            this.errorBoundary.handleError(error, {
+                component: this.getComponentName(),
+                operation: 'loadFile',
+                data: { filePath: fileUri.fsPath },
+            });
+        }
     }
 
     public async refresh(): Promise<void> {
-        await this.handleRefresh();
-    }
-
-    public getState(): AppState {
-        return this.stateManager.getState();
+        if (this.fileUri) {
+            await this.loadFile(this.fileUri);
+        }
     }
 
     /**
@@ -886,68 +555,31 @@ export class UIController {
     /**
      * Get the current data information
      */
-    public getDataInfo(): any | null {
-        return this.stateManager.getState().data.dataInfo;
+    public getDataInfo(): DataInfoResult | null {
+        return this.dataInfo;
     }
 
-    private async handleExecuteCommand(
-        command: string,
-        args?: any[],
-    ): Promise<any> {
-        const context: ErrorContext = {
-            component: this.getComponentName(),
-            operation: 'executeCommand',
-            data: { command, args },
-        };
-
-        return this.errorBoundary.wrapAsync(async () => {
-            Logger.info(`[UIController] 🔧 Executing command: ${command}`);
-            const result = await vscode.commands.executeCommand(
-                command,
-                ...(args || []),
-            );
-            Logger.info(
-                `[UIController] 🔧 Command executed successfully: ${command}`,
-            );
-            return result;
-        }, context);
-    }
-
-    // Cleanup
     public dispose(): void {
-        if (this.unsubscribeState) {
-            this.unsubscribeState();
-        }
+        this.errorBoundary.unregisterHandler(this.getComponentName());
         this.messageBus.dispose();
     }
 
     public setHtml(): void {
         const timer = new PerformanceTimer(`setHtml:<${this.getId()}>`);
-        this.webview.html = this.getHtmlForWebview();
-        timer.finish('setHtml');
-    }
-
-    private getHtmlForWebview() {
-        const devMode = getDevMode();
-        const lastLoadTime =
-            this.stateManager.getState().data.lastLoadTime?.toISOString() ||
-            null;
         const extensionUri = this.extensionUri;
-        return HTMLGenerator.generateMainHTML(
-            devMode,
-            lastLoadTime,
+        this.webview.html = HTMLGenerator.generateMainHTML(
+            getDevMode(),
+            this.lastLoadTime?.toISOString() ?? null,
             this.getId(),
             extensionUri ? { webview: this.webview, extensionUri } : undefined,
         );
+        timer.finish('setHtml');
     }
 
     private shouldConvertBandsToVariables(filePath: string): boolean {
-        const config = getConvertBandsToVariables();
-        const extension = filePath
-            .toLowerCase()
-            .substring(filePath.lastIndexOf('.'));
-        // Only apply to GeoTIFF formats
-        const geotiffExtensions = ['.tif', '.tiff', '.geotiff'];
-        return config && geotiffExtensions.includes(extension);
+        return (
+            getConvertBandsToVariables() &&
+            GEOTIFF_EXTENSIONS.includes(path.extname(filePath).toLowerCase())
+        );
     }
 }
