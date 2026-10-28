@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Have a question about using the Scientific Data Viewer extension? Want to discuss an idea before submitting a feature request? This is the perfect place!
+        Have a question about using the Scientific Data Viewer extension? Want to discuss an idea before submitting a feature request? This is the perfect place! All fields are optional: share whatever you can, and the more context, the easier it is to help.
 
         **Before asking:**
         - Check the [README](https://github.com/etienneschalk/scientific-data-viewer#readme) for basic usage
