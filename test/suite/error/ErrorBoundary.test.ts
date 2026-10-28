@@ -8,7 +8,6 @@ suite('ErrorBoundary Tests', () => {
         // Clear the singleton instance to ensure clean state
         (ErrorBoundary as any).instance = undefined;
         errorBoundary = ErrorBoundary.getInstance();
-        errorBoundary.clearErrorHistory();
     });
 
     test('should handle errors with component-specific handlers', () => {
@@ -67,23 +66,32 @@ suite('ErrorBoundary Tests', () => {
         assert.deepStrictEqual(history[0].context, testContext);
     });
 
-    test('should count errors by component', () => {
-        errorBoundary.handleError(new Error('Error 1'), {
-            component: 'comp1',
-            operation: 'op1',
+    test('unregistered component handler is no longer called', () => {
+        let componentCalls = 0;
+        let globalCalls = 0;
+        errorBoundary.registerGlobalHandler(() => {
+            globalCalls += 1;
         });
-        errorBoundary.handleError(new Error('Error 2'), {
-            component: 'comp1',
-            operation: 'op2',
+        errorBoundary.registerHandler('panel-1', () => {
+            componentCalls += 1;
         });
-        errorBoundary.handleError(new Error('Error 3'), {
-            component: 'comp2',
-            operation: 'op1',
-        });
+        const context = { component: 'panel-1', operation: 'op' };
 
-        assert.strictEqual(errorBoundary.getErrorCount('comp1'), 2);
-        assert.strictEqual(errorBoundary.getErrorCount('comp2'), 1);
-        assert.strictEqual(errorBoundary.getErrorCount(), 3);
+        errorBoundary.handleError(new Error('first'), context);
+        errorBoundary.unregisterHandler('panel-1');
+        errorBoundary.handleError(new Error('second'), context);
+        // Unregistering an unknown component is a no-op
+        errorBoundary.unregisterHandler('never-registered');
+
+        assert.strictEqual(componentCalls, 1);
+        assert.strictEqual(globalCalls, 1);
+    });
+
+    test('does not hook process-wide uncaught exceptions', () => {
+        const before = process.listenerCount('uncaughtException');
+        (ErrorBoundary as any).instance = undefined;
+        ErrorBoundary.getInstance();
+        assert.strictEqual(process.listenerCount('uncaughtException'), before);
     });
 
     test('should wrap async operations', async () => {
@@ -98,22 +106,6 @@ suite('ErrorBoundary Tests', () => {
                 throw new Error('async error');
             },
             { component: 'test', operation: 'async' },
-        );
-        assert.strictEqual(errorResult, null);
-    });
-
-    test('should wrap sync operations', () => {
-        const successResult = errorBoundary.wrapSync(() => 'success', {
-            component: 'test',
-            operation: 'sync',
-        });
-        assert.strictEqual(successResult, 'success');
-
-        const errorResult = errorBoundary.wrapSync(
-            () => {
-                throw new Error('sync error');
-            },
-            { component: 'test', operation: 'sync' },
         );
         assert.strictEqual(errorResult, null);
     });

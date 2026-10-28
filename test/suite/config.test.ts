@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import {
     getGlobalTimeControls,
     getGlobalDimensionSlices,
@@ -16,6 +17,7 @@ import {
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
     getFacetgridFigsize,
+    updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
 function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
@@ -132,5 +134,26 @@ suite('Config Test Suite', () => {
             properties['scientificDataViewer.showInheritedCoordinates'].default,
             true,
         );
+    });
+    test('useExtensionOwnEnvironment is written to user settings (works without a folder)', async () => {
+        const original = vscode.workspace.getConfiguration;
+        const updates: Array<[string, unknown, unknown]> = [];
+        (vscode.workspace as any).getConfiguration = () => ({
+            update: async (key: string, value: unknown, target: unknown) => {
+                updates.push([key, value, target]);
+            },
+        });
+        try {
+            await updateUseExtensionOwnEnvironment(true);
+        } finally {
+            (vscode.workspace as any).getConfiguration = original;
+        }
+        assert.deepStrictEqual(updates, [
+            [
+                'python.useExtensionOwnEnvironment',
+                true,
+                vscode.ConfigurationTarget.Global,
+            ],
+        ]);
     });
 });

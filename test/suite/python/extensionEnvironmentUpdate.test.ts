@@ -2,7 +2,11 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { ExtensionVirtualEnvironmentManager } from '../../../src/python/ExtensionVirtualEnvironmentManager';
+import {
+    ALL_REQUIREMENTS,
+    ExtensionVirtualEnvironmentManager,
+    UvNotAvailableError,
+} from '../../../src/python/ExtensionVirtualEnvironmentManager';
 
 /**
  * Automatic update of the extension's own uv environment when a new extension
@@ -171,6 +175,8 @@ suite('Extension environment update on new version', () => {
     test('failed upgrade keeps the previous environment and retries next start', async () => {
         const manager = makeExistingEnvironment();
         stubInstall(manager, 'fail');
+        // The previous environment can still import the core packages
+        (manager as any).hasCorePackages = async () => true;
 
         const result = await manager.prepareExisting();
 
@@ -186,5 +192,107 @@ suite('Extension environment update on new version', () => {
             fs.existsSync(manager.retrieve().pythonPath),
             'environment not deleted',
         );
+    });
+    test('failed upgrade of an unusable environment does not mark it ready', async () => {
+        const manager = makeExistingEnvironment();
+        stubInstall(manager, 'fail');
+        // e.g. a creation interrupted before the packages were installed
+        (manager as any).hasCorePackages = async () => false;
+
+        const result = await manager.prepareExisting();
+
+        assert.strictEqual(result.updated, false);
+        assert.strictEqual(manager.ready, false);
+        assert.strictEqual(manager.pythonPath, null);
+    });
+
+    test('requirements reach uv unmodified (no shell, no quoting)', async () => {
+        const manager = makeExistingEnvironment();
+        const calls: string[][] = [];
+        (manager as any).isUvAvailable = async () => true;
+        (manager as any).runUv = async (args: string[]) => {
+            calls.push(args);
+            return { code: 0, stdout: '', stderr: '' };
+        };
+        const pythonPath = path.join(storage, 'dir with spaces', 'python');
+
+        await manager.uvInstallPackages(pythonPath, ALL_REQUIREMENTS, true);
+
+        assert.deepStrictEqual(calls, [
+            [
+                'pip',
+                'install',
+                '--python',
+                pythonPath,
+                '--upgrade',
+                ...ALL_REQUIREMENTS,
+            ],
+        ]);
+        assert.ok(ALL_REQUIREMENTS.includes('xarray>=2026.4.0'));
+    });
+
+    test('uv install failure and missing uv are reported', async () => {
+        const manager = makeExistingEnvironment();
+        (manager as any).isUvAvailable = async () => true;
+        (manager as any).runUv = async () => ({
+            code: 2,
+            stdout: '',
+            stderr: 'No solution found',
+        });
+        await assert.rejects(
+            manager.uvInstallPackages('/python', ['xarray']),
+            /No solution found/,
+        );
+
+        (manager as any).isUvAvailable = async () => false;
+        await assert.rejects(
+            manager.uvInstallPackages('/python', ['xarray']),
+            UvNotAvailableError,
+        );
+    });
+
+    test('environment operations are serialised', async () => {
+        const manager = makeExistingEnvironment();
+        let running = 0;
+        let maxRunning = 0;
+        (manager as any).uvInstallRequiredPackages = async () => {
+            running += 1;
+            maxRunning = Math.max(maxRunning, running);
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            running -= 1;
+        };
+
+        await Promise.all([
+            manager.prepareExisting(),
+            manager.update(),
+            manager.update(),
+        ]);
+
+        assert.strictEqual(maxRunning, 1);
+    });
+
+    test('create() does nothing when the environment is already ready', async () => {
+        const manager = makeExistingEnvironment();
+        await manager.recordEnvironmentState();
+        await manager.prepareExisting();
+        let uvChecks = 0;
+        (manager as any).isUvAvailable = async () => {
+            uvChecks += 1;
+            return true;
+        };
+
+        await manager.create();
+
+        assert.strictEqual(uvChecks, 0);
+        assert.strictEqual(manager.ready, true);
+    });
+
+    test('last update time comes from the state file', async () => {
+        const manager = makeExistingEnvironment();
+        assert.strictEqual(manager.getLastUpdated(), null);
+        await manager.recordEnvironmentState();
+        const lastUpdated = manager.getLastUpdated();
+        assert.ok(lastUpdated instanceof Date);
+        assert.ok(Math.abs(Date.now() - lastUpdated.getTime()) < 60000);
     });
 });

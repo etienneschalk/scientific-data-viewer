@@ -336,13 +336,17 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
     };
 }
 
+/**
+ * Write useExtensionOwnEnvironment in the user (global) settings, which works
+ * with or without an open folder. A workspace value, if any, still wins.
+ */
 export async function updateUseExtensionOwnEnvironment(
     value: boolean,
 ): Promise<void> {
     return await getWorkspaceConfig().update(
         USE_EXTENSION_OWN_ENVIRONMENT,
         value,
-        vscode.ConfigurationTarget.Workspace,
+        vscode.ConfigurationTarget.Global,
     );
 }
 

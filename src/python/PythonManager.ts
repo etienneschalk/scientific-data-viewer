@@ -1,83 +1,84 @@
 import * as vscode from 'vscode';
-import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
 import { Logger } from '../common/Logger';
-import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
-import { quoteIfNeeded } from '../common/utils';
-import { showErrorMessage } from '../common/vscodeutils';
+import {
+    CORE_PACKAGES,
+    EXTENDED_PACKAGES,
+    ExtensionVirtualEnvironmentManager,
+    formatPipInstallCommand,
+    PLOT_PACKAGES,
+    UvNotAvailableError,
+} from './ExtensionVirtualEnvironmentManager';
 import { getPythonInterpreterFromPythonExtension } from './officialPythonExtensionApiUtils';
 import {
     getOverridePythonInterpreter,
     getUseExtensionOwnEnvironment,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
-import path from 'path';
 import { PerformanceTimer } from '../common/PerformanceTimer';
+import {
+    formatCommandForDisplay,
+    runProcess,
+    RunProcessResult,
+} from '../common/runProcess';
+
+/** Timeout of the package availability check run at initialisation. */
+const PACKAGE_CHECK_TIMEOUT_MS = 60_000;
+/** Timeout of `python --version` / `python -m pip --version` probes. */
+const PROBE_TIMEOUT_MS = 15_000;
 
 /**
- * Represents an active Python process that can be tracked and aborted
+ * A Python process that can be aborted by operation ID
  */
 interface ActiveProcess {
-    process: ChildProcess;
-    operationId: string;
+    controller: AbortController;
     startTime: number;
-    timeoutHandle?: NodeJS.Timeout; // Server-side timeout handle
+}
+
+/** Interpreter chosen by an initialisation run. */
+interface InterpreterState {
+    pythonPath: string | null;
+    source: EnvironmentSource | null;
+    corePackagesInstalled: boolean;
+    ownEnvironmentIssue: OwnEnvironmentIssue | null;
+}
+
+type SelectedInterpreter = {
+    pythonPath: string;
+    source: EnvironmentSource;
+} | null;
+
+/** Why the extension's own environment is not used although it is enabled. */
+export interface OwnEnvironmentIssue {
+    /** True when the cause is that uv is not installed. */
+    uvMissing: boolean;
+    message: string;
 }
 
 /**
- * Flag to control the creation of the extension own virtual environment
- * Indeed, we might want the uv environment creation to be handled by the user (via command only)
- * However, having an automatic installation attempt is useful to ensure that the extension works out of the box
- * It is written in this way to be able to easily change it in the future
- */
-const ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT = true;
-
-/**
- * Enum to represent the source of the Python environment
- * - override: The user has set an override Python interpreter when set
- *   via python section config: overridePythonInterpreter
- * - own-uv-env: The extension has created its own virtual environment with uv
- *   when python section config: useExtensionOwnEnvironment = true
- * - python-extension: The Python extension has created the environment
- *   when python section config: useExtensionOwnEnvironment = false
- * - system: The system Python interpreter is used (default behaviour)
- */
-
-/**
- * Class to manage the Python environment
- * It is responsible for:
- * - Initializing the Python environment
- * - Validating the Python environment
- * - Installing required packages
- * - Updating the currently used interpreter in the configuration
- * - Getting the current environment info
- * - Setting up event listeners for Python environment changes and creation
- * - Executing Python files
- * - Checking package availability
+ * Class to manage the Python environment.
+ *
+ * Environment sources, by priority:
+ * - override: python.overridePythonInterpreter is set
+ * - own-uv-env: python.useExtensionOwnEnvironment is on and the environment
+ *   could be prepared (or created with uv)
+ * - python-extension: interpreter selected in the official Python extension
+ * - system: first working `python3` / `python` / common install path
  */
 export class PythonManager {
     private _pythonPath: string | null = null;
     private _initialized: boolean = false;
-    private _initializationPromise: Promise<void> | null = null;
     private _environmentSource: EnvironmentSource | null = null;
     private _corePackagesInstalled: boolean = false;
+    private _ownEnvironmentIssue: OwnEnvironmentIssue | null = null;
+
+    /** Promise of the initialisation in flight, if any. */
+    private _initializationPromise: Promise<void> | null = null;
+    /** Set when (re)initialisation is requested while a run is in flight. */
+    private _reinitializeRequested = false;
 
     // Track active processes for timeout/abort handling
     private _activeProcesses: Map<string, ActiveProcess> = new Map();
-
-    // Core packages required for basic functionality
-    private readonly corePackages = ['xarray'];
-    private readonly plotPackages = ['matplotlib'];
-    // Additional packages for extended format support
-    private readonly extendedPackages = [
-        'netCDF4',
-        'h5netcdf',
-        'zarr',
-        'h5py',
-        'scipy',
-        'cfgrib',
-        'rioxarray',
-        'cdflib',
-    ];
 
     constructor(
         private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager,
@@ -102,6 +103,15 @@ export class PythonManager {
     }
 
     /**
+     * Why the last initialisation did not use the extension's own environment
+     * although `useExtensionOwnEnvironment` is on (null when it is used, or
+     * when the setting is off or an override interpreter takes precedence).
+     */
+    get ownEnvironmentIssue(): OwnEnvironmentIssue | null {
+        return this._ownEnvironmentIssue;
+    }
+
+    /**
      * Wait for Python initialization to complete
      * This method should be called before any file operations to prevent race conditions
      */
@@ -115,24 +125,67 @@ export class PythonManager {
     }
 
     /**
-     * Force initialize the Python environment
+     * (Re)initialize the Python environment.
+     *
+     * Single flight: when a run is already in flight, one more run is queued
+     * after it (requests made meanwhile are coalesced into that run) and the
+     * returned promise settles once the queued run is done. Only the latest
+     * run commits its result, so a slow, outdated run never overwrites a
+     * newer one.
      */
-    async forceInitialize(): Promise<void> {
-        Logger.info('🐍 🔄 Force initializing Python environment...');
-        this._initializationPromise = null; // Reset any existing initialization
-        await this.initializeIfNotInitializing();
+    forceInitialize(): Promise<void> {
+        Logger.info('🐍 🔄 Initializing Python environment...');
+        if (this._initializationPromise) {
+            Logger.debug(
+                '🐍 ⏳ Initialization in flight, scheduling one more run after it',
+            );
+            this._reinitializeRequested = true;
+            return this._initializationPromise;
+        }
+        // Deferred start: the promise is stored before any run code executes,
+        // so a refresh requested synchronously from within a run is queued.
+        const run = Promise.resolve()
+            .then(() => this.runInitializations())
+            .finally(() => {
+                this._initializationPromise = null;
+            });
+        this._initializationPromise = run;
+        return run;
+    }
+
+    private async runInitializations(): Promise<void> {
+        do {
+            this._reinitializeRequested = false;
+            const state = await this.resolveInterpreterState();
+            if (this._reinitializeRequested) {
+                Logger.debug(
+                    '🐍 ⏭️ Discarding outdated initialization result (a newer run is queued)',
+                );
+                continue;
+            }
+            this._pythonPath = state.pythonPath;
+            this._environmentSource = state.source;
+            this._corePackagesInstalled = state.corePackagesInstalled;
+            this._ownEnvironmentIssue = state.ownEnvironmentIssue;
+            this._initialized = true;
+            Logger.info(
+                state.pythonPath
+                    ? `🐍 📦 ${state.corePackagesInstalled ? '✅ Python environment ready' : '⚠️ Python environment not ready (missing core packages)'}: ${state.pythonPath} (${state.source})`
+                    : '🐍 ⚠️ No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.',
+            );
+        } while (this._reinitializeRequested);
     }
 
     /**
      * Execute a Python file
      * @param scriptPath    The path to the Python file
      * @param args          The arguments to pass to the Python file
-     * @param enableLogs    Whether to enable logs
+     * @param enableLogs    Whether to forward the script's stderr logs to the Logger
      * @param operationId   Optional ID to track this operation for abort support
-     * @param timeoutMs     Optional server-side timeout in milliseconds (default: no timeout)
-     *                      This timeout is independent of the webview and will kill the process
+     * @param timeoutMs     Optional server-side timeout in milliseconds (default: no timeout).
+     *                      The process is stopped when it elapses, with or without operationId,
      *                      even if the webview is closed.
-     * @returns             The result of the Python file
+     * @returns             The JSON value printed by the script on stdout
      */
     async executePythonFile(
         scriptPath: string,
@@ -157,296 +210,84 @@ export class PythonManager {
             `python-exec:${path.basename(scriptPath)}`,
         );
         timer.mark('start');
-
-        const result = await this.executePythonFileUnchecked(
-            this._pythonPath,
-            scriptPath,
-            args,
-            enableLogs,
-            operationId,
-            timeoutMs,
-        );
-        timer.mark('spawn-complete');
-        timer.finish('spawn');
-        return result;
+        try {
+            return await this.runPythonScript(
+                this._pythonPath,
+                scriptPath,
+                args,
+                enableLogs,
+                operationId,
+                timeoutMs,
+            );
+        } finally {
+            timer.finish('spawn');
+        }
     }
 
-    private async executePythonFileUnchecked(
+    private async runPythonScript(
         pythonPath: string,
         scriptPath: string,
         args: string[],
         enableLogs: boolean,
         operationId?: string,
         timeoutMs?: number,
-    ) {
-        const quotedPythonPath = quoteIfNeeded(pythonPath);
+    ): Promise<unknown> {
         Logger.log(
-            `🐍 📜 Executing Python file ${scriptPath} with args: [${args.join(' ')}]`,
+            `🐍 📜 Executing ${path.basename(scriptPath)} (${
+                enableLogs ? 'with' : 'without'
+            } logs handover${operationId ? `, operation ${operationId}` : ''}${
+                timeoutMs ? `, timeout ${timeoutMs}ms` : ''
+            })`,
         );
-        Logger.info(
-            `🐍 📜 - ${
-                enableLogs ? 'With logs handover' : 'Without logs handover'
-            }`,
+        Logger.log(
+            `🐍 📜 Full command (copy-paste): ${formatCommandForDisplay(
+                pythonPath,
+                [scriptPath, ...args],
+            )}`,
         );
-        Logger.info(
-            `🐍 📜 - Provided Python path for script execution: ${quotedPythonPath}`,
-        );
-        Logger.info(`🐍 📜 - Is initialized: ${this._initialized}`);
+
+        const controller = new AbortController();
         if (operationId) {
-            Logger.info(`🐍 📜 - Operation ID: ${operationId}`);
+            this._activeProcesses.set(operationId, {
+                controller,
+                startTime: Date.now(),
+            });
         }
-        const fullCommand = [
-            quoteIfNeeded(pythonPath),
-            quoteIfNeeded(scriptPath),
-            ...args.map((a) => quoteIfNeeded(a)),
-        ].join(' ');
-        Logger.log(`🐍 📜 Full command (copy-paste): ${fullCommand}`);
 
-        return new Promise((resolve, reject) => {
-            // Spawn Python directly (shell: false) so we have one child process. That way:
-            // - stdout/stderr are always captured (including on Windows; detached breaks pipes there).
-            // - We can abort by killing the child process directly; no process group needed.
-            const childProcess = spawn(pythonPath, [scriptPath, ...args], {
-                shell: false,
-                stdio: ['pipe', 'pipe', 'pipe'],
-                env: {
-                    ...process.env,
-                    PYTHONUNBUFFERED: '1',
-                },
+        let result: RunProcessResult;
+        try {
+            result = await runProcess(pythonPath, [scriptPath, ...args], {
+                env: { ...process.env, PYTHONUNBUFFERED: '1' },
+                timeoutMs,
+                signal: controller.signal,
+                onStderr: enableLogs ? forwardPythonLogs : undefined,
             });
-
-            // Track this process if an operation ID was provided
-            let serverTimeoutHandle: NodeJS.Timeout | undefined;
-            if (operationId) {
-                const activeProcess: ActiveProcess = {
-                    process: childProcess,
-                    operationId,
-                    startTime: Date.now(),
-                };
-
-                // Set up server-side timeout if specified
-                // This timeout is independent of the webview and will kill the process
-                // even if the user closes the tab
-                if (timeoutMs && timeoutMs > 0) {
-                    serverTimeoutHandle = setTimeout(() => {
-                        Logger.warn(
-                            `🐍 ⏰ Server-side timeout (${timeoutMs}ms) reached for operation: ${operationId}`,
-                        );
-                        this.abortProcess(operationId);
-                    }, timeoutMs);
-                    activeProcess.timeoutHandle = serverTimeoutHandle;
-                    Logger.debug(
-                        `🐍 📜 Server-side timeout set: ${timeoutMs}ms for operation: ${operationId}`,
-                    );
-                }
-
-                this._activeProcesses.set(operationId, activeProcess);
-                Logger.debug(
-                    `🐍 📜 Tracking process for operation: ${operationId} (PID: ${childProcess.pid})`,
-                );
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : String(error);
+            throw new Error(
+                (error as NodeJS.ErrnoException)?.code === 'ENOENT'
+                    ? `Python interpreter not found at: ${pythonPath}. Please check your Python installation.`
+                    : `Failed to execute Python script: ${message}`,
+            );
+        } finally {
+            if (
+                operationId &&
+                this._activeProcesses.get(operationId)?.controller ===
+                    controller
+            ) {
+                this._activeProcesses.delete(operationId);
             }
+        }
 
-            let stdout = '';
-            let stderr = '';
-
-            childProcess.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            childProcess.stderr.on('data', (data) => {
-                const logData = data.toString();
-                stderr += logData;
-
-                if (enableLogs) {
-                    // Forward Python logs to VSCode Logger
-                    // Parse log lines and forward them
-                    const lines = logData
-                        .split('\n')
-                        .filter((line: string) => line.trim());
-                    lines.forEach((line: string) => {
-                        if (line.includes(' - INFO - ')) {
-                            const message = line.split(' - INFO - ')[1];
-                            if (message) {
-                                Logger.info(`🐍 📜 [Python] [INFO] ${message}`);
-                            }
-                        } else if (line.includes(' - ERROR - ')) {
-                            const message = line.split(' - ERROR - ')[1];
-                            if (message) {
-                                Logger.error(
-                                    `🐍 📜 [Python] [ERROR] ${message}`,
-                                );
-                            }
-                        } else if (line.includes(' - WARNING - ')) {
-                            const message = line.split(' - WARNING - ')[1];
-                            if (message) {
-                                Logger.warn(
-                                    `🐍 📜 [Python] [WARNING] ${message}`,
-                                );
-                            }
-                        } else if (line.includes(' - DEBUG - ')) {
-                            const message = line.split(' - DEBUG - ')[1];
-                            if (message) {
-                                Logger.debug(
-                                    `🐍 📜 [Python] [DEBUG] ${message}`,
-                                );
-                            }
-                        } else if (line.trim()) {
-                            // Any other stderr output that doesn't match the log format
-                            Logger.info(`🐍 📜 [Python] ${line.trim()}`);
-                        }
-                    });
-                }
-            });
-
-            childProcess.on('close', (code, signal) => {
-                // Clear server-side timeout if it exists
-                if (serverTimeoutHandle) {
-                    clearTimeout(serverTimeoutHandle);
-                }
-
-                // Remove from active processes tracking
-                if (operationId) {
-                    const activeProcess =
-                        this._activeProcesses.get(operationId);
-                    if (activeProcess?.timeoutHandle) {
-                        clearTimeout(activeProcess.timeoutHandle);
-                    }
-                    this._activeProcesses.delete(operationId);
-                    Logger.debug(
-                        `🐍 📜 Process completed for operation: ${operationId} (code: ${code}, signal: ${signal})`,
-                    );
-                }
-
-                // Check if this process was killed/aborted
-                if (signal === 'SIGTERM' || signal === 'SIGKILL') {
-                    reject(
-                        new Error(
-                            `Process was aborted (signal: ${signal}). This usually happens when a plot operation times out, or if the plot operation was cancelled by the user.`,
-                        ),
-                    );
-                    return;
-                }
-
-                if (code === 0) {
-                    try {
-                        const result = JSON.parse(stdout);
-                        resolve(result);
-                    } catch (error) {
-                        Logger.debug(
-                            `🐍 📜 JSON parse failed for script output (stdout length=${stdout.length}): ${stdout.slice(0, 300)}`,
-                        );
-                        if (stdout.length === 0 && stderr) {
-                            Logger.info(
-                                `🐍 📜 Script stderr (stdout was empty): ${stderr.slice(0, 1000)}`,
-                            );
-                        }
-                        resolve(stdout);
-                    }
-                } else {
-                    // Log so Extension Log always shows what we got (exit code 1 often = uncaught exception)
-                    Logger.error(
-                        `🐍 📜 Python script exited with code ${code}. Stderr (${stderr?.length ?? 0} chars):\n${stderr || '(empty)'}`,
-                    );
-                    Logger.error(
-                        `🐍 📜 Python script stdout (${stdout?.length ?? 0} chars):\n${stdout || '(empty)'}`,
-                    );
-                    const errorMessage =
-                        stderr || stdout || 'Unknown Python error';
-                    // Prefer script's JSON error from stdout (e.g. Invalid --dimension-slices JSON)
-                    let userMessage: string;
-                    try {
-                        const out = stdout?.trim();
-                        if (
-                            out &&
-                            (out.startsWith('{') || out.startsWith('['))
-                        ) {
-                            const parsed = JSON.parse(out);
-                            if (
-                                parsed &&
-                                typeof parsed.error === 'string' &&
-                                parsed.error.length > 0
-                            ) {
-                                userMessage = parsed.error;
-                            } else {
-                                userMessage =
-                                    errorMessage
-                                        .trim()
-                                        .split('\n')
-                                        .pop()
-                                        ?.trim() ||
-                                    `Python script failed (exit code ${code})`;
-                            }
-                        } else {
-                            userMessage =
-                                errorMessage.trim().split('\n').pop()?.trim() ||
-                                `Python script failed (exit code ${code})`;
-                        }
-                    } catch {
-                        userMessage =
-                            errorMessage.trim().split('\n').pop()?.trim() ||
-                            `Python script failed (exit code ${code})`;
-                    }
-                    if (errorMessage.includes('ModuleNotFoundError')) {
-                        reject(
-                            new Error(
-                                `Missing Python package: ${errorMessage}. Please install required packages with: pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib`,
-                            ),
-                        );
-                    } else if (errorMessage.includes('PermissionError')) {
-                        reject(
-                            new Error(
-                                `Permission denied: ${errorMessage}. Please check file permissions.`,
-                            ),
-                        );
-                    } else if (errorMessage.includes('FileNotFoundError')) {
-                        reject(
-                            new Error(
-                                `File not found: ${errorMessage}. Please check the file path.`,
-                            ),
-                        );
-                    } else {
-                        reject(new Error(userMessage));
-                    }
-                }
-            });
-
-            childProcess.on('error', (error) => {
-                // Clear server-side timeout if it exists
-                if (serverTimeoutHandle) {
-                    clearTimeout(serverTimeoutHandle);
-                }
-
-                // Remove from active processes tracking
-                if (operationId) {
-                    const activeProcess =
-                        this._activeProcesses.get(operationId);
-                    if (activeProcess?.timeoutHandle) {
-                        clearTimeout(activeProcess.timeoutHandle);
-                    }
-                    this._activeProcesses.delete(operationId);
-                }
-
-                if (error.message.includes('ENOENT')) {
-                    reject(
-                        new Error(
-                            `Python interpreter not found at: ${pythonPath}. Please check your Python installation.`,
-                        ),
-                    );
-                } else {
-                    reject(
-                        new Error(
-                            `Failed to execute Python script: ${error.message}`,
-                        ),
-                    );
-                }
-            });
-        });
+        return parseScriptResult(result, timeoutMs);
     }
 
     /**
-     * Abort an active Python process by operation ID
+     * Abort an active Python process by operation ID (SIGTERM, then SIGKILL
+     * after one second if it is still running).
      * @param operationId The ID of the operation to abort
-     * @returns true if the process was found and killed, false otherwise
+     * @returns true if the process was found and stopped, false otherwise
      */
     public abortProcess(operationId: string): boolean {
         const activeProcess = this._activeProcesses.get(operationId);
@@ -456,65 +297,14 @@ export class PythonManager {
             );
             return false;
         }
-
-        // Clear the server-side timeout if it exists
-        if (activeProcess.timeoutHandle) {
-            clearTimeout(activeProcess.timeoutHandle);
-        }
-
-        const { process: childProcess } = activeProcess;
-        const duration = Date.now() - activeProcess.startTime;
-        const pid = childProcess.pid;
-
-        Logger.info(
-            `🐍 🛑 Aborting process for operation: ${operationId} (PID: ${pid}, duration: ${duration}ms)`,
-        );
-
-        if (pid === undefined) {
-            Logger.warn(
-                `🐍 ⚠️ Process PID is undefined, cannot kill: ${operationId}`,
-            );
-            this._activeProcesses.delete(operationId);
-            return false;
-        }
-
         this._activeProcesses.delete(operationId);
-
-        try {
-            // We spawn Python directly (shell: false), so the child is the Python process.
-            // Kill it directly; works on Windows and Unix.
-            Logger.debug(`🐍 🛑 Killing process with SIGTERM: ${pid}`);
-            childProcess.kill('SIGTERM');
-
-            // If the process doesn't terminate within 1 second, force kill
-            setTimeout(() => {
-                try {
-                    childProcess.kill('SIGKILL');
-                    Logger.debug(
-                        `🐍 ℹ️ Force killed process (may already be dead): ${operationId}`,
-                    );
-                } catch (killError) {
-                    Logger.debug(
-                        `🐍 ℹ️ Force kill returned error (process may already be dead): ${killError}`,
-                    );
-                }
-            }, 1000);
-
-            return true;
-        } catch (error) {
-            Logger.error(
-                `🐍 ❌ Failed to abort process ${operationId}: ${error}`,
-            );
-            return false;
-        }
-    }
-
-    /**
-     * Get all active operation IDs
-     * @returns Array of active operation IDs
-     */
-    public getActiveOperations(): string[] {
-        return Array.from(this._activeProcesses.keys());
+        Logger.info(
+            `🐍 🛑 Aborting process for operation: ${operationId} (duration: ${
+                Date.now() - activeProcess.startTime
+            }ms)`,
+        );
+        activeProcess.controller.abort();
+        return true;
     }
 
     /**
@@ -538,18 +328,9 @@ export class PythonManager {
             Logger.info('🐍 🧹 No active processes to abort');
             return 0;
         }
-
-        Logger.info(
-            `🐍 🧹 Aborting all ${operationIds.length} active processes`,
-        );
-
-        let abortedCount = 0;
-        for (const operationId of operationIds) {
-            if (this.abortProcess(operationId)) {
-                abortedCount++;
-            }
-        }
-
+        const abortedCount = operationIds.filter((operationId) =>
+            this.abortProcess(operationId),
+        ).length;
         Logger.info(`🐍 🧹 Aborted ${abortedCount} processes`);
         return abortedCount;
     }
@@ -567,153 +348,134 @@ export class PythonManager {
         };
     }
 
-    private async initializeIfNotInitializing(): Promise<void> {
-        // If initialization is already in progress, wait for it to complete
-        if (this._initializationPromise) {
-            Logger.debug(
-                '🐍 ⏳ Python initialization already in progress, waiting...',
-            );
-            return this._initializationPromise;
-        }
-
-        // Start initialization and store the promise
-        this._initializationPromise = this.doInitialize();
-        return this._initializationPromise;
+    /**
+     * Pick the interpreter to use and check its packages, without changing
+     * this manager's state (committed by runInitializations).
+     */
+    private async resolveInterpreterState(): Promise<InterpreterState> {
+        Logger.info('🐍 🔧 [INIT] Initializing Python manager');
+        const issue: { value: OwnEnvironmentIssue | null } = { value: null };
+        const selected = await this.selectInterpreter(issue);
+        return {
+            pythonPath: selected?.pythonPath ?? null,
+            source: selected?.source ?? null,
+            corePackagesInstalled: selected
+                ? await this.hasCorePackages(selected.pythonPath)
+                : false,
+            ownEnvironmentIssue: issue.value,
+        };
     }
 
-    private async doInitialize(): Promise<void> {
-        this._initialized = false;
-        try {
-            Logger.info('🐍 🔧 [INIT] Initializing Python manager');
-            const overrideInterpreter = getOverridePythonInterpreter();
-            const useExtensionEnv = getUseExtensionOwnEnvironment();
-
-            // First, check if there's an override interpreter set
-            if (overrideInterpreter) {
-                Logger.info(
-                    `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`,
-                );
-                await this.validatePythonEnvironment(
-                    overrideInterpreter,
-                    'override',
-                );
-                return;
-            }
-
-            // Check if extension environment is enabled
-            if (useExtensionEnv) {
-                Logger.info('🐍 🔧 Using extension own virtual environment');
-
-                if (
-                    !this.extensionEnvManager.ready &&
-                    this.extensionEnvManager.exists
-                ) {
-                    // Reuse the environment from a previous session; upgrade it
-                    // once if this extension version requires it.
-                    await this.prepareExistingExtensionEnvironment();
-                }
-
-                if (this.extensionEnvManager.ready) {
-                    await this.validatePythonEnvironment(
-                        this.extensionEnvManager.pythonPath,
-                        'own-uv-env',
-                    );
-                    return;
-                } else if (ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT) {
-                    // Try to create the extension environment
-                    try {
-                        await this.extensionEnvManager.create();
-                        if (this.extensionEnvManager.ready) {
-                            await this.validatePythonEnvironment(
-                                this.extensionEnvManager.pythonPath,
-                                'own-uv-env',
-                            );
-                            return;
-                        }
-                    } catch (error) {
-                        Logger.warn(
-                            '🐍 ⚠️ Failed to create extension own environment, falling back to Python extension',
-                        );
-                    }
-                } else {
-                    Logger.warn(
-                        '🐍 ⚠️ Extension own environment not ready, falling back to Python extension',
-                    );
-                }
-            }
-
-            // Fallback: Use Python extension API (original behavior)
-            const newPythonPath =
-                await getPythonInterpreterFromPythonExtension();
-
-            if (newPythonPath) {
-                Logger.info(
-                    `🐍 🔀 Python interpreter changed from ${this._pythonPath} to ${newPythonPath}`,
-                );
-                await this.validatePythonEnvironment(
-                    newPythonPath,
-                    'python-extension',
-                );
-                return;
-            }
-
-            // Fallback: Last chance - Common Python paths to check
-            // On Windows, try "python" before "python3" so we avoid the Windows Store
-            // stub (python3.exe that opens the Store and exits 0 with no output).
-            const commonPaths =
-                process.platform === 'win32'
-                    ? [
-                          'python',
-                          'python3',
-                          'py',
-                          'C:\\Python313\\python.exe',
-                          'C:\\Python312\\python.exe',
-                          'C:\\Python311\\python.exe',
-                          'C:\\Python310\\python.exe',
-                          'C:\\Python39\\python.exe',
-                      ]
-                    : [
-                          'python3',
-                          'python',
-                          '/usr/bin/python3',
-                          '/usr/local/bin/python3',
-                      ];
-
-            for (const pythonPath of commonPaths) {
-                try {
-                    const version = await this.getPythonVersion(pythonPath);
-                    if (version) {
-                        await this.validatePythonEnvironment(
-                            pythonPath,
-                            'system',
-                        );
-                        return;
-                    }
-                } catch (error) {
-                    // Ignore errors for individual paths
-                }
-            }
-
-            Logger.warn(
-                'No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.',
+    private async selectInterpreter(issue: {
+        value: OwnEnvironmentIssue | null;
+    }): Promise<SelectedInterpreter> {
+        const overrideInterpreter = getOverridePythonInterpreter();
+        if (overrideInterpreter) {
+            Logger.info(
+                `🐍 🔧 Using override Python interpreter: ${overrideInterpreter}`,
             );
-        } finally {
-            // Clear the initialization promise when done
-            this._initializationPromise = null;
-            this._initialized = true;
+            return { pythonPath: overrideInterpreter, source: 'override' };
         }
+
+        if (getUseExtensionOwnEnvironment()) {
+            const own = await this.prepareOwnEnvironment();
+            if (typeof own === 'string') {
+                return { pythonPath: own, source: 'own-uv-env' };
+            }
+            issue.value = own;
+        }
+
+        const pythonExtensionPath =
+            await getPythonInterpreterFromPythonExtension();
+        if (pythonExtensionPath) {
+            Logger.info(
+                `🐍 🔀 Using the Python extension's interpreter: ${pythonExtensionPath}`,
+            );
+            return {
+                pythonPath: pythonExtensionPath,
+                source: 'python-extension',
+            };
+        }
+
+        // Last chance: common Python paths. On Windows, try "python" before
+        // "python3" so we avoid the Windows Store stub (python3.exe that opens
+        // the Store and exits 0 with no output).
+        const commonPaths =
+            process.platform === 'win32'
+                ? [
+                      'python',
+                      'python3',
+                      'py',
+                      'C:\\Python313\\python.exe',
+                      'C:\\Python312\\python.exe',
+                      'C:\\Python311\\python.exe',
+                      'C:\\Python310\\python.exe',
+                      'C:\\Python39\\python.exe',
+                  ]
+                : [
+                      'python3',
+                      'python',
+                      '/usr/bin/python3',
+                      '/usr/local/bin/python3',
+                  ];
+        for (const pythonPath of commonPaths) {
+            if (await this.getPythonVersion(pythonPath)) {
+                return { pythonPath, source: 'system' };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Interpreter of the extension's own environment: reuse (and upgrade if
+     * needed) an existing one, else create it with uv. Returns why it cannot
+     * be used otherwise.
+     */
+    private async prepareOwnEnvironment(): Promise<
+        string | OwnEnvironmentIssue
+    > {
+        Logger.info('🐍 🔧 Using extension own virtual environment');
+        const envManager = this.extensionEnvManager;
+        let issue: OwnEnvironmentIssue;
+        try {
+            if (!envManager.ready && envManager.exists) {
+                // Reuse the environment from a previous session; upgrade it
+                // once if this extension version requires it.
+                await this.prepareExistingExtensionEnvironment();
+            }
+            if (!envManager.ready) {
+                await envManager.create();
+            }
+            if (envManager.pythonPath) {
+                return envManager.pythonPath;
+            }
+            issue = {
+                uvMissing: false,
+                message: 'the environment could not be prepared',
+            };
+        } catch (error) {
+            issue = {
+                uvMissing: error instanceof UvNotAvailableError,
+                message: error instanceof Error ? error.message : String(error),
+            };
+        }
+        Logger.warn(
+            `🐍 ⚠️ Extension own environment not usable (${issue.message}), falling back to the Python extension`,
+        );
+        return issue;
     }
 
     /**
      * Prepare the extension's own uv environment from a previous session.
      * When this extension version requires it (see ENVIRONMENT_REVISION), its
      * packages are upgraded once, with a progress notification. On failure the
-     * previous environment stays in use and the update is retried next start.
+     * previous environment stays in use (if it still works) and the update is
+     * retried next start.
      */
     private async prepareExistingExtensionEnvironment(): Promise<void> {
-        const updateReason = this.extensionEnvManager.getUpdateReason();
-        if (!updateReason) {
-            await this.extensionEnvManager.prepareExisting();
+        const envManager = this.extensionEnvManager;
+        if (!envManager.getUpdateReason()) {
+            await envManager.prepareExisting();
             return;
         }
 
@@ -722,14 +484,14 @@ export class PythonManager {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Scientific Data Viewer: updating its Python environment for this new version…',
             },
-            () => this.extensionEnvManager.prepareExisting(),
+            () => envManager.prepareExisting(),
         );
 
         if (result.updated) {
             vscode.window.showInformationMessage(
                 'Scientific Data Viewer: Python environment updated for this new version.',
             );
-        } else if (result.error) {
+        } else if (result.error && envManager.ready) {
             vscode.window.showWarningMessage(
                 'Scientific Data Viewer: the Python environment could not be updated (are you offline?). ' +
                     'The previous environment is used for now; the update will be retried at the next start, ' +
@@ -739,68 +501,40 @@ export class PythonManager {
     }
 
     private async getPythonVersion(pythonPath: string): Promise<string | null> {
-        return new Promise((resolve) => {
-            const process = spawn(quoteIfNeeded(pythonPath), ['--version'], {
-                shell: true,
-            });
-            let output = '';
-
-            process.stdout.on('data', (data) => {
-                output += data.toString();
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    resolve(output.trim());
-                } else {
-                    resolve(null);
-                }
-            });
-
-            process.on('error', () => {
-                resolve(null);
-            });
-        });
+        try {
+            const { code, stdout } = await runProcess(
+                pythonPath,
+                ['--version'],
+                { timeoutMs: PROBE_TIMEOUT_MS },
+            );
+            return code === 0 && stdout.trim() ? stdout.trim() : null;
+        } catch {
+            return null;
+        }
     }
 
-    private async checkAvailablePackages(
-        pythonPath: string,
-    ): Promise<string[]> {
-        Logger.debug(`🐍 🔍 Checking required packages`);
-
-        const allPackages = [
-            ...this.corePackages,
-            ...this.plotPackages,
-            ...this.extendedPackages,
-        ];
-
+    /** True when every core package can be found by the interpreter. */
+    private async hasCorePackages(pythonPath: string): Promise<boolean> {
         try {
             const availability = await this.checkPackagesAvailability(
                 pythonPath,
-                allPackages,
+                [...CORE_PACKAGES, ...PLOT_PACKAGES, ...EXTENDED_PACKAGES],
             );
-
-            const availablePackages: string[] = [];
-            for (const [packageName, isAvailable] of Object.entries(
-                availability,
-            )) {
-                if (isAvailable) {
-                    availablePackages.push(packageName);
-                    Logger.debug(`🐍 📦 ✅ Package available: ${packageName}`);
-                } else {
-                    Logger.debug(
-                        `🐍 📦 ⚠️ Package not available: ${packageName}`,
-                    );
-                }
-            }
-
             Logger.debug(
-                `🐍 📦 ℹ️ Available packages: ${availablePackages.join(', ')}`,
+                `🐍 📦 Package availability: ${JSON.stringify(availability)}`,
             );
-            return availablePackages;
+            const missing = CORE_PACKAGES.filter((pkg) => !availability[pkg]);
+            if (missing.length > 0) {
+                Logger.info(
+                    `🐍 📦 ⚠️ Missing core packages: ${missing.join(', ')}`,
+                );
+            }
+            return missing.length === 0;
         } catch (error) {
-            Logger.debug(`🐍 📦 ⚠️ Error checking packages: ${error}`);
-            return [];
+            Logger.error(
+                `🐍 📦 ❌ Python environment validation failed: ${error}`,
+            );
+            return false;
         }
     }
 
@@ -812,273 +546,286 @@ export class PythonManager {
      */
     public async checkPackagesAvailability(
         pythonPath: string,
-        packageNames: string[],
+        packageNames: readonly string[],
     ): Promise<Record<string, boolean>> {
         const scriptPath = path.join(
             __dirname,
             '../../../python/check_package_availability.py',
         );
+        Logger.debug(`🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`);
 
+        let result: unknown;
         try {
-            Logger.debug(
-                `🐍 📦 🔍 Checking packages: ${packageNames.join(', ')}`,
-            );
-
-            const result = await this.executePythonFileUnchecked(
+            result = await this.runPythonScript(
                 pythonPath,
                 scriptPath,
-                packageNames,
+                [...packageNames],
                 true, // Enable log handover for package availability check (e.g. debugging Issue #118)
+                undefined,
+                PACKAGE_CHECK_TIMEOUT_MS,
             );
-
-            // Log raw result for debugging (e.g. Issue #118: invalid response format)
-            const resultType = typeof result;
-            const resultPreview =
-                result === null
-                    ? 'null'
-                    : resultType === 'string'
-                      ? (result as string).slice(0, 500)
-                      : JSON.stringify(result).slice(0, 500);
-            Logger.debug(
-                `🐍 📦 Package availability check raw result: type=${resultType}, preview=${resultPreview}`,
-            );
-
-            // The result should be a JSON object with package availability
-            if (typeof result === 'object' && result !== null) {
-                const resultObj = result as Record<string, unknown>;
-                if (
-                    '_error' in resultObj &&
-                    typeof resultObj._error === 'string'
-                ) {
-                    Logger.error(
-                        `🐍 📦 Package check script reported error: ${resultObj._error}`,
-                    );
-                    throw new Error(
-                        `Package availability check failed: ${resultObj._error}`,
-                    );
-                }
-                return result as Record<string, boolean>;
-            } else {
-                Logger.error(
-                    `🐍 📦 Invalid package check response: expected object, got type=${resultType}, value=${resultPreview}`,
-                );
-                throw new Error(
-                    'Invalid response format from package availability check',
-                );
-            }
         } catch (error) {
             Logger.error(`🐍 📦 ❌ Error checking packages: ${error}`);
             throw new Error(`Failed to check package availability: ${error}`);
         }
+
+        if (typeof result !== 'object' || result === null) {
+            throw new Error(
+                'Invalid response format from package availability check',
+            );
+        }
+        const resultObj = result as Record<string, unknown>;
+        if (typeof resultObj._error === 'string') {
+            throw new Error(
+                `Package availability check failed: ${resultObj._error}`,
+            );
+        }
+        return result as Record<string, boolean>;
     }
 
-    private async checkPipAvailability(): Promise<void> {
-        if (!this._pythonPath) {
+    /**
+     * Install packages into the current interpreter. The extension's own
+     * environment (and any interpreter without pip, when uv is installed) is
+     * handled with `uv pip install --python`, the others with `python -m pip`.
+     */
+    async installPackages(packages: string[]): Promise<void> {
+        const pythonPath = this._pythonPath;
+        if (!pythonPath) {
             throw new Error('No Python interpreter configured');
         }
-
-        return new Promise((resolve, reject) => {
-            const process = spawn(
-                quoteIfNeeded(this._pythonPath!),
-                ['-m', 'pip', '--version'],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                },
-            );
-
-            let stdout = '';
-            let stderr = '';
-
-            process.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            process.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            process.on('close', (code) => {
-                if (code === 0) {
-                    Logger.debug(`🐍 📦 🔍 pip version: ${stdout.trim()}`);
-                    resolve();
-                } else {
-                    reject(
-                        new Error(
-                            `pip check failed (exit code ${code}): ${
-                                stderr || stdout
-                            }`,
-                        ),
-                    );
-                }
-            });
-
-            process.on('error', (error) => {
-                reject(
-                    new Error(
-                        `Failed to check pip availability: ${error.message}`,
-                    ),
-                );
-            });
-        });
-    }
-
-    private async validatePythonEnvironment(
-        pythonPath: string | null,
-        source: EnvironmentSource,
-    ): Promise<void> {
-        this._pythonPath = pythonPath;
-        this._environmentSource = source;
-
         Logger.info(
-            `🐍 🛡️ validatePythonEnvironment: Validating Python environment. Is initialized: ${this._initialized} | Python path: ${this._pythonPath}`,
+            `🐍 📦 🔍 Installing packages: ${packages.join(', ')} using Python: ${pythonPath}`,
         );
 
-        if (!this._pythonPath) {
-            throw new Error('No Python interpreter configured');
+        if (this._environmentSource === 'own-uv-env') {
+            await this.extensionEnvManager.uvInstallPackages(
+                pythonPath,
+                packages,
+            );
+            Logger.info(`🐍 📦 Installed with uv: ${packages.join(', ')}`);
+            return;
         }
 
-        try {
-            const packages = await this.checkAvailablePackages(
-                this._pythonPath,
-            );
-            const missingCorePackages = this.corePackages.filter(
-                (pkg) => !packages.includes(pkg),
-            );
-
-            // Only require core packages for basic functionality
-            if (missingCorePackages.length === 0) {
-                this._corePackagesInstalled = true;
-                Logger.info(
-                    `🐍 📦 ✅ Python environment ready! Using interpreter: ${this._pythonPath}`,
+        if (!(await this.hasPip(pythonPath))) {
+            if (await this.extensionEnvManager.isUvAvailable()) {
+                await this.extensionEnvManager.uvInstallPackages(
+                    pythonPath,
+                    packages,
                 );
-            } else {
-                this._corePackagesInstalled = false;
-                Logger.info(
-                    `🐍 📦 ⚠️ Python environment not ready! Missing core packages: ${missingCorePackages.join(
-                        ', ',
-                    )}`,
-                );
+                Logger.info(`🐍 📦 Installed with uv: ${packages.join(', ')}`);
+                return;
             }
-        } catch (error) {
-            Logger.error(
-                `🐍 📦 ❌ Python environment validation failed: ${error}`,
-            );
-            showErrorMessage(`Failed to validate Python environment: ${error}`);
-        }
-    }
-
-    async installPackages(packages: string[]): Promise<void> {
-        if (!this._pythonPath) {
-            throw new Error('No Python interpreter configured');
-        }
-
-        // First, check if pip is available
-        try {
-            await this.checkPipAvailability();
-        } catch (error) {
             throw new Error(
-                `pip is not available: ${error}. Please install pip or use a different Python interpreter.`,
+                `pip is not available for ${pythonPath}. Please install pip (or uv) or use a different Python interpreter.`,
             );
         }
 
-        return new Promise((resolve, reject) => {
+        const pipArgs = ['-m', 'pip', 'install', ...packages];
+        let result: RunProcessResult;
+        try {
+            result = await runProcess(pythonPath, pipArgs, {
+                onStdout: (chunk) => Logger.debug(`🐍 📦 pip stdout: ${chunk}`),
+                onStderr: (chunk) => Logger.warn(`🐍 📦 pip stderr: ${chunk}`),
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : String(error);
+            Logger.error(`🐍 📦 ❌ pip process error: ${message}`);
+            throw new Error(
+                `Failed to execute pip: ${message}` +
+                    ((error as NodeJS.ErrnoException)?.code === 'ENOENT'
+                        ? `\n\n💡 Troubleshooting: Python interpreter not found at: ${pythonPath}` +
+                          '\nPlease check your Python installation and try selecting a different interpreter.'
+                        : ''),
+            );
+        }
+
+        if (result.code === 0) {
             Logger.info(
-                `🐍 📦 🔍 Installing packages: ${packages.join(
-                    ', ',
-                )} using Python: ${this._pythonPath}`,
+                `Successfully installed packages: ${packages.join(', ')}`,
             );
-            Logger.debug(`🐍 📦 🔍 Working directory: ${process.cwd()}`);
-            Logger.debug(`🐍 📦 🔍 Environment PATH: ${process.env.PATH}`);
-
-            const pipProcess = spawn(
-                quoteIfNeeded(this._pythonPath!),
-                ['-m', 'pip', 'install', ...packages],
-                {
-                    shell: true,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                },
-            );
-
-            let stdout = '';
-            let stderr = '';
-
-            pipProcess.stdout.on('data', (data) => {
-                const output = data.toString();
-                stdout += output;
-                Logger.debug(`🐍 📦 pip stdout: ${output}`);
-            });
-
-            pipProcess.stderr.on('data', (data) => {
-                const output = data.toString();
-                stderr += output;
-                Logger.warn(`🐍 📦 pip stderr: ${output}`);
-            });
-
-            pipProcess.on('close', (code) => {
-                Logger.debug(`🐍 📦 pip process exited with code: ${code}`);
-                Logger.debug(`🐍 📦 pip stdout: ${stdout}`);
-                Logger.debug(`🐍 📦 pip stderr: ${stderr}`);
-
-                if (code === 0) {
-                    Logger.info(
-                        `Successfully installed packages: ${packages.join(
-                            ', ',
-                        )}`,
-                    );
-                    resolve();
-                } else {
-                    // Create detailed error message with pip output
-                    let errorMessage = `Failed to install packages. Exit code: ${code}`;
-
-                    if (stderr) {
-                        errorMessage += `\n\nPip Error Output:\n${stderr}`;
-                    }
-
-                    if (stdout) {
-                        errorMessage += `\n\nPip Standard Output:\n${stdout}`;
-                    }
-
-                    // Add common troubleshooting tips based on error content
-                    if (
-                        stderr.includes('Permission denied') ||
-                        stderr.includes('Access is denied')
-                    ) {
-                        errorMessage += `\n\n💡 Troubleshooting: Permission denied. Try running:\n${
-                            this._pythonPath
-                        } -m pip install --user ${packages.join(' ')}`;
-                    } else if (stderr.includes('No module named pip')) {
-                        errorMessage += `\n\n💡 Troubleshooting: pip is not installed. Try installing pip first or use a different Python interpreter.`;
-                    } else if (stderr.includes('Could not find a version')) {
-                        errorMessage += `\n\n💡 Troubleshooting: Package version not found. Try updating pip:\n${this._pythonPath} -m pip install --upgrade pip`;
-                    } else if (
-                        stderr.includes('SSL') ||
-                        stderr.includes('certificate')
-                    ) {
-                        errorMessage += `\n\n💡 Troubleshooting: SSL/Certificate issue. Try:\n${
-                            this._pythonPath
-                        } -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org ${packages.join(
-                            ' ',
-                        )}`;
-                    } else if (stderr.includes('Microsoft Visual C++')) {
-                        errorMessage += `\n\n💡 Troubleshooting: Missing Visual C++ compiler. Install Microsoft Visual C++ Build Tools or use pre-compiled packages.`;
-                    }
-
-                    reject(new Error(errorMessage));
-                }
-            });
-
-            pipProcess.on('error', (error) => {
-                Logger.error(`🐍 📦 ❌ pip process error: ${error.message}`);
-                let errorMessage = `Failed to execute pip: ${error.message}`;
-
-                if (error.message.includes('ENOENT')) {
-                    errorMessage += `\n\n💡 Troubleshooting: Python interpreter not found at: ${this._pythonPath}`;
-                    errorMessage += `\nPlease check your Python installation and try selecting a different interpreter.`;
-                }
-
-                reject(new Error(errorMessage));
-            });
-        });
+            return;
+        }
+        throw new Error(pipFailureMessage(pythonPath, packages, result));
     }
+
+    private async hasPip(pythonPath: string): Promise<boolean> {
+        try {
+            const { code, stdout } = await runProcess(
+                pythonPath,
+                ['-m', 'pip', '--version'],
+                { timeoutMs: PROBE_TIMEOUT_MS },
+            );
+            Logger.debug(`🐍 📦 🔍 pip version: ${stdout.trim()}`);
+            return code === 0;
+        } catch {
+            return false;
+        }
+    }
+}
+
+/** Forward the Python logger lines (` - LEVEL - message`) to the Logger. */
+function forwardPythonLogs(chunk: string): void {
+    for (const rawLine of chunk.split('\n')) {
+        const line = rawLine.trim();
+        if (!line) {
+            continue;
+        }
+        const match = / - (INFO|ERROR|WARNING|DEBUG) - (.*)$/.exec(line);
+        if (!match) {
+            Logger.info(`🐍 📜 [Python] ${line}`);
+            continue;
+        }
+        const [, level, message] = match;
+        const text = `🐍 📜 [Python] [${level}] ${message}`;
+        if (level === 'ERROR') {
+            Logger.error(text);
+        } else if (level === 'WARNING') {
+            Logger.warn(text);
+        } else if (level === 'DEBUG') {
+            Logger.debug(text);
+        } else {
+            Logger.info(text);
+        }
+    }
+}
+
+/**
+ * Parse the JSON printed by a script, or turn a failed run into an Error.
+ * Exported for unit tests.
+ */
+export function parseScriptResult(
+    result: RunProcessResult,
+    timeoutMs?: number,
+): unknown {
+    const { code, signal, stdout, stderr } = result;
+
+    if (result.timedOut) {
+        throw new Error(
+            `Python script timed out after ${timeoutMs} ms and was stopped.`,
+        );
+    }
+    if (result.aborted || signal === 'SIGTERM' || signal === 'SIGKILL') {
+        throw new Error(
+            `Process was aborted (signal: ${signal ?? 'SIGTERM'}). This usually happens when a plot operation times out, or if the plot operation was cancelled by the user.`,
+        );
+    }
+
+    if (code === 0) {
+        const parsed = parseJsonOutput(stdout);
+        if (parsed.ok) {
+            return parsed.value;
+        }
+        Logger.error(
+            `🐍 📜 Script output is not JSON (stdout length=${stdout.length}): ${stdout.slice(0, 300)}${
+                stderr ? `\nStderr: ${stderr.slice(0, 1000)}` : ''
+            }`,
+        );
+        throw new Error(
+            stdout.trim()
+                ? `Python script returned invalid output (expected JSON): ${stdout.trim().slice(0, 200)}`
+                : 'Python script returned no output (expected JSON). See the extension logs for details.',
+        );
+    }
+
+    // Log so the Extension Log always shows what we got (exit code 1 often = uncaught exception)
+    Logger.error(
+        `🐍 📜 Python script exited with code ${code}. Stderr (${stderr.length} chars):\n${stderr || '(empty)'}`,
+    );
+    Logger.error(
+        `🐍 📜 Python script stdout (${stdout.length} chars):\n${stdout || '(empty)'}`,
+    );
+    const errorMessage = stderr || stdout || 'Unknown Python error';
+    if (errorMessage.includes('ModuleNotFoundError')) {
+        throw new Error(
+            `Missing Python package: ${errorMessage}. Please install required packages with: ${formatPipInstallCommand()}`,
+        );
+    }
+    if (errorMessage.includes('PermissionError')) {
+        throw new Error(
+            `Permission denied: ${errorMessage}. Please check file permissions.`,
+        );
+    }
+    if (errorMessage.includes('FileNotFoundError')) {
+        throw new Error(
+            `File not found: ${errorMessage}. Please check the file path.`,
+        );
+    }
+    // Prefer the script's JSON error from stdout (e.g. Invalid --dimension-slices JSON)
+    const parsed = parseJsonOutput(stdout);
+    if (
+        parsed.ok &&
+        typeof (parsed.value as { error?: unknown })?.error === 'string' &&
+        (parsed.value as { error: string }).error.length > 0
+    ) {
+        throw new Error((parsed.value as { error: string }).error);
+    }
+    throw new Error(
+        errorMessage.trim().split('\n').pop()?.trim() ||
+            `Python script failed (exit code ${code})`,
+    );
+}
+
+/**
+ * Parse stdout as JSON; when it is not, try its last non-empty line (scripts
+ * print one JSON line, possibly after stray prints from libraries).
+ */
+function parseJsonOutput(
+    stdout: string,
+): { ok: true; value: unknown } | { ok: false } {
+    const candidates = [stdout.trim()];
+    const lastLine = stdout.trim().split('\n').pop()?.trim();
+    if (lastLine && lastLine !== candidates[0]) {
+        candidates.push(lastLine);
+    }
+    for (const candidate of candidates) {
+        if (!candidate) {
+            continue;
+        }
+        try {
+            return { ok: true, value: JSON.parse(candidate) };
+        } catch {
+            // try the next candidate
+        }
+    }
+    return { ok: false };
+}
+
+function pipFailureMessage(
+    pythonPath: string,
+    packages: string[],
+    result: RunProcessResult,
+): string {
+    const { code, stdout, stderr } = result;
+    let message = `Failed to install packages. Exit code: ${code}`;
+    if (stderr) {
+        message += `\n\nPip Error Output:\n${stderr}`;
+    }
+    if (stdout) {
+        message += `\n\nPip Standard Output:\n${stdout}`;
+    }
+    const pip = (...args: string[]) =>
+        formatCommandForDisplay(pythonPath, ['-m', 'pip', ...args]);
+    if (
+        stderr.includes('Permission denied') ||
+        stderr.includes('Access is denied')
+    ) {
+        message += `\n\n💡 Troubleshooting: Permission denied. Try running:\n${pip('install', '--user', ...packages)}`;
+    } else if (stderr.includes('Could not find a version')) {
+        message += `\n\n💡 Troubleshooting: Package version not found. Try updating pip:\n${pip('install', '--upgrade', 'pip')}`;
+    } else if (stderr.includes('SSL') || stderr.includes('certificate')) {
+        message += `\n\n💡 Troubleshooting: SSL/Certificate issue. Try:\n${pip(
+            'install',
+            '--trusted-host',
+            'pypi.org',
+            '--trusted-host',
+            'pypi.python.org',
+            '--trusted-host',
+            'files.pythonhosted.org',
+            ...packages,
+        )}`;
+    } else if (stderr.includes('Microsoft Visual C++')) {
+        message += `\n\n💡 Troubleshooting: Missing Visual C++ compiler. Install Microsoft Visual C++ Build Tools or use pre-compiled packages.`;
+    }
+    return message;
 }
