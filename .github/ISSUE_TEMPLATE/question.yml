@@ -29,7 +29,7 @@ body:
         - General usage question
         - Other
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: question-description
@@ -40,7 +40,7 @@ body:
         What would you like to know or discuss?
         Be as specific as possible to help others understand your question.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: context
@@ -113,6 +113,6 @@ body:
       description: By submitting this issue, you agree to follow our Code of Conduct
       options:
         - label: I have searched existing issues and this is not a duplicate
-          required: true
+          required: false
         - label: I have read and agree to follow the [Contributing Guidelines](CONTRIBUTING.md)
-          required: true
+          required: false

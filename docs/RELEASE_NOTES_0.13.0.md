@@ -360,6 +360,12 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Plot with a datetime range that matches no data → clear _"No data to plot"_ error instead of a `ZeroDivisionError`.
 4. `python python/create_sample_data.py --overwrite` completes with exit code 0 and rewrites the generated files; running it twice yields the same snapshots.
 
+### 14. Issue templates (repository)
+
+1. On GitHub, **New issue** → pick each of _Bug Report_, _Feature Request_, _Question / Discussion_.
+2. The intro says all fields are optional; no field is marked with a red asterisk.
+3. Submit with only a title → the issue is created (try on a fork to avoid noise).
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -380,7 +386,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                     |
 | **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                      |
 | **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus                                                                                                                                                                                       |
-| **Docs**      | `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                    |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                              |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                 |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |
 

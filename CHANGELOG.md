@@ -55,6 +55,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/tests/**`, `python/pyproject.toml`, `setup.sh`
 - **Sample generators split into the `sample_data` package**: the 6,000-line `python/create_sample_data.py` becomes one module per format family under `python/sample_data/`; `main.py` is table-driven and a failing generator no longer stops the others. Generation is reproducible (numpy seeded per generator, fixed creation timestamps and ZIP entry dates). The package is now linted by ruff.
   - **Files**: `python/sample_data/**`, `python/create_sample_data.py`, `.pre-commit-config.yaml`, `python/tests/test_compound_dtype_sample.py`
+- **GitHub issue templates: every field optional**: bug report, feature request and question forms no longer require any field or checkbox, and their intros say so, so that filing an issue does not feel like paperwork.
+  - **Files**: `.github/ISSUE_TEMPLATE/bug_report.yml`, `.github/ISSUE_TEMPLATE/feature_request.yml`, `.github/ISSUE_TEMPLATE/question.yml`
 - **VSIX contents**: nested `__pycache__`, `python/tests/`, `python/tools/`, `python/.golden/` and pytest caches are excluded.
   - **Files**: `.vscodeignore`
 
