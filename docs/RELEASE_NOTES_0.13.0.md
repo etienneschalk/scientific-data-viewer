@@ -12,7 +12,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 
 | Area                  | What v0.13 adds                                                                                                                                                  |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env; rejects zarr 2.x as “too old”                                                                         |
+| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (upgraded automatically on update); rejects zarr 2.x as “too old”                                      |
 | **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                 |
 | **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                               |
 | **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                   |
@@ -31,7 +31,12 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.0.** If your interpreter still has **zarr 2.x**, the extension reports it as unusable and suggests `zarr>=3`.
 - **Zarr v2 data** on disk remains readable through **zarr-python 3**; you do not need to rewrite stores for metadata viewing.
-- **Extension uv environment:** If you use **Scientific Data Viewer → Use Extension Own Environment**, run **Manage Extension Virtual Environment → Update** after upgrading so pins (`xarray>=2026.4.0`, `h5netcdf>=1.8`, `zarr>=3`) apply.
+- **Extension uv environment (automatic):** if you use **Scientific Data Viewer → Use Extension Own Environment**, nothing to do. At the first start of v0.13 the extension upgrades its environment once to the new pins (`xarray>=2026.4.0`, `h5netcdf>=1.8`, `zarr>=3`), showing a progress notification. If that fails (e.g. offline), the previous environment keeps working and the update is retried at the next start; **Manage Extension Virtual Environment → Update Packages** forces it.
+- **Your own interpreter (manual):** if the extension uses the **Python extension's** selected interpreter or **`overridePythonInterpreter`**, the extension never modifies it. Upgrade it yourself:
+
+  ```bash
+  pip install --upgrade "xarray>=2026.4.0" "zarr>=3" "h5netcdf>=1.8"
+  ```
 
 ### Kerchunk is optional
 
@@ -368,6 +373,20 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
+### 15. Automatic update of the extension uv environment
+
+**Expect:** with **`useExtensionOwnEnvironment`** on, an environment created by an older version (or recorded with a lower `ENVIRONMENT_REVISION`) is upgraded once at startup; later starts reuse it without reinstalling.
+
+**Test:**
+
+1. Remove any `overridePythonInterpreter` setting (it takes precedence), enable `scientificDataViewer.python.useExtensionOwnEnvironment`, reload. Wait for the environment to be created (first time only).
+2. Simulate an environment from v0.12: delete `sdv-environment.json` in the environment folder (Linux: `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/`; the path is shown by **Manage Extension Virtual Environment**).
+3. Reload window → notification _"updating its Python environment for this new version…"_, then _"Python environment updated"_. `sdv-environment.json` is back with `"revision": 1`.
+4. Reload again → **no** notification; the logs show `Extension virtual environment is up to date` (no `uv venv --clear`, no package install).
+5. _(Optional, offline)_ delete the file again, disconnect the network, reload → warning that the update failed; files still open with the previous environment. Reconnect, reload → the update runs.
+
+---
+
 ## Known limitations (unchanged or noted)
 
 - **Plotting** remains **experimental** (timeout, auto strategy only).
@@ -385,7 +404,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                     |
 | **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                      |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus                                                                                                                                                                                       |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment upgraded automatically when a version requires it (no rebuild at every start)                                                                                         |
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                              |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                 |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |

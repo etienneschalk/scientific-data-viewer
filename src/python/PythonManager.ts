@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { spawn, ChildProcess } from 'child_process';
 import { Logger } from '../common/Logger';
 import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
@@ -603,6 +604,15 @@ export class PythonManager {
             if (useExtensionEnv) {
                 Logger.info('🐍 🔧 Using extension own virtual environment');
 
+                if (
+                    !this.extensionEnvManager.ready &&
+                    this.extensionEnvManager.exists
+                ) {
+                    // Reuse the environment from a previous session; upgrade it
+                    // once if this extension version requires it.
+                    await this.prepareExistingExtensionEnvironment();
+                }
+
                 if (this.extensionEnvManager.ready) {
                     await this.validatePythonEnvironment(
                         this.extensionEnvManager.pythonPath,
@@ -691,6 +701,40 @@ export class PythonManager {
             // Clear the initialization promise when done
             this._initializationPromise = null;
             this._initialized = true;
+        }
+    }
+
+    /**
+     * Prepare the extension's own uv environment from a previous session.
+     * When this extension version requires it (see ENVIRONMENT_REVISION), its
+     * packages are upgraded once, with a progress notification. On failure the
+     * previous environment stays in use and the update is retried next start.
+     */
+    private async prepareExistingExtensionEnvironment(): Promise<void> {
+        const updateReason = this.extensionEnvManager.getUpdateReason();
+        if (!updateReason) {
+            await this.extensionEnvManager.prepareExisting();
+            return;
+        }
+
+        const result = await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Scientific Data Viewer: updating its Python environment for this new version…',
+            },
+            () => this.extensionEnvManager.prepareExisting(),
+        );
+
+        if (result.updated) {
+            vscode.window.showInformationMessage(
+                'Scientific Data Viewer: Python environment updated for this new version.',
+            );
+        } else if (result.error) {
+            vscode.window.showWarningMessage(
+                'Scientific Data Viewer: the Python environment could not be updated (are you offline?). ' +
+                    'The previous environment is used for now; the update will be retried at the next start, ' +
+                    'or run "Scientific Data Viewer: Manage Extension Virtual Environment" → Update Packages.',
+            );
         }
     }
 

@@ -10,8 +10,9 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 
 1. **Update version** in `package.json`
 2. **Update CHANGELOG.md** with new features and fixes
-3. **Test thoroughly** with various file types and sizes
-4. **Update documentation** if needed
+3. **Python requirements changed?** If existing users' uv environments must be upgraded (new/changed entry in `ALL_REQUIREMENTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` are then upgraded once at their next start.
+4. **Test thoroughly** with various file types and sizes
+5. **Update documentation** if needed
 
 ### Publishing to VSCode Marketplace
 

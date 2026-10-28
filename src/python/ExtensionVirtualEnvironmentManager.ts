@@ -13,6 +13,23 @@ export function requirementPackageName(requirement: string): string {
     return requirement.split(/[<>=!~[\s]/)[0];
 }
 
+/** Contents of the state file recorded in the environment folder. */
+export interface ExtensionEnvironmentState {
+    revision: number;
+    requirements: string[];
+    updatedAt: string;
+}
+
+/** Outcome of preparing an already existing environment at startup. */
+export interface PrepareExistingResult {
+    /** Why an update was attempted; null when the environment was up to date. */
+    updateReason: string | null;
+    /** True when the update ran and succeeded. */
+    updated: boolean;
+    /** Error message when the update failed (the previous environment is kept). */
+    error?: string;
+}
+
 export class ExtensionVirtualEnvironmentManager {
     public readonly PYTHON_VERSION = '3.13';
     public readonly UV_INSTALLATION_URL =
@@ -36,6 +53,18 @@ export class ExtensionVirtualEnvironmentManager {
         'rioxarray',
         'cdflib',
     ];
+    /**
+     * Bump this number in a release that needs existing extension environments
+     * to be updated (new or changed requirement, or to force an upgrade).
+     * Environments recorded with a lower revision are upgraded once, at the next
+     * extension start. Changing ALL_REQUIREMENTS also triggers an update, even
+     * if this number was not bumped.
+     *
+     * History:
+     * - 1 (v0.13.0): xarray>=2026.4.0, zarr>=3, h5netcdf>=1.8
+     */
+    public readonly ENVIRONMENT_REVISION = 1;
+    private readonly STATE_FILE_NAME = 'sdv-environment.json';
     // Distribution names without version specifiers, for reporting and for
     // matching against `pip list` output.
     private readonly ALL_PACKAGES = this.ALL_REQUIREMENTS.map((requirement) =>
@@ -98,6 +127,7 @@ export class ExtensionVirtualEnvironmentManager {
 
         this.extensionEnv!.isInitialized = true;
         this.extensionEnv!.lastUpdated = new Date();
+        await this.recordEnvironmentState();
 
         Logger.info(
             '[uv] ✅ Extension virtual environment created successfully',
@@ -285,12 +315,117 @@ export class ExtensionVirtualEnvironmentManager {
             );
             await this.uvInstallRequiredPackages({ upgrade: true });
             this.extensionEnv!.lastUpdated = new Date();
+            await this.recordEnvironmentState();
             Logger.info('[uv] ✅ Packages updated successfully');
             return true;
         } catch (error) {
             Logger.error(`[uv] ❌ Failed to update packages: ${error}`);
             return false;
         }
+    }
+
+    /**
+     * True when an environment folder with a Python executable exists, even if
+     * it has not been prepared in this session yet (see prepareExisting).
+     */
+    get exists(): boolean {
+        return (
+            this.extensionEnv.isCreated &&
+            fs.existsSync(this.extensionEnv.pythonPath)
+        );
+    }
+
+    private get stateFilePath(): string {
+        return path.join(this.extensionEnv.path, this.STATE_FILE_NAME);
+    }
+
+    /** State recorded at the last successful install/update, or null. */
+    readEnvironmentState(): ExtensionEnvironmentState | null {
+        try {
+            const raw = fs.readFileSync(this.stateFilePath, 'utf8');
+            const state = JSON.parse(raw) as ExtensionEnvironmentState;
+            return typeof state.revision === 'number' &&
+                Array.isArray(state.requirements)
+                ? state
+                : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /** Record that the environment matches the current revision and requirements. */
+    async recordEnvironmentState(): Promise<void> {
+        const state: ExtensionEnvironmentState = {
+            revision: this.ENVIRONMENT_REVISION,
+            requirements: [...this.ALL_REQUIREMENTS],
+            updatedAt: new Date().toISOString(),
+        };
+        await fs.promises.writeFile(
+            this.stateFilePath,
+            JSON.stringify(state, null, 2),
+            'utf8',
+        );
+    }
+
+    /**
+     * Why the existing environment must be updated before use, or null when it
+     * is up to date (or does not exist). An environment recorded by a newer
+     * extension version (higher revision) is left alone.
+     */
+    getUpdateReason(): string | null {
+        if (!this.exists) {
+            return null;
+        }
+        const state = this.readEnvironmentState();
+        if (!state) {
+            return 'the environment was created by an older extension version';
+        }
+        if (state.revision < this.ENVIRONMENT_REVISION) {
+            return `environment revision ${state.revision} is older than required revision ${this.ENVIRONMENT_REVISION}`;
+        }
+        if (state.revision > this.ENVIRONMENT_REVISION) {
+            return null;
+        }
+        const recorded = [...state.requirements].sort().join(',');
+        const current = [...this.ALL_REQUIREMENTS].sort().join(',');
+        return recorded === current ? null : 'the required packages changed';
+    }
+
+    /**
+     * Make an existing environment usable for this session: reuse it as is when
+     * up to date, otherwise upgrade its packages once. If the upgrade fails (e.g.
+     * offline), the previous environment is kept and the update is retried at
+     * the next start (the state is only recorded on success).
+     */
+    async prepareExisting(): Promise<PrepareExistingResult> {
+        if (!this.exists) {
+            throw new Error('Extension virtual environment does not exist');
+        }
+        const updateReason = this.getUpdateReason();
+        let result: PrepareExistingResult = { updateReason, updated: false };
+        if (updateReason) {
+            Logger.info(
+                `[uv] 📦 Updating extension virtual environment: ${updateReason}`,
+            );
+            try {
+                await this.uvInstallRequiredPackages({ upgrade: true });
+                await this.recordEnvironmentState();
+                this.extensionEnv.lastUpdated = new Date();
+                result = { updateReason, updated: true };
+                Logger.info('[uv] ✅ Extension virtual environment updated');
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : String(error);
+                Logger.warn(
+                    `[uv] ⚠️ Extension virtual environment update failed, keeping the previous one: ${message}`,
+                );
+                result = { updateReason, updated: false, error: message };
+            }
+        } else {
+            Logger.info('[uv] ✅ Extension virtual environment is up to date');
+        }
+        this.extensionEnv.isInitialized = true;
+        return result;
     }
 
     /**
@@ -620,8 +755,9 @@ export class ExtensionVirtualEnvironmentManager {
         const uvAvailable = await this.uvCheckAvailability();
 
         if (!uvAvailable) {
-            Logger.warn('[uv] 🔧 uv is not available.');
-            return;
+            // Throw rather than return: callers record the environment as up
+            // to date after a successful install.
+            throw new Error('[uv] uv is not available');
         }
 
         Logger.info(

@@ -60,6 +60,16 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Sample data   | `create_sample_data.py` (6,000 lines) → `python/sample_data/`; table-driven `main`; reproducible; `--overwrite`, `--disposable`; `.geotiff` generator fix (all v0.13 fixtures were never generated) |
 | Tests         | Moved to `python/tests/`; `python/pyproject.toml`; new `test_empty_selection.py`                                                                                                                    |
 
+### Phase 6 — Automatic uv environment update
+
+| Work          | Detail                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Revision mark | `ENVIRONMENT_REVISION` in `ExtensionVirtualEnvironmentManager` (1 = v0.13 pins); requirement-list change also triggers |
+| State file    | `sdv-environment.json` in the env folder records revision + requirements on create / update                            |
+| Startup       | Existing env reused; upgraded once (progress notification) when outdated; on failure old env kept, retried next start  |
+| Fix           | Env was rebuilt (`uv venv --clear` + full reinstall) at every start                                                    |
+| Scope         | Python-extension / override interpreters untouched (user's responsibility)                                             |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -90,7 +100,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 ## Upgrade / breaking notes
 
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.** Users on zarr 2.x see `zarr>=3` in missing-package messages.
-- **Extension uv environment:** run **Manage Extension Virtual Environment → Update** after upgrade.
+- **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 1); Python-extension / override interpreters must be upgraded by the user.
 - **Kerchunk** is opt-in (`pip install kerchunk`); not in default uv bundle.
 - No webview message contract breaks; new Python CLI flags are additive.
 
@@ -98,12 +108,12 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 
 ## Key files
 
-| Area      | Files                                                                                                                                                                      |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py` |
-| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `package.json`                                                                                  |
-| Webview   | `src/panel/webview/webview-script.js` (col_wrap auto)                                                                                                                      |
-| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                 |
+| Area      | Files                                                                                                                                                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`   |
+| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json` |
+| Webview   | `src/panel/webview/webview-script.js` (col_wrap auto)                                                                                                                        |
+| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                   |
 
 ---
 

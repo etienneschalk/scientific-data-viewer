@@ -37,6 +37,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Pull request summary**: `docs/PR_SUMMARY_0.13.0.md`
   - **Manual test plan**: `docs/MANUAL_TEST_PLAN_0.13.0.md` (step-by-step validation of every v0.13 feature for non-expert testers, with a results sheet)
 - **v0.13 sample data generators** in `python/create_sample_data.py`: unsuffixed Zarr v3 directory, sharded Zarr v3, Zarr v3 ZIP, gzip NetCDF (filters), COG GeoTIFF, Kerchunk reference JSON (`sample_data.kerchunk.json`).
+- **Automatic update of the extension's own uv environment**: when **`useExtensionOwnEnvironment`** is on, a new extension version that requires newer packages upgrades the environment once at startup (progress notification), instead of asking users to run **Manage Extension Virtual Environment → Update**. The need is declared by `ENVIRONMENT_REVISION` in `ExtensionVirtualEnvironmentManager` (bumped to **1** for v0.13 pins); a change of the requirement list also triggers it. The installed revision and requirements are recorded in `sdv-environment.json` inside the environment folder; environments without it (created by ≤ v0.12) are upgraded. If the upgrade fails (e.g. offline), the previous environment stays in use and the update is retried at the next start. Python-extension and override interpreters are not touched: updating them stays the user's responsibility.
+  - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `docs/PUBLISHING.md`
+  - **Tests**: `test/suite/python/extensionEnvironmentUpdate.test.ts`
 - **Golden snapshot harness**: `python/tools/golden_snapshots.py record|check` runs the backend CLI on local `sample-data/` files (info and plot cases, incl. v0.13 formats) and compares normalized JSON output, plot PNGs by hash with a frozen clock. Snapshots live in git-ignored `python/.golden/`.
   - **Files**: `python/tools/golden_snapshots.py`, `python/tools/_frozen_clock_entry.py`, `.gitignore`
 - **Sample data `--overwrite` / `--disposable` flags**: `python python/create_sample_data.py --overwrite` regenerates existing files through an empty staging directory, leaving files no generator produces untouched; `--disposable` creates the deletion-test files.
@@ -67,6 +70,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
+- **Extension uv environment rebuilt at every start**: an existing environment was never marked as initialized, so each VS Code session ran `uv venv --clear` and reinstalled every package — slow, and when offline the old environment was already deleted before the reinstall failed. Existing environments are now reused (and upgraded only when required, see above). Manual **Update Packages** now also reports a failure when uv is missing instead of silently succeeding.
+  - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`
 - **Unsupported plot type crashed the backend**: `create_plot` validated `plot_type` before detecting the file format, so the error handler hit `UnboundLocalError` and printed no JSON. It now returns a JSON error; CLI help no longer advertises `line` / `histogram`.
   - **Files**: `python/sdv_backend/plotting/api.py`, `python/sdv_backend/cli.py`
 - **Empty plot selections**: a datetime range or dimension slice selecting no values failed in xarray (`ZeroDivisionError` on an empty facet grid). The error now names the empty dimensions and the time range / slices.
@@ -83,7 +88,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 ### Upgrade / breaking notes
 
 - **Requires zarr-python ≥ 3** when using **xarray ≥ 2026.4.0**. Users on **zarr 2.x** must upgrade (`pip install "zarr>=3"`) or pin an older xarray — the extension surfaces **`zarr>=3`** in missing-package messages.
-- **Extension uv environment** should be **updated** after upgrade if **`useExtensionOwnEnvironment`** is enabled (new pins: xarray, zarr, h5netcdf).
+- **Extension uv environment** (`useExtensionOwnEnvironment`) is **upgraded automatically** once at the first start of v0.13 (new pins: xarray, zarr, h5netcdf). Users of the Python extension's interpreter or `overridePythonInterpreter` must upgrade those packages themselves.
 - **Kerchunk** is opt-in (`pip install kerchunk`); ordinary JSON editors are unaffected.
 - **Python imports**: code importing from `get_data_info` must use the `sdv_backend` modules; `create_plot` / `get_file_info` take `PlotOptions` / `InfoOptions`. The CLI (`python/get_data_info.py info|plot ...`) and its JSON output are unchanged.
 - **No** webview message contract breaks for existing plot flows; new CLI flags (`--netcdf-engine-order`, `--open-as-kerchunk`, `--facetgrid-figsize`, etc.) are additive.

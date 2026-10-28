@@ -2,7 +2,7 @@
 
 A step-by-step checklist to confirm v0.13.0 is ready to ship. You do **not** need to know the file formats: every step says exactly what to click and what you should see.
 
-- **Time needed:** about 1 h 30 for everything (Part A ≈ 20 min, Part B ≈ 1 h, Part C ≈ 10 min).
+- **Time needed:** about 1 h 30 for everything (Part A ≈ 20 min, Part B ≈ 1 h 15, Part C ≈ 10 min).
 - **How to use it:** do the steps in order. After each test, tick ✅ or ❌ in the [results sheet](#results-sheet) at the end. If something fails, see [When a test fails](#when-a-test-fails).
 - For the technical background of each feature, see [`RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md).
 
@@ -310,6 +310,29 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 ✅ There is **no** "Open Scientific Data Viewer" entry for it. (Folders, such as `broken_file.safe`, always offer "Open Scientific Data Viewer (Folder)" — that is expected.)
 
+### B19. The extension's own Python environment updates itself
+
+The extension can manage its own Python installation ("uv environment"). When a new version needs newer packages, it now upgrades that installation by itself, once.
+
+1. In your settings JSON, **temporarily remove** the `overridePythonInterpreter` line (from A6) and add:
+   `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**.
+2. Wait until the extension has finished setting up (first time: a few minutes; watch **Show Extension Logs** until it says the environment is ready). Open any `.nc` file to check it works.
+3. Pretend this environment comes from an older version: in the terminal run
+
+   ```bash
+   rm ~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/sdv-environment.json
+   ```
+
+4. **Reload Window**.
+
+✅ A notification says **"Scientific Data Viewer: updating its Python environment for this new version…"**, then **"Python environment updated for this new version."**
+
+5. **Reload Window** once more.
+
+✅ **No** update notification this time, and files open immediately.
+
+6. Put back your settings from A6 (re-add `overridePythonInterpreter`, remove `useExtensionOwnEnvironment`), save, **Reload Window**.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -373,6 +396,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B16 facetgridFigsize                 |        |       |
 | B17 Empty time range message         |        |       |
 | B18 No `.safe` menu                  |        |       |
+| B19 uv environment auto-update       |        |       |
 | C Old formats, export, outline       |        |       |
 
 **Ready to ship** when every line is ✅. Afterwards you can uninstall the VSIX or keep it.
