@@ -5,6 +5,7 @@ test/**
 *.test.ts
 
 # Exclude development files
+scripts/**
 .vscode-test/**
 .vscode/**
 *.log
@@ -57,6 +58,11 @@ Thumbs.db
 
 # Exclude build artifacts
 out/test/**
+
+# Webview TypeScript sources: shipped as the esbuild bundle out/webview/webview.js
+# (styles.css in the same folder is still loaded at runtime)
+src/panel/webview/**/*.ts
+src/panel/webview/tsconfig.json
 *.vsix
 
 # Exclude notebooks 

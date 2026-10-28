@@ -229,69 +229,6 @@ select:focus {
     font-weight: 600;
 }
 
-.dimension-item,
-.variable-item {
-    padding: 6px 8px;
-    background-color: var(--vscode-list-hoverBackground);
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    border: 1px solid var(--vscode-panel-border);
-}
-
-.variable-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.variable-item.selected {
-    background-color: var(--vscode-list-activeSelectionBackground);
-    color: var(--vscode-list-activeSelectionForeground);
-}
-
-.variable-item {
-    flex: 1;
-}
-
-.variable-item .dims {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-}
-
-.variable-item .variable-name {
-    font-weight: bold;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 300px;
-}
-
-.variable-item .dtype-shape {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
-    max-width: 100px;
-}
-
-.variable-item .size {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    text-align: right;
-    max-width: 100px;
-}
-
 /* Variable details styling */
 .variable-details {
     margin: 0;
@@ -444,35 +381,21 @@ select:focus {
     color: var(--vscode-descriptionForeground);
 }
 
-/* Enhanced highlighting for individual attributes */
-/* .attribute-item.highlighted {q
-    background-color: var(--vscode-textBlockQuote-background) !important;
-    border-left: 3px solid var(--vscode-textBlockQuote-border) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    animation: attributePulse 0.5s ease-in-out;
-} */
-
-/* @keyframes attributePulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}  */
-
-/* Responsive design for small screens */
+/* Responsive design for small screens: stack the variable summary fields */
 @media (max-width: 480px) {
-    .variable-item {
+    .variable-summary {
         flex-direction: column;
         align-items: flex-start;
         gap: 1px;
         padding: 4px 8px;
     }
 
-    .variable-item .variable-name,
-    .variable-item .dtype-shape,
-    .variable-item .dims,
-    .variable-item .size {
+    .variable-summary .variable-name,
+    .variable-summary .dtype-shape,
+    .variable-summary .dims,
+    .variable-summary .size {
         flex: none;
-        min-width: auto;
+        max-width: none;
         width: 100%;
         padding: 1px 0;
         text-align: left;
@@ -749,15 +672,6 @@ button:active {
     flex-wrap: wrap;
 }
 
-.plot-progress {
-    margin-top: 10px;
-    padding: 8px;
-    background-color: var(--vscode-input-background);
-    border: 1px solid var(--vscode-input-border);
-    font-size: 14px;
-    color: var(--vscode-foreground);
-}
-
 #degraded-mode-indicator {
     margin-left: 10px;
     background: #ffa500;
@@ -876,89 +790,39 @@ button:active {
     outline-offset: -1px;
 }
 
-.dimension-slices-facets .plot-col-wrap-input {
+.dimension-slices-facets .plot-input {
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+.dimension-slices-facets .plot-input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.dimension-slices-facets .plot-input--narrow {
     width: 4em;
     max-width: 100px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
 }
 
-.dimension-slices-facets .plot-col-wrap-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
+.dimension-slices-facets .plot-input--small {
+    width: 6em;
+    max-width: 140px;
 }
 
-.dimension-slices-facets .plot-aspect-size-input {
+.dimension-slices-facets .plot-input--medium {
     width: 8em;
     max-width: 160px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
 }
 
-.dimension-slices-facets .plot-aspect-size-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .bins-input {
-    width: 6em;
-    max-width: 140px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .bins-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-vmin-vmax-input {
-    width: 6em;
-    max-width: 140px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-vmin-vmax-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-cmap-input {
+.dimension-slices-facets .plot-input--wide {
     width: 12em;
     max-width: 210px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-cmap-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
 }
 
 .dimension-slices-section .plot-control-button {
@@ -1048,4 +912,28 @@ button:active {
 .datetime-text-input:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
+}
+
+/* Replace inline style attributes of the generated markup */
+.troubleshooting-sublist {
+    margin-left: 20px;
+}
+
+.error-help {
+    margin-top: 15px;
+}
+
+.error-help-note {
+    margin-top: 15px;
+    font-style: italic;
+}
+
+.plot-loading {
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+.plot-install-button {
+    margin-bottom: 6px;
 }

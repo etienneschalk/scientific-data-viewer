@@ -29,7 +29,8 @@ repos:
     hooks:
       - id: typescript-check
         name: TypeScript Type Check
-        entry: npx tsc --noEmit --project tsconfig.pre-commit.json
+        # Extension host (tsconfig.pre-commit.json) + webview (src/panel/webview, DOM types)
+        entry: npm run --silent typecheck
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
