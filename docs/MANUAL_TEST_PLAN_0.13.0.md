@@ -2,7 +2,7 @@
 
 A step-by-step checklist to confirm v0.13.0 is ready to ship. You do **not** need to know the file formats: every step says exactly what to click and what you should see.
 
-- **Time needed:** about 1 h 30 for everything (Part A ≈ 20 min, Part B ≈ 1 h 15, Part C ≈ 10 min).
+- **Time needed:** about 1 h 45 for everything (Part A ≈ 20 min, Part B ≈ 1 h 30, Part C ≈ 10 min). Part D is done later, after the merge.
 - **How to use it:** do the steps in order. After each test, tick ✅ or ❌ in the [results sheet](#results-sheet) at the end. If something fails, see [When a test fails](#when-a-test-fails).
 - For the technical background of each feature, see [`RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md).
 
@@ -312,11 +312,16 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 ### B19. The extension's own Python environment updates itself
 
-The extension can manage its own Python installation ("uv environment"). When a new version needs newer packages, it now upgrades that installation by itself, once.
+The extension can manage its own Python installation (the "uv environment"). When a new version needs newer packages, v0.13 upgrades that installation by itself, once, instead of asking the user to do it. (People who chose their own Python must still update it themselves; the extension never touches it.)
 
 1. In your settings JSON, **temporarily remove** the `overridePythonInterpreter` line (from A6) and add:
    `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**.
-2. Wait until the extension has finished setting up (first time: a few minutes; watch **Show Extension Logs** until it says the environment is ready). Open any `.nc` file to check it works.
+2. Wait until the extension has finished setting up. One of two things happens, both are fine:
+   - **No environment yet on this computer:** it is created (a few minutes the first time; **Show Extension Logs** says when it is ready).
+   - **An environment from an older version already exists:** you already see the notification of step 4 below. That is the feature working; note ✅ for step 4 and go on.
+
+   Then open any `.nc` file to check it works.
+
 3. Pretend this environment comes from an older version: in the terminal run
 
    ```bash
@@ -325,13 +330,53 @@ The extension can manage its own Python installation ("uv environment"). When a 
 
 4. **Reload Window**.
 
-✅ A notification says **"Scientific Data Viewer: updating its Python environment for this new version…"**, then **"Python environment updated for this new version."**
+✅ A notification says **"Scientific Data Viewer: updating its Python environment for this new version…"**, then **"Scientific Data Viewer: Python environment updated for this new version."**
 
 5. **Reload Window** once more.
 
-✅ **No** update notification this time, and files open immediately.
+✅ **No** update notification this time, and files open immediately (the logs say `Extension virtual environment is up to date`).
 
-6. Put back your settings from A6 (re-add `overridePythonInterpreter`, remove `useExtensionOwnEnvironment`), save, **Reload Window**.
+**When the update cannot run** (e.g. no internet). We simulate it by hiding the `uv` program for a moment:
+
+6. In the terminal (keep the same terminal open until step 9):
+
+   ```bash
+   rm ~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/sdv-environment.json
+   UV="$(which uv)"; mv "$UV" "$UV.off"; echo "uv hidden: $UV.off"
+   ```
+
+7. **Reload Window**.
+
+✅ A **warning** says the Python environment **could not be updated** and that the previous environment is used for now.
+
+8. Open any `.nc` file.
+
+✅ It still opens normally (the old environment was kept, not deleted).
+
+9. Put `uv` back, in the same terminal:
+
+   ```bash
+   mv "$UV.off" "$UV"; uv --version
+   ```
+
+   ✅ It prints a uv version. Then **Reload Window**.
+
+✅ The update now runs: the **"updating…"** then **"updated"** notifications appear (the retry happens by itself).
+
+10. Put back your settings from A6 (re-add `overridePythonInterpreter`, remove `useExtensionOwnEnvironment`), save, **Reload Window**.
+
+### B20. (Optional, recommended) Real upgrade from v0.12, like a user
+
+This repeats B19 the way users will live it: they have v0.12 with its own environment, and the Marketplace updates them to v0.13.
+
+1. In the Extensions panel, click **Scientific Data Viewer** → the gear ⚙ → **Install Specific Version…** (called **Install Another Version…** in some VS Code versions) → choose **0.12.1** → **Reload**.
+2. In settings: remove `overridePythonInterpreter`, add `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**. Wait until the environment is ready (logs), and open a `.nc` file.
+3. Install the v0.13 package again, exactly as in **A5** (Install from VSIX… → `scientific-data-viewer-0.13.0.vsix` → Reload).
+
+✅ At the first start of v0.13, the **"updating its Python environment for this new version…"** notification appears once, then **"updated"**. Files open; B1 (Healthcheck) shows no "too old" warning.
+
+4. **Reload Window**. ✅ No notification any more.
+5. Put back your settings from A6, save, **Reload Window**.
 
 ---
 
@@ -358,6 +403,34 @@ Also:
 
 ---
 
+## Part D — After the merge (repository side)
+
+These checks are about the GitHub repository, not the extension. GitHub only reads issue forms from the **default branch**, so do them once the merge request is merged (or on a fork whose default branch contains this work).
+
+### D1. Issue forms have no required fields
+
+1. On GitHub, click **Issues → New issue**.
+2. Open each form in turn: **Bug Report**, **Feature Request**, **Question / Discussion**.
+
+✅ Each form's introduction says that **every field is optional**, and no field has a red asterisk (`*`).
+
+3. On a fork (to avoid noise in the real project), submit a Bug Report with **only a title**.
+
+✅ The issue is created.
+
+---
+
+## Cleaning up after testing
+
+- **VS Code:** remove the lines you added to your user settings JSON (at least `overridePythonInterpreter` if you don't want it). Keep or uninstall the VSIX as you like.
+- **Test files:** the extra files from A4 can be deleted:
+
+  ```bash
+  rm -rf sample-data/my_v2_store sample-data/not_zarr.zip sample-data/my_refs.json sample-data/fake.safe
+  ```
+
+---
+
 ## When a test fails
 
 1. Note the test number (e.g. **B12**).
@@ -373,30 +446,33 @@ Tip: the logs contain a line `Full command (copy-paste): …`. Running that line
 
 Copy this table into your notes or the merge request and fill it in.
 
-| Test                                 | Result | Notes |
-| ------------------------------------ | ------ | ----- |
-| A3 Automated checks                  |        |       |
-| A4 Test files created                |        |       |
-| A5 VSIX built and installed (0.13.0) |        |       |
-| B1 Healthcheck                       |        |       |
-| B2 Zarr v3 label                     |        |       |
-| B3 Zarr v2 label                     |        |       |
-| B4 Zarr folder without `.zarr`       |        |       |
-| B5 Zarr in ZIP                       |        |       |
-| B6 Normal ZIP error                  |        |       |
-| B7 Sharded Zarr encoding             |        |       |
-| B8 Encoding setting off/on           |        |       |
-| B9 NetCDF filters                    |        |       |
-| B10 NetCDF engine order              |        |       |
-| B11 Inherited coordinates            |        |       |
-| B12 Kerchunk open + plot             |        |       |
-| B13 Open as Kerchunk                 |        |       |
-| B14 COG label                        |        |       |
-| B15 col_wrap auto / number           |        |       |
-| B16 facetgridFigsize                 |        |       |
-| B17 Empty time range message         |        |       |
-| B18 No `.safe` menu                  |        |       |
-| B19 uv environment auto-update       |        |       |
-| C Old formats, export, outline       |        |       |
+| Test                                      | Result | Notes |
+| ----------------------------------------- | ------ | ----- |
+| A3 Automated checks                       |        |       |
+| A4 Test files created                     |        |       |
+| A5 VSIX built and installed (0.13.0)      |        |       |
+| B1 Healthcheck                            |        |       |
+| B2 Zarr v3 label                          |        |       |
+| B3 Zarr v2 label                          |        |       |
+| B4 Zarr folder without `.zarr`            |        |       |
+| B5 Zarr in ZIP                            |        |       |
+| B6 Normal ZIP error                       |        |       |
+| B7 Sharded Zarr encoding                  |        |       |
+| B8 Encoding setting off/on                |        |       |
+| B9 NetCDF filters                         |        |       |
+| B10 NetCDF engine order                   |        |       |
+| B11 Inherited coordinates                 |        |       |
+| B12 Kerchunk open + plot                  |        |       |
+| B13 Open as Kerchunk                      |        |       |
+| B14 COG label                             |        |       |
+| B15 col_wrap auto / number                |        |       |
+| B16 facetgridFigsize                      |        |       |
+| B17 Empty time range message              |        |       |
+| B18 No `.safe` menu                       |        |       |
+| B19 uv environment auto-update            |        |       |
+| B19 failed update keeps old env, retries  |        |       |
+| B20 Real upgrade 0.12.1 → 0.13 (optional) |        |       |
+| C Old formats, export, outline            |        |       |
+| D1 Issue forms optional (after merge)     |        |       |
 
-**Ready to ship** when every line is ✅. Afterwards you can uninstall the VSIX or keep it.
+**Ready to ship** when every line of Parts A–C is ✅ (B20 is optional but recommended). **D1** is checked right after the merge.
