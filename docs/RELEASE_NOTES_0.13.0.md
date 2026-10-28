@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**.
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules).
 
 **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -10,16 +10,17 @@
 
 v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its minimum **zarr** to **3.x** and added DataTree/plotting improvements the extension now surfaces. The viewer stays **metadata-first** (no Dask clusters, no cloud auth, no write/convert pipelines).
 
-| Area                  | What v0.13 adds                                                                                                                                                  |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (upgraded automatically on update); rejects zarr 2.x as “too old”                                      |
-| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                 |
-| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                               |
-| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                   |
-| **Rasters**           | **COG** label in File Information after rasterio open                                                                                                            |
-| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                                                         |
-| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                         |
-| **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring)) |
+| Area                  | What v0.13 adds                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (upgraded automatically on update); rejects zarr 2.x as “too old”                                              |
+| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                         |
+| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                                       |
+| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                           |
+| **Rasters**           | **COG** label in File Information after rasterio open                                                                                                                    |
+| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                                                                 |
+| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
+| **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
+| **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -55,6 +56,18 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 ### Outline / sidebar
 
 - Kerchunk editor id **`kerchunkEditor`** is included in outline `when` clauses (same as other custom editors).
+
+### Code review changes visible to users
+
+- **Group plot overrides** now apply **field by field**: an empty group field (or a group checkbox left at its default) uses the global value. Before, any non-default group setting made all of the group's checkboxes win.
+- **Numeric attributes** show as numbers / arrays (`-999`, `[0.0, 2.0]`) instead of numpy text (`"[0. 2.]"`).
+- **Time selector** lists only real datetime variables (`datetime64`, cftime); variables such as temperature `t` no longer appear.
+- **Healthcheck** report: the **Logging System** and **Performance** sections are gone (one always passed, the other duplicated Memory).
+- Plotting a **cftime** time axis needs `nc-time-axis` (not in the uv bundle); without it the plot error says so.
+
+### Building from source (contributors)
+
+- `npm run compile` now also bundles the webview (`src/panel/webview/*.ts` → `out/webview/webview.js`, esbuild); `npm run typecheck` checks the extension host and the webview. Run `npm install` first (new devDependency `esbuild`).
 
 ### Python backend location (contributors)
 
@@ -102,6 +115,27 @@ Before any code moved, a **golden snapshot harness** (`python/tools/golden_snaps
 
 - Random data is seeded per generator and creation timestamps are fixed (2025-01-01), so regenerating gives the same data every time (byte-identical except HDF5 / CDF library header timestamps).
 - **`python python/create_sample_data.py --overwrite`** regenerates existing files (by default existing files are kept); files no generator produces are left untouched. **`--disposable`** also creates the deletion-test files.
+
+---
+
+## Code review fixes
+
+### Why
+
+A review of the whole codebase (October 2026, tracked item by item in [`CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) found a security issue, several real bugs hidden by over-engineered plumbing, and a lot of dead code: a message bus whose request/response half was never used, a Redux-like state store with undo history nobody called that broadcast the whole state ~9 times per load, a 4,000-line untyped webview script with every plot parameter duplicated, a 1,184-line healthcheck, and Python plot strategies spread over 8 classes and 2 registries.
+
+### What changed
+
+- **Security**: file-derived names were inserted into the webview HTML unescaped, and the webview could make the extension run any VS Code command. Values are escaped, the page has a Content-Security-Policy, the extension only runs three allowlisted commands, and plot file names from the webview cannot leave the data folder.
+- **Extension host**: subprocesses never use a shell (`runProcess`), which fixes uv receiving no version pins and stray `=2026.4.0` files; Python initialisation is single-flight and environment operations are serialised; "Install packages" works in the extension's uv environment; messages about uv / override interpreters are accurate; `ErrorBoundary` no longer catches other extensions' errors.
+- **Panel**: `MessageBus` reduced to `handle` / `emit` with typed `Requests` / `Events` maps; `StateManager` removed; one message per load; plot options as one object; `DataProcessor` no longer a singleton; Kerchunk URI kept; Windows-safe paths; saves no longer time out waiting for the notification.
+- **Webview**: TypeScript modules bundled by esbuild; one plot-parameter table for global and group controls; several display bugs fixed.
+- **Python backend**: always prints JSON (corrupt files, `inf` attributes); numpy values serialised as numbers; time filter, time ranges and cftime fixed; aspect only equal for spatial 2D plots; strategies replaced by `plotting/draw.py`.
+
+### How behaviour was preserved
+
+- Golden snapshots recorded before the Python changes: 27 info cases changed, all intended (numbers instead of strings, no false datetime variables, error JSON for corrupt files, no `h5py` engine); 0 plot PNG diffs. The non-regression plot gallery is byte-identical.
+- New tests: webview bundle in jsdom (escaping, CSP, plot payloads, time controls, export), UIController through the real channel, `runProcess`, healthcheck, CLI arguments; Python tests from 112 to 159.
 
 ---
 
@@ -385,13 +419,60 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 4. Reload again → **no** notification; the logs show `Extension virtual environment is up to date` (no `uv venv --clear`, no package install).
 5. _(Optional, offline)_ delete the file again, disconnect the network, reload → warning that the update failed; files still open with the previous environment. Reconnect, reload → the update runs.
 
+### 16. Code review: security (escaping, CSP, commands)
+
+**Expect:** names from files are shown as text; nothing is executed.
+
+**Test:**
+
+1. In Python, create a file whose variable name contains HTML:
+   ```python
+   import xarray as xr
+   xr.Dataset({'<img src=x onerror=alert(1)>': ('x', [1, 2])}).to_netcdf('xss.nc')
+   ```
+2. Open `xss.nc` → the variable list shows the literal text `<img src=x onerror=alert(1)>`; no broken image, no alert.
+3. **Developer: Open Webview Developer Tools** → Console: no CSP violation errors during normal use (loading, plotting, collapsing sections, error page links).
+4. On the error page (open an unsupported file, e.g. a `.txt` renamed to `.nc` with garbage content), click **🎮 Extension Settings**, **🎮 Check VSCode Output panel**, **🎮 Install xarray** → each still works.
+
+### 17. Code review: uv environment and interpreters
+
+**Test:**
+
+1. With `useExtensionOwnEnvironment` on, **Manage Extension Virtual Environment → Update Packages** → the log shows `uv pip install … xarray>=2026.4.0 … zarr>=3` (pins quoted in the log) and **no** files named `=2026.4.0` / `=3` appear in the opened workspace folder.
+2. From the error page, click **🎮 Install matplotlib** with the extension environment active → installs with uv (no "pip is not available").
+3. Set `overridePythonInterpreter`, then enable `useExtensionOwnEnvironment` → the message says the override takes precedence (not "uv is not installed").
+4. With **no folder open**, create the environment from **Manage Extension Virtual Environment** → success message, no "Failed to create" error.
+
+### 18. Code review: panel and plots
+
+**Test:**
+
+1. Right-click a Kerchunk reference saved as plain `refs.json` → **Open as Kerchunk / virtual Zarr** → File Information shows the Kerchunk engine (not a JSON error); opening it normally as well gives a second tab.
+2. Set `maxFileSize` to `1` and open a file > 1 MB → message says `Maximum allowed: 1MB`. Reset the setting.
+3. Create a plot, click **Save** and ignore the "Plot saved" notification for > 60 s → no "Request timeout" error; **Save All Plots** saves every plot.
+4. _(Windows)_ Save a plot → the file lands in `sdv-plots/` next to the data file; **Save As** proposes that folder.
+5. Select a global time variable, then plot a variable without a time dimension → the plot is created (warning in the logs) instead of `KeyError`.
+6. In a group, set only **cmap** in the Group Plot Controls → the group plot uses that cmap and the **global** checkbox values (e.g. robust).
+7. Plot a 2D `(time, station)` variable → not squeezed into a sliver.
+8. Outline (Explorer → Data Structure): click a group attribute → the viewer scrolls to it. Close the viewer → the outline is cleared.
+
+### 19. Code review: backend errors and attributes
+
+**Test:**
+
+1. Open a corrupt `.nc` (e.g. `echo garbage > bad.nc`) → error page with an error type and suggestion (not the generic "file might be corrupted").
+2. Open a file with a `valid_max = inf` attribute → opens; the attribute shows `inf`.
+3. Attributes such as `_FillValue` / `valid_range` show numbers / arrays (`-999`, `[0.0, 2.0]`).
+4. GRIB sample with temperature `t` → `t` is **not** offered in the time selector.
+
 ---
 
 ## Known limitations (unchanged or noted)
 
 - **Plotting** remains **experimental** (timeout, auto strategy only).
 - **`fileSize`** for directory stores is still `os.path.getsize` on the directory inode (rough size, not store bytes).
-- **Unsupported paths** may still show “Missing dependencies for Unknown files:” with an empty package list (pre-existing).
+- **cftime axes** need `nc-time-axis` to be plotted (not in the uv bundle).
+- **`joinId`** maps every non-alphanumeric character to `-`, so groups like `/a.b` and `/a-b` share element ids (rare; pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
@@ -400,14 +481,15 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                                                                                        |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                     |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                      |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment upgraded automatically when a version requires it (no rebuild at every start)                                                                                         |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                              |
-| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                 |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests |
+| Area          | Change                                                                                                                                                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                              |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                               |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment upgraded automatically when a version requires it (no rebuild at every start)                                                                                                                                                                  |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                          |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md) |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                          |
 
 ---
 

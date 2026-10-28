@@ -14,7 +14,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `python/get_data_info.py`, `python/test_package_requirements.py`
 - **Zarr stores without `.zarr` suffix (P0.2)**: Detect v2/v3 stores via `zarr.json`, `.zgroup`, `.zarray`, `.zmetadata` regardless of directory name. **`resolve_store_path`** opens the parent store when a metadata file is clicked. Explorer **Open (Folder)** remains on all folders (Zarr cannot be sniffed in `when` clauses).
   - **Files**: `python/get_data_info.py`, `package.json`, `python/test_zarr_store_detection.py`
-- **Zarr v3 encoding in attribute tables (P0.4)**: When **`showXarrayEncodingAttributes`** is on, Zarr v3 **codecs**, **shards**, and related encoding appear as `__xarray_encoding.*`. Format label distinguishes **Zarr v2** vs **Zarr v3** (and **(ZIP)** when applicable). Codec dataclasses serialized via `_describe_codec()` at collection time (not in `ComplexEncoder`, which is bypassed by `default=str`).
+- **Zarr v3 encoding in attribute tables (P0.4)**: When **`showXarrayEncodingAttributes`** is on, Zarr v3 **codecs**, **shards**, and related encoding appear as `__xarray_encoding.*`. Format label distinguishes **Zarr v2** vs **Zarr v3** (and **(ZIP)** when applicable). Codec dataclasses serialized via `_describe_codec()` at collection time (`asdict()` would otherwise turn them into bare config dicts before encoding).
   - **Files**: `python/get_data_info.py`, `python/test_zarr_store_detection.py`
 - **Zarr ZipStore (P0.3)**: Open `.zip` archives whose contents include a Zarr store (root or nested prefix) via `zarr.storage.ZipStore`. Non-Zarr ZIP → clear **ValueError**, not a missing-package error. Prefix detection uses `removeprefix("./")` (not `lstrip`, which broke `.zgroup`).
   - **Files**: `python/get_data_info.py`, `package.json`, `python/test_zarr_store_detection.py`
@@ -62,11 +62,42 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `.github/ISSUE_TEMPLATE/bug_report.yml`, `.github/ISSUE_TEMPLATE/feature_request.yml`, `.github/ISSUE_TEMPLATE/question.yml`
 - **VSIX contents**: nested `__pycache__`, `python/tests/`, `python/tools/`, `python/.golden/` and pytest caches are excluded.
   - **Files**: `.vscodeignore`
+- **Webview channel simplified (code review)**: `MessageBus` is now a ~100-line host-side channel (`handle(command, fn)` for webview requests, `emit(event, payload)` for events) typed by one `Requests` and one `Events` map in `MessageTypes.ts`. The unused host→webview request path, event listeners, convenience methods, 17 unused payload interfaces and the `getDataInfo` / `getCurrentFilePath` / `updateHeaders` handlers are gone, as are the `uiStateChanged` / `pythonEnvironmentChanged` events. The Redux-like `StateManager` (undo history, validation, 7 never-dispatched actions) is replaced by three fields on `UIController`; a file load now posts one `dataLoaded` message instead of ~9 full-state broadcasts (each carrying the HTML representations). Load errors take one path (ErrorBoundary → `error` event) and keep the backend's suggestion and error type.
+  - **Files**: `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/panel/UIController.ts`, `src/panel/state/AppState.ts` (deleted), `src/DataViewerPanel.ts`
+  - **Tests**: `test/suite/communication/MessageBus.test.ts`, `test/suite/ui/UIController.test.ts` (rewritten to drive the controller through the channel); `test/suite/state/AppState.test.ts` and 10 placeholder `assert.ok(true)` tests in `dataViewerPanel.test.ts` removed
+- **Plot options passed as one object**: the 24 positional plot parameters (webview → `UIController` → `DataProcessor`) are one `PlotOptions` object; CLI arguments are built by `buildCreatePlotCliArgs` (mirrors `buildGetDataInfoCliArgs`). `DataProcessor` is no longer a singleton: `extension.ts` creates it and hands it to `DataViewerPanel` / `UIController`. `getDataInfo` now rejects on subprocess failure (with the real message) instead of returning `null`, and has a 5-minute timeout.
+  - **Files**: `src/types.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/DataViewerPanel.ts`, `src/extension.ts`
+  - **Tests**: `test/suite/dataProcessor.test.ts` (`buildCreatePlotCliArgs`), `test/suite/integration.test.ts`, `test/suite/datetimeEdgeCases.test.ts`
+- **Webview rewritten as TypeScript modules**: the 4,000-line `webview-script.js` is split into `src/panel/webview/` (`main`, `bus`, `state`, `util`, `plotParams`, `timeControls`, `plotActions`, `export`, `errors`, `render/*`) with its own `tsconfig.json` (DOM, strict), bundled by **esbuild** into `out/webview/webview.js` (`npm run compile` / `watch`; new `npm run typecheck`). One `PLOT_PARAMETERS` table drives render / read / reset / merge for both global and group plot controls (~600 duplicated lines removed); one `resolvePlotOptions` serves single and "Plot All"; the `globalTimeControlsState` DOM mirror is gone. The supported-extensions list in error pages is generated from `package.json` (now includes Kerchunk). `CSSGenerator` / `JavaScriptGenerator` merged into `WebviewAssets`. `joinId` shared with the outline through `src/shared/ids.ts`.
+  - **Files**: `src/panel/webview/**`, `scripts/build-webview.mjs`, `src/panel/WebviewAssets.ts`, `src/panel/HTMLGenerator.ts`, `src/shared/ids.ts`, `src/outline/HeaderExtractor.ts`, `package.json` (esbuild devDependency), `tsconfig.json`, `tsconfig.pre-commit.json`, `.pre-commit-config.yaml`, `.vscodeignore`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts` (real bundle in jsdom), `test/suite/ui/WebviewAssets.test.ts`, `test/suite/ui/webviewExport.test.ts`
+- **Group plot overrides apply field by field**: an empty group field or a group checkbox left at its default now falls back to the global value; previously any non-default group setting made all group checkboxes win. Group dimension slices still replace the global ones when set.
+  - **Files**: `src/panel/webview/plotParams.ts`, `src/panel/webview/plotActions.ts`
+- **Subprocesses without a shell**: every `uv` / Python spawn goes through `src/common/runProcess.ts` (no shell, timeout and abort with SIGTERM → SIGKILL), replacing ~9 copy-pasted wrappers; `quoteIfNeeded` is gone.
+  - **Files**: `src/common/runProcess.ts`, `src/python/PythonManager.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`
+  - **Tests**: `test/suite/common/runProcess.test.ts`
+- **Healthcheck simplified** (1,184 → ~700 lines, plain functions instead of a singleton): one Python package check feeds both Dependencies and Supported Formats; package lists derive from `ALL_REQUIREMENTS`; uv detection reuses the environment manager. The always-passing **Logging System** section and the duplicate **Performance** section are removed.
+  - **Files**: `src/common/HealthcheckManager.ts`, `src/extension.ts`
+  - **Tests**: `test/suite/common/HealthcheckManager.test.ts`
+- **Python plot drawing as plain functions**: the strategy classes, registries and dispatcher (`plotting/strategies/`, `dispatcher.py`, ~580 lines) are replaced by `plotting/draw.py`; identical `*_imshow_merged_kw` helpers collapsed into `imshow_kwargs()`; engine tables in `opening.py` / `engines.py` simplified; ZIP member listing cached (one open per run instead of three). Plot PNGs are byte-identical (non-regression gallery).
+  - **Files**: `python/sdv_backend/plotting/draw.py`, `python/sdv_backend/plotting/kwargs.py`, `python/sdv_backend/plotting/api.py`, `python/sdv_backend/opening.py`, `python/sdv_backend/environment/engines.py`, `python/sdv_backend/formats/zarr.py`
+  - **Tests**: `python/tests/test_plot_drawing.py`, `python/tests/test_opening.py`
+- **Numeric attributes are JSON numbers**: numpy scalars and arrays in attributes (e.g. `_FillValue`, `valid_range`, `flag_values`) are now sent as numbers / arrays instead of strings such as `"[0. 2.]"`; `inf` / `nan` stay text.
+  - **Files**: `python/sdv_backend/serialization.py`
+  - **Tests**: `python/tests/test_serialization.py`
+- **Datetime variables detected by dtype only**: the time selector lists `datetime64` and cftime variables; the name heuristic (`t`, `time`, `date`… with any `units`) is gone, so e.g. ERA5/GRIB temperature `t` (K) no longer appears with nonsense ranges.
+  - **Files**: `python/sdv_backend/info/variables.py`, `python/sdv_backend/info/extract.py`
+  - **Tests**: `python/tests/test_datetime_edge_cases.py`
+- **Developer docs**: `docs/TECHNICAL_ARCHITECTURE.md` rewritten to describe the actual architecture (it described components that never existed); `docs/DEVELOPMENT.md`, `CLAUDE.md` updated; code review tracking list in `docs/CODE_REVIEW_TODO.md`.
+- **Dependencies**: unused runtime dependency `axios` removed; `jsdom` (tests only) moved to `devDependencies`; build scripts excluded from the VSIX.
+  - **Files**: `package.json`, `package-lock.json`, `.vscodeignore`
 
 ### Removed
 
 - **Stale Sentinel-1 SAFE support claims (Phase 0)**: **`.safe`** removed from explorer context menu filters, `package.json` keywords, Python **`SupportedExtensionType`**, sample generator hooks, and webview comments. Historical CHANGELOG entries for v0.5 SAFE removal are unchanged.
   - **Files**: `package.json`, `python/get_data_info.py`, `python/create_sample_data.py`, `test/suite/extension.test.ts`
+- **Dead code found in the code review**: `isPlotOperationActive`, `getActiveOperations`, `ATTEMPT_CREATING_EXTENSION_OWN_UV_ENVIRONMENT`, duplicate `DataInfoResult` / `DataInfoError` declarations and fields Python never sends (`format`, `format_info.is_supported`), unused `package-types.ts` types, `HeaderExtractor.extractHeaders` (needed `DOMParser`, absent in the extension host), `ErrorBoundary.wrapSync` / `getErrorCount` / `clearErrorHistory`, `PerformanceTimer.getMarks`, non-existent Python-extension API fallbacks, unreachable UI cases; webview dead handlers and listeners; unused CSS (`.variable-item`, `.dimension-item`, `.variable-row`, `.plot-progress`); Python pre-DataTree branches, `ComplexEncoder` dead branches, unreachable colormap branches, duplicate `XR_OPTIONS`. `h5py` is no longer listed as an xarray engine (it is not one).
+  - **Files**: see `docs/CODE_REVIEW_TODO.md` items D1–D9
 
 ### Fixed
 
@@ -85,12 +116,70 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Sample generation aborted at `sample_data.geotiff`**: GDAL cannot infer a driver from the `.geotiff` extension, and the abort skipped every later generator (all v0.13 fixtures). The file is written with `driver="GTiff"`.
   - **Files**: `python/sample_data/geotiff.py`
 
+- **uv received no version pins (shell redirection)**: `uv pip install` was spawned with `shell: true` and unquoted requirements, so the shell read `xarray>=2026.4.0` as a redirection: uv got `pip install xarray zarr …` and files named `=2026.4.0`, `=3`, `=1.8` were created in the working directory.
+  - **Files**: `src/common/runProcess.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`
+  - **Tests**: `test/suite/common/runProcess.test.ts`, `test/suite/python/extensionEnvironmentUpdate.test.ts`
+- **"Open as Kerchunk / virtual Zarr" opened the file as plain JSON**: the `openAs=kerchunk` query was dropped when the panel rebuilt the URI from its path, so `--open-as-kerchunk` was never passed; the panel de-duplication also re-focused the plain view. The panel now keeps the URI, and a Kerchunk view is distinct from the plain one.
+  - **Files**: `src/DataViewerPanel.ts`, `src/panel/UIController.ts`
+  - **Tests**: `test/suite/ui/UIController.test.ts`, `test/suite/dataViewerPanel.test.ts`
+- **Other extensions' crashes reported as ours**: `ErrorBoundary` hooked `process.on('uncaughtException')` in the shared extension host, so errors of other extensions popped up as "Scientific Data Viewer Error" and counted in the healthcheck. Removed. Panel error handlers are also unregistered when a panel closes (they kept closed panels in memory).
+  - **Files**: `src/common/ErrorBoundary.ts`, `src/panel/UIController.ts`
+  - **Tests**: `test/suite/error/ErrorBoundary.test.ts`, `test/suite/ui/UIController.test.ts`
+- **"File too large" message** printed the limit in bytes with an `MB` suffix (e.g. "Maximum allowed: 524288000MB").
+  - **Files**: `src/panel/UIController.ts`
+- **Saving / exporting on Windows**: plot save, Save As and webview export split paths on `/`, so on Windows plots were written at the drive root and default names were wrong; Save As defaulted to `/sdv-plots/…` (filesystem root) on every OS. Paths now use `path` and default next to the data file.
+  - **Files**: `src/panel/UIController.ts`, `src/panel/webview/plotActions.ts`
+- **False "Request timeout" after saving a plot**: Save / Save As waited for the "Plot saved" notification to be dismissed, so after 60 s the webview reported a failure although the file was written, and **Save All Plots** stopped at the first one.
+  - **Files**: `src/panel/UIController.ts`
+- **Concurrent Python (re)initialisation**: refreshes overlapping during startup could run two initialisations, two `uv pip install` or `uv venv --clear` at once, and leave `ready` reflecting a half-validated state. Initialisation is single-flight (a request during a run queues one more run); environment create / upgrade / delete are serialised; the `onDidEnvironmentsChanged` listener (wrong event name, never fired) is removed.
+  - **Files**: `src/python/PythonManager.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/officialPythonExtensionApiUtils.ts`
+  - **Tests**: `test/suite/pythonManager.test.ts`
+- **"Install packages" failed in the extension's uv environment** (no pip in uv venvs): it now uses `uv pip install --python <env>` there, and falls back to uv when another interpreter has no pip.
+  - **Files**: `src/python/PythonManager.ts`
+- **Misleading environment messages**: enabling `useExtensionOwnEnvironment` showed "uv is not installed" whenever the environment was not used, including when `overridePythonInterpreter` takes precedence or the install failed for another reason. The Manage UI wrote the setting at Workspace level (failing with no folder open and then reporting a successful creation as failed).
+  - **Files**: `src/extension.ts`, `src/common/config.ts`, `src/python/ExtensionVirtualEnvironmentManagerUI.ts`
+- **Stale interpreter state**: when no interpreter is found, the previous path and source were kept (status bar could say "ready"); a failed upgrade marked an unusable environment as initialised. Package checks have a 60 s timeout; a backend printing non-JSON output is now an error instead of a raw string.
+  - **Files**: `src/python/PythonManager.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`
+- **Outline**: links to group attributes did nothing in the default nested attributes view (id mismatch with the webview); the outline stayed visible after closing its panel; `reveal()` rejections were unhandled; the tree view was never disposed. The healthcheck report no longer opens twice.
+  - **Files**: `src/outline/HeaderExtractor.ts`, `src/outline/OutlineProvider.ts`, `src/extension.ts`, `src/common/HealthcheckManager.ts`
+  - **Tests**: `test/suite/outline/HeaderExtractor.test.ts`, `test/suite/outline/OutlineProvider.test.ts`
+- **Webview bugs**: a file without groups crashed the display (undefined `contentContainer`); group time-range text inputs were ignored and the group datetime select did not prefill its range; after Refresh a stale datetime variable stayed applied; HTML strings appeared as literal text in empty sections; timed-out plot requests stayed in the pending map.
+  - **Files**: `src/panel/webview/**`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts`
+- **Backend printed no JSON for corrupt or missing files**: only `ImportError` was caught while opening; any other exception ended in a traceback with empty stdout, shown as a generic "file might be corrupted". Errors are now returned with type and suggestion, and `cli.main` has a last-resort JSON error.
+  - **Files**: `python/sdv_backend/info/extract.py`, `python/sdv_backend/cli.py`
+  - **Tests**: `python/tests/test_cli_errors.py`
+- **A single `inf` attribute made a file unopenable** (`Out of range float values are not JSON compliant`); NaN inside tuples crashed too.
+  - **Files**: `python/sdv_backend/serialization.py`
+  - **Tests**: `python/tests/test_serialization.py`
+- **Time filter broke plots of variables without that dimension**: with a global datetime variable selected, plotting e.g. a static `mask(lat)` or a 0-d variable failed with `KeyError`. The filter is applied only to variables sharing the time dimension (with a warning otherwise). A root datetime variable is also found when plotting group variables.
+  - **Files**: `python/sdv_backend/plotting/selection.py`
+  - **Tests**: `python/tests/test_datetime_filtering.py`
+- **Time ranges**: one missing value made min/max `NaT`; cftime calendars (`noleap`, `360_day`…) are now detected and get ISO min/max, and plot filtering works in their calendar.
+  - **Files**: `python/sdv_backend/info/extract.py`, `python/sdv_backend/info/variables.py`, `python/sdv_backend/plotting/selection.py`
+  - **Tests**: `python/tests/test_datetime_edge_cases.py`, `python/tests/test_datetime_filtering.py`
+- **Every 2D plot drawn with equal aspect**: `set_aspect("equal")` was applied even to `(time, station)` arrays, rendering them as slivers; it is now only used when both dimensions are spatial.
+  - **Files**: `python/sdv_backend/plotting/draw.py`
+  - **Tests**: `python/tests/test_plot_drawing.py`
+- **scipy-opened NetCDF3 files** fell into a broken fallback (scipy has no `open_datatree`); unknown extensions reported "Missing dependencies for Unknown files" instead of "Unsupported file format".
+  - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/environment/engines.py`, `python/sdv_backend/info/extract.py`
+  - **Tests**: `python/tests/test_opening.py`, `python/tests/test_cli_errors.py`
+
+### Security
+
+- **HTML injection from file metadata**: variable, coordinate, dimension and group names, dims strings and error messages were inserted into the webview with `innerHTML` unescaped, and the webview could ask the extension to run **any** VS Code command with any arguments (`executeCommand`) — a crafted NetCDF/Zarr variable name could run commands when the file was opened. All file-derived values are now escaped (xarray's own HTML repr excepted), names are no longer used in CSS selectors, the page has a **Content-Security-Policy** (no inline scripts or `onclick` handlers), the host only runs the three commands the webview needs, and plot file names from the webview must be relative paths without `..`.
+  - **Files**: `src/panel/webview/**`, `src/panel/HTMLGenerator.ts`, `src/panel/UIController.ts`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts`, `test/suite/ui/webviewExport.test.ts`, `test/suite/ui/UIController.test.ts`
+
 ### Upgrade / breaking notes
 
 - **Requires zarr-python ≥ 3** when using **xarray ≥ 2026.4.0**. Users on **zarr 2.x** must upgrade (`pip install "zarr>=3"`) or pin an older xarray — the extension surfaces **`zarr>=3`** in missing-package messages.
 - **Extension uv environment** (`useExtensionOwnEnvironment`) is **upgraded automatically** once at the first start of v0.13 (new pins: xarray, zarr, h5netcdf). Users of the Python extension's interpreter or `overridePythonInterpreter` must upgrade those packages themselves.
 - **Kerchunk** is opt-in (`pip install kerchunk`); ordinary JSON editors are unaffected.
 - **Python imports**: code importing from `get_data_info` must use the `sdv_backend` modules; `create_plot` / `get_file_info` take `PlotOptions` / `InfoOptions`. The CLI (`python/get_data_info.py info|plot ...`) and its JSON output are unchanged.
+- **Webview protocol**: requests `getDataInfo`, `getCurrentFilePath`, `updateHeaders` and events `uiStateChanged`, `pythonEnvironmentChanged` are removed; `executeCommand` only accepts the extension's show-logs / show-settings / install-packages commands. Only matters for code that drove the webview directly.
+- **JSON output**: numeric attributes are numbers / arrays instead of strings; `datetime_variables` only lists real datetime variables; `h5py` no longer appears in `available_engines`.
+- **Building from source** requires `npm run compile` (now also bundles the webview with esbuild); the webview source is `src/panel/webview/*.ts`.
 - **No** webview message contract breaks for existing plot flows; new CLI flags (`--netcdf-engine-order`, `--open-as-kerchunk`, `--facetgrid-figsize`, etc.) are additive.
 
 ### Not shipped (see `docs/v0.13/OUT_OF_SCOPE.md`)

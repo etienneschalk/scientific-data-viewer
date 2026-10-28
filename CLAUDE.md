@@ -6,8 +6,9 @@ VSCode extension (`eschalk0.scientific-data-viewer`) for inspecting scientific d
 
 ```bash
 npm install                 # deps (Node >= 22)
-npm run compile             # tsc -> out/  (entry: out/src/extension.js)
-npm run watch               # incremental compile
+npm run compile             # esbuild webview bundle (out/webview/webview.js) + tsc -> out/ (entry: out/src/extension.js)
+npm run watch               # incremental webview bundle + tsc
+npm run typecheck           # tsc --noEmit for the extension host and the webview
 npm run lint                # eslint --fix on src/
 npm test                    # VSCode integration tests (mocha via @vscode/test-electron, out/test/runTest.js); needs a display (CI uses Xvfb)
 npm run package             # build .vsix with vsce
@@ -22,11 +23,12 @@ python scripts/generate_readme.py     # regenerate README.md
 
 - `src/extension.ts` — activation, command registration.
 - `src/ScientificDataEditorProvider.ts` — custom editor for supported file types; `src/DataViewerPanel.ts` — webview panel lifecycle.
-- `src/panel/` — webview UI: `HTMLGenerator`, `CSSGenerator`, `JavaScriptGenerator` build the page as strings; `UIController` orchestrates; `communication/MessageBus` + `MessageTypes` define extension<->webview messages; `state/AppState`.
-- `src/python/` — `PythonManager` (interpreter selection via the official Python extension API, subprocess execution/abort), `ExtensionVirtualEnvironmentManager` (extension-owned uv/venv; reused across sessions, upgraded when `ENVIRONMENT_REVISION` increases), `DataProcessor` (singleton calling scripts in `python/`).
+- `src/panel/` — `UIController` (per-panel logic, answers webview requests); `communication/MessageTypes` (protocol: `Requests` / `Events` maps) + `MessageBus` (host side: `handle` / `emit`); `HTMLGenerator` (page skeleton with CSP), `WebviewAssets`, `ThemeManager`.
+- `src/panel/webview/` — webview front-end in TypeScript (own `tsconfig.json`, DOM types), bundled by `scripts/build-webview.mjs` (esbuild) into `out/webview/webview.js`; `plotParams.ts` is the single table of plot controls. `src/shared/ids.ts` (`joinId`) is shared with the outline.
+- `src/python/` — `PythonManager` (interpreter selection via the official Python extension API, subprocess execution/abort), `ExtensionVirtualEnvironmentManager` (extension-owned uv/venv; reused across sessions, upgraded when `ENVIRONMENT_REVISION` increases), `DataProcessor` (builds CLI args and runs the scripts in `python/`; created in `extension.ts` and passed to `DataViewerPanel`).
 - `src/outline/` — document outline (headers) for the viewer.
-- `src/common/` — config access, Logger, ErrorBoundary, PerformanceTimer, Healthcheck.
-- `python/sdv_backend/` — the Python backend package: `cli` (argparse → `InfoOptions`/`PlotOptions`), `results` (JSON contract), `environment/` (packages, engines), `formats/` (detection), `opening` (`OpenedData`, decode_cf fallback), `info/` (`get_file_info`), `plotting/` (`create_plot`: selection, strategies, render). Dependencies flow `cli → info/plotting → opening → formats → environment`.
+- `src/common/` — config access, Logger, ErrorBoundary, `runProcess` (spawn without a shell — never use `shell: true`), PerformanceTimer, Healthcheck.
+- `python/sdv_backend/` — the Python backend package: `cli` (argparse → `InfoOptions`/`PlotOptions`), `results` (JSON contract), `environment/` (packages, engines), `formats/` (detection), `opening` (`OpenedData`, decode_cf fallback), `info/` (`get_file_info`), `plotting/` (`create_plot`: selection, `draw`, render). Dependencies flow `cli → info/plotting → opening → formats → environment`.
 - `python/get_data_info.py` — thin entry point the extension spawns (= `python -m sdv_backend`); prints one JSON line consumed by `DataProcessor`.
 - `python/tests/` — pytest tests for the Python backend.
 - `test/suite/` — TS mocha tests mirroring `src/` layout.

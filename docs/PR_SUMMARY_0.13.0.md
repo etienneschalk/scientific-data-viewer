@@ -2,7 +2,7 @@
 
 ## Summary
 
-Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots).
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules).
 
 **Version:** `0.13.0` in `package.json` / `package-lock.json`
 
@@ -70,6 +70,20 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Fix           | Env was rebuilt (`uv venv --clear` + full reinstall) at every start                                                    |
 | Scope         | Python-extension / override interpreters untouched (user's responsibility)                                             |
 
+### Phase 7 — Code review fixes
+
+| Area           | Work                                                                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security       | Escape all file-derived values in the webview; CSP (no inline scripts / handlers); `executeCommand` allowlist (3 commands); plot file names validated (relative, no `..`)                      |
+| Extension host | `runProcess` (no shell) fixes uv version pins; single-flight init + serialised env operations; uv-based package install; accurate uv / override messages; Global config target                 |
+| Error handling | No `uncaughtException` hook in the shared host; per-panel handlers unregistered on dispose; backend errors keep suggestion / type                                                              |
+| Panel          | `MessageBus` → `handle` / `emit` with typed `Requests` / `Events`; `StateManager` removed (1 message per load instead of ~9); `PlotOptions` object end to end; `DataProcessor` not a singleton |
+| Bugs           | Kerchunk URI kept; "File too large" MB; Windows paths; save no longer awaits the notification; outline ids in nested view; outline cleared on close                                            |
+| Webview        | `webview-script.js` (4,000 lines) → `src/panel/webview/*.ts` bundled by esbuild; one plot-parameter table; display bugs (no groups, group time inputs, stale time variable after Refresh)      |
+| Healthcheck    | 1,184 → ~700 lines, plain functions, one package check                                                                                                                                         |
+| Python backend | Always JSON (corrupt files, `inf`); numpy values as numbers; time filter / NaT / cftime; equal aspect only for spatial plots; no `h5py` engine; strategies → `plotting/draw.py`                |
+| Dead code      | Unused types, helpers, handlers, CSS, Python branches; `axios` dependency; `jsdom` → devDependencies                                                                                           |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -102,7 +116,10 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.** Users on zarr 2.x see `zarr>=3` in missing-package messages.
 - **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 1); Python-extension / override interpreters must be upgraded by the user.
 - **Kerchunk** is opt-in (`pip install kerchunk`); not in default uv bundle.
-- No webview message contract breaks; new Python CLI flags are additive.
+- Webview protocol: `getDataInfo` / `getCurrentFilePath` / `updateHeaders` requests and `uiStateChanged` / `pythonEnvironmentChanged` events removed; `executeCommand` allowlisted. New Python CLI flags are additive.
+- JSON output: numeric attributes are numbers / arrays; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
+- Group plot overrides apply field by field (empty group field → global value).
+- `npm run compile` also bundles the webview (esbuild); run `npm install` first.
 
 ---
 
@@ -112,7 +129,8 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`   |
 | Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json` |
-| Webview   | `src/panel/webview/webview-script.js` (col_wrap auto)                                                                                                                        |
+| Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts`              |
+| Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`        |
 | Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                   |
 
 ---
@@ -125,8 +143,12 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 source .venv/bin/activate   # or extension interpreter
 python -m pytest python/tests -q
 python python/tools/golden_snapshots.py check   # after `record` on a known-good commit
-npm run compile && npm test
+npm run compile && npm test       # 284 passing (VS Code integration + webview bundle in jsdom)
+npm run typecheck                 # extension host + webview
+pre-commit run --all-files
 ```
+
+Results at the end of the code review pass: `npm test` 284 passing / 0 failing; `pytest python/tests` 159 passing (was 112); golden snapshots 83 cases, 0 failing (re-recorded after reviewing the 27 intended info diffs); non-regression plot gallery byte-identical.
 
 **Sample data** (written under `sample-data/`):
 
@@ -134,7 +156,7 @@ npm run compile && npm test
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§13.
+**Manual:** Follow [`docs/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§19 (§16–§19: code review fixes).
 
 ---
 
@@ -151,6 +173,8 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] Version `0.13.0` in `package.json`
 - [x] `docs/DEVELOPMENT.md` — backend package layout, sample data commands
 - [x] `CLAUDE.md` — commands and architecture for AI-assisted development
+- [x] `docs/TECHNICAL_ARCHITECTURE.md` — rewritten for the actual architecture (code review)
+- [x] `docs/CODE_REVIEW_TODO.md` — code review items, all checked
 
 ---
 
@@ -188,3 +212,12 @@ Backend restructuring (branch `eschalk/backend-package`):
 27. `f0a8ff7` — test: cover v0.13 sample formats in the golden snapshot harness
 28. `111d674` — feat(sample-data): add --overwrite and --disposable flags
 29. `c4bb9c5` — docs: add CLAUDE.md with project commands and architecture
+30. `99102d9` — docs: document the backend restructuring in the v0.13.0 release docs
+31. `02b2917` — fix: resolve relative Kerchunk reference paths from the reference folder
+32. `dfda52d` — docs: add a step-by-step manual test plan for v0.13.0
+33. `0d29f49` — chore: make all GitHub issue template fields optional
+34. `5f06197` — feat: update the extension's uv environment automatically on new versions
+35. `bbf2623` — docs: update the v0.13.0 manual test plan
+36. `753c93e` — chore: say all fields are optional in the question issue form intro
+
+Code review pass: not yet committed (see `docs/CODE_REVIEW_TODO.md` for the item list).

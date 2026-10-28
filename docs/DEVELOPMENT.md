@@ -86,15 +86,15 @@ python python/get_data_info.py info sample-data/sample_data.nc
 python python/get_data_info.py plot sample-data/sample_data.nc /temperature --style default
 ```
 
-| Module                           | Responsibility                                                                                 |
-| -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope               |
-| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                    |
-| `environment/`                   | Installed packages, xarray engine selection per extension                                      |
-| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                    |
-| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)               |
-| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges            |
-| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, plot strategies, PNG rendering |
+| Module                           | Responsibility                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope                   |
+| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                        |
+| `environment/`                   | Installed packages, xarray engine selection per extension                                          |
+| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                        |
+| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)                   |
+| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                |
+| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, drawing (`draw.py`), PNG rendering |
 
 Dependencies point one way: `cli → info / plotting → opening → formats → environment`.
 
@@ -113,11 +113,14 @@ Disclaimer: most visualization scripts are experimental and can produce unusable
 ### 🏗️ Building
 
 ```bash
-# Compile TypeScript
+# Compile TypeScript and bundle the webview (out/webview/webview.js)
 npm run compile
 
-# Watch for changes
+# Watch for changes (webview bundle + extension host)
 npm run watch
+
+# Typecheck extension host and webview without emitting
+npm run typecheck
 
 # Run tests
 npm test
@@ -201,10 +204,10 @@ pip install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf
 ### 2. Build the Extension
 
 ```bash
-# Compile TypeScript
+# Compile TypeScript and bundle the webview (out/webview/webview.js)
 npm run compile
 
-# Watch for changes during development
+# Watch for changes during development (webview bundle + extension host)
 npm run watch
 ```
 
