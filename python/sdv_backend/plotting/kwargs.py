@@ -102,30 +102,16 @@ class PlotKwargsBundle:
         return out
 
     def imshow_kwargs(self) -> dict[str, Any]:
-        """Kwargs for .plot.imshow(): full raw except bins (histogram-only). Includes cmap."""
+        """Kwargs for .plot.imshow(): full raw except bins (histogram-only).
+
+        Includes cmap and the figure kwargs (aspect, size, col_wrap).
+        """
         out = dict(self.raw)
         out.pop("bins", None)
         return out
 
     def use_cmap_imshow_path(self) -> bool:
         return "cmap" in self.raw
-
-    def _subset_figure_kw(self, keys: tuple[str, ...]) -> dict[str, Any]:
-        return {k: self.raw[k] for k in keys if k in self.raw}
-
-    def user_imshow_merged_kw(self) -> dict[str, Any]:
-        """User branch: imshow + aspect/size/col_wrap (single merge; no duplicate ** cmap)."""
-        fig = self._subset_figure_kw(("aspect", "size", "col_wrap"))
-        return {**self.imshow_kwargs(), **fig}
-
-    def auto_imshow_merged_kw(self) -> dict[str, Any]:
-        """Auto branch: imshow + aspect/size only (col_wrap handled per strategy)."""
-        fig = self._subset_figure_kw(("aspect", "size"))
-        return {**self.imshow_kwargs(), **fig}
-
-    def auto_figure_defaults(self) -> dict[str, Any]:
-        """Aspect/size subset for strategies that pass explicit defaults."""
-        return self._subset_figure_kw(("aspect", "size"))
 
 
 def _valid_plot_dim(name: str | None, var_arr: xr.DataArray) -> str | None:

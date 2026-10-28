@@ -12,6 +12,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import pandas as pd
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
@@ -60,8 +62,14 @@ def get_file_info(
         opened = OpenedData.open(
             file_path, file_format_info, options.convert_bands_to_variables
         )
-    except ImportError:
+    except ImportError as exc:
+        if file_format_info.available_engines and not file_format_info.missing_packages:
+            # Raised by an installed engine: a reading failure, not a setup one
+            return _file_info_error(exc, file_format_info, versions_text)
         return _open_import_error(file_format_info, versions_text)
+    except Exception as exc:
+        # Missing, corrupt or unreadable file: every engine failed
+        return _file_info_error(exc, file_format_info, versions_text)
 
     if opened.used_engine == "rasterio":
         refined_name = refine_geotiff_display_name(
@@ -99,15 +107,21 @@ def get_file_info(
         logger.info(f"Detected datetime variables: {info.datetime_variables}")
         return info
     except Exception as exc:
-        logger.info(f"Error getting file info: {exc!r}")
-        # Handle other errors (file corruption, format issues, etc.)
-        return FileInfoError(
-            error=str(exc),
-            error_type=type(exc).__name__,
-            suggestion="Check if the file is corrupted or in an unsupported format",
-            format_info=file_format_info,
-            xarray_show_versions=versions_text,
-        )
+        return _file_info_error(exc, file_format_info, versions_text)
+
+
+def _file_info_error(
+    exc: Exception, file_format_info: FileFormatInfo, versions_text: str
+) -> FileInfoError:
+    """Error result for a file that could not be read (corruption, format issues...)."""
+    logger.info(f"Error getting file info: {exc!r}")
+    return FileInfoError(
+        error=str(exc) or type(exc).__name__,
+        error_type=type(exc).__name__,
+        suggestion="Check if the file is corrupted or in an unsupported format",
+        format_info=file_format_info,
+        xarray_show_versions=versions_text,
+    )
 
 
 def _open_import_error(
@@ -147,6 +161,20 @@ def _open_import_error(
             xarray_show_versions=versions_text,
         )
     missing = file_format_info.missing_packages
+    if not missing and not file_format_info.available_engines:
+        # No engine maps to this extension: not a missing-package problem
+        return FileInfoError(
+            error=(
+                f"Unsupported file format: {file_format_info.extension or 'no extension'}"
+            ),
+            error_type="ValueError",
+            format_info=file_format_info,
+            suggestion=(
+                "Supported formats: NetCDF, CDF, HDF5, Zarr (directory or ZIP), "
+                "GRIB, GeoTIFF, JPEG-2000 and Kerchunk references."
+            ),
+            xarray_show_versions=versions_text,
+        )
     return FileInfoError(
         error=f"Missing dependencies for {file_format_info.display_name} files: {', '.join(missing)}",
         error_type="ImportError",
@@ -264,15 +292,25 @@ def _add_group_info(
 
 
 def _datetime_range(name: str, da: xr.DataArray, kind: str) -> dict[str, Any]:
-    """{'name', 'min', 'max'} with ISO strings (None when empty or not computable)."""
+    """{'name', 'min', 'max'} with ISO strings, ignoring NaT / missing values.
+
+    ``min`` / ``max`` are None when there is no valid value or they cannot be
+    computed. Works for ``datetime64`` and cftime (non-standard calendars).
+    """
     min_val = max_val = None
     try:
-        import pandas as pd
-
-        values = da.values
-        if values.size > 0:
-            min_val = pd.Timestamp(values.min()).isoformat()
-            max_val = pd.Timestamp(values.max()).isoformat()
+        values = np.asarray(da.values).ravel()
+        if np.issubdtype(values.dtype, np.datetime64):
+            values = values[~np.isnat(values)]
+            if values.size > 0:
+                min_val = pd.Timestamp(values.min()).isoformat()
+                max_val = pd.Timestamp(values.max()).isoformat()
+        else:
+            # cftime objects; missing values decode to None or NaN
+            valid = [v for v in values if v is not None and not pd.isna(v)]
+            if valid:
+                min_val = min(valid).isoformat()
+                max_val = max(valid).isoformat()
     except Exception as exc:
         min_val = max_val = None
         logger.warning(f"Could not compute min/max for datetime {kind} {name}: {exc!r}")

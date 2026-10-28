@@ -4,6 +4,7 @@ from typing import Literal
 
 import numpy as np
 import xarray as xr
+from xarray.coding.times import contains_cftime_datetimes
 
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
@@ -59,49 +60,21 @@ def create_variable_info(
 
 
 def is_datetime_variable(var: xr.DataArray) -> bool:
-    """Check if a variable is a datetime type.
+    """Whether ``var`` holds decoded datetimes: ``datetime64`` or cftime objects.
 
-    Parameters
-    ----------
-    var : xr.DataArray
-        Variable to check
-
-    Returns
-    -------
-    bool
-        True if variable is datetime type
+    Raw numbers with CF time units (e.g. when the file was opened with
+    ``decode_cf=False``) are not datetimes: their values cannot be compared
+    with dates. Only the first element of an object array is read to look
+    for cftime objects.
     """
-    # Check dtype for datetime64
     if np.issubdtype(var.dtype, np.datetime64):
         return True
-
-    # Check if dtype string contains 'datetime'
-    dtype_str = str(var.dtype)
-    if "datetime" in dtype_str.lower():
-        return True
-
-    # Check for CF-convention time coordinates (numeric with time units)
-    # These are often used in NetCDF files
-    attrs = var.attrs
-    if "units" in attrs:
-        units = str(attrs["units"]).lower()
-        # Check for time units like "days since", "hours since", "seconds since", etc.
-        if "since" in units and any(
-            time_unit in units
-            for time_unit in ["day", "hour", "minute", "second", "year", "month"]
-        ):
-            return True
-
-    # Check for standard_name indicating time
-    if "standard_name" in attrs and str(attrs["standard_name"]).lower() == "time":
-        return True
-
-    # Check if variable name suggests it's a time variable (common names)
-    var_name_lower = str(var.name).lower() if hasattr(var, "name") else ""
-    # Additional check: if it has units or standard_name, it's likely a time variable
-    return var_name_lower in ["time", "timestamp", "datetime", "date", "t"] and (
-        "units" in attrs or "standard_name" in attrs
-    )
+    if var.dtype != object:
+        return False
+    try:
+        return bool(contains_cftime_datetimes(var.variable))
+    except Exception:
+        return False
 
 
 def check_monotonicity(

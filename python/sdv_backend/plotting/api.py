@@ -1,8 +1,8 @@
 """``create_plot``: the 'plot' mode entry point.
 
 Pipeline: detect format -> open file -> pick variable -> apply dimension slices
--> apply datetime filter -> build xarray plot kwargs -> run a plotting strategy
-(user-driven or automatic) -> render PNG.
+-> apply datetime filter -> build xarray plot kwargs -> draw (user layout or
+automatic, see ``draw``) -> render PNG.
 """
 
 import contextlib
@@ -16,10 +16,7 @@ from sdv_backend.environment.packages import check_package_availability
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.opening import OpenedData
-from sdv_backend.plotting.dispatcher import (
-    XarrayPlotDispatcher,
-    detect_plotting_strategy,
-)
+from sdv_backend.plotting.draw import draw_plot
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
 from sdv_backend.plotting.options import PlotOptions
 from sdv_backend.plotting.render import (
@@ -35,11 +32,6 @@ from sdv_backend.plotting.selection import (
     get_variable,
     split_variable_path,
 )
-from sdv_backend.plotting.strategies.auto import (
-    AutoDefaultPlotContext,
-    AutoPlotOrchestrator,
-)
-from sdv_backend.plotting.strategies.user import UserProvidedPlotOrchestrator
 from sdv_backend.plotting.style import MATPLOTLIB_RC_CONTEXT
 from sdv_backend.results import CreatePlotError, CreatePlotResult
 
@@ -86,6 +78,8 @@ def create_plot(
             message = (
                 f"No engines available for {file_format_info.extension} files. "
                 f"Missing packages: {', '.join(file_format_info.missing_packages)}"
+                if file_format_info.missing_packages
+                else f"Unsupported file format: {file_format_info.extension or 'no extension'}"
             )
             logger.error(message)
             return CreatePlotError(error=message, format_info=file_format_info)
@@ -131,32 +125,7 @@ def create_plot(
                 else contextlib.nullcontext()
             )
             with xarray_plot_ctx, mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
-                plot_dispatcher = XarrayPlotDispatcher()
-                if options.has_user_layout:
-                    logger.info(
-                        "User provided dimension/facet/bins params: building plot from user input only"
-                    )
-                    UserProvidedPlotOrchestrator(plot_dispatcher).run(
-                        var,
-                        bundle,
-                        facet_row=options.facet_row,
-                        facet_col=options.facet_col,
-                        plot_x=options.plot_x,
-                        plot_y=options.plot_y,
-                        plot_hue=options.plot_hue,
-                    )
-                else:
-                    AutoPlotOrchestrator(plot_dispatcher).run(
-                        var,
-                        bundle,
-                        detect_plotting_strategy(var),
-                        plt_module=plt,
-                        default_ctx=AutoDefaultPlotContext(
-                            datetime_var=selection.datetime_var,
-                            datetime_var_display_name=selection.datetime_var_name,
-                            variable_name=variable_name,
-                        ),
-                    )
+                draw_plot(var, bundle, options, selection, variable_name)
 
                 suptitle = build_suptitle(
                     variable_name,

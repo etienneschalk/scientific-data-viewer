@@ -1,9 +1,12 @@
 """Selecting the data to plot: open file, find variable, slice and time-filter."""
 
+import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+import pandas as pd
 import xarray as xr
+from xarray.coding.times import contains_cftime_datetimes
 
 from sdv_backend._bootstrap import logger
 from sdv_backend.info.datatree import datatree_inherit_mode
@@ -20,6 +23,7 @@ def split_variable_path(variable_path: str) -> tuple[PurePosixPath, str]:
     """'/group/var.name' -> (PurePosixPath('/group'), 'var.name').
 
     Uses ``.name`` instead of ``.stem`` to preserve dots in variable names.
+    A bare name ('time') has the parent '.'; see ``_resolve_datetime_group``.
     """
     path = PurePosixPath(variable_path)
     return path.parent, path.name
@@ -78,13 +82,14 @@ class DatetimeSelection:
 
 
 def _time_range_mask(datetime_var: xr.DataArray, start_ts, end_ts):
-    if start_ts and end_ts:
-        return (datetime_var >= start_ts) & (datetime_var <= end_ts)
-    if start_ts:
-        return datetime_var >= start_ts
-    if end_ts:
-        return datetime_var <= end_ts
-    return None
+    mask = None
+    if start_ts is not None:
+        mask = datetime_var >= start_ts
+    if end_ts is not None:
+        before_end = datetime_var <= end_ts
+        mask = before_end if mask is None else mask & before_end
+    # cftime (object) comparisons give object arrays; isel needs booleans
+    return None if mask is None else mask.astype(bool)
 
 
 def _filter_with_mask(
@@ -108,6 +113,79 @@ def _filter_with_mask(
     return var, datetime_var
 
 
+def _resolve_datetime_group(
+    datetime_group_name: PurePosixPath,
+    datetime_var_name: str,
+    group: xr.Dataset,
+    group_name: PurePosixPath,
+    opened: OpenedData,
+    options: PlotOptions,
+) -> xr.Dataset:
+    """Dataset holding the datetime variable.
+
+    The webview sends root-group variables as a bare name ('time', parent
+    '.'). Its global time selector lists each name once, so a bare name is
+    looked up in the plotted variable's group first (which has its own
+    'time', or inherits the root one), then in the root group.
+    """
+    if str(datetime_group_name) == ".":
+        if datetime_var_name in group.variables:
+            return group
+        datetime_group_name = PurePosixPath("/")
+    if datetime_group_name == group_name:
+        return group
+    return opened.group(
+        datetime_group_name,
+        datatree_inherit_mode(options.show_inherited_coordinates),
+    )
+
+
+# YYYY-MM-DD[THH:MM[:SS[.ffffff]]]: parsed by hand because datetime rejects
+# dates that only exist in some calendars (e.g. 2000-02-30 in 360_day)
+_ISO_DATETIME_RE = re.compile(
+    r"^\s*(\d{1,4})-(\d{1,2})-(\d{1,2})"
+    r"(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?)?Z?\s*$"
+)
+
+
+def _parse_bound(text: str | None, datetime_var: xr.DataArray, label: str):
+    """Parse a start/end bound comparable with ``datetime_var``'s values.
+
+    ``pd.Timestamp`` for ``datetime64``; a cftime date in the variable's
+    calendar for cftime variables (pandas cannot compare with those, and its
+    Timestamps stop at year 1677).
+    """
+    if not text:
+        return None
+    if not contains_cftime_datetimes(datetime_var.variable):
+        return pd.Timestamp(text)
+    import cftime
+
+    calendar = datetime_var.dt.calendar
+    match = _ISO_DATETIME_RE.match(text)
+    if match is None:
+        raise PlotInputError(
+            f"Invalid {label} datetime {text!r}: expected YYYY-MM-DD[THH:MM[:SS]]"
+        )
+    year, month, day, hour, minute, second, fraction = match.groups()
+    try:
+        return cftime.datetime(
+            int(year),
+            int(month),
+            int(day),
+            int(hour or 0),
+            int(minute or 0),
+            int(second or 0),
+            int((fraction or "0").ljust(6, "0")),
+            calendar=calendar,
+        )
+    except ValueError as exc:
+        raise PlotInputError(
+            f"Invalid {label} datetime {text!r} for the '{calendar}' calendar of "
+            f"'{datetime_var.name}': {exc}"
+        ) from exc
+
+
 def apply_datetime_filter(
     var: xr.DataArray,
     variable_name: str,
@@ -118,31 +196,22 @@ def apply_datetime_filter(
 ) -> DatetimeSelection:
     """Restrict ``var`` to [start_datetime, end_datetime] of a datetime variable.
 
-    The datetime variable may live in another group. Coordinates of ``var``'s own
-    group use ``.sel()`` (with start/end swapped when decreasing); anything else,
-    or non-monotonic coordinates, falls back to boolean indexing on a shared
-    dimension.
+    The datetime variable may live in another group. When it is a dimension
+    coordinate of ``var``, ``.sel()`` is used (with start/end swapped when
+    decreasing); otherwise, or for non-monotonic coordinates, boolean indexing
+    on a shared dimension. Variables without such a dimension (e.g. static
+    fields) are plotted unfiltered.
     """
     if not options.datetime_variable_name:
         return DatetimeSelection(var=var)
     try:
-        import pandas as pd
-
-        start_ts = (
-            pd.Timestamp(options.start_datetime) if options.start_datetime else None
-        )
-        end_ts = pd.Timestamp(options.end_datetime) if options.end_datetime else None
-
         # Handle datetime variable path (may include group path like "/time" or "group/time")
         datetime_group_name, datetime_var_name = split_variable_path(
             options.datetime_variable_name
         )
-        datetime_group = group
-        if str(datetime_group_name) not in (str(group_name), "."):
-            datetime_group = opened.group(
-                datetime_group_name,
-                datatree_inherit_mode(options.show_inherited_coordinates),
-            )
+        datetime_group = _resolve_datetime_group(
+            datetime_group_name, datetime_var_name, group, group_name, opened, options
+        )
 
         if (
             datetime_var_name not in datetime_group.coords
@@ -157,19 +226,10 @@ def apply_datetime_filter(
 
         datetime_var: xr.DataArray | None = datetime_group[datetime_var_name]
         assert datetime_var is not None
+        start_ts = _parse_bound(options.start_datetime, datetime_var, "start")
+        end_ts = _parse_bound(options.end_datetime, datetime_var, "end")
 
-        if datetime_var_name not in datetime_group.coords:
-            # Data variable sharing a dimension with var: boolean indexing
-            var, datetime_var = _filter_with_mask(
-                var,
-                datetime_var,
-                start_ts,
-                end_ts,
-                f"Datetime variable '{datetime_var_name}' does not share any dimensions "
-                f"with variable '{variable_name}'. Cannot use for plotting. "
-                f"Variable dimensions: {var.dims}, datetime dimensions: {datetime_var.dims}",
-            )
-        elif datetime_var_name in group.coords:
+        if datetime_var_name in var.dims and datetime_var_name in var.indexes:
             monotonicity = check_monotonicity(datetime_var)
             if monotonicity == "non_monotonic":
                 logger.info(
@@ -196,15 +256,15 @@ def apply_datetime_filter(
                 var = var.sel({datetime_var_name: time_slice})
                 datetime_var = datetime_var.sel({datetime_var_name: time_slice})
         else:
-            # Coordinate from a different group: positional indexing on a shared dim
+            # Data variable, non-index coordinate or coordinate from another
+            # group: boolean indexing on a shared dimension, if any
             var, datetime_var = _filter_with_mask(
                 var,
                 datetime_var,
                 start_ts,
                 end_ts,
-                f"Datetime variable '{datetime_var_name}' is a coordinate in a different group "
-                f"and does not share any dimensions with variable '{variable_name}'. "
-                f"Cannot use for plotting. "
+                f"Datetime variable '{datetime_var_name}' does not share any dimensions "
+                f"with variable '{variable_name}'; plotting it without time filtering. "
                 f"Variable dimensions: {var.dims}, datetime dimensions: {datetime_var.dims}",
             )
     except PlotInputError:

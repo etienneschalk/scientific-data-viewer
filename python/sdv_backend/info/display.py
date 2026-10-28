@@ -4,8 +4,7 @@ from typing import Any
 
 import xarray as xr
 
-XR_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
-
+from sdv_backend._bootstrap import XR_DISPLAY_OPTIONS
 
 # For text representation, expand attrs since users can't click to expand them
 XR_TEXT_OPTIONS: dict[str, Any] = {
@@ -16,7 +15,7 @@ XR_TEXT_OPTIONS: dict[str, Any] = {
 
 
 # For HTML representation, keep attrs collapsed (users can click to expand)
-XR_HTML_OPTIONS: dict[str, Any] = {**XR_OPTIONS}
+XR_HTML_OPTIONS: dict[str, Any] = {**XR_DISPLAY_OPTIONS}
 
 
 # Defaults for Issue #102 (overridable via CLI --small-variable-bytes / --small-value-display-max-len).

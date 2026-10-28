@@ -1,5 +1,6 @@
 """Zarr store detection, zipped Zarr and metadata-file resolution."""
 
+import functools
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -48,6 +49,34 @@ def looks_like_zip(path: Path) -> bool:
     return name.endswith(".zip")
 
 
+def _zip_member_names(path: Path) -> tuple[str, ...] | None:
+    """Member names of a ZIP archive (``/`` separators), None if unreadable.
+
+    Format detection, version detection and opening all need them: the
+    listing is cached so the archive's central directory is read once.
+    """
+    try:
+        stat = path.stat()
+    except OSError as exc:
+        logger.warning(f"Could not read ZIP archive {path}: {exc!r}")
+        return None
+    return _cached_zip_member_names(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+@functools.lru_cache(maxsize=8)
+def _cached_zip_member_names(
+    path: str, _mtime_ns: int, _size: int
+) -> tuple[str, ...] | None:
+    try:
+        with zipfile.ZipFile(path) as archive:
+            return tuple(name.replace("\\", "/") for name in archive.namelist())
+    except zipfile.BadZipFile:
+        logger.warning(f"{path} is not a valid ZIP archive")
+    except OSError as exc:
+        logger.warning(f"Could not read ZIP archive {path}: {exc!r}")
+    return None
+
+
 def zip_zarr_root_prefix(path: Path) -> str | None:
     """Return the zip-internal prefix of a Zarr store, or None if none is found.
 
@@ -59,19 +88,12 @@ def zip_zarr_root_prefix(path: Path) -> str | None:
     ``temperature/zarr.json``), the shortest prefix wins so the store root
     is selected rather than a child array.
     """
-    try:
-        with zipfile.ZipFile(path) as archive:
-            names = archive.namelist()
-    except zipfile.BadZipFile:
-        logger.warning(f"{path} is not a valid ZIP archive")
-        return None
-    except OSError as exc:
-        logger.warning(f"Could not read ZIP archive {path}: {exc!r}")
+    names = _zip_member_names(path)
+    if names is None:
         return None
 
     prefixes: list[str] = []
-    for raw_name in names:
-        name = raw_name.replace("\\", "/")
+    for name in names:
         if name.startswith("./"):
             name = name[2:]
         # Array-level ``.zarray`` / per-array ``zarr.json`` would point at
@@ -111,11 +133,7 @@ def detect_zarr_format_version(path: Path) -> int | None:
             return None
         v3_member = "zarr.json" if prefix == "" else f"{prefix}/zarr.json"
         v2_member = ".zgroup" if prefix == "" else f"{prefix}/.zgroup"
-        try:
-            with zipfile.ZipFile(path) as archive:
-                names = {name.replace("\\", "/") for name in archive.namelist()}
-        except (zipfile.BadZipFile, OSError):
-            return None
+        names = _zip_member_names(path) or ()
         if v3_member in names:
             return 3
         if v2_member in names:

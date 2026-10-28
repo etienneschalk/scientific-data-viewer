@@ -1,81 +1,55 @@
-"""JSON serialization of backend results (NaN/complex/numpy-safe)."""
+"""JSON serialization of backend results (non-finite-float/numpy-safe)."""
 
 import json
-from collections.abc import Callable
-from dataclasses import asdict, is_dataclass
+import math
 from typing import Any
 
 import numpy as np
-import xarray as xr
-
-# <JSON Serialization Section>
 
 
-def sanitize_nan(obj, default: Callable[[Any], str]):
+def sanitize_non_finite(obj: Any) -> Any:
+    """Replace NaN / ±inf floats by their ``repr`` (JSON has no such numbers).
+
+    Walks dicts, lists and tuples (tuples become lists, as JSON would make
+    them anyway). Covers ``float`` subclasses such as ``np.float64``, whose
+    ``repr`` is e.g. ``np.float64(nan)``; other numpy floats are handled by
+    ``ComplexEncoder.default``.
+    """
     if isinstance(obj, dict):
-        return {k: sanitize_nan(v, default) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [sanitize_nan(v, default) for v in obj]
-    elif isinstance(obj, float) and np.isnan(obj):
-        # str gives 'nan', repr gives eg np.float64(nan)
-        return default(obj)
+        return {k: sanitize_non_finite(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_non_finite(v) for v in obj]
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return repr(obj)
     return obj
 
 
 class ComplexEncoder(json.JSONEncoder):
-    def encode(self, obj, *args, **kwargs):
-        return super().encode(sanitize_nan(obj, repr), *args, **kwargs)
+    """JSON encoder for backend results: numpy scalars and arrays become JSON
+    numbers / lists, non-finite floats become strings, anything else ``str``.
 
-    def default(self, obj: Any) -> Any:
-        """
-        Best effort to try to convert non-native Python objects to strings when serialization to JSON,
-        with a fallback on calling ``str`` on the object to serialized
-
-        Parameters
-        ----------
-        obj
-            Object to convert to
-
-        Returns
-        -------
-            Serializable representation of the object
-        """
-        if is_dataclass(obj):
-            return asdict(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, (xr.Dataset, xr.DataArray)):
-            return obj.to_dict()
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.integer):
-            return int(obj)
-        # Let the base class default method raise the TypeError
-        # The default=str kwarg can still be passed to json.dumps
-        # to catch all and convert to string.
-        return super().default(obj)
-
-
-def to_json_best_effort(
-    obj: Any,
-    *,
-    encoder: type[json.JSONEncoder] = ComplexEncoder,
-    **kwargs: Any,
-) -> str:
+    Dataclasses are converted by ``asdict`` before encoding (which also
+    converts nested ones, hence ``_describe_codec`` for Zarr codecs).
     """
-    Best effort to convert a complex object to JSON.
 
-    Parameters
-    ----------
-    obj
-        Object to convert
-    encoder, optional
-        JSONEncoder to use, by default ComplexEncoderDefaultStr
-        The default should be able to convert most common complex objects encountered in the project to JSON.
-    kwargs
-        Additional keyword arguments to pass to the ``json.dumps`` function, eg ``indent``
-    Returns
-    -------
-        JSON string
+    def encode(self, o: Any) -> str:
+        return super().encode(sanitize_non_finite(o))
+
+    def default(self, o: Any) -> Any:
+        if isinstance(o, np.bool_):
+            return bool(o)
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o) if math.isfinite(o) else str(o)
+        if isinstance(o, np.ndarray):
+            return sanitize_non_finite(o.tolist())
+        return str(o)
+
+
+def to_json_best_effort(obj: Any, **kwargs: Any) -> str:
+    """Serialize ``obj`` to JSON, never failing on numpy or non-finite values.
+
+    ``kwargs`` are passed to ``json.dumps`` (e.g. ``indent``).
     """
-    return json.dumps(obj, cls=encoder, allow_nan=False, default=str, **kwargs)
+    return json.dumps(obj, cls=ComplexEncoder, allow_nan=False, **kwargs)

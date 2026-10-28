@@ -4,8 +4,6 @@ from typing import Literal
 
 import xarray as xr
 
-# </JSON Serialization Section>
-
 DictOfDatasets = dict[str, xr.Dataset]
 
 
@@ -35,14 +33,11 @@ EngineType = Literal[
     "h5netcdf",
     "scipy",
     "zarr",
-    "h5py",
     "cfgrib",
     "rasterio",
     "cdflib",
     "kerchunk",
 ]
 
-
-# --- Plot execution: kwargs bundle, dispatcher, and strategies (create_plot) ---
 
 ColWrap = int | Literal["auto"] | None

@@ -22,7 +22,11 @@ logger: Logger = logging.getLogger(__name__)
 logger.info("Python version: %s", sys.version)
 
 
-xr.set_options(display_expand_attrs=False, display_expand_data=False)
+# Collapsed attrs and data: also the options of the HTML repr (see info/display.py)
+XR_DISPLAY_OPTIONS = {"display_expand_attrs": False, "display_expand_data": False}
+
+
+xr.set_options(**XR_DISPLAY_OPTIONS)
 
 
 np.set_printoptions(threshold=20, edgeitems=2)

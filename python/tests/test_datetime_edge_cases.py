@@ -35,51 +35,40 @@ class TestIsDatetimeVariable:
         )
         assert is_datetime_variable(var) is True
 
-    def test_cf_convention_time_units(self):
-        """Test detection of CF-convention time coordinates (Edge Case 9)."""
-        # Days since
+    @pytest.mark.parametrize(
+        "attrs",
+        [
+            {"units": "days since 2000-01-01"},
+            {"units": "hours since 2000-01-01"},
+            {"units": "seconds since 2000-01-01"},
+            {"standard_name": "time"},
+        ],
+    )
+    def test_undecoded_cf_time_is_not_datetime(self, attrs):
+        """Raw numbers with CF time attributes (file opened with decode_cf=False)
+        cannot be compared with dates: they are not datetime variables."""
+        var = xr.DataArray(np.arange(10), dims=["time"], attrs=attrs, name="time")
+        assert is_datetime_variable(var) is False
+
+    @pytest.mark.parametrize("name", ["time", "timestamp", "datetime", "date", "t"])
+    def test_time_like_names_are_not_enough(self, name):
+        """A temperature called ``t`` (units K) is not a time variable (P5)."""
         var = xr.DataArray(
-            np.arange(10),
-            dims=["time"],
-            attrs={"units": "days since 2000-01-01"},
+            np.linspace(270.0, 280.0, 10), dims=["x"], attrs={"units": "K"}, name=name
         )
+        assert is_datetime_variable(var) is False
+
+    def test_cftime_values(self):
+        """Non-standard calendars decode to cftime objects (P7)."""
+        times = xr.date_range(
+            "2000-01-01", periods=3, freq="D", calendar="360_day", use_cftime=True
+        )
+        var = xr.DataArray(times, dims=["time"], name="time")
         assert is_datetime_variable(var) is True
 
-        # Hours since
-        var = xr.DataArray(
-            np.arange(10),
-            dims=["time"],
-            attrs={"units": "hours since 2000-01-01"},
-        )
-        assert is_datetime_variable(var) is True
-
-        # Seconds since
-        var = xr.DataArray(
-            np.arange(10),
-            dims=["time"],
-            attrs={"units": "seconds since 2000-01-01"},
-        )
-        assert is_datetime_variable(var) is True
-
-    def test_standard_name_time(self):
-        """Test detection via standard_name attribute."""
-        var = xr.DataArray(
-            np.arange(10),
-            dims=["time"],
-            attrs={"standard_name": "time"},
-        )
-        assert is_datetime_variable(var) is True
-
-    def test_common_time_variable_names(self):
-        """Test detection via common variable names."""
-        for name in ["time", "timestamp", "datetime", "date", "t"]:
-            var = xr.DataArray(
-                np.arange(10),
-                dims=[name],
-                attrs={"units": "days since 2000-01-01"},
-            )
-            var.name = name
-            assert is_datetime_variable(var) is True
+    def test_object_array_without_cftime(self):
+        var = xr.DataArray(np.array(["a", "b"], dtype=object), dims=["x"])
+        assert is_datetime_variable(var) is False
 
     def test_variable_name_with_dots(self):
         """Test variable names with dots are preserved (Edge Case 10)."""

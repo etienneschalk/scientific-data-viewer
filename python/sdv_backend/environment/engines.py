@@ -2,8 +2,6 @@
 
 from collections.abc import Sequence
 
-import xarray as xr
-
 from sdv_backend.environment.packages import (
     ENGINE_PACKAGES,
     check_package_is_usable,
@@ -21,8 +19,8 @@ FORMAT_ENGINE_MAP: dict[SupportedExtensionType, list[EngineType]] = {
     #
     ".zarr": ["zarr"],
     #
-    ".h5": ["h5netcdf", "h5py", "netcdf4"],
-    ".hdf5": ["h5netcdf", "h5py", "netcdf4"],
+    ".h5": ["h5netcdf", "netcdf4"],
+    ".hdf5": ["h5netcdf", "netcdf4"],
     #
     ".grib": ["cfgrib"],
     ".grib2": ["cfgrib"],
@@ -52,22 +50,11 @@ DEFAULT_NETCDF_ENGINE_ORDER: tuple[str, ...] = ("netcdf4", "h5netcdf", "scipy")
 ALLOWED_NETCDF_ENGINES: frozenset[str] = frozenset(DEFAULT_NETCDF_ENGINE_ORDER)
 
 
-# We try to use DataTree when possible, but for some, do not attempt as the failure is certain.
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET: dict[str, bool] = dict.fromkeys(
-    ENGINE_PACKAGES, False
+# Engines opened with xr.open_dataset (single root group): their xarray
+# backend has no open_datatree (NetCDF3 has no groups; cdflib has its own API).
+ENGINES_WITHOUT_DATATREE: frozenset[str] = frozenset(
+    {"scipy", "cfgrib", "rasterio", "cdflib", "kerchunk"}
 )
-
-
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cfgrib"] = True
-
-
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["rasterio"] = True
-
-
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["cdflib"] = True  # cdflib uses its own API
-
-
-DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET["kerchunk"] = True  # no DataTree backend
 
 
 def normalize_netcdf_engine_order(
@@ -170,19 +157,5 @@ def get_missing_packages(file_extension: str) -> list[str]:
 
 
 def can_use_datatree(engine: str) -> bool:
-    """Check if DataTree can be used with the given engine.
-
-    Parameters
-    ----------
-    engine : str
-        xarray engine name
-
-    Returns
-    -------
-    bool
-        True if DataTree can be used, False otherwise
-    """
-    return (
-        hasattr(xr, "open_datatree")
-        and not DEFAULT_ENGINE_TO_FORCE_USE_OPEN_DATASET[engine]
-    )
+    """Whether the engine can open files with ``xr.open_datatree``."""
+    return engine not in ENGINES_WITHOUT_DATATREE

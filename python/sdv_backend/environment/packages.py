@@ -13,7 +13,6 @@ ENGINE_PACKAGES: dict[EngineType, str] = {
     "h5netcdf": "h5netcdf",
     "scipy": "scipy",
     "zarr": "zarr",
-    "h5py": "h5py",
     "cfgrib": "cfgrib",
     "rasterio": "rioxarray",
     "cdflib": "cdflib",

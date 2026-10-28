@@ -24,10 +24,22 @@ from sdv_backend.serialization import to_json_best_effort
 
 
 def main() -> int:
-    """Main entry point: parse arguments, run info or plot mode, print one JSON line."""
-    parser = build_parser()
-    args = parser.parse_args()
+    """Main entry point: parse arguments, run info or plot mode, print one JSON line.
 
+    Unexpected exceptions still produce a JSON line (``{"error": "<message>"}``,
+    exit code 1) so the extension can show the message instead of a traceback.
+    """
+    args = build_parser().parse_args()
+    try:
+        return _run(args)
+    except Exception as exc:
+        logger.exception(f"Unexpected error in {args.mode} mode")
+        print(to_json_best_effort({"error": f"{type(exc).__name__}: {exc}"}))
+        return 1
+
+
+def _run(args: argparse.Namespace) -> int:
+    """Run the ``info`` or ``plot`` mode and print its JSON result."""
     if args.mode == "plot" and not args.variable_name:
         print(to_json_best_effort({"error": "Variable name is required for plot mode"}))
         return 1
