@@ -220,4 +220,10 @@ Backend restructuring (branch `eschalk/backend-package`):
 35. `bbf2623` — docs: update the v0.13.0 manual test plan
 36. `753c93e` — chore: say all fields are optional in the question issue form intro
 
-Code review pass: not yet committed (see `docs/CODE_REVIEW_TODO.md` for the item list).
+Code review pass (items in `docs/CODE_REVIEW_TODO.md`):
+
+37. `285ba3b` — fix(backend): always return JSON errors, fix serialization and time handling
+38. `3c00c37` — fix(host): spawn without a shell, serialise Python init, clean up host code
+39. `ba507b8` — refactor(panel): simplify message bus and panel state; fix Kerchunk and save paths
+40. `62559ae` — refactor(webview): TypeScript modules bundled with esbuild; escape data, add CSP
+41. `fa4a32d` — docs: document the code review pass for v0.13.0
