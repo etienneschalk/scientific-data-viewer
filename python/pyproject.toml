@@ -7,7 +7,7 @@ name = "sdv-backend"
 version = "0.13.0"
 description = "Python backend of the Scientific Data Viewer VSCode extension"
 requires-python = ">=3.13"
-dependencies = ["xarray", "numpy", "matplotlib"]
+dependencies = ["xarray>=2024.10", "numpy", "matplotlib"]
 
 [project.optional-dependencies]
 netcdf = ["netCDF4", "h5netcdf", "scipy"]
