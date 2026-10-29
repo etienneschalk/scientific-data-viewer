@@ -4,6 +4,8 @@ VSCode extension (`eschalk0.scientific-data-viewer`) for inspecting scientific d
 
 ## Commands
 
+**Always run `source ~/.nvm/nvm.sh && nvm use` (Node 22, from `.nvmrc`) in the same shell command before any Node-related command** (`npm`, `npx`, `node`, `pre-commit`, `git commit` — its hooks run prettier / eslint). The system Node can be too old (e.g. v10): commands then fail with errors like `prettier requires at least version 14 of Node` or `Module.createRequire is not a function`.
+
 ```bash
 npm install                 # deps (Node >= 22)
 npm run compile             # esbuild webview bundle (out/webview/webview.js) + tsc -> out/ (entry: out/src/extension.js)
