@@ -63,6 +63,10 @@ function showDegradedModeIndicator(): void {
     });
 
     hidePlotControlsForBrowser();
+    // The exported controls are a frozen record: nothing to reset
+    document
+        .querySelectorAll<HTMLElement>('.plot-reset-button')
+        .forEach((button) => button.classList.add('hidden'));
 }
 
 async function handleTextCopy(button: HTMLElement): Promise<void> {

@@ -41,7 +41,9 @@ function applyExportStateToClone(clone: Element): void {
                 el.setAttribute('disabled', 'disabled');
             } else {
                 el.setAttribute('value', live.value);
-                el.setAttribute('readonly', 'readonly');
+                // readonly does not apply to sliders: they would still move
+                const frozen = live.type === 'range' ? 'disabled' : 'readonly';
+                el.setAttribute(frozen, frozen);
             }
         });
 }

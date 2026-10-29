@@ -894,6 +894,110 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
+    test('export keeps the state of cards, sections and slice widgets', async () => {
+        harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+        const doc = harness.document;
+        const set = (id: string, value: string) =>
+            harness.setValue(doc.getElementById(id), value, 'input');
+        // Cards and sections: variable open, its attributes closed, encoding open
+        const card = doc.getElementById(
+            'data-group___-___variable___temperature',
+        );
+        card.open = true;
+        card.querySelector('[id$="___attributes"]').open = false;
+        card.querySelector('[id$="___encoding"]').open = true;
+        // Slices: a range with step, an index with an ignored step, col_wrap auto
+        set('dim-slice-time', '1:3:2');
+        set('dim-slice-lat', '1');
+        set('dim-slice-lat-step', '2');
+        doc.getElementById('plotColWrapAutoCheckbox').checked = true;
+        harness.setValue(
+            doc.getElementById('plotColWrapAutoCheckbox'),
+            'on',
+            'change',
+        );
+        harness.click(doc.getElementById('exportWebviewButton'));
+        const exported = harness.requests('exportWebview')[0].payload
+            .htmlContent as string;
+
+        const offline = new JSDOM(exported, { runScripts: 'dangerously' });
+        await new Promise((resolve) =>
+            offline.window.addEventListener('load', resolve),
+        );
+        try {
+            const off = offline.window.document;
+            const offCard = off.getElementById(card.id);
+            assert.deepStrictEqual(
+                [
+                    offCard.open,
+                    offCard.querySelector('[id$="___attributes"]').open,
+                    offCard.querySelector('[id$="___encoding"]').open,
+                ],
+                [true, false, true],
+            );
+            const values = (id: string) =>
+                ['', '-stop', '-step', '-from', '-to'].map(
+                    (suffix) => off.getElementById(id + suffix).value,
+                );
+            assert.deepStrictEqual(values('dim-slice-time'), [
+                '1',
+                '3',
+                '2',
+                '1',
+                '2',
+            ]);
+            assert.deepStrictEqual(values('dim-slice-lat'), [
+                '1',
+                '',
+                '2',
+                '1',
+                '1',
+            ]);
+            const timeRange = off
+                .getElementById('dim-slice-time-from')
+                .closest('.slice-range');
+            assert.strictEqual(
+                timeRange.style.getPropertyValue('--slice-from'),
+                '0.5',
+            );
+            assert.ok(
+                off
+                    .getElementById('dim-slice-lat')
+                    .closest('.dimension-slice-row')
+                    .classList.contains('slice-step-ignored'),
+            );
+            assert.ok(off.getElementById('plotColWrapInput').disabled);
+            // Frozen: boxes read-only, sliders disabled, no Reset
+            assert.ok(off.getElementById('dim-slice-time').readOnly);
+            assert.ok(off.getElementById('dim-slice-time-from').disabled);
+            assert.strictEqual(
+                off.querySelectorAll('.plot-reset-button:not(.hidden)').length,
+                0,
+            );
+        } finally {
+            offline.window.close();
+        }
+    });
+
+    test('export keeps an empty selection outlined', async () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        harness.setValue(doc.getElementById('dim-slice-time'), '2:1', 'input');
+        assert.strictEqual(
+            doc
+                .getElementById('dim-slice-time-stop')
+                .getAttribute('aria-invalid'),
+            'true',
+        );
+        harness.click(doc.getElementById('exportWebviewButton'));
+        const exported = harness.requests('exportWebview')[0].payload
+            .htmlContent as string;
+        assert.match(
+            exported,
+            /id="dim-slice-time-stop"[^>]*aria-invalid="true"/,
+        );
+    });
+
     test('export capture keeps control values', async () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;

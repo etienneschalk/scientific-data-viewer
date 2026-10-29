@@ -518,6 +518,10 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The boxes are empty and the handles are back at both ends.
 
+6. Type `1:3` in the **start** box of `time`, then export the webview (download icon at the top) and open the HTML file in a browser.
+
+✅ The `time` boxes show `1` and `3` and the handles are at the same place. You cannot type in the boxes or move the handles, and there is no **Reset** button.
+
 ---
 
 ## Part C — Quick check that old features still work

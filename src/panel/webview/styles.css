@@ -1267,7 +1267,8 @@ pre:not(.html-representation pre) {
     border-radius: 0 var(--sdv-radius-sm) var(--sdv-radius-sm) 0;
 }
 
-.slice-part:invalid {
+.slice-part:invalid,
+.slice-part[aria-invalid='true'] {
     border-color: var(
         --vscode-inputValidation-errorBorder,
         var(--vscode-errorForeground)
@@ -1364,10 +1365,15 @@ pre:not(.html-representation pre) {
     display: none;
 }
 
-.slice-range-handle:disabled::-webkit-slider-thumb {
+.slice-range--disabled .slice-range-handle::-webkit-slider-thumb {
     background-color: var(--sdv-border);
     box-shadow: none;
     cursor: not-allowed;
+}
+
+/* Exported page: the slider shows the selection but does not move */
+.slice-range-handle:disabled::-webkit-slider-thumb {
+    cursor: default;
 }
 
 .slice-range-handle:active::-webkit-slider-thumb {

@@ -215,6 +215,12 @@ function updateBoxState(field: SliceField): void {
         ? 'Stop must be greater than start (stop is excluded): this selects nothing'
         : '';
     boxes.stop.setCustomValidity(message);
+    // An attribute, unlike the custom validity, is kept by the HTML export
+    if (empty) {
+        boxes.stop.setAttribute('aria-invalid', 'true');
+    } else {
+        boxes.stop.removeAttribute('aria-invalid');
+    }
     boxes.stop.title = message;
 }
 

@@ -64,6 +64,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 
 ### Code review changes visible to users
 
+- **Exported HTML** keeps the slice widgets frozen: sliders no longer move, the red outline of an empty selection is kept, and the Reset buttons are hidden.
 - **vmin / vmax** now apply when a dimension slice, a facet or x / y / hue is set (they were silently dropped unless a `cmap` was given); unchecking **add_colorbar** works there too. Checking **robust** on a 1D variable no longer fails with `unexpected keyword argument 'robust'`.
 - **Group plot overrides** now apply **field by field**: an empty group field (or a group checkbox left at its default) uses the global value. Before, any non-default group setting made all of the group's checkboxes win.
 - **Numeric attributes** show as numbers / arrays (`-999`, `[0.0, 2.0]`) instead of numpy text (`"[0. 2.]"`).
@@ -729,6 +730,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Paste `0:24:2` in **start** → the three boxes fill and the focus goes to **step**. Paste `5::2` → stop becomes the dimension size (to the end). Type `abc` in a box, or start `8` stop `3` → outlined in red. Type step `-1` → the slider greys out.
 7. **Create Plot** with `time` start `0`, stop `2` → the plot uses two time steps; with start `1` only → one time step (no time dimension left).
 8. **Reset** next to **Dimension slices** → boxes empty, handles back at both ends. Same in a group's **Group Plot Controls** (group values still override the global ones).
+9. Set `time` to start `1` stop `3` step `2`, type start `2` stop `1` in another dimension, then export the webview and open the HTML in a browser → the boxes show the same values, the handles and highlight are where they were, the empty selection is still outlined in red; the boxes cannot be edited, the handles do not move and there is no **Reset** button.
 
 ---
 
