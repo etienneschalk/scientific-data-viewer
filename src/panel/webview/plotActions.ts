@@ -1,3 +1,4 @@
+import { ICONS } from '../../shared/icons';
 import { messageBus } from './bus';
 import { mergePlotControls, readPlotControls } from './plotParams';
 import { activePlotOperations, globalState, plotAllState } from './state';
@@ -87,7 +88,7 @@ function displayVariablePlotError(controls: HTMLElement, text: string): void {
         <div>
             ${
                 text.includes('Matplotlib is not installed')
-                    ? `<button class="plot-action-button plot-install-button" data-action="install-packages" data-packages="matplotlib" title="Once installed (a notification should appear), retry 'Create Plot' again.">🎮 Install matplotlib</button>`
+                    ? `<button class="plot-action-button plot-install-button" data-action="install-packages" data-packages="matplotlib" title="Once installed (a notification should appear), retry 'Create Plot' again.">${ICONS.install} Install matplotlib</button>`
                     : ''
             }
             <button class="text-copy-button" data-target-id="${preId}" title="Copy error message">Copy</button>
@@ -120,7 +121,9 @@ function updatePlotAllUI(isRunning: boolean): void {
     ) as HTMLButtonElement | null;
     if (button) {
         button.disabled = isRunning;
-        button.textContent = isRunning ? 'Plotting...' : '⚠️ Plot All';
+        button.innerHTML = isRunning
+            ? 'Plotting...'
+            : `${ICONS.warning} Plot All`;
     }
     updateCancelButtonVisibility();
 }
@@ -135,8 +138,7 @@ function updateCancelButtonVisibility(): void {
         'hidden',
         count === 0 && !plotAllState.running,
     );
-    cancelButton.textContent =
-        count > 0 ? `🛑 Cancel All (${count})` : '🛑 Cancel All';
+    cancelButton.innerHTML = `${ICONS.stop} Cancel All${count > 0 ? ` (${count})` : ''}`;
 }
 
 function getVariableGroup(variable: string): string {

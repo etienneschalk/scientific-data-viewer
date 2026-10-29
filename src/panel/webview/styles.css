@@ -197,7 +197,7 @@ kbd {
 }
 
 /* Global error panel */
-.error {
+#error {
     margin: 16px 0;
     padding: 16px 20px;
     color: var(--vscode-foreground);
@@ -207,33 +207,33 @@ kbd {
     border-radius: var(--sdv-radius-lg);
 }
 
-.error h3 {
+#error h3 {
     color: var(--vscode-errorForeground);
     font-size: 1.15em;
     font-weight: 600;
     margin-bottom: 10px;
 }
 
-.error h4 {
+#error h4 {
     font-size: 1em;
     font-weight: 600;
     margin: 16px 0 8px;
 }
 
-.error p {
+#error p {
     margin: 8px 0;
 }
 
-.error strong {
+#error strong {
     color: var(--vscode-errorForeground);
 }
 
-.error ol {
+#error ol {
     margin: 8px 0;
     padding-left: 20px;
 }
 
-.error li {
+#error li {
     margin: 6px 0;
 }
 
@@ -302,6 +302,9 @@ kbd {
 }
 
 #degraded-mode-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 11px;
     font-weight: normal;
     line-height: 16px;
@@ -446,8 +449,12 @@ button:disabled {
     );
 }
 
-.header-control-button svg,
-.timestamp-icon svg {
+/* Line icons (src/shared/icons.ts): drawn in the text color of their parent */
+.sdv-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.2;
@@ -455,14 +462,32 @@ button:disabled {
     stroke-linejoin: round;
 }
 
-.header-control-button svg {
+.header-control-button .sdv-icon {
     width: 16px;
     height: 16px;
 }
 
-.timestamp-icon svg {
-    width: 14px;
-    height: 14px;
+h3 .sdv-icon,
+h4 .sdv-icon {
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.2em;
+    margin-right: 2px;
+}
+
+#error h4 .sdv-icon {
+    color: var(--vscode-editorLightBulb-foreground, currentColor);
+}
+
+.external-link .sdv-icon {
+    width: 11px;
+    height: 11px;
+    vertical-align: 0;
+}
+
+#degraded-mode-indicator .sdv-icon {
+    width: 12px;
+    height: 12px;
 }
 
 /* Form controls */

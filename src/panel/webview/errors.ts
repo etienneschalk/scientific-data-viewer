@@ -1,3 +1,4 @@
+import { ICONS } from '../../shared/icons';
 import { messageBus } from './bus';
 import { escapeHtml, escapeHtmlMultiline, SUPPORTED_EXTENSIONS } from './util';
 
@@ -8,15 +9,15 @@ const COMMAND_SHOW_SETTINGS = 'scientificDataViewer.showSettings';
 
 /** Link handled by the delegated `data-action` click listener (no inline onclick: CSP). */
 function installLink(packages: string[], text: string): string {
-    return /*html*/ `<a href="#" class="small-button-link" data-action="install-packages" data-packages="${escapeHtml(packages.join(','))}">🎮 ${escapeHtml(text)}</a>`;
+    return /*html*/ `<a href="#" class="small-button-link" data-action="install-packages" data-packages="${escapeHtml(packages.join(','))}">${ICONS.install} ${escapeHtml(text)}</a>`;
 }
 
 function renderTroubleshootingSteps(): string {
     return /*html*/ `
-        <h4>💡 General Troubleshooting Steps</h4>
+        <h4>${ICONS.lightbulb} General Troubleshooting Steps</h4>
         <ol>
-            <li>If this is the first time you are using the extension, please consult the <a href="https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started" target="_blank">🔗 Getting Started</a> guide</li>
-            <li>If the file is indicated as too large, you can increase the Max File Size in the <a href="#" class="small-button-link" data-action="show-settings">🎮 Extension Settings</a></li>
+            <li>If this is the first time you are using the extension, please consult the <a href="https://github.com/etienneschalk/scientific-data-viewer/wiki/Getting-Started" target="_blank" class="external-link">Getting Started ${ICONS.linkExternal}</a> guide</li>
+            <li>If the file is indicated as too large, you can increase the Max File Size in the <a href="#" class="small-button-link" data-action="show-settings">${ICONS.settings} Extension Settings</a></li>
             <li>Make sure that the file format is supported (${escapeHtml(SUPPORTED_EXTENSIONS.join(', '))})</li>
             <li>Make sure Python is installed and accessible</li>
             <li>
@@ -24,8 +25,8 @@ function renderTroubleshootingSteps(): string {
                 Please go to the Extensions pane and search for <code>ms-python.python</code>
                 to verify that the official Python extension is both installed and enabled.
                 <ul class="troubleshooting-sublist">
-                    <li>For VSCode users: <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python" target="_blank">🔗 Python extension (VSCode Marketplace)</a></li>
-                    <li>For Cursor users: <a href="https://open-vsx.org/extension/ms-python/python" target="_blank">🔗 Python extension (Open VSX Registry)</a></li>
+                    <li>For VSCode users: <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python" target="_blank" class="external-link">Python extension (VSCode Marketplace) ${ICONS.linkExternal}</a></li>
+                    <li>For Cursor users: <a href="https://open-vsx.org/extension/ms-python/python" target="_blank" class="external-link">Python extension (Open VSX Registry) ${ICONS.linkExternal}</a></li>
                 </ul>
             </li>
             <li>Select the Python Interpreter: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Python: Select Interpreter"</li>
@@ -43,8 +44,8 @@ function renderTroubleshootingSteps(): string {
             </li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>
             <li>Finally, try to close and reopen the file to reload the page</li>
-            <li><a href="#" class="small-button-link" data-action="show-logs">🎮 Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
-            <li>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank">🔗 Scientific Data Viewer GitHub repository</a></li>
+            <li><a href="#" class="small-button-link" data-action="show-logs">${ICONS.output} Check VSCode Output panel</a> for more details (choose "Scientific Data Viewer" from the dropdown)</li>
+            <li>If you need more help, please report the issue on the <a href="https://github.com/etienneschalk/scientific-data-viewer/issues" target="_blank" class="external-link">Scientific Data Viewer GitHub repository ${ICONS.linkExternal}</a></li>
         </ol>
     `;
 }
@@ -60,7 +61,7 @@ export function displayGlobalError(
         return;
     }
     errorDiv.innerHTML = /*html*/ `
-        <h3>❌ Error</h3>
+        <h3>${ICONS.error} Error</h3>
         <p><strong>Message:</strong> <strong>${escapeHtmlMultiline(message)}</strong></p>
         ${details ? /*html*/ `<p><strong>Details:</strong> ${escapeHtmlMultiline(details)}</p>` : ''}
         ${errorType ? /*html*/ `<p><strong>Error Type:</strong> ${escapeHtml(errorType)}</p>` : ''}

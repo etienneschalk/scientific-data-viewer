@@ -6,6 +6,7 @@
  * through one delegated listener, using element ids for the header/global
  * buttons and `data-action` attributes for everything rendered dynamically.
  */
+import { ICONS } from '../../shared/icons';
 import { messageBus } from './bus';
 import {
     displayGlobalError,
@@ -38,7 +39,7 @@ import { clearTimeControls, handleTimeControlEvent } from './timeControls';
 function showDegradedModeIndicator(): void {
     const indicator = document.createElement('span');
     indicator.id = 'degraded-mode-indicator';
-    indicator.textContent = '🌐 Browser Mode';
+    indicator.innerHTML = `${ICONS.globe} Browser Mode`;
     indicator.title =
         'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
     (document.getElementById('top-level-title') ?? document.body).appendChild(

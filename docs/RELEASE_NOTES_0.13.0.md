@@ -155,6 +155,7 @@ The panel was styled like a plain web page from the early 2010s: square bordered
 - **Sections**: VS Code-style twisties on every collapsible section; top-level titles stay sticky under the header; Dimensions / Coordinates / Variables / Attributes / Group Plot Controls use the uppercase pane-header style.
 - **Variables**: each variable is a rounded card (summary row, value, attributes, and for data variables the plot controls and plot); `📄` markers removed; dims and dtypes in the editor font.
 - **Controls**: one style for every text, number, date input, select and checkbox (theme input / dropdown colors, focus ring); plot actions (Reset, Save, Save As, Open) are secondary buttons, Create Plot stays primary; copy buttons read **Copy** / **Copied** and float in the corner of text representations and plot errors.
+- **Icons**: no emoji left in the viewer. Toolbar, Plot All / Cancel All, install / settings / logs links, external links, the error title, the troubleshooting heading and the Browser Mode badge use one set of inline SVG line icons (`src/shared/icons.ts`) drawn in the surrounding text color.
 - **Feedback**: error page and plot errors as callouts with an accent border; loading spinner; `<kbd>` styled like VS Code keybinding labels; outline navigation highlight uses the focus color.
 - **Themes**: colors come only from `--vscode-*` variables. Derived surfaces and borders use `color-mix()`; VS Code < 1.77 (no `color-mix()`) falls back to flat surfaces. High-contrast themes get explicit contrast borders and no tinted surfaces.
 
@@ -521,6 +522,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 7. Explorer → Data Structure: click a variable → the viewer scrolls to it and highlights it with the focus color.
 8. Export the webview (download icon) and open the HTML in a browser → same look as in VS Code.
 9. Open `sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
+10. No emoji is left: **Plot All** shows a warning line icon (a stop icon on **Cancel All** while plotting), and the error page uses line icons for its title, the troubleshooting heading, the install / settings / logs links and after external links.
 
 ---
 
@@ -534,7 +536,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background and the variable card's plot controls keep rounded top corners (`:has()` needs 1.75+); everything stays readable.
-- **Error page and plot buttons** still use emoji in their text (⚠️ Plot All, 🎮 Install…, 🔗 links); only the toolbar and copy buttons were changed.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---

@@ -1,4 +1,5 @@
 import { getDisplayName, getVersion } from '../common/vscodeutils';
+import { ICONS } from '../shared/icons';
 import {
     readWebviewAsset,
     WEBVIEW_SCRIPT,
@@ -19,25 +20,6 @@ function escapeHtml(unsafe: string): string {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
 }
-
-/** 16px line icons for the header; stroke and size come from styles.css. */
-function icon(body: string): string {
-    return `<svg viewBox="0 0 16 16" aria-hidden="true">${body}</svg>`;
-}
-
-const ICONS = {
-    export: icon('<path d="M8 2.5v7.5M5 7l3 3 3-3M3 11.5v2h10v-2"/>'),
-    collapseAll: icon(
-        '<rect x="4.5" y="4.5" width="9" height="9" rx="1.5"/><path d="M2.5 11V3.5a1 1 0 0 1 1-1H11M6.75 9h4.5"/>',
-    ),
-    expandAll: icon(
-        '<rect x="4.5" y="4.5" width="9" height="9" rx="1.5"/><path d="M2.5 11V3.5a1 1 0 0 1 1-1H11M6.75 9h4.5M9 6.75v4.5"/>',
-    ),
-    refresh: icon(
-        '<path d="M13 8a5 5 0 1 1-1.46-3.54"/><path d="M8.75 4.5h2.8V1.7"/>',
-    ),
-    clock: icon('<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.25l2 1.25"/>'),
-};
 
 /**
  * HTML generation utilities to break down the monolithic DataViewerPanel
@@ -366,8 +348,8 @@ export class HTMLGenerator {
             <details class="sticky-group-details" id="section-global-plot-controls">
                 <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
-                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
-                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">🛑 Cancel All</button>
+                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">${ICONS.warning} Plot All</button>
+                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">${ICONS.stop} Cancel All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
