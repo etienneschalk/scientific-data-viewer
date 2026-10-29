@@ -137,6 +137,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Backend  | `collect_attributes` / `collect_encoding` replace `collect_dataarray_attributes`; `encoding` on `VariableInfo` / `CoordinateInfo`, `encoding_flattened` on `FileInfoResult`; no more `__xarray_encoding.*` keys in `attributes`; duplicated `filters.*` keys dropped |
 | Webview  | Variable card = summary row + **Attributes** (open) / **Xarray Encoding** (collapsed) / **Plot** (open) sections, each collapsible; the summary row shows or hides them all; cards start collapsed                                                                   |
 | Webview  | Group **Xarray Encoding** section (collapsed); entry-count badges on group and variable section headers; creating a plot opens its card and Plot section                                                                                                             |
+| Webview  | Groups as cards: sticky header row with counts (dimensions · coordinates · variables), sections divided by hairlines like a variable card's; no box-in-box for dimensions / plot panels                                                                              |
 | Outline  | **Xarray Encoding (n)** under groups, coordinates, variables (webview ids `…___encoding`, `…___encoding-entry___<key>`); coordinate / variable branches share one helper                                                                                             |
 | Styles   | Pane-header style for card sections, contents aligned with section titles; the last `:has()` rule (plot-controls corner radius) is gone                                                                                                                              |
 | Fix      | Group **Attributes** (nested view): `:` right after the name like the other attribute / encoding rows, not next to the value                                                                                                                                         |
@@ -240,6 +241,8 @@ python scripts/architecture/generate.py --check  # diagrams still match the code
 Results after adding the local load time setting: `npm test` 300 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
 Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+Results after turning groups into cards: `npm test` 301 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` checked (overview, plots, narrow; dark and light) plus a one-off scrolled capture for the sticky group header.
 
 Results after moving the xarray encoding to its own section: `npm test` 294 passing; `pytest python/tests` 165 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; `npm run screenshots` checked (overview, expanded, plots, narrow). Golden snapshots: re-`record` needed (every info case changes: `encoding` / `encoding_flattened` fields, no `__xarray_encoding.*` attributes).
 
@@ -364,6 +367,7 @@ Architecture diagrams:
 Xarray Encoding section:
 
 56. feat(webview): show the xarray encoding in its own collapsible sections
+57. feat(webview): show each group as a card with collapsible sections
 
 Cancel a single plot:
 

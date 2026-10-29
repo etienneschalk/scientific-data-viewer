@@ -446,6 +446,10 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Each variable opens by itself on its plot.
 
+5. Look at a whole group, then scroll down through it.
+
+✅ The group is one box: its title line shows counts (e.g. "3 dimensions · 3 coordinates · 3 variables"), and its parts (Group Plot Controls, Dimensions, … Xarray Encoding) are separated by thin lines inside the same border. While you scroll, the title line stays at the top until the group ends.
+
 ### B26. Cancel one plot
 
 1. Open `sample_data.nc`, open a variable and click **Create Plot**, then quickly click the red **Cancel** button that appears next to it. (If the plot is too fast to catch, use a bigger file.)

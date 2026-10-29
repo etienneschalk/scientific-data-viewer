@@ -259,33 +259,77 @@ function renderGroup(
     const encoding = data.encoding_flattened?.[groupName] ?? {};
     const encodingCount = Object.keys(encoding).length;
 
+    const dimensionCount = Object.keys(dimensions ?? {}).length;
+    const coordinateCount = coordinates?.length ?? 0;
+    const variableCount = variables?.length ?? 0;
+
     const section = (
         name: string,
         title: string,
         content: string,
         count?: number,
         open = true,
-    ) => /*html*/ `
-                <div class="info-section" id="${joinId(['data-group', groupName, name])}">
-                    <details${open ? ' open' : ''}> <summary><h4>${title}</h4>${count ? countBadge(count) : ''}</summary>
-                        <div class="${name}">
-                            ${content}
-                        </div>
-                    </details>
-                </div>`;
+    ) =>
+        renderGroupSection(
+            joinId(['data-group', groupName, name]),
+            title,
+            /*html*/ `<div class="${name}">${content}</div>`,
+            { open, count },
+        );
 
     return /*html*/ `
         <div class="info-section" id="${groupId}">
-            <details class="sticky-group-details"> <summary><h3>Group: ${escapeHtml(groupName)}</h3></summary>
-                ${renderGroupPlotControls(data, groupName, flags)}
-                ${section('dimensions', 'Dimensions', dimensionsHtml, Object.keys(dimensions ?? {}).length)}
-                ${section('coordinates', 'Coordinates', coordinatesHtml, coordinates?.length ?? 0)}
-                ${section('variables', 'Variables', variablesHtml, variables?.length ?? 0)}
-                ${section('attributes', 'Attributes', attributesHtml, attributeCount)}
-                ${encodingCount > 0 ? section('encoding', 'Xarray Encoding', renderKeyValueItems(encoding, groupId, 'encoding-entry'), encodingCount, false) : ''}
+            <details class="group-card">
+                <summary class="group-card-summary">
+                    <h3>Group: ${escapeHtml(groupName)}</h3>
+                    <span class="group-card-meta">${escapeHtml(
+                        [
+                            plural(dimensionCount, 'dimension'),
+                            plural(coordinateCount, 'coordinate'),
+                            plural(variableCount, 'variable'),
+                        ].join(' · '),
+                    )}</span>
+                </summary>
+                <div class="group-card-body">
+                    ${renderGroupPlotControls(data, groupName, flags)}
+                    ${section('dimensions', 'Dimensions', dimensionsHtml, dimensionCount)}
+                    ${section('coordinates', 'Coordinates', coordinatesHtml, coordinateCount)}
+                    ${section('variables', 'Variables', variablesHtml, variableCount)}
+                    ${section('attributes', 'Attributes', attributesHtml, attributeCount)}
+                    ${encodingCount > 0 ? section('encoding', 'Xarray Encoding', renderKeyValueItems(encoding, groupId, 'encoding-entry'), encodingCount, false) : ''}
+                </div>
             </details>
         </div>
         `;
+}
+
+function plural(count: number, noun: string): string {
+    return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+/**
+ * One collapsible section of a group card (pane header style, like the
+ * sections of a variable card).
+ */
+function renderGroupSection(
+    id: string,
+    title: string,
+    content: string,
+    options: {
+        open: boolean;
+        count?: number;
+        /** Group Plot Controls: `.group-plot-controls-section` with data-group */
+        plotGroup?: string;
+    },
+): string {
+    const { open, count, plotGroup } = options;
+    const plotAttrs =
+        plotGroup === undefined ? '' : ` data-group="${escapeHtml(plotGroup)}"`;
+    return /*html*/ `
+                    <details class="group-section${plotGroup === undefined ? '' : ' group-plot-controls-section'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                        <summary class="group-section-summary"><h4>${title}</h4>${count ? countBadge(count) : ''}</summary>
+                        ${content}
+                    </details>`;
 }
 
 /** Group time controls and plot parameters (same markup roles as the global ones). */
@@ -358,15 +402,12 @@ function renderGroupPlotControls(
         return '';
     }
 
-    return /*html*/ `
-                <div class="info-section group-plot-controls-section" ${groupAttr} id="${joinId(['data-group', groupName, 'group-plot-controls'])}">
-                    <details${flags.isFirstRootGroup ? ' open' : ''}> <summary><h4>Group Plot Controls</h4></summary>
-                        <div class="group-plot-controls-content">
-                            ${timeControlsHtml}
-                            ${dimensionSlicesHtml}
-                        </div>
-                    </details>
-                </div>`;
+    return renderGroupSection(
+        joinId(['data-group', groupName, 'group-plot-controls']),
+        'Group Plot Controls',
+        /*html*/ `<div class="group-plot-controls-content">${timeControlsHtml}${dimensionSlicesHtml}</div>`,
+        { open: !!flags.isFirstRootGroup, plotGroup: groupName },
+    );
 }
 
 /** Global dimension slices: every dimension of every group (max size), sorted. */

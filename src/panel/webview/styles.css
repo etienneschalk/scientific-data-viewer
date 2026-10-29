@@ -751,23 +751,78 @@ pre:not(.html-representation pre) {
     right: 0;
 }
 
-/* Group content */
-.dimensions,
-.variables,
-.coordinates,
-.attributes,
-.encoding {
-    padding-bottom: 8px;
+/*
+ * Group cards: a sticky header row (group name and counts), then sections
+ * divided by hairlines (Group Plot Controls, Dimensions, Coordinates,
+ * Variables, Attributes, Xarray Encoding), built like the variable cards.
+ * overflow: clip (not hidden) rounds the corners without breaking the
+ * sticky header.
+ */
+.group-card {
+    margin: 4px 0 12px;
+    overflow: clip;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+.group-card > .group-card-summary {
+    position: sticky;
+    top: calc(var(--sdv-header-height) - 1px);
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    padding: 8px 12px 8px 8px;
+    /* Tinted but opaque: content scrolling under the sticky row stays hidden */
+    background:
+        linear-gradient(var(--sdv-surface), var(--sdv-surface)),
+        var(--vscode-editor-background);
+    transition: background var(--sdv-transition);
+}
+
+/* The divider under the header moves with it while it is stuck */
+.group-card[open] > .group-card-summary {
+    border-bottom: 1px solid var(--sdv-border);
+}
+
+.group-card-body > .group-section:first-child {
+    border-top: none;
+}
+
+.group-card > .group-card-summary:hover {
+    background:
+        linear-gradient(var(--sdv-surface-hover), var(--sdv-surface-hover)),
+        var(--vscode-editor-background);
+}
+
+.group-card-summary h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.group-card-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Section twisties line up with the group name, contents with the section titles */
+.info-section > .group-card > .group-card-body {
+    margin-left: 0;
+    --sdv-section-indent: 28px;
+    --sdv-section-content-indent: 48px;
+}
+
+.group-section > :not(summary) {
+    padding: 2px 12px 12px var(--sdv-section-content-indent);
 }
 
 .dimensions-compact {
-    padding: 8px 12px;
     font-family: var(--sdv-mono);
     font-size: var(--sdv-mono-size);
     color: var(--vscode-descriptionForeground);
-    background-color: var(--sdv-surface);
-    border: 1px solid var(--sdv-border);
-    border-radius: var(--sdv-radius-lg);
 }
 
 .dimensions-compact strong {
@@ -859,17 +914,21 @@ pre:not(.html-representation pre) {
     --sdv-section-content-indent: 48px;
 }
 
-.variable-section {
+/* Sections of variable and group cards: pane headers divided by hairlines */
+.variable-section,
+.group-section {
     border-top: 1px solid var(--sdv-border);
 }
 
-.variable-section > .variable-section-summary {
+.variable-section > summary,
+.group-section > summary {
     gap: 8px;
     padding: 5px 12px 5px var(--sdv-section-indent);
     transition: background-color var(--sdv-transition);
 }
 
-.variable-section > .variable-section-summary:hover {
+.variable-section > summary:hover,
+.group-section > summary:hover {
     background-color: var(--sdv-surface-hover);
 }
 
@@ -1031,11 +1090,20 @@ pre:not(.html-representation pre) {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
-    padding-bottom: 8px;
 }
 
+/* In a group card the panels are plain blocks of the section */
 .group-plot-controls-content > .group-plot-controls {
     margin-top: 0;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+}
+
+.group-plot-controls-content > .group-plot-controls + .group-plot-controls {
+    padding-top: 12px;
+    border-top: 1px solid var(--sdv-border);
 }
 
 .time-controls-section h4 {
@@ -1170,7 +1238,8 @@ pre:not(.html-representation pre) {
         display: none;
     }
 
-    .variable-details-content {
+    .variable-details-content,
+    .info-section > .group-card > .group-card-body {
         --sdv-section-indent: 8px;
         --sdv-section-content-indent: 12px;
     }

@@ -21,7 +21,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
 | **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
-| **Variables**         | Xarray encoding in its own collapsed section; variable cards with collapsible Attributes / Xarray Encoding / Plot (see [§ Xarray Encoding](#xarray-encoding-section))    |
+| **Variables**         | Xarray encoding in its own collapsed section; variable and group cards with collapsible sections (see [§ Xarray Encoding](#xarray-encoding-section))                     |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                            |
 
@@ -186,13 +186,14 @@ The xarray encoding (`dtype`, `_FillValue`, chunks, compression, Zarr codecs) wa
 - **Group Xarray Encoding**: groups get an **Xarray Encoding** section after **Attributes**, collapsed by default (`source`, `unlimited_dims`…). The group sections show their entry count as a badge.
 - **Plain keys**: `dtype`, `chunks`, `compressors` instead of `__xarray_encoding.dtype`… The duplicated `__xarray_encoding.filters.*` keys are gone: with both the netcdf4 and h5netcdf engines, the compression keys (`zlib`, `complevel`, `shuffle`, `fletcher32`) are already in the encoding.
 - **Outline**: **Xarray Encoding (n)** under groups, coordinates and variables; clicking it opens the section in the viewer.
+- **Group cards**: groups are built like the variable cards, so a group reads as one block instead of a title followed by detached sections. One bordered card per group: a header row (group name, then "3 dimensions · 3 coordinates · 3 variables", useful when the group is collapsed) that stays pinned under the toolbar while you scroll the group, then **Group Plot Controls**, **Dimensions**, **Coordinates**, **Variables**, **Attributes**, **Xarray Encoding** as sections divided by hairlines, with the same headers and indentation as a variable's sections. The dimensions line and the group plot control panels no longer draw their own box inside the card.
 - **Setting**: `showXarrayEncodingAttributes` keeps its name (no migration); off, the encoding sections are not shown.
 - **JSON** (scripts reading `get_data_info.py info`): `encoding` on variables and coordinates and `encoding_flattened` per group; `attributes` / `attributes_flattened` only hold the attributes.
 
 ### How it was checked
 
 - `npm test` (294 passing, including new jsdom tests of the card sections, their default states and ids, the group section, and the card opening on plot), `pytest python/tests` (165 passing; compression keys checked with netcdf4 and h5netcdf), `npm run typecheck`, pre-commit.
-- `npm run screenshots`: overview (collapsed cards, badges), every section expanded, plots (cards opened by the plots), 420 px.
+- `npm run screenshots`: overview (collapsed cards, badges), every section expanded, plots (cards opened by the plots), 420 px, in Dark Modern and Light Modern; a one-off capture of the page scrolled into a group (pinned group header, nothing showing through it).
 
 ---
 
@@ -651,7 +652,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Explorer → Data Structure: expand a variable → **Xarray Encoding (n)**; click an entry → the viewer opens the card and the section and highlights the line.
 7. Set `"scientificDataViewer.showXarrayEncodingAttributes": false`, **Refresh** → no Xarray Encoding section (groups, coordinates, variables, outline); attributes unchanged.
 8. Export the webview → open the HTML in a browser → sections open / closed as at export time, and they still collapse.
-9. Expand the group **Attributes** section → each `:` sits right after the attribute name, as in a variable's **Attributes** and in the **Xarray Encoding** sections (it used to sit next to the value).
+9. Each group is one card: its header shows the group name and its counts (e.g. "3 dimensions · 3 coordinates · 3 variables"); its sections (Group Plot Controls … Xarray Encoding) are separated by thin lines inside the same border. Scroll down inside an open group → its header stays under the toolbar until the end of the group, and the content passes under it. Collapse the group → only the header row is left, with its counts.
+10. Expand the group **Attributes** section → each `:` sits right after the attribute name, as in a variable's **Attributes** and in the **Xarray Encoding** sections (it used to sit next to the value).
 
 ### 25. Cancel a single plot
 
@@ -697,16 +699,16 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                                                                                                                                                                                  |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                               |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                                                |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                 |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                   |
-| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                           |
-| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)            |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section, collapsible variable sections; Cancel button for a single plot; load time in local time |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                           |
+| Area          | Change                                                                                                                                                                                                                                                                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                          |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                                           |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                            |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                              |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                      |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)       |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                      |
 
 ---
 

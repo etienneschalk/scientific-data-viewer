@@ -371,8 +371,8 @@ suite('Webview script (jsdom)', () => {
 
         const doc = harness.document;
         const section = doc.getElementById('data-group___-___encoding');
-        const details = section.querySelector('details');
-        assert.strictEqual(details.open, false);
+        assert.strictEqual(section.tagName, 'DETAILS');
+        assert.strictEqual(section.open, false);
         assert.strictEqual(
             section.querySelector('.count-badge').textContent,
             '2',
@@ -387,6 +387,48 @@ suite('Webview script (jsdom)', () => {
                 .getElementById('data-group___-___attributes')
                 .textContent.includes('source'),
         );
+    });
+
+    test('group card: header with counts, then its sections', () => {
+        harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+
+        const doc = harness.document;
+        const [card, other] = Array.from(
+            doc.querySelectorAll('details.group-card'),
+        ) as any[];
+        assert.strictEqual(card.parentElement.id, 'data-group___-');
+        assert.strictEqual(card.open, true, 'first group open');
+        assert.strictEqual(
+            card.querySelector('.group-card-meta').textContent,
+            '2 dimensions · 1 coordinate · 1 variable',
+        );
+        const sections = Array.from(
+            card.querySelectorAll(':scope > .group-card-body > .group-section'),
+        ) as any[];
+        assert.deepStrictEqual(
+            sections.map((section) => [
+                section.id,
+                section.querySelector('h4').textContent,
+                section.open,
+            ]),
+            [
+                [
+                    'data-group___-___group-plot-controls',
+                    'Group Plot Controls',
+                    true,
+                ],
+                ['data-group___-___dimensions', 'Dimensions', true],
+                ['data-group___-___coordinates', 'Coordinates', true],
+                ['data-group___-___variables', 'Variables', true],
+                ['data-group___-___attributes', 'Attributes', true],
+                ['data-group___-___encoding', 'Xarray Encoding', false],
+            ],
+        );
+        assert.ok(
+            sections[0].classList.contains('group-plot-controls-section'),
+        );
+        assert.strictEqual(sections[0].dataset.group, '/');
+        assert.strictEqual(other.open, false, 'other groups start collapsed');
     });
 
     test('a plot opens its collapsed variable card and Plot section', () => {
