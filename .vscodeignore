@@ -21,16 +21,24 @@ chats/**
 # runtime, and vsce rewrites the README's relative links to the repository
 docs/**
 
-# Include media directory (for icons)
-!media/**
+# Media: the manifest and the code use icon.png and
+# icon_viridis_bold_monochromatic.svg only. README screenshots are not needed:
+# vsce rewrites their links to the GitHub repository in the packaged README.
+media/icon.svg
+media/icon_dark_bg.svg
+media/icon_viridis_bold_monochromatic___old.svg
+media/screenshots/**
 
-# Exclude Python cache and temporary files
+# Python: ship only what the extension runs (get_data_info.py and its
+# sdv_backend package, check_package_availability.py); sample data generators,
+# notebooks, tests and tools stay out. vsce applies "!" patterns whatever their
+# order (a negation wins over any exclusion), so they name .py files only, to
+# keep __pycache__ out.
+python/**
+!python/get_data_info.py
+!python/check_package_availability.py
+!python/sdv_backend/**/*.py
 python/**/__pycache__/**
-python/tests/**
-python/tools/**
-python/.golden/**
-python/.pytest_cache/**
-python/*.egg-info/**
 *.pyc
 *.pyo
 *.pyd
@@ -64,11 +72,24 @@ Thumbs.db
 # Exclude build artifacts
 out/test/**
 
-# Webview TypeScript sources: shipped as the esbuild bundle out/webview/webview.js
-# (styles.css in the same folder is still loaded at runtime)
-src/panel/webview/**/*.ts
-src/panel/webview/tsconfig.json
+# TypeScript sources: shipped compiled in out/ (extension host: tsc, webview:
+# esbuild bundle out/webview/webview.js). The webview stylesheet is loaded from
+# src/ at runtime (WEBVIEW_STYLESHEET in src/panel/WebviewAssets.ts).
+src/**
+!src/panel/webview/styles.css
 *.vsix
+
+# Repository tooling and caches
+.github/**
+.ruff_cache/**
+.pytest_cache/**
+.gitignore
+.nvmrc
+.pre-commit-config.yaml
+.secrets.baseline
+*.sh
+tsconfig*.json
+pyproject.toml
 
 # Exclude notebooks 
 notebooks/**

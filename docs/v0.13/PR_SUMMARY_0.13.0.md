@@ -135,7 +135,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
-- `.vsix` no longer ships `docs/` (48 contributor files): `.vscodeignore` excludes `docs/**` and `**/*.md` except `README.md` (`npx vsce ls`: 252 → 203 files)
+- `.vsix` ships only runtime files: `docs/`, host TypeScript sources, caches, repository scripts / configs, `python/` dev scripts and notebooks, unused media excluded; `.vscodeignore` allow-lists `src/` (`styles.css`) and `python/` (backend `.py`). `npx vsce ls`: 252 → 98 files, 2.5 → 1.1 MB; unpacked `.vsix` checked (requires resolve, assets present, backend info / plot run)
 
 ---
 
@@ -319,3 +319,4 @@ Architecture diagrams:
 
 53. feat(tooling): generate architecture diagrams from the code
 54. fix(package): stop shipping docs/ in the .vsix
+55. fix(package): ship only runtime files in the .vsix

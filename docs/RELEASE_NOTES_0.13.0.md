@@ -73,7 +73,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 ### Building from source (contributors)
 
 - `npm run compile` now also bundles the webview (`src/panel/webview/*.ts` → `out/webview/webview.js`, esbuild); `npm run typecheck` checks the extension host and the webview. Run `npm install` first (new devDependency `esbuild`).
-- The `.vsix` no longer contains `docs/` (48 contributor files that the extension never read): `.vscodeignore` now excludes `docs/**` and Markdown files at any depth, except `README.md`. Check with `npx vsce ls`.
+- The `.vsix` now contains only what the extension runs: 98 files / 1.1 MB instead of 252 files / 2.5 MB. Gone: `docs/`, the TypeScript sources of the extension host, tool caches, repository scripts and configs, the sample data generators, notebooks and test scripts of `python/`, unused icons and the README screenshots. `.vscodeignore` lists what ships from `src/` and `python/`: **a new runtime file there must be added to it** (vsce applies `!` patterns whatever their order). Check with `npx vsce ls`.
 
 ### Python backend location (contributors)
 
