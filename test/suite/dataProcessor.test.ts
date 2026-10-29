@@ -135,7 +135,6 @@ suite('DataProcessor Test Suite', () => {
 
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'line',
         });
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -194,7 +193,6 @@ suite('DataProcessor Test Suite', () => {
         try {
             await processor.createPlot(mockUri, {
                 variable: 'temperature',
-                plotType: 'line',
             });
             assert.fail('Should have thrown an error');
         } catch (error) {
@@ -232,7 +230,6 @@ suite('DataProcessor Test Suite', () => {
         // createPlot returns error in response instead of throwing
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'line',
         });
         assert.ok(plotData);
         assert.ok(plotData?.error);
@@ -352,7 +349,6 @@ suite('DataProcessor Test Suite', () => {
 
         await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             dimensionSlices: { time: '0:24:2', rlat: '100:120' },
             facetRow: 'time',
             facetCol: 'rlat',
@@ -430,7 +426,6 @@ suite('DataProcessor Test Suite', () => {
 
         await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             plotX: 'time',
             plotY: 'lat',
             plotHue: 'lon',
@@ -468,7 +463,6 @@ suite('buildCreatePlotCliArgs', () => {
                 'plot',
                 '/d/a.nc',
                 '/t',
-                'auto',
                 '--style',
                 'default',
                 '--netcdf-engine-order',
@@ -494,7 +488,7 @@ suite('buildCreatePlotCliArgs', () => {
             },
             baseOptions,
         );
-        assert.deepStrictEqual(args.slice(6), [
+        assert.deepStrictEqual(args.slice(5), [
             '--netcdf-engine-order',
             'netcdf4,h5netcdf',
         ]);

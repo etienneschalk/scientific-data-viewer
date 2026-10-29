@@ -123,33 +123,29 @@ GRP = "sample_data_multiple_groups.nc"
 D4 = "sample_large_4d_data.nc"
 CROP = '{"rlat": "200:260", "rlon": "100:150"}'
 
-# (case id, file, variable, plot_type, extra flags)
-PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
-    ("auto_3d", NC, "/precipitation", "auto", []),
+# (case id, file, variable, extra flags)
+PLOT_CASES: list[tuple[str, str, str, list[str]]] = [
+    ("auto_3d", NC, "/precipitation", []),
     (
         "slice_4d",
         D4,
         "/temperature_4d",
-        "auto",
         ["--dimension-slices", '{"time": 0, "level": 0}'],
     ),
-    ("auto_group", GRP, "/atmosphere/wind/u_component", "auto", []),
-    ("histogram", NC, "/precipitation", "histogram", []),
-    ("style_dark", NC, "/precipitation", "auto", ["--style", "dark_background"]),
-    ("slice_map", HS, "/hs", "auto", ["--dimension-slices", '{"time": 0}']),
+    ("auto_group", GRP, "/atmosphere/wind/u_component", []),
+    ("style_dark", NC, "/precipitation", ["--style", "dark_background"]),
+    ("slice_map", HS, "/hs", ["--dimension-slices", '{"time": 0}']),
     (
         "slice_point",
         HS,
         "/hs",
-        "auto",
         ["--dimension-slices", '{"rlat": 3, "rlon": 4}'],
     ),
-    ("hist_bins", HS, "/hs", "auto", ["--dimension-slices", CROP, "--bins", "50"]),
+    ("hist_bins", HS, "/hs", ["--dimension-slices", CROP, "--bins", "50"]),
     (
         "facet_row",
         HS,
         "/hs",
-        "auto",
         [
             "--dimension-slices",
             '{"time": "0:24:12", "rlat": "200:260", "rlon": "100:150"}',
@@ -161,7 +157,6 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "facet_col_wrap",
         HS,
         "/hs",
-        "auto",
         [
             "--dimension-slices",
             '{"time": "0:6", "rlat": "200:260", "rlon": "100:150"}',
@@ -175,7 +170,6 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "facet_figsize",
         HS,
         "/hs",
-        "auto",
         [
             "--dimension-slices",
             '{"time": "0:4", "rlat": "200:260", "rlon": "100:150"}',
@@ -189,7 +183,6 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "xy_hue",
         HS,
         "/hs",
-        "auto",
         [
             "--dimension-slices",
             '{"rlat": "0:3", "rlon": 0}',
@@ -204,7 +197,6 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "kwargs_mix",
         HS,
         "/hs",
-        "auto",
         [
             "--dimension-slices",
             '{"time": 0}',
@@ -230,15 +222,13 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "bands",
         "sample_multiband.tif",
         "/band_1",
-        "auto",
         ["--convert-bands-to-variables"],
     ),
-    ("tif_band_data", "sample_data.tif", "/band_data", "auto", []),
+    ("tif_band_data", "sample_data.tif", "/band_data", []),
     (
         "datetime_filter",
         NC,
         "/precipitation",
-        "auto",
         [
             "--datetime-variable",
             "time",
@@ -252,7 +242,6 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "datetime_range",
         NC,
         "/precipitation",
-        "auto",
         [
             "--datetime-variable",
             "time",
@@ -266,62 +255,54 @@ PLOT_CASES: list[tuple[str, str, str, str, list[str]]] = [
         "datetime_start_only",
         NC,
         "/precipitation",
-        "auto",
         ["--datetime-variable", "/time", "--start-datetime", "2020-03-15"],
     ),
     (
         "datetime_end_only",
         GRP,
         "/atmosphere/temperature",
-        "auto",
         ["--datetime-variable", "/atmosphere/time", "--end-datetime", "2000-01-01"],
     ),
     (
         "datetime_other_group",
         GRP,
         "/atmosphere/temperature",
-        "auto",
         ["--datetime-variable", "/time"],
     ),
     (
         "datetime_missing",
         NC,
         "/precipitation",
-        "auto",
         ["--datetime-variable", "/nope"],
     ),
     (
         "datetime_bad_ts",
         NC,
         "/precipitation",
-        "auto",
         ["--datetime-variable", "time", "--start-datetime", "not-a-date"],
     ),
-    ("cog", "sample_data_cog.tif", "/band_data", "auto", []),
-    ("zarr_v3_zip", "sample_zarr_v3.zarr.zip", "/chlorophyll", "auto", []),
+    ("cog", "sample_data_cog.tif", "/band_data", []),
+    ("zarr_v3_zip", "sample_zarr_v3.zarr.zip", "/chlorophyll", []),
     (
         "kerchunk",
         "sample_data.kerchunk.json",
         "/temperature",
-        "auto",
         ["--dimension-slices", '{"time": 0}'],
     ),
-    ("err_missing_var", NC, "/does_not_exist", "auto", []),
+    ("err_missing_var", NC, "/does_not_exist", []),
     (
         "err_bad_slices",
         NC,
         "/precipitation",
-        "auto",
         ["--dimension-slices", "{not json"],
     ),
     (
         "err_bad_dim",
         NC,
         "/precipitation",
-        "auto",
         ["--dimension-slices", '{"nope": 0}'],
     ),
-    ("err_broken_file", "broken_file.nc", "/x", "auto", []),
+    ("err_broken_file", "broken_file.nc", "/x", []),
 ]
 
 CASE_TIMEOUT_S = 300
@@ -356,12 +337,8 @@ def build_cases() -> list[Case]:
                     ["info", str(SAMPLE / rel), *flags, *extra],
                 )
             )
-    for case_id, rel, var, plot_type, extra in PLOT_CASES:
-        cases.append(
-            Case(
-                f"plot__{case_id}", ["plot", str(SAMPLE / rel), var, plot_type, *extra]
-            )
-        )
+    for case_id, rel, var, extra in PLOT_CASES:
+        cases.append(Case(f"plot__{case_id}", ["plot", str(SAMPLE / rel), var, *extra]))
     return cases
 
 

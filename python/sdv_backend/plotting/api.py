@@ -62,7 +62,6 @@ def create_plot(
     CreatePlotResult or CreatePlotError
         CreatePlotResult with Base64-encoded PNG image data if successful, CreatePlotError if failed
     """
-    plot_type = options.plot_type  # named local: part of the error message below
     try:
         # Detect file format and available engines
         file_format_info = detect_file_format(
@@ -70,9 +69,6 @@ def create_plot(
             netcdf_engine_order=options.netcdf_engine_order,
             open_as_kerchunk=options.open_as_kerchunk,
         )
-
-        if plot_type != "auto":
-            raise ValueError(f"Invalid plot type: {plot_type}")
 
         if not file_format_info.is_supported:
             message = (
@@ -149,11 +145,9 @@ def create_plot(
         )
 
     except Exception as exc:
-        logger.error(
-            f"Error creating plot: {exc!r} ({file_path=} {variable_path=} {plot_type=})"
-        )
+        logger.error(f"Error creating plot: {exc!r} ({file_path=} {variable_path=})")
         return CreatePlotError(
-            error=f"Error creating plot: {exc!r} ({file_path=} {variable_path=} {plot_type=})",
+            error=f"Error creating plot: {exc!r} ({file_path=} {variable_path=})",
             format_info=file_format_info,
         )
 

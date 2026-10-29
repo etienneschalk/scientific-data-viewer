@@ -418,6 +418,16 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 2. Put back your settings from A6, **Reload Window**.
 
+### B24. No plot type drop-down
+
+1. Open `sample_data.nc` and expand a group.
+
+✅ Under each variable there is only the **Create Plot** button: the "Auto (Recommended)" drop-down is gone.
+
+2. Click **Create Plot** on `temperature`.
+
+✅ The plot appears, as before.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -516,6 +526,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B21 GRIB / TIFF with own environment       |        |       |
 | B22 Code review fixes                      |        |       |
 | B23 Old xarray message (optional)          |        |       |
+| B24 No plot type drop-down                 |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
 | C Old formats, export, outline             |        |       |
 | D1 Issue forms optional (after merge)      |        |       |

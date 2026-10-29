@@ -154,7 +154,6 @@ class TestPlotXyHueCLI:
                 "plot",
                 "/nonexistent/file.nc",
                 "var",
-                "auto",
                 "--plot-x",
                 "time",
                 "--plot-y",

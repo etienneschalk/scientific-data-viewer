@@ -134,7 +134,6 @@ suite('Integration Test Suite', () => {
         // Test plot creation
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'line',
         });
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
@@ -255,7 +254,6 @@ suite('Integration Test Suite', () => {
         // Test plot creation with error - should return error in response
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'line',
         });
         assert.ok(plotData);
         assert.ok(plotData?.error);
@@ -294,7 +292,6 @@ suite('Integration Test Suite', () => {
         try {
             await processor.createPlot(mockUri, {
                 variable: 'temperature',
-                plotType: 'line',
             });
             assert.fail('Should have thrown an error');
         } catch (error) {
@@ -500,7 +497,7 @@ suite('Integration Test Suite', () => {
             // Test plot creation
             const plotData = await processor.createPlot(
                 vscode.Uri.file('/path/to/test.nc'),
-                { variable: 'temperature', plotType: 'line' },
+                { variable: 'temperature' },
             );
             assert.ok(plotData);
             assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));

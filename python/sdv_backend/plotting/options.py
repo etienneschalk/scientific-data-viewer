@@ -110,8 +110,6 @@ class PlotOptions:
 
     Attributes
     ----------
-    plot_type : str
-        Type of plot to create (currently only 'auto' supported)
     style : str
         Matplotlib style to use (e.g., 'default', 'dark_background')
     vmin, vmax : float, optional
@@ -127,7 +125,6 @@ class PlotOptions:
         (e.g. ``QuadMesh``). Default False.
     """
 
-    plot_type: str = "auto"
     style: str = "auto"
 
     # Opening the file

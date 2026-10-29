@@ -14,7 +14,6 @@ export interface EnvironmentInfo {
  */
 export interface PlotOptions {
     variable: string;
-    plotType?: string;
     datetimeVariableName?: string;
     startDatetime?: string;
     endDatetime?: string;

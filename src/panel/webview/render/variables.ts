@@ -196,9 +196,6 @@ function renderVariablePlotControls(variableName: string): string {
     return /*html*/ `
         <div class="variable-plot-controls" data-variable="${escapeHtml(variableName)}">
             <div class="plot-controls-row">
-                <select class="plot-type-select">
-                    <option value="auto" selected>Auto (Recommended)</option>
-                </select>
                 <button class="create-plot-button" data-action="create-plot">Create Plot</button>
             </div>
             <div class="plot-container hidden">

@@ -964,7 +964,6 @@ def main() -> int:
             data_path,
             args.variable_path,
             PlotOptions(
-                plot_type="auto",
                 style=args.style,
                 dimension_slices=case.dimension_slices,
                 facet_row=case.facet_row,

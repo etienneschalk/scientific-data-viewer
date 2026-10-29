@@ -94,14 +94,7 @@ export function buildCreatePlotCliArgs(
     plot: PlotOptions,
     options: CreatePlotCliOptions,
 ): string[] {
-    const args = [
-        'plot',
-        filePath,
-        plot.variable,
-        plot.plotType ?? 'auto',
-        '--style',
-        options.style,
-    ];
+    const args = ['plot', filePath, plot.variable, '--style', options.style];
     if (options.convertBandsToVariables) {
         args.push('--convert-bands-to-variables');
     }

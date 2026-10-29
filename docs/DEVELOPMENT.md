@@ -293,7 +293,7 @@ npm test
 - [ ] File context menu appears for supported files
 - [ ] Data viewer opens and displays file information
 - [ ] Variables and dimensions are shown correctly
-- [ ] Plot generation works for different plot types
+- [ ] Plot generation works for variables of different dimensionality (1-D, 2-D, 3-D+)
 - [ ] Error handling works for invalid files
 - [ ] Large files are handled appropriately
 

@@ -104,13 +104,6 @@ Examples:
     )
 
     parser.add_argument(
-        "plot_type",
-        nargs="?",
-        default="auto",
-        help="Plot type: only 'auto' is supported (optional, default: 'auto')",
-    )
-
-    parser.add_argument(
         "--style",
         default="",
         help="Matplotlib plot style. Any valid matplotlib style name (e.g., 'default', 'dark_background', 'seaborn', 'ggplot', etc.)",
@@ -341,7 +334,6 @@ def _plot_options(
     args: argparse.Namespace, dimension_slices: dict[str, str | int] | None
 ) -> PlotOptions:
     return PlotOptions(
-        plot_type=args.plot_type,
         style=args.style,
         convert_bands_to_variables=args.convert_bands_to_variables,
         datetime_variable_name=args.datetime_variable,

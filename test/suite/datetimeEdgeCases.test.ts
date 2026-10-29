@@ -96,7 +96,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: '2020-01-01T00:00:00',
             endDatetime: '2020-01-10T00:00:00',
@@ -110,7 +109,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
         });
 
@@ -122,7 +120,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: '2020-01-01T00:00:00',
         });
@@ -135,7 +132,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             endDatetime: '2020-01-10T00:00:00',
         });
@@ -148,7 +144,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: '',
         });
 
@@ -160,7 +155,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: '   ',
         });
 
@@ -172,7 +166,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: '',
             endDatetime: '2020-01-10T00:00:00',
@@ -186,7 +179,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: '2020-01-01T00:00:00',
             endDatetime: '',
@@ -200,7 +192,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature.hourly',
-            plotType: 'auto',
             datetimeVariableName: 'time.stamp',
             startDatetime: '2020-01-01T00:00:00',
             endDatetime: '2020-01-10T00:00:00',
@@ -214,7 +205,6 @@ suite('Datetime Edge Cases Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
         const plotData = await dataProcessor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'subgroup/time',
             startDatetime: '2020-01-01T00:00:00',
             endDatetime: '2020-01-10T00:00:00',
@@ -300,7 +290,6 @@ suite('Datetime Edge Cases Test Suite', () => {
 
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: 'invalid-datetime',
         });
@@ -332,7 +321,6 @@ suite('Datetime Edge Cases Test Suite', () => {
 
         const plotData = await processor.createPlot(mockUri, {
             variable: 'temperature',
-            plotType: 'auto',
             datetimeVariableName: 'nonexistent_time',
         });
 

@@ -110,6 +110,15 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                         |
 | Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                        |
 
+### Phase 10 — Plot type selector removed
+
+| Area     | Work                                                                                                                                                      |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webview  | "Auto (Recommended)" `<select>` removed from each variable's plot row (it had one option; the backend refused any other)                                  |
+| Protocol | `plotType` dropped from `PlotOptions` (`src/types.ts`) and from the argv built by `buildCreatePlotCliArgs`                                                |
+| Backend  | `plot_type` positional argument and `PlotOptions.plot_type` removed; `create_plot` error messages no longer end with `plot_type='auto'`                   |
+| Tests    | TS and Python tests updated; golden harness drops the plot-type column and the `plot__histogram` case (82 cases); release notes §22, manual test plan B24 |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -176,6 +185,8 @@ pre-commit run --all-files
 npm run package && scripts/upgrade-sandbox.sh [--scenario offline|interrupted]   # upgrade from v0.12.1
 ```
 
+Results after removing the plot type selector: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 82 / 0 failing (re-recorded: only `plot__err_broken_file` changed, losing `plot_type='auto'`); `npm run typecheck` and pre-commit clean.
+
 Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` 24 / 24 screenshots (4 themes × 6 scenarios, ~18 s).
 
 ```bash
@@ -193,7 +204,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§21 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§22 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed).
 
 ---
 
@@ -280,3 +291,7 @@ Upgrade safety (v0.12 → v0.13):
 49. docs: add the v0.13 getting-started hub and upgrade test plan
 50. docs: fix stale developer docs
 51. docs: list the upgrade-safety commits in the v0.13.0 PR summary
+
+Plot type selector:
+
+52. feat(webview): remove the unused plot type selector

@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls).
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed.
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -67,6 +67,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 - **Healthcheck** report: the **Logging System** and **Performance** sections are gone (one always passed, the other duplicated Memory).
 - **xarray older than 2024.10** in your own interpreter: the viewer now shows _"xarray X is too old…"_ with the `pip install` command, instead of `module 'xarray' has no attribute 'DataTree'` (v0.12 failed the same way). xarray 2024.10 – 2026.3 still works for NetCDF / HDF5; 2026.4+ is recommended.
 - Plotting a **cftime** time axis needs `nc-time-axis` (not in the uv bundle); without it the plot error says so.
+- The **plot type selector** ("Auto (Recommended)") next to **Create Plot** is gone. It only ever offered `auto`, so plots do not change. Scripts calling the backend directly use `get_data_info.py plot <file> <variable> [flags]`: the third positional argument (`auto`) no longer exists and would be read as an unexpected argument.
 
 ### Building from source (contributors)
 
@@ -526,6 +527,17 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 10. No emoji is left: **Plot All** shows a warning line icon (a stop icon on **Cancel All** while plotting), and the error page uses line icons for its title, the troubleshooting heading, the install / settings / logs links and after external links.
 11. _(Contributors)_ `npm run screenshots` → 24 PNG files in `screenshots/v0.13/<theme>/` and `screenshots/v0.13/index.html`; open the gallery and compare it with the steps above.
 
+### 22. Plot type selector removed
+
+**Expect:** each variable's plot row shows only the **Create Plot** button; plots look as before.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc`, expand a group → under each variable there is a **Create Plot** button and no "Auto (Recommended)" drop-down.
+2. **Create Plot** on `temperature` and on a 1-D variable → both plots appear, same as v0.12 with "Auto" selected.
+3. Make a plot fail (e.g. a dimension slice on a dimension that does not exist, in the group plot controls) → the error text ends with `(file_path=… variable_path=…)`, without `plot_type=`.
+4. _(Contributors)_ `.venv/bin/python python/get_data_info.py plot sample-data/sample_data.nc /precipitation` → one JSON line with `plot_data`; `pytest python/tests` and `python python/tools/golden_snapshots.py check` pass (re-`record` once: error snapshots lose `plot_type='auto'`, and `plot__histogram` no longer exists).
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -553,7 +565,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only                                                                                                                                                          |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed                                                                                                                   |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                |
 
 ---

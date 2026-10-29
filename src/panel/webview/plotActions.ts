@@ -23,7 +23,6 @@ interface PlotParts {
     container: HTMLElement;
     image: HTMLElement;
     message: HTMLElement;
-    plotTypeSelect: HTMLSelectElement | null;
 }
 
 function plotParts(controls: HTMLElement): PlotParts {
@@ -39,7 +38,6 @@ function plotParts(controls: HTMLElement): PlotParts {
         container: part('.plot-container'),
         image: part('.plot-image-container'),
         message: part('.plot-error'),
-        plotTypeSelect: controls.querySelector('.plot-type-select'),
     };
 }
 
@@ -154,7 +152,7 @@ function getVariableGroup(variable: string): string {
  * controls override the global ones field by field (see mergePlotControls).
  */
 function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
-    const { variable, plotTypeSelect } = plotParts(controls);
+    const { variable } = plotParts(controls);
     const globalSection = document.getElementById(
         'section-global-plot-controls',
     );
@@ -176,7 +174,6 @@ function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
 
     return {
         variable,
-        plotType: plotTypeSelect ? plotTypeSelect.value : 'auto',
         datetimeVariableName:
             groupTime.datetimeVariableName ?? globalTime.datetimeVariableName,
         startDatetime: convertDatetimeLocalToISO(

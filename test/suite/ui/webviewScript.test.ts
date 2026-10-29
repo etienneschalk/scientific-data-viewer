@@ -380,7 +380,6 @@ suite('Webview script (jsdom)', () => {
         assert.ok(String(operationId).startsWith('plot-'));
         assert.deepStrictEqual(payload, {
             variable: '/temperature',
-            plotType: 'auto',
             datetimeVariableName: 'time',
             startDatetime: '2020-01-01T00:00:00',
             endDatetime: '2020-01-03T00:00:00',
