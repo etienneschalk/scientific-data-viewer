@@ -21,6 +21,7 @@ from sdv_backend._bootstrap import logger
 from sdv_backend.plotting.kwargs import (
     PlotKwargsBundle,
     build_user_facet_plot_kw,
+    draws_color_mesh,
     strip_add_legend_unless_hue,
 )
 from sdv_backend.plotting.options import PlotOptions
@@ -109,7 +110,10 @@ def _draw_user_layout(
             _plot(
                 var,
                 "user_provided:DataArray.plot(facets+slice_kwargs)",
-                **{**plot_kw, **bundle.generic_kwargs()},
+                **{
+                    **plot_kw,
+                    **bundle.generic_kwargs(color_mesh=draws_color_mesh(var, plot_kw)),
+                },
             )
         return
 
@@ -130,7 +134,11 @@ def _draw_user_layout(
             **bundle.imshow_kwargs(),
         )
     else:
-        _plot(var, "user_provided:DataArray.plot(no_facets)", **bundle.generic_kwargs())
+        _plot(
+            var,
+            "user_provided:DataArray.plot(no_facets)",
+            **bundle.generic_kwargs(color_mesh=draws_color_mesh(var, {})),
+        )
 
 
 def _draw_auto(
@@ -197,7 +205,11 @@ def _draw_auto(
         )
     else:
         logger.info("Creating default plot (xarray choice)")
-        _plot(var, "auto:default:DataArray.plot", **bundle.generic_kwargs())
+        _plot(
+            var,
+            "auto:default:DataArray.plot",
+            **bundle.generic_kwargs(color_mesh=draws_color_mesh(var, {})),
+        )
 
 
 def _equal_aspect_if_spatial(image: xr.DataArray) -> None:
@@ -222,7 +234,7 @@ def _plot_1d_against_datetime(
         _plot(
             var,
             "auto:default:DataArray.plot(datetime_mismatch_fallback)",
-            **bundle.generic_kwargs(),
+            **bundle.generic_kwargs(color_mesh=draws_color_mesh(var, {})),
         )
         return
     if np.issubdtype(datetime_values.dtype, np.datetime64):
@@ -239,5 +251,5 @@ def _plot_1d_against_datetime(
     _plot(
         var_with_time,
         "auto:default:DataArray.plot(1d+datetime_coord)",
-        **bundle.generic_kwargs(),
+        **bundle.generic_kwargs(color_mesh=False),
     )

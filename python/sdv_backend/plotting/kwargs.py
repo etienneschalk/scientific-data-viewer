@@ -25,6 +25,25 @@ def strip_add_legend_unless_hue(plot_kwargs: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+# Options of a color-mapped plot, rejected by line and histogram artists
+COLOR_MESH_KEYS: tuple[str, ...] = ("cmap", "vmin", "vmax", "robust", "add_colorbar")
+
+
+def draws_color_mesh(var: xr.DataArray, plot_kw: dict[str, Any]) -> bool:
+    """Whether ``var.plot(**plot_kw)`` draws a 2D color mesh (pcolormesh).
+
+    Same choice as xarray's ``DataArray.plot``: size-1 dimensions are
+    squeezed (but row / col / hue), then two dimensions left besides the
+    facets and hue give a color mesh, unless ``hue`` turns them into lines;
+    one gives lines, more a histogram.
+    """
+    special = {plot_kw.get(key) for key in ("row", "col", "hue")} - {None}
+    plot_dims = [
+        dim for dim, size in var.sizes.items() if size > 1 and dim not in special
+    ]
+    return len(plot_dims) == 2 and not plot_kw.get("hue")
+
+
 @dataclass(frozen=True)
 class PlotKwargsBundle:
     """User-requested plot kwargs. Variants split cmap (imshow-only) from generic .plot()."""
@@ -90,13 +109,18 @@ class PlotKwargsBundle:
                 out[k] = self.raw[k]
         return out
 
-    def generic_kwargs(self) -> dict[str, Any]:
-        """Kwargs for .plot(): no cmap / color-only keys (xarray may mis-route them)."""
+    def generic_kwargs(self, *, color_mesh: bool) -> dict[str, Any]:
+        """Kwargs for .plot().
+
+        The color keys only reach a 2D color mesh (``color_mesh``, see
+        ``draws_color_mesh``): xarray draws other data as lines or a
+        histogram, whose matplotlib artists reject them.
+        """
         out = dict(self.raw)
-        out.pop("cmap", None)
-        out.pop("vmin", None)
-        out.pop("vmax", None)
-        out.pop("add_colorbar", None)
+        if not color_mesh:
+            ignored = [key for key in COLOR_MESH_KEYS if out.pop(key, None) is not None]
+            if ignored:
+                logger.info("%s ignored: not a color-mapped plot", ", ".join(ignored))
         if not out.get("add_legend"):
             out.pop("add_legend", None)
         return out

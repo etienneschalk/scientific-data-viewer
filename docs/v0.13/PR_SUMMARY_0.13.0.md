@@ -261,6 +261,8 @@ Results after adding the local load time setting: `npm test` 300 passing; `npm r
 
 Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
+Results after the vmin / vmax fix: `pytest python/tests` 175 passing; frozen-clock PNG comparison through the CLI (vmin / vmax change the image with a slice, facets or a `0:1` slice; 1D + robust draws); golden plot snapshots unchanged (info snapshots need a re-`record` since the encoding moved).
+
 Results after the dimension slice boxes and slider: `npm test` 305 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots (dark, light) and real mouse drags in headless Chromium.
 
 Results after the plot controls layout: `npm test` 301 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots of the global and group plot controls (dark, light, 420 px).
@@ -393,6 +395,8 @@ Xarray Encoding section:
 57. feat(webview): show each group as a card with collapsible sections
 58. feat(webview): lay out the plot controls as aligned fields
 59. feat(webview): add start / stop / step boxes and a slider to dimension slices
+60. fix(webview): let one slider handle rewrite only its own slice box
+61. fix(plot): apply vmin / vmax to color meshes of user layouts
 
 Cancel a single plot:
 

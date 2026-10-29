@@ -492,6 +492,10 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Same layout, without an extra box inside the group.
 
+4. Back in **Global Plot Controls**, type `0` in the **start** box of `time`, then **vmin** `10` and **vmax** `12`. **Create Plot** on `temperature`.
+
+✅ The colorbar goes from 10 to 12 and most of the map is at one of the two end colors. Untick **add_colorbar**, **Create Plot** again → no colorbar.
+
 ### B27. Dimension slices: boxes and slider
 
 1. Open `sample_data.nc` → **Global Plot Controls** → **Dimension slices**.

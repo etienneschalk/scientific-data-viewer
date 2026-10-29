@@ -64,6 +64,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 
 ### Code review changes visible to users
 
+- **vmin / vmax** now apply when a dimension slice, a facet or x / y / hue is set (they were silently dropped unless a `cmap` was given); unchecking **add_colorbar** works there too. Checking **robust** on a 1D variable no longer fails with `unexpected keyword argument 'robust'`.
 - **Group plot overrides** now apply **field by field**: an empty group field (or a group checkbox left at its default) uses the global value. Before, any non-default group setting made all of the group's checkboxes win.
 - **Numeric attributes** show as numbers / arrays (`-999`, `[0.0, 2.0]`) instead of numpy text (`"[0. 2.]"`).
 - **Time selector** lists only real datetime variables (`datetime64`, cftime); variables such as temperature `t` no longer appear.
@@ -712,6 +713,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Type `0` in a dimension slice and `20` in **bins** → **Reset** of Dimension slices clears the slice only → **Reset** of Plot parameters clears `bins` and restores the default checkboxes.
 4. Expand a group → **Group Plot Controls** has the same layout, without a box of its own. A group value still overrides the global one (`bins` 10 in the group, 30 globally → the group's variable uses 10).
 5. Narrow the editor to ~400 px → two columns of fields, no horizontal scroll.
+6. Type `0` in the **start** box of `time` and set **vmin** / **vmax** to a narrow range (e.g. `10` / `12` for `temperature`) → **Create Plot**: the colors saturate and the colorbar runs from 10 to 12 (before the fix, the plot ignored them unless a cmap was set). Uncheck **add_colorbar** → no colorbar. On a 1D variable, check **robust** → the line plot is drawn (no `robust` error).
 
 ### 26. Dimension slices: boxes and slider
 
