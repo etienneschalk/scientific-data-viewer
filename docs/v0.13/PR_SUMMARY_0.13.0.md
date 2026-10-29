@@ -106,6 +106,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                    |
 | Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                         |
 | Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                    |
+| Fix         | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                       |
 | Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
 | Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                         |
 | Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                        |
@@ -354,3 +355,7 @@ Xarray Encoding section:
 Cancel a single plot:
 
 57. feat(webview): add a Cancel button to each variable's plot
+
+Scrollbar space:
+
+58. fix(webview): keep room for the scrollbar so content does not jump after loading

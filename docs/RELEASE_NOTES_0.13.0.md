@@ -154,7 +154,7 @@ The panel was styled like a plain web page from the early 2010s: square bordered
 
 ### What changed
 
-- **Layout**: centred column up to 960 px with 24 px gutters (12 px below 480 px); nested content lines up with its section title.
+- **Layout**: centred column up to 960 px with 24 px gutters (12 px below 480 px); nested content lines up with its section title. Space for the vertical scrollbar is always kept free (`scrollbar-gutter: stable`), so the column no longer jumps left when the scrollbar appears after loading.
 - **Header**: sticky toolbar with a bottom hairline, version badge, and 28 px icon buttons (SVG line icons in the theme icon color, hover like editor title actions) instead of 🖼️ 📁 📂 🔄; the 🕒 next to the load time is an icon too.
 - **Sections**: VS Code-style twisties on every collapsible section; top-level titles stay sticky under the header; Dimensions / Coordinates / Variables / Attributes / Group Plot Controls use the uppercase pane-header style.
 - **Variables**: each variable is a rounded card (summary row, value, attributes, and for data variables the plot controls and plot); `📄` markers removed; dims and dtypes in the editor font.
@@ -593,6 +593,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 9. Open `sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
 10. No emoji is left: **Plot All** shows a warning line icon (a stop icon on **Cancel All** while plotting), and the error page uses line icons for its title, the troubleshooting heading, the install / settings / logs links and after external links.
 11. _(Contributors)_ `npm run screenshots` → 24 PNG files in `screenshots/v0.13/<theme>/` and `screenshots/v0.13/index.html`; open the gallery and compare it with the steps above.
+12. Make the editor wider than 1000 px and open `sample-data/sample_data.nc` → while **Loading** shows there is no scrollbar; when the content appears and the scrollbar shows up, the header and the content do not move sideways.
 
 ### 22. Plot type selector removed
 

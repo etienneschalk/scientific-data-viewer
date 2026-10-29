@@ -99,6 +99,11 @@ body.vscode-high-contrast-light {
     text-decoration: none;
 }
 
+/* Keep room for the scrollbar: content does not shift when it appears after loading. */
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     font-family: var(--vscode-font-family);
     font-size: var(--vscode-font-size);

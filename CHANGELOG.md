@@ -125,6 +125,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Fixed
 
+- **Content jumped left when the data loaded**: the loading page is shorter than the panel, so it has no scrollbar. Once the file information appears, the page almost always becomes taller than the panel and a vertical scrollbar appears. The scrollbar made the page narrower, so the centred column (new in the styling refresh) moved left by half the scrollbar's width. `scrollbar-gutter: stable` on `html` now always keeps that space free: it stays empty while the page is short, and no empty scrollbar track is drawn the way `overflow-y: scroll` would draw one.
+  - **Files**: `src/panel/webview/styles.css`
+  - **Tests**: manual (release notes step 21.12)
+
 - **xarray older than 2024.10 ended in an `AttributeError`**: with an old xarray in the selected interpreter (Python extension or override), the backend crashed while importing (`module 'xarray' has no attribute 'DataTree'`; v0.12 crashed the same way). It now prints a JSON error the extension shows: the xarray version found, the minimum (2024.10, 2026.4+ recommended) and the `pip install -U "xarray>=2026.4.0" "zarr>=3"` command. Checked against v0.12.1 with xarray 2024.6 (both crash before, message now) and xarray 2025.1 / zarr 2 (NetCDF, HDF5 and plots work in both; Zarr v3 stores now say `zarr>=3` is missing instead of a `FileNotFoundError`).
   - **Files**: `python/sdv_backend/_bootstrap.py`
   - **Tests**: `python/tests/test_cli_errors.py`
