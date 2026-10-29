@@ -91,4 +91,4 @@ Baseline before the work: `npm test` 294 passing, `pytest python/tests` 112 pass
 
 ## 8. Documentation
 
-- [x] **Doc1** `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/PR_SUMMARY_0.13.0.md`, and developer docs made stale by the changes (`CLAUDE.md`, `docs/DEVELOPMENT.md`, `docs/TECHNICAL_ARCHITECTURE.md`)
+- [x] **Doc1** `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/PR_SUMMARY_0.13.0.md`, and developer docs made stale by the changes (`CLAUDE.md`, `docs/DEVELOPMENT.md`, `docs/TECHNICAL_ARCHITECTURE.md`)

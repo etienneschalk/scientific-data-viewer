@@ -2,7 +2,7 @@
 
 **TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules).
 
-**Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
+**Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
 ---
 
@@ -12,7 +12,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 
 | Area                  | What v0.13 adds                                                                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (upgraded automatically on update); rejects zarr 2.x as “too old”                                              |
+| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (rebuilt automatically on update); rejects zarr 2.x as “too old”                                               |
 | **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                         |
 | **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                                       |
 | **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                           |
@@ -32,8 +32,8 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.0.** If your interpreter still has **zarr 2.x**, the extension reports it as unusable and suggests `zarr>=3`.
 - **Zarr v2 data** on disk remains readable through **zarr-python 3**; you do not need to rewrite stores for metadata viewing.
-- **Extension uv environment (automatic):** if you use **Scientific Data Viewer → Use Extension Own Environment**, nothing to do. At the first start of v0.13 the extension upgrades its environment once to the new pins (`xarray>=2026.4.0`, `h5netcdf>=1.8`, `zarr>=3`), showing a progress notification. If that fails (e.g. offline), the previous environment keeps working and the update is retried at the next start; **Manage Extension Virtual Environment → Update Packages** forces it.
-- **eccodeslib pin:** the uv environment also pins `eccodeslib<2.48` (`ENVIRONMENT_REVISION` 2): eccodeslib 2.48+ crashes the Python process at exit when pyproj is also loaded (`free(): invalid pointer` / `double free or corruption` on GRIB and TIFF files). Environments that already received a newer release are downgraded at the next start. On your own interpreter, if you see these errors: `pip install "eccodeslib<2.48"`.
+- **Extension uv environment (automatic):** if you use **Scientific Data Viewer → Use Extension Own Environment**, nothing to do. At the first start of v0.13 the extension **deletes its environment and builds it again from scratch** with the new pins (`xarray>=2026.4.0`, `h5netcdf>=1.8`, `zarr>=3`, `eccodeslib<2.48`), showing a progress notification. It needs network access and takes a few minutes. If that fails (e.g. offline), the previous environment is restored and keeps working, and the rebuild is retried at the next start; **Manage Extension Virtual Environment → Recreate** forces it. If the extension is stuck after the update, see **Troubleshooting → The extension stopped working after an update** in the README.
+- **eccodeslib pin:** the uv environment also pins `eccodeslib<2.48` (`ENVIRONMENT_REVISION` 2): eccodeslib 2.48+ crashes the Python process at exit when pyproj is also loaded (`free(): invalid pointer` / `double free or corruption` on GRIB and TIFF files). Environments that already received a newer release are rebuilt at the next start. On your own interpreter, if you see these errors: `pip install "eccodeslib<2.48"`.
 - **Your own interpreter (manual):** if the extension uses the **Python extension's** selected interpreter or **`overridePythonInterpreter`**, the extension never modifies it. Upgrade it yourself:
 
   ```bash
@@ -64,6 +64,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 - **Numeric attributes** show as numbers / arrays (`-999`, `[0.0, 2.0]`) instead of numpy text (`"[0. 2.]"`).
 - **Time selector** lists only real datetime variables (`datetime64`, cftime); variables such as temperature `t` no longer appear.
 - **Healthcheck** report: the **Logging System** and **Performance** sections are gone (one always passed, the other duplicated Memory).
+- **xarray older than 2024.10** in your own interpreter: the viewer now shows _"xarray X is too old…"_ with the `pip install` command, instead of `module 'xarray' has no attribute 'DataTree'` (v0.12 failed the same way). xarray 2024.10 – 2026.3 still works for NetCDF / HDF5; 2026.4+ is recommended.
 - Plotting a **cftime** time axis needs `nc-time-axis` (not in the uv bundle); without it the plot error says so.
 
 ### Building from source (contributors)
@@ -96,13 +97,13 @@ The backend is now the **`python/sdv_backend/`** package; imports flow one way: 
 | `formats/`                       | Format detection: Zarr (incl. ZIP), Kerchunk, GeoTIFF / COG                                             |
 | `opening.py`                     | Opening with engine and `decode_cf` fallback; `OpenedData` hides the DataTree-vs-dict-of-Datasets split |
 | `info/`                          | `get_file_info`, now split into small steps (reprs, per-group metadata, datetime ranges)                |
-| `plotting/`                      | `create_plot` (~110 lines): `selection.py` (variable, slices, datetime filter), strategies, `render.py` |
+| `plotting/`                      | `create_plot` (~110 lines): `selection.py` (variable, slices, datetime filter), `draw.py`, `render.py`  |
 
 Sample generators moved to **`python/sample_data/`** (one module per format family); `python/create_sample_data.py` remains the entry point.
 
 ### How behaviour was preserved
 
-Before any code moved, a **golden snapshot harness** (`python/tools/golden_snapshots.py`) recorded the backend's JSON output for 74 `info` / `plot` invocations on `sample-data/` (plot images compared by hash, with a frozen clock). Each refactoring step was checked against it; the code was moved verbatim first and only then decomposed. Snapshots stayed identical except where a bug fix below intentionally changed the output.
+Before any code moved, a **golden snapshot harness** (`python/tools/golden_snapshots.py`) recorded the backend's JSON output for 68 `info` / `plot` invocations (83 today, with the v0.13 sample formats) on `sample-data/` (plot images compared by hash, with a frozen clock). Each refactoring step was checked against it; the code was moved verbatim first and only then decomposed. Snapshots stayed identical except where a bug fix below intentionally changed the output.
 
 ### Bugs found and fixed along the way
 
@@ -123,7 +124,7 @@ Before any code moved, a **golden snapshot harness** (`python/tools/golden_snaps
 
 ### Why
 
-A review of the whole codebase (October 2026, tracked item by item in [`CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) found a security issue, several real bugs hidden by over-engineered plumbing, and a lot of dead code: a message bus whose request/response half was never used, a Redux-like state store with undo history nobody called that broadcast the whole state ~9 times per load, a 4,000-line untyped webview script with every plot parameter duplicated, a 1,184-line healthcheck, and Python plot strategies spread over 8 classes and 2 registries.
+A review of the whole codebase (October 2026, tracked item by item in [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)) found a security issue, several real bugs hidden by over-engineered plumbing, and a lot of dead code: a message bus whose request/response half was never used, a Redux-like state store with undo history nobody called that broadcast the whole state ~9 times per load, a 4,000-line untyped webview script with every plot parameter duplicated, a 1,184-line healthcheck, and Python plot strategies spread over 8 classes and 2 registries.
 
 ### What changed
 
@@ -154,7 +155,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 
 ## Manual verification guide
 
-Use this checklist if you have **not** reviewed every commit on the branch. For a click-by-click version written for testers who don't know the formats (with a results sheet), see [`MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md). Each section states **what to expect**, **how to test**, and **common failure modes**.
+Use this checklist if you have **not** reviewed every commit on the branch. For a click-by-click version written for testers who don't know the formats (with a results sheet), see [`MANUAL_TEST_PLAN_0.13.0.md`](./v0.13/MANUAL_TEST_PLAN_0.13.0.md). Each section states **what to expect**, **how to test**, and **common failure modes**.
 
 ### 0. Environment setup
 
@@ -408,17 +409,20 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
-### 15. Automatic update of the extension uv environment
+### 15. Automatic rebuild of the extension uv environment
 
-**Expect:** with **`useExtensionOwnEnvironment`** on, an environment created by an older version (or recorded with a lower `ENVIRONMENT_REVISION`) is upgraded once at startup; later starts reuse it without reinstalling.
+**Expect:** with **`useExtensionOwnEnvironment`** on, an environment created by an older version (or recorded with a lower `ENVIRONMENT_REVISION`) is deleted and created again from scratch once at startup; later starts reuse it without reinstalling. If the rebuild fails, the previous environment is restored.
 
-**Test:**
+**Automated:** `scripts/upgrade-sandbox.sh` runs a real v0.12.1 → v0.13.0 upgrade in a throw-away VS Code profile, with the scenarios `normal`, `offline` and `interrupted`; see [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
+
+**Test by hand:**
 
 1. Remove any `overridePythonInterpreter` setting (it takes precedence), enable `scientificDataViewer.python.useExtensionOwnEnvironment`, reload. Wait for the environment to be created (first time only).
-2. Simulate an environment from v0.12: delete `sdv-environment.json` in the environment folder (Linux: `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/`; the path is shown by **Manage Extension Virtual Environment**).
-3. Reload window → notification _"updating its Python environment for this new version…"_, then _"Python environment updated"_. `sdv-environment.json` is back with `"revision": 2` and `eccodeslib<2.48` in its requirements.
+2. Simulate an environment from v0.12: in the environment folder (Linux: `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/`; **Manage Extension Virtual Environment → Open in Explorer** shows it), delete `sdv-environment.json` and create an empty file `old.txt`.
+3. Reload window → notification _"rebuilding its Python environment for this new version…"_, then _"Python environment rebuilt"_. `sdv-environment.json` is back with `"revision": 2` and `eccodeslib<2.48` in its requirements; `old.txt` is gone; no `python-environment.previous` folder is left.
 4. Reload again → **no** notification; the logs show `Extension virtual environment is up to date` (no `uv venv --clear`, no package install).
-5. _(Optional, offline)_ delete the file again, disconnect the network, reload → warning that the update failed; files still open with the previous environment. Reconnect, reload → the update runs.
+5. **Manage Extension Virtual Environment → Recreate** → progress notification, then _"recreated successfully"_; files still open.
+6. _(Optional, offline)_ delete `sdv-environment.json` again, disconnect the network, reload → warning that the rebuild failed; files still open with the previous environment. Reconnect, reload → the rebuild runs.
 
 ### 16. Code review: security (escaping, CSP, commands)
 
@@ -472,7 +476,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. With `useExtensionOwnEnvironment` on and an environment recorded as `"revision": 1` (or with `eccodeslib` ≥ 2.48: check with `uv pip list --python <env>/bin/python`), reload the window → the update notification appears once; afterwards `uv pip list` shows `eccodeslib 2.47.3.23`.
+1. With `useExtensionOwnEnvironment` on and an environment recorded as `"revision": 1` (or with `eccodeslib` ≥ 2.48: check with `uv pip list --python <env>/bin/python`), reload the window → the rebuild notification appears once; afterwards `uv pip list` shows `eccodeslib 2.47.3.23`.
 2. Open `sample-data/sample_data.grib`, `sample_data.grib2`, `sample_data.tif`, `sample_data_cog.tif` → each loads; plot a variable of each.
 3. Command line check: `<env>/bin/python -c "import eccodes, pyproj"` exits with code 0.
 
@@ -493,22 +497,24 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                                                                                                                                                                 |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                              |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                               |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment upgraded automatically when a version requires it (no rebuild at every start)                                                                                                                                                                  |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
-| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                          |
-| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md) |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                          |
+| Area          | Change                                                                                                                                                                                                                                                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                    |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                                     |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                      |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                |
 
 ---
 
 ## Links
 
 - [Changelog](../CHANGELOG.md#0130---2026-09-15)
-- [Pull request summary / MR description](./PR_SUMMARY_0.13.0.md)
-- [Manual test plan (step by step, with results sheet)](./MANUAL_TEST_PLAN_0.13.0.md)
+- [Pull request summary / MR description](./v0.13/PR_SUMMARY_0.13.0.md)
+- [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
+- [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)
+- [Upgrade test plan (users updating from v0.12)](./v0.13/UPGRADE_TEST_PLAN.md)
 - [v0.13 planning folder](./v0.13/README.md)
 - [Previous release: v0.12.1](./RELEASE_NOTES_0.12.1.md)

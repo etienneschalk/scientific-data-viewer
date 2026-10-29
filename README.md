@@ -177,7 +177,8 @@ The extension supports multiple ways to configure your Python environment:
    - **Manage Extension Environment**:
      - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
      - Type "Scientific Data Viewer: Manage Extension Virtual Environment"
-     - Choose a command: create, update, delete, view information
+     - Choose a command: create, update, recreate (delete and rebuild from scratch), delete, view information
+   - **Updates**: when a new extension version needs different packages, the environment is deleted and rebuilt automatically at the next start (a notification shows the progress). If the rebuild fails (e.g. offline), the previous environment keeps being used and the rebuild is retried at the next start
    - **Benefits of this approach**:
      - **Python 3.13**: Uses uv to install and use Python 3.13 for optimal performance
      - **Self-Contained**: Works without external Python environment setup
@@ -202,6 +203,7 @@ The extension supports multiple ways to configure your Python environment:
    - Select "Open Scientific Data Viewer" for single file or folder
    - Select "Open Scientific Data Viewer for Selection" to open multiple selected files or folders
    - Command "View: Split Editor" is NOT supported
+   - **Zarr stores**: `.zarr` folders, directories with `zarr.json` / `.zgroup` (even without a `.zarr` suffix), and `.zip` / `.zarr.zip` archives that contain a Zarr store. Use **Open Scientific Data Viewer (Folder)** for directory stores (shown on all folders because metadata cannot be sniffed in menu `when` clauses).
    - **Kerchunk / virtual Zarr** (:warning: experimental): files named `*.kerchunk.json` or `*.ref.json` open in a dedicated editor. For other `.json` / `.parquet` / `.parq` files, use **Open as Kerchunk / virtual Zarr**. Ordinary JSON is not hijacked. Requires the optional `kerchunk` package (`pip install kerchunk`). Not installed in the extension uv environment by default.
 
 4. **From command palette**:
@@ -428,25 +430,33 @@ The extension includes specific settings for virtual environment management:
 
 ### ⚠️ Common Issues
 
-1. **Windows: extension not working (0.8.0 / 0.8.1)**:
+1. **The extension stopped working after an update**:
+   - Try these steps in order:
+     1. **Check the logs**: run "Scientific Data Viewer: Show Extension Logs" (lines starting with `[uv]` describe the extension's own environment).
+     2. **Rebuild the extension's own environment** (if you use **Use Extension Own Environment**): run "Scientific Data Viewer: Manage Extension Virtual Environment" → **Recreate**. It deletes the environment and builds it again from scratch; the previous one is kept if the rebuild fails.
+     3. **Use another interpreter for now**: turn off `scientificDataViewer.python.useExtensionOwnEnvironment` to use the Python extension's interpreter, or set `scientificDataViewer.python.overridePythonInterpreter`.
+     4. **Delete the environment by hand**: close VS Code and delete the `python-environment` folder in the extension's storage ("Manage Extension Virtual Environment" → **Open in Explorer** shows it): `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/` (Linux), `~/Library/Application Support/Code/User/globalStorage/eschalk0.scientific-data-viewer/` (macOS), `%APPDATA%\Code\User\globalStorage\eschalk0.scientific-data-viewer\` (Windows). It is recreated at the next start.
+     5. **Go back to the previous version**: in the Extensions view, click the gear of Scientific Data Viewer → **Install Specific Version…**, and [report the issue](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=bug_report.yml) with the logs.
+
+2. **Windows: extension not working (0.8.0 / 0.8.1)**:
    - Versions 0.8.0 and 0.8.1 have [known issues](https://github.com/etienneschalk/scientific-data-viewer/issues/118) on Windows (e.g. "Invalid response format", "Python environment not ready"). **v0.8.2 attempts to fix this.** If the problem persists after updating to 0.8.2, use [version 0.7.0](https://github.com/etienneschalk/scientific-data-viewer/releases/tag/v0.7.0) as a workaround.
 
-2. **Python not found**:
+3. **Python not found**:
    - Ensure Python is installed and in your PATH. Use the "Python: Select Interpreter" command to manually set the path. Consider using the extension's own virtual environment for a self-contained solution.
 
-3. **uv not available**:
+4. **uv not available**:
    - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/). Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`. If uv is not installed, the extension will fall back to using the Python extension's interpreter.
 
-4. **Missing packages**:
+5. **Missing packages**:
    - Install required packages: `pip install xarray matplotlib`. Install per-format packages: `pip install netCDF4 "zarr>=3" h5netcdf h5py numpy rioxarray`. Or let the extension install them automatically (prompt when opening a file). If xarray is 2026.4+ but zarr is still 2.x, upgrade with `pip install "zarr>=3"`.
 
-5. **zarr 2.x reported as missing or too old**:
-   - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, run **Manage Extension Virtual Environment → Update** after upgrading the extension.
+6. **zarr 2.x reported as missing or too old**:
+   - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, the environment is rebuilt automatically after the extension update; otherwise run **Manage Extension Virtual Environment → Recreate**.
 
-6. **Large files not loading**:
+7. **Large files not loading**:
    - Increase the `maxFileSize` setting. Consider using data slicing for very large datasets.
 
-7. **Permission errors**:
+8. **Permission errors**:
    - Ensure the extension has permission to read your data files. Check file permissions and VSCode workspace settings.
 
 ### 💬 Getting Help

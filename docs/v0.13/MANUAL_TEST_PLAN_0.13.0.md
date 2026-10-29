@@ -2,9 +2,9 @@
 
 A step-by-step checklist to confirm v0.13.0 is ready to ship. You do **not** need to know the file formats: every step says exactly what to click and what you should see.
 
-- **Time needed:** about 1 h 45 for everything (Part A ≈ 20 min, Part B ≈ 1 h 30, Part C ≈ 10 min). Part D is done later, after the merge.
+- **Time needed:** about 2 h for everything (Part A ≈ 20 min, Part B ≈ 1 h 45, Part C ≈ 10 min). Part D is done later, after the merge.
 - **How to use it:** do the steps in order. After each test, tick ✅ or ❌ in the [results sheet](#results-sheet) at the end. If something fails, see [When a test fails](#when-a-test-fails).
-- For the technical background of each feature, see [`RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md).
+- For the technical background of each feature, see [`RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md).
 
 ---
 
@@ -310,9 +310,9 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 ✅ There is **no** "Open Scientific Data Viewer" entry for it. (Folders, such as `broken_file.safe`, always offer "Open Scientific Data Viewer (Folder)" — that is expected.)
 
-### B19. The extension's own Python environment updates itself
+### B19. The extension's own Python environment rebuilds itself
 
-The extension can manage its own Python installation (the "uv environment"). When a new version needs newer packages, v0.13 upgrades that installation by itself, once, instead of asking the user to do it. (People who chose their own Python must still update it themselves; the extension never touches it.)
+The extension can manage its own Python installation (the "uv environment"). When a new version needs other packages, v0.13 deletes that installation and builds it again from scratch, by itself, once, instead of asking the user to do it. If the rebuild fails, the old installation is put back. (People who chose their own Python must still update it themselves; the extension never touches it.)
 
 1. In your settings JSON, **temporarily remove** the `overridePythonInterpreter` line (from A6) and add:
    `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**.
@@ -325,33 +325,36 @@ The extension can manage its own Python installation (the "uv environment"). Whe
 3. Pretend this environment comes from an older version: in the terminal run
 
    ```bash
-   rm ~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/sdv-environment.json
+   ENV=~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment
+   rm "$ENV/sdv-environment.json"; touch "$ENV/left-by-old-version.txt"
    ```
 
 4. **Reload Window**.
 
-✅ A notification says **"Scientific Data Viewer: updating its Python environment for this new version…"**, then **"Scientific Data Viewer: Python environment updated for this new version."**
+✅ A notification says **"Scientific Data Viewer: rebuilding its Python environment for this new version (this can take a few minutes)…"**, then **"Scientific Data Viewer: Python environment rebuilt for this new version."**
+
+✅ `ls "$ENV"` no longer shows `left-by-old-version.txt` (the folder was rebuilt from scratch), and `ls "$ENV.previous"` says it does not exist.
 
 5. **Reload Window** once more.
 
-✅ **No** update notification this time, and files open immediately (the logs say `Extension virtual environment is up to date`).
+✅ **No** rebuild notification this time, and files open immediately (the logs say `Extension virtual environment is up to date`).
 
-**When the update cannot run** (e.g. no internet). We simulate it by hiding the `uv` program for a moment:
+**When the rebuild cannot run** (e.g. no internet). We simulate it by hiding the `uv` program for a moment:
 
 6. In the terminal (keep the same terminal open until step 9):
 
    ```bash
-   rm ~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/sdv-environment.json
+   rm "$ENV/sdv-environment.json"; touch "$ENV/left-by-old-version.txt"
    UV="$(which uv)"; mv "$UV" "$UV.off"; echo "uv hidden: $UV.off"
    ```
 
 7. **Reload Window**.
 
-✅ A **warning** says the Python environment **could not be updated** and that the previous environment is used for now.
+✅ A **warning** says the Python environment **could not be rebuilt** and that the previous environment is used for now.
 
 8. Open any `.nc` file.
 
-✅ It still opens normally (the old environment was kept, not deleted).
+✅ It still opens normally, and `ls "$ENV"` still shows `left-by-old-version.txt` (the old environment was put back, not deleted).
 
 9. Put `uv` back, in the same terminal:
 
@@ -361,22 +364,59 @@ The extension can manage its own Python installation (the "uv environment"). Whe
 
    ✅ It prints a uv version. Then **Reload Window**.
 
-✅ The update now runs: the **"updating…"** then **"updated"** notifications appear (the retry happens by itself).
+✅ The rebuild now runs: the **"rebuilding…"** then **"rebuilt"** notifications appear (the retry happens by itself).
 
-10. Put back your settings from A6 (re-add `overridePythonInterpreter`, remove `useExtensionOwnEnvironment`), save, **Reload Window**.
+10. **Ctrl+Shift+P** → `Scientific Data Viewer: Manage Extension Virtual Environment` → **Recreate**.
+
+✅ A progress notification, then **"Extension virtual environment recreated successfully!"**; files still open.
+
+11. Put back your settings from A6 (re-add `overridePythonInterpreter`, remove `useExtensionOwnEnvironment`), save, **Reload Window**.
 
 ### B20. (Optional, recommended) Real upgrade from v0.12, like a user
 
-This repeats B19 the way users will live it: they have v0.12 with its own environment, and the Marketplace updates them to v0.13.
+This repeats B19 the way users will live it: they have v0.12 with its own environment, and the Marketplace updates them to v0.13. `scripts/upgrade-sandbox.sh` does the same automatically in a throw-away VS Code profile (see [UPGRADE_TEST_PLAN.md](./UPGRADE_TEST_PLAN.md)); this by-hand version also checks what the user sees.
 
 1. In the Extensions panel, click **Scientific Data Viewer** → the gear ⚙ → **Install Specific Version…** (called **Install Another Version…** in some VS Code versions) → choose **0.12.1** → **Reload**.
 2. In settings: remove `overridePythonInterpreter`, add `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**. Wait until the environment is ready (logs), and open a `.nc` file.
 3. Install the v0.13 package again, exactly as in **A5** (Install from VSIX… → `scientific-data-viewer-0.13.0.vsix` → Reload).
 
-✅ At the first start of v0.13, the **"updating its Python environment for this new version…"** notification appears once, then **"updated"**. Files open; B1 (Healthcheck) shows no "too old" warning.
+✅ At the first start of v0.13, the **"rebuilding its Python environment for this new version…"** notification appears once, then **"rebuilt"**. Files open; B1 (Healthcheck) shows no "too old" warning.
 
 4. **Reload Window**. ✅ No notification any more.
 5. Put back your settings from A6, save, **Reload Window**.
+
+### B21. GRIB and TIFF files with the extension's own environment
+
+These files used to crash the extension's own environment (`free(): invalid pointer`, `double free or corruption` in the logs).
+
+1. As in B19 step 1, use `useExtensionOwnEnvironment` (no `overridePythonInterpreter`), **Reload Window**, wait until ready.
+2. Open `sample_data.grib`, `sample_data.grib2`, `sample_data_cog.tif` and `sample_multiband.tif`; click **Create Plot** on one variable of each.
+
+✅ All open and plot; **Show Extension Logs** contains no `free()` / `double free` / `exit code 134`.
+
+3. Put back your settings from A6, **Reload Window**.
+
+### B22. Fixes from the code review
+
+Quick checks of the review fixes (details in [RELEASE_NOTES §16–§19](../RELEASE_NOTES_0.13.0.md#16-code-review-security-escaping-csp-commands)):
+
+1. **No stray files**: in the project folder, `ls` shows **no** files named `=2026.4.0`, `=3` or `=1.8`.
+2. **Big-file message**: set `"scientificDataViewer.maxFileSize": 0.001`, open `sample_data.nc` ✅ the error says `Maximum allowed: 0.001MB` (not a byte count). Remove the setting.
+3. **Kerchunk in a second tab**: open `sample_data.nc`, then right-click `my_refs.json` (from A4) → **Open as Kerchunk / virtual Zarr** ✅ a second tab opens and shows the data.
+4. **Save plot**: plot a variable, click **Save** ✅ a PNG appears under `sample-data/sdv-plots/`, with no "timeout" message.
+5. **Corrupt file**: open `broken_file.h5` ✅ a clear error message, with its error type, not a blank page.
+6. **GRIB time selector**: open `sample_data.grib` ✅ the time selector does not list `t` (temperature).
+7. **Outline**: in the **Scientific Data Structure** panel, click an attribute of a group of `sample_data_multiple_groups.nc` ✅ the viewer scrolls to it.
+
+### B23. Too-old xarray gives a clear message
+
+Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/oldx --python 3.10 && uv pip install --python /tmp/oldx/bin/python "xarray==2024.6.0" netCDF4 matplotlib`.
+
+1. Set `"scientificDataViewer.python.overridePythonInterpreter": "/tmp/oldx/bin/python"`, **Reload Window**, open `sample_data.nc`.
+
+✅ The error says **"xarray 2024.6.0 is too old for Scientific Data Viewer"** with a `pip install` command (v0.12 showed `module 'xarray' has no attribute 'DataTree'`).
+
+2. Put back your settings from A6, **Reload Window**.
 
 ---
 
@@ -446,33 +486,38 @@ Tip: the logs contain a line `Full command (copy-paste): …`. Running that line
 
 Copy this table into your notes or the merge request and fill it in.
 
-| Test                                      | Result | Notes |
-| ----------------------------------------- | ------ | ----- |
-| A3 Automated checks                       |        |       |
-| A4 Test files created                     |        |       |
-| A5 VSIX built and installed (0.13.0)      |        |       |
-| B1 Healthcheck                            |        |       |
-| B2 Zarr v3 label                          |        |       |
-| B3 Zarr v2 label                          |        |       |
-| B4 Zarr folder without `.zarr`            |        |       |
-| B5 Zarr in ZIP                            |        |       |
-| B6 Normal ZIP error                       |        |       |
-| B7 Sharded Zarr encoding                  |        |       |
-| B8 Encoding setting off/on                |        |       |
-| B9 NetCDF filters                         |        |       |
-| B10 NetCDF engine order                   |        |       |
-| B11 Inherited coordinates                 |        |       |
-| B12 Kerchunk open + plot                  |        |       |
-| B13 Open as Kerchunk                      |        |       |
-| B14 COG label                             |        |       |
-| B15 col_wrap auto / number                |        |       |
-| B16 facetgridFigsize                      |        |       |
-| B17 Empty time range message              |        |       |
-| B18 No `.safe` menu                       |        |       |
-| B19 uv environment auto-update            |        |       |
-| B19 failed update keeps old env, retries  |        |       |
-| B20 Real upgrade 0.12.1 → 0.13 (optional) |        |       |
-| C Old formats, export, outline            |        |       |
-| D1 Issue forms optional (after merge)     |        |       |
+| Test                                       | Result | Notes |
+| ------------------------------------------ | ------ | ----- |
+| A3 Automated checks                        |        |       |
+| A4 Test files created                      |        |       |
+| A5 VSIX built and installed (0.13.0)       |        |       |
+| B1 Healthcheck                             |        |       |
+| B2 Zarr v3 label                           |        |       |
+| B3 Zarr v2 label                           |        |       |
+| B4 Zarr folder without `.zarr`             |        |       |
+| B5 Zarr in ZIP                             |        |       |
+| B6 Normal ZIP error                        |        |       |
+| B7 Sharded Zarr encoding                   |        |       |
+| B8 Encoding setting off/on                 |        |       |
+| B9 NetCDF filters                          |        |       |
+| B10 NetCDF engine order                    |        |       |
+| B11 Inherited coordinates                  |        |       |
+| B12 Kerchunk open + plot                   |        |       |
+| B13 Open as Kerchunk                       |        |       |
+| B14 COG label                              |        |       |
+| B15 col_wrap auto / number                 |        |       |
+| B16 facetgridFigsize                       |        |       |
+| B17 Empty time range message               |        |       |
+| B18 No `.safe` menu                        |        |       |
+| B19 uv environment auto-rebuild            |        |       |
+| B19 failed rebuild keeps old env, retries  |        |       |
+| B19 Recreate action                        |        |       |
+| B20 Real upgrade 0.12.1 → 0.13 (optional)  |        |       |
+| B21 GRIB / TIFF with own environment       |        |       |
+| B22 Code review fixes                      |        |       |
+| B23 Old xarray message (optional)          |        |       |
+| Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
+| C Old formats, export, outline             |        |       |
+| D1 Issue forms optional (after merge)      |        |       |
 
 **Ready to ship** when every line of Parts A–C is ✅ (B20 is optional but recommended). **D1** is checked right after the merge.

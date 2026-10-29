@@ -1,6 +1,6 @@
 # v0.13 — implementation phases
 
-**Status:** Shipped as **v0.13.0** (2026-09-15). See [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) and [`docs/PR_SUMMARY_0.13.0.md`](../PR_SUMMARY_0.13.0.md).
+**Status:** Shipped as **v0.13.0** (2026-09-15). See [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) and [`docs/v0.13/PR_SUMMARY_0.13.0.md`](./PR_SUMMARY_0.13.0.md).
 
 Work through phases in order. Later phases may be cut from the release; **Phase 0 + Phase 1** are the intended v0.13 core. Phase 2 items are individually optional (see [TO_IMPLEMENT.md](./TO_IMPLEMENT.md) P2 and [OUT_OF_SCOPE.md](./OUT_OF_SCOPE.md)).
 
@@ -117,7 +117,7 @@ User-managed interpreters: keep prompting for missing engines; add a **zarr majo
 ## Release notes (shipped)
 
 - [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) — what merged + manual verification guide
-- [`docs/PR_SUMMARY_0.13.0.md`](../PR_SUMMARY_0.13.0.md) — merge request description
+- [`docs/v0.13/PR_SUMMARY_0.13.0.md`](./PR_SUMMARY_0.13.0.md) — merge request description
 - [`CHANGELOG.md`](../../CHANGELOG.md#0130---2026-09-15) — detailed [0.13.0] entry
 
 **Shipped:** Phase 0; P0.1–P0.5; P1.1–P1.3; P1.5 (Kerchunk); P2.3 (COG); P2.7 (`facetgridFigsize`); v0.13 sample data generators.
