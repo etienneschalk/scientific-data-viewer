@@ -30,6 +30,25 @@ export const ALL_REQUIREMENTS: readonly string[] = [
 ];
 
 /**
+ * Version constraints on indirect dependencies of the extension's own uv
+ * environment. They are added to every uv install into that environment, but
+ * are not packages the extension imports (so not part of the package checks).
+ *
+ * - eccodeslib (wheel of the eccodes C library, used by cfgrib): releases from
+ *   2.48 crash the Python process at exit ("free(): invalid pointer", "double
+ *   free or corruption") when pyproj (rioxarray) is imported after eccodes,
+ *   which xarray does when it loads its backends. Every file then failed to
+ *   open. 2.47.3.23 is the last release without the crash.
+ */
+export const ENVIRONMENT_CONSTRAINTS: readonly string[] = ['eccodeslib<2.48'];
+
+/** Everything installed into the extension's own environment. */
+export const ENVIRONMENT_INSTALL_REQUIREMENTS: readonly string[] = [
+    ...ALL_REQUIREMENTS,
+    ...ENVIRONMENT_CONSTRAINTS,
+];
+
+/**
  * Strip the version specifier from a pip requirement.
  * `zarr>=3` becomes `zarr`, while `h5py` is returned unchanged.
  */
@@ -109,8 +128,9 @@ export class ExtensionVirtualEnvironmentManager {
      *
      * History:
      * - 1 (v0.13.0): xarray>=2026.4.0, zarr>=3, h5netcdf>=1.8
+     * - 2 (v0.13.0): eccodeslib<2.48 (downgrades environments that got 2.48+)
      */
-    public readonly ENVIRONMENT_REVISION = 1;
+    public readonly ENVIRONMENT_REVISION = 2;
     private readonly STATE_FILE_NAME = 'sdv-environment.json';
     // Distribution names without version specifiers, for reporting and for
     // matching against `pip list` output.
@@ -354,7 +374,7 @@ export class ExtensionVirtualEnvironmentManager {
     async recordEnvironmentState(): Promise<void> {
         const state: ExtensionEnvironmentState = {
             revision: this.ENVIRONMENT_REVISION,
-            requirements: [...ALL_REQUIREMENTS],
+            requirements: [...ENVIRONMENT_INSTALL_REQUIREMENTS],
             updatedAt: new Date().toISOString(),
         };
         await fs.promises.writeFile(
@@ -384,7 +404,7 @@ export class ExtensionVirtualEnvironmentManager {
             return null;
         }
         const recorded = [...state.requirements].sort().join(',');
-        const current = [...ALL_REQUIREMENTS].sort().join(',');
+        const current = [...ENVIRONMENT_INSTALL_REQUIREMENTS].sort().join(',');
         return recorded === current ? null : 'the required packages changed';
     }
 
@@ -693,8 +713,19 @@ export class ExtensionVirtualEnvironmentManager {
         if (!(await this.isUvAvailable())) {
             throw new UvNotAvailableError();
         }
+        // Constraints only apply to the extension's own environment; other
+        // interpreters are the user's.
+        const constrained =
+            pythonPath === this.extensionEnv.pythonPath
+                ? [
+                      ...packages,
+                      ...ENVIRONMENT_CONSTRAINTS.filter(
+                          (c) => !packages.includes(c),
+                      ),
+                  ]
+                : packages;
         const { code, stdout, stderr } = await this.runUv(
-            this.buildInstallArgs(pythonPath, packages, upgrade),
+            this.buildInstallArgs(pythonPath, constrained, upgrade),
         );
         if (code !== 0) {
             throw new Error(

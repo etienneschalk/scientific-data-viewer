@@ -33,6 +33,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.0.** If your interpreter still has **zarr 2.x**, the extension reports it as unusable and suggests `zarr>=3`.
 - **Zarr v2 data** on disk remains readable through **zarr-python 3**; you do not need to rewrite stores for metadata viewing.
 - **Extension uv environment (automatic):** if you use **Scientific Data Viewer → Use Extension Own Environment**, nothing to do. At the first start of v0.13 the extension upgrades its environment once to the new pins (`xarray>=2026.4.0`, `h5netcdf>=1.8`, `zarr>=3`), showing a progress notification. If that fails (e.g. offline), the previous environment keeps working and the update is retried at the next start; **Manage Extension Virtual Environment → Update Packages** forces it.
+- **eccodeslib pin:** the uv environment also pins `eccodeslib<2.48` (`ENVIRONMENT_REVISION` 2): eccodeslib 2.48+ crashes the Python process at exit when pyproj is also loaded (`free(): invalid pointer` / `double free or corruption` on GRIB and TIFF files). Environments that already received a newer release are downgraded at the next start. On your own interpreter, if you see these errors: `pip install "eccodeslib<2.48"`.
 - **Your own interpreter (manual):** if the extension uses the **Python extension's** selected interpreter or **`overridePythonInterpreter`**, the extension never modifies it. Upgrade it yourself:
 
   ```bash
@@ -415,7 +416,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 1. Remove any `overridePythonInterpreter` setting (it takes precedence), enable `scientificDataViewer.python.useExtensionOwnEnvironment`, reload. Wait for the environment to be created (first time only).
 2. Simulate an environment from v0.12: delete `sdv-environment.json` in the environment folder (Linux: `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/`; the path is shown by **Manage Extension Virtual Environment**).
-3. Reload window → notification _"updating its Python environment for this new version…"_, then _"Python environment updated"_. `sdv-environment.json` is back with `"revision": 1`.
+3. Reload window → notification _"updating its Python environment for this new version…"_, then _"Python environment updated"_. `sdv-environment.json` is back with `"revision": 2` and `eccodeslib<2.48` in its requirements.
 4. Reload again → **no** notification; the logs show `Extension virtual environment is up to date` (no `uv venv --clear`, no package install).
 5. _(Optional, offline)_ delete the file again, disconnect the network, reload → warning that the update failed; files still open with the previous environment. Reconnect, reload → the update runs.
 
@@ -465,12 +466,23 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Attributes such as `_FillValue` / `valid_range` show numbers / arrays (`-999`, `[0.0, 2.0]`).
 4. GRIB sample with temperature `t` → `t` is **not** offered in the time selector.
 
+### 20. eccodeslib pin (GRIB / TIFF crash)
+
+**Expect:** GRIB and GeoTIFF files open with the extension's uv environment, with no `free(): invalid pointer` / `double free or corruption` in the logs.
+
+**Test:**
+
+1. With `useExtensionOwnEnvironment` on and an environment recorded as `"revision": 1` (or with `eccodeslib` ≥ 2.48: check with `uv pip list --python <env>/bin/python`), reload the window → the update notification appears once; afterwards `uv pip list` shows `eccodeslib 2.47.3.23`.
+2. Open `sample-data/sample_data.grib`, `sample_data.grib2`, `sample_data.tif`, `sample_data_cog.tif` → each loads; plot a variable of each.
+3. Command line check: `<env>/bin/python -c "import eccodes, pyproj"` exits with code 0.
+
 ---
 
 ## Known limitations (unchanged or noted)
 
 - **Plotting** remains **experimental** (timeout, auto strategy only).
 - **`fileSize`** for directory stores is still `os.path.getsize` on the directory inode (rough size, not store bytes).
+- **eccodeslib** stays below 2.48 in the extension environment until a fixed release exists; other interpreters with eccodeslib ≥ 2.48 and pyproj still crash at exit (`pip install "eccodeslib<2.48"`).
 - **cftime axes** need `nc-time-axis` to be plotted (not in the uv bundle).
 - **`joinId`** maps every non-alphanumeric character to `-`, so groups like `/a.b` and `/a-b` share element ids (rare; pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.

@@ -62,27 +62,28 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 6 — Automatic uv environment update
 
-| Work          | Detail                                                                                                                 |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Revision mark | `ENVIRONMENT_REVISION` in `ExtensionVirtualEnvironmentManager` (1 = v0.13 pins); requirement-list change also triggers |
-| State file    | `sdv-environment.json` in the env folder records revision + requirements on create / update                            |
-| Startup       | Existing env reused; upgraded once (progress notification) when outdated; on failure old env kept, retried next start  |
-| Fix           | Env was rebuilt (`uv venv --clear` + full reinstall) at every start                                                    |
-| Scope         | Python-extension / override interpreters untouched (user's responsibility)                                             |
+| Work          | Detail                                                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Revision mark | `ENVIRONMENT_REVISION` in `ExtensionVirtualEnvironmentManager` (1 = v0.13 pins, 2 = `eccodeslib<2.48`); requirement-list change also triggers |
+| State file    | `sdv-environment.json` in the env folder records revision + requirements on create / update                                                   |
+| Startup       | Existing env reused; upgraded once (progress notification) when outdated; on failure old env kept, retried next start                         |
+| Fix           | Env was rebuilt (`uv venv --clear` + full reinstall) at every start                                                                           |
+| Scope         | Python-extension / override interpreters untouched (user's responsibility)                                                                    |
 
 ### Phase 7 — Code review fixes
 
-| Area           | Work                                                                                                                                                                                           |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Security       | Escape all file-derived values in the webview; CSP (no inline scripts / handlers); `executeCommand` allowlist (3 commands); plot file names validated (relative, no `..`)                      |
-| Extension host | `runProcess` (no shell) fixes uv version pins; single-flight init + serialised env operations; uv-based package install; accurate uv / override messages; Global config target                 |
-| Error handling | No `uncaughtException` hook in the shared host; per-panel handlers unregistered on dispose; backend errors keep suggestion / type                                                              |
-| Panel          | `MessageBus` → `handle` / `emit` with typed `Requests` / `Events`; `StateManager` removed (1 message per load instead of ~9); `PlotOptions` object end to end; `DataProcessor` not a singleton |
-| Bugs           | Kerchunk URI kept; "File too large" MB; Windows paths; save no longer awaits the notification; outline ids in nested view; outline cleared on close                                            |
-| Webview        | `webview-script.js` (4,000 lines) → `src/panel/webview/*.ts` bundled by esbuild; one plot-parameter table; display bugs (no groups, group time inputs, stale time variable after Refresh)      |
-| Healthcheck    | 1,184 → ~700 lines, plain functions, one package check                                                                                                                                         |
-| Python backend | Always JSON (corrupt files, `inf`); numpy values as numbers; time filter / NaT / cftime; equal aspect only for spatial plots; no `h5py` engine; strategies → `plotting/draw.py`                |
-| Dead code      | Unused types, helpers, handlers, CSS, Python branches; `axios` dependency; `jsdom` → devDependencies                                                                                           |
+| Area             | Work                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security         | Escape all file-derived values in the webview; CSP (no inline scripts / handlers); `executeCommand` allowlist (3 commands); plot file names validated (relative, no `..`)                      |
+| Extension host   | `runProcess` (no shell) fixes uv version pins; single-flight init + serialised env operations; uv-based package install; accurate uv / override messages; Global config target                 |
+| Error handling   | No `uncaughtException` hook in the shared host; per-panel handlers unregistered on dispose; backend errors keep suggestion / type                                                              |
+| Panel            | `MessageBus` → `handle` / `emit` with typed `Requests` / `Events`; `StateManager` removed (1 message per load instead of ~9); `PlotOptions` object end to end; `DataProcessor` not a singleton |
+| Bugs             | Kerchunk URI kept; "File too large" MB; Windows paths; save no longer awaits the notification; outline ids in nested view; outline cleared on close                                            |
+| Webview          | `webview-script.js` (4,000 lines) → `src/panel/webview/*.ts` bundled by esbuild; one plot-parameter table; display bugs (no groups, group time inputs, stale time variable after Refresh)      |
+| Healthcheck      | 1,184 → ~700 lines, plain functions, one package check                                                                                                                                         |
+| Python backend   | Always JSON (corrupt files, `inf`); numpy values as numbers; time filter / NaT / cftime; equal aspect only for spatial plots; no `h5py` engine; strategies → `plotting/draw.py`                |
+| eccodeslib crash | `eccodeslib` ≥ 2.48 aborts Python at exit with pyproj loaded (GRIB / TIFF errors); `ENVIRONMENT_CONSTRAINTS = ['eccodeslib<2.48']`, revision 2                                                 |
+| Dead code        | Unused types, helpers, handlers, CSS, Python branches; `axios` dependency; `jsdom` → devDependencies                                                                                           |
 
 ### Sample data & docs
 
@@ -114,7 +115,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 ## Upgrade / breaking notes
 
 - **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.** Users on zarr 2.x see `zarr>=3` in missing-package messages.
-- **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 1); Python-extension / override interpreters must be upgraded by the user.
+- **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 2: v0.13 pins, then `eccodeslib<2.48` against an exit crash with pyproj); Python-extension / override interpreters must be upgraded by the user.
 - **Kerchunk** is opt-in (`pip install kerchunk`); not in default uv bundle.
 - Webview protocol: `getDataInfo` / `getCurrentFilePath` / `updateHeaders` requests and `uiStateChanged` / `pythonEnvironmentChanged` events removed; `executeCommand` allowlisted. New Python CLI flags are additive.
 - JSON output: numeric attributes are numbers / arrays; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
@@ -156,7 +157,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§19 (§16–§19: code review fixes).
+**Manual:** Follow [`docs/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](./RELEASE_NOTES_0.13.0.md) §0–§20 (§16–§19: code review fixes, §20: eccodeslib pin).
 
 ---
 

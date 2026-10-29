@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import {
     ALL_REQUIREMENTS,
+    ENVIRONMENT_CONSTRAINTS,
     ExtensionVirtualEnvironmentManager,
     UvNotAvailableError,
 } from '../../../src/python/ExtensionVirtualEnvironmentManager';
@@ -229,6 +230,42 @@ suite('Extension environment update on new version', () => {
             ],
         ]);
         assert.ok(ALL_REQUIREMENTS.includes('xarray>=2026.4.0'));
+    });
+
+    test('v0.13.0 revision 1 environments are updated (eccodeslib pin)', () => {
+        const manager = makeExistingEnvironment();
+        // State written by the first v0.13 builds, before the eccodeslib pin
+        writeState(manager, {
+            revision: 1,
+            requirements: [...ALL_REQUIREMENTS],
+            updatedAt: '2026-10-28T16:23:24.798Z',
+        });
+        assert.ok(ENVIRONMENT_CONSTRAINTS.includes('eccodeslib<2.48'));
+        assert.match(manager.getUpdateReason() ?? '', /older than required/);
+    });
+
+    test('installs into the extension environment carry the constraints', async () => {
+        const manager = makeExistingEnvironment();
+        const calls: string[][] = [];
+        (manager as any).isUvAvailable = async () => true;
+        (manager as any).runUv = async (args: string[]) => {
+            calls.push(args);
+            return { code: 0, stdout: '', stderr: '' };
+        };
+        const envPython = manager.retrieve().pythonPath;
+
+        await manager.uvInstallPackages(envPython, ['cfgrib']);
+
+        assert.deepStrictEqual(calls, [
+            [
+                'pip',
+                'install',
+                '--python',
+                envPython,
+                'cfgrib',
+                ...ENVIRONMENT_CONSTRAINTS,
+            ],
+        ]);
     });
 
     test('uv install failure and missing uv are reported', async () => {
