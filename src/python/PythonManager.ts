@@ -467,10 +467,10 @@ export class PythonManager {
 
     /**
      * Prepare the extension's own uv environment from a previous session.
-     * When this extension version requires it (see ENVIRONMENT_REVISION), its
-     * packages are upgraded once, with a progress notification. On failure the
-     * previous environment stays in use (if it still works) and the update is
-     * retried next start.
+     * When this extension version requires it (see ENVIRONMENT_REVISION), it
+     * is deleted and recreated once, with a progress notification. On failure
+     * the previous environment stays in use (if it still works) and the
+     * recreation is retried next start.
      */
     private async prepareExistingExtensionEnvironment(): Promise<void> {
         const envManager = this.extensionEnvManager;
@@ -482,20 +482,20 @@ export class PythonManager {
         const result = await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: 'Scientific Data Viewer: updating its Python environment for this new version…',
+                title: 'Scientific Data Viewer: rebuilding its Python environment for this new version (this can take a few minutes)…',
             },
             () => envManager.prepareExisting(),
         );
 
         if (result.updated) {
             vscode.window.showInformationMessage(
-                'Scientific Data Viewer: Python environment updated for this new version.',
+                'Scientific Data Viewer: Python environment rebuilt for this new version.',
             );
         } else if (result.error && envManager.ready) {
             vscode.window.showWarningMessage(
-                'Scientific Data Viewer: the Python environment could not be updated (are you offline?). ' +
-                    'The previous environment is used for now; the update will be retried at the next start, ' +
-                    'or run "Scientific Data Viewer: Manage Extension Virtual Environment" → Update Packages.',
+                'Scientific Data Viewer: the Python environment could not be rebuilt (are you offline?). ' +
+                    'The previous environment is used for now; it will be rebuilt at the next start, ' +
+                    'or run "Scientific Data Viewer: Manage Extension Virtual Environment" → Recreate.',
             );
         }
     }

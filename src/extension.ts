@@ -111,7 +111,13 @@ export function activate(context: vscode.ExtensionContext) {
     Logger.info('🧩 🚀 Extension managers initialized successfully');
 
     Logger.info('🧩 🔧 Refreshing Python environment...');
-    refreshPython(pythonManager, statusBarItem);
+    refreshPython(pythonManager, statusBarItem).then(() => {
+        // Don't fall back to another interpreter silently (e.g. after a
+        // failed environment rebuild on upgrade)
+        if (pythonManager.ownEnvironmentIssue) {
+            reportOwnEnvironmentNotUsed(pythonManager, extensionEnvManager);
+        }
+    });
     Logger.info('🧩 🚀 Python environment refreshed successfully');
 
     Logger.info('🧩 🔧 Registering custom editor providers...');
@@ -435,8 +441,8 @@ function handlerOnDidChangeConfiguration(
 }
 
 /**
- * After useExtensionOwnEnvironment was turned on, tell the user why the
- * extension's own environment is not the one in use, if it is not.
+ * At startup or after useExtensionOwnEnvironment was turned on, tell the user
+ * why the extension's own environment is not the one in use, if it is not.
  */
 function reportOwnEnvironmentNotUsed(
     pythonManager: PythonManager,
@@ -468,7 +474,7 @@ function reportOwnEnvironmentNotUsed(
     showErrorMessage(
         `The extension's own environment could not be set up${
             issue ? `: ${issue.message}` : ''
-        }. Another interpreter is used for now; see the logs for details.`,
+        }. Another interpreter is used for now; see the logs for details, or run "Scientific Data Viewer: Manage Extension Virtual Environment" → Recreate.`,
         true,
         true,
     );

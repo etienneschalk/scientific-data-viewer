@@ -121,10 +121,11 @@ export class ExtensionVirtualEnvironmentManager {
     private readonly ENV_FOLDER_NAME = 'python-environment';
     /**
      * Bump this number in a release that needs existing extension environments
-     * to be updated (new or changed requirement, or to force an upgrade).
-     * Environments recorded with a lower revision are upgraded once, at the next
-     * extension start. Changing ALL_REQUIREMENTS also triggers an update, even
-     * if this number was not bumped.
+     * to be rebuilt (new or changed requirement, broken package versions...).
+     * Environments recorded with a lower revision are deleted and recreated
+     * from scratch once, at the next extension start (see prepareExisting).
+     * Changing ALL_REQUIREMENTS or ENVIRONMENT_CONSTRAINTS also triggers it,
+     * even if this number was not bumped.
      *
      * History:
      * - 1 (v0.13.0): xarray>=2026.4.0, zarr>=3, h5netcdf>=1.8
@@ -132,6 +133,11 @@ export class ExtensionVirtualEnvironmentManager {
      */
     public readonly ENVIRONMENT_REVISION = 2;
     private readonly STATE_FILE_NAME = 'sdv-environment.json';
+    /**
+     * The previous environment is moved here while a new one is created, and
+     * moved back if the creation fails.
+     */
+    private readonly BACKUP_SUFFIX = '.previous';
     // Distribution names without version specifiers, for reporting and for
     // matching against `pip list` output.
     private readonly ALL_PACKAGES = ALL_REQUIREMENTS.map(
@@ -145,6 +151,7 @@ export class ExtensionVirtualEnvironmentManager {
             this.globalStorageUriFsPath,
             this.ENV_FOLDER_NAME,
         );
+        this.restoreInterruptedRecreation(envPath);
         this.extensionEnv = {
             path: envPath,
             pythonPath: this.getPythonExecutablePath(envPath),
@@ -222,32 +229,122 @@ export class ExtensionVirtualEnvironmentManager {
                 );
                 return;
             }
-            Logger.info('[uv] 🐍 🔧 Creating extension virtual environment...');
-
-            await fs.promises.mkdir(this.globalStorageUriFsPath, {
-                recursive: true,
-            });
-
-            if (!(await this.isUvAvailable())) {
-                throw new UvNotAvailableError();
-            }
-
-            // Install Python with uv first to ensure it is available
-            await this.uvInstallPython();
-            await this.uvCreateVirtualEnvironment(this.extensionEnv.path);
-
-            this.extensionEnv.isCreated = true;
-            this.extensionEnv.isInitialized = false;
-
-            await this.uvInstallRequiredPackages({ upgrade: false });
-
-            this.extensionEnv.isInitialized = true;
-            await this.recordEnvironmentState();
-
-            Logger.info(
-                '[uv] ✅ Extension virtual environment created successfully',
-            );
+            await this.createEnvironment();
         });
+    }
+
+    /**
+     * Delete the environment and create it again from scratch. The previous
+     * environment is restored if the new one cannot be created (offline, uv
+     * missing...). Throws in that case.
+     */
+    recreate(): Promise<void> {
+        return this.serialize(() => this.recreateEnvironment());
+    }
+
+    private async createEnvironment(): Promise<void> {
+        Logger.info('[uv] 🐍 🔧 Creating extension virtual environment...');
+
+        await fs.promises.mkdir(this.globalStorageUriFsPath, {
+            recursive: true,
+        });
+
+        if (!(await this.isUvAvailable())) {
+            throw new UvNotAvailableError();
+        }
+
+        // Install Python with uv first to ensure it is available
+        await this.uvInstallPython();
+        await this.uvCreateVirtualEnvironment(this.extensionEnv.path);
+
+        this.extensionEnv.isCreated = true;
+        this.extensionEnv.isInitialized = false;
+
+        await this.uvInstallRequiredPackages({ upgrade: false });
+
+        this.extensionEnv.isInitialized = true;
+        await this.recordEnvironmentState();
+
+        Logger.info(
+            '[uv] ✅ Extension virtual environment created successfully',
+        );
+    }
+
+    private async recreateEnvironment(): Promise<void> {
+        const envPath = this.extensionEnv.path;
+        const backupPath = envPath + this.BACKUP_SUFFIX;
+        if (!this.extensionEnv.isCreated) {
+            await this.createEnvironment();
+            return;
+        }
+
+        Logger.info(
+            `[uv] 🗑️ Recreating extension virtual environment (previous one kept in ${backupPath} until the new one works)`,
+        );
+        await fs.promises.rm(backupPath, { recursive: true, force: true });
+        // Throws (e.g. a file locked on Windows) before anything was changed
+        await fs.promises.rename(envPath, backupPath);
+        this.extensionEnv.isCreated = false;
+        this.extensionEnv.isInitialized = false;
+
+        try {
+            await this.createEnvironment();
+        } catch (error) {
+            Logger.warn(
+                `[uv] ⚠️ New environment could not be created, restoring the previous one: ${error}`,
+            );
+            try {
+                await fs.promises.rm(envPath, { recursive: true, force: true });
+                await fs.promises.rename(backupPath, envPath);
+            } catch (restoreError) {
+                Logger.error(
+                    `[uv] ❌ Could not restore the previous environment from ${backupPath}: ${restoreError}`,
+                );
+            }
+            this.extensionEnv.isCreated = fs.existsSync(envPath);
+            this.extensionEnv.isInitialized = false;
+            throw error;
+        }
+
+        try {
+            await fs.promises.rm(backupPath, { recursive: true, force: true });
+        } catch (error) {
+            // Removed at the next start by restoreInterruptedRecreation
+            Logger.warn(
+                `[uv] ⚠️ Could not delete the previous environment ${backupPath}: ${error}`,
+            );
+        }
+    }
+
+    /**
+     * A recreation interrupted by closing VS Code leaves the previous
+     * environment in the backup folder. Keep the new environment if it was
+     * completed (it has a state file), otherwise put the previous one back, so
+     * that the recreation is simply retried.
+     */
+    private restoreInterruptedRecreation(envPath: string): void {
+        const backupPath = envPath + this.BACKUP_SUFFIX;
+        if (!fs.existsSync(backupPath)) {
+            return;
+        }
+        try {
+            if (fs.existsSync(path.join(envPath, this.STATE_FILE_NAME))) {
+                Logger.info(
+                    `[uv] 🗑️ Removing the previous environment left in ${backupPath}`,
+                );
+                fs.rmSync(backupPath, { recursive: true, force: true });
+            } else {
+                Logger.warn(
+                    `[uv] ⚠️ An environment recreation was interrupted: restoring the previous environment from ${backupPath}`,
+                );
+                fs.rmSync(envPath, { recursive: true, force: true });
+                fs.renameSync(backupPath, envPath);
+            }
+        } catch (error) {
+            Logger.error(
+                `[uv] ❌ Could not clean up ${backupPath} after an interrupted recreation: ${error}`,
+            );
+        }
     }
 
     /**
@@ -278,11 +375,13 @@ export class ExtensionVirtualEnvironmentManager {
 
     /**
      * Make an existing environment usable for this session: reuse it as is when
-     * up to date, otherwise upgrade its packages once. If the upgrade fails (e.g.
-     * offline), the previous environment is kept when it can still import the
-     * core packages, and the update is retried at the next start (the state is
-     * only recorded on success). An environment that cannot import them is not
-     * marked initialised, so the caller recreates it or falls back.
+     * up to date, otherwise delete it and create it again from scratch (an
+     * in-place upgrade can keep broken leftovers of older versions). If that
+     * fails (e.g. offline), the previous environment is restored and kept when
+     * it can still import the core packages, and the recreation is retried at
+     * the next start (the state is only recorded on success). An environment
+     * that cannot import them is not marked initialised, so the caller creates
+     * it again or falls back to another interpreter.
      */
     prepareExisting(): Promise<PrepareExistingResult> {
         return this.serialize(async () => {
@@ -299,23 +398,21 @@ export class ExtensionVirtualEnvironmentManager {
             }
 
             Logger.info(
-                `[uv] 📦 Updating extension virtual environment: ${updateReason}`,
+                `[uv] 📦 Recreating extension virtual environment: ${updateReason}`,
             );
             try {
-                await this.uvInstallRequiredPackages({ upgrade: true });
-                await this.recordEnvironmentState();
-                this.extensionEnv.isInitialized = true;
-                Logger.info('[uv] ✅ Extension virtual environment updated');
+                await this.recreateEnvironment();
+                Logger.info('[uv] ✅ Extension virtual environment recreated');
                 return { updateReason, updated: true };
             } catch (error) {
                 const message =
                     error instanceof Error ? error.message : String(error);
-                const usable = await this.hasCorePackages();
+                const usable = this.exists && (await this.hasCorePackages());
                 this.extensionEnv.isInitialized = usable;
                 Logger.warn(
                     usable
-                        ? `[uv] ⚠️ Extension virtual environment update failed, keeping the previous one: ${message}`
-                        : `[uv] ❌ Extension virtual environment update failed and the previous one is not usable: ${message}`,
+                        ? `[uv] ⚠️ Extension virtual environment recreation failed, keeping the previous one: ${message}`
+                        : `[uv] ❌ Extension virtual environment recreation failed and the previous one is not usable: ${message}`,
                 );
                 return { updateReason, updated: false, error: message };
             }
@@ -675,29 +772,20 @@ export class ExtensionVirtualEnvironmentManager {
             `[uv] 🔧 Creating virtual environment with uv at: ${envPath}`,
         );
 
-        try {
-            const { code, stdout, stderr } = await this.runUv(
-                ['venv', '--clear', '--python', this.PYTHON_VERSION, envPath],
-                '🔧',
-            );
-            if (code === 0) {
-                Logger.info(
-                    `[uv] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`,
-                );
-            } else {
-                Logger.warn(
-                    `[uv] ⚠️ Failed to create environment with Python ${
-                        this.PYTHON_VERSION
-                    }: exit code ${code}: ${stderr || stdout}`,
-                );
-            }
-        } catch (error) {
-            Logger.warn(
-                `[uv] ⚠️ Failed to execute uv venv with Python ${
+        const { code, stdout, stderr } = await this.runUv(
+            ['venv', '--clear', '--python', this.PYTHON_VERSION, envPath],
+            '🔧',
+        );
+        if (code !== 0) {
+            throw new Error(
+                `uv failed to create the environment with Python ${
                     this.PYTHON_VERSION
-                }: ${error instanceof Error ? error.message : String(error)}`,
+                } (exit code ${code}): ${stderr || stdout}`,
             );
         }
+        Logger.info(
+            `[uv] ✅ Virtual environment created successfully with uv using Python ${this.PYTHON_VERSION}`,
+        );
     }
 
     /**

@@ -10,20 +10,29 @@ import {
 } from '../../../src/python/ExtensionVirtualEnvironmentManager';
 
 /**
- * Automatic update of the extension's own uv environment when a new extension
- * version requires it (ENVIRONMENT_REVISION / requirements change).
- * uv is never called: the install step is stubbed.
+ * Automatic recreation of the extension's own uv environment when a new
+ * extension version requires it (ENVIRONMENT_REVISION / requirements change).
+ * uv is never called: the uv steps are stubbed.
  */
 suite('Extension environment update on new version', () => {
     let storage: string;
+    /** File only present in the environment of the previous session. */
+    const OLD_FILE = 'left-by-previous-version.txt';
 
-    /** Fake environment folder with a Python executable, as left by a previous session. */
-    function makeExistingEnvironment(): ExtensionVirtualEnvironmentManager {
-        const envPath = path.join(storage, 'python-environment');
+    function envPath(): string {
+        return path.join(storage, 'python-environment');
+    }
+
+    function backupPath(): string {
+        return envPath() + '.previous';
+    }
+
+    /** Folder with a Python executable, as created by `uv venv`. */
+    function makePython(folder: string): void {
         const bin =
             process.platform === 'win32'
-                ? path.join(envPath, 'Scripts')
-                : path.join(envPath, 'bin');
+                ? path.join(folder, 'Scripts')
+                : path.join(folder, 'bin');
         fs.mkdirSync(bin, { recursive: true });
         fs.writeFileSync(
             path.join(
@@ -32,7 +41,36 @@ suite('Extension environment update on new version', () => {
             ),
             '',
         );
+    }
+
+    /** Fake environment folder with a Python executable, as left by a previous session. */
+    function makeExistingEnvironment(): ExtensionVirtualEnvironmentManager {
+        makePython(envPath());
+        fs.writeFileSync(path.join(envPath(), OLD_FILE), '');
         return new ExtensionVirtualEnvironmentManager(storage);
+    }
+
+    /**
+     * Replace the uv steps of an environment creation; `uv venv` creates the
+     * Python executable. Returns a counter of package installs.
+     */
+    function stubUv(
+        manager: ExtensionVirtualEnvironmentManager,
+        install: 'succeed' | 'fail',
+    ): { installs: number } {
+        const counter = { installs: 0 };
+        const stubbed = manager as any;
+        stubbed.isUvAvailable = async () => true;
+        stubbed.uvInstallPython = async () => {};
+        stubbed.uvCreateVirtualEnvironment = async (folder: string) =>
+            makePython(folder);
+        stubbed.uvInstallRequiredPackages = async () => {
+            counter.installs += 1;
+            if (install === 'fail') {
+                throw new Error('network unreachable');
+            }
+        };
+        return counter;
     }
 
     function writeState(
@@ -43,21 +81,6 @@ suite('Extension environment update on new version', () => {
             path.join(manager.retrieve().path, 'sdv-environment.json'),
             JSON.stringify(state),
         );
-    }
-
-    /** Replace the uv install step; returns a counter of calls. */
-    function stubInstall(
-        manager: ExtensionVirtualEnvironmentManager,
-        behaviour: 'succeed' | 'fail',
-    ): { calls: number } {
-        const counter = { calls: 0 };
-        (manager as any).uvInstallRequiredPackages = async () => {
-            counter.calls += 1;
-            if (behaviour === 'fail') {
-                throw new Error('network unreachable');
-            }
-        };
-        return counter;
     }
 
     setup(() => {
@@ -146,36 +169,42 @@ suite('Extension environment update on new version', () => {
     test('up-to-date environment is reused without reinstalling', async () => {
         const manager = makeExistingEnvironment();
         await manager.recordEnvironmentState();
-        const install = stubInstall(manager, 'succeed');
+        const uv = stubUv(manager, 'succeed');
 
         const result = await manager.prepareExisting();
 
-        assert.strictEqual(install.calls, 0);
+        assert.strictEqual(uv.installs, 0);
         assert.deepStrictEqual(result, { updateReason: null, updated: false });
         assert.strictEqual(manager.ready, true);
+        assert.ok(fs.existsSync(path.join(envPath(), OLD_FILE)));
     });
 
-    test('outdated environment is upgraded once and recorded', async () => {
+    test('outdated environment is deleted, recreated once and recorded', async () => {
         const manager = makeExistingEnvironment();
-        const install = stubInstall(manager, 'succeed');
+        const uv = stubUv(manager, 'succeed');
 
         const result = await manager.prepareExisting();
 
-        assert.strictEqual(install.calls, 1);
+        assert.strictEqual(uv.installs, 1);
         assert.strictEqual(result.updated, true);
         assert.strictEqual(manager.ready, true);
         assert.strictEqual(manager.getUpdateReason(), null);
+        assert.ok(
+            !fs.existsSync(path.join(envPath(), OLD_FILE)),
+            'nothing left from the previous environment',
+        );
+        assert.ok(!fs.existsSync(backupPath()), 'backup removed');
 
         // Next session: nothing to do
         const nextSession = new ExtensionVirtualEnvironmentManager(storage);
-        const nextInstall = stubInstall(nextSession, 'succeed');
+        const nextUv = stubUv(nextSession, 'succeed');
         await nextSession.prepareExisting();
-        assert.strictEqual(nextInstall.calls, 0);
+        assert.strictEqual(nextUv.installs, 0);
     });
 
-    test('failed upgrade keeps the previous environment and retries next start', async () => {
+    test('failed recreation restores the previous environment and retries next start', async () => {
         const manager = makeExistingEnvironment();
-        stubInstall(manager, 'fail');
+        stubUv(manager, 'fail');
         // The previous environment can still import the core packages
         (manager as any).hasCorePackages = async () => true;
 
@@ -187,16 +216,30 @@ suite('Extension environment update on new version', () => {
         assert.notStrictEqual(
             manager.getUpdateReason(),
             null,
-            'state not recorded, so the update is retried',
+            'state not recorded, so the recreation is retried',
         );
         assert.ok(
-            fs.existsSync(manager.retrieve().pythonPath),
-            'environment not deleted',
+            fs.existsSync(path.join(envPath(), OLD_FILE)),
+            'previous environment restored',
         );
+        assert.ok(!fs.existsSync(backupPath()), 'backup moved back');
     });
-    test('failed upgrade of an unusable environment does not mark it ready', async () => {
+
+    test('missing uv keeps the previous environment', async () => {
         const manager = makeExistingEnvironment();
-        stubInstall(manager, 'fail');
+        (manager as any).isUvAvailable = async () => false;
+        (manager as any).hasCorePackages = async () => true;
+
+        const result = await manager.prepareExisting();
+
+        assert.match(result.error ?? '', /uv is not available/);
+        assert.strictEqual(manager.ready, true);
+        assert.ok(fs.existsSync(path.join(envPath(), OLD_FILE)));
+    });
+
+    test('failed recreation of an unusable environment does not mark it ready', async () => {
+        const manager = makeExistingEnvironment();
+        stubUv(manager, 'fail');
         // e.g. a creation interrupted before the packages were installed
         (manager as any).hasCorePackages = async () => false;
 
@@ -290,6 +333,7 @@ suite('Extension environment update on new version', () => {
 
     test('environment operations are serialised', async () => {
         const manager = makeExistingEnvironment();
+        stubUv(manager, 'succeed');
         let running = 0;
         let maxRunning = 0;
         (manager as any).uvInstallRequiredPackages = async () => {
@@ -322,6 +366,45 @@ suite('Extension environment update on new version', () => {
 
         assert.strictEqual(uvChecks, 0);
         assert.strictEqual(manager.ready, true);
+    });
+
+    test('recreate() rebuilds an up-to-date environment from scratch', async () => {
+        const manager = makeExistingEnvironment();
+        await manager.recordEnvironmentState();
+        await manager.prepareExisting();
+        const uv = stubUv(manager, 'succeed');
+
+        await manager.recreate();
+
+        assert.strictEqual(uv.installs, 1);
+        assert.strictEqual(manager.ready, true);
+        assert.ok(!fs.existsSync(path.join(envPath(), OLD_FILE)));
+    });
+
+    test('interrupted recreation: the previous environment is restored at next start', () => {
+        // VS Code closed while the new environment was being installed
+        makePython(backupPath());
+        fs.writeFileSync(path.join(backupPath(), OLD_FILE), '');
+        makePython(envPath());
+
+        const manager = new ExtensionVirtualEnvironmentManager(storage);
+
+        assert.ok(fs.existsSync(path.join(envPath(), OLD_FILE)));
+        assert.ok(!fs.existsSync(backupPath()));
+        assert.strictEqual(manager.exists, true);
+        assert.notStrictEqual(manager.getUpdateReason(), null, 'retried');
+    });
+
+    test('interrupted recreation: a completed new environment is kept', async () => {
+        const manager = makeExistingEnvironment();
+        await manager.recordEnvironmentState();
+        // VS Code closed before the previous environment was deleted
+        makePython(backupPath());
+
+        const nextSession = new ExtensionVirtualEnvironmentManager(storage);
+
+        assert.ok(!fs.existsSync(backupPath()), 'leftover backup removed');
+        assert.strictEqual(nextSession.getUpdateReason(), null);
     });
 
     test('last update time comes from the state file', async () => {

@@ -64,6 +64,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
                         description: 'Update all packages in the environment',
                     },
                     {
+                        label: '$(refresh) Recreate',
+                        description:
+                            'Delete and rebuild the environment from scratch (fixes a broken environment)',
+                    },
+                    {
                         label: '$(trash) Delete',
                         description: 'Remove the environment',
                     },
@@ -91,6 +96,9 @@ export class ExtensionVirtualEnvironmentManagerUI {
             switch (action?.label) {
                 case '$(sync) Update Packages':
                     await this.update();
+                    break;
+                case '$(refresh) Recreate':
+                    await this.recreate();
                     break;
                 case '$(trash) Delete':
                     await this.delete();
@@ -194,6 +202,37 @@ export class ExtensionVirtualEnvironmentManagerUI {
             );
             showErrorMessage(`Failed to update packages: ${error}`, true, true);
         }
+    }
+
+    /**
+     * Delete the environment and build it again from scratch. The previous
+     * environment is restored if that fails.
+     */
+    private async recreate(): Promise<void> {
+        try {
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Recreating the extension virtual environment (this can take a few minutes)…',
+                },
+                () => this.extensionEnvManager.recreate(),
+            );
+        } catch (error) {
+            Logger.error(
+                `🔧 ❌ Failed to recreate extension environment: ${error}`,
+            );
+            showErrorMessageAndProposeHelpToInstallUv(
+                error,
+                this.extensionEnvManager.UV_INSTALLATION_URL,
+            );
+            return;
+        }
+        // The interpreter may have changed (e.g. the extension had fallen
+        // back to another one while this environment was broken)
+        await this.refreshPython();
+        vscode.window.showInformationMessage(
+            'Extension virtual environment recreated successfully!',
+        );
     }
 
     /**
