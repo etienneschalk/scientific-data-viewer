@@ -90,7 +90,7 @@ function displayVariablePlotError(controls: HTMLElement, text: string): void {
                     ? `<button class="plot-action-button plot-install-button" data-action="install-packages" data-packages="matplotlib" title="Once installed (a notification should appear), retry 'Create Plot' again.">🎮 Install matplotlib</button>`
                     : ''
             }
-            <button class="text-copy-button" data-target-id="${preId}" title="Copy error message">📋 Copy</button>
+            <button class="text-copy-button" data-target-id="${preId}" title="Copy error message">Copy</button>
             <pre id="${preId}"></pre>
         </div>`;
     const pre = message.querySelector('pre');

@@ -96,6 +96,18 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Upgrade test         | `scripts/upgrade-sandbox.sh`: real v0.12.1 → v0.13.0 update in a throw-away VS Code profile; scenarios `normal`, `offline`, `interrupted`                                                                                             |
 | Docs                 | `docs/v0.13/GETTING_STARTED.md` (hub), `docs/v0.13/UPGRADE_TEST_PLAN.md` (profiles, results, support playbook); README troubleshooting entry; v0.13 working docs moved to `docs/v0.13/`; stale developer docs fixed                   |
 
+### Phase 9 — Viewer styling refresh
+
+| Area       | Work                                                                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Stylesheet | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                     |
+| Layout     | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                |
+| Components | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers  |
+| Controls   | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings           |
+| Markup     | Header emoji → inline SVG line icons (`ICONS` in `HTMLGenerator.ts`, `aria-label`s); copy buttons read **Copy** / **Copied** / **Failed** |
+| Fallbacks  | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                |
+| Docs       | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21                   |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -137,13 +149,13 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 
 ## Key files
 
-| Area      | Files                                                                                                                                                                        |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`   |
-| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json` |
-| Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts`              |
-| Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`        |
-| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                   |
+| Area      | Files                                                                                                                                                                                                         |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`                                    |
+| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json`                                  |
+| Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/webview/styles.css`, `src/panel/HTMLGenerator.ts` (CSP, header icons), `src/panel/WebviewAssets.ts` |
+| Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`                                         |
+| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                                                    |
 
 ---
 
@@ -161,6 +173,8 @@ pre-commit run --all-files
 npm run package && scripts/upgrade-sandbox.sh [--scenario offline|interrupted]   # upgrade from v0.12.1
 ```
 
+Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; visual check in headless Chromium (dark, light, narrow, scrolled, plots, plot error, error page).
+
 Results after the upgrade-safety work: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 83 / 0 failing; `upgrade-sandbox.sh` normal, offline and interrupted passing (see [`UPGRADE_TEST_PLAN.md`](./UPGRADE_TEST_PLAN.md#results-2026-10-29-linux-vs-code-1144-uv-0102)).
 
 Results at the end of the code review pass: `npm test` 284 passing / 0 failing; `pytest python/tests` 159 passing (was 112); golden snapshots 83 cases, 0 failing (re-recorded after reviewing the 27 intended info diffs); non-regression plot gallery byte-identical.
@@ -171,7 +185,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§20 (§16–§19: code review fixes, §20: eccodeslib pin).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§21 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling).
 
 ---
 

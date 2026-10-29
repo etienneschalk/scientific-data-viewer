@@ -263,7 +263,7 @@ The extension allows you to export complete data viewer content as self-containe
 
 1. **Using the Export Button**:
    - Open a scientific data file in the Scientific Data Viewer
-   - Click the export button (🖼️) in the header controls
+   - Click the export button (download icon) in the header toolbar
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 

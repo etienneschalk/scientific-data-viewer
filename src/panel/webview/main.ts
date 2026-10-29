@@ -69,17 +69,17 @@ async function handleTextCopy(button: HTMLElement): Promise<void> {
     const text = targetElement?.textContent ?? '';
     try {
         await navigator.clipboard.writeText(text);
-        button.textContent = '✓ Copied!';
+        button.textContent = 'Copied';
         button.classList.add('copied');
         setTimeout(() => {
-            button.textContent = '📋 Copy';
+            button.textContent = 'Copy';
             button.classList.remove('copied');
         }, 2000);
     } catch (err) {
         console.error('Failed to copy text:', err);
-        button.textContent = '❌ Failed';
+        button.textContent = 'Failed';
         setTimeout(() => {
-            button.textContent = '📋 Copy';
+            button.textContent = 'Copy';
         }, 2000);
     }
 }

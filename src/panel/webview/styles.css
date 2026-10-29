@@ -1,16 +1,97 @@
 /* https://gist.github.com/estruyf/ba49203e1a7d6868e9320a4ea480c27a All VS Code theme variables */
 /* https://marketplace.visualstudio.com/items?itemName=phoenisx.cssvar */
 
-/* Base styles */
-body {
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-    font-weight: var(--vscode-font-weight);
-    color: var(--vscode-foreground);
-    background-color: var(--vscode-editor-background);
-    max-width: 768px;
+/*
+ * Design tokens. Colors always come from the active VS Code theme; the
+ * tokens only add spacing, radii and a few derived surfaces on top of it.
+ */
+:root {
+    --sdv-gutter: 24px;
+    --sdv-indent: 20px; /* twistie width: nested content lines up with its title */
+    --sdv-header-height: 40px;
+    --sdv-max-width: 960px;
+
+    --sdv-radius-sm: 4px;
+    --sdv-radius: 6px;
+    --sdv-radius-lg: 8px;
+    --sdv-control-height: 26px;
+
+    --sdv-mono: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
+    --sdv-mono-size: 0.92em;
+    --sdv-transition: 120ms ease;
+
+    /* Fallbacks for webviews without color-mix() (VS Code < 1.77) */
+    --sdv-border: var(
+        --vscode-widget-border,
+        var(--vscode-panel-border, rgba(128, 128, 128, 0.35))
+    );
+    --sdv-surface: rgba(128, 128, 128, 0.06);
+    --sdv-surface-hover: var(--vscode-list-hoverBackground);
+    --sdv-error-surface: transparent;
+    --sdv-success-color: var(--vscode-testing-iconPassed, #4caf50);
+    --sdv-success-surface: transparent;
+    --sdv-highlight: transparent;
 }
 
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+    :root {
+        --sdv-border: color-mix(
+            in srgb,
+            var(--vscode-foreground) 14%,
+            transparent
+        );
+        --sdv-surface: color-mix(
+            in srgb,
+            var(--vscode-foreground) 3.5%,
+            transparent
+        );
+        --sdv-surface-hover: color-mix(
+            in srgb,
+            var(--vscode-foreground) 7%,
+            transparent
+        );
+        --sdv-error-surface: color-mix(
+            in srgb,
+            var(--vscode-errorForeground) 8%,
+            transparent
+        );
+        --sdv-success-surface: color-mix(
+            in srgb,
+            var(--sdv-success-color) 10%,
+            transparent
+        );
+        --sdv-highlight: color-mix(
+            in srgb,
+            var(--vscode-focusBorder) 14%,
+            transparent
+        );
+    }
+}
+
+/* High contrast themes: explicit borders, no tinted surfaces */
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+    --sdv-border: var(--vscode-contrastBorder);
+    --sdv-surface: transparent;
+    --sdv-surface-hover: transparent;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+    color-scheme: dark;
+}
+
+body.vscode-light,
+body.vscode-high-contrast-light {
+    color-scheme: light;
+}
+
+/* Base styles */
 * {
     box-sizing: border-box;
     padding: 0;
@@ -18,33 +99,125 @@ body {
     text-decoration: none;
 }
 
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    font-weight: var(--vscode-font-weight);
+    line-height: 1.45;
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+    max-width: var(--sdv-max-width);
+    margin: 0 auto;
+    padding: 0 var(--sdv-gutter) 48px;
+}
+
+a {
+    color: var(--vscode-textLink-foreground);
+}
+
+a:hover {
+    color: var(--vscode-textLink-activeForeground);
+    text-decoration: underline;
+}
+
+code {
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-textPreformat-foreground);
+    background-color: var(
+        --vscode-textPreformat-background,
+        var(--vscode-textCodeBlock-background)
+    );
+    padding: 1px 5px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+kbd {
+    display: inline-block;
+    font-family: inherit;
+    font-size: 0.9em;
+    line-height: 1.3;
+    padding: 1px 5px;
+    color: var(--vscode-keybindingLabel-foreground, inherit);
+    background-color: var(--vscode-keybindingLabel-background, transparent);
+    border: 1px solid var(--vscode-keybindingLabel-border, var(--sdv-border));
+    border-bottom-color: var(
+        --vscode-keybindingLabel-bottomBorder,
+        var(--sdv-border)
+    );
+    border-radius: var(--sdv-radius-sm);
+    box-shadow: inset 0 -1px 0
+        var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
 .hidden {
     display: none !important;
 }
 
-.highlighted {
-    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
-}
-
-.loading {
-    text-align: center;
-    padding: 20px;
+.muted-text {
     color: var(--vscode-descriptionForeground);
 }
 
+/* Loading states */
+.loading,
+.plot-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.loading {
+    padding: 48px 0;
+}
+
+.plot-loading {
+    padding: 24px 0;
+}
+
+.loading::before,
+.plot-loading::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--sdv-border);
+    border-top-color: var(
+        --vscode-progressBar-background,
+        var(--vscode-focusBorder)
+    );
+    animation: sdv-spin 0.8s linear infinite;
+}
+
+@keyframes sdv-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Global error panel */
 .error {
+    margin: 16px 0;
+    padding: 16px 20px;
     color: var(--vscode-foreground);
-    border: 2px solid var(--vscode-errorForeground);
-    padding: 15px;
-    margin: 15px 0;
-    margin-left: 15px;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+    background-color: var(--sdv-error-surface);
+    border: 1px solid var(--vscode-errorForeground);
+    border-left-width: 4px;
+    border-radius: var(--sdv-radius-lg);
 }
 
 .error h3 {
     color: var(--vscode-errorForeground);
-    margin-top: 0;
+    font-size: 1.15em;
+    font-weight: 600;
     margin-bottom: 10px;
+}
+
+.error h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 16px 0 8px;
 }
 
 .error p {
@@ -55,384 +228,419 @@ body {
     color: var(--vscode-errorForeground);
 }
 
-.error code {
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textPreformat-foreground);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-}
-
 .error ol {
-    margin: 10px 0;
+    margin: 8px 0;
     padding-left: 20px;
 }
 
 .error li {
-    margin: 5px 0;
+    margin: 6px 0;
 }
 
-/* Header styles */
+.troubleshooting-sublist {
+    margin: 4px 0 4px 20px;
+}
+
+.error-help {
+    margin-top: 16px;
+}
+
+.error-help-note {
+    margin-top: 16px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+/* Inline action link of the error panel (install packages, settings...) */
+.small-button-link {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: var(--sdv-radius-sm);
+    border: 1px solid var(--vscode-textLink-foreground);
+    color: var(--vscode-textLink-foreground);
+    transition: background-color var(--sdv-transition);
+}
+
+.small-button-link:hover {
+    text-decoration: none;
+    background-color: var(--sdv-surface-hover);
+}
+
+/* Header: sticky toolbar, full bleed over the body gutters */
 .header {
     position: sticky;
     top: 0;
-    left: 0;
     z-index: 100;
-    background-color: var(--vscode-editor-background);
-    
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-left: 15px;
-    height: 30px; /* same as offset for sticky headers */
+    gap: 12px;
+    height: var(--sdv-header-height);
+    margin: 0 calc(-1 * var(--sdv-gutter)) 8px;
+    padding: 0 var(--sdv-gutter);
+    background-color: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--sdv-border);
 }
 
 .title {
-    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.title small {
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 16px;
+    padding: 0 7px;
+    border-radius: 8px;
+    color: var(--vscode-badge-foreground);
+    background-color: var(--vscode-badge-background);
+}
+
+#degraded-mode-indicator {
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 16px;
+    padding: 0 7px;
+    border-radius: 8px;
+    color: var(--vscode-editorWarning-foreground, #cca700);
+    border: 1px solid var(--vscode-editorWarning-foreground, #cca700);
 }
 
 .controls {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
 }
 
 .timestamp {
-    color: var(--vscode-descriptionForeground);
-    margin-left: 10px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
 }
 
-/* Button styles */
+.timestamp-icon {
+    display: inline-flex;
+}
+
+.tree-controls {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+/* Buttons: primary by default, secondary variants below */
 button {
-    background-color: var(--vscode-button-background);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--sdv-control-height);
+    padding: 3px 12px;
+    font: inherit;
+    line-height: 18px;
+    white-space: nowrap;
     color: var(--vscode-button-foreground);
-    font-family: var(--vscode-font-family, 'Consolas', 'Monaco', monospace);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
+    background-color: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: var(--sdv-radius-sm);
     cursor: pointer;
-    font-size: inherit;
-    transition: background-color 0.2s ease;
+    transition:
+        background-color var(--sdv-transition),
+        opacity var(--sdv-transition);
 }
 
-button:hover {
+button:hover:not(:disabled) {
     background-color: var(--vscode-button-hoverBackground);
-    color: var(--vscode-button-foreground);
+}
+
+button:focus {
+    outline: none;
+}
+
+button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
 }
 
 button:disabled {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-.small-button-link {
-    padding: 0;
-    margin:0;
-    /* Add opacity to css variable (does not work) */
-    /* https://stackoverflow.com/questions/40010597/how-do-i-apply-opacity-to-a-css-color-variable */
-    border: 1px solid var(--vscode-textLink-foreground);
-    border-radius: 2px;
-}
-
-/* Copy button variant */
+.plot-control-button,
+.plot-action-button,
 .text-copy-button {
-    background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
-    padding: 4px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 80px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    background-color: var(--vscode-button-secondaryBackground);
 }
 
-.text-copy-button:hover {
+.plot-control-button:hover:not(:disabled),
+.plot-action-button:hover:not(:disabled),
+.text-copy-button:hover:not(:disabled) {
     background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
+}
+
+.plot-install-button {
+    margin-bottom: 8px;
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+}
+
+.plot-install-button:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.text-copy-button {
+    min-height: 22px;
+    padding: 1px 8px;
+    font-size: 12px;
 }
 
 .text-copy-button.copied {
-    background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
 }
 
-/* Form styles */
+.plot-control-button.cancel-button {
+    color: var(--vscode-errorForeground);
+    background-color: var(--sdv-error-surface);
+    border-color: var(--vscode-errorForeground);
+}
+
+.plot-control-button.cancel-button:hover:not(:disabled) {
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-inputValidation-errorBorder, #be1100);
+}
+
+/* Toolbar icon buttons, like the editor title actions */
+.header-control-button {
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    background-color: transparent;
+    border: none;
+    border-radius: var(--sdv-radius);
+}
+
+.header-control-button:hover:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-hoverBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+.header-control-button:active:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-activeBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+.header-control-button svg,
+.timestamp-icon svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.header-control-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.timestamp-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Form controls */
+select,
+input[type='text'],
+input[type='number'],
+input[type='datetime-local'] {
+    min-height: var(--sdv-control-height);
+    padding: 2px 8px;
+    font: inherit;
+    color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, var(--sdv-border));
+    border-radius: var(--sdv-radius-sm);
+}
+
 select {
-    background-color: var(--vscode-dropdown-background);
+    padding-right: 4px;
     color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: inherit;
+    background-color: var(--vscode-dropdown-background);
+    border-color: var(--vscode-dropdown-border, var(--sdv-border));
+    cursor: pointer;
 }
 
-select:focus {
+select:focus,
+input:focus {
     outline: 1px solid var(--vscode-focusBorder);
     outline-offset: -1px;
 }
 
-/* Info section styles */
-.info-section {
-    margin: 0;
-    /* padding: 0 15px; */
-    background-color: var(--vscode-editor-background);
-    /* border: 1px solid var(--vscode-panel-border); */
-    /* margin: 2px 0; */
-    padding-left: 15px;
+input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
 }
 
-.info-section h3 {
-    margin-top: 0;
-    color: var(--vscode-foreground);
-    top: 0;
-    background-color: var(--vscode-editor-background);
-    padding: 10px 0;
-    font-size: 1.1em;
-    font-weight: normal;
+input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--vscode-button-background);
+    cursor: pointer;
 }
 
-.info-section h4 {
-    margin: 0;
-    padding: 10px 0;
-    color: var(--vscode-foreground);
+input[type='checkbox']:focus {
+    outline-offset: 1px;
 }
 
-.dimensions,
-.variables,
-.coordinates {
-    display: grid;
-    grid-template-columns: 1fr;
-}
-
-.dimensions-compact {
-    padding: 6px 8px;
-    background-color: var(--vscode-list-hoverBackground);
-    color: var(--vscode-foreground);
-    border: 1px solid var(--vscode-panel-border);
-}
-
-.dimensions-compact strong {
-    color: var(--vscode-foreground);
-    font-weight: 600;
-}
-
-/* Variable details styling */
-.variable-details {
-    margin: 0;
-    border: 1px solid var(--vscode-panel-border);
-    background-color: var(--vscode-list-hoverBackground);
-    margin-top: 8px;
-}
-
-.variable-details:first-child {
-    margin-top: 0;
-}
-
-.variable-summary {
+/*
+ * Collapsible sections. Every <details> of the viewer gets a VS Code style
+ * twistie (the xarray HTML repr uses checkboxes, not <details>).
+ */
+details > summary {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    padding: 6px 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    list-style: none; /* Remove default list style */
-}
-
-.variable-summary::-webkit-details-marker {
-    display: none; /* Hide default arrow */
-}
-
-.variable-summary::before {
-    content: '📄';
-    margin-left: 8px;
-    order: 999; /* Move to the right */
-}
-
-.variable-details[open] .variable-summary::before {
-    content: '📄';
-}
-
-.variable-summary.not-clickable::before {
-    opacity: 0.5;
-}
-
-.variable-summary.not-clickable {
-    cursor: default;
-}
-
-.variable-summary .variable-name {
-    font-weight: bold;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 300px;
-}
-
-.variable-summary .dims {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-}
-
-.variable-summary .dtype-shape {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
-    max-width: 120px;
-}
-
-.variable-summary .size {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    text-align: right;
-    max-width: 80px;
-}
-
-/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
-.variable-details-content {
-    display: block;
-}
-
-.variable-display-value {
-    margin: 4px 0 4px 1em;
-    padding: 4px 6px;
-    font-size: 0.9em;
-    color: var(--vscode-descriptionForeground);
-    word-break: break-all;
-    display: block;
-}
-
-.variable-display-value code {
-    font-family: var(--vscode-editor-font-family);
-}
-
-/* Attributes details styling */
-.attributes-container {
-    background-color: var(--vscode-textCodeBlock-background);
-    padding: 4px 8px;
-    margin: 0;
-    border-top: 1px solid var(--vscode-panel-border);
-}
-
-.attribute-name {
-    font-weight: bold;
-    min-width: 180px;
-    flex-shrink: 0;
-}
-
-.attribute-value {
-    word-break: break-word;
-    flex: 1;
-}
-
-/* Collapsible nested attributes tree (Issue #120) */
-.attributes-tree-node {
-    margin-left: 0.75rem;
-    margin-top: 2px;
-}
-.attributes-tree-node details {
-    margin-left: 0.5rem;
-}
-.attribute-tree-summary {
-    cursor: pointer;
+    gap: 6px;
+    padding: 8px 0;
     list-style: none;
+    cursor: pointer;
     user-select: none;
+    color: var(--vscode-foreground);
 }
-.attribute-tree-summary::-webkit-details-marker {
+
+details > summary::-webkit-details-marker {
     display: none;
 }
-.attribute-tree-summary::before {
-    content: '▸ ';
-    display: inline-block;
-    width: 1em;
-}
-.attributes-tree-node[open] > .attribute-tree-summary::before {
-    content: '▾ ';
-}
-.attributes-tree-children {
-    margin-left: 0.5rem;
-    border-left: 1px solid var(--vscode-panel-border);
-    padding-left: 0.5rem;
+
+details > summary::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin: 0 4px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    opacity: 0.7;
+    transform: rotate(-45deg);
+    transition: transform var(--sdv-transition);
 }
 
-.muted-text {
+details[open] > summary::before {
+    transform: rotate(45deg);
+}
+
+details > summary:focus {
+    outline: none;
+}
+
+details > summary:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+/* Nested content lines up with its section title */
+.info-section > details > :not(summary) {
+    margin-left: var(--sdv-indent);
+}
+
+/* Top-level sections: sticky titles under the header */
+details.sticky-group-details {
+    margin-bottom: 4px;
+}
+
+details.sticky-group-details > summary {
+    position: sticky;
+    top: calc(var(--sdv-header-height) - 1px);
+    z-index: 10;
+    padding: 10px 0;
+    background-color: var(--vscode-editor-background);
+}
+
+details.sticky-group-details > summary h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+details.sticky-group-details[open] {
+    padding-bottom: 12px;
+}
+
+/* Sub-sections (Dimensions, Variables...): pane header style */
+.info-section h4 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--vscode-descriptionForeground);
 }
 
-/* Responsive design for small screens: stack the variable summary fields */
-@media (max-width: 480px) {
-    .variable-summary {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1px;
-        padding: 4px 8px;
-    }
-
-    .variable-summary .variable-name,
-    .variable-summary .dtype-shape,
-    .variable-summary .dims,
-    .variable-summary .size {
-        flex: none;
-        max-width: none;
-        width: 100%;
-        padding: 1px 0;
-        text-align: left;
-    }
+.info-section details > summary:hover h4 {
+    color: var(--vscode-foreground);
 }
 
+/* File information */
 .file-path-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 8px 0;
+    margin: 4px 0 8px;
+}
+
+.file-path-container > p {
+    flex: none;
 }
 
 .file-path-code {
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textPreformat-foreground);
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-    padding: 4px 8px;
-    border-radius: 3px;
-    border: 1px solid var(--vscode-panel-border);
+    order: 1;
     flex: 1;
+    min-width: 0;
+    padding: 4px 10px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-textPreformat-foreground);
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius);
     word-break: break-all;
 }
 
-/* Representation styles */
+.file-path-container .text-copy-button {
+    order: 2;
+}
+
+#fileInfo p {
+    color: var(--vscode-descriptionForeground);
+}
+
+#fileInfo strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+}
+
+/* Representations */
 .html-representation {
-    /* max-height: 500px; */
-    margin-top: 2px;
+    margin-top: 4px;
     overflow: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-    padding: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
     background-color: var(--vscode-editor-background);
 }
 
@@ -444,277 +652,331 @@ select:focus {
 
 .html-representation th,
 .html-representation td {
-    border: 1px solid var(--vscode-panel-border);
+    border: 1px solid var(--sdv-border);
     padding: 4px 8px;
     text-align: left;
 }
 
 .html-representation th {
-    background-color: var(--vscode-list-hoverBackground);
-    font-weight: bold;
+    background-color: var(--sdv-surface);
+    font-weight: 600;
 }
 
 .text-representation-container {
     position: relative;
+    margin-top: 4px;
 }
 
-pre {
-    /* white    -space: pre-wrap; */
-    /* word-wrap: break-word; */
+/* Copy button floats in the corner of its code block */
+.text-representation-container > .text-copy-button {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    opacity: 0.85;
+}
+
+.text-representation-container > .text-copy-button:hover,
+.text-representation-container > .text-copy-button:focus-visible {
+    opacity: 1;
+}
+
+pre:not(.html-representation pre) {
     max-height: 400px;
     overflow: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-    padding: 10px;
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-    background-color: var(--vscode-textCodeBlock-background);
+    padding: 12px 14px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    line-height: 1.5;
     color: var(--vscode-textPreformat-foreground);
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
 }
 
-details summary {
-    cursor: pointer;
-    padding: 8px 0;
-    font-weight: 500;
-    color: var(--vscode-foreground);
-}
-
-details.sticky-group-details {
-    margin-top: 0;
-    color: var(--vscode-foreground);
-    top: 0;
-    background-color: var(--vscode-editor-background);
-    /* z-index: 10; */
+/* Troubleshooting: copy button at the end of the summary row */
+#section-troubleshooting details:not(.sticky-group-details) {
+    position: relative;
     margin-bottom: 8px;
 }
 
-details.sticky-group-details > summary {
-    top: -1px; /* fix empirical one pixel gap observed in VS Code */
-    top: 30px; /* offset for the header */
-    top: 29px; /* fix empirical one pixel gap observed in VS Code */
-    position: sticky;
-    display: list-item;
-    width: 100%;
-    background-color: var(--vscode-editor-background);
-    z-index: 10;
-    margin-bottom: 0;
-    padding: 10px 0;
+#section-troubleshooting details:not(.sticky-group-details) > .text-copy-button {
+    position: absolute;
+    top: 6px;
+    right: 0;
 }
 
-/* details[open].sticky-group-details {
-    margin-bottom: 15px;
-} */
+/* Group content */
+.dimensions,
+.variables,
+.coordinates,
+.attributes {
+    padding-bottom: 8px;
+}
 
-details.sticky-group-details summary > * {
-    display: inline;
-    border: none;
-    margin: 0;
+.dimensions-compact {
+    padding: 8px 12px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-descriptionForeground);
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+.dimensions-compact strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+}
+
+/* Variable cards: summary row, details and (data variables) plot controls */
+.variable-details {
+    margin-top: 8px;
+    overflow: hidden;
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+.variable-details:first-child {
+    margin-top: 0;
+}
+
+.variable-details:has(+ .variable-plot-controls) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.variable-summary {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 7px 12px 7px 8px;
+    transition: background-color var(--sdv-transition);
+}
+
+.variable-summary:hover {
+    background-color: var(--sdv-surface-hover);
+}
+
+.variable-summary.not-clickable {
+    cursor: default;
+}
+
+.variable-summary.not-clickable:hover {
+    background-color: transparent;
+}
+
+.variable-summary.not-clickable::before {
+    visibility: hidden;
+}
+
+.variable-summary .variable-name {
+    flex: 1;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+.variable-summary .dims,
+.variable-summary .dtype-shape,
+.variable-summary .size {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.variable-summary .dims {
+    max-width: 300px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+}
+
+.variable-summary .dtype-shape {
+    text-align: right;
+    max-width: 120px;
+}
+
+.variable-summary .size {
+    text-align: right;
+    max-width: 80px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
+.variable-details-content {
+    display: block;
+}
+
+.variable-display-value {
+    padding: 8px 12px;
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    word-break: break-all;
+    border-top: 1px solid var(--sdv-border);
+}
+
+.variable-display-value code {
+    background-color: transparent;
     padding: 0;
 }
 
-.plot-image-container {
-    height: auto;
-    margin: auto;
-    width: 100%;
-    text-align: center;
-    padding: 6px 8px;
-    padding-top: 0;
-}
-/* Plot image styles */
-.plot-image-container img {
-    height: auto;
-    margin: auto;
+/* Attributes */
+.attributes-container {
+    padding: 8px 12px 10px;
+    border-top: 1px solid var(--sdv-border);
 }
 
-/* Plot control button variant */
-.plot-control-button {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    padding: 8px 16px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.plot-control-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
-}
-
-.plot-control-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* Cancel button variant - more prominent styling */
-.plot-control-button.cancel-button {
-    background-color: var(--vscode-inputValidation-errorBackground, #5a1d1d);
-    color: var(--vscode-inputValidation-errorForeground, #f48771);
-    border: 1px solid var(--vscode-inputValidation-errorBorder, #be1100);
-}
-
-.plot-control-button.cancel-button:hover {
-    background-color: var(--vscode-inputValidation-errorBorder, #be1100);
-    color: #ffffff;
-}
-
-/* Tree control button styles */
-.tree-controls {
+.attribute-item {
     display: flex;
     gap: 8px;
-    align-items: center;
+    padding: 2px 0;
 }
 
-button:active {
-    transform: translateY(1px);
+.attribute-name {
+    font-weight: 600;
+    min-width: 180px;
+    flex-shrink: 0;
 }
 
-.header-control-button {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    font-size: 0.9em;
-    padding: 6px;
+.attribute-value {
+    word-break: break-word;
+    flex: 1;
 }
 
-.header-control-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
+/* Collapsible nested attributes tree (Issue #120) */
+.attributes-tree-node {
+    margin-top: 2px;
 }
 
-.header-control-button:active {
-    background-color: var(--vscode-button-secondaryHoverBackground);
+.attributes-tree-node > .attribute-tree-summary {
+    padding: 2px 0;
+    gap: 4px;
 }
 
-.plot-error {
-    color: var(--vscode-errorForeground);
-    border: 1px solid var(--vscode-errorForeground);
-    max-width: 650px; /* XXX hardcoded value, hack to avoid overflow (layout issues)... */
+.attributes-tree-children {
+    margin-left: 7px;
+    padding-left: 13px;
+    border-left: 1px solid var(--sdv-border);
 }
 
-.plot-error.success {
-    color: #4caf50;
-    border: 1px solid #4caf50;
-}
-
-/* Per-variable plot controls */
+/* Plot controls */
 .variable-plot-controls {
-    padding: 0;
-    margin: 0;
-    background-color: var(--vscode-list-hoverBackground);
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-top: none;
+    border-radius: 0 0 var(--sdv-radius-lg) var(--sdv-radius-lg);
 }
 
 .plot-controls-row {
-    padding: 6px 8px;
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
     align-items: center;
+    padding: 8px 12px;
 }
 
-.plot-type-select {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
+.plot-container {
+    padding: 0 12px 12px;
 }
 
-/* Plot action button variant */
-.create-plot-button,
-.plot-action-button {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.create-plot-button:hover:not(:disabled),
-.plot-action-button:hover:not(:disabled) {
-    background-color: var(--vscode-button-hoverBackground);
-    color: var(--vscode-button-foreground);
-}
-
-.create-plot-button:disabled,
-.plot-action-button:disabled {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    cursor: not-allowed;
+.plot-actions,
+.global-plot-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
 }
 
 .plot-image-container {
-    margin-top: 6px;
+    margin-top: 12px;
+    text-align: center;
 }
 
-.plot-actions {
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    padding: 0 8px;
-    justify-content: left;
-    flex-wrap: wrap;
+.plot-image-container:empty {
+    display: none;
 }
 
-.global-plot-controls {
-    display: flex;
-    gap: 10px;
-    margin: 0;
-    justify-content: left;
-    flex-wrap: wrap;
+.plot-image-container img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: var(--sdv-radius);
 }
 
-#degraded-mode-indicator {
-    margin-left: 10px;
-    background: #ffa500;
-    color: #000;
-    padding: 2px 3px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+.plot-error {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--sdv-border);
+    border-left-width: 3px;
+    border-radius: var(--sdv-radius);
+    min-width: 0;
 }
 
+.plot-error.error {
+    color: var(--vscode-errorForeground);
+    background-color: var(--sdv-error-surface);
+    border-color: var(--vscode-errorForeground);
+}
+
+.plot-error.success {
+    color: var(--sdv-success-color);
+    background-color: var(--sdv-success-surface);
+    border-color: var(--sdv-success-color);
+}
+
+/* Plot error: the message sits in the callout, copy button in its corner */
+.plot-error > div {
+    position: relative;
+}
+
+.plot-error .text-copy-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.plot-error pre:not(.html-representation pre) {
+    max-height: 240px;
+    padding: 0 64px 0 0;
+    color: inherit;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Global and group plot control panels */
+.time-controls-section,
 .dimension-slices-section {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+    margin-top: 16px;
+    padding: 16px;
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
 }
 
-.dimension-slices-section h4 {
+.group-plot-controls-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-bottom: 8px;
+}
+
+.group-plot-controls-content > .group-plot-controls {
     margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--vscode-foreground);
 }
 
-.dimension-slices-hint {
-    font-size: 0.9em;
-    color: var(--vscode-descriptionForeground);
-    margin: 0 0 12px 0;
-}
-
-.dimension-slices-hint a {
-    color: var(--vscode-textLink-foreground);
-    text-decoration: none;
-}
-
-.dimension-slices-hint a:hover {
-    text-decoration: underline;
+.time-controls-section h4 {
+    margin-bottom: 12px;
 }
 
 .plot-controls-subsection {
-    margin-top: 16px;
+    margin-top: 20px;
 }
 
 .plot-controls-subsection:first-of-type {
@@ -722,87 +984,73 @@ button:active {
 }
 
 .plot-controls-subsection-title {
-    font-size: 0.95em;
+    font-size: 1em;
     font-weight: 600;
     color: var(--vscode-foreground);
-    margin: 0 0 6px 0;
+    margin-bottom: 4px;
 }
 
+.dimension-slices-hint {
+    font-size: 0.92em;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 12px;
+}
+
+.time-controls-row,
 .dimension-slice-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 8px 12px;
+    margin-bottom: 8px;
 }
 
+.time-controls-row:last-child {
+    margin-bottom: 0;
+}
+
+.time-controls-row label,
 .dimension-slice-row label {
-    min-width: 180px;
-    color: var(--vscode-foreground);
+    min-width: 160px;
 }
 
 .dimension-slice-row input {
     flex: 1;
     max-width: 220px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
 }
 
-.dimension-slice-row input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
+.datetime-variable-select,
+.datetime-input,
+.datetime-text-input {
+    flex: 1;
+    min-width: 0;
 }
 
 .dimension-slices-facets {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin: 12px 0;
+    margin: 0 0 16px;
 }
 
 .dimension-slices-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px 10px;
 }
 
-.dimension-slices-facets label {
+.dimension-slices-row label {
     color: var(--vscode-foreground);
 }
 
-.dimension-slices-facets .facet-select {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
+/* Extra space between parameters, not between a field and its "auto" box */
+.dimension-slices-row label:not(:first-child) {
+    margin-left: 8px;
 }
 
-.dimension-slices-facets .facet-select:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-input {
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
+.dimension-slices-row input[type='number'] + .plot-checkbox-label {
+    margin-left: 0;
 }
 
 .dimension-slices-facets .plot-input--narrow {
@@ -825,115 +1073,64 @@ button:active {
     max-width: 210px;
 }
 
-.dimension-slices-section .plot-control-button {
-    margin-top: 4px;
+.dimension-slices-section > .time-controls-row {
+    margin-top: 16px;
+    margin-bottom: 0;
 }
 
-/* Group Plot Controls: per-group time and dimension slices (same structure as Dimensions/Coordinates) */
-.group-plot-controls-section {
-    margin-top: 0;
+/* Outline navigation target */
+.highlighted {
+    background-color: var(--sdv-highlight);
+    box-shadow: inset 3px 0 0 var(--vscode-focusBorder);
+    border-radius: var(--sdv-radius);
+    transition: background-color 300ms ease;
 }
 
-.group-plot-controls-section details summary {
-    cursor: pointer;
+/* Small screens: stack the variable summary fields */
+@media (max-width: 480px) {
+    :root {
+        --sdv-gutter: 12px;
+    }
+
+    .variable-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        padding: 6px 12px;
+    }
+
+    .variable-summary::before {
+        display: none;
+    }
+
+    .time-controls-row label,
+    .dimension-slice-row label {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .variable-summary .variable-name,
+    .variable-summary .dtype-shape,
+    .variable-summary .dims,
+    .variable-summary .size {
+        flex: none;
+        max-width: none;
+        width: 100%;
+        padding: 1px 0;
+        text-align: left;
+    }
 }
 
-/* Content wrapper aligned with .dimensions / .coordinates */
-.group-plot-controls-content {
-    display: grid;
-    grid-template-columns: 1fr;
+@media (max-width: 600px) {
+    .timestamp {
+        display: none;
+    }
 }
 
-.group-plot-controls-section .group-plot-controls {
-    margin-top: 10px;
-    padding: 12px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-}
-
-.group-plot-controls-section .group-plot-controls h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: var(--vscode-foreground);
-}
-
-.time-controls-section {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-}
-
-.time-controls-section h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--vscode-foreground);
-}
-
-.time-controls-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.time-controls-row label {
-    min-width: 180px;
-    color: var(--vscode-foreground);
-}
-
-.datetime-variable-select,
-.datetime-input {
-    flex: 1;
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.datetime-text-input {
-    flex: 1;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.datetime-variable-select:focus,
-.datetime-input:focus,
-.datetime-text-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-/* Replace inline style attributes of the generated markup */
-.troubleshooting-sublist {
-    margin-left: 20px;
-}
-
-.error-help {
-    margin-top: 15px;
-}
-
-.error-help-note {
-    margin-top: 15px;
-    font-style: italic;
-}
-
-.plot-loading {
-    text-align: center;
-    color: var(--vscode-descriptionForeground);
-    font-style: italic;
-}
-
-.plot-install-button {
-    margin-bottom: 6px;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before {
+        transition: none !important;
+        animation-duration: 0s !important;
+    }
 }

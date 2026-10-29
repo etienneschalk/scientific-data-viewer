@@ -94,6 +94,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Developer docs**: `docs/TECHNICAL_ARCHITECTURE.md` rewritten to describe the actual architecture (it described components that never existed); `docs/DEVELOPMENT.md`, `CLAUDE.md` updated; code review tracking list in `docs/v0.13/CODE_REVIEW_TODO.md`.
 - **Dependencies**: unused runtime dependency `axios` removed; `jsdom` (tests only) moved to `devDependencies`; build scripts excluded from the VSIX.
   - **Files**: `package.json`, `package-lock.json`, `.vscodeignore`
+- **Modernised viewer styling**: the stylesheet is rewritten to look like current VS Code (Settings editor, sidebar panes) instead of a plain web page. Rounded cards for variables, plot panels and code blocks; wider gutters and a centred 960 px column; a sticky header toolbar with icon buttons (SVG line icons in the theme's icon color, replacing the 🖼️ 📁 📂 🔄 emoji); VS Code-style twisties on every collapsible section; sub-sections (Dimensions, Variables…) as uppercase pane headers; one consistent style for every input, select and checkbox (some plot inputs were white in dark themes); secondary buttons for plot actions; error and plot-error callouts; keybinding-style `<kbd>`; a loading spinner. Colors still come only from the active theme (`--vscode-*` variables; derived surfaces use `color-mix()` with flat fallbacks for VS Code < 1.77, explicit contrast borders in high-contrast themes). Copy buttons read **Copy** / **Copied** instead of `📋 Copy`. Element ids, classes and the outline are unchanged.
+  - **Files**: `src/panel/webview/styles.css`, `src/panel/HTMLGenerator.ts`, `src/panel/webview/main.ts`, `src/panel/webview/plotActions.ts`, `src/panel/webview/render/representations.ts`, `docs/documentation.json`, generated `README.md`
+  - **Tests**: existing suite (290 passing); visual check of dark, light, narrow, scrolled, plot and error states in headless Chromium
 
 ### Removed
 

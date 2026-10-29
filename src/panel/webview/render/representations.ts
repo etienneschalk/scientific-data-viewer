@@ -73,7 +73,7 @@ export function displayTextRepresentation(
     <div class="info-section" id="${joinId([prefixId, name])}">
         <details> <summary>${escapeHtml(name)}</summary>
             <div class="text-representation-container">
-                <button id="${joinId(['groupTextCopyButton', name])}" data-target-id="${preId}" class="text-copy-button">📋 Copy</button>
+                <button id="${joinId(['groupTextCopyButton', name])}" data-target-id="${preId}" class="text-copy-button">Copy</button>
                 <pre id="${preId}"></pre>
             </div>
         </details>

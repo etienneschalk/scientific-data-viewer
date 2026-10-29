@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules).
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls).
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -20,6 +20,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                                                                 |
 | **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
+| **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
@@ -138,6 +139,31 @@ A review of the whole codebase (October 2026, tracked item by item in [`CODE_REV
 
 - Golden snapshots recorded before the Python changes: 27 info cases changed, all intended (numbers instead of strings, no false datetime variables, error JSON for corrupt files, no `h5py` engine); 0 plot PNG diffs. The non-regression plot gallery is byte-identical.
 - New tests: webview bundle in jsdom (escaping, CSP, plot payloads, time controls, export), UIController through the real channel, `runProcess`, healthcheck, CLI arguments; Python tests from 112 to 159.
+
+---
+
+## Viewer styling refresh
+
+### Why
+
+The panel was styled like a plain web page from the early 2010s: square bordered boxes, emoji toolbar buttons, 15 px gutters, controls styled one by one (some plot inputs were white in dark themes), and a page that sat in a fixed 768 px column on the left. Current VS Code (Settings editor, sidebar panes, quick input) uses rounded corners, larger spacing and quiet, icon-only toolbars; the viewer now follows that language while staying sober.
+
+### What changed
+
+- **Layout**: centred column up to 960 px with 24 px gutters (12 px below 480 px); nested content lines up with its section title.
+- **Header**: sticky toolbar with a bottom hairline, version badge, and 28 px icon buttons (SVG line icons in the theme icon color, hover like editor title actions) instead of 🖼️ 📁 📂 🔄; the 🕒 next to the load time is an icon too.
+- **Sections**: VS Code-style twisties on every collapsible section; top-level titles stay sticky under the header; Dimensions / Coordinates / Variables / Attributes / Group Plot Controls use the uppercase pane-header style.
+- **Variables**: each variable is a rounded card (summary row, value, attributes, and for data variables the plot controls and plot); `📄` markers removed; dims and dtypes in the editor font.
+- **Controls**: one style for every text, number, date input, select and checkbox (theme input / dropdown colors, focus ring); plot actions (Reset, Save, Save As, Open) are secondary buttons, Create Plot stays primary; copy buttons read **Copy** / **Copied** and float in the corner of text representations and plot errors.
+- **Feedback**: error page and plot errors as callouts with an accent border; loading spinner; `<kbd>` styled like VS Code keybinding labels; outline navigation highlight uses the focus color.
+- **Themes**: colors come only from `--vscode-*` variables. Derived surfaces and borders use `color-mix()`; VS Code < 1.77 (no `color-mix()`) falls back to flat surfaces. High-contrast themes get explicit contrast borders and no tinted surfaces.
+
+Element ids, CSS classes used by the script, and the outline are unchanged; exported HTML embeds the new stylesheet as before.
+
+### How it was checked
+
+- `npm test` (290 passing), `npm run typecheck`, pre-commit hooks.
+- Visual check in headless Chromium of the real webview bundle fed with backend JSON (`sample_data.nc`), with the theme variables captured from exported dark and light reports: collapsed and expanded sections, plots, plot error, global error page, 420 px width, and scrolled (sticky header and section title).
 
 ---
 
@@ -480,6 +506,22 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 2. Open `sample-data/sample_data.grib`, `sample_data.grib2`, `sample_data.tif`, `sample_data_cog.tif` → each loads; plot a variable of each.
 3. Command line check: `<env>/bin/python -c "import eccodes, pyproj"` exits with code 0.
 
+### 21. Viewer styling refresh
+
+**Expect:** the viewer looks like a native VS Code page in every theme, with no unreadable control.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc` with **Dark Modern**, then **Light Modern**, then a **High Contrast** theme (Preferences: Color Theme) → header toolbar shows four line icons (export, collapse all, expand all, refresh) whose tooltips match; every input / select is readable (no white input in dark themes); high contrast shows visible borders around cards and panels.
+2. Scroll down → the header and the current section title stay at the top, with no gap between them.
+3. Click **Collapse all** then **Expand all** → twisties rotate; nested content lines up under its title.
+4. Expand a variable → the card shows its attributes; **Create Plot** → the plot appears inside the same card. Plot a variable that fails → red callout with a **Copy** button in its corner; click it → **Copied** for 2 s.
+5. **Xarray Text Representation** → the **Copy** button floats in the top-right corner of the code block and does not hide the first line.
+6. Narrow the editor to ~400 px → variable rows stack, time-control labels go above their inputs, no horizontal scroll.
+7. Explorer → Data Structure: click a variable → the viewer scrolls to it and highlights it with the focus color.
+8. Export the webview (download icon) and open the HTML in a browser → same look as in VS Code.
+9. Open `sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -491,6 +533,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **`joinId`** maps every non-alphanumeric character to `-`, so groups like `/a.b` and `/a-b` share element ids (rare; pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
+- **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background and the variable card's plot controls keep rounded top corners (`:has()` needs 1.75+); everything stays readable.
+- **Error page and plot buttons** still use emoji in their text (⚠️ Plot All, 🎮 Install…, 🔗 links); only the toolbar and copy buttons were changed.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---
@@ -505,6 +549,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only                                                                                                                                                          |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                |
 
 ---

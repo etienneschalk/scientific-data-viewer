@@ -20,6 +20,25 @@ function escapeHtml(unsafe: string): string {
         .replaceAll("'", '&#039;');
 }
 
+/** 16px line icons for the header; stroke and size come from styles.css. */
+function icon(body: string): string {
+    return `<svg viewBox="0 0 16 16" aria-hidden="true">${body}</svg>`;
+}
+
+const ICONS = {
+    export: icon('<path d="M8 2.5v7.5M5 7l3 3 3-3M3 11.5v2h10v-2"/>'),
+    collapseAll: icon(
+        '<rect x="4.5" y="4.5" width="9" height="9" rx="1.5"/><path d="M2.5 11V3.5a1 1 0 0 1 1-1H11M6.75 9h4.5"/>',
+    ),
+    expandAll: icon(
+        '<rect x="4.5" y="4.5" width="9" height="9" rx="1.5"/><path d="M2.5 11V3.5a1 1 0 0 1 1-1H11M6.75 9h4.5M9 6.75v4.5"/>',
+    ),
+    refresh: icon(
+        '<path d="M13 8a5 5 0 1 1-1.46-3.54"/><path d="M8.75 4.5h2.8V1.7"/>',
+    ),
+    clock: icon('<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.25l2 1.25"/>'),
+};
+
 /**
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
@@ -197,10 +216,10 @@ export class HTMLGenerator {
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime)}
             <div class="tree-controls">
-                <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content">🖼️</button>
-                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
-                <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
-                <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
+                <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content" aria-label="Export Webview Content">${ICONS.export}</button>
+                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections" aria-label="Collapse All Sections">${ICONS.collapseAll}</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections" aria-label="Expand All Sections">${ICONS.expandAll}</button>
+                <button id="refreshButton" class="header-control-button" title="Refresh" aria-label="Refresh">${ICONS.refresh}</button>
             </div>
         </div>
     </div>`;
@@ -212,7 +231,7 @@ export class HTMLGenerator {
         <span id="timestampText">Loaded: ${
             lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
         }</span>
-        <span class="timestamp-icon">🕒</span>
+        <span class="timestamp-icon">${ICONS.clock}</span>
         </div>
         `;
     }
@@ -246,7 +265,7 @@ export class HTMLGenerator {
                 <div id="filePathContainer" class="file-path-container">
                     <p><strong>File Path:</strong></p>
                     <button data-target-id="filePathCode" class="text-copy-button">
-                    📋 Copy
+                    Copy
                     </button>
                     <code id="filePathCode" class="file-path-code"></code>
                 </div>
@@ -287,7 +306,7 @@ export class HTMLGenerator {
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button data-target-id="textRepresentation" class="text-copy-button">
-                        📋 Copy
+                        Copy
                     </button>
                     <pre id="textRepresentation" class="text-representation"></pre>
                 </div>
@@ -314,7 +333,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Python Interpreter Path</summary>
                             <button data-target-id="pythonPath" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="pythonPath">Loading Python path...</pre>
                     </details>
@@ -323,7 +342,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Extension Configuration</summary>
                             <button data-target-id="extensionConfig" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="extensionConfig">Loading configuration...</pre>
                     </details>
@@ -332,7 +351,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Show xarray version information</summary>
                             <button data-target-id="showVersions" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="showVersions">Loading version information...</pre>
                     </details>
