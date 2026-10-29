@@ -34,7 +34,8 @@ line-length = 88
 indent-width = 4
 
 # Match modern type syntax (PEP 604 `X | Y`, PEP 585 `list[...]`) used in `python/` tooling.
-# Requires Python 3.10+ to run those scripts (see v0.11.0 release notes).
+# The backend must keep running on Python 3.10+: it is spawned with the user's
+# interpreter (Python extension / override), not only the extension's 3.13 env.
 target-version = "py310"
 
 [tool.ruff.lint]

@@ -47,11 +47,11 @@ npm install
 
 # Install Python dependencies
 echo "🐍 Installing Python dependencies..."
-pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray pandas pytest
+pip3 install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8" scipy cfgrib rioxarray cdflib pandas pytest
 
 # Create sample data
 echo "📊 Creating sample data files..."
-echo "   This will regenerate all sample files including disposable test files..."
+echo "   Existing files are kept (use --overwrite to regenerate them, --disposable for the deletion-test files)..."
 python3 python/create_sample_data.py
 
 # Issue #117 non-regression plot PNGs (versioned folder from package.json)

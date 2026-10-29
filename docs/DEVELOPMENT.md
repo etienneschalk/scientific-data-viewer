@@ -48,7 +48,7 @@ Recommended VSCode extension: [es6-string-html](https://marketplace.visualstudio
 4. **Install Python dependencies** (if not already installed):
 
    ```bash
-   pip install xarray matplotlib
+   pip install "xarray>=2026.4.0" matplotlib "zarr>=3"
    ```
 
 5. **Open in VSCode**:
@@ -182,7 +182,7 @@ This guide provides detailed instructions for developing, testing, and maintaini
 ### Required Python Packages
 
 ```bash
-pip install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf
+pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8"
 ```
 
 ## Development Setup
@@ -198,7 +198,7 @@ cd scientific-data-viewer
 npm install
 
 # Install Python dependencies
-pip install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf
+pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8"
 ```
 
 ### 2. Build the Extension
@@ -221,14 +221,7 @@ npm run watch
 
 ### Core Components
 
-```
-src/
-├── extension.ts          # Main entry point, command registration, custom editors
-├── dataProcessor.ts      # Python integration, data processing
-├── dataViewerPanel.ts    # Webview panel for data visualization
-├── pythonManager.ts      # Advanced Python environment management
-└── logger.ts             # Comprehensive logging utilities
-```
+See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) for the modules of `src/` and how they talk to each other, and the backend section below for `python/sdv_backend/`.
 
 ### Data Flow
 
@@ -270,11 +263,8 @@ npm run lint
 #### Unit Tests
 
 ```bash
-# Run all tests
+# Run all tests (inside a VS Code instance; from a VS Code terminal: env -u ELECTRON_RUN_AS_NODE npm test)
 npm test
-
-# Run specific test file
-npx mocha out/test/suite/extension.test.js
 ```
 
 #### Integration Testing
@@ -318,7 +308,7 @@ npx mocha out/test/suite/extension.test.js
 
 #### Python Script Debugging
 
-1. **Add print statements** to Python scripts in `dataProcessor.ts`
+1. **Log to stderr** in the backend (`python/sdv_backend/`); stdout is reserved for the JSON result
 2. **Check VSCode Output panel** for Python output
 3. **Use Python debugger** if needed
 
@@ -522,7 +512,7 @@ npx mocha out/test/suite/extension.test.js
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed contribution guidelines.
 
 ### Quick Start
 

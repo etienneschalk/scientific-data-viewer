@@ -10,9 +10,11 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 
 1. **Update version** in `package.json`
 2. **Update CHANGELOG.md** with new features and fixes
-3. **Python requirements changed?** If existing users' uv environments must be upgraded (new/changed entry in `ALL_REQUIREMENTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` are then upgraded once at their next start.
-4. **Test thoroughly** with various file types and sizes
-5. **Update documentation** if needed
+3. **Python requirements changed?** If existing users' uv environments must change (new/changed entry in `ALL_REQUIREMENTS` or `ENVIRONMENT_CONSTRAINTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` then get their environment deleted and rebuilt once at their next start.
+4. **Test the upgrade from the previous release**: `npm run package`, then `scripts/upgrade-sandbox.sh --old scientific-data-viewer-<previous>.vsix` (and `--scenario offline`, `--scenario interrupted` when the environment changed). See `docs/v0.13/UPGRADE_TEST_PLAN.md`.
+5. **Write the release docs**: `docs/RELEASE_NOTES_<ver>.md` (read by `publish.sh` and linked from the README) and the PR summary in `docs/v<major.minor>/`.
+6. **Test thoroughly** with various file types and sizes
+7. **Update documentation** if needed (then `python scripts/generate_readme.py`)
 
 ### Publishing to VSCode Marketplace
 
@@ -48,7 +50,7 @@ To make the extension available in Cursor, VSCodium, and other VSCode-compatible
 3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
 4. **Publish**: `npm run openvsx-publish`
 
-See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instructions.
+See the Open VSX section above for detailed publishing instructions.
 
 ### Manual Publishing
 
