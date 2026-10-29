@@ -159,7 +159,8 @@
                 "scientificDataViewer.showXarrayEncodingAttributes",
                 "scientificDataViewer.showInheritedCoordinates",
                 "scientificDataViewer.netcdfEngineOrder",
-                "scientificDataViewer.nestedAttributesView"
+                "scientificDataViewer.nestedAttributesView",
+                "scientificDataViewer.showLoadTimeInLocalTime"
             ]
         }
     ],

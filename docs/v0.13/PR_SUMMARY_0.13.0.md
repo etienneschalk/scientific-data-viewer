@@ -153,6 +153,15 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Host    | No change: same `abortPlot` request and `PythonManager.abortProcess` path as **Cancel All**                                                                                                                  |
 | Docs    | Architecture text of the plot / cancel figure; release notes § Cancel a single plot and manual step §25; manual test plan B26                                                                                |
 
+### Phase 14 — Load time in local time
+
+| Area    | Work                                                                                                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Setting | `showLoadTimeInLocalTime` (default `true`), sent to the webview in `extensionConfig`                                                    |
+| Webview | `displayTimestamp` formats the **Loaded:** time with `formatLoadTime` (`src/shared/time.ts`): ISO 8601 with UTC offset, or UTC when off |
+| Host    | `HTMLGenerator` placeholder uses the same formatter (`UIController.setHtml` passes the setting)                                         |
+| Docs    | `documentation.json` / README (Display settings); release notes § Load time in local time and manual step §26; manual test plan B27     |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -176,6 +185,7 @@ See [`docs/v0.13/OUT_OF_SCOPE.md`](./OUT_OF_SCOPE.md): pyfive (P1.4), OME-Zarr (
 | `netcdfEngineOrder`        | `["netcdf4","h5netcdf","scipy"]` | Try-order for `.nc` / `.nc4` / `.netcdf` only                      |
 | `showInheritedCoordinates` | `true`                           | Parent DataTree coords on child groups; `inherited_from` attribute |
 | `facetgridFigsize`         | `[]`                             | Optional `[width, height]` inches for faceted plots                |
+| `showLoadTimeInLocalTime`  | `true`                           | **Loaded:** time in local time (with UTC offset); `false` → UTC    |
 
 Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, …).
 
@@ -226,6 +236,8 @@ Results after adding the architecture diagrams: `generate.py --check` passes; dr
 python scripts/architecture/generate.py          # docs/architecture/ (needs Graphviz)
 python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz)
 ```
+
+Results after adding the local load time setting: `npm test` 300 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
 Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
@@ -364,3 +376,7 @@ Scrollbar space:
 Group attributes alignment:
 
 59. fix(webview): align the colon of group attributes with the other sections
+
+Load time in local time:
+
+60. feat(webview): show the load time in local time (new setting)

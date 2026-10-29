@@ -701,6 +701,13 @@
                     "order": 1013,
                     "description": "Show parent DataTree coordinates on child groups.",
                     "markdownDescription": "When enabled (**default**), child groups in multi-group NetCDF / Zarr DataTrees include coordinates inherited from parent nodes (`DataTree.to_dataset(inherit='all_coords')`). Inherited coordinates are tagged with an `inherited_from` attribute. Disable to list only coordinates stored on that group. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.showLoadTimeInLocalTime": {
+                    "type": "boolean",
+                    "default": true,
+                    "order": 1014,
+                    "description": "Show the load time (top right of the viewer) in local time instead of UTC.",
+                    "markdownDescription": "When enabled (**default**), the **Loaded:** timestamp at the top right of the viewer is shown in your local time zone, with its UTC offset (e.g. `2026-10-29T14:03:12.345+01:00`). Disable to show it in UTC (e.g. `2026-10-29T13:03:12.345Z`). Applies at the next load or **Refresh** (🔄)."
                 }
             }
         }

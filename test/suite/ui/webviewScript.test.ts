@@ -250,6 +250,20 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('load time is shown in local time by default, in UTC when disabled', () => {
+        const text = () =>
+            harness.document.getElementById('timestampText').textContent;
+
+        harness.loadData(sampleDataInfo());
+        assert.match(
+            text(),
+            /^Loaded: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$/,
+        );
+
+        harness.loadData(sampleDataInfo(), { showLoadTimeInLocalTime: false });
+        assert.strictEqual(text(), 'Loaded: 2026-01-01T00:00:00.000Z');
+    });
+
     test('renders non-string attribute values as JSON text', () => {
         harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
 

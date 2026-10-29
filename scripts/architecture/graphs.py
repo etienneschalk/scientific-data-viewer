@@ -63,7 +63,7 @@ HOST_LAYERS = [
         "python/officialPythonExtensionApiUtils",
         "common/PerformanceTimer",
     ],
-    ["common/runProcess", "shared/ids", "shared/icons"],
+    ["common/runProcess", "shared/ids", "shared/icons", "shared/time"],
 ]
 # The main request path, drawn with a thick border
 HOST_KEY = {

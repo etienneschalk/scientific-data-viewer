@@ -21,6 +21,7 @@ import {
     getWebviewExportTheme,
     getConvertBandsToVariables,
     getOutlineEnabled,
+    getShowLoadTimeInLocalTime,
 } from '../common/config';
 import { DataInfoResult, PlotOptions } from '../types';
 import { SaveResult } from './communication/MessageTypes';
@@ -572,6 +573,7 @@ export class UIController {
             this.lastLoadTime?.toISOString() ?? null,
             this.getId(),
             extensionUri ? { webview: this.webview, extensionUri } : undefined,
+            getShowLoadTimeInLocalTime(),
         );
         timer.finish('setHtml');
     }

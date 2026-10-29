@@ -16,6 +16,7 @@ import {
     getShowXarrayEncodingAttributes,
     getNetcdfEngineOrder,
     getShowInheritedCoordinates,
+    getShowLoadTimeInLocalTime,
     getFacetgridFigsize,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
@@ -91,6 +92,7 @@ suite('Config Test Suite', () => {
         );
         assert.ok(Array.isArray(config.netcdfEngineOrder));
         assert.strictEqual(typeof config.showInheritedCoordinates, 'boolean');
+        assert.strictEqual(typeof config.showLoadTimeInLocalTime, 'boolean');
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
     });
 
@@ -99,6 +101,7 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof getShowXarrayEncodingAttributes(), 'boolean');
         assert.ok(Array.isArray(getNetcdfEngineOrder()));
         assert.strictEqual(typeof getShowInheritedCoordinates(), 'boolean');
+        assert.strictEqual(typeof getShowLoadTimeInLocalTime(), 'boolean');
         assert.ok(
             getFacetgridFigsize() === null ||
                 (Array.isArray(getFacetgridFigsize()) &&
@@ -132,6 +135,10 @@ suite('Config Test Suite', () => {
         );
         assert.strictEqual(
             properties['scientificDataViewer.showInheritedCoordinates'].default,
+            true,
+        );
+        assert.strictEqual(
+            properties['scientificDataViewer.showLoadTimeInLocalTime'].default,
             true,
         );
     });

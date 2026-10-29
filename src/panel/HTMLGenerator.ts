@@ -1,5 +1,6 @@
 import { getDisplayName, getVersion } from '../common/vscodeutils';
 import { ICONS } from '../shared/icons';
+import { formatLoadTime } from '../shared/time';
 import {
     readWebviewAsset,
     WEBVIEW_SCRIPT,
@@ -25,15 +26,12 @@ function escapeHtml(unsafe: string): string {
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
 export class HTMLGenerator {
-    private static formatTimestamp(isoString: string): string {
-        return new Date(isoString).toISOString();
-    }
-
     static generateMainHTML(
         devMode: boolean,
         lastLoadTime: string | null,
         panelId: number,
         assetOptions?: WebviewAssetOptions,
+        useLocalTime = false,
     ): string {
         const cspBlock = this.getContentSecurityPolicyBlock(assetOptions);
         const cssBlock = this.getStylesheetBlock(devMode, assetOptions);
@@ -49,7 +47,7 @@ export class HTMLGenerator {
     ${cssBlock}
 </head>
 <body>
-    ${this.generateHeader(devMode, lastLoadTime, panelId)}
+    ${this.generateHeader(devMode, lastLoadTime, panelId, useLocalTime)}
     ${this.generateLoadingAndError()}
     ${this.generateContent()}
     ${scriptBlock}
@@ -189,6 +187,7 @@ export class HTMLGenerator {
         devMode: boolean,
         lastLoadTime: string | null,
         panelId: number,
+        useLocalTime = false,
     ): string {
         return /*html*/ `
     <div class="header">
@@ -196,7 +195,7 @@ export class HTMLGenerator {
             devMode ? escapeHtml(`<${panelId}>`) : ''
         }</small></div>
         <div class="controls" id="header-controls">
-            ${this.generateTimestamp(lastLoadTime)}
+            ${this.generateTimestamp(lastLoadTime, useLocalTime)}
             <div class="tree-controls">
                 <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content" aria-label="Export Webview Content">${ICONS.export}</button>
                 <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections" aria-label="Collapse All Sections">${ICONS.collapseAll}</button>
@@ -207,11 +206,14 @@ export class HTMLGenerator {
     </div>`;
     }
 
-    static generateTimestamp(lastLoadTime: string | null): string {
+    static generateTimestamp(
+        lastLoadTime: string | null,
+        useLocalTime = false,
+    ): string {
         return /*html*/ `
         <div id="timestamp" class="timestamp hidden">
         <span id="timestampText">Loaded: ${
-            lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
+            lastLoadTime ? formatLoadTime(lastLoadTime, useLocalTime) : '--'
         }</span>
         <span class="timestamp-icon">${ICONS.clock}</span>
         </div>

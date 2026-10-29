@@ -56,6 +56,7 @@ const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
 const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
 const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
 const FACETGRID_FIGSIZE = 'facetgridFigsize';
+const SHOW_LOAD_TIME_IN_LOCAL_TIME = 'showLoadTimeInLocalTime';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -88,6 +89,7 @@ const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
 const ALLOWED_NETCDF_ENGINES = new Set(DEFAULT_NETCDF_ENGINE_ORDER);
 const DEFAULT_SHOW_INHERITED_COORDINATES = true;
 const DEFAULT_FACETGRID_FIGSIZE: readonly number[] = [];
+const DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -276,6 +278,14 @@ export function getShowInheritedCoordinates(): boolean {
     );
 }
 
+/** Show the "Loaded:" timestamp in the local time zone instead of UTC. */
+export function getShowLoadTimeInLocalTime(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        SHOW_LOAD_TIME_IN_LOCAL_TIME,
+        DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME,
+    );
+}
+
 /** FacetGrid panel size (width, height) in inches, or null when unset. */
 export function getFacetgridFigsize(): [number, number] | null {
     const raw = getWorkspaceConfig().get<number[]>(FACETGRID_FIGSIZE, [
@@ -333,6 +343,7 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
         netcdfEngineOrder: getNetcdfEngineOrder(),
         showInheritedCoordinates: getShowInheritedCoordinates(),
+        showLoadTimeInLocalTime: getShowLoadTimeInLocalTime(),
     };
 }
 

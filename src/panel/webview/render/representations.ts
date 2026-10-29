@@ -1,4 +1,5 @@
 import { joinId } from '../../../shared/ids';
+import { formatLoadTime } from '../../../shared/time';
 import { escapeHtml } from '../util';
 
 function byId(id: string): HTMLElement {
@@ -111,6 +112,7 @@ export function displayExtensionConfig(configData: unknown): void {
 export function displayTimestamp(
     isoString: string | null | undefined,
     isLoading = false,
+    useLocalTime = true,
 ): void {
     const timestampElement = byId('timestamp');
     const timestampText = byId('timestampText');
@@ -118,7 +120,7 @@ export function displayTimestamp(
         timestampText.textContent = 'Loading...';
         timestampElement.classList.remove('hidden');
     } else if (isoString) {
-        timestampText.textContent = `Loaded: ${new Date(isoString).toISOString()}`;
+        timestampText.textContent = `Loaded: ${formatLoadTime(isoString, useLocalTime)}`;
         timestampElement.classList.remove('hidden');
     } else {
         timestampElement.classList.add('hidden');

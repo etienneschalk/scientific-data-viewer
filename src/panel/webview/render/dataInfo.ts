@@ -88,7 +88,11 @@ export function displayAll(state: DataLoadedPayload): void {
     }
     displayPythonPath(state?.python?.pythonPath);
     displayExtensionConfig(extensionConfig);
-    displayTimestamp(data.lastLoadTime);
+    displayTimestamp(
+        data.lastLoadTime,
+        false,
+        extensionConfig?.showLoadTimeInLocalTime !== false,
+    );
 }
 
 /** Render the global plot parameters once (exported HTML keeps its own). */

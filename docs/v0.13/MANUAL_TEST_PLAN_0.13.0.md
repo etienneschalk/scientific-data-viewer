@@ -460,6 +460,20 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The variable says **Plot cancelled.**, as with its own **Cancel** button.
 
+### B27. Load time in local time
+
+1. Open `sample_data.nc` and look at the top right of the viewer.
+
+✅ It shows `Loaded:` followed by the time of your clock and your time zone offset, e.g. `2026-10-29T14:03:12.345+01:00`.
+
+2. In the settings, turn off **Show Load Time In Local Time**, then click **Refresh** (🔄).
+
+✅ The time now ends with `Z` and is in UTC.
+
+3. Turn the setting back on and click **Refresh**.
+
+✅ Local time again.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -561,6 +575,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B24 No plot type drop-down                 |        |       |
 | B25 Variable sections, Xarray Encoding     |        |       |
 | B26 Cancel one plot                        |        |       |
+| B27 Load time in local time                |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
 | C Old formats, export, outline             |        |       |
 | D1 Issue forms optional (after merge)      |        |       |
