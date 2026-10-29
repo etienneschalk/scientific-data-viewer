@@ -3,8 +3,13 @@
     "tasks": [
         {
             "label": "compile",
-            "type": "npm",
-            "script": "compile",
+            "type": "shell",
+            "command": "npm run compile",
+            "linux": {
+                "options": {
+                    "shell": { "executable": "/bin/bash", "args": ["-ic"] }
+                }
+            },
             "group": "build",
             "presentation": {
                 "panel": "shared",
