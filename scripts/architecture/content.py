@@ -173,6 +173,8 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             "`AbortController` per running operation. Two timers read the same `plotTimeoutMs` setting (default "
             f"{plot_timeout}): the webview's sends `abortPlot` when it fires, and the host's kills the process even "
             "when the panel is already gone.",
+            "Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and shows the plot as cancelled at "
+            "once; the response that follows is ignored. "
             "“Create all plots” runs these requests with a concurrency limit so that cancel requests still get "
             "through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a "
             f"{grace} grace period.",

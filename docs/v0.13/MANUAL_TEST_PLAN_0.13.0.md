@@ -446,6 +446,20 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Each variable opens by itself on its plot.
 
+### B26. Cancel one plot
+
+1. Open `sample_data.nc`, open a variable and click **Create Plot**, then quickly click the red **Cancel** button that appears next to it. (If the plot is too fast to catch, use a bigger file.)
+
+✅ While the plot runs, **Create Plot** is greyed out and **Cancel** is shown. After **Cancel**, the plot area says **Plot cancelled.** (not a red error), **Cancel** disappears and **Create Plot** can be clicked again.
+
+2. Click **Create Plot** again and let it finish.
+
+✅ The plot appears as usual; no **Cancel** button left.
+
+3. Start a plot, then open **Global Plot Controls** and click **Cancel All**.
+
+✅ The variable says **Plot cancelled.**, as with its own **Cancel** button.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -546,6 +560,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B23 Old xarray message (optional)          |        |       |
 | B24 No plot type drop-down                 |        |       |
 | B25 Variable sections, Xarray Encoding     |        |       |
+| B26 Cancel one plot                        |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
 | C Old formats, export, outline             |        |       |
 | D1 Issue forms optional (after merge)      |        |       |

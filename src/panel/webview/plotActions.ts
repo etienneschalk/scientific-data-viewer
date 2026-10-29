@@ -41,6 +41,12 @@ function plotParts(controls: HTMLElement): PlotParts {
     };
 }
 
+/** Operation id of the plot each variable is running (for its Cancel button). */
+const runningPlots = new WeakMap<HTMLElement, string>();
+
+/** Operations cancelled by the user: their result is ignored when it arrives. */
+const cancelledPlotOperations = new Set<string>();
+
 export function allPlotControls(): HTMLElement[] {
     return Array.from(
         document.querySelectorAll<HTMLElement>('.variable-plot-controls'),
@@ -124,6 +130,26 @@ function displayVariablePlotSuccess(controls: HTMLElement, text: string): void {
     setMultilineText(message, text);
     message.classList.remove('hidden', 'error');
     message.classList.add('success');
+}
+
+function displayVariablePlotCancelled(controls: HTMLElement): void {
+    const { image, message } = plotParts(controls);
+    image.innerHTML = '';
+    setMultilineText(message, 'Plot cancelled.');
+    message.classList.remove('hidden', 'error', 'success');
+}
+
+/** While a plot runs: Create Plot is disabled and Cancel is shown. */
+function setPlotRunning(controls: HTMLElement, running: boolean): void {
+    const create = controls.querySelector<HTMLButtonElement>(
+        '[data-action="create-plot"]',
+    );
+    if (create) {
+        create.disabled = running;
+    }
+    controls
+        .querySelector('[data-action="cancel-plot"]')
+        ?.classList.toggle('hidden', !running);
 }
 
 function plotImageData(controls: HTMLElement): string | null {
@@ -221,10 +247,12 @@ function compactPlotPayload(
     return payload;
 }
 
+type PlotOutcome = 'success' | 'error' | 'cancelled';
+
 /** Create the plot of one variable block and display the result. */
 export async function createVariablePlot(
     controls: HTMLElement,
-): Promise<boolean> {
+): Promise<PlotOutcome> {
     const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const payload = {
         ...compactPlotPayload(resolvePlotOptions(controls)),
@@ -233,25 +261,65 @@ export async function createVariablePlot(
 
     displayVariablePlotLoading(controls);
     activePlotOperations.add(operationId);
+    runningPlots.set(controls, operationId);
+    setPlotRunning(controls, true);
     updateCancelButtonVisibility();
     try {
         const plotData = await messageBus.createPlot(
             payload,
             globalState.plotTimeoutMs,
         );
+        if (cancelledPlotOperations.has(operationId)) {
+            return 'cancelled';
+        }
         displayVariablePlot(controls, plotData);
-        return true;
+        return 'success';
     } catch (error) {
+        if (cancelledPlotOperations.has(operationId)) {
+            return 'cancelled';
+        }
         console.error('Failed to create plot:', error);
         plotParts(controls).image.innerHTML = '';
         displayVariablePlotError(
             controls,
             'Error creating plot: ' + (error as Error).message,
         );
-        return false;
+        return 'error';
     } finally {
+        cancelledPlotOperations.delete(operationId);
         activePlotOperations.delete(operationId);
+        if (runningPlots.get(controls) === operationId) {
+            runningPlots.delete(controls);
+            setPlotRunning(controls, false);
+        }
         updateCancelButtonVisibility();
+    }
+}
+
+/**
+ * Show the variable's plot as cancelled right away; the result of the
+ * operation, which may still arrive, is ignored.
+ */
+function markPlotCancelled(controls: HTMLElement, operationId: string): void {
+    cancelledPlotOperations.add(operationId);
+    activePlotOperations.delete(operationId);
+    runningPlots.delete(controls);
+    setPlotRunning(controls, false);
+    displayVariablePlotCancelled(controls);
+    updateCancelButtonVisibility();
+}
+
+/** Cancel the running plot of one variable and abort its Python process. */
+export async function cancelVariablePlot(controls: HTMLElement): Promise<void> {
+    const operationId = runningPlots.get(controls);
+    if (!operationId) {
+        return;
+    }
+    markPlotCancelled(controls, operationId);
+    try {
+        await messageBus.abortPlot(operationId);
+    } catch (error) {
+        console.error('Failed to abort plot:', error);
     }
 }
 
@@ -316,9 +384,10 @@ export async function handleCreateAllPlots(): Promise<void> {
                 if (plotAllState.cancelled) {
                     return { success: false, skipped: true };
                 }
+                const outcome = await createVariablePlot(controls);
                 return {
-                    success: await createVariablePlot(controls),
-                    skipped: false,
+                    success: outcome === 'success',
+                    skipped: outcome === 'cancelled',
                 };
             },
             5,
@@ -364,6 +433,15 @@ export async function handleCancelAllPlots(): Promise<void> {
         return;
     }
 
+    for (const controls of allPlotControls()) {
+        const operationId = runningPlots.get(controls);
+        if (operationId) {
+            markPlotCancelled(controls, operationId);
+        }
+    }
+    operationIds.forEach((operationId) =>
+        cancelledPlotOperations.add(operationId),
+    );
     const results = await Promise.allSettled(
         operationIds.map((operationId) => messageBus.abortPlot(operationId)),
     );

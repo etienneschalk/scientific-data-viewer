@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections.
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections. A running plot can be **cancelled on its own**, next to its **Create Plot** button.
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -17,7 +17,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                                       |
 | **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                           |
 | **Rasters**           | **COG** label in File Information after rasterio open                                                                                                                    |
-| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting                                                                                                 |
+| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting; **Cancel** button for a single plot (see [§ Cancel a single plot](#cancel-a-single-plot))      |
 | **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
 | **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
@@ -193,6 +193,26 @@ The xarray encoding (`dtype`, `_FillValue`, chunks, compression, Zarr codecs) wa
 
 - `npm test` (294 passing, including new jsdom tests of the card sections, their default states and ids, the group section, and the card opening on plot), `pytest python/tests` (165 passing; compression keys checked with netcdf4 and h5netcdf), `npm run typecheck`, pre-commit.
 - `npm run screenshots`: overview (collapsed cards, badges), every section expanded, plots (cards opened by the plots), 420 px.
+
+---
+
+## Cancel a single plot
+
+### Why
+
+A slow plot (large variable, no slice) could only be stopped with **Cancel All** in the Global Plot Controls, which may be far from the variable and also stops the other plots. And a cancelled plot then showed an error ("Process was aborted… This usually happens when a plot operation times out…") as if something had gone wrong.
+
+### What changed
+
+- While a variable's plot runs, a **Cancel** button appears next to **Create Plot**; **Create Plot** is disabled until the plot ends (a second click used to start a second process for the same variable).
+- **Cancel** aborts that variable's process only (the same `abortPlot` request as **Cancel All**, with the plot's operation id). The plot area shows **Plot cancelled.** at once, in a neutral callout.
+- The response of a cancelled plot is ignored: a plot that finishes just before the abort reaches its process does not appear afterwards, and the abort error is not shown.
+- **Cancel All** marks every running plot the same way. During **Plot All**, a plot cancelled on its own counts as cancelled, not as failed, in the summary notification.
+- Nothing changes on the extension host or the backend: the abort path, the timeouts and the protocol are the ones **Cancel All** already used.
+
+### How it was checked
+
+- `npm test` (296 passing, including two new jsdom tests: single Cancel, and Cancel All on a running plot), `npm run typecheck`, `generate.py --check`, pre-commit.
 
 ---
 
@@ -612,6 +632,18 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 7. Set `"scientificDataViewer.showXarrayEncodingAttributes": false`, **Refresh** → no Xarray Encoding section (groups, coordinates, variables, outline); attributes unchanged.
 8. Export the webview → open the HTML in a browser → sections open / closed as at export time, and they still collapse.
 
+### 25. Cancel a single plot
+
+**Expect:** a running plot can be stopped from its own Plot section.
+
+**Test:**
+
+1. Open a large file (or set `"scientificDataViewer.plotTimeoutMs": 60000` and plot a large variable without slices) → click **Create Plot** → **Create Plot** is greyed out and a red **Cancel** button appears next to it; **Cancel All (1)** appears in the Global Plot Controls.
+2. Click **Cancel** → the plot area shows **Plot cancelled.** (no red error), **Cancel** disappears, **Create Plot** works again, **Cancel All** is hidden. **Show Logs**: `Aborting process for operation: plot-…`.
+3. Start two plots, cancel one → only that one shows **Plot cancelled.**; the other finishes and **Cancel All** shows (1) meanwhile.
+4. Start a plot and click **Cancel All** → the variable shows **Plot cancelled.**, not the "Process was aborted" error.
+5. Press **Plot All**, then **Cancel** on one running variable → the final notification counts it as cancelled, not failed.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -626,6 +658,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background; everything stays readable.
 - **Screenshots** use theme variables recorded from VS Code 1.144 (`scripts/screenshots/themes/`); re-run `capture-themes.mjs` when the default themes change. The xarray HTML representation keeps its own colors in high-contrast themes.
 - **Architecture diagrams**: the sequence diagrams, the process overview and the pipelines are drawn by hand in `scripts/architecture/figures.py`; `--check` only catches renamed or removed symbols, not a changed order of calls. Graph layouts can differ slightly between Graphviz versions (generated with 2.43).
+- **Cancelling a plot right after clicking Create Plot**: if the abort reaches the extension before the Python process is started, nothing is stopped and the process runs to the end (its result is ignored; the plot timeout still applies). The same was already true of **Cancel All**.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---
@@ -640,7 +673,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                        |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section, collapsible variable sections                                                |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section, collapsible variable sections; Cancel button for a single plot               |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                |
 
 ---

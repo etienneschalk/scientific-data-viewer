@@ -623,6 +623,65 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
+    test('Cancel stops the plot of one variable', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        const create = controls.querySelector('[data-action="create-plot"]');
+        const cancel = controls.querySelector('[data-action="cancel-plot"]');
+        assert.ok(cancel.classList.contains('hidden'), 'hidden when idle');
+
+        harness.click(create);
+        assert.ok(!cancel.classList.contains('hidden'), 'shown while running');
+        assert.strictEqual(create.disabled, true);
+        const [request] = harness.requests('createPlot');
+
+        harness.click(cancel);
+
+        const [abort] = harness.requests('abortPlot');
+        assert.ok(abort, 'abortPlot sent');
+        assert.strictEqual(
+            abort.payload.operationId,
+            request.payload.operationId,
+        );
+        assert.ok(cancel.classList.contains('hidden'));
+        assert.strictEqual(create.disabled, false);
+        const message = controls.querySelector('.plot-error');
+        assert.strictEqual(message.textContent, 'Plot cancelled.');
+        assert.ok(!message.classList.contains('error'));
+        // The aborted request's error (or a late plot) does not replace it
+        harness.respond(request.id, 'Process was aborted', false);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.strictEqual(message.textContent, 'Plot cancelled.');
+        assert.strictEqual(controls.querySelector('img'), null);
+    });
+
+    test('Cancel All marks every running plot as cancelled', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+        const [request] = harness.requests('createPlot');
+
+        harness.click(harness.document.getElementById('cancelAllPlotsButton'));
+
+        const [abort] = harness.requests('abortPlot');
+        assert.strictEqual(
+            abort.payload.operationId,
+            request.payload.operationId,
+        );
+        assert.strictEqual(
+            controls.querySelector('.plot-error').textContent,
+            'Plot cancelled.',
+        );
+        assert.ok(
+            controls
+                .querySelector('[data-action="cancel-plot"]')
+                .classList.contains('hidden'),
+        );
+        harness.respond(request.id, 'iVBORw0KGgo=');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.strictEqual(controls.querySelector('img'), null);
+    });
+
     test('export capture keeps control values', async () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;

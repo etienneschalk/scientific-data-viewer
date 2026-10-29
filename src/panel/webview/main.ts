@@ -16,6 +16,7 @@ import {
 } from './errors';
 import { handleExportWebview } from './export';
 import {
+    cancelVariablePlot,
     createVariablePlot,
     handleCancelAllPlots,
     handleCreateAllPlots,
@@ -151,6 +152,7 @@ const BUTTON_HANDLERS: Record<string, () => unknown> = {
 /** Per-variable plot actions (`data-action` inside `.variable-plot-controls`). */
 const PLOT_ACTIONS: Record<string, (controls: HTMLElement) => unknown> = {
     'create-plot': createVariablePlot,
+    'cancel-plot': cancelVariablePlot,
     'reset-plot': resetVariablePlot,
     'save-plot': saveVariablePlot,
     'save-plot-as': saveVariablePlotAs,

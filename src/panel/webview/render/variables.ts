@@ -1,3 +1,4 @@
+import { ICONS } from '../../../shared/icons';
 import { joinId } from '../../../shared/ids';
 import { attributeValueStrings, escapeHtml, formatFileSize } from '../util';
 
@@ -259,6 +260,7 @@ function renderPlotControls(): string {
     return /*html*/ `
                     <div class="plot-controls-row">
                         <button class="create-plot-button" data-action="create-plot">Create Plot</button>
+                        <button class="plot-action-button cancel-button hidden" data-action="cancel-plot" title="Cancel this plot operation">${ICONS.stop} Cancel</button>
                     </div>
                     <div class="plot-container hidden">
                         <div class="plot-actions">

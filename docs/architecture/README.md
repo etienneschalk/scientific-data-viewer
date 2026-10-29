@@ -73,7 +73,7 @@ The webview generates an `operationId` that travels down to `PythonManager`, whi
 
 ![Creating and cancelling a plot](svg/plot.svg)
 
-_“Create all plots” runs these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a 1 s grace period._
+_Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and shows the plot as cancelled at once; the response that follows is ignored. “Create all plots” runs these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a 1 s grace period._
 
 Read: `src/panel/webview/plotActions.ts` · `src/python/PythonManager.ts (runPythonScript, abortProcess, parseScriptResult)` · `src/common/runProcess.ts`
 

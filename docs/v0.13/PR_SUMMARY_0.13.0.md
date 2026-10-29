@@ -141,6 +141,16 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Settings | `showXarrayEncodingAttributes` keeps its key; description now refers to the encoding sections                                                                                                                                                                        |
 | Docs     | `documentation.json` / README; release notes § Xarray Encoding section and manual step §24; manual test plan B7–B9 and B25                                                                                                                                           |
 
+### Phase 13 — Cancel a single plot
+
+| Area    | Work                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Webview | **Cancel** button next to **Create Plot**, shown while the variable's plot runs (Create Plot disabled meanwhile); `cancelVariablePlot` sends `abortPlot` for that operation id and shows **Plot cancelled.** |
+| Webview | Responses of cancelled operations are ignored; **Cancel All** marks running plots the same way; `createVariablePlot` returns `'success' / 'error' / 'cancelled'`, so Plot All counts cancelled plots         |
+| Styles  | `.cancel-button` applies to the per-variable button as well as **Cancel All**                                                                                                                                |
+| Host    | No change: same `abortPlot` request and `PythonManager.abortProcess` path as **Cancel All**                                                                                                                  |
+| Docs    | Architecture text of the plot / cancel figure; release notes § Cancel a single plot and manual step §25; manual test plan B26                                                                                |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -215,6 +225,8 @@ python scripts/architecture/generate.py          # docs/architecture/ (needs Gra
 python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz)
 ```
 
+Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
 Results after moving the xarray encoding to its own section: `npm test` 294 passing; `pytest python/tests` 165 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; `npm run screenshots` checked (overview, expanded, plots, narrow). Golden snapshots: re-`record` needed (every info case changes: `encoding` / `encoding_flattened` fields, no `__xarray_encoding.*` attributes).
 
 Results after removing the plot type selector: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 82 / 0 failing (re-recorded: only `plot__err_broken_file` changed, losing `plot_type='auto'`); `npm run typecheck` and pre-commit clean.
@@ -236,7 +248,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot).
 
 ---
 
@@ -338,3 +350,7 @@ Architecture diagrams:
 Xarray Encoding section:
 
 56. feat(webview): show the xarray encoding in its own collapsible sections
+
+Cancel a single plot:
+
+57. feat(webview): add a Cancel button to each variable's plot

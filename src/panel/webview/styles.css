@@ -412,13 +412,13 @@ button:disabled {
     background-color: var(--vscode-button-background);
 }
 
-.plot-control-button.cancel-button {
+.cancel-button {
     color: var(--vscode-errorForeground);
     background-color: var(--sdv-error-surface);
     border-color: var(--vscode-errorForeground);
 }
 
-.plot-control-button.cancel-button:hover:not(:disabled) {
+.cancel-button:hover:not(:disabled) {
     color: var(--vscode-button-foreground);
     background-color: var(--vscode-inputValidation-errorBorder, #be1100);
 }

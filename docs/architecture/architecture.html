@@ -1022,313 +1022,319 @@ footer {
 <h2><span class="n">4</span>Webview bundle</h2>
 <p>Built separately by esbuild into <code>out/webview/webview.js</code>, with its own <code>tsconfig.json</code> and DOM types. Outside its own folder it imports only <code>src/shared/icons.ts</code> and <code>src/shared/ids.ts</code>, so the message protocol is the only runtime contract between the two sides. <code>plotParams.ts</code> is the single table of plot controls.</p>
 <figure><div class="scroll"><svg class="gv" role="img" aria-label="Webview bundle modules: main imports the feature modules, which share bus, state, util and src/shared." style="max-width:781px"
- viewBox="0.00 0.00 624.60 351.72" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 340.92)">
+ viewBox="0.00 0.00 624.60 434.96" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 424.16)">
 
 <g id="node1" class="node f&#45;web key">
 <title>panel/webview/bus</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M487.17,-314C487.17,-314 447.83,-314 447.83,-314 444.17,-314 440.5,-310.33 440.5,-306.67 440.5,-306.67 440.5,-299.33 440.5,-299.33 440.5,-295.67 444.17,-292 447.83,-292 447.83,-292 487.17,-292 487.17,-292 490.83,-292 494.5,-295.67 494.5,-299.33 494.5,-299.33 494.5,-306.67 494.5,-306.67 494.5,-310.33 490.83,-314 487.17,-314"/>
-<text text-anchor="middle" x="467.5" y="-300.6" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M487.17,-350.34C487.17,-350.34 447.83,-350.34 447.83,-350.34 444.17,-350.34 440.5,-346.68 440.5,-343.01 440.5,-343.01 440.5,-335.68 440.5,-335.68 440.5,-332.01 444.17,-328.34 447.83,-328.34 447.83,-328.34 487.17,-328.34 487.17,-328.34 490.83,-328.34 494.5,-332.01 494.5,-335.68 494.5,-335.68 494.5,-343.01 494.5,-343.01 494.5,-346.68 490.83,-350.34 487.17,-350.34"/>
+<text text-anchor="middle" x="467.5" y="-336.94" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
 </g>
 
 <g id="node12" class="node f&#45;web">
 <title>panel/webview/util</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M595.67,-157C595.67,-157 556.33,-157 556.33,-157 552.67,-157 549,-153.33 549,-149.67 549,-149.67 549,-142.33 549,-142.33 549,-138.67 552.67,-135 556.33,-135 556.33,-135 595.67,-135 595.67,-135 599.33,-135 603,-138.67 603,-142.33 603,-142.33 603,-149.67 603,-149.67 603,-153.33 599.33,-157 595.67,-157"/>
-<text text-anchor="middle" x="576" y="-143.6" font-family="DejaVu Sans Mono" font-size="10.50">util</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M595.67,-203.34C595.67,-203.34 556.33,-203.34 556.33,-203.34 552.67,-203.34 549,-199.68 549,-196.01 549,-196.01 549,-188.68 549,-188.68 549,-185.01 552.67,-181.34 556.33,-181.34 556.33,-181.34 595.67,-181.34 595.67,-181.34 599.33,-181.34 603,-185.01 603,-188.68 603,-188.68 603,-196.01 603,-196.01 603,-199.68 599.33,-203.34 595.67,-203.34"/>
+<text text-anchor="middle" x="576" y="-189.94" font-family="DejaVu Sans Mono" font-size="10.50">util</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
 <title>panel/webview/bus&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M494.94,-297.41C501.43,-295.05 507.96,-291.71 513,-287 549.72,-252.74 565.93,-192.87 571.96,-163.4"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="574.07,-163.55 573.16,-157.26 569.95,-162.74 574.07,-163.55"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M494.85,-331.73C501.35,-328.93 507.89,-325.21 513,-320.34 545.92,-288.95 563.57,-236.45 570.88,-209.48"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="572.95,-209.85 572.44,-203.51 568.89,-208.78 572.95,-209.85"/>
 </g>
 
 <g id="node2" class="node f&#45;web">
 <title>panel/webview/errors</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-282C330.67,-282 290.33,-282 290.33,-282 286.67,-282 283,-278.33 283,-274.67 283,-274.67 283,-267.33 283,-267.33 283,-263.67 286.67,-260 290.33,-260 290.33,-260 330.67,-260 330.67,-260 334.33,-260 338,-263.67 338,-267.33 338,-267.33 338,-274.67 338,-274.67 338,-278.33 334.33,-282 330.67,-282"/>
-<text text-anchor="middle" x="310.5" y="-268.6" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-350.34C330.67,-350.34 290.33,-350.34 290.33,-350.34 286.67,-350.34 283,-346.68 283,-343.01 283,-343.01 283,-335.68 283,-335.68 283,-332.01 286.67,-328.34 290.33,-328.34 290.33,-328.34 330.67,-328.34 330.67,-328.34 334.33,-328.34 338,-332.01 338,-335.68 338,-335.68 338,-343.01 338,-343.01 338,-346.68 334.33,-350.34 330.67,-350.34"/>
+<text text-anchor="middle" x="310.5" y="-336.94" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.15,-276.5C364.78,-282 405.77,-290.46 434.23,-296.34"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.16,-298.47 440.46,-297.62 435.01,-294.35 434.16,-298.47"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.15,-339.34C364.78,-339.34 405.77,-339.34 434.23,-339.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="434.46,-341.44 440.46,-339.34 434.46,-337.24 434.46,-341.44"/>
 </g>
 
 <g id="edge3" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.27,-266.65C389.65,-258.15 498.37,-239.34 513,-230 538.9,-213.48 557.68,-182.02 567.41,-162.64"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="569.4,-163.36 570.14,-157.04 565.63,-161.52 569.4,-163.36"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.36,-335.13C389.9,-326.86 498.88,-308.44 513,-298.34 544.03,-276.13 561.98,-233.16 569.97,-209.31"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="572.03,-209.76 571.88,-203.41 568.03,-208.47 572.03,-209.76"/>
 </g>
 
 <g id="node13" class="node f&#45;shared">
 <title>shared/icons</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M505.67,-282C505.67,-282 429.33,-282 429.33,-282 425.67,-282 422,-278.33 422,-274.67 422,-274.67 422,-267.33 422,-267.33 422,-263.67 425.67,-260 429.33,-260 429.33,-260 505.67,-260 505.67,-260 509.33,-260 513,-263.67 513,-267.33 513,-267.33 513,-274.67 513,-274.67 513,-278.33 509.33,-282 505.67,-282"/>
-<text text-anchor="middle" x="467.5" y="-268.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M505.67,-266.34C505.67,-266.34 429.33,-266.34 429.33,-266.34 425.67,-266.34 422,-262.68 422,-259.01 422,-259.01 422,-251.68 422,-251.68 422,-248.01 425.67,-244.34 429.33,-244.34 429.33,-244.34 505.67,-244.34 505.67,-244.34 509.33,-244.34 513,-248.01 513,-251.68 513,-251.68 513,-259.01 513,-259.01 513,-262.68 509.33,-266.34 505.67,-266.34"/>
+<text text-anchor="middle" x="467.5" y="-252.94" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
 </g>
 
 <g id="edge4" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.15,-271C359.38,-271 389.74,-271 415.59,-271"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="415.72,-273.1 421.72,-271 415.72,-268.9 415.72,-273.1"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.34,-335.38C352.97,-332.52 371.08,-327.82 386,-320.34 411.47,-307.58 436.28,-285.68 451.47,-270.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="453.08,-272.23 455.86,-266.52 450.12,-269.25 453.08,-272.23"/>
 </g>
 
 <g id="node3" class="node f&#45;web">
 <title>panel/webview/export</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-282C164.67,-282 124.33,-282 124.33,-282 120.67,-282 117,-278.33 117,-274.67 117,-274.67 117,-267.33 117,-267.33 117,-263.67 120.67,-260 124.33,-260 124.33,-260 164.67,-260 164.67,-260 168.33,-260 172,-263.67 172,-267.33 172,-267.33 172,-274.67 172,-274.67 172,-278.33 168.33,-282 164.67,-282"/>
-<text text-anchor="middle" x="144.5" y="-268.6" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-372.34C164.67,-372.34 124.33,-372.34 124.33,-372.34 120.67,-372.34 117,-368.68 117,-365.01 117,-365.01 117,-357.68 117,-357.68 117,-354.01 120.67,-350.34 124.33,-350.34 124.33,-350.34 164.67,-350.34 164.67,-350.34 168.33,-350.34 172,-354.01 172,-357.68 172,-357.68 172,-365.01 172,-365.01 172,-368.68 168.33,-372.34 164.67,-372.34"/>
+<text text-anchor="middle" x="144.5" y="-358.94" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M167.25,-282.16C184.97,-290.59 210.9,-301.46 235,-306 304.98,-319.2 388.97,-312.69 434.07,-307.43"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.46,-309.5 440.17,-306.7 433.96,-305.33 434.46,-309.5"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M172.29,-362.16C216.82,-363.2 308.79,-363.91 386,-355.34 401.99,-353.57 419.52,-350.25 434.14,-347.09"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="434.8,-349.09 440.21,-345.75 433.9,-344.99 434.8,-349.09"/>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-271C200.69,-271 245.8,-271 276.48,-271"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.8,-273.1 282.8,-271 276.8,-268.9 276.8,-273.1"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-357.76C200.69,-353.94 245.8,-347.89 276.48,-343.77"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.13,-345.8 282.8,-342.92 276.57,-341.64 277.13,-345.8"/>
 </g>
 
 <g id="node4" class="node f&#45;web key">
 <title>panel/webview/main</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-223C46.67,-223 7.33,-223 7.33,-223 3.67,-223 0,-219.33 0,-215.67 0,-215.67 0,-208.33 0,-208.33 0,-204.67 3.67,-201 7.33,-201 7.33,-201 46.67,-201 46.67,-201 50.33,-201 54,-204.67 54,-208.33 54,-208.33 54,-215.67 54,-215.67 54,-219.33 50.33,-223 46.67,-223"/>
-<text text-anchor="middle" x="27" y="-209.6" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-203.34C46.67,-203.34 7.33,-203.34 7.33,-203.34 3.67,-203.34 0,-199.68 0,-196.01 0,-196.01 0,-188.68 0,-188.68 0,-185.01 3.67,-181.34 7.33,-181.34 7.33,-181.34 46.67,-181.34 46.67,-181.34 50.33,-181.34 54,-185.01 54,-188.68 54,-188.68 54,-196.01 54,-196.01 54,-199.68 50.33,-203.34 46.67,-203.34"/>
+<text text-anchor="middle" x="27" y="-189.94" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M33.94,-223.2C43.44,-239.92 63.66,-271.14 90,-287 200.99,-353.83 365.55,-326.84 434.39,-311.19"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.99,-313.21 440.36,-309.81 434.04,-309.12 434.99,-313.21"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M27.7,-203.61C27.48,-236.99 31.98,-335.6 90,-377.34 198.71,-455.56 373.02,-385.12 439.52,-353.17"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="440.77,-354.9 445.25,-350.39 438.93,-351.12 440.77,-354.9"/>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.16,-219.12C65.19,-222.02 78.18,-225.32 90,-228 155.87,-242.94 233.57,-257.43 276.61,-265.18"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.42,-267.28 282.7,-266.28 277.17,-263.15 276.42,-267.28"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.7,-203.63C34.21,-229.34 49.12,-292.19 90,-320.34 119.44,-340.61 222.89,-341.41 276.59,-340.37"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="276.93,-342.46 282.89,-340.23 276.84,-338.26 276.93,-342.46"/>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/export</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M44.39,-223.14C56.63,-231.19 73.95,-242.01 90,-250 96.7,-253.34 104.07,-256.52 111.13,-259.35"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="110.62,-261.41 116.98,-261.65 112.16,-257.5 110.62,-261.41"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.48,-203.49C33.7,-231 48.34,-302.74 90,-342.34 95.86,-347.92 103.47,-351.87 111.09,-354.67"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="110.54,-356.7 116.9,-356.59 111.86,-352.71 110.54,-356.7"/>
 </g>
 
 <g id="node5" class="node f&#45;web">
 <title>panel/webview/plotActions</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-223C179.67,-223 109.33,-223 109.33,-223 105.67,-223 102,-219.33 102,-215.67 102,-215.67 102,-208.33 102,-208.33 102,-204.67 105.67,-201 109.33,-201 109.33,-201 179.67,-201 179.67,-201 183.33,-201 187,-204.67 187,-208.33 187,-208.33 187,-215.67 187,-215.67 187,-219.33 183.33,-223 179.67,-223"/>
-<text text-anchor="middle" x="144.5" y="-209.6" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-122.34C179.67,-122.34 109.33,-122.34 109.33,-122.34 105.67,-122.34 102,-118.68 102,-115.01 102,-115.01 102,-107.68 102,-107.68 102,-104.01 105.67,-100.34 109.33,-100.34 109.33,-100.34 179.67,-100.34 179.67,-100.34 183.33,-100.34 187,-104.01 187,-107.68 187,-107.68 187,-115.01 187,-115.01 187,-118.68 183.33,-122.34 179.67,-122.34"/>
+<text text-anchor="middle" x="144.5" y="-108.94" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
 </g>
 
 <g id="edge10" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotActions</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-212C66.56,-212 81.68,-212 95.94,-212"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="95.99,-214.1 101.99,-212 95.99,-209.9 95.99,-214.1"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M37.52,-181.04C48.9,-168.09 69.06,-146.93 90,-133.34 94.76,-130.25 100.03,-127.45 105.35,-124.97"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="106.5,-126.76 111.12,-122.4 104.79,-122.92 106.5,-126.76"/>
 </g>
 
 <g id="node6" class="node f&#45;web key">
 <title>panel/webview/plotParams</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-184C342.67,-184 278.33,-184 278.33,-184 274.67,-184 271,-180.33 271,-176.67 271,-176.67 271,-169.33 271,-169.33 271,-165.67 274.67,-162 278.33,-162 278.33,-162 342.67,-162 342.67,-162 346.33,-162 350,-165.67 350,-169.33 350,-169.33 350,-176.67 350,-176.67 350,-180.33 346.33,-184 342.67,-184"/>
-<text text-anchor="middle" x="310.5" y="-170.6" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-122.34C342.67,-122.34 278.33,-122.34 278.33,-122.34 274.67,-122.34 271,-118.68 271,-115.01 271,-115.01 271,-107.68 271,-107.68 271,-104.01 274.67,-100.34 278.33,-100.34 278.33,-100.34 342.67,-100.34 342.67,-100.34 346.33,-100.34 350,-104.01 350,-107.68 350,-107.68 350,-115.01 350,-115.01 350,-118.68 346.33,-122.34 342.67,-122.34"/>
+<text text-anchor="middle" x="310.5" y="-108.94" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
 </g>
 
 <g id="edge11" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.06,-204.36C65.07,-201.37 78.08,-198.15 90,-196 149.96,-185.18 220.13,-178.93 264.68,-175.74"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="264.96,-177.83 270.79,-175.31 264.66,-173.64 264.96,-177.83"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M49.69,-181.34C61.41,-175.71 76.26,-169.06 90,-164.34 149.14,-144.05 219.79,-128.47 264.66,-119.61"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.33,-121.61 270.81,-118.4 264.52,-117.49 265.33,-121.61"/>
 </g>
 
 <g id="node7" class="node f&#45;web">
 <title>panel/webview/render/dataInfo</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-125C191.67,-125 97.33,-125 97.33,-125 93.67,-125 90,-121.33 90,-117.67 90,-117.67 90,-110.33 90,-110.33 90,-106.67 93.67,-103 97.33,-103 97.33,-103 191.67,-103 191.67,-103 195.33,-103 199,-106.67 199,-110.33 199,-110.33 199,-117.67 199,-117.67 199,-121.33 195.33,-125 191.67,-125"/>
-<text text-anchor="middle" x="144.5" y="-111.6" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-203.34C191.67,-203.34 97.33,-203.34 97.33,-203.34 93.67,-203.34 90,-199.68 90,-196.01 90,-196.01 90,-188.68 90,-188.68 90,-185.01 93.67,-181.34 97.33,-181.34 97.33,-181.34 191.67,-181.34 191.67,-181.34 195.33,-181.34 199,-185.01 199,-188.68 199,-188.68 199,-196.01 199,-196.01 199,-199.68 195.33,-203.34 191.67,-203.34"/>
+<text text-anchor="middle" x="144.5" y="-189.94" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
 </g>
 
 <g id="edge12" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/dataInfo</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M36.84,-200.82C48.19,-186.92 68.94,-162.96 90,-146 98.17,-139.42 107.82,-133.24 116.66,-128.1"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="117.86,-129.83 122.03,-125.03 115.78,-126.18 117.86,-129.83"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-192.34C63,-192.34 73.2,-192.34 83.49,-192.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="83.55,-194.44 89.55,-192.34 83.55,-190.24 83.55,-194.44"/>
 </g>
 
 <g id="node8" class="node f&#45;web">
 <title>panel/webview/render/representations</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M378.67,-22C378.67,-22 242.33,-22 242.33,-22 238.67,-22 235,-18.33 235,-14.67 235,-14.67 235,-7.33 235,-7.33 235,-3.67 238.67,0 242.33,0 242.33,0 378.67,0 378.67,0 382.33,0 386,-3.67 386,-7.33 386,-7.33 386,-14.67 386,-14.67 386,-18.33 382.33,-22 378.67,-22"/>
-<text text-anchor="middle" x="310.5" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">render/representations</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M378.67,-176.34C378.67,-176.34 242.33,-176.34 242.33,-176.34 238.67,-176.34 235,-172.68 235,-169.01 235,-169.01 235,-161.68 235,-161.68 235,-158.01 238.67,-154.34 242.33,-154.34 242.33,-154.34 378.67,-154.34 378.67,-154.34 382.33,-154.34 386,-158.01 386,-161.68 386,-161.68 386,-169.01 386,-169.01 386,-172.68 382.33,-176.34 378.67,-176.34"/>
+<text text-anchor="middle" x="310.5" y="-162.94" font-family="DejaVu Sans Mono" font-size="10.50">render/representations</text>
 </g>
 
 <g id="edge13" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M31.44,-200.8C38.79,-178.5 58.02,-128.13 90,-98 132.49,-57.97 195.63,-35.55 243.3,-23.54"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="244.01,-25.53 249.33,-22.06 243,-21.45 244.01,-25.53"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54,-184.38C65,-181.34 78.02,-178.17 90,-176.34 135.66,-169.38 187.21,-166.54 228.88,-165.49"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="229.01,-167.58 234.96,-165.34 228.91,-163.38 229.01,-167.58"/>
 </g>
 
 <g id="node11" class="node f&#45;web">
 <title>panel/webview/timeControls</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M348.67,-152C348.67,-152 272.33,-152 272.33,-152 268.67,-152 265,-148.33 265,-144.67 265,-144.67 265,-137.33 265,-137.33 265,-133.67 268.67,-130 272.33,-130 272.33,-130 348.67,-130 348.67,-130 352.33,-130 356,-133.67 356,-137.33 356,-137.33 356,-144.67 356,-144.67 356,-148.33 352.33,-152 348.67,-152"/>
-<text text-anchor="middle" x="310.5" y="-138.6" font-family="DejaVu Sans Mono" font-size="10.50">timeControls</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M348.67,-68.34C348.67,-68.34 272.33,-68.34 272.33,-68.34 268.67,-68.34 265,-64.68 265,-61.01 265,-61.01 265,-53.68 265,-53.68 265,-50.01 268.67,-46.34 272.33,-46.34 272.33,-46.34 348.67,-46.34 348.67,-46.34 352.33,-46.34 356,-50.01 356,-53.68 356,-53.68 356,-61.01 356,-61.01 356,-64.68 352.33,-68.34 348.67,-68.34"/>
+<text text-anchor="middle" x="310.5" y="-54.94" font-family="DejaVu Sans Mono" font-size="10.50">timeControls</text>
 </g>
 
 <g id="edge14" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/timeControls</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M45.23,-200.91C57.31,-193.62 74.08,-184.46 90,-179 145.91,-159.83 213.28,-150.01 258.51,-145.2"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="258.99,-147.26 264.74,-144.56 258.56,-143.09 258.99,-147.26"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M31.7,-181.17C39.15,-160.53 58.04,-116.59 90,-95.34 140.39,-61.84 211.19,-55.09 258.62,-54.91"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="258.86,-57.02 264.86,-54.93 258.87,-52.82 258.86,-57.02"/>
 </g>
 
 <g id="edge15" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M33.14,-223.04C41.94,-240.45 61.72,-273.69 90,-287 203.13,-340.26 357.2,-305.08 428.02,-283.82"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="428.66,-285.82 433.79,-282.07 427.44,-281.8 428.66,-285.82"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.26,-202.66C93.06,-217.3 168.3,-243.42 235,-253.34 296.64,-262.51 368.53,-261.3 415.64,-258.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="415.95,-261.02 421.83,-258.6 415.73,-256.82 415.95,-261.02"/>
 </g>
 
 <g id="edge16" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M159.74,-223.13C170.61,-231.7 185.9,-243.92 199,-255 215.35,-268.82 215.26,-278.71 235,-287 270.05,-301.73 379.24,-303.44 434.2,-303.32"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.32,-305.42 440.31,-303.3 434.3,-301.22 434.32,-305.42"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M156.31,-122.64C167.85,-135.1 186.21,-156.07 199,-176.34 219.16,-208.29 207.22,-227.74 235,-253.34 264.96,-280.95 378.05,-314.97 434.31,-330.66"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="433.88,-332.72 440.23,-332.3 435.01,-328.68 433.88,-332.72"/>
 </g>
 
 <g id="edge17" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-202.06C211.02,-196.42 240.68,-189.37 264.84,-183.62"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.51,-185.62 270.86,-182.19 264.54,-181.53 265.51,-185.62"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-111.34C211.02,-111.34 240.68,-111.34 264.84,-111.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="264.86,-113.44 270.86,-111.34 264.86,-109.24 264.86,-113.44"/>
 </g>
 
 <g id="node10" class="node f&#45;web">
 <title>panel/webview/state</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M487.17,-157C487.17,-157 447.83,-157 447.83,-157 444.17,-157 440.5,-153.33 440.5,-149.67 440.5,-149.67 440.5,-142.33 440.5,-142.33 440.5,-138.67 444.17,-135 447.83,-135 447.83,-135 487.17,-135 487.17,-135 490.83,-135 494.5,-138.67 494.5,-142.33 494.5,-142.33 494.5,-149.67 494.5,-149.67 494.5,-153.33 490.83,-157 487.17,-157"/>
-<text text-anchor="middle" x="467.5" y="-143.6" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M487.17,-95.34C487.17,-95.34 447.83,-95.34 447.83,-95.34 444.17,-95.34 440.5,-91.68 440.5,-88.01 440.5,-88.01 440.5,-80.68 440.5,-80.68 440.5,-77.01 444.17,-73.34 447.83,-73.34 447.83,-73.34 487.17,-73.34 487.17,-73.34 490.83,-73.34 494.5,-77.01 494.5,-80.68 494.5,-80.68 494.5,-88.01 494.5,-88.01 494.5,-91.68 490.83,-95.34 487.17,-95.34"/>
+<text text-anchor="middle" x="467.5" y="-81.94" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
 </g>
 
 <g id="edge18" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.3,-212.93C236.04,-212.9 318.54,-209.35 386,-189 407.21,-182.6 429.27,-170.36 444.92,-160.58"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="446.45,-162.09 450.38,-157.1 444.19,-158.55 446.45,-162.09"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.23,-102.73C202.23,-99.94 219.31,-97.11 235,-95.34 305.84,-87.36 389.5,-85.16 434.31,-84.56"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="434.4,-86.66 440.37,-84.48 434.35,-82.46 434.4,-86.66"/>
 </g>
 
 <g id="edge19" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/timeControls</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M160.18,-200.79C177.26,-188.29 206.73,-168.33 235,-157 242.44,-154.02 250.52,-151.55 258.54,-149.52"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="259.3,-151.5 264.64,-148.06 258.32,-147.42 259.3,-151.5"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M171.43,-100.22C189.14,-92.87 213.24,-83.34 235,-76.34 242.59,-73.9 250.7,-71.56 258.67,-69.41"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="259.47,-71.37 264.73,-67.81 258.39,-67.31 259.47,-71.37"/>
 </g>
 
 <g id="edge20" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.02,-214.37C235.15,-216.42 316.73,-217.7 386,-208 443.87,-199.9 457.97,-193.65 513,-174 524.45,-169.91 536.72,-164.59 547.29,-159.68"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="548.44,-161.46 552.98,-157 546.65,-157.66 548.44,-161.46"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M155.1,-100.11C170.14,-83.48 201.06,-53.04 235,-41.34 351.81,-1.09 410.56,26.74 513,-42.34 558.12,-72.77 570.45,-142.66 573.78,-175.15"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="571.69,-175.35 574.34,-181.13 575.87,-174.96 571.69,-175.35"/>
 </g>
 
 <g id="edge21" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.33,-220.72C202.34,-223.77 219.41,-227.14 235,-230 301.91,-242.26 319.08,-242.81 386,-255 395.64,-256.75 405.9,-258.72 415.76,-260.66"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="415.55,-262.76 421.84,-261.86 416.36,-258.64 415.55,-262.76"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M155.47,-122.46C166.62,-135.11 184.94,-156.57 199,-176.34 216.8,-201.37 208.89,-219.17 235,-235.34 264.12,-253.38 356.47,-256.29 415.35,-256.2"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="415.66,-258.3 421.65,-256.18 415.64,-254.1 415.66,-258.3"/>
 </g>
 
 <g id="edge22" class="edge e&#45;host">
 <title>panel/webview/plotParams&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.36,-173.15C391.12,-172.78 456.91,-170.68 513,-162 522.92,-160.47 533.55,-158.02 543.16,-155.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="543.75,-157.52 548.99,-153.94 542.65,-153.47 543.75,-157.52"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.27,-119.92C391.23,-129.4 457.44,-145.92 513,-165.34 524.03,-169.2 535.86,-174.14 546.2,-178.74"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="545.44,-180.7 551.78,-181.25 547.17,-176.87 545.44,-180.7"/>
 </g>
 
 <g id="node14" class="node f&#45;shared">
 <title>shared/ids</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M499.67,-103C499.67,-103 435.33,-103 435.33,-103 431.67,-103 428,-99.33 428,-95.67 428,-95.67 428,-88.33 428,-88.33 428,-84.67 431.67,-81 435.33,-81 435.33,-81 499.67,-81 499.67,-81 503.33,-81 507,-84.67 507,-88.33 507,-88.33 507,-95.67 507,-95.67 507,-99.33 503.33,-103 499.67,-103"/>
-<text text-anchor="middle" x="467.5" y="-89.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/ids</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M499.67,-203.34C499.67,-203.34 435.33,-203.34 435.33,-203.34 431.67,-203.34 428,-199.68 428,-196.01 428,-196.01 428,-188.68 428,-188.68 428,-185.01 431.67,-181.34 435.33,-181.34 435.33,-181.34 499.67,-181.34 499.67,-181.34 503.33,-181.34 507,-185.01 507,-188.68 507,-188.68 507,-196.01 507,-196.01 507,-199.68 503.33,-203.34 499.67,-203.34"/>
+<text text-anchor="middle" x="467.5" y="-189.94" font-family="DejaVu Sans Mono" font-size="10.50">shared/ids</text>
 </g>
 
 <g id="edge23" class="edge e&#45;host">
 <title>panel/webview/plotParams&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.14,-168.25C362.03,-165.86 374.9,-162.3 386,-157 393.01,-153.65 427.28,-125.17 448.78,-107.04"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="450.2,-108.59 453.43,-103.11 447.49,-105.38 450.2,-108.59"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M333.4,-122.37C348.27,-129.9 368.37,-140.14 386,-149.34 404.26,-158.88 424.74,-169.82 440.47,-178.28"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="439.76,-180.28 446.04,-181.28 441.76,-176.58 439.76,-180.28"/>
 </g>
 
 <g id="edge24" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M157.03,-125.04C185.66,-152.45 260.06,-223.67 293.18,-255.38"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="291.97,-257.13 297.76,-259.76 294.88,-254.1 291.97,-257.13"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M152.78,-203.41C166.77,-224.06 199.23,-269.04 235,-298.34 248.21,-309.16 264.69,-318.57 278.78,-325.64"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.95,-327.57 284.26,-328.33 279.8,-323.8 277.95,-327.57"/>
 </g>
 
 <g id="edge25" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-125.13C182.95,-134.77 210.05,-148.46 235,-157 244.43,-160.23 254.77,-162.94 264.66,-165.16"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="264.43,-167.27 270.74,-166.49 265.33,-163.16 264.43,-167.27"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M158.24,-181.29C174.83,-167.45 205.25,-143.91 235,-130.34 244.34,-126.08 254.79,-122.67 264.85,-119.98"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.42,-122 270.71,-118.47 264.37,-117.93 265.42,-122"/>
 </g>
 
 <g id="edge26" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M156.12,-102.72C175.69,-82.17 217.06,-39.84 235,-30 239.03,-27.79 243.33,-25.83 247.74,-24.09"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="248.49,-26.05 253.39,-22.01 247.04,-22.11 248.49,-26.05"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-183.5C211.08,-181.55 223.87,-179.44 236.37,-177.38"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="236.91,-179.42 242.48,-176.38 236.22,-175.28 236.91,-179.42"/>
 </g>
 
 <g id="node9" class="node f&#45;web">
 <title>panel/webview/render/variables</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-76C360.67,-76 260.33,-76 260.33,-76 256.67,-76 253,-72.33 253,-68.67 253,-68.67 253,-61.33 253,-61.33 253,-57.67 256.67,-54 260.33,-54 260.33,-54 360.67,-54 360.67,-54 364.33,-54 368,-57.67 368,-61.33 368,-61.33 368,-68.67 368,-68.67 368,-72.33 364.33,-76 360.67,-76"/>
-<text text-anchor="middle" x="310.5" y="-62.6" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-230.34C360.67,-230.34 260.33,-230.34 260.33,-230.34 256.67,-230.34 253,-226.68 253,-223.01 253,-223.01 253,-215.68 253,-215.68 253,-212.01 256.67,-208.34 260.33,-208.34 260.33,-208.34 360.67,-208.34 360.67,-208.34 364.33,-208.34 368,-212.01 368,-215.68 368,-215.68 368,-223.01 368,-223.01 368,-226.68 364.33,-230.34 360.67,-230.34"/>
+<text text-anchor="middle" x="310.5" y="-216.94" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
 </g>
 
 <g id="edge27" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/variables</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M176.8,-102.88C193.9,-96.96 215.51,-89.74 235,-84 242.45,-81.81 250.36,-79.63 258.14,-77.57"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="258.77,-79.57 264.05,-76.02 257.71,-75.51 258.77,-79.57"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-201.18C214.37,-203.68 231.02,-206.42 246.68,-209"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="246.6,-211.11 252.86,-210.02 247.28,-206.97 246.6,-211.11"/>
 </g>
 
 <g id="edge28" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.31,-113.25C248.25,-113.33 322.36,-115.35 386,-125 402.12,-127.44 419.67,-131.81 434.26,-135.94"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="433.98,-138.04 440.32,-137.68 435.14,-134.01 433.98,-138.04"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M164.37,-181.19C182.03,-171.26 209.44,-157.14 235,-149.34 299.86,-129.54 321.57,-148.52 386,-127.34 406.91,-120.47 428.84,-108.39 444.52,-98.78"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="446.01,-100.32 450,-95.37 443.79,-96.76 446.01,-100.32"/>
 </g>
 
 <g id="edge29" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/timeControls</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-122.84C218.34,-125.99 239.82,-129.53 258.7,-132.64"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="258.74,-134.77 265,-133.67 259.42,-130.63 258.74,-134.77"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M153.59,-181.26C168.15,-161.91 200.49,-121.5 235,-95.34 247.66,-85.75 263.1,-77.42 276.63,-71.02"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.74,-72.82 282.3,-68.4 275.98,-69.01 277.74,-72.82"/>
 </g>
 
 <g id="edge30" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M161.5,-102.8C172.17,-95.29 186.49,-85.14 199,-76 215.15,-64.21 216.03,-55.32 235,-49 293.61,-29.46 458.99,-22.99 513,-53 542.77,-69.54 560.86,-107.11 569.29,-129.1"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="567.37,-129.96 571.42,-134.86 571.31,-128.51 567.37,-129.96"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M157.42,-203.44C173.59,-217.75 204.06,-242.15 235,-253.34 351.43,-295.46 401.66,-325.5 513,-271.34 539.57,-258.42 558.13,-227.99 567.64,-208.89"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="569.6,-209.68 570.31,-203.36 565.81,-207.85 569.6,-209.68"/>
 </g>
 
 <g id="edge31" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.43,-108.93C211.15,-107.89 223.49,-106.86 235,-106 299.94,-101.13 375.23,-96.83 421.87,-94.32"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="422.09,-96.41 427.97,-93.99 421.87,-92.21 422.09,-96.41"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.23,-192.34C261.57,-192.34 363.23,-192.34 421.56,-192.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="421.76,-194.44 427.76,-192.34 421.76,-190.24 421.76,-194.44"/>
 </g>
 
 <g id="edge32" class="edge e&#45;host">
 <title>panel/webview/render/representations&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M386.09,-1.75C426.75,-0.49 476.14,-5.48 513,-30 547.85,-53.18 564.58,-102.64 571.27,-128.86"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="569.23,-129.36 572.69,-134.69 573.31,-128.36 569.23,-129.36"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M386.03,-165.9C424.19,-167.07 471.28,-169.89 513,-176.34 522.92,-177.88 533.55,-180.32 543.16,-182.84"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="542.65,-184.88 548.99,-184.41 543.75,-180.82 542.65,-184.88"/>
 </g>
 
 <g id="edge33" class="edge e&#45;host">
 <title>panel/webview/render/representations&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M333.4,-22.03C348.27,-29.56 368.37,-39.79 386,-49 404.26,-58.53 424.74,-69.48 440.47,-77.94"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="439.76,-79.94 446.04,-80.94 441.76,-76.24 439.76,-79.94"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M374.99,-176.4C390.65,-179.13 407.09,-181.99 421.65,-184.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="421.5,-186.63 427.77,-185.6 422.22,-182.5 421.5,-186.63"/>
 </g>
 
 <g id="edge34" class="edge e&#45;host">
 <title>panel/webview/render/variables&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M368.26,-56.79C410.31,-53.32 467.89,-54.2 513,-76 536.77,-87.49 555.36,-112.63 565.76,-129.44"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="564.08,-130.72 568.97,-134.79 567.68,-128.56 564.08,-130.72"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M368.27,-219.23C408.81,-218.43 464.53,-215.84 513,-208.34 522.92,-206.81 533.55,-204.37 543.16,-201.85"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="543.75,-203.86 548.99,-200.28 542.65,-199.81 543.75,-203.86"/>
 </g>
 
 <g id="edge35" class="edge e&#45;host">
-<title>panel/webview/render/variables&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M368.34,-74.9C385.88,-77.96 404.95,-81.28 421.57,-84.17"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="421.31,-86.26 427.58,-85.22 422.03,-82.12 421.31,-86.26"/>
+<title>panel/webview/render/variables&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M359.27,-230.44C377.17,-234.59 397.57,-239.33 415.73,-243.55"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="415.48,-245.65 421.8,-244.96 416.43,-241.56 415.48,-245.65"/>
 </g>
 
 <g id="edge36" class="edge e&#45;host">
-<title>panel/webview/timeControls&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M356.33,-142.45C381.18,-143.25 411.5,-144.23 434.04,-144.95"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.12,-147.06 440.18,-145.15 434.26,-142.86 434.12,-147.06"/>
+<title>panel/webview/render/variables&#45;&gt;shared/ids</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M368.34,-209.44C385.88,-206.39 404.95,-203.06 421.57,-200.17"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="422.03,-202.22 427.58,-199.12 421.31,-198.08 422.03,-202.22"/>
 </g>
 
 <g id="edge37" class="edge e&#45;host">
+<title>panel/webview/timeControls&#45;&gt;panel/webview/state</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M356.33,-65.15C381.18,-69.48 411.5,-74.76 434.04,-78.69"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="433.91,-80.8 440.18,-79.76 434.63,-76.66 433.91,-80.8"/>
+</g>
+
+<g id="edge38" class="edge e&#45;host">
 <title>panel/webview/timeControls&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M356.09,-133.97C397.03,-128.6 459.3,-123.18 513,-130 522.86,-131.25 533.4,-133.58 542.94,-136.08"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="542.4,-138.11 548.74,-137.66 543.49,-134.06 542.4,-138.11"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M356.31,-47.72C399.98,-40.93 466.43,-37.78 513,-68.34 550.44,-92.92 566.21,-147.28 572.03,-175.15"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="570.02,-175.83 573.24,-181.31 574.15,-175.01 570.02,-175.83"/>
 </g>
 </g>
 </svg></div><figcaption><code>main.ts</code> installs one delegated click listener (the CSP forbids inline handlers) and dispatches on element ids and <code>data-action</code> attributes. Without a VS Code API (exported HTML opened in a browser) the bus runs in degraded mode and rejects every request.</figcaption></figure>
@@ -1343,7 +1349,7 @@ footer {
 <section id="plot">
 <h2><span class="n">6</span>Creating and cancelling a plot</h2>
 <p>The webview generates an <code>operationId</code> that travels down to <code>PythonManager</code>, which keeps one <code>AbortController</code> per running operation. Two timers read the same <code>plotTimeoutMs</code> setting (default 20 s): the webview's sends <code>abortPlot</code> when it fires, and the host's kills the process even when the panel is already gone.</p>
-<figure><div class="scroll"><svg viewBox="0 0 1180 968" class="hand seq" role="img" aria-label="Sequence of creating a plot: a request carries an operationId down to PythonManager, which registers an AbortController; the plot returns as base64 PNG, or is killed by cancel, the webview timer, or the host timeout." style="max-width:1180px"><defs><marker id="sp-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="sp-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="sp-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="sp-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><rect x="14" y="364" width="1152" height="570" rx="6" class="frame"/><path d="M20,364 L162.4,364 L162.4,374 L154.4,382 L14,382 L14,370 Q14,364 20,364 Z" class="frametab"/><text x="22" y="377" text-anchor="start" class="framet">alt  the plot finishes</text><line x1="14" y1="564" x2="1166" y2="564" class="framediv"/><text x="22" y="579" text-anchor="start" class="framet halo">else  user clicks Cancel, or the webview timer fires (onTimeout)</text><line x1="14" y1="834" x2="1166" y2="834" class="framediv"/><text x="22" y="849" text-anchor="start" class="framet halo">else  host timeoutMs elapses (also when the webview was closed)</text><line x1="84" y1="62" x2="84" y2="958" class="life"/><rect x="6.7" y="14" width="154.7" height="48" rx="7" class="bx web"/><text x="84" y="35.2" text-anchor="middle" class="t" font-size="11.5">plotActions</text><text x="84" y="49.8" text-anchor="middle" class="s">webview</text><line x1="252.7" y1="62" x2="252.7" y2="958" class="life"/><rect x="175.3" y="14" width="154.7" height="48" rx="7" class="bx web"/><text x="252.7" y="35.2" text-anchor="middle" class="t" font-size="11.5">bus.ts</text><text x="252.7" y="49.8" text-anchor="middle" class="s">webview</text><line x1="421.3" y1="62" x2="421.3" y2="958" class="life"/><rect x="344" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="421.3" y="35.2" text-anchor="middle" class="t" font-size="11.5">UIController</text><text x="421.3" y="49.8" text-anchor="middle" class="s">+ MessageBus</text><line x1="590" y1="62" x2="590" y2="958" class="life"/><rect x="512.7" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="590" y="35.2" text-anchor="middle" class="t" font-size="11.5">DataProcessor</text><text x="590" y="49.8" text-anchor="middle" class="s">host</text><line x1="758.7" y1="62" x2="758.7" y2="958" class="life"/><rect x="681.3" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="758.7" y="35.2" text-anchor="middle" class="t" font-size="11.5">PythonManager</text><text x="758.7" y="49.8" text-anchor="middle" class="s">_activeProcesses</text><line x1="927.3" y1="62" x2="927.3" y2="958" class="life"/><rect x="850" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="927.3" y="35.2" text-anchor="middle" class="t" font-size="11.5">runProcess</text><text x="927.3" y="49.8" text-anchor="middle" class="s">common/</text><line x1="1096" y1="62" x2="1096" y2="958" class="life"/><rect x="1018.7" y="14" width="154.7" height="48" rx="7" class="bx py"/><text x="1096" y="35.2" text-anchor="middle" class="t" font-size="11.5">Python</text><text x="1096" y="49.8" text-anchor="middle" class="s">create_plot</text><polyline points="88,104 248.7,104" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="106" y="98" text-anchor="start" class="mlbl m-call halo">createPlot(payload, plotTimeoutMs)</text><circle cx="84" cy="104" r="8" class="num"/><text x="84" y="107.5" text-anchor="middle" class="numt">1</text><polyline points="256.7,132 278.7,132 278.7,148 258.7,148" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="284.7" y="144" text-anchor="start" class="mlbl m-self halo">start webview timer</text><polyline points="256.7,172 417.3,172" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="274.7" y="166" text-anchor="start" class="mlbl m-call halo">request createPlot {operationId, …}</text><circle cx="252.7" cy="172" r="8" class="num"/><text x="252.7" y="175.5" text-anchor="middle" class="numt">2</text><polyline points="425.3,206 586,206" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="511.7" y="200" text-anchor="middle" class="mlbl m-call halo">createPlot(uri, plot)</text><circle cx="421.3" cy="206" r="8" class="num"/><text x="421.3" y="209.5" text-anchor="middle" class="numt">3</text><polyline points="594,240 754.7,240" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="612" y="234" text-anchor="start" class="mlbl m-call halo">executePythonFile(…, operationId, timeoutMs)</text><circle cx="590" cy="240" r="8" class="num"/><text x="590" y="243.5" text-anchor="middle" class="numt">4</text><polyline points="762.7,268 784.7,268 784.7,284 764.7,284" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="790.7" y="280" text-anchor="start" class="mlbl m-self halo">register AbortController</text><polyline points="762.7,308 923.3,308" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="780.7" y="302" text-anchor="start" class="mlbl m-call halo">runProcess(signal, timeoutMs)</text><circle cx="758.7" cy="308" r="8" class="num"/><text x="758.7" y="311.5" text-anchor="middle" class="numt">5</text><polyline points="931.3,342 1092,342" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="949.3" y="336" text-anchor="start" class="mlbl m-call halo">spawn … plot &lt;file&gt; &lt;var&gt;</text><circle cx="927.3" cy="342" r="8" class="num"/><text x="927.3" y="345.5" text-anchor="middle" class="numt">6</text><polyline points="1092,402 931.3,402" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="1074" y="396" text-anchor="end" class="mlbl m-return halo">stdout: CreatePlotResult, exit 0</text><circle cx="1096" cy="402" r="8" class="num"/><text x="1096" y="405.5" text-anchor="middle" class="numt">7</text><polyline points="923.3,436 762.7,436" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="905.3" y="430" text-anchor="end" class="mlbl m-return halo">{code, stdout, stderr}</text><circle cx="927.3" cy="436" r="8" class="num"/><text x="927.3" y="439.5" text-anchor="middle" class="numt">8</text><polyline points="754.7,470 425.3,470" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="584" y="464" text-anchor="middle" class="mlbl m-return halo">parseScriptResult() → plot_data</text><circle cx="758.7" cy="470" r="8" class="num"/><text x="758.7" y="473.5" text-anchor="middle" class="numt">9</text><polyline points="417.3,504 256.7,504" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="399.3" y="498" text-anchor="end" class="mlbl m-return halo">response {success: true}</text><circle cx="421.3" cy="504" r="8" class="num"/><text x="421.3" y="507.5" text-anchor="middle" class="numt">10</text><polyline points="248.7,538 88,538" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="162.3" y="532" text-anchor="middle" class="mlbl m-return halo">&lt;img&gt; base64 PNG</text><circle cx="252.7" cy="538" r="8" class="num"/><text x="252.7" y="541.5" text-anchor="middle" class="numt">11</text><polyline points="88,604 248.7,604" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="106" y="598" text-anchor="start" class="mlbl m-call halo">abortPlot(operationId)</text><circle cx="84" cy="604" r="8" class="num"/><text x="84" y="607.5" text-anchor="middle" class="numt">12</text><polyline points="256.7,638 417.3,638" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="343" y="632" text-anchor="middle" class="mlbl m-call halo">request abortPlot</text><circle cx="252.7" cy="638" r="8" class="num"/><text x="252.7" y="641.5" text-anchor="middle" class="numt">13</text><polyline points="425.3,672 754.7,672" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="596" y="666" text-anchor="middle" class="mlbl m-call halo">abortProcess(operationId)</text><circle cx="421.3" cy="672" r="8" class="num"/><text x="421.3" y="675.5" text-anchor="middle" class="numt">14</text><polyline points="762.7,706 923.3,706" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="849" y="700" text-anchor="middle" class="mlbl m-call halo">controller.abort()</text><circle cx="758.7" cy="706" r="8" class="num"/><text x="758.7" y="709.5" text-anchor="middle" class="numt">15</text><polyline points="931.3,740 1092,740" class="ln ln-warn" fill="none" marker-end="url(#sp-warn)"/><text x="949.3" y="734" text-anchor="start" class="mlbl m-kill halo">SIGTERM, SIGKILL after 1 s</text><circle cx="927.3" cy="740" r="8" class="num"/><text x="927.3" y="743.5" text-anchor="middle" class="numt">16</text><polyline points="754.7,774 425.3,774" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="584" y="768" text-anchor="middle" class="mlbl m-return halo">throws &quot;Process was aborted&quot;</text><circle cx="758.7" cy="774" r="8" class="num"/><text x="758.7" y="777.5" text-anchor="middle" class="numt">17</text><polyline points="417.3,808 256.7,808" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="399.3" y="802" text-anchor="end" class="mlbl m-return halo">response {success: false}</text><circle cx="421.3" cy="808" r="8" class="num"/><text x="421.3" y="811.5" text-anchor="middle" class="numt">18</text><polyline points="931.3,874 1092,874" class="ln ln-warn" fill="none" marker-end="url(#sp-warn)"/><text x="949.3" y="868" text-anchor="start" class="mlbl m-kill halo">SIGTERM, SIGKILL after 1 s</text><circle cx="927.3" cy="874" r="8" class="num"/><text x="927.3" y="877.5" text-anchor="middle" class="numt">19</text><polyline points="923.3,908 762.7,908" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="905.3" y="902" text-anchor="end" class="mlbl m-return halo">{timedOut} → &quot;timed out and was stopped&quot;</text><circle cx="927.3" cy="908" r="8" class="num"/><text x="927.3" y="911.5" text-anchor="middle" class="numt">20</text></svg></div><figcaption>“Create all plots” runs these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same <code>runProcess</code> stop routine: SIGTERM, then SIGKILL after a 1 s grace period.</figcaption></figure>
+<figure><div class="scroll"><svg viewBox="0 0 1180 968" class="hand seq" role="img" aria-label="Sequence of creating a plot: a request carries an operationId down to PythonManager, which registers an AbortController; the plot returns as base64 PNG, or is killed by cancel, the webview timer, or the host timeout." style="max-width:1180px"><defs><marker id="sp-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="sp-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="sp-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="sp-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><rect x="14" y="364" width="1152" height="570" rx="6" class="frame"/><path d="M20,364 L162.4,364 L162.4,374 L154.4,382 L14,382 L14,370 Q14,364 20,364 Z" class="frametab"/><text x="22" y="377" text-anchor="start" class="framet">alt  the plot finishes</text><line x1="14" y1="564" x2="1166" y2="564" class="framediv"/><text x="22" y="579" text-anchor="start" class="framet halo">else  user clicks Cancel, or the webview timer fires (onTimeout)</text><line x1="14" y1="834" x2="1166" y2="834" class="framediv"/><text x="22" y="849" text-anchor="start" class="framet halo">else  host timeoutMs elapses (also when the webview was closed)</text><line x1="84" y1="62" x2="84" y2="958" class="life"/><rect x="6.7" y="14" width="154.7" height="48" rx="7" class="bx web"/><text x="84" y="35.2" text-anchor="middle" class="t" font-size="11.5">plotActions</text><text x="84" y="49.8" text-anchor="middle" class="s">webview</text><line x1="252.7" y1="62" x2="252.7" y2="958" class="life"/><rect x="175.3" y="14" width="154.7" height="48" rx="7" class="bx web"/><text x="252.7" y="35.2" text-anchor="middle" class="t" font-size="11.5">bus.ts</text><text x="252.7" y="49.8" text-anchor="middle" class="s">webview</text><line x1="421.3" y1="62" x2="421.3" y2="958" class="life"/><rect x="344" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="421.3" y="35.2" text-anchor="middle" class="t" font-size="11.5">UIController</text><text x="421.3" y="49.8" text-anchor="middle" class="s">+ MessageBus</text><line x1="590" y1="62" x2="590" y2="958" class="life"/><rect x="512.7" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="590" y="35.2" text-anchor="middle" class="t" font-size="11.5">DataProcessor</text><text x="590" y="49.8" text-anchor="middle" class="s">host</text><line x1="758.7" y1="62" x2="758.7" y2="958" class="life"/><rect x="681.3" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="758.7" y="35.2" text-anchor="middle" class="t" font-size="11.5">PythonManager</text><text x="758.7" y="49.8" text-anchor="middle" class="s">_activeProcesses</text><line x1="927.3" y1="62" x2="927.3" y2="958" class="life"/><rect x="850" y="14" width="154.7" height="48" rx="7" class="bx host"/><text x="927.3" y="35.2" text-anchor="middle" class="t" font-size="11.5">runProcess</text><text x="927.3" y="49.8" text-anchor="middle" class="s">common/</text><line x1="1096" y1="62" x2="1096" y2="958" class="life"/><rect x="1018.7" y="14" width="154.7" height="48" rx="7" class="bx py"/><text x="1096" y="35.2" text-anchor="middle" class="t" font-size="11.5">Python</text><text x="1096" y="49.8" text-anchor="middle" class="s">create_plot</text><polyline points="88,104 248.7,104" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="106" y="98" text-anchor="start" class="mlbl m-call halo">createPlot(payload, plotTimeoutMs)</text><circle cx="84" cy="104" r="8" class="num"/><text x="84" y="107.5" text-anchor="middle" class="numt">1</text><polyline points="256.7,132 278.7,132 278.7,148 258.7,148" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="284.7" y="144" text-anchor="start" class="mlbl m-self halo">start webview timer</text><polyline points="256.7,172 417.3,172" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="274.7" y="166" text-anchor="start" class="mlbl m-call halo">request createPlot {operationId, …}</text><circle cx="252.7" cy="172" r="8" class="num"/><text x="252.7" y="175.5" text-anchor="middle" class="numt">2</text><polyline points="425.3,206 586,206" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="511.7" y="200" text-anchor="middle" class="mlbl m-call halo">createPlot(uri, plot)</text><circle cx="421.3" cy="206" r="8" class="num"/><text x="421.3" y="209.5" text-anchor="middle" class="numt">3</text><polyline points="594,240 754.7,240" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="612" y="234" text-anchor="start" class="mlbl m-call halo">executePythonFile(…, operationId, timeoutMs)</text><circle cx="590" cy="240" r="8" class="num"/><text x="590" y="243.5" text-anchor="middle" class="numt">4</text><polyline points="762.7,268 784.7,268 784.7,284 764.7,284" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="790.7" y="280" text-anchor="start" class="mlbl m-self halo">register AbortController</text><polyline points="762.7,308 923.3,308" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="780.7" y="302" text-anchor="start" class="mlbl m-call halo">runProcess(signal, timeoutMs)</text><circle cx="758.7" cy="308" r="8" class="num"/><text x="758.7" y="311.5" text-anchor="middle" class="numt">5</text><polyline points="931.3,342 1092,342" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="949.3" y="336" text-anchor="start" class="mlbl m-call halo">spawn … plot &lt;file&gt; &lt;var&gt;</text><circle cx="927.3" cy="342" r="8" class="num"/><text x="927.3" y="345.5" text-anchor="middle" class="numt">6</text><polyline points="1092,402 931.3,402" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="1074" y="396" text-anchor="end" class="mlbl m-return halo">stdout: CreatePlotResult, exit 0</text><circle cx="1096" cy="402" r="8" class="num"/><text x="1096" y="405.5" text-anchor="middle" class="numt">7</text><polyline points="923.3,436 762.7,436" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="905.3" y="430" text-anchor="end" class="mlbl m-return halo">{code, stdout, stderr}</text><circle cx="927.3" cy="436" r="8" class="num"/><text x="927.3" y="439.5" text-anchor="middle" class="numt">8</text><polyline points="754.7,470 425.3,470" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="584" y="464" text-anchor="middle" class="mlbl m-return halo">parseScriptResult() → plot_data</text><circle cx="758.7" cy="470" r="8" class="num"/><text x="758.7" y="473.5" text-anchor="middle" class="numt">9</text><polyline points="417.3,504 256.7,504" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="399.3" y="498" text-anchor="end" class="mlbl m-return halo">response {success: true}</text><circle cx="421.3" cy="504" r="8" class="num"/><text x="421.3" y="507.5" text-anchor="middle" class="numt">10</text><polyline points="248.7,538 88,538" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="162.3" y="532" text-anchor="middle" class="mlbl m-return halo">&lt;img&gt; base64 PNG</text><circle cx="252.7" cy="538" r="8" class="num"/><text x="252.7" y="541.5" text-anchor="middle" class="numt">11</text><polyline points="88,604 248.7,604" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="106" y="598" text-anchor="start" class="mlbl m-call halo">abortPlot(operationId)</text><circle cx="84" cy="604" r="8" class="num"/><text x="84" y="607.5" text-anchor="middle" class="numt">12</text><polyline points="256.7,638 417.3,638" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="343" y="632" text-anchor="middle" class="mlbl m-call halo">request abortPlot</text><circle cx="252.7" cy="638" r="8" class="num"/><text x="252.7" y="641.5" text-anchor="middle" class="numt">13</text><polyline points="425.3,672 754.7,672" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="596" y="666" text-anchor="middle" class="mlbl m-call halo">abortProcess(operationId)</text><circle cx="421.3" cy="672" r="8" class="num"/><text x="421.3" y="675.5" text-anchor="middle" class="numt">14</text><polyline points="762.7,706 923.3,706" class="ln ln-edge" fill="none" marker-end="url(#sp-edge)"/><text x="849" y="700" text-anchor="middle" class="mlbl m-call halo">controller.abort()</text><circle cx="758.7" cy="706" r="8" class="num"/><text x="758.7" y="709.5" text-anchor="middle" class="numt">15</text><polyline points="931.3,740 1092,740" class="ln ln-warn" fill="none" marker-end="url(#sp-warn)"/><text x="949.3" y="734" text-anchor="start" class="mlbl m-kill halo">SIGTERM, SIGKILL after 1 s</text><circle cx="927.3" cy="740" r="8" class="num"/><text x="927.3" y="743.5" text-anchor="middle" class="numt">16</text><polyline points="754.7,774 425.3,774" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="584" y="768" text-anchor="middle" class="mlbl m-return halo">throws &quot;Process was aborted&quot;</text><circle cx="758.7" cy="774" r="8" class="num"/><text x="758.7" y="777.5" text-anchor="middle" class="numt">17</text><polyline points="417.3,808 256.7,808" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="399.3" y="802" text-anchor="end" class="mlbl m-return halo">response {success: false}</text><circle cx="421.3" cy="808" r="8" class="num"/><text x="421.3" y="811.5" text-anchor="middle" class="numt">18</text><polyline points="931.3,874 1092,874" class="ln ln-warn" fill="none" marker-end="url(#sp-warn)"/><text x="949.3" y="868" text-anchor="start" class="mlbl m-kill halo">SIGTERM, SIGKILL after 1 s</text><circle cx="927.3" cy="874" r="8" class="num"/><text x="927.3" y="877.5" text-anchor="middle" class="numt">19</text><polyline points="923.3,908 762.7,908" class="ln ln-edge dash" fill="none" marker-end="url(#sp-edge)"/><text x="905.3" y="902" text-anchor="end" class="mlbl m-return halo">{timedOut} → &quot;timed out and was stopped&quot;</text><circle cx="927.3" cy="908" r="8" class="num"/><text x="927.3" y="911.5" text-anchor="middle" class="numt">20</text></svg></div><figcaption>Each variable's Cancel button, like “Cancel all”, sends <code>abortPlot</code> and shows the plot as cancelled at once; the response that follows is ignored. “Create all plots” runs these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same <code>runProcess</code> stop routine: SIGTERM, then SIGKILL after a 1 s grace period.</figcaption></figure>
 <p class="files"><b>Read</b>src/panel/webview/plotActions.ts · src/python/PythonManager.ts (runPythonScript, abortProcess, parseScriptResult) · src/common/runProcess.ts</p>
 </section>
 
