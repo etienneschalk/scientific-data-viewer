@@ -10,21 +10,21 @@
 
 v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its minimum **zarr** to **3.x** and added DataTree/plotting improvements the extension now surfaces. The viewer stays **metadata-first** (no Dask clusters, no cloud auth, no write/convert pipelines).
 
-| Area                  | What v0.13 adds                                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (rebuilt automatically on update); rejects zarr 2.x as “too old”                                               |
-| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                         |
-| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                                       |
-| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                           |
-| **Rasters**           | **COG** label in File Information after rasterio open                                                                                                                    |
-| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting; **Cancel** button for a single plot (see [§ Cancel a single plot](#cancel-a-single-plot))      |
-| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
-| **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
-| **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
-| **Variables**         | Xarray encoding in its own collapsed section; variable and group cards with collapsible sections (see [§ Xarray Encoding](#xarray-encoding-section))                     |
-| **Plot controls**     | Aligned fields sorted in Facets / Axes / Color / Figure, one heading style, Reset per block (see [§ Plot controls layout](#plot-controls-layout))                        |
-| **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
-| **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                            |
+| Area                  | What v0.13 adds                                                                                                                                                                              |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zarr 3 stack**      | Pins `xarray>=2026.4.0`, `zarr>=3` in the optional uv env (rebuilt automatically on update); rejects zarr 2.x as “too old”                                                                   |
+| **Zarr UX**           | Opens stores **without** a `.zarr` suffix; **ZIP** archives; **v2/v3** format label and codec/shard encoding in attribute tables                                                             |
+| **NetCDF / DataTree** | Configurable **engine order**; **HDF5 filter** metadata; **inherited coordinates** on child groups                                                                                           |
+| **Virtual Zarr**      | Experimental **Kerchunk** JSON (named patterns + context menu)                                                                                                                               |
+| **Rasters**           | **COG** label in File Information after rasterio open                                                                                                                                        |
+| **Plots**             | **`col_wrap='auto'`** checkbox; **`facetgridFigsize`** workspace setting; **Cancel** button for a single plot (see [§ Cancel a single plot](#cancel-a-single-plot))                          |
+| **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                                     |
+| **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes))                     |
+| **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))                                 |
+| **Variables**         | Xarray encoding in its own collapsed section; variable and group cards with collapsible sections (see [§ Xarray Encoding](#xarray-encoding-section))                                         |
+| **Plot controls**     | Aligned fields sorted in Facets / Axes / Color / Figure, Reset per block; slices as start : stop : step boxes with a two-handle slider (see [§ Plot controls layout](#plot-controls-layout)) |
+| **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))                             |
+| **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                                                |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -249,11 +249,13 @@ The plot controls were hard to scan: each row was a flow of `label: input` pairs
 - **Fieldsets**: plot parameters are sorted by meaning: **Facets** (row, col, col_wrap), **Axes** (x, y, hue, xincrease, yincrease), **Color** (vmin, vmax, cmap, robust, add_colorbar), **Figure** (size, aspect, bins, add_legend).
 - **Reset per block**: **Reset** next to Dimension slices clears only the slices (before, the single "Clear Dimension Slices and Plot Parameters" button cleared both); Plot parameters have their own Reset.
 - Nothing changes in what is sent to the backend; element ids are unchanged.
+- **Dimension slices: three boxes and a slider**: each dimension has **start : stop : step** boxes joined into one control, and a slider whose two handles set start and stop (the step is kept). Typing moves the handles, dragging fills the boxes. Handles on top of each other select one index; handles at both ends clear the selection; handles can cross. A whole slice typed or pasted in a box (`0:24:2`) is spread over the boxes. Non-integer input is outlined in red. Before, a slice was one text box where the Python syntax had to be typed.
 
 ### How it was checked
 
 - `npm test` (301 passing; new test: each Reset clears its own block), `npm run typecheck`, pre-commit.
 - Screenshots of the global and group plot controls (time controls turned on) in Dark Modern, Light Modern and at 420 px.
+- Slices: jsdom tests of the two-way sync; screenshots of a slice, an index and an open slice with a step; real mouse drags in headless Chromium (one handle; overlapped handles pulled apart in both directions).
 
 ---
 
@@ -710,6 +712,21 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Type `0` in a dimension slice and `20` in **bins** → **Reset** of Dimension slices clears the slice only → **Reset** of Plot parameters clears `bins` and restores the default checkboxes.
 4. Expand a group → **Group Plot Controls** has the same layout, without a box of its own. A group value still overrides the global one (`bins` 10 in the group, 30 globally → the group's variable uses 10).
 5. Narrow the editor to ~400 px → two columns of fields, no horizontal scroll.
+
+### 26. Dimension slices: boxes and slider
+
+**Expect:** a slice can be typed in three boxes or set with a slider, and both stay in sync.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → **Dimension slices**: each dimension shows `start : stop : step` boxes and a slider with both handles at the ends.
+2. Type `2` in **start** of `time` → both handles jump to 2. Type `5` in **stop** → the second handle moves to 4 (stop excluded), the track between them is highlighted.
+3. Drag the right handle → **stop** follows (handle index + 1); drag it over the left one and beyond → the handles swap roles, the boxes always show lower : higher.
+4. Put the two handles on the same position → **stop** empties: a single index. With a **step** typed, it becomes a one-element slice instead (`i : i+1 : step`).
+5. Drag the handles back to both ends → start and stop empty (no selection); the step box is never changed by the slider.
+6. Paste `0:24:2` in **start** → the three boxes fill and the focus goes to **step**. Type `abc` in a box → it is outlined in red.
+7. **Create Plot** with `time` start `0`, stop `2` → the plot uses two time steps; with start `1` only → one time step (no time dimension left).
+8. **Reset** next to **Dimension slices** → boxes empty, handles back at both ends. Same in a group's **Group Plot Controls** (group values still override the global ones).
 
 ---
 

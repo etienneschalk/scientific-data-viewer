@@ -1,4 +1,9 @@
 import { joinId } from '../../shared/ids';
+import {
+    readDimensionSlices,
+    renderDimensionSliceFields,
+    resetDimensionSlices,
+} from './dimensionSlices';
 import { escapeHtml } from './util';
 
 type PlotParameterKind =
@@ -414,24 +419,6 @@ function readPlotParameter(
     }
 }
 
-/** Dimension slices typed under `root`: {dim: int | "slice string"}. */
-function readDimensionSlices(
-    root: ParentNode,
-): Record<string, string | number> {
-    const dimensionSlices: Record<string, string | number> = {};
-    root.querySelectorAll<HTMLInputElement>('.dimension-slice-input').forEach(
-        (input) => {
-            const value = input.value.trim();
-            const dim = input.dataset.dimension;
-            if (value && dim) {
-                const num = Number(value);
-                dimensionSlices[dim] = Number.isInteger(num) ? num : value;
-            }
-        },
-    );
-    return dimensionSlices;
-}
-
 /** All plot options of a scope root (global section or group section). */
 export function readPlotControls(root: ParentNode): PlotControlsValues {
     const values: PlotControlsValues = {
@@ -480,11 +467,7 @@ export function mergePlotControls(
 
 /** Reset dimension slices and plot parameters under `root` to their defaults. */
 export function resetPlotControls(root: ParentNode): void {
-    root.querySelectorAll<HTMLInputElement>('.dimension-slice-input').forEach(
-        (input) => {
-            input.value = '';
-        },
-    );
+    resetDimensionSlices(root);
     for (const param of PLOT_PARAMETERS) {
         const element = paramElement(root, param.key);
         if (!element) {
@@ -518,19 +501,5 @@ export function renderDimensionSliceInputs(
     scope: PlotScope,
     dimSizes: Record<string, number>,
 ): string {
-    const groupAttr = groupAttribute(scope);
-    return Object.keys(dimSizes)
-        .sort()
-        .map((dimName) => {
-            const id =
-                scope.groupName === null
-                    ? `dim-slice-${joinId([dimName])}`
-                    : `group-dim-${scope.safeId}-${joinId([dimName])}`;
-            return /*html*/ `
-                <div class="plot-field dimension-slice-row">
-                    ${fieldLabel(id, dimName, `size ${dimSizes[dimName]}`)}
-                    <input type="text" id="${id}" class="dimension-slice-input" data-dimension="${escapeHtml(dimName)}"${groupAttr} placeholder="e.g. 0:24:2" />
-                </div>`;
-        })
-        .join('');
+    return renderDimensionSliceFields(dimSizes, scope.groupName, scope.safeId);
 }

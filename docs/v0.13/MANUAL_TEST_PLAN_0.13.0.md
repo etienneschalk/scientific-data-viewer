@@ -234,7 +234,7 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 
 ✅ The viewer opens (title mentions **Kerchunk (virtual Zarr) Data Viewer**). **Format:** `Kerchunk (virtual Zarr)`. Variables `pressure` and `temperature` are listed.
 
-2. Open **Global Plot Controls** and, under **Dimension slices**, type `0` for **time** (one time step; the full file is too big to plot within the time limit).
+2. Open **Global Plot Controls** and, under **Dimension slices**, type `0` in the **start** box of **time** (one time step; the full file is too big to plot within the time limit).
 3. Click **Create Plot** on **`temperature`**.
 
 ✅ A map appears within a few seconds. (This reads real data from `sample_data.nc`, next to the `.json` file.)
@@ -266,7 +266,7 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 1. Open **`hs-issue-0117.nc`** (if you don't have it, use `sample_data.nc4` and its variable `temperature`).
 2. Open the **Global Plot Controls** section.
-3. Under **Dimension slices**, type `0:6` for **time** (this keeps time steps 0 to 5).
+3. Under **Dimension slices**, type `0:6` in the **start** box of **time** (it fills start `0` and stop `6`: time steps 0 to 5).
 4. Under **Plot parameters → Facets**, set **col** to `time`.
 5. Under **col_wrap**, tick **auto**.
 
@@ -492,6 +492,28 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Same layout, without an extra box inside the group.
 
+### B27. Dimension slices: boxes and slider
+
+1. Open `sample_data.nc` → **Global Plot Controls** → **Dimension slices**.
+
+✅ Each dimension has three small boxes `start : stop : step` and a slider under them.
+
+2. Drag the right handle of the `time` slider to the left.
+
+✅ The **stop** box fills with a number and follows the handle.
+
+3. Type `1` in **start** and empty **stop**.
+
+✅ Both handles go to position 1 (one single time step).
+
+4. Paste `0:6:2` in **start**.
+
+✅ The three boxes show `0`, `6`, `2`.
+
+5. Click **Reset** next to **Dimension slices**.
+
+✅ The boxes are empty and the handles are back at both ends.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -593,6 +615,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B24 No plot type drop-down                 |        |       |
 | B25 Variable sections, Xarray Encoding     |        |       |
 | B26 Plot controls layout                   |        |       |
+| B27 Dimension slices boxes and slider      |        |       |
 | B26 Cancel one plot                        |        |       |
 | B27 Load time in local time                |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |

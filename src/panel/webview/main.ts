@@ -14,6 +14,7 @@ import {
     executeShowLogsCommand,
     executeShowSettingsCommand,
 } from './errors';
+import { handleDimensionSliceEvent } from './dimensionSlices';
 import { handleExportWebview } from './export';
 import {
     cancelVariablePlot,
@@ -233,9 +234,11 @@ function setupEventListeners(): void {
             syncColWrapAutoCheckbox(target);
         }
         handleTimeControlEvent(target);
+        handleDimensionSliceEvent(target);
     });
     document.addEventListener('input', (event) => {
         handleTimeControlEvent(event.target);
+        handleDimensionSliceEvent(event.target);
     });
 }
 

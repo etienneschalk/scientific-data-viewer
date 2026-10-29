@@ -173,6 +173,15 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged |
 | Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                          |
 
+### Phase 14 — Dimension slice boxes and slider
+
+| Area     | Work                                                                                                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input |
+| Rules    | Start alone = index; handles together = index (`i:i+1:step` with a step); handles at both ends = no selection; handles can cross; stop excluded; negative = from the end    |
+| Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                              |
+| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated          |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -251,6 +260,8 @@ python scripts/architecture/generate.py --check  # diagrams still match the code
 Results after adding the local load time setting: `npm test` 300 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
 Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+Results after the dimension slice boxes and slider: `npm test` 305 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots (dark, light) and real mouse drags in headless Chromium.
 
 Results after the plot controls layout: `npm test` 301 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots of the global and group plot controls (dark, light, 420 px).
 
@@ -381,6 +392,7 @@ Xarray Encoding section:
 56. feat(webview): show the xarray encoding in its own collapsible sections
 57. feat(webview): show each group as a card with collapsible sections
 58. feat(webview): lay out the plot controls as aligned fields
+59. feat(webview): add start / stop / step boxes and a slider to dimension slices
 
 Cancel a single plot:
 

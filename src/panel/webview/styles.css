@@ -1238,6 +1238,130 @@ pre:not(.html-representation pre) {
     cursor: pointer;
 }
 
+/*
+ * Dimension slices: start : stop : step boxes joined into one control
+ * (rounded outer corners, colons in the gutters), then a two-handle slider.
+ */
+.plot-fields--slices {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.slice-boxes {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.slice-boxes > .slice-part {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    border-radius: 0;
+}
+
+.slice-boxes > .slice-part:first-child {
+    border-radius: var(--sdv-radius-sm) 0 0 var(--sdv-radius-sm);
+}
+
+.slice-boxes > .slice-part:last-child {
+    border-radius: 0 var(--sdv-radius-sm) var(--sdv-radius-sm) 0;
+}
+
+.slice-part:invalid {
+    border-color: var(
+        --vscode-inputValidation-errorBorder,
+        var(--vscode-errorForeground)
+    );
+}
+
+.slice-colon {
+    display: flex;
+    align-items: center;
+    padding: 0 3px;
+    font-family: var(--sdv-mono);
+    color: var(--vscode-descriptionForeground);
+}
+
+/* Rail (::before), selection between the handles (::after), two overlaid range inputs */
+.slice-range {
+    --sdv-thumb: 12px;
+    position: relative;
+    height: 16px;
+}
+
+.slice-range::before,
+.slice-range::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    height: 4px;
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.slice-range::before {
+    left: calc(var(--sdv-thumb) / 2);
+    right: calc(var(--sdv-thumb) / 2);
+    background-color: var(--sdv-border);
+}
+
+.slice-range::after {
+    left: calc(
+        var(--sdv-thumb) / 2 + (100% - var(--sdv-thumb)) * var(--slice-from)
+    );
+    right: calc(
+        var(--sdv-thumb) / 2 + (100% - var(--sdv-thumb)) *
+            (1 - var(--slice-to))
+    );
+    background-color: var(--vscode-button-background);
+}
+
+/* Only the thumbs take the pointer, so both handles stay reachable */
+.slice-range-handle {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slice-range-handle:focus {
+    outline: none;
+}
+
+.slice-range-handle::-webkit-slider-runnable-track {
+    height: 16px;
+    background: transparent;
+}
+
+.slice-range-handle::-webkit-slider-thumb {
+    width: var(--sdv-thumb);
+    height: var(--sdv-thumb);
+    margin-top: 2px;
+    background-color: var(--vscode-button-background);
+    border: 2px solid var(--vscode-editor-background);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--vscode-button-background);
+    cursor: grab;
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slice-range-handle:active::-webkit-slider-thumb {
+    cursor: grabbing;
+}
+
+.slice-range-handle:focus-visible::-webkit-slider-thumb {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
 /* Outline navigation target */
 .highlighted {
     background-color: var(--sdv-highlight);

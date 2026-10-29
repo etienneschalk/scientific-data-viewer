@@ -614,6 +614,93 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(request.payload.datetimeVariableName, undefined);
     });
 
+    suite('dimension slices: start / stop / step boxes and slider', () => {
+        // Global field of `time` (size 3, indices 0..2)
+        const field = () => {
+            const doc = harness.document;
+            const id = 'dim-slice-time';
+            return {
+                start: doc.getElementById(id),
+                stop: doc.getElementById(`${id}-stop`),
+                step: doc.getElementById(`${id}-step`),
+                from: doc.getElementById(`${id}-from`),
+                to: doc.getElementById(`${id}-to`),
+            };
+        };
+        const boxes = () =>
+            ['start', 'stop', 'step'].map(
+                (part) => (field() as any)[part].value,
+            );
+        const handles = () => [field().from.value, field().to.value];
+        const sentSlices = () => {
+            harness.click(
+                harness
+                    .plotControls('/temperature')
+                    .querySelector('[data-action="create-plot"]'),
+            );
+            const requests = harness.requests('createPlot');
+            return requests[requests.length - 1].payload.dimensionSlices;
+        };
+
+        setup(() => harness.loadData(sampleDataInfo()));
+
+        test('a typed or pasted slice is spread over the boxes', () => {
+            harness.setValue(field().start, '0:3:2', 'input');
+            assert.deepStrictEqual(boxes(), ['0', '3', '2']);
+            assert.strictEqual(harness.document.activeElement, field().step);
+            assert.deepStrictEqual(sentSlices(), { time: '0:3:2' });
+        });
+
+        test('start alone is an index; boxes move the slider', () => {
+            harness.setValue(field().start, '1', 'input');
+            assert.deepStrictEqual(handles(), ['1', '1']);
+            assert.deepStrictEqual(sentSlices(), { time: 1 });
+
+            harness.setValue(field().stop, '3', 'input');
+            assert.deepStrictEqual(handles(), ['1', '2'], 'stop is excluded');
+            harness.setValue(field().start, '-2', 'input');
+            assert.deepStrictEqual(
+                handles(),
+                ['1', '2'],
+                'counted from the end',
+            );
+        });
+
+        test('the slider fills start and stop, never the step', () => {
+            harness.setValue(field().step, '2', 'input');
+            harness.setValue(field().to, '1', 'input');
+            assert.deepStrictEqual(boxes(), ['0', '2', '2']);
+
+            // Handles can cross: the selection is lower..higher
+            harness.setValue(field().from, '2', 'input');
+            assert.deepStrictEqual(boxes(), ['1', '3', '2']);
+
+            // Together with a step: a one-element slice
+            harness.setValue(field().to, '2', 'input');
+            assert.deepStrictEqual(boxes(), ['2', '3', '2']);
+
+            // Together without a step: an index
+            harness.setValue(field().step, '', 'input');
+            harness.setValue(field().to, '2', 'input');
+            assert.deepStrictEqual(boxes(), ['2', '', '']);
+            assert.deepStrictEqual(sentSlices(), { time: 2 });
+
+            // Whole dimension: no selection
+            harness.setValue(field().from, '0', 'input');
+            assert.deepStrictEqual(boxes(), ['', '', '']);
+            assert.strictEqual(sentSlices(), undefined, 'dropped when empty');
+        });
+
+        test('Reset clears the boxes and the slider', () => {
+            harness.setValue(field().start, '1:2', 'input');
+            harness.click(
+                harness.document.getElementById('clearDimensionSlicesButton'),
+            );
+            assert.deepStrictEqual(boxes(), ['', '', '']);
+            assert.deepStrictEqual(handles(), ['0', '2']);
+        });
+    });
+
     test('each Reset button clears its own block', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;
