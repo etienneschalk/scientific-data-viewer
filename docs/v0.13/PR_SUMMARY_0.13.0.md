@@ -198,50 +198,63 @@ python python/create_sample_data.py --overwrite   # from the repository root
 
 ## Commits (oldest → newest)
 
-1. `e581e1e` — docs: plan v0.13 technology updates
-2. `ccd8b41` — feat: drop stale Sentinel-1 SAFE support claims
-3. `994013d` — feat: require zarr 3 and pin the xarray 2026 stack
-4. `21a277d` — feat: detect Zarr stores that are not named *.zarr
-5. `44f2465` — feat: identify Zarr codecs and format version in metadata
-6. `82e8925` — feat: open Zarr stores packaged as ZIP archives
-7. `3db54b1` — feat: support xarray col_wrap=auto in plot controls
-8. `76a15bf` — feat: add NetCDF engine order, HDF5 filters, and inherited DataTree coords
-9. `7960d27` — feat: open Kerchunk virtual Zarr references experimentally
-10. `bc1cb5e` — feat: label Cloud Optimized GeoTIFF files in file info
-11. `6acf9cb` — feat: add facetgridFigsize setting for faceted xarray plots
-12. `ad77254` — chore: release v0.13.0 with changelog and release notes
-13. `4fdd8d0` — feat: add v0.13 sample data generators for new formats
-14. `0d885bf` — docs: complete v0.13.0 release and MR documentation
+1. docs: plan v0.13 technology updates
+2. feat: drop stale Sentinel-1 SAFE support claims
+3. feat: require zarr 3 and pin the xarray 2026 stack
+4. feat: detect Zarr stores that are not named *.zarr
+5. feat: identify Zarr codecs and format version in metadata
+6. feat: open Zarr stores packaged as ZIP archives
+7. feat: support xarray col_wrap=auto in plot controls
+8. feat: add NetCDF engine order, HDF5 filters, and inherited DataTree coords
+9. feat: open Kerchunk virtual Zarr references experimentally
+10. feat: label Cloud Optimized GeoTIFF files in file info
+11. feat: add facetgridFigsize setting for faceted xarray plots
+12. chore: release v0.13.0 with changelog and release notes
+13. feat: add v0.13 sample data generators for new formats
+14. docs: complete v0.13.0 release and MR documentation
 
-Backend restructuring (branch `eschalk/backend-package`):
+Backend restructuring:
 
-15. `cb4ad47` — test: add golden snapshot harness for Python backend refactoring
-16. `104e1c3` — refactor: split get_data_info.py into the sdv_backend package
-17. `f7a6001` — fix: return a JSON error instead of crashing on unsupported plot types
-18. `89d0808` — refactor: decompose create_plot into a selection/render pipeline
-19. `ebaef98` — refactor: decompose get_file_info and the CLI; share OpenedData
-20. `b7b38c5` — docs: describe the sdv_backend package layout
-21. `81c482f` — fix: explain empty plot selections instead of failing in xarray
-22. `0b083ee` — refactor: make helpers shared across backend modules public
-23. `6fcaef2` — refactor: split create_sample_data.py into the sample_data package
-24. `e375411` — fix(sample-data): write sample_data.geotiff with an explicit GTiff driver
-25. `02d6246` — docs: mention the sample_data package
-26. `d2a6211` — feat(sample-data): reproducible generation; table-driven main
-27. `f0a8ff7` — test: cover v0.13 sample formats in the golden snapshot harness
-28. `111d674` — feat(sample-data): add --overwrite and --disposable flags
-29. `c4bb9c5` — docs: add CLAUDE.md with project commands and architecture
-30. `99102d9` — docs: document the backend restructuring in the v0.13.0 release docs
-31. `02b2917` — fix: resolve relative Kerchunk reference paths from the reference folder
-32. `dfda52d` — docs: add a step-by-step manual test plan for v0.13.0
-33. `0d29f49` — chore: make all GitHub issue template fields optional
-34. `5f06197` — feat: update the extension's uv environment automatically on new versions
-35. `bbf2623` — docs: update the v0.13.0 manual test plan
-36. `753c93e` — chore: say all fields are optional in the question issue form intro
+15. test: add golden snapshot harness for Python backend refactoring
+16. refactor: split get_data_info.py into the sdv_backend package
+17. fix: return a JSON error instead of crashing on unsupported plot types
+18. refactor: decompose create_plot into a selection/render pipeline
+19. refactor: decompose get_file_info and the CLI; share OpenedData
+20. docs: describe the sdv_backend package layout
+21. fix: explain empty plot selections instead of failing in xarray
+22. refactor: make helpers shared across backend modules public
+23. refactor: split create_sample_data.py into the sample_data package
+24. fix(sample-data): write sample_data.geotiff with an explicit GTiff driver
+25. docs: mention the sample_data package
+26. feat(sample-data): reproducible generation; table-driven main
+27. test: cover v0.13 sample formats in the golden snapshot harness
+28. feat(sample-data): add --overwrite and --disposable flags
+29. docs: add CLAUDE.md with project commands and architecture
+30. docs: document the backend restructuring in the v0.13.0 release docs
+31. fix: resolve relative Kerchunk reference paths from the reference folder
+32. docs: add a step-by-step manual test plan for v0.13.0
+33. chore: make all GitHub issue template fields optional
+34. feat: update the extension's uv environment automatically on new versions
+35. docs: update the v0.13.0 manual test plan
+36. chore: say all fields are optional in the question issue form intro
 
 Code review pass (items in `docs/v0.13/CODE_REVIEW_TODO.md`):
 
-37. `285ba3b` — fix(backend): always return JSON errors, fix serialization and time handling
-38. `3c00c37` — fix(host): spawn without a shell, serialise Python init, clean up host code
-39. `ba507b8` — refactor(panel): simplify message bus and panel state; fix Kerchunk and save paths
-40. `62559ae` — refactor(webview): TypeScript modules bundled with esbuild; escape data, add CSP
-41. `fa4a32d` — docs: document the code review pass for v0.13.0
+37. fix(backend): always return JSON errors, fix serialization and time handling
+38. fix(host): spawn without a shell, serialise Python init, clean up host code
+39. refactor(panel): simplify message bus and panel state; fix Kerchunk and save paths
+40. refactor(webview): TypeScript modules bundled with esbuild; escape data, add CSP
+41. docs: document the code review pass for v0.13.0
+42. docs: list the code review commits in the v0.13.0 PR summary
+43. fix(env): pin eccodeslib<2.48 to stop a crash at exit with pyproj
+44. chore(vscode): run the compile task with nvm's Node
+45. chmoding ensure.sh
+
+Upgrade safety (v0.12 → v0.13):
+
+46. feat(env): delete and rebuild the uv environment when a version needs it
+47. fix(backend): explain when xarray is too old instead of crashing
+48. test: add an upgrade test running v0.12 -> v0.13 in a sandbox profile
+49. docs: add the v0.13 getting-started hub and upgrade test plan
+50. docs: fix stale developer docs
+51. docs: list the upgrade-safety commits in the v0.13.0 PR summary
