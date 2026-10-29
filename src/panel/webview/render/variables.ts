@@ -84,8 +84,7 @@ export function renderAttributesTree(
             const { valueStr, displayStr } = attributeValueStrings(value);
             return /*html*/ `
                 <div class="attribute-item" id="${nodeId}">
-                    <span class="attribute-name" title="${safeKey}">${safeKey}</span>
-                    <span> : </span>
+                    <span class="attribute-name" title="${safeKey}">${safeKey} : </span>
                     <span class="attribute-value muted-text" title="${escapeHtml(valueStr)}">${escapeHtml(displayStr)}</span>
                 </div>`;
         })

@@ -282,6 +282,14 @@ suite('Webview script (jsdom)', () => {
         );
         assert.ok(root.querySelector('details.attributes-tree-node'));
         assert.ok(root.textContent.includes(EVIL));
+        // The colon sits in the name column, as in the flat rows
+        const names = root.querySelectorAll(
+            '.attribute-item > .attribute-name',
+        );
+        assert.ok(names.length > 0);
+        for (const name of names) {
+            assert.ok(name.textContent.endsWith(' : '), name.textContent);
+        }
         assert.strictEqual(
             harness.document.querySelectorAll('#content img').length,
             0,

@@ -129,6 +129,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `src/panel/webview/styles.css`
   - **Tests**: manual (release notes step 21.12)
 
+- **Colon of group attributes placed next to the value**: with the nested attributes view, the group **Attributes** section drew the `:` after the 180 px name column, so it sat next to the value, while variable attributes and every Xarray Encoding section put it right after the name. The tree now renders the colon inside the name, like the flat rows.
+  - **Files**: `src/panel/webview/render/variables.ts`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts` (renders nested attributes as a tree)
+
 - **xarray older than 2024.10 ended in an `AttributeError`**: with an old xarray in the selected interpreter (Python extension or override), the backend crashed while importing (`module 'xarray' has no attribute 'DataTree'`; v0.12 crashed the same way). It now prints a JSON error the extension shows: the xarray version found, the minimum (2024.10, 2026.4+ recommended) and the `pip install -U "xarray>=2026.4.0" "zarr>=3"` command. Checked against v0.12.1 with xarray 2024.6 (both crash before, message now) and xarray 2025.1 / zarr 2 (NetCDF, HDF5 and plots work in both; Zarr v3 stores now say `zarr>=3` is missing instead of a `FileNotFoundError`).
   - **Files**: `python/sdv_backend/_bootstrap.py`
   - **Tests**: `python/tests/test_cli_errors.py`

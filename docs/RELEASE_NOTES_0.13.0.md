@@ -632,6 +632,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Explorer → Data Structure: expand a variable → **Xarray Encoding (n)**; click an entry → the viewer opens the card and the section and highlights the line.
 7. Set `"scientificDataViewer.showXarrayEncodingAttributes": false`, **Refresh** → no Xarray Encoding section (groups, coordinates, variables, outline); attributes unchanged.
 8. Export the webview → open the HTML in a browser → sections open / closed as at export time, and they still collapse.
+9. Expand the group **Attributes** section → each `:` sits right after the attribute name, as in a variable's **Attributes** and in the **Xarray Encoding** sections (it used to sit next to the value).
 
 ### 25. Cancel a single plot
 

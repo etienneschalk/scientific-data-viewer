@@ -139,6 +139,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Webview  | Group **Xarray Encoding** section (collapsed); entry-count badges on group and variable section headers; creating a plot opens its card and Plot section                                                                                                             |
 | Outline  | **Xarray Encoding (n)** under groups, coordinates, variables (webview ids `…___encoding`, `…___encoding-entry___<key>`); coordinate / variable branches share one helper                                                                                             |
 | Styles   | Pane-header style for card sections, contents aligned with section titles; the last `:has()` rule (plot-controls corner radius) is gone                                                                                                                              |
+| Fix      | Group **Attributes** (nested view): `:` right after the name like the other attribute / encoding rows, not next to the value                                                                                                                                         |
 | Settings | `showXarrayEncodingAttributes` keeps its key; description now refers to the encoding sections                                                                                                                                                                        |
 | Docs     | `documentation.json` / README; release notes § Xarray Encoding section and manual step §24; manual test plan B7–B9 and B25                                                                                                                                           |
 
@@ -359,3 +360,7 @@ Cancel a single plot:
 Scrollbar space:
 
 58. fix(webview): keep room for the scrollbar so content does not jump after loading
+
+Group attributes alignment:
+
+59. fix(webview): align the colon of group attributes with the other sections
