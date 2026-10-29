@@ -4,13 +4,19 @@ import { escapeHtml } from './util';
 type PlotParameterKind =
     'dimension' | 'bool' | 'int' | 'float' | 'text' | 'colWrap';
 
+/** Fieldsets of the plot parameters, in display order */
+const PLOT_PARAMETER_GROUPS = ['Facets', 'Axes', 'Color', 'Figure'] as const;
+type PlotParameterGroup = (typeof PLOT_PARAMETER_GROUPS)[number];
+
 export interface PlotParameter {
     /** createPlot payload field */
     key: string;
     label: string;
+    /** Short help shown after the label (the full help is in `title`) */
+    hint?: string;
     kind: PlotParameterKind;
-    /** Row of the rendered controls */
-    row: number;
+    /** Fieldset the control is shown in */
+    group: PlotParameterGroup;
     /** Element id in the Global Plot Controls */
     id: string;
     /** Element id prefix in a Group Plot Controls block (`-<safe group id>` appended) */
@@ -22,7 +28,6 @@ export interface PlotParameter {
     min?: number;
     /** Reject values <= 0 (float) */
     positive?: boolean;
-    width?: 'narrow' | 'small' | 'medium' | 'wide';
     placeholder?: string;
     /** colWrap only: the "auto" checkbox */
     autoId?: string;
@@ -32,15 +37,16 @@ export interface PlotParameter {
 
 /**
  * Plot parameters shared by the Global Plot Controls and every Group Plot
- * Controls block. Each entry drives rendering, reading, resetting and merging.
- * `id` / `groupId` keep the historical element ids.
+ * Controls block, in display order. Each entry drives rendering, reading,
+ * resetting and merging. `id` / `groupId` keep the historical element ids.
  */
 export const PLOT_PARAMETERS: PlotParameter[] = [
     {
         key: 'facetRow',
         label: 'row',
+        hint: 'facets',
         kind: 'dimension',
-        row: 0,
+        group: 'Facets',
         id: 'facetRowSelect',
         groupId: 'group-facet-row',
         title: 'xarray row: dimension to facet along rows',
@@ -48,8 +54,9 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
     {
         key: 'facetCol',
         label: 'col',
+        hint: 'facets',
         kind: 'dimension',
-        row: 0,
+        group: 'Facets',
         id: 'facetColSelect',
         groupId: 'group-facet-col',
         title: 'xarray col: dimension to facet along columns',
@@ -57,14 +64,14 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
     {
         key: 'colWrap',
         label: 'col_wrap',
+        hint: 'max columns',
         kind: 'colWrap',
         min: 1,
-        row: 0,
+        group: 'Facets',
         id: 'plotColWrapInput',
         groupId: 'group-plot-col-wrap',
         autoId: 'plotColWrapAutoCheckbox',
         groupAutoId: 'group-plot-col-wrap-auto',
-        width: 'narrow',
         placeholder: 'e.g. 4',
         title: 'xarray col_wrap: max columns in faceted grid (positive integer)',
         autoTitle:
@@ -74,7 +81,7 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         key: 'plotX',
         label: 'x',
         kind: 'dimension',
-        row: 1,
+        group: 'Axes',
         id: 'plotXSelect',
         groupId: 'group-plot-x',
         title: 'xarray x: dimension for the x-axis',
@@ -83,7 +90,7 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         key: 'plotY',
         label: 'y',
         kind: 'dimension',
-        row: 1,
+        group: 'Axes',
         id: 'plotYSelect',
         groupId: 'group-plot-y',
         title: 'xarray y: dimension for the y-axis',
@@ -91,8 +98,9 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
     {
         key: 'plotHue',
         label: 'hue',
+        hint: 'colors',
         kind: 'dimension',
-        row: 1,
+        group: 'Axes',
         id: 'plotHueSelect',
         groupId: 'group-plot-hue',
         title: 'xarray hue: dimension mapped to colors',
@@ -102,7 +110,7 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'xincrease',
         kind: 'bool',
         default: true,
-        row: 2,
+        group: 'Axes',
         id: 'xIncreaseCheckbox',
         groupId: 'group-x-increase',
         title: 'xarray xincrease (uncheck to reverse x-axis)',
@@ -112,17 +120,49 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'yincrease',
         kind: 'bool',
         default: true,
-        row: 2,
+        group: 'Axes',
         id: 'yIncreaseCheckbox',
         groupId: 'group-y-increase',
         title: 'xarray yincrease (uncheck to reverse y-axis)',
     },
     {
+        key: 'vmin',
+        label: 'vmin',
+        kind: 'float',
+        group: 'Color',
+        id: 'plotVminInput',
+        groupId: 'group-plot-vmin',
+        placeholder: 'auto',
+        title: 'Color scale minimum (float)',
+    },
+    {
+        key: 'vmax',
+        label: 'vmax',
+        kind: 'float',
+        group: 'Color',
+        id: 'plotVmaxInput',
+        groupId: 'group-plot-vmax',
+        placeholder: 'auto',
+        title: 'Color scale maximum (float)',
+    },
+    {
+        key: 'cmap',
+        label: 'cmap',
+        hint: 'colormap',
+        kind: 'text',
+        group: 'Color',
+        id: 'plotCmapInput',
+        groupId: 'group-plot-cmap',
+        placeholder: 'e.g. viridis',
+        title: 'Matplotlib colormap name (user must provide a valid existing cmap)',
+    },
+    {
         key: 'robust',
         label: 'robust',
+        hint: '2–98 %',
         kind: 'bool',
         default: false,
-        row: 2,
+        group: 'Color',
         id: 'robustCheckbox',
         groupId: 'group-robust',
         title: 'xarray robust: use 2nd/98th percentiles for color limits (helps with outliers)',
@@ -132,89 +172,56 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'add_colorbar',
         kind: 'bool',
         default: true,
-        row: 2,
+        group: 'Color',
         id: 'addColorbarCheckbox',
         groupId: 'group-add-colorbar',
         title: 'xarray add_colorbar (uncheck to hide colorbar when applicable)',
+    },
+    {
+        key: 'size',
+        label: 'size',
+        hint: 'height, in',
+        kind: 'float',
+        positive: true,
+        group: 'Figure',
+        id: 'plotSizeInput',
+        groupId: 'group-plot-size',
+        placeholder: 'e.g. 5',
+        title: 'xarray size in inches (fig height, float)',
+    },
+    {
+        key: 'aspect',
+        label: 'aspect',
+        hint: 'width / height',
+        kind: 'float',
+        positive: true,
+        group: 'Figure',
+        id: 'plotAspectInput',
+        groupId: 'group-plot-aspect',
+        placeholder: 'e.g. 1.5',
+        title: 'xarray aspect (fig width = aspect * size, float)',
+    },
+    {
+        key: 'bins',
+        label: 'bins',
+        hint: 'histogram',
+        kind: 'int',
+        min: 1,
+        group: 'Figure',
+        id: 'plotBinsInput',
+        groupId: 'group-bins',
+        placeholder: 'e.g. 100',
+        title: 'Number of bins for histogram-style plots',
     },
     {
         key: 'addLegend',
         label: 'add_legend',
         kind: 'bool',
         default: true,
-        row: 2,
+        group: 'Figure',
         id: 'addLegendCheckbox',
         groupId: 'group-add-legend',
         title: 'xarray add_legend (default on: typical xarray plot defaults; backend omits when unsafe for imshow)',
-    },
-    {
-        key: 'bins',
-        label: 'bins',
-        kind: 'int',
-        min: 1,
-        row: 3,
-        id: 'plotBinsInput',
-        groupId: 'group-bins',
-        width: 'small',
-        placeholder: 'e.g. 100',
-        title: 'Number of bins for histogram-style plots',
-    },
-    {
-        key: 'aspect',
-        label: 'aspect',
-        kind: 'float',
-        positive: true,
-        row: 3,
-        id: 'plotAspectInput',
-        groupId: 'group-plot-aspect',
-        width: 'medium',
-        placeholder: 'e.g. 1 or 1.5',
-        title: 'xarray aspect (fig width = aspect * size, float)',
-    },
-    {
-        key: 'size',
-        label: 'size',
-        kind: 'float',
-        positive: true,
-        row: 3,
-        id: 'plotSizeInput',
-        groupId: 'group-plot-size',
-        width: 'medium',
-        placeholder: 'e.g. 4 or 5.5',
-        title: 'xarray size in inches (fig height, float)',
-    },
-    {
-        key: 'vmin',
-        label: 'vmin',
-        kind: 'float',
-        row: 4,
-        id: 'plotVminInput',
-        groupId: 'group-plot-vmin',
-        width: 'small',
-        placeholder: 'optional',
-        title: 'Color scale minimum (float)',
-    },
-    {
-        key: 'vmax',
-        label: 'vmax',
-        kind: 'float',
-        row: 4,
-        id: 'plotVmaxInput',
-        groupId: 'group-plot-vmax',
-        width: 'small',
-        placeholder: 'optional',
-        title: 'Color scale maximum (float)',
-    },
-    {
-        key: 'cmap',
-        label: 'cmap',
-        kind: 'text',
-        row: 4,
-        id: 'plotCmapInput',
-        groupId: 'group-plot-cmap',
-        width: 'wide',
-        placeholder: 'e.g. viridis, plasma',
-        title: 'Matplotlib colormap name (user must provide a valid existing cmap)',
     },
 ];
 
@@ -273,7 +280,13 @@ function dimensionOptionsHtml(dimNames: string[]): string {
     );
 }
 
-function renderPlotParameter(
+/** Label of a field: the xarray name, then a short muted hint. */
+function fieldLabel(id: string, name: string, hint?: string): string {
+    return /*html*/ `<label for="${id}" class="plot-field-label"><span class="plot-field-name">${escapeHtml(name)}</span>${hint ? `<span class="plot-field-hint">${escapeHtml(hint)}</span>` : ''}</label>`;
+}
+
+/** Control of one parameter (the cell's second line). */
+function renderPlotParameterControl(
     scope: PlotScope,
     param: PlotParameter,
     dimNames: string[],
@@ -282,52 +295,52 @@ function renderPlotParameter(
     const groupAttr = groupAttribute(scope);
     const title = escapeHtml(param.title);
     const placeholder = escapeHtml(param.placeholder);
-    const widthClass = param.width ? ` plot-input--${param.width}` : '';
     switch (param.kind) {
         case 'dimension':
-            return /*html*/ `
-                <label for="${id}">${param.label}:</label>
-                <select id="${id}" class="facet-select" data-param="${param.key}"${groupAttr} title="${title}">
-                    ${dimensionOptionsHtml(dimNames)}
-                </select>`;
+            return /*html*/ `<select id="${id}" class="facet-select" data-param="${param.key}"${groupAttr} title="${title}">${dimensionOptionsHtml(dimNames)}</select>`;
         case 'bool':
-            return /*html*/ `
-                <label for="${id}" class="plot-checkbox-label">${param.label}:</label>
-                <input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${groupAttr}${param.default ? ' checked' : ''} title="${title}" />`;
+            return /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${groupAttr}${param.default ? ' checked' : ''} title="${title}" /></span>`;
         case 'colWrap': {
             const autoId = plotParamElementId(scope, param, 'auto');
             return /*html*/ `
-                <label for="${id}">${param.label}:</label>
-                <input type="number" id="${id}" class="plot-input${widthClass}" min="1" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />
-                <label for="${autoId}" class="plot-checkbox-label">auto</label>
-                <input type="checkbox" id="${autoId}" class="plot-checkbox plot-col-wrap-auto" data-param="${param.key}Auto"${groupAttr} title="${escapeHtml(param.autoTitle)}" />`;
+                <span class="plot-field-pair">
+                    <input type="number" id="${id}" class="plot-input" min="1" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />
+                    <label for="${autoId}" class="plot-inline-check" title="${escapeHtml(param.autoTitle)}"><input type="checkbox" id="${autoId}" class="plot-checkbox plot-col-wrap-auto" data-param="${param.key}Auto"${groupAttr} />auto</label>
+                </span>`;
         }
         case 'int':
-            return /*html*/ `
-                <label for="${id}">${param.label}:</label>
-                <input type="number" id="${id}" class="plot-input${widthClass}"${param.min !== undefined ? ` min="${param.min}"` : ''} data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
+            return /*html*/ `<input type="number" id="${id}" class="plot-input"${param.min !== undefined ? ` min="${param.min}"` : ''} data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
         default:
             // float and text
-            return /*html*/ `
-                <label for="${id}">${param.label}:</label>
-                <input type="text" id="${id}" class="plot-input${widthClass}" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
+            return /*html*/ `<input type="text" id="${id}" class="plot-input" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
     }
 }
 
-/** HTML of every plot-parameter row of a scope. */
+/**
+ * HTML of the plot parameters of a scope: one fieldset per group (Facets,
+ * Axes...), each parameter a cell (name above, control below) of a grid
+ * whose columns line up across fieldsets.
+ */
 export function renderPlotParameters(
     scope: PlotScope,
     dimNames: string[],
 ): string {
-    const rows: string[] = [];
-    for (const param of PLOT_PARAMETERS) {
-        rows[param.row] =
-            (rows[param.row] ?? '') +
-            renderPlotParameter(scope, param, dimNames);
-    }
-    return rows
-        .map((html) => `<div class="dimension-slices-row">${html}</div>`)
-        .join('');
+    return PLOT_PARAMETER_GROUPS.map((group) => {
+        const cells = PLOT_PARAMETERS.filter((param) => param.group === group)
+            .map(
+                (param) => /*html*/ `
+                    <div class="plot-field" title="${escapeHtml(param.title)}">
+                        ${fieldLabel(plotParamElementId(scope, param), param.label, param.hint)}
+                        ${renderPlotParameterControl(scope, param, dimNames)}
+                    </div>`,
+            )
+            .join('');
+        return /*html*/ `
+                <div class="plot-fieldset">
+                    <div class="plot-fieldset-caption">${group}</div>
+                    <div class="plot-fields">${cells}</div>
+                </div>`;
+    }).join('');
 }
 
 /** Replace the options of every dimension select under `root`, keeping valid selections. */
@@ -514,9 +527,9 @@ export function renderDimensionSliceInputs(
                     ? `dim-slice-${joinId([dimName])}`
                     : `group-dim-${scope.safeId}-${joinId([dimName])}`;
             return /*html*/ `
-                <div class="dimension-slice-row">
-                    <label for="${id}">${escapeHtml(dimName)} (${escapeHtml(dimSizes[dimName])}):</label>
-                    <input type="text" id="${id}" class="dimension-slice-input" data-dimension="${escapeHtml(dimName)}"${groupAttr} placeholder="e.g. 0:24:2 or 130" />
+                <div class="plot-field dimension-slice-row">
+                    ${fieldLabel(id, dimName, `size ${dimSizes[dimName]}`)}
+                    <input type="text" id="${id}" class="dimension-slice-input" data-dimension="${escapeHtml(dimName)}"${groupAttr} placeholder="e.g. 0:24:2" />
                 </div>`;
         })
         .join('');

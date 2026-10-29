@@ -173,8 +173,9 @@ const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
             clearTimeControls(section);
         }
     },
+    // Resets the block of the button: dimension slices or plot parameters
     'clear-plot-controls': (element) => {
-        const section = element.closest('.dimension-slices-section');
+        const section = element.closest('.plot-controls-subsection');
         if (section) {
             resetPlotControls(section);
         }

@@ -614,14 +614,20 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(request.payload.datetimeVariableName, undefined);
     });
 
-    test('clear buttons reset global plot parameters', () => {
+    test('each Reset button clears its own block', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;
         harness.setValue(doc.getElementById('plotBinsInput'), '20');
         doc.getElementById('robustCheckbox').checked = true;
         doc.getElementById('plotColWrapAutoCheckbox').checked = true;
+        harness.setValue(doc.getElementById('dim-slice-lat'), '0:1');
 
         harness.click(doc.getElementById('clearDimensionSlicesButton'));
+
+        assert.strictEqual(doc.getElementById('dim-slice-lat').value, '');
+        assert.strictEqual(doc.getElementById('plotBinsInput').value, '20');
+
+        harness.click(doc.getElementById('clearPlotParametersButton'));
 
         assert.strictEqual(doc.getElementById('plotBinsInput').value, '');
         assert.strictEqual(doc.getElementById('robustCheckbox').checked, false);

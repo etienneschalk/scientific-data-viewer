@@ -1076,141 +1076,166 @@ pre:not(.html-representation pre) {
     word-break: break-word;
 }
 
-/* Global and group plot control panels */
-.time-controls-section,
-.dimension-slices-section {
-    margin-top: 16px;
-    padding: 16px;
+/*
+ * Plot controls (Global Plot Controls card, Group Plot Controls section):
+ * blocks (Time range, Dimension slices, Plot parameters) divided by
+ * hairlines, each a heading row with its Reset button, a one-line hint and a
+ * grid of fields (name above, control below) whose columns line up across
+ * blocks and fieldsets.
+ */
+.plot-controls-card {
+    margin-top: 12px;
+    padding: 0 16px;
     background-color: var(--sdv-surface);
     border: 1px solid var(--sdv-border);
     border-radius: var(--sdv-radius-lg);
 }
 
-.group-plot-controls-content {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+/* Clips the hairline above the first visible block (blocks hide themselves) */
+.plot-controls-content {
+    clip-path: inset(1px -8px -8px -8px);
 }
 
-/* In a group card the panels are plain blocks of the section */
-.group-plot-controls-content > .group-plot-controls {
-    margin-top: 0;
-    padding: 0;
-    background-color: transparent;
-    border: none;
-    border-radius: 0;
-}
-
-.group-plot-controls-content > .group-plot-controls + .group-plot-controls {
-    padding-top: 12px;
-    border-top: 1px solid var(--sdv-border);
-}
-
-.time-controls-section h4 {
-    margin-bottom: 12px;
+.group-section > .plot-controls-content {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .plot-controls-subsection {
-    margin-top: 20px;
+    padding: 12px 0 14px;
+    border-top: 1px solid var(--sdv-border);
 }
 
-.plot-controls-subsection:first-of-type {
-    margin-top: 0;
+.plot-controls-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
 }
 
 .plot-controls-subsection-title {
-    font-size: 1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--vscode-foreground);
-    margin-bottom: 4px;
+}
+
+.plot-controls-subsection-title code {
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.plot-reset-button {
+    margin-left: auto;
+    min-height: 0;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    background-color: transparent;
+    border-color: var(--sdv-border);
+}
+
+.plot-reset-button:hover:not(:disabled) {
+    color: var(--vscode-foreground);
+    background-color: var(--sdv-surface-hover);
 }
 
 .dimension-slices-hint {
-    font-size: 0.92em;
-    color: var(--vscode-descriptionForeground);
     margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
 }
 
-.time-controls-row,
-.dimension-slice-row {
+/* Fieldsets of the plot parameters (Facets, Axes...): caption and hairline */
+.plot-fieldset + .plot-fieldset {
+    margin-top: 14px;
+}
+
+.plot-fieldset-caption {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 8px 12px;
+    gap: 8px;
     margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
 }
 
-.time-controls-row:last-child {
-    margin-bottom: 0;
-}
-
-.time-controls-row label,
-.dimension-slice-row label {
-    min-width: 160px;
-}
-
-.dimension-slice-row input {
+.plot-fieldset-caption::after {
+    content: '';
     flex: 1;
-    max-width: 220px;
+    border-top: 1px solid var(--sdv-border);
 }
 
-.datetime-variable-select,
-.datetime-input,
-.datetime-text-input {
-    flex: 1;
+/* Same column tracks everywhere, so fields line up across fieldsets */
+.plot-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px 16px;
+}
+
+.plot-fields--time {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.plot-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     min-width: 0;
 }
 
-.dimension-slices-facets {
+.plot-field-label {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 0 0 16px;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
 }
 
-.dimension-slices-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-}
-
-.dimension-slices-row label {
+.plot-field-name {
+    font-family: var(--sdv-mono);
+    font-size: 12px;
+    font-weight: 600;
     color: var(--vscode-foreground);
 }
 
-/* Extra space between parameters, not between a field and its "auto" box */
-.dimension-slices-row label:not(:first-child) {
-    margin-left: 8px;
+/* Time fields are not xarray names */
+.plot-fields--time .plot-field-name {
+    font-family: inherit;
 }
 
-.dimension-slices-row input[type='number'] + .plot-checkbox-label {
-    margin-left: 0;
+.plot-field-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
 }
 
-.dimension-slices-facets .plot-input--narrow {
-    width: 4em;
-    max-width: 100px;
+.plot-field > select,
+.plot-field > input:not([type='checkbox']),
+.plot-field-pair > .plot-input {
+    width: 100%;
+    min-width: 0;
 }
 
-.dimension-slices-facets .plot-input--small {
-    width: 6em;
-    max-width: 140px;
+.plot-field-check,
+.plot-field-pair {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--sdv-control-height);
 }
 
-.dimension-slices-facets .plot-input--medium {
-    width: 8em;
-    max-width: 160px;
-}
-
-.dimension-slices-facets .plot-input--wide {
-    width: 12em;
-    max-width: 210px;
-}
-
-.dimension-slices-section > .time-controls-row {
-    margin-top: 16px;
-    margin-bottom: 0;
+.plot-inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 /* Outline navigation target */
@@ -1244,10 +1269,8 @@ pre:not(.html-representation pre) {
         --sdv-section-content-indent: 12px;
     }
 
-    .time-controls-row label,
-    .dimension-slice-row label {
-        min-width: 0;
-        width: 100%;
+    .plot-fields {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 
     .variable-summary .variable-name,

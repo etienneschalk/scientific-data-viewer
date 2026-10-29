@@ -347,29 +347,35 @@ function renderGroupPlotControls(
         groupName,
     ]);
 
+    const heading = (title: string, action: string, help: string) => /*html*/ `
+                        <div class="plot-controls-heading">
+                            <h5 class="plot-controls-subsection-title">${title}</h5>
+                            <button type="button" class="plot-reset-button" data-action="${action}" title="${help}">Reset</button>
+                        </div>`;
+    const timeField = (role: 'start' | 'end', label: string) => /*html*/ `
+                            <div class="plot-field">
+                                <label for="group-${role}-datetime-${safeId}" class="plot-field-label"><span class="plot-field-name">${label}</span></label>
+                                <input type="datetime-local" id="group-${role}-datetime-${safeId}" class="datetime-input" data-time="${role}" ${groupAttr} />
+                                <input type="text" id="group-${role}-datetime-text-${safeId}" class="datetime-text-input" data-time="${role}-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="${label} (text)" ${groupAttr} />
+                            </div>`;
+
     const timeControlsHtml =
         flags.groupTimeControls && timeVars.length > 0
             ? /*html*/ `
                 <div class="group-plot-controls time-controls-section">
-                    <h4>Group Time Controls</h4>
-                    <div class="time-controls-row">
-                        <label for="group-datetime-select-${safeId}">Datetime variable:</label>
-                        <select id="group-datetime-select-${safeId}" class="datetime-variable-select" data-time="variable" ${groupAttr}>
-                            ${datetimeOptionsHtml('Select...', timeVars)}
-                        </select>
-                    </div>
-                    <div class="time-controls-row">
-                        <label for="group-start-datetime-${safeId}">Start:</label>
-                        <input type="datetime-local" id="group-start-datetime-${safeId}" class="datetime-input" data-time="start" ${groupAttr} />
-                        <input type="text" id="group-start-datetime-text-${safeId}" class="datetime-text-input" data-time="start-text" placeholder="YYYY-MM-DD HH:MM:SS" ${groupAttr} />
-                    </div>
-                    <div class="time-controls-row">
-                        <label for="group-end-datetime-${safeId}">End:</label>
-                        <input type="datetime-local" id="group-end-datetime-${safeId}" class="datetime-input" data-time="end" ${groupAttr} />
-                        <input type="text" id="group-end-datetime-text-${safeId}" class="datetime-text-input" data-time="end-text" placeholder="YYYY-MM-DD HH:MM:SS" ${groupAttr} />
-                    </div>
-                    <div class="time-controls-row">
-                        <button type="button" class="plot-control-button" data-action="clear-time">Clear Time</button>
+                    <div class="plot-controls-subsection">
+                        ${heading('Time range', 'clear-time', 'Clear the time range')}
+                        <p class="dimension-slices-hint">Plot only the values between two dates of a datetime variable; overrides the global time range.</p>
+                        <div class="plot-fields plot-fields--time">
+                            <div class="plot-field">
+                                <label for="group-datetime-select-${safeId}" class="plot-field-label"><span class="plot-field-name">Datetime variable</span></label>
+                                <select id="group-datetime-select-${safeId}" class="datetime-variable-select" data-time="variable" ${groupAttr}>
+                                    ${datetimeOptionsHtml('Select...', timeVars)}
+                                </select>
+                            </div>
+                            ${timeField('start', 'Start')}
+                            ${timeField('end', 'End')}
+                        </div>
                     </div>
                 </div>`
             : '';
@@ -379,21 +385,18 @@ function renderGroupPlotControls(
             ? /*html*/ `
                 <div class="group-plot-controls dimension-slices-section">
                     <div class="plot-controls-subsection dimension-slices-isel">
-                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
-                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
-                        <div class="dimension-slices-container">
+                        ${heading('Dimension slices <code>isel</code>', 'clear-plot-controls', 'Clear the dimension slices')}
+                        <p class="dimension-slices-hint">An index (<code>130</code>) or a slice (<code>100:120</code>, <code>0:24:2</code>) per dimension, applied before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
+                        <div class="plot-fields dimension-slices-container">
                             ${renderDimensionSliceInputs(scope, groupDims)}
                         </div>
                     </div>
                     <div class="plot-controls-subsection plot-parameters">
-                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
-                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                        ${heading('Plot parameters <code>plot</code>', 'clear-plot-controls', 'Reset the plot parameters')}
+                        <p class="dimension-slices-hint">Override the global plot parameters for this group; empty fields use the global ones. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
                         <div class="dimension-slices-facets">
                             ${renderPlotParameters(scope, dimNames)}
                         </div>
-                    </div>
-                    <div class="time-controls-row">
-                        <button type="button" class="plot-control-button" data-action="clear-plot-controls">Clear Dimension Slices and Plot Parameters</button>
                     </div>
                 </div>`
             : '';
@@ -405,7 +408,7 @@ function renderGroupPlotControls(
     return renderGroupSection(
         joinId(['data-group', groupName, 'group-plot-controls']),
         'Group Plot Controls',
-        /*html*/ `<div class="group-plot-controls-content">${timeControlsHtml}${dimensionSlicesHtml}</div>`,
+        /*html*/ `<div class="plot-controls-content">${timeControlsHtml}${dimensionSlicesHtml}</div>`,
         { open: !!flags.isFirstRootGroup, plotGroup: groupName },
     );
 }

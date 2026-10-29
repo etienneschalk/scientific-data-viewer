@@ -234,7 +234,7 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 
 ✅ The viewer opens (title mentions **Kerchunk (virtual Zarr) Data Viewer**). **Format:** `Kerchunk (virtual Zarr)`. Variables `pressure` and `temperature` are listed.
 
-2. Open **Global Plot Controls** and, under **Dimension Slices (passed to isel)**, type `0` for **time** (one time step; the full file is too big to plot within the time limit).
+2. Open **Global Plot Controls** and, under **Dimension slices**, type `0` for **time** (one time step; the full file is too big to plot within the time limit).
 3. Click **Create Plot** on **`temperature`**.
 
 ✅ A map appears within a few seconds. (This reads real data from `sample_data.nc`, next to the `.json` file.)
@@ -266,9 +266,9 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 1. Open **`hs-issue-0117.nc`** (if you don't have it, use `sample_data.nc4` and its variable `temperature`).
 2. Open the **Global Plot Controls** section.
-3. Under **Dimension Slices (passed to isel)**, type `0:6` for **time** (this keeps time steps 0 to 5).
-4. Under **Plot Parameters (passed to plot)**, set **col:** to `time`.
-5. Next to **col_wrap:**, tick **auto**.
+3. Under **Dimension slices**, type `0:6` for **time** (this keeps time steps 0 to 5).
+4. Under **Plot parameters → Facets**, set **col** to `time`.
+5. Under **col_wrap**, tick **auto**.
 
 ✅ The number box next to col_wrap becomes greyed out.
 
@@ -293,16 +293,16 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 1. In settings add: `"scientificDataViewer.globalTimeControls": true,` → save → **Reload Window**.
 2. Open **`sample_data.netcdf`**.
-3. In **Time Controls**, choose `time` as the datetime variable, **Start Time** `2020-01-02`, **End Time** `2020-01-04`.
+3. In **Time range**, choose `time` as the **Datetime variable**, **Start** `2020-01-02`, **End** `2020-01-04`.
 4. **Create Plot** on **`precipitation`**.
 
 ✅ The error reads **"No data to plot: dimension(s) time are empty after selection. Check the time range …"** ❌ if it says `ZeroDivisionError`.
 
-5. Change to **Start Time** `2020-01-15`, **End Time** `2020-04-15`, **Create Plot**.
+5. Change to **Start** `2020-01-15`, **End** `2020-04-15`, **Create Plot**.
 
 ✅ A plot appears; its title mentions the start and end times.
 
-6. Click **Clear Time Controls**; remove the `globalTimeControls` line, save.
+6. Click **Reset** next to **Time range**; remove the `globalTimeControls` line, save.
 
 ### B18. Sentinel ".safe" is no longer offered
 
@@ -478,6 +478,20 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Local time again.
 
+### B26. Plot controls are easy to read
+
+1. Open `sample_data.nc`, open **Global Plot Controls**.
+
+✅ One box with up to three parts, each with a bold title and a **Reset** button on the right: **Time range** (only if turned on in settings), **Dimension slices**, **Plot parameters**. Under Plot parameters, the settings are sorted in four small groups (**Facets**, **Axes**, **Color**, **Figure**); each one shows its name above its box, and the boxes line up in columns from one group to the next.
+
+2. Type `0` in a dimension slice and `20` in **bins**, then click **Reset** next to **Dimension slices**.
+
+✅ Only the slice is cleared; `bins` stays. **Reset** next to **Plot parameters** clears `bins`.
+
+3. Open a group's **Group Plot Controls**.
+
+✅ Same layout, without an extra box inside the group.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -578,6 +592,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B23 Old xarray message (optional)          |        |       |
 | B24 No plot type drop-down                 |        |       |
 | B25 Variable sections, Xarray Encoding     |        |       |
+| B26 Plot controls layout                   |        |       |
 | B26 Cancel one plot                        |        |       |
 | B27 Load time in local time                |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |

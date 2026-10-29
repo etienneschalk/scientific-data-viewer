@@ -356,48 +356,58 @@ export class HTMLGenerator {
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
 
-                <!-- Time Controls Subsection -->
-                <div class="time-controls-section" style="display: none;">
-                    <h4>Time Controls</h4>
-                    <div class="time-controls-row">
-                        <label for="datetimeVariableSelect">Select Datetime Variable:</label>
-                        <select id="datetimeVariableSelect" class="datetime-variable-select" data-time="variable">
-                            <option value="">Select datetime variable...</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
+                <!-- One card: time range, dimension slices, plot parameters -->
+                <div class="plot-controls-card"><div class="plot-controls-content">
+                    <div class="time-controls-section" style="display: none;">
+                        <div class="plot-controls-subsection">
+                            <div class="plot-controls-heading">
+                                <h5 class="plot-controls-subsection-title">Time range</h5>
+                                <button type="button" id="clearTimeControlsButton" class="plot-reset-button" data-action="clear-time" title="Clear the time range">Reset</button>
+                            </div>
+                            <p class="dimension-slices-hint">Plot only the values between two dates of a datetime variable.</p>
+                            <div class="plot-fields plot-fields--time">
+                                <div class="plot-field">
+                                    <label for="datetimeVariableSelect" class="plot-field-label"><span class="plot-field-name">Datetime variable</span></label>
+                                    <select id="datetimeVariableSelect" class="datetime-variable-select" data-time="variable">
+                                        <option value="">Select datetime variable...</option>
+                                        <!-- Options will be populated dynamically -->
+                                    </select>
+                                </div>
+                                <div class="plot-field">
+                                    <label for="startDatetimeInput" class="plot-field-label"><span class="plot-field-name">Start</span></label>
+                                    <input type="datetime-local" id="startDatetimeInput" class="datetime-input" data-time="start" />
+                                    <input type="text" id="startDatetimeTextInput" class="datetime-text-input" data-time="start-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="Start (text)" />
+                                </div>
+                                <div class="plot-field">
+                                    <label for="endDatetimeInput" class="plot-field-label"><span class="plot-field-name">End</span></label>
+                                    <input type="datetime-local" id="endDatetimeInput" class="datetime-input" data-time="end" />
+                                    <input type="text" id="endDatetimeTextInput" class="datetime-text-input" data-time="end-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="End (text)" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="time-controls-row">
-                        <label for="startDatetimeInput">Start Time:</label>
-                        <input type="datetime-local" id="startDatetimeInput" class="datetime-input" data-time="start" />
-                        <input type="text" id="startDatetimeTextInput" class="datetime-text-input" data-time="start-text" placeholder="YYYY-MM-DD HH:MM:SS" />
-                    </div>
-                    <div class="time-controls-row">
-                        <label for="endDatetimeInput">End Time:</label>
-                        <input type="datetime-local" id="endDatetimeInput" class="datetime-input" data-time="end" />
-                        <input type="text" id="endDatetimeTextInput" class="datetime-text-input" data-time="end-text" placeholder="YYYY-MM-DD HH:MM:SS" />
-                    </div>
-                    <div class="time-controls-row">
-                        <button id="clearTimeControlsButton" class="plot-control-button" data-action="clear-time">Clear Time Controls</button>
-                    </div>
-                </div>
 
-                <!-- Dimension Slices (Issue #117) -->
-                <div class="dimension-slices-section" style="display: none;">
-                    <div class="plot-controls-subsection dimension-slices-isel">
-                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
-                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
-                        <div id="dimensionSlicesContainer"></div>
+                    <!-- Dimension Slices (Issue #117) and plot parameters -->
+                    <div class="dimension-slices-section" style="display: none;">
+                        <div class="plot-controls-subsection dimension-slices-isel">
+                            <div class="plot-controls-heading">
+                                <h5 class="plot-controls-subsection-title">Dimension slices <code>isel</code></h5>
+                                <button type="button" id="clearDimensionSlicesButton" class="plot-reset-button" data-action="clear-plot-controls" title="Clear the dimension slices">Reset</button>
+                            </div>
+                            <p class="dimension-slices-hint">An index (<code>130</code>) or a slice (<code>100:120</code>, <code>0:24:2</code>) per dimension, applied before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
+                            <div id="dimensionSlicesContainer" class="plot-fields"></div>
+                        </div>
+                        <div class="plot-controls-subsection plot-parameters">
+                            <div class="plot-controls-heading">
+                                <h5 class="plot-controls-subsection-title">Plot parameters <code>plot</code></h5>
+                                <button type="button" id="clearPlotParametersButton" class="plot-reset-button" data-action="clear-plot-controls" title="Reset the plot parameters">Reset</button>
+                            </div>
+                            <p class="dimension-slices-hint">Passed to the xarray plot call; empty fields keep xarray's defaults. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                            <!-- Rendered by the webview script from its plot-parameter table -->
+                            <div id="globalPlotParameters" class="dimension-slices-facets"></div>
+                        </div>
                     </div>
-                    <div class="plot-controls-subsection plot-parameters">
-                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
-                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
-                        <!-- Rendered by the webview script from its plot-parameter table -->
-                        <div id="globalPlotParameters" class="dimension-slices-facets"></div>
-                    </div>
-                    <div class="time-controls-row">
-                        <button id="clearDimensionSlicesButton" class="plot-control-button" data-action="clear-plot-controls">Clear Dimension Slices and Plot Parameters</button>
-                    </div>
-                </div>
+                </div></div>
             </details>
         </div>`;
     }

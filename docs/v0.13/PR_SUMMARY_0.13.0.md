@@ -163,6 +163,16 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Host    | `HTMLGenerator` placeholder uses the same formatter (`UIController.setHtml` passes the setting)                                         |
 | Docs    | `documentation.json` / README (Display settings); release notes § Load time in local time and manual step §26; manual test plan B27     |
 
+### Phase 13 — Plot controls layout
+
+| Area      | Work                                                                                                                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout    | Blocks Time range / Dimension slices `isel` / Plot parameters `plot`: one heading style, one-line hint, Reset per block, hairlines; global controls in one card   |
+| Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                          |
+| Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                   |
+| Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged |
+| Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                          |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -241,6 +251,8 @@ python scripts/architecture/generate.py --check  # diagrams still match the code
 Results after adding the local load time setting: `npm test` 300 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
 Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+Results after the plot controls layout: `npm test` 301 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots of the global and group plot controls (dark, light, 420 px).
 
 Results after turning groups into cards: `npm test` 301 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` checked (overview, plots, narrow; dark and light) plus a one-off scrolled capture for the sticky group header.
 
@@ -368,6 +380,7 @@ Xarray Encoding section:
 
 56. feat(webview): show the xarray encoding in its own collapsible sections
 57. feat(webview): show each group as a card with collapsible sections
+58. feat(webview): lay out the plot controls as aligned fields
 
 Cancel a single plot:
 

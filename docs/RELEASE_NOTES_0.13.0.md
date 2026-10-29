@@ -22,6 +22,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
 | **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
 | **Variables**         | Xarray encoding in its own collapsed section; variable and group cards with collapsible sections (see [§ Xarray Encoding](#xarray-encoding-section))                     |
+| **Plot controls**     | Aligned fields sorted in Facets / Axes / Color / Figure, one heading style, Reset per block (see [§ Plot controls layout](#plot-controls-layout))                        |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                            |
 
@@ -232,6 +233,27 @@ The **Loaded:** timestamp at the top right of the viewer was always in UTC (`202
 ### How it was checked
 
 - `npm test` (300 passing; new tests for the formatter, the webview with the setting on and off, `HTMLGenerator` and the `package.json` default), `npm run typecheck`, `generate.py --check`, pre-commit.
+
+---
+
+## Plot controls layout
+
+### Why
+
+The plot controls were hard to scan: each row was a flow of `label: input` pairs of different widths, so nothing lined up from one row to the next; the time controls, dimension slices and plot parameters used three heading styles; checkboxes came after their label; and the global controls stacked a box per panel.
+
+### What changed
+
+- **Blocks**: **Time range**, **Dimension slices** (`isel`) and **Plot parameters** (`plot`) share one heading style with a one-line hint and their own **Reset** button on the right, separated by hairlines. Global Plot Controls are one card; Group Plot Controls draw no box inside the group card.
+- **Fields**: each parameter shows its xarray name (editor font) with a short hint (`hue colors`, `robust 2–98 %`, `size height, in`), and its control below at full width. Fields sit in a grid whose columns line up across blocks; it falls back to two columns on narrow editors.
+- **Fieldsets**: plot parameters are sorted by meaning: **Facets** (row, col, col_wrap), **Axes** (x, y, hue, xincrease, yincrease), **Color** (vmin, vmax, cmap, robust, add_colorbar), **Figure** (size, aspect, bins, add_legend).
+- **Reset per block**: **Reset** next to Dimension slices clears only the slices (before, the single "Clear Dimension Slices and Plot Parameters" button cleared both); Plot parameters have their own Reset.
+- Nothing changes in what is sent to the backend; element ids are unchanged.
+
+### How it was checked
+
+- `npm test` (301 passing; new test: each Reset clears its own block), `npm run typecheck`, pre-commit.
+- Screenshots of the global and group plot controls (time controls turned on) in Dark Modern, Light Modern and at 420 px.
 
 ---
 
@@ -676,6 +698,18 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 1. Open any sample file → the top right shows `Loaded: <date>T<time>.<ms>+HH:MM` (or `-HH:MM`), with the time of your clock and your time zone offset (`+00:00` in UTC).
 2. Set `"scientificDataViewer.showLoadTimeInLocalTime": false` → **Refresh** (🔄) → `Loaded: …Z`, in UTC (same instant).
 3. Set it back to `true` (or remove it) → **Refresh** → local time again.
+
+### 25. Plot controls layout
+
+**Expect:** plot controls read as aligned fields in titled blocks.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → one card: **Dimension slices** and **Plot parameters** (and **Time range** with `globalTimeControls` on), each with a bold title, a hint and **Reset** on the right.
+2. Plot parameters show four captions (**Facets**, **Axes**, **Color**, **Figure**); every field has its name above its control, and the controls line up in columns across captions. Checkboxes sit in the same columns as the inputs.
+3. Type `0` in a dimension slice and `20` in **bins** → **Reset** of Dimension slices clears the slice only → **Reset** of Plot parameters clears `bins` and restores the default checkboxes.
+4. Expand a group → **Group Plot Controls** has the same layout, without a box of its own. A group value still overrides the global one (`bins` 10 in the group, 30 globally → the group's variable uses 10).
+5. Narrow the editor to ~400 px → two columns of fields, no horizontal scroll.
 
 ---
 
