@@ -135,6 +135,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
+- `.vsix` no longer ships `docs/` (48 contributor files): `.vscodeignore` excludes `docs/**` and `**/*.md` except `README.md` (`npx vsce ls`: 252 → 203 files)
 
 ---
 
@@ -317,3 +318,4 @@ Plot type selector:
 Architecture diagrams:
 
 53. feat(tooling): generate architecture diagrams from the code
+54. fix(package): stop shipping docs/ in the .vsix

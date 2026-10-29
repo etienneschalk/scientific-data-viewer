@@ -14,10 +14,12 @@ screenshots/**
 
 # Exclude documentation that's not needed in the package
 chats/**
-*.md
+# vsce matches "*.md" at the root only: "**/" excludes nested files too
+**/*.md
 !README.md
-# Architecture diagrams (scripts/architecture/generate.py), for contributors
-docs/architecture/**
+# Contributor docs, release notes, architecture diagrams: nothing reads them at
+# runtime, and vsce rewrites the README's relative links to the repository
+docs/**
 
 # Include media directory (for icons)
 !media/**

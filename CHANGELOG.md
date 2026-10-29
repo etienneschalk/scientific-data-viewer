@@ -188,6 +188,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **scipy-opened NetCDF3 files** fell into a broken fallback (scipy has no `open_datatree`); unknown extensions reported "Missing dependencies for Unknown files" instead of "Unsupported file format".
   - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/environment/engines.py`, `python/sdv_backend/info/extract.py`
   - **Tests**: `python/tests/test_opening.py`, `python/tests/test_cli_errors.py`
+- **Contributor docs shipped in the `.vsix`**: the `*.md` rule of `.vscodeignore` only matched files at the root (vsce does not match nested paths with it), so the 48 files of `docs/` (release notes since 0.3, PR summaries, planning docs, `documentation.json`) and `.pytest_cache/README.md` were packaged. `docs/` is now excluded and Markdown files are excluded at any depth; `README.md` stays. Nothing reads `docs/` at runtime, and vsce rewrites the README's relative links to the GitHub repository.
+  - **Files**: `.vscodeignore`
+  - **Tests**: `npx vsce ls` lists 203 files instead of 252: the 49 removed are `docs/**` and `.pytest_cache/README.md`, nothing else changes
 
 ### Security
 
