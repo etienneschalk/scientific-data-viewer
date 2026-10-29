@@ -239,11 +239,13 @@ Dimension Slices let you subset data by dimension index or slice before plotting
 
 - **Where to find it**: In the plot controls area, look for the **Dimension slices** block. Each dimension of the dataset (or group) has three boxes, **start : stop : step**, and a slider below them.
 - **Slice syntax** (Python-style, stop excluded):
-  - **Single index**: start only, e.g. `130` — use one position along that dimension.
+  - **Single index**: start with an empty stop, e.g. `130` — use one position along that dimension (a step is then ignored and shown struck through).
   - **Range**: start and stop, e.g. `100` : `120` — from index 100 up to (but not including) 120.
   - **Range with step**: e.g. `0` : `24` : `2` — from 0 to 24 in steps of 2 (e.g. every other time step).
-  - Typing or pasting a whole slice such as `0:24:2` in a box spreads it over the three boxes. Negative indices count from the end.
-- **Slider**: drag its two handles to set start and stop (the step is kept); the boxes follow, and typing in the boxes moves the handles. Put the handles on top of each other to select a single index; bring them back to both ends to clear the selection.
+  - Typing or pasting a whole slice such as `0:24:2` in a box spreads it over the three boxes. An open slice keeps its Python meaning: `5:` or `5::2` fills stop with the dimension size (to the end).
+  - **Negative indices** count from the end, as in Python (`-1` is the last one). The slider shows them at their positive position, and the box keeps what you typed until you drag its own handle.
+  - A stop at or before start selects nothing: the stop box is outlined in red. A negative step reverses the slice: the slider is then disabled (use the boxes).
+- **Slider**: drag its two handles to set start and stop (the step is kept); typing in the boxes moves the handles. Dragging one handle only changes its own box (both change when the handles cross). Put the handles on top of each other to select a single index; bring them back to both ends to clear the selection.
 - Slices are applied as xarray's `isel()` before plotting. Invalid slice strings produce a clear error. **Reset** next to the block title clears the slices.
 - **Plot parameters** are grouped below the slices, each with its xarray name above its control:
   - **Facets**: **row** / **col** choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels); **col_wrap** is an optional positive integer limiting the number of columns, or check **auto** to use xarray `col_wrap='auto'` (xarray 2026.04+).

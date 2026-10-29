@@ -175,12 +175,12 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 14 — Dimension slice boxes and slider
 
-| Area     | Work                                                                                                                                                                        |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input |
-| Rules    | Start alone = index; handles together = index (`i:i+1:step` with a step); handles at both ends = no selection; handles can cross; stop excluded; negative = from the end    |
-| Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                              |
-| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated          |
+| Area     | Work                                                                                                                                                                                                                                                                                                                                               |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input                                                                                                                                                                        |
+| Rules    | Start with empty stop = index (step ignored, struck through); one handle rewrites one box (a box keeps its text while its index is unchanged); crossing changes both; handles at both ends = no selection; `5::2` → stop = size; negative = from the end, kept until its handle moves; negative step disables the slider; empty selection outlined |
+| Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                                                                                                                                                                                                     |
+| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated                                                                                                                                                                                 |
 
 ### Sample data & docs
 

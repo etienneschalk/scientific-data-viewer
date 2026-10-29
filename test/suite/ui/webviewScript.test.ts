@@ -666,29 +666,84 @@ suite('Webview script (jsdom)', () => {
             );
         });
 
-        test('the slider fills start and stop, never the step', () => {
-            harness.setValue(field().step, '2', 'input');
+        test('moving one handle rewrites only its own box', () => {
             harness.setValue(field().to, '1', 'input');
-            assert.deepStrictEqual(boxes(), ['0', '2', '2']);
+            assert.deepStrictEqual(boxes(), ['', '2', ''], 'start untouched');
 
-            // Handles can cross: the selection is lower..higher
-            harness.setValue(field().from, '2', 'input');
-            assert.deepStrictEqual(boxes(), ['1', '3', '2']);
-
-            // Together with a step: a one-element slice
+            // A box keeps its text while its index does not change
+            harness.setValue(field().start, '-3', 'input');
             harness.setValue(field().to, '2', 'input');
-            assert.deepStrictEqual(boxes(), ['2', '3', '2']);
+            assert.deepStrictEqual(boxes(), ['-3', '3', '']);
+            harness.setValue(field().from, '1', 'input');
+            assert.deepStrictEqual(boxes(), ['1', '3', ''], 'stop untouched');
 
-            // Together without a step: an index
-            harness.setValue(field().step, '', 'input');
+            // Crossing swaps the roles: both boxes change
+            harness.setValue(field().to, '0', 'input');
+            assert.deepStrictEqual(
+                boxes(),
+                ['', '2', ''],
+                'start 0 is left empty',
+            );
+        });
+
+        test('handles together select an index, even with a step', () => {
+            harness.setValue(field().start, '0:3:2', 'input');
+            assert.deepStrictEqual(handles(), ['0', '2']);
+
+            harness.setValue(field().to, '0', 'input');
+            assert.deepStrictEqual(boxes(), ['0', '', '2'], 'stop emptied');
+            const row = field().start.closest('.dimension-slice-row');
+            assert.ok(row.classList.contains('slice-step-ignored'));
+            assert.deepStrictEqual(sentSlices(), { time: 0 });
+
+            // Apart again: a range, the step counts again
             harness.setValue(field().to, '2', 'input');
-            assert.deepStrictEqual(boxes(), ['2', '', '']);
-            assert.deepStrictEqual(sentSlices(), { time: 2 });
+            assert.deepStrictEqual(boxes(), ['0', '3', '2']);
+            assert.ok(!row.classList.contains('slice-step-ignored'));
+            assert.deepStrictEqual(sentSlices(), { time: '0:3:2' });
+        });
 
-            // Whole dimension: no selection
-            harness.setValue(field().from, '0', 'input');
+        test('back to both ends: no selection', () => {
+            harness.setValue(field().to, '1', 'input');
+            harness.setValue(field().to, '2', 'input');
             assert.deepStrictEqual(boxes(), ['', '', '']);
             assert.strictEqual(sentSlices(), undefined, 'dropped when empty');
+        });
+
+        test('an open slice typed after a start keeps its Python meaning', () => {
+            harness.setValue(field().start, '1::2', 'input');
+            assert.deepStrictEqual(boxes(), ['1', '3', '2'], '"to the end"');
+            assert.deepStrictEqual(handles(), ['1', '2']);
+
+            harness.setValue(field().start, '1:', 'input');
+            const stop = field().stop;
+            assert.strictEqual(harness.document.activeElement, stop);
+            assert.deepStrictEqual(
+                [stop.selectionStart, stop.selectionEnd],
+                [0, 1],
+                'the filled stop is selected, so typing replaces it',
+            );
+        });
+
+        test('negative values, reversed step and empty selection', () => {
+            harness.setValue(field().start, '-1', 'input');
+            assert.deepStrictEqual(
+                handles(),
+                ['2', '2'],
+                'counted from the end',
+            );
+            harness.setValue(field().start, '-3:-1', 'input');
+            assert.deepStrictEqual(handles(), ['0', '1']);
+
+            harness.setValue(field().step, '-1', 'input');
+            assert.ok(field().from.disabled && field().to.disabled);
+            harness.setValue(field().step, '', 'input');
+            assert.ok(!field().from.disabled);
+
+            harness.setValue(field().start, '2:1', 'input');
+            assert.strictEqual(field().stop.validity.valid, false);
+            harness.setValue(field().stop, '3', 'input');
+            assert.strictEqual(field().stop.validity.valid, true);
         });
 
         test('Reset clears the boxes and the slider', () => {

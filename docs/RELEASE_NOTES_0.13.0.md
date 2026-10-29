@@ -249,7 +249,7 @@ The plot controls were hard to scan: each row was a flow of `label: input` pairs
 - **Fieldsets**: plot parameters are sorted by meaning: **Facets** (row, col, col_wrap), **Axes** (x, y, hue, xincrease, yincrease), **Color** (vmin, vmax, cmap, robust, add_colorbar), **Figure** (size, aspect, bins, add_legend).
 - **Reset per block**: **Reset** next to Dimension slices clears only the slices (before, the single "Clear Dimension Slices and Plot Parameters" button cleared both); Plot parameters have their own Reset.
 - Nothing changes in what is sent to the backend; element ids are unchanged.
-- **Dimension slices: three boxes and a slider**: each dimension has **start : stop : step** boxes joined into one control, and a slider whose two handles set start and stop (the step is kept). Typing moves the handles, dragging fills the boxes. Handles on top of each other select one index; handles at both ends clear the selection; handles can cross. A whole slice typed or pasted in a box (`0:24:2`) is spread over the boxes. Non-integer input is outlined in red. Before, a slice was one text box where the Python syntax had to be typed.
+- **Dimension slices: three boxes and a slider**: each dimension has **start : stop : step** boxes joined into one control, and a slider whose two handles set start and stop (the step is kept). Typing moves the handles; dragging one handle changes only its own box (both when the handles cross). Start with an empty stop selects one index, a typed step being then ignored (struck through); handles on top of each other give that index; handles at both ends clear the selection. A whole slice typed or pasted in a box (`0:24:2`) is spread over the boxes, and `5::2` keeps its Python meaning (stop = dimension size). Negative start / stop count from the end: the handles show the positive position and the box keeps the typed text until its own handle moves. A negative step disables the slider; an empty selection (stop at or before start) and non-integer input are outlined in red. Before, a slice was one text box where the Python syntax had to be typed.
 
 ### How it was checked
 
@@ -721,10 +721,10 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → **Dimension slices**: each dimension shows `start : stop : step` boxes and a slider with both handles at the ends.
 2. Type `2` in **start** of `time` → both handles jump to 2. Type `5` in **stop** → the second handle moves to 4 (stop excluded), the track between them is highlighted.
-3. Drag the right handle → **stop** follows (handle index + 1); drag it over the left one and beyond → the handles swap roles, the boxes always show lower : higher.
-4. Put the two handles on the same position → **stop** empties: a single index. With a **step** typed, it becomes a one-element slice instead (`i : i+1 : step`).
+3. Drag the right handle → only **stop** follows (handle index + 1), **start** is not rewritten (type `-10` in start first: it stays `-10`). Drag it over the left one and beyond → the handles swap roles, both boxes change and show lower : higher.
+4. Put the two handles on the same position → **stop** empties: a single index. With a **step** typed, stop empties too and the step is struck through (ignored); pull the handles apart → the step counts again.
 5. Drag the handles back to both ends → start and stop empty (no selection); the step box is never changed by the slider.
-6. Paste `0:24:2` in **start** → the three boxes fill and the focus goes to **step**. Type `abc` in a box → it is outlined in red.
+6. Paste `0:24:2` in **start** → the three boxes fill and the focus goes to **step**. Paste `5::2` → stop becomes the dimension size (to the end). Type `abc` in a box, or start `8` stop `3` → outlined in red. Type step `-1` → the slider greys out.
 7. **Create Plot** with `time` start `0`, stop `2` → the plot uses two time steps; with start `1` only → one time step (no time dimension left).
 8. **Reset** next to **Dimension slices** → boxes empty, handles back at both ends. Same in a group's **Group Plot Controls** (group values still override the global ones).
 

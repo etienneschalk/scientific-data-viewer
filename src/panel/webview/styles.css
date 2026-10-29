@@ -1274,6 +1274,12 @@ pre:not(.html-representation pre) {
     );
 }
 
+/* Start alone selects an index: a step typed meanwhile is not used */
+.slice-step-ignored .slice-part[data-part='step'] {
+    color: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+    text-decoration: line-through;
+}
+
 .slice-colon {
     display: flex;
     align-items: center;
@@ -1351,6 +1357,17 @@ pre:not(.html-representation pre) {
     pointer-events: auto;
     -webkit-appearance: none;
     appearance: none;
+}
+
+/* Negative step: the slider cannot show a reversed slice */
+.slice-range--disabled::after {
+    display: none;
+}
+
+.slice-range-handle:disabled::-webkit-slider-thumb {
+    background-color: var(--sdv-border);
+    box-shadow: none;
+    cursor: not-allowed;
 }
 
 .slice-range-handle:active::-webkit-slider-thumb {

@@ -386,7 +386,7 @@ function renderGroupPlotControls(
                 <div class="group-plot-controls dimension-slices-section">
                     <div class="plot-controls-subsection dimension-slices-isel">
                         ${heading('Dimension slices <code>isel</code>', 'clear-plot-controls', 'Clear the dimension slices')}
-                        <p class="dimension-slices-hint">Start alone selects one index (<code>130</code>); start, stop and step select a slice (<code>100:120</code>, <code>0:24:2</code>; stop excluded). The slider moves start and stop. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
+                        <p class="dimension-slices-hint">Start with an empty stop selects one index (<code>130</code>); start, stop and step select a slice (<code>100:120</code>, <code>0:24:2</code>; stop excluded; negative counts from the end). The slider moves start and stop. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
                         <div class="plot-fields plot-fields--slices dimension-slices-container">
                             ${renderDimensionSliceInputs(scope, groupDims)}
                         </div>
