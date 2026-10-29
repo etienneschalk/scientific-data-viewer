@@ -13,3 +13,6 @@ venv/
 blog-article.md
 python/.golden/
 .pytest_cache/
+
+# Viewer screenshots (npm run screenshots)
+/screenshots/

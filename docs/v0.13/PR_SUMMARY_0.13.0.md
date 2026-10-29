@@ -98,16 +98,17 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 9 — Viewer styling refresh
 
-| Area       | Work                                                                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Stylesheet | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                      |
-| Layout     | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                 |
-| Components | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                   |
-| Controls   | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                            |
-| Markup     | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed** |
-| Fix        | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                            |
-| Fallbacks  | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                 |
-| Docs       | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21                                                                    |
+| Area        | Work                                                                                                                                                                                                                               |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stylesheet  | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                              |
+| Layout      | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                         |
+| Components  | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                           |
+| Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                    |
+| Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                         |
+| Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                    |
+| Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
+| Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                         |
+| Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                        |
 
 ### Sample data & docs
 
@@ -155,6 +156,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 | Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`                                             |
 | Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json`                                           |
 | Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/webview/styles.css`, `src/shared/icons.ts`, `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts` |
+| Tooling   | `scripts/screenshots/` (`npm run screenshots`, `capture-themes.mjs`)                                                                                                                                                   |
 | Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`                                                  |
 | Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                                                             |
 
@@ -174,7 +176,12 @@ pre-commit run --all-files
 npm run package && scripts/upgrade-sandbox.sh [--scenario offline|interrupted]   # upgrade from v0.12.1
 ```
 
-Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; visual check in headless Chromium (dark, light, narrow, scrolled, plots, plot error, error page).
+Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` 24 / 24 screenshots (4 themes × 6 scenarios, ~18 s).
+
+```bash
+npm run screenshots                              # screenshots/v0.13/<theme>/*.png + index.html
+node scripts/screenshots/capture-themes.mjs      # re-record VS Code theme variables (needs a display)
+```
 
 Results after the upgrade-safety work: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 83 / 0 failing; `upgrade-sandbox.sh` normal, offline and interrupted passing (see [`UPGRADE_TEST_PLAN.md`](./UPGRADE_TEST_PLAN.md#results-2026-10-29-linux-vs-code-1144-uv-0102)).
 

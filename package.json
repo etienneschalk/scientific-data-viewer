@@ -710,6 +710,7 @@
         "compile": "npm run build:webview && tsc -p ./ && tsc -p src/panel/webview",
         "build:webview": "node scripts/build-webview.mjs",
         "watch": "node scripts/build-webview.mjs --watch --with-tsc",
+        "screenshots": "node scripts/screenshots/take-screenshots.mjs",
         "typecheck": "tsc --noEmit -p tsconfig.pre-commit.json && tsc -p src/panel/webview",
         "lint": "eslint src --ext ts --fix",
         "test": "node ./out/test/runTest.js",

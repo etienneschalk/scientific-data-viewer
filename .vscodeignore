@@ -6,6 +6,7 @@ test/**
 
 # Exclude development files
 scripts/**
+screenshots/**
 .vscode-test/**
 .vscode/**
 *.log

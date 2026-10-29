@@ -1,0 +1,10 @@
+{
+    "name": "sdv-theme-capture",
+    "displayName": "SDV theme capture (screenshot tooling, not shipped)",
+    "version": "0.0.0",
+    "private": true,
+    "publisher": "eschalk0",
+    "engines": {
+        "vscode": "^1.74.0"
+    }
+}

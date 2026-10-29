@@ -15,6 +15,7 @@ npm run package             # build .vsix with vsce
 pytest python/tests         # Python-side tests (need xarray etc. installed)
 python python/tools/golden_snapshots.py check   # backend JSON vs local snapshots (record first)
 pre-commit run --all-files  # prettier, eslint, tsc --noEmit, ruff, ruff-format, detect-secrets...
+npm run screenshots         # full-page viewer screenshots -> screenshots/v<major.minor>/<theme>/ (scripts/screenshots/, docs/SCREENSHOTS.md)
 python python/create_sample_data.py [--overwrite]   # create sample-data/ (generators in python/sample_data/)
 python scripts/generate_readme.py     # regenerate README.md
 ```

@@ -297,6 +297,26 @@ npm test
 - [ ] Error handling works for invalid files
 - [ ] Large files are handled appropriately
 
+#### Viewer screenshots
+
+Full technical note: [`SCREENSHOTS.md`](./SCREENSHOTS.md).
+
+`npm run screenshots` saves full-page screenshots of the viewer to `screenshots/v<major.minor>/<theme>/` (for example `screenshots/v0.13/dark-modern/03-plots.png`), plus an `index.html` gallery. The folder is git-ignored. Run it after a UI change, or before a release to compare with the previous version's folder.
+
+- **What is rendered**: the real page, made of the `HTMLGenerator` markup, the compiled webview bundle and `styles.css`. It is fed by the real Python backend: info and plots run through `python/get_data_info.py` with the extension's CLI arguments and default settings. The page is shown in the built-in VS Code themes (Dark Modern, Light Modern, High Contrast, High Contrast Light).
+- **Scenarios**: `overview`, `expanded` (every section open), `plots` (every data variable plotted), `plot-error` (out-of-range slice), `error-page` (unreadable file) and `narrow` (420 px). Files are numbered in this order, also when you run only some of them.
+- **Data**: a small seeded NetCDF with groups, created by `scripts/screenshots/make_fixture.py` in `screenshots/.fixture/`. It is the same for every version, so screenshots can be compared. `--file <path>` shows another file instead.
+- **Requirements**: Node 22 (`nvm use`); a Python with xarray, netCDF4 and matplotlib (`--python`, `$SDV_PYTHON`, else `.venv`, else `python3`); Chrome, Chromium or Edge (`--chrome`, `$CHROME_PATH`, else Playwright's Chromium, else the usual install locations). No npm package is added: Chromium is driven over the DevTools protocol with Node's built-in WebSocket.
+
+```bash
+npm run screenshots                                   # compile, then all themes and scenarios
+npm run screenshots -- --skip-compile --theme dark-modern --scenario plots
+npm run screenshots -- --setting globalTimeControls=true --setting groupTimeControls=true
+npm run screenshots -- --scale 2 --width 1280         # sharper images for docs
+```
+
+The theme variables come from `scripts/screenshots/themes/*.json`. They were recorded from a real VS Code by `node scripts/screenshots/capture-themes.mjs`, which starts VS Code through `@vscode/test-electron` (like `npm test`, so it needs a display) and switches through the themes listed in `scripts/screenshots/themes.mjs`. Re-run it when VS Code changes its default themes, then commit the JSON files.
+
 ### 3. Debugging
 
 #### VSCode Debugging

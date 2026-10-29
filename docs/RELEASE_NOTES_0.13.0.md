@@ -164,7 +164,8 @@ Element ids, CSS classes used by the script, and the outline are unchanged; expo
 ### How it was checked
 
 - `npm test` (290 passing), `npm run typecheck`, pre-commit hooks.
-- Visual check in headless Chromium of the real webview bundle fed with backend JSON (`sample_data.nc`), with the theme variables captured from exported dark and light reports: collapsed and expanded sections, plots, plot error, global error page, 420 px width, and scrolled (sticky header and section title).
+- **`npm run screenshots`** (new, for contributors): full-page screenshots of the real page in the four built-in VS Code themes, with real backend data and plots, saved to `screenshots/v0.13/<theme>/`. Run it again for the next version and compare the `screenshots/v0.14/` folder with this one. See [`SCREENSHOTS.md`](./SCREENSHOTS.md).
+- First pass: the scrolled state (sticky header and section title) was checked with a one-off capture.
 
 ---
 
@@ -523,6 +524,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 8. Export the webview (download icon) and open the HTML in a browser → same look as in VS Code.
 9. Open `sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
 10. No emoji is left: **Plot All** shows a warning line icon (a stop icon on **Cancel All** while plotting), and the error page uses line icons for its title, the troubleshooting heading, the install / settings / logs links and after external links.
+11. _(Contributors)_ `npm run screenshots` → 24 PNG files in `screenshots/v0.13/<theme>/` and `screenshots/v0.13/index.html`; open the gallery and compare it with the steps above.
 
 ---
 
@@ -536,6 +538,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background and the variable card's plot controls keep rounded top corners (`:has()` needs 1.75+); everything stays readable.
+- **Screenshots** use theme variables recorded from VS Code 1.144 (`scripts/screenshots/themes/`); re-run `capture-themes.mjs` when the default themes change. The xarray HTML representation keeps its own colors in high-contrast themes.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---
