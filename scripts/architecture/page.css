@@ -1,0 +1,257 @@
+/* Layout of docs/architecture/architecture.html: a reference sheet, narrow text column, figures at full sheet width. */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.sheet {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+header {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(30px, 4.6vw, 46px);
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 16.5px;
+}
+.keyrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.sw {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  flex: none;
+}
+.sw.host {
+  background: var(--host-tint);
+  border-color: var(--host);
+}
+.sw.web {
+  background: var(--web-tint);
+  border-color: var(--web);
+}
+.sw.py {
+  background: var(--py-tint);
+  border-color: var(--py);
+}
+.sw.ext {
+  background: var(--ext-tint);
+  border-color: var(--ext);
+}
+.sw.warn {
+  background: var(--warn-tint);
+  border-color: var(--warn);
+}
+.sw.shared {
+  background: var(--surface2);
+  border-style: dashed;
+}
+.ls {
+  width: 26px;
+  height: 0;
+  border-top: 2px solid var(--edge);
+  flex: none;
+}
+.ls.dash {
+  border-top-style: dashed;
+}
+.ls.web {
+  border-color: var(--web);
+}
+.ls.warn {
+  border-color: var(--warn);
+}
+nav.toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+nav.toc a {
+  font-size: 13px;
+  color: var(--fg);
+  text-decoration: none;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+nav.toc a:hover,
+nav.toc a:focus-visible {
+  border-color: var(--host);
+  color: var(--host);
+  outline: none;
+}
+nav.toc a span {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-right: 4px;
+}
+section {
+  padding-top: 44px;
+  display: grid;
+  gap: 14px;
+}
+h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 23px;
+  margin: 0;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+h2 .n {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+}
+section > p {
+  max-width: 72ch;
+  margin: 0;
+}
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--surface2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.files {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.files b {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--fg);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 10px;
+}
+figure {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+}
+.scroll {
+  overflow-x: auto;
+  padding: 18px;
+}
+figure svg {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  height: auto;
+}
+svg.hand {
+  min-width: 980px;
+}
+figcaption {
+  border-top: 1px solid var(--line);
+  padding: 10px 18px 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tablewrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+}
+th,
+td {
+  text-align: left;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--surface2);
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+td:first-child {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--web);
+  font-weight: 600;
+}
+td.ev {
+  color: var(--host);
+}
+footer {
+  margin-top: 56px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

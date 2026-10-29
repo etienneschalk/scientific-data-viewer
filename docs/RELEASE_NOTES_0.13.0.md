@@ -22,6 +22,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
 | **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
+| **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                            |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -167,6 +168,27 @@ Element ids, CSS classes used by the script, and the outline are unchanged; expo
 - `npm test` (290 passing), `npm run typecheck`, pre-commit hooks.
 - **`npm run screenshots`** (new, for contributors): full-page screenshots of the real page in the four built-in VS Code themes, with real backend data and plots, saved to `screenshots/v0.13/<theme>/`. Run it again for the next version and compare the `screenshots/v0.14/` folder with this one. See [`SCREENSHOTS.md`](./SCREENSHOTS.md).
 - First pass: the scrolled state (sticky header and section title) was checked with a one-off capture.
+
+---
+
+## Architecture diagrams
+
+For contributors only; nothing changes in the extension.
+
+### Why
+
+The architecture was described in prose and one ASCII sketch (`docs/TECHNICAL_ARCHITECTURE.md`). The parts that are hard to assemble from prose (which process talks to which, the message protocol, how a plot is cancelled, how the interpreter is chosen, how the uv environment is rebuilt) are now drawn. Hand-made diagrams go stale silently, so these are generated from the code and checked against it.
+
+### What changed
+
+- **`docs/architecture/`**: 9 figures and the webview protocol tables, as a `README.md` that GitHub renders (standalone SVG files that follow the light or dark color scheme) and as a single page, `architecture.html`, to open in a browser.
+- **`scripts/architecture/generate.py`** writes them. The module graphs are laid out by Graphviz from the import statements of `src/` and `python/sdv_backend/`; the protocol tables are read from `MessageTypes.ts`; the version, editor and command counts and the timeouts quoted in the figures come from `package.json` and the constants in the code. The process overview, the two sequence diagrams and the backend pipelines are drawn by `figures.py`.
+- **`generate.py --check`** (no Graphviz needed) fails when a module is not placed in the diagrams, when a symbol named by a figure or by the text no longer exists in its file, or when the protocol notes no longer match `MessageTypes.ts`. Run it after moving or renaming modules; it tells which table or figure to update.
+
+### How it was checked
+
+- `--check` passes, and reports each kind of drift injected on purpose (unplaced module, missing module, renamed symbol, missing protocol note). Two runs give byte-identical files.
+- The SVG files parse as XML and render as images in light and dark; the HTML page in headless Chromium; pre-commit leaves the generated `README.md` unchanged. `docs/architecture/` is not in the `.vsix` (`vsce ls`).
 
 ---
 
@@ -538,6 +560,18 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Make a plot fail (e.g. a dimension slice on a dimension that does not exist, in the group plot controls) → the error text ends with `(file_path=… variable_path=…)`, without `plot_type=`.
 4. _(Contributors)_ `.venv/bin/python python/get_data_info.py plot sample-data/sample_data.nc /precipitation` → one JSON line with `plot_data`; `pytest python/tests` and `python python/tools/golden_snapshots.py check` pass (re-`record` once: error snapshots lose `plot_type='auto'`, and `plot__histogram` no longer exists).
 
+### 23. Architecture diagrams (contributors)
+
+**Expect:** the diagrams in `docs/architecture/` are regenerated from the code and match it.
+
+**Test:**
+
+1. `.venv/bin/python scripts/architecture/generate.py --check` → "every module is placed and every referenced symbol exists", exit code 0.
+2. With Graphviz installed (`dot -V`): `.venv/bin/python scripts/architecture/generate.py` → "Wrote 9 SVG figures, architecture.html and README.md"; `git status docs/architecture` shows no change on a clean checkout.
+3. Open `docs/architecture/README.md` on GitHub (or in the VS Code Markdown preview) → 10 sections, 9 figures readable in the light and the dark theme, two protocol tables.
+4. Open `docs/architecture/architecture.html` in a browser → same content on one page; hovering a box of the module graphs shows its path.
+5. Add an empty `src/common/Example.ts`, run step 1 again → it fails with `src/common/Example.ts is not placed in graphs.HOST_LAYERS`; delete the file.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -551,6 +585,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
 - **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background and the variable card's plot controls keep rounded top corners (`:has()` needs 1.75+); everything stays readable.
 - **Screenshots** use theme variables recorded from VS Code 1.144 (`scripts/screenshots/themes/`); re-run `capture-themes.mjs` when the default themes change. The xarray HTML representation keeps its own colors in high-contrast themes.
+- **Architecture diagrams**: the sequence diagrams, the process overview and the pipelines are drawn by hand in `scripts/architecture/figures.py`; `--check` only catches renamed or removed symbols, not a changed order of calls. Graph layouts can differ slightly between Graphviz versions (generated with 2.43).
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---
@@ -562,7 +597,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                    |
 | **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness                                                                                                                                                     |
 | **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                      |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note                                                                                                                                                                                       |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                        |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
 | **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed                                                                                                                   |

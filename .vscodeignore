@@ -16,6 +16,8 @@ screenshots/**
 chats/**
 *.md
 !README.md
+# Architecture diagrams (scripts/architecture/generate.py), for contributors
+docs/architecture/**
 
 # Include media directory (for icons)
 !media/**

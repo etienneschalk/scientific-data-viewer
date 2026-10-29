@@ -119,6 +119,16 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Backend  | `plot_type` positional argument and `PlotOptions.plot_type` removed; `create_plot` error messages no longer end with `plot_type='auto'`                   |
 | Tests    | TS and Python tests updated; golden harness drops the plot-type column and the `plot__histogram` case (82 cases); release notes §22, manual test plan B24 |
 
+### Phase 11 — Architecture diagrams (contributors)
+
+| Area      | Work                                                                                                                                                                                                                                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Diagrams  | `docs/architecture/`: 9 SVG figures (processes, host modules, webview bundle, opening a file, plot and cancel, interpreter choice, uv environment, backend packages, backend pipelines), the webview protocol tables, a `README.md` index rendered by GitHub and a single-page `architecture.html` |
+| Generator | `python scripts/architecture/generate.py` (standard library + Graphviz `dot`): module graphs from the import statements, protocol tables from `MessageTypes.ts`, version / counts / timeouts from `package.json` and constants; flows drawn by `figures.py`; deterministic output, light and dark  |
+| Drift     | `--check` (no Graphviz): fails when a module is not placed in the diagrams, a symbol named by a figure or the text no longer exists in its file, or the protocol notes do not match `MessageTypes.ts`                                                                                              |
+| Packaging | `docs/architecture/**` excluded from the `.vsix` (`.vscodeignore`)                                                                                                                                                                                                                                 |
+| Docs      | `DEVELOPMENT.md` § Architecture diagrams; link from `TECHNICAL_ARCHITECTURE.md`; `CLAUDE.md`; release notes § Architecture diagrams and manual step §23                                                                                                                                            |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -165,7 +175,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 | Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`                                             |
 | Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json`                                           |
 | Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/webview/styles.css`, `src/shared/icons.ts`, `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts` |
-| Tooling   | `scripts/screenshots/` (`npm run screenshots`, `capture-themes.mjs`)                                                                                                                                                   |
+| Tooling   | `scripts/screenshots/` (`npm run screenshots`, `capture-themes.mjs`), `scripts/architecture/` (`generate.py` → `docs/architecture/`)                                                                                   |
 | Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`                                                  |
 | Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                                                             |
 
@@ -183,6 +193,13 @@ npm run compile && npm test       # 290 passing (VS Code integration + webview b
 npm run typecheck                 # extension host + webview
 pre-commit run --all-files
 npm run package && scripts/upgrade-sandbox.sh [--scenario offline|interrupted]   # upgrade from v0.12.1
+```
+
+Results after adding the architecture diagrams: `generate.py --check` passes; drift injected on purpose (unplaced `src/shared/icons.ts`, missing module, renamed symbol, missing protocol note) is reported; two runs give byte-identical output; the 9 SVG files parse as XML and render as images in light and dark; pre-commit clean (prettier leaves the generated `README.md` unchanged); `docs/architecture/` absent from `vsce ls`.
+
+```bash
+python scripts/architecture/generate.py          # docs/architecture/ (needs Graphviz)
+python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz)
 ```
 
 Results after removing the plot type selector: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 82 / 0 failing (re-recorded: only `plot__err_broken_file` changed, losing `plot_type='auto'`); `npm run typecheck` and pre-commit clean.
@@ -204,7 +221,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§22 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only).
 
 ---
 
@@ -222,6 +239,7 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `docs/DEVELOPMENT.md` — backend package layout, sample data commands
 - [x] `CLAUDE.md` — commands and architecture for AI-assisted development
 - [x] `docs/TECHNICAL_ARCHITECTURE.md` — rewritten for the actual architecture (code review)
+- [x] `docs/architecture/` — architecture diagrams, generated by `scripts/architecture/generate.py`
 - [x] `docs/v0.13/CODE_REVIEW_TODO.md` — code review items, all checked
 - [x] `docs/v0.13/GETTING_STARTED.md` — hub: reading order, risks, review and release plan
 - [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
@@ -295,3 +313,7 @@ Upgrade safety (v0.12 → v0.13):
 Plot type selector:
 
 52. feat(webview): remove the unused plot type selector
+
+Architecture diagrams:
+
+53. feat(tooling): generate architecture diagrams from the code

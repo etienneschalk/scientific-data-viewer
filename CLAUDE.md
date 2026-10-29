@@ -18,6 +18,7 @@ pre-commit run --all-files  # prettier, eslint, tsc --noEmit, ruff, ruff-format,
 npm run screenshots         # full-page viewer screenshots -> screenshots/v<major.minor>/<theme>/ (scripts/screenshots/, docs/SCREENSHOTS.md)
 python python/create_sample_data.py [--overwrite]   # create sample-data/ (generators in python/sample_data/)
 python scripts/generate_readme.py     # regenerate README.md
+.venv/bin/python scripts/architecture/generate.py [--check]   # regenerate docs/architecture/ diagrams (Graphviz) / check they match the code
 ```
 
 ## Architecture
@@ -37,6 +38,7 @@ python scripts/generate_readme.py     # regenerate README.md
 ## Conventions / gotchas
 
 - **README.md is auto-generated** from `package.json` + `docs/documentation.json` — edit those and run `scripts/generate_readme.py`, never README.md directly.
+- **`docs/architecture/` is generated** by `scripts/architecture/generate.py` — never edit it by hand. After adding / moving / renaming a module, a webview protocol message or a function named in a flow, run `generate.py --check`, fix what it reports in `scripts/architecture/` (layers, refs, notes, flows), then regenerate and commit (see `docs/DEVELOPMENT.md` § Architecture diagrams).
 - New settings/commands go in `package.json` `contributes` and are read through `src/common/config.ts`.
 - Python code: ruff (config in `pyproject.toml`), double quotes, Python 3.13+.
 - Releases: bump `package.json` version, update `CHANGELOG.md`, add `docs/RELEASE_NOTES_<ver>.md` (stays in `docs/`: `publish.sh` and the README generator read it there; see `docs/PUBLISHING.md`, `publish.sh`). Run `scripts/upgrade-sandbox.sh` before releasing a change to the uv environment.

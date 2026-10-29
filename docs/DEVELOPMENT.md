@@ -317,6 +317,22 @@ npm run screenshots -- --scale 2 --width 1280         # sharper images for docs
 
 The theme variables come from `scripts/screenshots/themes/*.json`. They were recorded from a real VS Code by `node scripts/screenshots/capture-themes.mjs`, which starts VS Code through `@vscode/test-electron` (like `npm test`, so it needs a display) and switches through the themes listed in `scripts/screenshots/themes.mjs`. Re-run it when VS Code changes its default themes, then commit the JSON files.
 
+#### Architecture diagrams
+
+[`docs/architecture/`](./architecture/README.md) holds the architecture diagrams: processes and their boundaries, the webview protocol, the module graphs of the extension host, the webview bundle and the Python backend, the file-opening and plot sequences, the interpreter choice and the uv environment lifecycle. They are generated, never edited by hand, and committed (`README.md` with `svg/*.svg` for GitHub, `architecture.html` to open in a browser). `docs/architecture/` is not packaged in the `.vsix`.
+
+```bash
+.venv/bin/python scripts/architecture/generate.py          # regenerate docs/architecture/ (needs Graphviz: apt install graphviz / brew install graphviz)
+.venv/bin/python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz needed)
+```
+
+Run `--check` after adding, moving or renaming a module, a message of the webview protocol, or a function named in a flow; regenerate and commit when it passes. The script needs only the standard library (Python 3.10+).
+
+- **Computed from the code**: import edges (`src/**/*.ts`, `python/sdv_backend/**/*.py`), the protocol tables (`Requests` / `Events` in `MessageTypes.ts`), the version and editor / command counts (`package.json`), and the timeouts and Python version quoted in the figures (constants in `src/`).
+- **Written by hand** in `scripts/architecture/`: the placement of host modules into layers (`graphs.HOST_LAYERS`) and the backend package descriptions (`graphs.PY_PACKAGES`); the two flowcharts (`graphs.py`); the process overview, the sequences and the pipelines (`figures.py`); the text (`content.py`). Each figure and section lists the symbols it names (`*_REFS`, `refs`).
+- **What `--check` catches**: a module that is not placed in the diagrams (or a placed one that no longer exists), a named symbol missing from its file, a protocol message without a note in `content.py` (or the reverse). It cannot see a changed order of calls: when you change a flow, update its figure.
+- **Styles**: `diagram.css` (colors as tokens, light and dark, embedded in each SVG) and `page.css` (layout of `architecture.html`). Layouts can differ slightly between Graphviz versions; the committed files were made with Graphviz 2.43.
+
 ### 3. Debugging
 
 #### VSCode Debugging

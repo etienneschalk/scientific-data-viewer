@@ -3,6 +3,10 @@
 How the extension is put together, for contributors. Commands and setup are in
 `docs/DEVELOPMENT.md`; the Python backend modules are described there too.
 
+Diagrams of everything below (module graphs, webview protocol, file-opening and
+plot sequences, interpreter choice, uv environment, backend pipelines), generated
+from the code: [`docs/architecture/`](./architecture/README.md).
+
 ## Overview
 
 ```
