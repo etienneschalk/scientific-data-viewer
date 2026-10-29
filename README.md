@@ -227,10 +227,11 @@ The data viewer editor shows:
 - **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
 - **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
   - **Dimensions**: Dataset dimensions and their sizes
-  - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a coordinate.
-  - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a variable.
-    - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
-  - **Attributes**: Show group's attributes. Coordinate and variable attributes may include `__xarray_encoding.*` entries when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
+  - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Clicking on a coordinate reveals its attributes and its xarray encoding.
+  - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Clicking on a variable's row reveals or hides all its sections at once: **Attributes** (open by default), **Xarray Encoding** (collapsed by default) and **Plot**; each section can also be collapsed on its own. Creating a plot opens the variable.
+    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
+  - **Attributes**: Show group's attributes.
+  - **Xarray Encoding** (collapsed by default): the group's xarray encoding (e.g. `source`, `unlimited_dims`). Groups, coordinates and variables show this section when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
 
 ### 📐 Dimension Slices
 
@@ -415,7 +416,7 @@ The extension includes specific settings for virtual environment management:
   - When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Use **Refresh** (🔄) after changing.
 - **`scientificDataViewer.showXarrayEncodingAttributes`**
   - (type: `boolean`, default: `true`)
-  - When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. Disable to hide these from attribute tables. Use **Refresh** (🔄) after changing.
+  - When enabled (**default**), groups, coordinates, and variables get an **Xarray Encoding** section (collapsed by default, next to their attributes) listing their xarray encoding (e.g. `_FillValue`, `dtype`, chunking, compression, Zarr codecs). Disable to hide these sections. Use **Refresh** (🔄) after changing.
 - **`scientificDataViewer.showInheritedCoordinates`**
   - (type: `boolean`, default: `true`)
   - When enabled (**default**), child groups in multi-group NetCDF / Zarr DataTrees include coordinates inherited from parent nodes (`DataTree.to_dataset(inherit='all_coords')`). Inherited coordinates are tagged with an `inherited_from` attribute. Disable to list only coordinates stored on that group. Use **Refresh** (🔄) after changing.

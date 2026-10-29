@@ -672,8 +672,8 @@
                     "type": "boolean",
                     "default": true,
                     "order": 1011,
-                    "description": "Show __xarray_encoding.* attributes for groups, coordinates, and variables.",
-                    "markdownDescription": "When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. Disable to hide these from attribute tables. Use **Refresh** (🔄) after changing."
+                    "description": "Show the xarray encoding of groups, coordinates, and variables in their Xarray Encoding sections.",
+                    "markdownDescription": "When enabled (**default**), groups, coordinates, and variables get an **Xarray Encoding** section (collapsed by default, next to their attributes) listing their xarray encoding (e.g. `_FillValue`, `dtype`, chunking, compression, Zarr codecs). Disable to hide these sections. Use **Refresh** (🔄) after changing."
                 },
                 "scientificDataViewer.netcdfEngineOrder": {
                     "type": "array",

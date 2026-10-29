@@ -1,22 +1,10 @@
-"""Codec / HDF5 filter description and attribute collection."""
+"""Attribute and xarray encoding collection (codecs described by name)."""
 
 from typing import Any
 
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
-
-# Compression / checksum keys that netCDF4-python and h5netcdf Variable.filters() share.
-HDF5_FILTER_ENCODING_KEYS: tuple[str, ...] = (
-    "zlib",
-    "szip",
-    "zstd",
-    "bzip2",
-    "blosc",
-    "shuffle",
-    "fletcher32",
-    "complevel",
-)
 
 
 def _describe_codec(value: Any) -> Any:
@@ -58,40 +46,17 @@ def _describe_codec(value: Any) -> Any:
     return value
 
 
-def _hdf5_filters_from_encoding(
-    data_array: xr.DataArray | xr.Dataset,
-) -> dict[str, Any]:
-    """Build a filters() -shaped mapping from xarray encoding keys.
+def collect_attributes(data_array: xr.DataArray | xr.Dataset) -> dict[str, Any]:
+    """``attrs`` of a variable, coordinate or group, with string keys."""
+    return {str(k): v for k, v in data_array.attrs.items()}
 
-    h5netcdf 1.8 exposes ``Variable.filters()``; netCDF4-python already copies
-    the same keys onto ``DataArray.encoding``. Reconstructing from encoding
-    avoids reopening the file per variable and stays silent when filters() is
-    missing.
+
+def collect_encoding(data_array: xr.DataArray | xr.Dataset) -> dict[str, Any]:
+    """xarray ``encoding`` of a variable, coordinate or group, for UI display.
+
+    Shown in its own "Xarray Encoding" section, apart from the attributes.
+    Codecs are described by name (see ``_describe_codec``). HDF5 filters
+    (``zlib``, ``complevel``, ``shuffle``...) are already encoding keys with
+    both the netcdf4 and h5netcdf engines.
     """
-    try:
-        encoding = getattr(data_array, "encoding", None) or {}
-        return {
-            key: encoding[key] for key in HDF5_FILTER_ENCODING_KEYS if key in encoding
-        }
-    except Exception as exc:
-        logger.debug("Could not collect HDF5 filter encoding: %r", exc)
-        return {}
-
-
-def collect_dataarray_attributes(
-    data_array: xr.DataArray | xr.Dataset,
-    *,
-    show_xarray_encoding_attributes: bool,
-) -> dict[str, Any]:
-    """Merge attrs and optional xarray encoding metadata for UI display."""
-    items: list[tuple[str, Any]] = [(str(k), v) for k, v in data_array.attrs.items()]
-    if show_xarray_encoding_attributes:
-        items.extend(
-            ("__xarray_encoding." + str(k), _describe_codec(v))
-            for k, v in data_array.encoding.items()
-        )
-        items.extend(
-            ("__xarray_encoding.filters." + str(k), v)
-            for k, v in _hdf5_filters_from_encoding(data_array).items()
-        )
-    return dict(items)
+    return {str(k): _describe_codec(v) for k, v in data_array.encoding.items()}

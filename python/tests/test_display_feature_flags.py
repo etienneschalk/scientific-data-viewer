@@ -1,18 +1,18 @@
-"""Tests for display feature flags (Issue #140 group order, xarray encoding attrs)."""
+"""Tests for display feature flags (Issue #140 group order, xarray encoding)."""
 
 from __future__ import annotations
 
 import xarray as xr
 
 from sdv_backend.info.datatree import flatten_datatree_groups
-from sdv_backend.info.encoding import collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_attributes, collect_encoding
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.info.variables import create_coord_info, create_variable_info
 from sdv_backend.results import FileInfoResult
 
 
-def test_collect_dataarray_attributes_omits_encoding_when_disabled() -> None:
+def test_attributes_and_encoding_are_collected_separately() -> None:
     var = xr.DataArray(
         [1, 2],
         dims=("x",),
@@ -21,27 +21,21 @@ def test_collect_dataarray_attributes_omits_encoding_when_disabled() -> None:
     )
     var.encoding["_FillValue"] = -999
 
-    with_encoding = collect_dataarray_attributes(
-        var, show_xarray_encoding_attributes=True
-    )
-    without_encoding = collect_dataarray_attributes(
-        var, show_xarray_encoding_attributes=False
-    )
-
-    assert with_encoding["units"] == "m"
-    assert any(k.startswith("__xarray_encoding.") for k in with_encoding)
-    assert without_encoding == {"units": "m"}
+    assert collect_attributes(var) == {"units": "m"}
+    assert collect_encoding(var) == {"_FillValue": -999}
 
 
 def test_create_variable_info_respects_encoding_flag() -> None:
-    var = xr.DataArray([1], dims=("x",), name="a")
+    var = xr.DataArray([1], dims=("x",), name="a", attrs={"units": "m"})
     var.encoding["dtype"] = "int32"
 
     shown = create_variable_info("a", var, show_xarray_encoding_attributes=True)
     hidden = create_variable_info("a", var, show_xarray_encoding_attributes=False)
 
-    assert any(k.startswith("__xarray_encoding.") for k in shown.attributes)
-    assert hidden.attributes == {}
+    assert shown.encoding == {"dtype": "int32"}
+    assert shown.attributes == {"units": "m"}
+    assert hidden.encoding == {}
+    assert hidden.attributes == {"units": "m"}
 
 
 def test_create_coord_info_respects_encoding_flag() -> None:
@@ -51,8 +45,9 @@ def test_create_coord_info_respects_encoding_flag() -> None:
     shown = create_coord_info("x", coord, show_xarray_encoding_attributes=True)
     hidden = create_coord_info("x", coord, show_xarray_encoding_attributes=False)
 
-    assert any(k.startswith("__xarray_encoding.") for k in shown.attributes)
-    assert hidden.attributes == {}
+    assert shown.encoding == {"dtype": "int32"}
+    assert shown.attributes == {}
+    assert hidden.encoding == {}
 
 
 def test_flatten_datatree_groups_alphabetical_vs_file_order() -> None:
@@ -110,7 +105,7 @@ def test_get_file_info_group_order_flag(tmp_path) -> None:
     ]
 
 
-def test_get_file_info_hides_encoding_attributes_when_disabled(
+def test_get_file_info_hides_encoding_when_disabled(
     tmp_path,
 ) -> None:
     var = xr.DataArray(
@@ -136,9 +131,11 @@ def test_get_file_info_hides_encoding_attributes_when_disabled(
     assert isinstance(with_encoding, FileInfoResult)
     assert isinstance(without_encoding, FileInfoResult)
 
-    var_attrs_on = with_encoding.variables_flattened["/"][0].attributes
-    var_attrs_off = without_encoding.variables_flattened["/"][0].attributes
+    var_on = with_encoding.variables_flattened["/"][0]
+    var_off = without_encoding.variables_flattened["/"][0]
 
-    assert any(k.startswith("__xarray_encoding.") for k in var_attrs_on)
-    assert not any(k.startswith("__xarray_encoding.") for k in var_attrs_off)
-    assert var_attrs_off.get("units") == "K"
+    assert var_on.attributes == var_off.attributes == {"units": "K"}
+    assert var_on.encoding["_FillValue"] == -999
+    assert var_off.encoding == {}
+    assert "source" in with_encoding.encoding_flattened["/"]
+    assert without_encoding.encoding_flattened == {}

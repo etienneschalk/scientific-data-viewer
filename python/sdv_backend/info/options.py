@@ -21,7 +21,7 @@ class InfoOptions:
     order_groups_alphabetically : bool
         When True, sort flattened DataTree group paths alphabetically (Issue #140).
     show_xarray_encoding_attributes : bool
-        When True, include ``__xarray_encoding.*`` entries from xarray encoding metadata.
+        When True, report the xarray encoding of groups, coordinates and variables.
     netcdf_engine_order : sequence of str or str, optional
         Preferred engines for ``.nc`` / ``.nc4`` / ``.netcdf`` (not NASA ``.cdf``).
     show_inherited_coordinates : bool

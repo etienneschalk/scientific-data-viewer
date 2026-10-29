@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed.
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections.
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -21,6 +21,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Honesty**           | **`.safe`** removed from explorer menus/keywords (was never implemented)                                                                                                 |
 | **Code review**       | Security fix (escaping, CSP, command allowlist); uv pins; Kerchunk; Windows paths; backend robustness; dead code removed (see [§ Code review fixes](#code-review-fixes)) |
 | **Look and feel**     | Restyled to match current VS Code: rounded cards, wider gutters, icon toolbar, twisties, consistent inputs (see [§ Viewer styling](#viewer-styling-refresh))             |
+| **Variables**         | Xarray encoding in its own collapsed section; variable cards with collapsible Attributes / Xarray Encoding / Plot (see [§ Xarray Encoding](#xarray-encoding-section))    |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))         |
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                            |
 
@@ -172,6 +173,29 @@ Element ids, CSS classes used by the script, and the outline are unchanged; expo
 
 ---
 
+## Xarray Encoding section
+
+### Why
+
+The xarray encoding (`dtype`, `_FillValue`, chunks, compression, Zarr codecs) was mixed into the attribute tables as `__xarray_encoding.*` entries. It is a different kind of information: attributes describe the data, the encoding describes how it is stored. Mixed together, a variable with 3 attributes showed 15 lines, the prefix took half the width of the name column, and the HDF5 compression keys showed up twice (`__xarray_encoding.zlib` and `__xarray_encoding.filters.zlib`). Clicking a variable also only toggled its attributes: the plot row stayed visible, so a group could not be reduced to a list of variables.
+
+### What changed
+
+- **Variable card**: the summary row (name, dims, dtype, shape, size), then up to three sections, each with a pane-style header and an entry count: **Attributes** (open by default), **Xarray Encoding** (collapsed by default), **Plot** (data variables, open by default). Each section collapses on its own; clicking the summary row shows or hides the whole card. Opening a card again brings back the sections as they were left (progressive disclosure: a group first reads as one line per variable, and the details stay one click away).
+- **Cards start collapsed**, the Plot section included (before, **Create Plot** was visible under each collapsed variable). **Create Plot** is one click further away; **Plot All** and a single plot open the card and its Plot section so the result is never hidden. Groups keep the state the user chose.
+- **Group Xarray Encoding**: groups get an **Xarray Encoding** section after **Attributes**, collapsed by default (`source`, `unlimited_dims`…). The group sections show their entry count as a badge.
+- **Plain keys**: `dtype`, `chunks`, `compressors` instead of `__xarray_encoding.dtype`… The duplicated `__xarray_encoding.filters.*` keys are gone: with both the netcdf4 and h5netcdf engines, the compression keys (`zlib`, `complevel`, `shuffle`, `fletcher32`) are already in the encoding.
+- **Outline**: **Xarray Encoding (n)** under groups, coordinates and variables; clicking it opens the section in the viewer.
+- **Setting**: `showXarrayEncodingAttributes` keeps its name (no migration); off, the encoding sections are not shown.
+- **JSON** (scripts reading `get_data_info.py info`): `encoding` on variables and coordinates and `encoding_flattened` per group; `attributes` / `attributes_flattened` only hold the attributes.
+
+### How it was checked
+
+- `npm test` (294 passing, including new jsdom tests of the card sections, their default states and ids, the group section, and the card opening on plot), `pytest python/tests` (165 passing; compression keys checked with netcdf4 and h5netcdf), `npm run typecheck`, pre-commit.
+- `npm run screenshots`: overview (collapsed cards, badges), every section expanded, plots (cards opened by the plots), 420 px.
+
+---
+
 ## Architecture diagrams
 
 For contributors only; nothing changes in the extension.
@@ -282,13 +306,13 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ### 4. Zarr v3 encoding metadata (P0.4)
 
-**Expect:** With **`showXarrayEncodingAttributes`** on (default), variables/coordinates show `__xarray_encoding.*` including Zarr v3 **codecs**, **shards**, etc.; format string distinguishes **Zarr v2** vs **Zarr v3**.
+**Expect:** With **`showXarrayEncodingAttributes`** on (default), the **Xarray Encoding** section of variables/coordinates includes Zarr v3 **codecs**, **shards**, etc.; format string distinguishes **Zarr v2** vs **Zarr v3**.
 
 **Test:**
 
 1. Open a **v3** store (directory with `zarr.json`).
-2. Expand a variable → attributes include keys like `__xarray_encoding.compressors` / shard-related entries (exact keys depend on the store).
-3. Toggle **`showXarrayEncodingAttributes`** off → refresh → encoding keys disappear.
+2. Expand a variable, then its **Xarray Encoding** section → keys like `compressors` / `shards` (exact keys depend on the store).
+3. Toggle **`showXarrayEncodingAttributes`** off → refresh → the **Xarray Encoding** sections disappear.
 4. Open a **v2** store (`.zgroup`) → label should say **Zarr v2**.
 
 ---
@@ -323,7 +347,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ### 7. HDF5 / NetCDF compression filters (P1.2)
 
-**Expect:** gzip (or other) compressed NetCDF4 variables show `__xarray_encoding.filters.*` (e.g. `zlib`, `complevel`) when encoding attributes are enabled.
+**Expect:** gzip (or other) compressed NetCDF4 variables show `zlib`, `complevel` (and `shuffle`, `fletcher32`) in their **Xarray Encoding** section when the encoding is enabled, with the netcdf4 and the h5netcdf engine.
 
 **Test:**
 
@@ -335,7 +359,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
    ds.to_netcdf("gzip.nc", encoding={"temp": {"zlib": True, "complevel": 4}})
    ```
 
-2. Open in viewer → variable attributes include `__xarray_encoding.filters.zlib` and `complevel`.
+2. Open in viewer → expand `temp`, then **Xarray Encoding** → `zlib : true`, `complevel : 4`. Set `netcdfEngineOrder` to `["h5netcdf"]`, **Refresh** → same keys.
 3. Requires **h5netcdf ≥ 1.8** in env for best metadata parity (pinned in extension uv env).
 
 ---
@@ -573,6 +597,21 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 4. Open `docs/architecture/architecture.html` in a browser → same content on one page; hovering a box of the module graphs shows its path.
 5. Add an empty `src/common/Example.ts`, run step 1 again → it fails with `src/common/Example.ts is not placed in graphs.HOST_LAYERS`; delete the file.
 
+### 24. Xarray Encoding section and variable card sections
+
+**Expect:** the encoding has its own collapsed section; a variable's sections collapse one by one or all at once from its row.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc` → under **Variables**, each variable is one collapsed line; the section headers of the group show counts (e.g. **VARIABLES 3**); a collapsed **XARRAY ENCODING** section follows **ATTRIBUTES**.
+2. Click a data variable's row → **ATTRIBUTES n** (open), **XARRAY ENCODING n** (collapsed), **PLOT** (open, **Create Plot**). No `__xarray_encoding.` text anywhere.
+3. Open **Xarray Encoding** → `dtype`, `_FillValue`, `source`… Collapse **Attributes**. Click the variable's row → everything hides; click again → Attributes still collapsed, Encoding still open.
+4. Click a coordinate → **Attributes** and **Xarray Encoding**, no Plot section. A coordinate with neither (and no small value) shows a plain row, without twistie.
+5. Collapse all variables, press **Plot All** → each plotted variable opens on its Plot section; collapsed groups stay collapsed.
+6. Explorer → Data Structure: expand a variable → **Xarray Encoding (n)**; click an entry → the viewer opens the card and the section and highlights the line.
+7. Set `"scientificDataViewer.showXarrayEncodingAttributes": false`, **Refresh** → no Xarray Encoding section (groups, coordinates, variables, outline); attributes unchanged.
+8. Export the webview → open the HTML in a browser → sections open / closed as at export time, and they still collapse.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -583,8 +622,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **cftime axes** need `nc-time-axis` to be plotted (not in the uv bundle).
 - **`joinId`** maps every non-alphanumeric character to `-`, so groups like `/a.b` and `/a-b` share element ids (rare; pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
-- **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in encoding attributes.
-- **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background and the variable card's plot controls keep rounded top corners (`:has()` needs 1.75+); everything stays readable.
+- **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in the Xarray Encoding section.
+- **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background; everything stays readable.
 - **Screenshots** use theme variables recorded from VS Code 1.144 (`scripts/screenshots/themes/`); re-run `capture-themes.mjs` when the default themes change. The xarray HTML representation keeps its own colors in high-contrast themes.
 - **Architecture diagrams**: the sequence diagrams, the process overview and the pipelines are drawn by hand in `scripts/architecture/figures.py`; `--check` only catches renamed or removed symbols, not a changed order of calls. Graph layouts can differ slightly between Graphviz versions (generated with 2.43).
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
@@ -601,7 +640,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                        |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md) |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed                                                                                                                   |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section, collapsible variable sections                                                |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                |
 
 ---

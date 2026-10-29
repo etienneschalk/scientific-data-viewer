@@ -25,7 +25,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | P0.1 | Pin `xarray>=2026.4.0`, `zarr>=3`, `h5netcdf>=1.8` in uv env; reject zarr 2.x as too old                  |
 | P0.2 | Detect Zarr stores without `.zarr` suffix (`zarr.json`, `.zgroup`, …); folder open + `resolve_store_path` |
 | P0.3 | Open `.zip` / `.zarr.zip` via `zarr.storage.ZipStore`                                                     |
-| P0.4 | Zarr v2/v3 format label; v3 codecs/shards in `__xarray_encoding.*`                                        |
+| P0.4 | Zarr v2/v3 format label; v3 codecs/shards in the **Xarray Encoding** section                              |
 | P0.5 | Plot `col_wrap='auto'` checkbox in Global/Group plot controls                                             |
 
 ### Phase 2 — NetCDF / DataTree quality (P1)
@@ -33,7 +33,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | ID   | Feature                                                                                               |
 | ---- | ----------------------------------------------------------------------------------------------------- |
 | P1.1 | Setting `scientificDataViewer.netcdfEngineOrder`                                                      |
-| P1.2 | HDF5 filter metadata as `__xarray_encoding.filters.*`                                                 |
+| P1.2 | HDF5 compression keys of the encoding (`zlib`, `complevel`…) with netcdf4 and h5netcdf                |
 | P1.3 | Setting `scientificDataViewer.showInheritedCoordinates` + `DataTree.to_dataset(inherit='all_coords')` |
 
 ### Phase 3 — Virtual Zarr (P1.5)
@@ -129,6 +129,18 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Packaging | `docs/architecture/**` excluded from the `.vsix` (`.vscodeignore`)                                                                                                                                                                                                                                 |
 | Docs      | `DEVELOPMENT.md` § Architecture diagrams; link from `TECHNICAL_ARCHITECTURE.md`; `CLAUDE.md`; release notes § Architecture diagrams and manual step §23                                                                                                                                            |
 
+### Phase 12 — Xarray Encoding section, collapsible variable sections
+
+| Area     | Work                                                                                                                                                                                                                                                                 |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend  | `collect_attributes` / `collect_encoding` replace `collect_dataarray_attributes`; `encoding` on `VariableInfo` / `CoordinateInfo`, `encoding_flattened` on `FileInfoResult`; no more `__xarray_encoding.*` keys in `attributes`; duplicated `filters.*` keys dropped |
+| Webview  | Variable card = summary row + **Attributes** (open) / **Xarray Encoding** (collapsed) / **Plot** (open) sections, each collapsible; the summary row shows or hides them all; cards start collapsed                                                                   |
+| Webview  | Group **Xarray Encoding** section (collapsed); entry-count badges on group and variable section headers; creating a plot opens its card and Plot section                                                                                                             |
+| Outline  | **Xarray Encoding (n)** under groups, coordinates, variables (webview ids `…___encoding`, `…___encoding-entry___<key>`); coordinate / variable branches share one helper                                                                                             |
+| Styles   | Pane-header style for card sections, contents aligned with section titles; the last `:has()` rule (plot-controls corner radius) is gone                                                                                                                              |
+| Settings | `showXarrayEncodingAttributes` keeps its key; description now refers to the encoding sections                                                                                                                                                                        |
+| Docs     | `documentation.json` / README; release notes § Xarray Encoding section and manual step §24; manual test plan B7–B9 and B25                                                                                                                                           |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -163,7 +175,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 - **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 2: v0.13 pins, then `eccodeslib<2.48` against an exit crash with pyproj); Python-extension / override interpreters must be upgraded by the user.
 - **Kerchunk** is opt-in (`pip install kerchunk`); not in default uv bundle.
 - Webview protocol: `getDataInfo` / `getCurrentFilePath` / `updateHeaders` requests and `uiStateChanged` / `pythonEnvironmentChanged` events removed; `executeCommand` allowlisted. New Python CLI flags are additive.
-- JSON output: numeric attributes are numbers / arrays; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
+- JSON output: numeric attributes are numbers / arrays; xarray encoding in `encoding` / `encoding_flattened` instead of `__xarray_encoding.*` attribute keys; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
 - Group plot overrides apply field by field (empty group field → global value).
 - `npm run compile` also bundles the webview (esbuild); run `npm install` first.
 
@@ -203,6 +215,8 @@ python scripts/architecture/generate.py          # docs/architecture/ (needs Gra
 python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz)
 ```
 
+Results after moving the xarray encoding to its own section: `npm test` 294 passing; `pytest python/tests` 165 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; `npm run screenshots` checked (overview, expanded, plots, narrow). Golden snapshots: re-`record` needed (every info case changes: `encoding` / `encoding_flattened` fields, no `__xarray_encoding.*` attributes).
+
 Results after removing the plot type selector: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 82 / 0 failing (re-recorded: only `plot__err_broken_file` changed, losing `plot_type='auto'`); `npm run typecheck` and pre-commit clean.
 
 Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` 24 / 24 screenshots (4 themes × 6 scenarios, ~18 s).
@@ -222,7 +236,7 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections).
 
 ---
 
@@ -320,3 +334,7 @@ Architecture diagrams:
 53. feat(tooling): generate architecture diagrams from the code
 54. fix(package): stop shipping docs/ in the .vsix
 55. fix(package): ship only runtime files in the .vsix
+
+Xarray Encoding section:
+
+56. feat(webview): show the xarray encoding in its own collapsible sections

@@ -10,7 +10,7 @@ from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     format_small_value,
 )
-from sdv_backend.info.encoding import collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_attributes, collect_encoding
 from sdv_backend.results import CoordinateInfo, VariableInfo
 
 
@@ -34,7 +34,7 @@ def create_variable_info(
     small_value_display_max_len : int
         Max character length for display (truncation).
     show_xarray_encoding_attributes : bool
-        When True, include ``__xarray_encoding.*`` entries from encoding metadata.
+        When True, fill ``encoding`` with the xarray encoding metadata.
 
     Returns
     -------
@@ -51,10 +51,8 @@ def create_variable_info(
         shape=list(var.shape),
         dimensions=[str(d) for d in var.dims],
         size_bytes=var.nbytes,
-        attributes=collect_dataarray_attributes(
-            var,
-            show_xarray_encoding_attributes=show_xarray_encoding_attributes,
-        ),
+        attributes=collect_attributes(var),
+        encoding=collect_encoding(var) if show_xarray_encoding_attributes else {},
         display_value=display_value,
     )
 
@@ -134,7 +132,7 @@ def create_coord_info(
     small_value_display_max_len : int
         Max character length for display (truncation).
     show_xarray_encoding_attributes : bool
-        When True, include ``__xarray_encoding.*`` entries from encoding metadata.
+        When True, fill ``encoding`` with the xarray encoding metadata.
 
     Returns
     -------
@@ -145,10 +143,7 @@ def create_coord_info(
     if small_variable_bytes > 0 and coord.nbytes <= small_variable_bytes:
         display_value = format_small_value(coord, max_len=small_value_display_max_len)
 
-    attributes = collect_dataarray_attributes(
-        coord,
-        show_xarray_encoding_attributes=show_xarray_encoding_attributes,
-    )
+    attributes = collect_attributes(coord)
     if inherited_from:
         attributes = {**attributes, "inherited_from": inherited_from}
 
@@ -159,5 +154,6 @@ def create_coord_info(
         dimensions=[str(d) for d in coord.dims],
         size_bytes=coord.nbytes,
         attributes=attributes,
+        encoding=collect_encoding(coord) if show_xarray_encoding_attributes else {},
         display_value=display_value,
     )

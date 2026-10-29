@@ -620,6 +620,22 @@ details.sticky-group-details[open] {
     color: var(--vscode-foreground);
 }
 
+/* Number of entries after a section title (VS Code pane header badge) */
+.count-badge {
+    flex: none;
+    min-width: 18px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 16px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--vscode-badge-foreground);
+    background-color: var(--vscode-badge-background);
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+    border-radius: 9px;
+}
+
 /* File information */
 .file-path-container {
     display: flex;
@@ -734,7 +750,8 @@ pre:not(.html-representation pre) {
 .dimensions,
 .variables,
 .coordinates,
-.attributes {
+.attributes,
+.encoding {
     padding-bottom: 8px;
 }
 
@@ -753,7 +770,11 @@ pre:not(.html-representation pre) {
     font-weight: 600;
 }
 
-/* Variable cards: summary row, details and (data variables) plot controls */
+/*
+ * Variable cards: a summary row (name, dims, dtype, shape, size) that shows or
+ * hides the card's sections (Attributes, Xarray Encoding, Plot), each one
+ * collapsible on its own.
+ */
 .variable-details {
     margin-top: 8px;
     overflow: hidden;
@@ -764,11 +785,6 @@ pre:not(.html-representation pre) {
 
 .variable-details:first-child {
     margin-top: 0;
-}
-
-.variable-details:has(+ .variable-plot-controls) {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
 }
 
 .variable-summary {
@@ -833,10 +849,39 @@ pre:not(.html-representation pre) {
 /* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
 .variable-details-content {
     display: block;
+    /* Section twisties line up with the variable name, contents with the section titles */
+    --sdv-section-indent: 28px;
+    --sdv-section-content-indent: 48px;
+}
+
+.variable-section {
+    border-top: 1px solid var(--sdv-border);
+}
+
+.variable-section > .variable-section-summary {
+    gap: 8px;
+    padding: 5px 12px 5px var(--sdv-section-indent);
+    transition: background-color var(--sdv-transition);
+}
+
+.variable-section > .variable-section-summary:hover {
+    background-color: var(--sdv-surface-hover);
+}
+
+.variable-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--vscode-descriptionForeground);
+}
+
+.variable-section-summary:hover .variable-section-title {
+    color: var(--vscode-foreground);
 }
 
 .variable-display-value {
-    padding: 8px 12px;
+    padding: 8px 12px 8px var(--sdv-section-indent);
     font-size: 0.9em;
     color: var(--vscode-descriptionForeground);
     word-break: break-all;
@@ -848,10 +893,9 @@ pre:not(.html-representation pre) {
     padding: 0;
 }
 
-/* Attributes */
+/* Attributes and encoding of a variable card */
 .attributes-container {
-    padding: 8px 12px 10px;
-    border-top: 1px solid var(--sdv-border);
+    padding: 0 12px 10px var(--sdv-section-content-indent);
 }
 
 .attribute-item {
@@ -887,24 +931,17 @@ pre:not(.html-representation pre) {
     border-left: 1px solid var(--sdv-border);
 }
 
-/* Plot controls */
-.variable-plot-controls {
-    background-color: var(--sdv-surface);
-    border: 1px solid var(--sdv-border);
-    border-top: none;
-    border-radius: 0 0 var(--sdv-radius-lg) var(--sdv-radius-lg);
-}
-
+/* Plot section of a data variable card */
 .plot-controls-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    padding: 8px 12px;
+    padding: 2px 12px 10px var(--sdv-section-content-indent);
 }
 
 .plot-container {
-    padding: 0 12px 12px;
+    padding: 0 12px 12px var(--sdv-section-content-indent);
 }
 
 .plot-actions,
@@ -1126,6 +1163,11 @@ pre:not(.html-representation pre) {
 
     .variable-summary::before {
         display: none;
+    }
+
+    .variable-details-content {
+        --sdv-section-indent: 8px;
+        --sdv-section-content-indent: 12px;
     }
 
     .time-controls-row label,

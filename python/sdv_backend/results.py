@@ -55,6 +55,9 @@ class VariableInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Variable attributes/metadata
+    encoding : Dict[str, Any]
+        xarray encoding (dtype, _FillValue, chunks, codecs...); empty when
+        showXarrayEncodingAttributes is off
     display_value : Optional[str], optional
         Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
@@ -65,6 +68,7 @@ class VariableInfo:
     dimensions: list[str]
     size_bytes: int
     attributes: dict[str, Any]
+    encoding: dict[str, Any] = field(default_factory=dict)
     display_value: str | None = None
 
 
@@ -86,6 +90,9 @@ class CoordinateInfo:
         Memory size in bytes
     attributes : Dict[str, Any]
         Coordinate attributes/metadata
+    encoding : Dict[str, Any]
+        xarray encoding (dtype, _FillValue, chunks, codecs...); empty when
+        showXarrayEncodingAttributes is off
     display_value : Optional[str], optional
         Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
     """
@@ -96,6 +103,7 @@ class CoordinateInfo:
     dimensions: list[str]
     size_bytes: int
     attributes: dict[str, Any]
+    encoding: dict[str, Any] = field(default_factory=dict)
     display_value: str | None = None
 
 
@@ -127,6 +135,8 @@ class FileInfoResult:
         Coordinates for each group (for DataTree support)
     attributes_flattened : Dict[str, Dict[str, Any]]
         Attributes for each group (for DataTree support)
+    encoding_flattened : Dict[str, Dict[str, Any]]
+        xarray encoding for each group (absent when showXarrayEncodingAttributes is off)
     xarray_html_repr_flattened : Dict[str, str]
         HTML representation for each group
     xarray_text_repr_flattened : Dict[str, str]
@@ -146,6 +156,7 @@ class FileInfoResult:
     attributes_flattened: dict[str, dict[str, Any]]
     xarray_html_repr_flattened: dict[str, str] = field(repr=False)
     xarray_text_repr_flattened: dict[str, str] = field(repr=False)
+    encoding_flattened: dict[str, dict[str, Any]] = field(default_factory=dict)
     datetime_variables: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     decode_cf_degraded: bool = False
 

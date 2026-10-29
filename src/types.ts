@@ -98,6 +98,7 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            encoding?: { [key: string]: any };
             display_value?: string;
         }>;
     };
@@ -109,10 +110,13 @@ export interface DataInfoResult {
             dimensions: string[];
             size_bytes: number;
             attributes?: { [key: string]: any };
+            encoding?: { [key: string]: any };
             display_value?: string;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };
+    /** Absent when showXarrayEncodingAttributes is off. */
+    encoding_flattened?: { [groupName: string]: { [key: string]: any } };
     xarray_html_repr_flattened: { [groupName: string]: string };
     xarray_text_repr_flattened: { [groupName: string]: string };
     datetime_variables?: {

@@ -178,25 +178,25 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 ### B7. Sharded Zarr shows its compression details
 
 1. Right-click the folder **`sample_zarr_v3_sharded.zarr`** → **Open Scientific Data Viewer (Folder)**.
-2. Find the variable **`reflectance`** and look at its attributes (click it to expand if needed).
+2. Find the variable **`reflectance`**, click it to expand it, then click its **Xarray Encoding** section (closed at first).
 
-✅ You see lines starting with `__xarray_encoding.`, including **`__xarray_encoding.shards`** = `[32, 32]` and **`__xarray_encoding.compressors`** mentioning `zstd`.
+✅ You see **`shards`** = `[32, 32]` and **`compressors`** mentioning `zstd`.
 
 ### B8. Turning off the encoding details hides them
 
 1. In your settings JSON add: `"scientificDataViewer.showXarrayEncodingAttributes": false,` → save.
 2. Back in the viewer of B7, press **🔄 Refresh**.
 
-✅ The `__xarray_encoding.…` lines are gone.
+✅ The **Xarray Encoding** sections are gone (the attributes stay).
 
-3. Remove that line from the settings (or set it to `true`), save, **🔄 Refresh** → the lines come back.
+3. Remove that line from the settings (or set it to `true`), save, **🔄 Refresh** → the sections come back.
 
 ### B9. Compressed NetCDF shows its compression ("filters")
 
 1. Open **`sample_netcdf_gzip.nc`**.
-2. Look at the attributes of variable **`air_temperature`**.
+2. Expand the variable **`air_temperature`**, then its **Xarray Encoding** section.
 
-✅ You see **`__xarray_encoding.filters.zlib`** = `True` and **`__xarray_encoding.filters.complevel`** = `4`.
+✅ You see **`zlib`** = `true` and **`complevel`** = `4`.
 
 ### B10. Choosing which NetCDF reader is used
 
@@ -428,6 +428,24 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The plot appears, as before.
 
+### B25. Variable sections and the Xarray Encoding section
+
+1. Open `sample_data.nc` and expand a group.
+
+✅ Each variable is a single line. Section titles show a number (e.g. **VARIABLES 3**). After **ATTRIBUTES** there is a closed **XARRAY ENCODING** section.
+
+2. Click a variable's line.
+
+✅ Three parts appear: **ATTRIBUTES** (open), **XARRAY ENCODING** (closed) and **PLOT** (with **Create Plot**). No text starting with `__xarray_encoding.` anywhere.
+
+3. Close **Attributes**, open **Xarray Encoding**, then click the variable's line twice.
+
+✅ Everything hides, then comes back as you left it (Attributes closed, Encoding open).
+
+4. Click the line of every variable to close them, then open **Global Plot Controls** and press **Plot All**.
+
+✅ Each variable opens by itself on its plot.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -527,6 +545,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B22 Code review fixes                      |        |       |
 | B23 Old xarray message (optional)          |        |       |
 | B24 No plot type drop-down                 |        |       |
+| B25 Variable sections, Xarray Encoding     |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
 | C Old formats, export, outline             |        |       |
 | D1 Issue forms optional (after merge)      |        |       |

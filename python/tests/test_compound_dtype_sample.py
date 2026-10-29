@@ -28,7 +28,7 @@ def test_compound_dtype_sample_opens_and_encoding_dtype_has_angle_brackets() -> 
 
             result = get_file_info(nc_path)
             pets = next(v for v in result.variables_flattened["/"] if v.name == "pets")
-            dtype_attr = pets.attributes["__xarray_encoding.dtype"]
+            dtype_attr = pets.encoding["dtype"]
             dtype_str = str(dtype_attr)
             assert "<" in dtype_str, (
                 "encoding dtype should contain '<' (endianness) to reproduce #137"

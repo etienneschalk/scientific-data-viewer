@@ -24,11 +24,12 @@ import {
     displayTimestamp,
 } from './representations';
 import {
-    renderAttributeItem,
+    countBadge,
     renderAttributesTree,
     renderCoordinateVariable,
     renderDataVariable,
     renderGroupDimensions,
+    renderKeyValueItems,
     VariableInfo,
 } from './variables';
 
@@ -44,6 +45,7 @@ export interface DataInfo {
     coordinates_flattened?: Record<string, VariableInfo[]>;
     variables_flattened?: Record<string, VariableInfo[]>;
     attributes_flattened?: Record<string, Record<string, unknown>>;
+    encoding_flattened?: Record<string, Record<string, unknown>>;
     datetime_variables?: DatetimeVariablesByGroup;
     xarray_html_repr?: string;
     xarray_text_repr?: string;
@@ -235,34 +237,33 @@ function renderGroup(
             : /*html*/ `<p class="muted-text">No variables found in this group.</p>`;
 
     // Flat list, or collapsible tree when nestedAttributesView is on
-    const attributes = data.attributes_flattened?.[groupName];
+    const groupId = joinId(['data-group', groupName]);
+    const attributes = data.attributes_flattened?.[groupName] ?? {};
+    const attributeCount = Object.keys(attributes).length;
     let attributesHtml = /*html*/ `<p class="muted-text">No attributes found in this group.</p>`;
-    if (attributes && Object.keys(attributes).length > 0) {
+    if (attributeCount > 0) {
         attributesHtml = flags.nestedAttributesView
             ? renderAttributesTree(attributes, [
                   'data-group',
                   groupName,
                   'attributes',
               ])
-            : Object.entries(attributes)
-                  .map(([attrName, value]) =>
-                      renderAttributeItem(
-                          joinId([
-                              'data-group',
-                              groupName,
-                              'attribute',
-                              attrName,
-                          ]),
-                          attrName,
-                          value,
-                      ),
-                  )
-                  .join('');
+            : renderKeyValueItems(attributes, groupId, 'attribute');
     }
 
-    const section = (name: string, title: string, content: string) => /*html*/ `
+    // Collapsed by default; absent when the encoding is not reported
+    const encoding = data.encoding_flattened?.[groupName] ?? {};
+    const encodingCount = Object.keys(encoding).length;
+
+    const section = (
+        name: string,
+        title: string,
+        content: string,
+        count?: number,
+        open = true,
+    ) => /*html*/ `
                 <div class="info-section" id="${joinId(['data-group', groupName, name])}">
-                    <details open> <summary><h4>${title}</h4></summary>
+                    <details${open ? ' open' : ''}> <summary><h4>${title}</h4>${count ? countBadge(count) : ''}</summary>
                         <div class="${name}">
                             ${content}
                         </div>
@@ -270,13 +271,14 @@ function renderGroup(
                 </div>`;
 
     return /*html*/ `
-        <div class="info-section" id="${joinId(['data-group', groupName])}">
+        <div class="info-section" id="${groupId}">
             <details class="sticky-group-details"> <summary><h3>Group: ${escapeHtml(groupName)}</h3></summary>
                 ${renderGroupPlotControls(data, groupName, flags)}
-                ${section('dimensions', 'Dimensions', dimensionsHtml)}
-                ${section('coordinates', 'Coordinates', coordinatesHtml)}
-                ${section('variables', 'Variables', variablesHtml)}
-                ${section('attributes', 'Attributes', attributesHtml)}
+                ${section('dimensions', 'Dimensions', dimensionsHtml, Object.keys(dimensions ?? {}).length)}
+                ${section('coordinates', 'Coordinates', coordinatesHtml, coordinates?.length ?? 0)}
+                ${section('variables', 'Variables', variablesHtml, variables?.length ?? 0)}
+                ${section('attributes', 'Attributes', attributesHtml, attributeCount)}
+                ${encodingCount > 0 ? section('encoding', 'Xarray Encoding', renderKeyValueItems(encoding, groupId, 'encoding-entry'), encodingCount, false) : ''}
             </details>
         </div>
         `;

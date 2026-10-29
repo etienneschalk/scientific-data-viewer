@@ -16,7 +16,7 @@ from sdv_backend.formats.zarr import (
     resolve_store_path,
     zip_zarr_root_prefix,
 )
-from sdv_backend.info.encoding import collect_dataarray_attributes
+from sdv_backend.info.encoding import collect_encoding
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.results import FileInfoError, FileInfoResult
 
@@ -131,14 +131,12 @@ def test_encoding_reports_codec_names_and_shards(tmp_path: Path) -> None:
     )
 
     opened = xr.open_dataset(store, engine="zarr", consolidated=False)
-    attributes = collect_dataarray_attributes(
-        opened["temp"], show_xarray_encoding_attributes=True
-    )
+    encoding = collect_encoding(opened["temp"])
 
-    assert attributes["__xarray_encoding.shards"] == (4, 4)
-    compressors = attributes["__xarray_encoding.compressors"]
+    assert encoding["shards"] == (4, 4)
+    compressors = encoding["compressors"]
     assert [codec["name"] for codec in compressors] == ["zstd"]
-    assert attributes["__xarray_encoding.serializer"]["name"] == "bytes"
+    assert encoding["serializer"]["name"] == "bytes"
 
 
 def test_encoding_values_that_are_not_codecs_are_untouched() -> None:
@@ -146,12 +144,10 @@ def test_encoding_values_that_are_not_codecs_are_untouched() -> None:
     variable.encoding["chunks"] = (2,)
     variable.encoding["dtype"] = "int32"
 
-    attributes = collect_dataarray_attributes(
-        variable, show_xarray_encoding_attributes=True
-    )
+    encoding = collect_encoding(variable)
 
-    assert attributes["__xarray_encoding.chunks"] == (2,)
-    assert attributes["__xarray_encoding.dtype"] == "int32"
+    assert encoding["chunks"] == (2,)
+    assert encoding["dtype"] == "int32"
 
 
 def test_unrelated_json_file_is_not_resolved_to_its_directory(tmp_path: Path) -> None:

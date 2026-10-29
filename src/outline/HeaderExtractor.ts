@@ -16,6 +16,8 @@ function formatAttributeLabel(name: string, value: unknown): string {
     return `${name}: ${typeof value === 'string' ? value : JSON.stringify(value)}`;
 }
 
+type VariableEntry = DataInfoResult['variables_flattened'][string][number];
+
 function isAttributeObject(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -184,91 +186,32 @@ export class HeaderExtractor {
             });
         }
 
-        // Add coordinates section
-        const coordinates = dataInfo.coordinates_flattened[groupName] || [];
-        if (coordinates.length > 0) {
+        // Add coordinates and variables sections
+        const variableSections: Array<
+            ['coordinate' | 'variable', string, VariableEntry[]]
+        > = [
+            [
+                'coordinate',
+                'Coordinates',
+                dataInfo.coordinates_flattened[groupName] || [],
+            ],
+            [
+                'variable',
+                'Variables',
+                dataInfo.variables_flattened[groupName] || [],
+            ],
+        ];
+        for (const [kind, label, variables] of variableSections) {
+            if (variables.length === 0) {
+                continue;
+            }
             subHeaders.push({
-                label: `Coordinates (${coordinates.length})`,
+                label: `${label} (${variables.length})`,
                 level: 3,
                 id: HeaderExtractor.joinId([
                     'data-group',
                     groupName,
-                    'coordinates',
-                ]),
-                children: coordinates
-                    .filter((coord) => coord.name && coord.name.trim() !== '') // Filter out empty coordinate names
-                    .map((coord) => {
-                        const coordChildren: HeaderItem[] = [];
-
-                        // Add attributes for this coordinate if they exist
-                        if (
-                            coord.attributes &&
-                            Object.keys(coord.attributes).length > 0
-                        ) {
-                            const attrEntries = Object.entries(
-                                coord.attributes,
-                            ).filter(
-                                ([attrName]) =>
-                                    attrName && attrName.trim() !== '',
-                            ); // Filter out empty attribute names
-                            if (attrEntries.length > 0) {
-                                coordChildren.push({
-                                    label: `Attributes (${attrEntries.length})`,
-                                    level: 5,
-                                    id: HeaderExtractor.joinId([
-                                        'data-group',
-                                        groupName,
-                                        'coordinate',
-                                        coord.name,
-                                        'attributes',
-                                    ]),
-                                    children: attrEntries.map(
-                                        ([attrName, value]) => ({
-                                            label: formatAttributeLabel(
-                                                attrName,
-                                                value,
-                                            ),
-                                            level: 6,
-                                            id: HeaderExtractor.joinId([
-                                                'data-group',
-                                                groupName,
-                                                'coordinate',
-                                                coord.name,
-                                                'attribute',
-                                                attrName,
-                                            ]),
-                                            children: [],
-                                        }),
-                                    ),
-                                });
-                            }
-                        }
-
-                        return {
-                            label: `${coord.name} (${coord.dtype})`,
-                            level: 4,
-                            id: HeaderExtractor.joinId([
-                                'data-group',
-                                groupName,
-                                'coordinate',
-                                coord.name,
-                            ]),
-                            children: coordChildren,
-                        };
-                    }),
-            });
-        }
-
-        // Add variables section
-        const variables = dataInfo.variables_flattened[groupName] || [];
-        if (variables.length > 0) {
-            subHeaders.push({
-                label: `Variables (${variables.length})`,
-                level: 3,
-                id: HeaderExtractor.joinId([
-                    'data-group',
-                    groupName,
-                    'variables',
+                    `${kind}s`,
                 ]),
                 children: variables
                     .filter(
@@ -276,62 +219,37 @@ export class HeaderExtractor {
                             variable.name && variable.name.trim() !== '',
                     ) // Filter out empty variable names
                     .map((variable) => {
-                        const varChildren: HeaderItem[] = [];
-
-                        // Add attributes for this variable if they exist
-                        if (
-                            variable.attributes &&
-                            Object.keys(variable.attributes).length > 0
-                        ) {
-                            const attrEntries = Object.entries(
-                                variable.attributes,
-                            ).filter(
-                                ([attrName]) =>
-                                    attrName && attrName.trim() !== '',
-                            ); // Filter out empty attribute names
-                            if (attrEntries.length > 0) {
-                                varChildren.push({
-                                    label: `Attributes (${attrEntries.length})`,
-                                    level: 5,
-                                    id: HeaderExtractor.joinId([
-                                        'data-group',
-                                        groupName,
-                                        'variable',
-                                        variable.name,
-                                        'attributes',
-                                    ]),
-                                    children: attrEntries.map(
-                                        ([attrName, value]) => ({
-                                            label: formatAttributeLabel(
-                                                attrName,
-                                                value,
-                                            ),
-                                            level: 6,
-                                            id: HeaderExtractor.joinId([
-                                                'data-group',
-                                                groupName,
-                                                'variable',
-                                                variable.name,
-                                                'attribute',
-                                                attrName,
-                                            ]),
-                                            children: [],
-                                        }),
-                                    ),
-                                });
-                            }
-                        }
-
+                        const idParts = [
+                            'data-group',
+                            groupName,
+                            kind,
+                            variable.name,
+                        ];
                         return {
                             label: `${variable.name} (${variable.dtype})`,
                             level: 4,
-                            id: HeaderExtractor.joinId([
-                                'data-group',
-                                groupName,
-                                'variable',
-                                variable.name,
-                            ]),
-                            children: varChildren,
+                            id: HeaderExtractor.joinId(idParts),
+                            children: [
+                                this.createKeyValueSection(
+                                    'Attributes',
+                                    variable.attributes,
+                                    idParts,
+                                    'attributes',
+                                    'attribute',
+                                    5,
+                                ),
+                                this.createKeyValueSection(
+                                    'Xarray Encoding',
+                                    variable.encoding,
+                                    idParts,
+                                    'encoding',
+                                    'encoding-entry',
+                                    5,
+                                ),
+                            ].filter(
+                                (header): header is HeaderItem =>
+                                    header !== undefined,
+                            ),
                         };
                     }),
             });
@@ -372,7 +290,53 @@ export class HeaderExtractor {
             });
         }
 
+        // Add xarray encoding section (same ids as the webview)
+        const encodingSection = this.createKeyValueSection(
+            'Xarray Encoding',
+            dataInfo.encoding_flattened?.[groupName],
+            ['data-group', groupName],
+            'encoding',
+            'encoding-entry',
+            3,
+        );
+        if (encodingSection) {
+            subHeaders.push(encodingSection);
+        }
+
         return subHeaders;
+    }
+
+    /**
+     * Header of a flat `name: value` section (attributes or encoding) with
+     * one child per entry, or undefined when there is no entry. Ids are the
+     * webview's: `[...parentIdParts, sectionId]` and
+     * `[...parentIdParts, itemKind, name]`.
+     */
+    private static createKeyValueSection(
+        label: string,
+        entries: Record<string, unknown> | undefined,
+        parentIdParts: string[],
+        sectionId: string,
+        itemKind: string,
+        level: number,
+    ): HeaderItem | undefined {
+        const items = Object.entries(entries ?? {}).filter(
+            ([name]) => name && name.trim() !== '',
+        ); // Filter out empty names
+        if (items.length === 0) {
+            return undefined;
+        }
+        return {
+            label: `${label} (${items.length})`,
+            level,
+            id: HeaderExtractor.joinId([...parentIdParts, sectionId]),
+            children: items.map(([name, value]) => ({
+                label: formatAttributeLabel(name, value),
+                level: level + 1,
+                id: HeaderExtractor.joinId([...parentIdParts, itemKind, name]),
+                children: [],
+            })),
+        };
     }
 
     /**

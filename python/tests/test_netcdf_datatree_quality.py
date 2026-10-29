@@ -10,7 +10,6 @@ from sdv_backend.environment.engines import (
     normalize_netcdf_engine_order,
 )
 from sdv_backend.info.datatree import flatten_datatree_groups, inherited_coord_sources
-from sdv_backend.info.encoding import collect_dataarray_attributes
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.results import FileInfoResult
@@ -59,7 +58,7 @@ def test_get_file_info_used_engine_follows_netcdf_order(tmp_path) -> None:
     assert h5_first.used_engine == "h5netcdf"
 
 
-def test_gzip_netcdf_exposes_complevel_filters(tmp_path) -> None:
+def test_gzip_netcdf_exposes_compression_in_encoding(tmp_path) -> None:
     nc_path = tmp_path / "gzip.nc"
     ds = xr.Dataset({"temp": ("x", np.arange(8, dtype="float32"))})
     ds.to_netcdf(
@@ -67,17 +66,17 @@ def test_gzip_netcdf_exposes_complevel_filters(tmp_path) -> None:
         encoding={"temp": {"zlib": True, "complevel": 4}},
     )
 
-    result = get_file_info(nc_path, InfoOptions(small_variable_bytes=0))
-    assert isinstance(result, FileInfoResult)
-    attrs = result.variables_flattened["/"][0].attributes
-    assert attrs["__xarray_encoding.filters.zlib"] is True
-    assert attrs["__xarray_encoding.filters.complevel"] == 4
-
-    hidden = collect_dataarray_attributes(
-        xr.open_dataset(nc_path)["temp"],
-        show_xarray_encoding_attributes=False,
-    )
-    assert not any(k.startswith("__xarray_encoding.filters.") for k in hidden)
+    for engine in ("netcdf4", "h5netcdf"):
+        result = get_file_info(
+            nc_path,
+            InfoOptions(small_variable_bytes=0, netcdf_engine_order=[engine]),
+        )
+        assert isinstance(result, FileInfoResult)
+        assert result.used_engine == engine
+        variable = result.variables_flattened["/"][0]
+        assert variable.encoding["zlib"] is True
+        assert variable.encoding["complevel"] == 4
+        assert not any("zlib" in key for key in variable.attributes)
 
 
 def test_inherited_coordinates_on_child_groups(tmp_path) -> None:

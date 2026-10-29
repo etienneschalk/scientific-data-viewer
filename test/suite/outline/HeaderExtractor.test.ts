@@ -274,4 +274,71 @@ suite('HeaderExtractor Test Suite', () => {
             );
         });
     });
+
+    test('xarray encoding has its own sections, with the webview ids', () => {
+        const variable = (name: string, encoding: Record<string, unknown>) => ({
+            name,
+            dtype: 'float32',
+            shape: [2],
+            dimensions: ['x'],
+            size_bytes: 8,
+            attributes: { units: 'm' },
+            encoding,
+        });
+        const dataInfo = makeDataInfo({
+            dimensions_flattened: { '/': { x: 2 } },
+            coordinates_flattened: { '/': [variable('x', {})] },
+            variables_flattened: {
+                '/': [variable('t', { dtype: 'int16', zlib: true })],
+            },
+            attributes_flattened: { '/': {} },
+            encoding_flattened: { '/': { source: 'a.nc' } },
+        });
+
+        const headers = HeaderExtractor.createDynamicDataViewerHeaders(
+            dataInfo,
+            { nestedAttributesView: false },
+        );
+
+        const t = findById(headers, 'data-group___-___variable___t');
+        assert.ok(t);
+        assert.deepStrictEqual(
+            t.children.map((c) => [c.label, c.id]),
+            [
+                [
+                    'Attributes (1)',
+                    'data-group___-___variable___t___attributes',
+                ],
+                [
+                    'Xarray Encoding (2)',
+                    'data-group___-___variable___t___encoding',
+                ],
+            ],
+        );
+        assert.deepStrictEqual(
+            t.children[1].children.map((c) => [c.label, c.id]),
+            [
+                [
+                    'dtype: int16',
+                    'data-group___-___variable___t___encoding-entry___dtype',
+                ],
+                [
+                    'zlib: true',
+                    'data-group___-___variable___t___encoding-entry___zlib',
+                ],
+            ],
+        );
+        // No entry, no section
+        const x = findById(headers, 'data-group___-___coordinate___x');
+        assert.deepStrictEqual(
+            x?.children.map((c) => c.label),
+            ['Attributes (1)'],
+        );
+        const groupEncoding = findById(headers, 'data-group___-___encoding');
+        assert.strictEqual(groupEncoding?.label, 'Xarray Encoding (1)');
+        assert.strictEqual(
+            groupEncoding?.children[0].id,
+            'data-group___-___encoding-entry___source',
+        );
+    });
 });

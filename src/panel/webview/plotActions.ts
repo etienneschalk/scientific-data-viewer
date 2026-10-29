@@ -54,8 +54,26 @@ function hidePlotMessage(controls: HTMLElement): void {
     message.textContent = '';
 }
 
+/**
+ * Open the variable card and its Plot section (the controls element), so a
+ * plot started while they are collapsed (e.g. by Plot All) is seen. Enclosing
+ * groups keep the state the user chose.
+ */
+function revealPlotSection(controls: HTMLElement): void {
+    if (controls instanceof HTMLDetailsElement) {
+        controls.open = true;
+    }
+    const card = controls.closest<HTMLDetailsElement>(
+        'details.variable-details',
+    );
+    if (card) {
+        card.open = true;
+    }
+}
+
 function displayVariablePlotLoading(controls: HTMLElement): void {
     const { container, image } = plotParts(controls);
+    revealPlotSection(controls);
     hidePlotMessage(controls);
     image.innerHTML = '<p class="plot-loading">Loading...</p>';
     container.classList.remove('hidden');

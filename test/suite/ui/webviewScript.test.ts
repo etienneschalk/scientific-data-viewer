@@ -168,6 +168,11 @@ function sampleDataInfo(): any {
                         range: [1, 2],
                         nested: { a: { b: 1 } },
                     },
+                    encoding: {
+                        dtype: 'float32',
+                        chunks: [3, 2],
+                        zlib: true,
+                    },
                 },
             ],
             [`/g${EVIL}`]: [
@@ -183,6 +188,10 @@ function sampleDataInfo(): any {
         attributes_flattened: {
             '/': { title: EVIL, version: 2, flag: false, list: [1, 'a'] },
             [`/g${EVIL}`]: {},
+        },
+        encoding_flattened: {
+            '/': { source: 'C:\\data\\sample.nc', unlimited_dims: [] },
+            [`/g${EVIL}`]: { [`e${EVIL}`]: EVIL },
         },
         datetime_variables: {
             '/': [
@@ -276,6 +285,103 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(
             harness.document.querySelectorAll('#content img').length,
             0,
+        );
+    });
+
+    test('variable card: Attributes, Xarray Encoding and Plot sections', () => {
+        harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+
+        const doc = harness.document;
+        const card = doc.getElementById(
+            'data-group___-___variable___temperature',
+        );
+        assert.strictEqual(card.tagName, 'DETAILS');
+        assert.strictEqual(card.open, false, 'cards start collapsed');
+        const sections = Array.from(
+            card.querySelectorAll(
+                ':scope > .variable-details-content > details.variable-section',
+            ),
+        ) as any[];
+        assert.deepStrictEqual(
+            sections.map((section) => [
+                section.querySelector('.variable-section-title').textContent,
+                section.querySelector('.count-badge')?.textContent,
+                section.open,
+            ]),
+            [
+                ['Attributes', '7', true],
+                ['Xarray Encoding', '3', false],
+                ['Plot', undefined, true],
+            ],
+        );
+        const [attributes, encoding, plot] = sections;
+        assert.ok(!attributes.textContent.includes('dtype'));
+        assert.ok(
+            doc.getElementById(
+                'data-group___-___variable___temperature___encoding-entry___dtype',
+            ),
+            'encoding entry ids match the outline',
+        );
+        assert.ok(
+            encoding.textContent
+                .replace(/\s+/g, ' ')
+                .includes('chunks : [3,2]'),
+        );
+        assert.strictEqual(plot, harness.plotControls('/temperature'));
+        assert.ok(
+            !doc
+                .getElementById('group-info-container')
+                .textContent.includes('__xarray_encoding'),
+        );
+
+        // A coordinate without attributes or encoding has no section
+        const time = doc.getElementById('data-group___-___coordinate___time');
+        assert.strictEqual(time.querySelectorAll('details').length, 0);
+        assert.ok(
+            time
+                .querySelector('.variable-summary')
+                .classList.contains('not-clickable'),
+        );
+    });
+
+    test('group xarray encoding is a collapsed section of its own', () => {
+        harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+
+        const doc = harness.document;
+        const section = doc.getElementById('data-group___-___encoding');
+        const details = section.querySelector('details');
+        assert.strictEqual(details.open, false);
+        assert.strictEqual(
+            section.querySelector('.count-badge').textContent,
+            '2',
+        );
+        assert.ok(
+            section.textContent
+                .replace(/\s+/g, ' ')
+                .includes('source : C:\\data\\sample.nc'),
+        );
+        assert.ok(
+            !doc
+                .getElementById('data-group___-___attributes')
+                .textContent.includes('source'),
+        );
+    });
+
+    test('a plot opens its collapsed variable card and Plot section', () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        const card = controls.closest('details.variable-details');
+        controls.open = false;
+        assert.strictEqual(card.open, false);
+
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+
+        assert.strictEqual(card.open, true);
+        assert.strictEqual(controls.open, true);
+        // Encoding keeps the state the user chose
+        assert.strictEqual(
+            card.querySelector('[id$="___encoding"]').open,
+            false,
         );
     });
 

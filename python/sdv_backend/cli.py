@@ -270,7 +270,7 @@ Examples:
     parser.add_argument(
         "--no-show-xarray-encoding-attributes",
         action="store_true",
-        help="Omit __xarray_encoding.* attribute entries from group, coordinate, and variable metadata",
+        help="Omit the xarray encoding of groups, coordinates, and variables",
     )
 
     parser.add_argument(

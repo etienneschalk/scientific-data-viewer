@@ -9,6 +9,7 @@ export interface VariableInfo {
     dimensions?: string[];
     size_bytes?: number;
     attributes?: Record<string, unknown>;
+    encoding?: Record<string, unknown>;
     display_value?: string;
 }
 
@@ -90,7 +91,7 @@ export function renderAttributesTree(
         .join('\n');
 }
 
-export function renderAttributeItem(
+function renderAttributeItem(
     id: string,
     attrName: string,
     value: unknown,
@@ -104,24 +105,62 @@ export function renderAttributeItem(
         </div>`;
 }
 
-function renderVariableAttributes(
-    attributes: Record<string, unknown>,
+/** Pill with the number of entries of a section, after its title. */
+export function countBadge(count: number): string {
+    return /*html*/ `<span class="count-badge">${count}</span>`;
+}
+
+/** Flat `name : value` rows; `itemKind` is the id part of each row. */
+export function renderKeyValueItems(
+    entries: Record<string, unknown>,
     parentId: string,
+    itemKind: 'attribute' | 'encoding-entry',
 ): string {
-    const items = Object.entries(attributes)
-        .map(([attrName, value]) =>
+    return Object.entries(entries)
+        .map(([name, value]) =>
             renderAttributeItem(
-                joinId([parentId, 'attribute', attrName]),
-                attrName,
+                joinId([parentId, itemKind, name]),
+                name,
                 value,
             ),
         )
         .join('');
-    return /*html*/ `<div class="attributes-container">${items}</div>`;
 }
 
 /**
- * Shared markup of coordinate and data variables.
+ * One collapsible section of a variable card (Attributes, Xarray Encoding,
+ * Plot): a small pane header, open or closed by default.
+ */
+function renderVariableSection(
+    id: string,
+    title: string,
+    content: string,
+    options: {
+        open: boolean;
+        count?: number;
+        /** Plot section: `.variable-plot-controls` with its data-variable */
+        plotVariable?: string;
+    },
+): string {
+    const { open, count, plotVariable } = options;
+    const plotAttrs =
+        plotVariable === undefined
+            ? ''
+            : ` data-variable="${escapeHtml(plotVariable)}"`;
+    return /*html*/ `
+                <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                    <summary class="variable-section-summary">
+                        <span class="variable-section-title">${title}</span>
+                        ${count === undefined ? '' : countBadge(count)}
+                    </summary>
+                    ${content}
+                </details>`;
+}
+
+/**
+ * Shared markup of coordinate and data variables: a card whose summary row
+ * (name, dims, dtype, shape, size) shows or hides all its sections at once,
+ * each section keeping its own open state.
  * @param dataVariable value of data-variable (full path for data variables)
  */
 function renderVariableDetails(
@@ -139,27 +178,50 @@ function renderVariableDetails(
         : '';
     const baseId = joinId(['data-group', groupName, kind, variable.name]);
     const attributes = variable.attributes ?? {};
-    const hasAttributes = Object.keys(attributes).length > 0;
-    const attributesContent = hasAttributes
-        ? renderVariableAttributes(attributes, baseId)
-        : '';
-    const displayValueBlock = variable.display_value
-        ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>`
-        : '';
+    const encoding = variable.encoding ?? {};
+    const attributeCount = Object.keys(attributes).length;
+    const encodingCount = Object.keys(encoding).length;
+
+    const sections = [
+        variable.display_value
+            ? `<div class="variable-display-value"><code>${escapeHtml(variable.display_value)}</code></div>`
+            : '',
+        attributeCount > 0
+            ? renderVariableSection(
+                  joinId([baseId, 'attributes']),
+                  'Attributes',
+                  /*html*/ `<div class="attributes-container">${renderKeyValueItems(attributes, baseId, 'attribute')}</div>`,
+                  { open: true, count: attributeCount },
+              )
+            : '',
+        encodingCount > 0
+            ? renderVariableSection(
+                  joinId([baseId, 'encoding']),
+                  'Xarray Encoding',
+                  /*html*/ `<div class="attributes-container">${renderKeyValueItems(encoding, baseId, 'encoding-entry')}</div>`,
+                  { open: false, count: encodingCount },
+              )
+            : '',
+        kind === 'variable'
+            ? renderVariableSection(
+                  joinId([baseId, 'plot']),
+                  'Plot',
+                  renderPlotControls(),
+                  { open: true, plotVariable: dataVariable },
+              )
+            : '',
+    ].join('');
 
     return /*html*/ `
         <details class="variable-details" id="${baseId}" data-variable="${escapeHtml(dataVariable)}">
-            <summary class="variable-summary ${hasAttributes ? '' : 'not-clickable'}">
+            <summary class="variable-summary ${sections ? '' : 'not-clickable'}">
                 <span class="variable-name" title="${escapeHtml(dataVariable)}">${escapeHtml(variable.name)}</span>
                 <span class="dims" title="${escapeHtml(dimsStr)}">${escapeHtml(dimsStr)}</span>
                 <span class="dtype-shape" title="${escapeHtml(variable.dtype)}"><code>${escapeHtml(variable.dtype)}</code></span>
                 <span class="dtype-shape" title="${escapeHtml(shapeStr)}">${escapeHtml(shapeStr)}</span>
                 ${sizeStr ? `<span class="size">${escapeHtml(sizeStr)}</span>` : ''}
             </summary>
-            <div class="variable-details-content">
-                ${displayValueBlock}
-                <div id="${joinId(['data-group', groupName, kind, variable.name, 'attributes'])}">${attributesContent}</div>
-            </div>
+            <div class="variable-details-content">${sections}</div>
         </details>`;
 }
 
@@ -181,32 +243,31 @@ export function renderDataVariable(
 ): string {
     // For datatree variables, use full path (group/variable) for plotting
     const fullVariableName = `${groupName === '/' ? '' : groupName}/${variable.name}`;
-    return (
-        renderVariableDetails(
-            variable,
-            groupName,
-            'variable',
-            fullVariableName,
-        ) + renderVariablePlotControls(fullVariableName)
+    return renderVariableDetails(
+        variable,
+        groupName,
+        'variable',
+        fullVariableName,
     );
 }
 
-/** Per-variable plot block; its buttons are handled through `data-action`. */
-function renderVariablePlotControls(variableName: string): string {
+/**
+ * Content of a data variable's Plot section (the section element is the
+ * `.variable-plot-controls`); its buttons are handled through `data-action`.
+ */
+function renderPlotControls(): string {
     return /*html*/ `
-        <div class="variable-plot-controls" data-variable="${escapeHtml(variableName)}">
-            <div class="plot-controls-row">
-                <button class="create-plot-button" data-action="create-plot">Create Plot</button>
-            </div>
-            <div class="plot-container hidden">
-                <div class="plot-actions">
-                    <button class="plot-action-button" data-action="reset-plot">Reset</button>
-                    <button class="plot-action-button" data-action="save-plot">Save</button>
-                    <button class="plot-action-button" data-action="save-plot-as">Save As...</button>
-                    <button class="plot-action-button" data-action="open-plot">Open</button>
-                </div>
-                <div class="plot-error hidden"></div>
-                <div class="plot-image-container"></div>
-            </div>
-        </div>`;
+                    <div class="plot-controls-row">
+                        <button class="create-plot-button" data-action="create-plot">Create Plot</button>
+                    </div>
+                    <div class="plot-container hidden">
+                        <div class="plot-actions">
+                            <button class="plot-action-button" data-action="reset-plot">Reset</button>
+                            <button class="plot-action-button" data-action="save-plot">Save</button>
+                            <button class="plot-action-button" data-action="save-plot-as">Save As...</button>
+                            <button class="plot-action-button" data-action="open-plot">Open</button>
+                        </div>
+                        <div class="plot-error hidden"></div>
+                        <div class="plot-image-container"></div>
+                    </div>`;
 }
