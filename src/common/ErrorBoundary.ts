@@ -126,7 +126,8 @@ export class ErrorBoundary {
     ): string {
         // Map technical errors to user-friendly messages
         if (error.message.includes('Python environment not ready')) {
-            return 'Python environment is not ready. Please configure Python interpreter.';
+            // The message says why (no interpreter, missing packages...)
+            return `${error.message}. Please configure the Python interpreter.`;
         }
 
         if (error.message.includes('Missing Python package')) {

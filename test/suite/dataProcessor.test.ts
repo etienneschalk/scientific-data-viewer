@@ -239,6 +239,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle Python environment not ready', async () => {
         const mockPythonManager = {
             isReady: () => false,
+            notReadyReason: 'missing core packages in /usr/bin/python3: xarray',
         } as any;
 
         const processor = new DataProcessor(mockPythonManager);
@@ -249,13 +250,17 @@ suite('DataProcessor Test Suite', () => {
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
+            assert.strictEqual(
+                error.message,
+                'Python environment not ready: missing core packages in /usr/bin/python3: xarray',
+            );
         }
     });
 
     test('should handle Python environment not ready for plot', async () => {
         const mockPythonManager = {
             isReady: () => false,
+            notReadyReason: 'missing core packages in /usr/bin/python3: xarray',
         } as any;
 
         const processor = new DataProcessor(mockPythonManager);
@@ -266,7 +271,10 @@ suite('DataProcessor Test Suite', () => {
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
+            assert.strictEqual(
+                error.message,
+                'Python environment not ready: missing core packages in /usr/bin/python3: xarray',
+            );
         }
     });
 

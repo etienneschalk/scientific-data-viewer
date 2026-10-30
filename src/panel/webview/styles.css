@@ -292,6 +292,7 @@ kbd {
     align-items: center;
     gap: 8px;
     min-width: 0;
+    overflow: hidden;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -321,6 +322,7 @@ kbd {
 
 .controls {
     display: flex;
+    flex-shrink: 0;
     gap: 12px;
     align-items: center;
 }
@@ -1268,7 +1270,9 @@ pre:not(.html-representation pre) {
 }
 
 .slice-part:invalid,
-.slice-part[aria-invalid='true'] {
+.slice-part[aria-invalid='true'],
+.plot-input:invalid,
+.plot-input[aria-invalid='true'] {
     border-color: var(
         --vscode-inputValidation-errorBorder,
         var(--vscode-errorForeground)
@@ -1434,6 +1438,13 @@ pre:not(.html-representation pre) {
 
 @media (max-width: 600px) {
     .timestamp {
+        display: none;
+    }
+}
+
+/* The toolbar keeps its four buttons: the version badge goes first */
+@media (max-width: 380px) {
+    .title small {
         display: none;
     }
 }

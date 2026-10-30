@@ -29,7 +29,13 @@ import {
     saveVariablePlot,
     saveVariablePlotAs,
 } from './plotActions';
-import { resetPlotControls, syncColWrapAutoCheckbox } from './plotParams';
+import {
+    handleInheritedCheckboxChange,
+    resetPlotControls,
+    showInheritedCheckboxes,
+    syncColWrapAutoCheckbox,
+    validatePlotParameterInput,
+} from './plotParams';
 import {
     DataLoadedPayload,
     displayAll,
@@ -237,12 +243,15 @@ function setupEventListeners(): void {
         ) {
             syncColWrapAutoCheckbox(target);
         }
+        handleInheritedCheckboxChange(target);
         handleTimeControlEvent(target);
         handleDimensionSliceEvent(target);
+        validatePlotParameterInput(target);
     });
     document.addEventListener('input', (event) => {
         handleTimeControlEvent(event.target);
         handleDimensionSliceEvent(event.target);
+        validatePlotParameterInput(event.target);
     });
 }
 
@@ -273,6 +282,7 @@ function initialize(): void {
     if (messageBus.isDegradedMode) {
         // Exported HTML viewed in a browser: static content, no extension.
         showDegradedModeIndicator();
+        showInheritedCheckboxes(document);
     }
 }
 

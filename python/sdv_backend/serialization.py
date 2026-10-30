@@ -8,11 +8,12 @@ import numpy as np
 
 
 def sanitize_non_finite(obj: Any) -> Any:
-    """Replace NaN / ±inf floats by their ``repr`` (JSON has no such numbers).
+    """Replace NaN / ±inf floats by ``"nan"`` / ``"inf"`` / ``"-inf"`` (JSON
+    has no such numbers).
 
     Walks dicts, lists and tuples (tuples become lists, as JSON would make
     them anyway). Covers ``float`` subclasses such as ``np.float64``, whose
-    ``repr`` is e.g. ``np.float64(nan)``; other numpy floats are handled by
+    ``repr`` would be ``np.float64(nan)``; other numpy floats are handled by
     ``ComplexEncoder.default``.
     """
     if isinstance(obj, dict):
@@ -20,7 +21,7 @@ def sanitize_non_finite(obj: Any) -> Any:
     if isinstance(obj, (list, tuple)):
         return [sanitize_non_finite(v) for v in obj]
     if isinstance(obj, float) and not math.isfinite(obj):
-        return repr(obj)
+        return str(float(obj))
     return obj
 
 

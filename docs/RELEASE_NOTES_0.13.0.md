@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections. A running plot can be **cancelled on its own**, next to its **Create Plot** button. The **Loaded:** time at the top right is now shown in **local time** (new setting `showLoadTimeInLocalTime`, on by default).
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections. A running plot can be **cancelled on its own**, next to its **Create Plot** button. The **Loaded:** time at the top right is now shown in **local time** (new setting `showLoadTimeInLocalTime`, on by default). A final **QA pass** (adversarial, differential and end-to-end testing; tools kept in `scripts/qa/`) found no regression in what is read or plotted and fixed 20 issues: small negative **vmin / vmax** (`-1e-7`) that broke the plot, `np.float64(nan)` shown for `NaN`, viewers closed while loading that left their outline or kept plotting, Plot All re-running a running plot, numbers typed wrong silently ignored, group checkboxes that could not override the global ones, unclear Kerchunk and Python-environment errors (see [§ QA pass](#qa-pass)).
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -25,6 +25,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Plot controls**     | Aligned fields sorted in Facets / Axes / Color / Figure, Reset per block; slices as start : stop : step boxes with a two-handle slider (see [§ Plot controls layout](#plot-controls-layout)) |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))                             |
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                                                |
+| **QA pass**           | 20 fixes from adversarial / differential / end-to-end testing; harnesses in `scripts/qa/` (see [§ QA pass](#qa-pass))                                                                        |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -74,10 +75,20 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 - Plotting a **cftime** time axis needs `nc-time-axis` (not in the uv bundle); without it the plot error says so.
 - The **plot type selector** ("Auto (Recommended)") next to **Create Plot** is gone. It only ever offered `auto`, so plots do not change. Scripts calling the backend directly use `get_data_info.py plot <file> <variable> [flags]`: the third positional argument (`auto`) no longer exists and would be read as an unexpected argument.
 
+### QA pass changes visible to users
+
+- **Group Plot Controls checkboxes** start at "use the global value", drawn as a dash; a click gives the group its own value, **Reset** returns to the global one. Before, a group checkbox left at its default could not override a changed global checkbox.
+- **Numbers typed wrong** in the plot parameters (`1,5`, `-3` for size) are outlined in red and **Create Plot** says which field is wrong instead of plotting without it.
+- **`NaN` / `inf`** read `nan` / `inf` (not `np.float64(nan)`); numeric array attributes read `[0.1, nan, inf]`.
+- **vmin / vmax** like `-0.0000001` work (they failed with `argument --vmin: expected one argument`).
+- **`maxFileSize`** of 0 or less means no limit; the limit never applied to Zarr directories, which the setting now says.
+- **"Python environment not ready"** says why: interpreter not found, missing core packages (with the `pip install` command) or Python older than 3.10.
+- Closing a viewer stops its running plots.
+
 ### Building from source (contributors)
 
 - `npm run compile` now also bundles the webview (`src/panel/webview/*.ts` → `out/webview/webview.js`, esbuild); `npm run typecheck` checks the extension host and the webview. Run `npm install` first (new devDependency `esbuild`).
-- The `.vsix` now contains only what the extension runs: 98 files / 1.1 MB instead of 252 files / 2.5 MB. Gone: `docs/`, the TypeScript sources of the extension host, tool caches, repository scripts and configs, the sample data generators, notebooks and test scripts of `python/`, unused icons and the README screenshots. `.vscodeignore` lists what ships from `src/` and `python/`: **a new runtime file there must be added to it** (vsce applies `!` patterns whatever their order). Check with `npx vsce ls`.
+- The `.vsix` now contains only what the extension runs: 70 files / 1.05 MB instead of 252 files / 2.5 MB. Gone: `docs/`, the TypeScript sources of the extension host and their source maps, tool caches, repository scripts and configs, the sample data generators, notebooks and test scripts of `python/`, unused icons and the README screenshots. `.vscodeignore` is an allow-list: it excludes everything and names each runtime file, so **a new runtime file must be added to it**, and nothing else can be packaged by accident (vsce applies `!` patterns whatever their order). `vscode:prepublish` deletes `out/` before compiling. Check with `npx vsce ls`.
 
 ### Python backend location (contributors)
 
@@ -281,6 +292,44 @@ The architecture was described in prose and one ASCII sketch (`docs/TECHNICAL_AR
 - The SVG files parse as XML and render as images in light and dark; the HTML page in headless Chromium; pre-commit leaves the generated `README.md` unchanged. `docs/architecture/` is not in the `.vsix` (`vsce ls`).
 
 ---
+
+## QA pass
+
+### Why
+
+Many things changed in v0.13; a tester's pass was needed before the release, trying to break the viewer on every format rather than following the happy path.
+
+### What was done
+
+- **Backend, differential**: v0.12.1 and v0.13 run with the same interpreter on every sample file and 53 hostile files; `info` compared structurally, every variable plotted by both and the images compared pixel by pixel, ~80 plot-option scenarios. Every difference traced to an intended change; 133 of 145 default plots are pixel-identical (the rest: newly opened formats, the intended `(time, station)` aspect fix, identical failures).
+- **Webview**: the real page (real CSP, compiled bundle, VS Code theme variables) in headless Chromium, with real typing and mouse drags, the backend through the extension's own argument builder and process runner. No injection through any hostile name or value (live page and exported HTML).
+- **Extension host**: suites inside a real VS Code against the live panels and message bus (opening every format, Kerchunk, plots, abort, save paths, settings, outline, multiple panels, packaging).
+- Report: [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md); fixes tracked in [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md). The tools are versioned in `scripts/qa/` (see its README).
+
+### What was fixed
+
+| Finding                                                                                      | Fix                                                                                     |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| vmin / vmax `-1e-7`, values starting with `-` read as CLI options                            | The CLI joins each value option with its value (`--vmin=-1e-7`) before parsing          |
+| `np.float64(nan)` / `np.float64(inf)` in attributes and `_FillValue`                         | Written `nan` / `inf`; numeric arrays shown `[0.1, nan, inf]`                           |
+| Viewer closed while loading: ghost outline, error toast, plot kept running                   | A load ending after close (or superseded by a newer one) is ignored; close aborts plots |
+| Export Webview exported the first visible viewer, not the focused one                        | Focused viewer first                                                                    |
+| Plot All re-ran a plot already running; Cancel then left an orphan                           | Plot All skips running variables                                                        |
+| Numbers typed wrong silently ignored                                                         | Outlined in red; the plot is refused with the list of fields                            |
+| Group checkbox could not override a changed global checkbox                                  | "Use the global value" state (dash) until clicked                                       |
+| Kerchunk: generic or empty error messages                                                    | Precise reasons (invalid JSON, no Zarr metadata, missing target file)                   |
+| Header icons over the version badge below 380 px                                             | Badge hidden, buttons kept                                                              |
+| `maxFileSize` ≤ 0 refused everything; `facetgridFigsize` < 0.1 accepted                      | No limit; ignored                                                                       |
+| Install command accepted pip / uv options from the webview                                   | Requirement specifiers only                                                             |
+| Export with no captured page opened the save dialog first                                    | Fails at once                                                                           |
+| "Python environment not ready" without a reason; Python 3.8 `TypeError`                      | Reason given; Python < 3.10 reported as such                                            |
+| Outline Expand All: hundreds of concurrent reveals, one nested group left collapsed          | Revealed one at a time, parents first, failed ones retried once                         |
+| `.vsix` was a deny-list: any new top-level folder (`.qa/`) got packaged; source maps shipped | Allow-list of runtime files; no source maps; `out/` cleaned before packaging            |
+
+### How it was checked
+
+- `npm test` (325 passing), `pytest python/tests` (195 passing), `npm run typecheck`, `generate.py --check`, golden snapshots re-recorded after checking that every difference is the encoding move or `nan`.
+- `scripts/qa/`: webview scenarios (render, controls, time, cancel), end-to-end suites in VS Code 1.144, backend differential against v0.12.1 (no regression).
 
 ## New settings (summary)
 
@@ -732,6 +781,23 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 8. **Reset** next to **Dimension slices** → boxes empty, handles back at both ends. Same in a group's **Group Plot Controls** (group values still override the global ones).
 9. Set `time` to start `1` stop `3` step `2`, type start `2` stop `1` in another dimension, then export the webview and open the HTML in a browser → the boxes show the same values, the handles and highlight are where they were, the empty selection is still outlined in red; the boxes cannot be edited, the handles do not move and there is no **Reset** button.
 
+### 27. QA pass fixes
+
+**Expect:** the fixes of [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md) hold.
+
+**Test:**
+
+1. Open `sample-data/sample_data.netcdf`, slice `time` start `0`, **vmin** `-0.0000001` → **Create Plot** → the plot appears (no `expected one argument` error).
+2. Type **vmin** `1,5` → the box turns red, its tooltip says to use a dot; **Create Plot** → "Invalid plot parameters, nothing was plotted: Global Plot Controls: vmin …". Fix it to `1.5` → the plot is made.
+3. Uncheck **add_colorbar** in the Global Plot Controls; in the group's **Group Plot Controls**, the add_colorbar box shows a dash → **Create Plot** → no colorbar. Click the group box (checked) → colorbar. **Reset** of the group's Plot parameters → dash again.
+4. Open `sample-data/sample_data.nc`, expand a coordinate → **Xarray Encoding** → `_FillValue : nan` (not `np.float64(nan)`).
+5. Open `sample-data/sample_data_multiple_groups.nc` and close the tab at once → once the load would have finished, the **Data Structure** outline is empty. Open `sample-data/broken_file.nc` and close it at once → no error notification.
+6. Set `plotTimeoutMs` to `600000`, start a plot of `/temperature` in `sample-data/sample_data.nc`, close the tab → no `get_data_info.py plot` process left after a few seconds (`ps`).
+7. Open two viewers side by side, focus the right one, run **Export Webview Content** → the proposed file name is the right one's.
+8. Start a slow plot, press **Plot All**, then **Cancel** on that variable → "Plot cancelled." stays.
+9. Narrow the editor to 320 px → the four toolbar buttons are separate from the title (the version badge is hidden).
+10. Select a Python 3.8 interpreter (`overridePythonInterpreter`) and open a file → the error says Python 3.10 or newer is required; select a venv without xarray → the error names the missing package and the `pip install` command.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -742,7 +808,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **cftime axes** need `nc-time-axis` to be plotted (not in the uv bundle).
 - **`joinId`** maps every non-alphanumeric character to `-`, so groups like `/a.b` and `/a-b` share element ids (rare; pre-existing).
 - **Kerchunk** Parquet references: context menu exists; validation is lighter than JSON `refs` sniffing, and relative target paths are not resolved (JSON only) — treat as experimental.
-- **NaN `fill_value`** of Zarr variables is displayed as the text `np.float64(nan)` in the Xarray Encoding section.
+- **Names longer than 256 bytes** (allowed by HDF5, not by netCDF): the netcdf4 engine reads them past netCDF-C's limit, so a file may open with a garbled name, or `info` and `plot` may disagree ("Variable … not found"). Upstream issue; put `h5netcdf` first in `netcdfEngineOrder` for such files.
+- **Python 3.10** or newer is required by the backend; older interpreters are reported as such.
 - **Viewer styling on VS Code < 1.77** (no `color-mix()`): cards and panels have no tinted background; everything stays readable.
 - **Screenshots** use theme variables recorded from VS Code 1.144 (`scripts/screenshots/themes/`); re-run `capture-themes.mjs` when the default themes change. The xarray HTML representation keeps its own colors in high-contrast themes.
 - **Architecture diagrams**: the sequence diagrams, the process overview and the pipelines are drawn by hand in `scripts/architecture/figures.py`; `--check` only catches renamed or removed symbols, not a changed order of calls. Graph layouts can differ slightly between Graphviz versions (generated with 2.43).
@@ -763,6 +830,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                      |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)       |
 | **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time |
+| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md)                                                                                                                                     |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                      |
 
 ---
@@ -774,5 +842,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
 - [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)
 - [Upgrade test plan (users updating from v0.12)](./v0.13/UPGRADE_TEST_PLAN.md)
+- [QA report](./v0.13/QA_REPORT_0.13.0.md) and [QA fixes](./v0.13/QA_FIXES_0.13.0.md)
 - [v0.13 planning folder](./v0.13/README.md)
 - [Previous release: v0.12.1](./RELEASE_NOTES_0.12.1.md)

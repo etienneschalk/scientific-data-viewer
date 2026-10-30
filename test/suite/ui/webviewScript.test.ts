@@ -166,6 +166,11 @@ function sampleDataInfo(): any {
                         valid: true,
                         missing: null,
                         range: [1, 2],
+                        limits: [0.1, 'nan', 'inf'],
+                        grid: [
+                            [1, 2],
+                            [3, '-inf'],
+                        ],
                         nested: { a: { b: 1 } },
                     },
                     encoding: {
@@ -264,7 +269,7 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(text(), 'Loaded: 2026-01-01T00:00:00.000Z');
     });
 
-    test('renders non-string attribute values as JSON text', () => {
+    test('renders non-string attribute values as JSON text, numeric arrays like numpy', () => {
         harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
 
         const text = harness.document.getElementById(
@@ -275,7 +280,9 @@ suite('Webview script (jsdom)', () => {
             'count : 3',
             'valid : true',
             'missing : null',
-            'range : [1,2]',
+            'range : [1, 2]',
+            'limits : [0.1, nan, inf]',
+            'grid : [[1, 2], [3, -inf]]',
             'nested : {"a":{"b":1}}',
             'version : 2',
             'flag : false',
@@ -331,7 +338,7 @@ suite('Webview script (jsdom)', () => {
                 section.open,
             ]),
             [
-                ['Attributes', '7', true],
+                ['Attributes', '9', true],
                 ['Xarray Encoding', '3', false],
                 ['Plot', undefined, true],
             ],
@@ -347,7 +354,7 @@ suite('Webview script (jsdom)', () => {
         assert.ok(
             encoding.textContent
                 .replace(/\s+/g, ' ')
-                .includes('chunks : [3,2]'),
+                .includes('chunks : [3, 2]'),
         );
         assert.strictEqual(plot, harness.plotControls('/temperature'));
         assert.ok(
@@ -835,6 +842,112 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
+    test('a group checkbox uses the global value until clicked, again after Reset', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const safeId = 'group-plot___-';
+        const globalColorbar = doc.getElementById('addColorbarCheckbox');
+        const groupColorbar = doc.getElementById(
+            `group-add-colorbar-${safeId}`,
+        );
+        const create = () => {
+            harness.click(
+                harness
+                    .plotControls('/temperature')
+                    .querySelector('[data-action="create-plot"]'),
+            );
+            return harness.requests('createPlot').pop().payload;
+        };
+        assert.strictEqual(groupColorbar.indeterminate, true);
+        assert.strictEqual(groupColorbar.getAttribute('data-inherit'), 'true');
+
+        globalColorbar.checked = false;
+        assert.strictEqual(create().addColorbar, false, 'global value used');
+
+        groupColorbar.click();
+        assert.strictEqual(groupColorbar.indeterminate, false);
+        assert.strictEqual(groupColorbar.checked, true);
+        assert.strictEqual(groupColorbar.getAttribute('data-inherit'), null);
+        assert.strictEqual(create().addColorbar, true, 'group overrides');
+
+        harness.click(
+            groupColorbar
+                .closest('.plot-controls-subsection')
+                .querySelector('[data-action="clear-plot-controls"]'),
+        );
+        assert.strictEqual(groupColorbar.indeterminate, true);
+        assert.strictEqual(create().addColorbar, false, 'back to global');
+    });
+
+    test('a number typed wrong is outlined and blocks the plot with a message', async () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const vmin = doc.getElementById('plotVminInput');
+        const size = doc.getElementById('plotSizeInput');
+        harness.setValue(vmin, '1,5', 'input');
+        harness.setValue(size, '-3', 'input');
+        assert.strictEqual(vmin.getAttribute('aria-invalid'), 'true');
+        assert.match(vmin.title, /use a dot as decimal separator/);
+        assert.strictEqual(size.getAttribute('aria-invalid'), 'true');
+
+        const controls = harness.plotControls('/temperature');
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        assert.strictEqual(harness.requests('createPlot').length, 0);
+        const message = controls.querySelector('.plot-error').textContent;
+        assert.match(message, /nothing was plotted/);
+        assert.match(
+            message,
+            /Global Plot Controls: vmin: "1,5" is not a number/,
+        );
+        assert.match(
+            message,
+            /Global Plot Controls: size: must be greater than 0/,
+        );
+
+        harness.setValue(vmin, '1.5', 'input');
+        const reset = doc.querySelector(
+            '#section-global-plot-controls .plot-parameters [data-action="clear-plot-controls"]',
+        );
+        harness.click(reset);
+        assert.strictEqual(vmin.getAttribute('aria-invalid'), null);
+        assert.strictEqual(size.getAttribute('aria-invalid'), null);
+        harness.setValue(vmin, '-1e-7', 'input');
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+        const [request] = harness.requests('createPlot');
+        assert.strictEqual(request.payload.vmin, -1e-7);
+    });
+
+    test('Plot All does not start a second plot of a variable already plotting', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+        const [first] = harness.requests('createPlot');
+
+        harness.click(harness.document.getElementById('createAllPlotsButton'));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        const forTemperature = harness
+            .requests('createPlot')
+            .filter((r: any) => r.payload.variable === '/temperature');
+        assert.strictEqual(forTemperature.length, 1);
+        // Its Cancel still reaches the only running process
+        harness.click(controls.querySelector('[data-action="cancel-plot"]'));
+        const [abort] = harness.requests('abortPlot');
+        assert.strictEqual(
+            abort.payload.operationId,
+            first.payload.operationId,
+        );
+        harness.respond(first.id, 'iVBORfake');
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.strictEqual(
+            controls.querySelector('.plot-error').textContent,
+            'Plot cancelled.',
+        );
+        assert.strictEqual(controls.querySelector('img'), null);
+    });
+
     test('Cancel stops the plot of one variable', async () => {
         harness.loadData(sampleDataInfo());
         const controls = harness.plotControls('/temperature');
@@ -1003,6 +1116,8 @@ suite('Webview script (jsdom)', () => {
         const doc = harness.document;
         harness.setValue(doc.getElementById('plotBinsInput'), '42');
         doc.getElementById('robustCheckbox').checked = true;
+        // One group checkbox set, the others left at "use the global value"
+        doc.getElementById('group-robust-group-plot___-').click();
         harness.click(doc.getElementById('exportWebviewButton'));
 
         const [request] = harness.requests('exportWebview');
@@ -1026,6 +1141,15 @@ suite('Webview script (jsdom)', () => {
                 offlineDoc.getElementById('refreshButton').style.display,
                 'none',
             );
+            const groupRobust = offlineDoc.getElementById(
+                'group-robust-group-plot___-',
+            );
+            const groupColorbar = offlineDoc.getElementById(
+                'group-add-colorbar-group-plot___-',
+            );
+            assert.strictEqual(groupRobust.checked, true);
+            assert.strictEqual(groupRobust.indeterminate, false);
+            assert.strictEqual(groupColorbar.indeterminate, true);
         } finally {
             offline.window.close();
         }

@@ -329,4 +329,22 @@ suite('DataViewerPanel Test Suite', () => {
         // Should be removed from active panels
         assert.ok(!DataViewerPanel.getPanel(panel.getId()));
     });
+
+    test('getActivePanel prefers the focused panel over another visible one', () => {
+        DataViewerPanel.dispose();
+        const left = DataViewerPanel.createFromWebviewPanel(
+            vscode.Uri.file('/path/to/left.nc'),
+            { ...mockWebviewPanel, active: false, visible: true } as any,
+            mockWebviewOptions,
+        );
+        const right = DataViewerPanel.createFromWebviewPanel(
+            vscode.Uri.file('/path/to/right.nc'),
+            { ...mockWebviewPanel, active: true, visible: true } as any,
+            mockWebviewOptions,
+        );
+
+        assert.strictEqual(DataViewerPanel.getActivePanel(), right);
+        assert.notStrictEqual(DataViewerPanel.getActivePanel(), left);
+        DataViewerPanel.dispose();
+    });
 });

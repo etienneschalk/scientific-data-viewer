@@ -32,9 +32,35 @@ export function formatFileSize(bytes: number): string {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
+/** How the backend writes non-finite floats, which JSON cannot hold. */
+const NON_FINITE = new Set(['nan', 'inf', '-inf']);
+
+function isNumericArray(value: unknown): value is unknown[] {
+    return (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.every((item) =>
+            Array.isArray(item)
+                ? isNumericArray(item)
+                : typeof item === 'number' ||
+                  (typeof item === 'string' && NON_FINITE.has(item)),
+        )
+    );
+}
+
+/** `[0.1, nan, inf]`: numbers like numpy prints them, non-finite ones unquoted. */
+function formatNumericArray(value: unknown[]): string {
+    return `[${value
+        .map((item) =>
+            Array.isArray(item) ? formatNumericArray(item) : String(item),
+        )
+        .join(', ')}]`;
+}
+
 /**
  * Attribute values arrive as JSON: strings, numbers, booleans, null, arrays
- * or nested objects. Non-strings are shown as their JSON text.
+ * or nested objects. Numeric arrays are shown like numpy prints them, other
+ * non-strings as their JSON text.
  */
 export function attributeValueStrings(value: unknown): {
     valueStr: string;
@@ -43,6 +69,8 @@ export function attributeValueStrings(value: unknown): {
     let valueStr: string | undefined;
     if (typeof value === 'string') {
         valueStr = value;
+    } else if (isNumericArray(value)) {
+        valueStr = formatNumericArray(value);
     } else {
         try {
             valueStr = JSON.stringify(value);

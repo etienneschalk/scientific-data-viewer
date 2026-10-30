@@ -171,6 +171,42 @@ suite('UIController Test Suite', () => {
         assert.match(message, /Maximum allowed: 0\.000001MB$/);
     });
 
+    test('export without captured HTML fails before the save dialog', async () => {
+        await controller.loadFile(dataFile);
+        for (const htmlContent of [null, '']) {
+            const response = await request('exportWebview', { htmlContent });
+            assert.strictEqual(response.success, true);
+            assert.strictEqual(response.payload.success, false);
+            assert.match(response.payload.error, /could not be captured/);
+        }
+    });
+
+    test('the size limit does not apply to directory stores (Zarr)', async () => {
+        const store = vscode.Uri.file(path.join(tmpDir, 'store.zarr'));
+        fs.mkdirSync(store.fsPath);
+        const config = vscode.workspace.getConfiguration(
+            'scientificDataViewer',
+        );
+        const previous = config.inspect<number>('maxFileSize')?.globalValue;
+        await config.update(
+            'maxFileSize',
+            0.000001,
+            vscode.ConfigurationTarget.Global,
+        );
+        try {
+            await controller.loadFile(store);
+        } finally {
+            await config.update(
+                'maxFileSize',
+                previous,
+                vscode.ConfigurationTarget.Global,
+            );
+        }
+
+        assert.strictEqual(events('error').length, 0);
+        assert.strictEqual(events('dataLoaded').length, 1);
+    });
+
     test('createPlot passes the request options and the file URI (with query)', async () => {
         const kerchunkUri = dataFile.with({ query: 'openAs=kerchunk' });
         await controller.loadFile(kerchunkUri);
@@ -255,6 +291,139 @@ suite('UIController Test Suite', () => {
         controller.dispose();
 
         assert.ok(!handlers.has('UIController-<1>'));
+    });
+
+    /** Data processor whose `info` calls resolve when the test says so. */
+    function deferredDataProcessor() {
+        const pending: Array<(response: unknown) => void> = [];
+        const aborted: string[] = [];
+        const processor = {
+            ...makeDataProcessor(),
+            getDataInfo: () =>
+                new Promise((resolve) => {
+                    pending.push(resolve);
+                }),
+            createPlot: () => new Promise(() => {}),
+            abortPlot: (operationId: string) => {
+                aborted.push(operationId);
+                return true;
+            },
+        };
+        return { processor, pending, aborted };
+    }
+
+    async function until(condition: () => boolean) {
+        for (let i = 0; i < 200 && !condition(); i++) {
+            await new Promise((resolve) => setTimeout(resolve, 5));
+        }
+        assert.ok(condition(), 'condition not reached');
+    }
+
+    test('a load that ends after dispose updates nothing (outline, callbacks, webview)', async () => {
+        const { processor, pending } = deferredDataProcessor();
+        let outlineUpdates = 0;
+        const notified: Error[] = [];
+        const boundary = ErrorBoundary.getInstance();
+        const previousGlobal = (boundary as any).globalErrorHandler;
+        boundary.registerGlobalHandler((error: Error) => {
+            notified.push(error);
+        });
+        try {
+            const closing = new UIController(
+                7,
+                mockWebview,
+                (error) => errors.push(error),
+                (success) => successes.push(success),
+                processor,
+                () => outlineUpdates++,
+            );
+            const success = closing.loadFile(dataFile);
+            const failure = closing.loadFile(dataFile);
+            await until(() => pending.length === 2);
+            closing.dispose();
+            pending[1]({ result: dataInfoResponse.result });
+            pending[0]({ error: { error: 'cannot mmap an empty file' } });
+            await Promise.all([success, failure]);
+
+            assert.strictEqual(outlineUpdates, 0);
+            assert.deepStrictEqual(successes, []);
+            assert.deepStrictEqual(errors, []);
+            assert.deepStrictEqual(
+                notified,
+                [],
+                'no notification for a closed panel',
+            );
+            assert.deepStrictEqual(posted, []);
+            assert.strictEqual(closing.getDataInfo(), null);
+        } finally {
+            (boundary as any).globalErrorHandler = previousGlobal;
+        }
+    });
+
+    test('only the latest load updates the panel', async () => {
+        const { processor, pending } = deferredDataProcessor();
+        const racing = new UIController(
+            8,
+            mockWebview,
+            (error) => errors.push(error),
+            (success) => successes.push(success),
+            processor,
+        );
+        try {
+            const first = racing.loadFile(dataFile);
+            const second = racing.loadFile(dataFile);
+            await until(() => pending.length === 2);
+            // The newer load fails first, the older one succeeds afterwards
+            pending[1]({ error: { error: 'File too large' } });
+            await second;
+            pending[0]({ result: dataInfoResponse.result });
+            await first;
+
+            assert.deepStrictEqual(
+                posted.map((m) => m.event),
+                ['error'],
+            );
+            assert.deepStrictEqual(
+                errors.map((e) => e.message),
+                ['File too large'],
+            );
+            assert.deepStrictEqual(successes, []);
+            assert.strictEqual(racing.getDataInfo(), null);
+        } finally {
+            racing.dispose();
+        }
+    });
+
+    test('dispose aborts the plots the panel is running', async () => {
+        const { processor, pending, aborted } = deferredDataProcessor();
+        const plotting = new UIController(
+            9,
+            mockWebview,
+            (error) => errors.push(error),
+            (success) => successes.push(success),
+            processor,
+        );
+        const load = plotting.loadFile(dataFile);
+        await until(() => pending.length === 1);
+        pending[0]({ result: dataInfoResponse.result });
+        await load;
+        receive({
+            type: 'request',
+            id: 'plot-a',
+            command: 'createPlot',
+            payload: { variable: '/t', operationId: 'op-a' },
+        });
+        receive({
+            type: 'request',
+            id: 'plot-b',
+            command: 'createPlot',
+            payload: { variable: '/u', operationId: 'op-b' },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        plotting.dispose();
+
+        assert.deepStrictEqual(aborted.sort(), ['op-a', 'op-b']);
     });
 });
 

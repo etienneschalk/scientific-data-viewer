@@ -395,9 +395,9 @@
 
 <g id="edge1" class="edge e&#45;host">
 <title>cli&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M776.43,-387.69C801.97,-382.84 824.73,-376.77 835.5,-369.5 858.4,-354.04 865.08,-335.08 853.5,-310 818.85,-234.97 728.74,-200.65 655.22,-184.95"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="655.36,-182.83 649.06,-183.67 654.5,-186.95 655.36,-182.83"/>
-<text text-anchor="middle" x="860" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M776.43,-387.69C801.97,-382.84 824.73,-376.77 835.5,-369.5 858.4,-354.04 858.72,-337.13 853.5,-310 846.48,-273.57 850.78,-256.51 822.5,-232.5 797.18,-211 721.27,-195.21 655.61,-185.13"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="655.54,-182.99 649.29,-184.17 654.91,-187.14 655.54,-182.99"/>
+<text text-anchor="middle" x="868" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
 </g>
 
 <g id="node5" class="node py key">
@@ -418,7 +418,7 @@
 <title>info&#45;&gt;formats</title>
 <path fill="none" stroke="black" stroke-width="0.9" d="M661.48,-309.92C657.39,-285.16 645.97,-235.1 617.5,-204.5 611.89,-198.47 604.95,-193.45 597.64,-189.3"/>
 <polygon fill="black" stroke="black" stroke-width="0.9" points="598.27,-187.26 591.99,-186.3 596.3,-190.97 598.27,-187.26"/>
-<text text-anchor="middle" x="702" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff </text>
+<text text-anchor="middle" x="732" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
 </g>
 
 <g id="edge12" class="edge e&#45;host">

@@ -64,10 +64,15 @@ export async function handleExportWebview(): Promise<void> {
     if (messageBus.isDegradedMode) {
         return;
     }
-    try {
-        const result: any = await messageBus.exportWebview(
-            captureWebviewContent(),
+    const htmlContent = captureWebviewContent();
+    if (htmlContent === null) {
+        displayGlobalError(
+            'Failed to export webview content: the page could not be captured (see the developer console).',
         );
+        return;
+    }
+    try {
+        const result: any = await messageBus.exportWebview(htmlContent);
         if (result && result.success === false) {
             displayGlobalError(
                 'Failed to export webview content: ' + result.error,

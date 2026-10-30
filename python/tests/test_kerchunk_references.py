@@ -111,3 +111,59 @@ def test_relative_reference_paths_resolve_from_reference_folder(
     monkeypatch.chdir(tmp_path)  # not the reference folder
     result = create_plot(ref_path, "/temp")
     assert isinstance(result, CreatePlotResult), result
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("{not json", "not valid JSON"),
+        ("[1, 2, 3]", "expected a mapping with a 'refs' key"),
+        (json.dumps({"version": 1, "refs": []}), "'refs' must be a JSON object"),
+        (json.dumps({"version": 1, "refs": {}}), "no Zarr metadata"),
+    ],
+)
+def test_invalid_reference_files_say_why(tmp_path, content, expected) -> None:
+    """The reason was computed then replaced by a generic "no 'refs' mapping"
+    (QA 0.13.0 bug 12)."""
+    path = tmp_path / "refs.kerchunk.json"
+    path.write_text(content)
+    result = get_file_info(path, InfoOptions(small_variable_bytes=0))
+    assert isinstance(result, FileInfoError)
+    assert result.error_type == "ValueError"
+    assert expected in result.error
+
+
+def test_missing_reference_target_names_the_file(tmp_path) -> None:
+    pytest.importorskip("kerchunk")
+    from sdv_backend.plotting.api import create_plot
+    from sdv_backend.plotting.options import PlotOptions
+    from sdv_backend.results import CreatePlotError
+
+    zarray = {
+        "chunks": [3],
+        "compressor": None,
+        "dtype": "<f8",
+        "fill_value": None,
+        "filters": None,
+        "order": "C",
+        "shape": [3],
+        "zarr_format": 2,
+    }
+    path = tmp_path / "missing.kerchunk.json"
+    path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "refs": {
+                    ".zgroup": '{"zarr_format": 2}',
+                    "v/.zarray": json.dumps(zarray),
+                    "v/.zattrs": '{"_ARRAY_DIMENSIONS": ["x"]}',
+                    "v/0": ["gone.bin", 0, 24],
+                },
+            }
+        )
+    )
+    result = create_plot(path, "/v", PlotOptions())
+    assert isinstance(result, CreatePlotError)
+    assert "ReferenceNotReachable()" not in result.error
+    assert "gone.bin" in result.error

@@ -69,10 +69,12 @@ export class DataViewerPanel {
 
     public static getActivePanel(): DataViewerPanel | undefined {
         Logger.debug(`🚚 🗂️ Getting active panel`);
-        // Find the panel that is currently visible
-        const activePanel = Array.from(DataViewerPanel._panels.values()).find(
-            (panel) => panel._webviewPanel.visible,
-        );
+        // The focused panel; else, e.g. when focus is in the Explorer, the
+        // first visible one. With split editors several panels are visible.
+        const panels = Array.from(DataViewerPanel._panels.values());
+        const activePanel =
+            panels.find((panel) => panel._webviewPanel.active) ??
+            panels.find((panel) => panel._webviewPanel.visible);
         if (activePanel) {
             Logger.debug(`🚚 🗂️ Found active panel: ${activePanel.getId()}`);
         } else {

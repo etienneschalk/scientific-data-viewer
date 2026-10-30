@@ -1,6 +1,10 @@
 import { ICONS } from '../../shared/icons';
 import { messageBus } from './bus';
-import { mergePlotControls, readPlotControls } from './plotParams';
+import {
+    invalidPlotParameters,
+    mergePlotControls,
+    readPlotControls,
+} from './plotParams';
 import { activePlotOperations, globalState, plotAllState } from './state';
 import {
     convertDatetimeLocalToISO,
@@ -191,21 +195,51 @@ function getVariableGroup(variable: string): string {
     return group === '' ? '/' : group;
 }
 
+/** The Global Plot Controls and the variable's Group Plot Controls, if any. */
+function plotControlSections(variable: string): {
+    globalSection: HTMLElement | null;
+    groupSection: HTMLElement | null;
+} {
+    return {
+        globalSection: document.getElementById('section-global-plot-controls'),
+        groupSection: findByData(
+            document,
+            '.group-plot-controls-section',
+            'group',
+            getVariableGroup(variable),
+        ),
+    };
+}
+
+/**
+ * Numbers typed wrong in the controls that apply to the variable. A wrong
+ * global value only counts when the group does not override it.
+ */
+function invalidPlotOptions(controls: HTMLElement): string[] {
+    const { variable } = plotParts(controls);
+    const { globalSection, groupSection } = plotControlSections(variable);
+    const groupValues = groupSection ? readPlotControls(groupSection) : null;
+    const groupInvalid = groupSection
+        ? invalidPlotParameters(groupSection).map(
+              ({ message }) =>
+                  `Group Plot Controls (${getVariableGroup(variable)}): ${message}`,
+          )
+        : [];
+    const globalInvalid = globalSection
+        ? invalidPlotParameters(globalSection)
+              .filter(({ key }) => groupValues?.[key] === undefined)
+              .map(({ message }) => `Global Plot Controls: ${message}`)
+        : [];
+    return [...groupInvalid, ...globalInvalid];
+}
+
 /**
  * Everything createPlot needs for one variable: the variable's group
  * controls override the global ones field by field (see mergePlotControls).
  */
 function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
     const { variable } = plotParts(controls);
-    const globalSection = document.getElementById(
-        'section-global-plot-controls',
-    );
-    const groupSection = findByData(
-        document,
-        '.group-plot-controls-section',
-        'group',
-        getVariableGroup(variable),
-    );
+    const { globalSection, groupSection } = plotControlSections(variable);
 
     const globalTime = readTimeControls(globalTimeControlsSection());
     const groupTime = readTimeControls(
@@ -253,6 +287,17 @@ type PlotOutcome = 'success' | 'error' | 'cancelled';
 export async function createVariablePlot(
     controls: HTMLElement,
 ): Promise<PlotOutcome> {
+    // Plotting without them would silently ignore what the user typed
+    const invalid = invalidPlotOptions(controls);
+    if (invalid.length > 0) {
+        revealPlotSection(controls);
+        plotParts(controls).image.innerHTML = '';
+        displayVariablePlotError(
+            controls,
+            `Invalid plot parameters, nothing was plotted:\n${invalid.join('\n')}`,
+        );
+        return 'error';
+    }
     const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const payload = {
         ...compactPlotPayload(resolvePlotOptions(controls)),
@@ -367,7 +412,11 @@ export async function handleCreateAllPlots(): Promise<void> {
     if (messageBus.isDegradedMode) {
         return;
     }
-    const controlsList = allPlotControls();
+    // A variable whose plot is already running keeps that run: plotting it a
+    // second time would leave one of the two processes out of reach of Cancel
+    const controlsList = allPlotControls().filter(
+        (controls) => !runningPlots.has(controls),
+    );
     if (controlsList.length === 0) {
         return;
     }

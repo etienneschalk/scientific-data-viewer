@@ -9,6 +9,12 @@ KERCHUNK_JSON_NAME_SUFFIXES: tuple[str, ...] = (
 )
 
 
+# Entries of a reference store that describe groups and arrays
+ZARR_METADATA_KEYS = frozenset(
+    {".zgroup", ".zarray", ".zattrs", ".zmetadata", "zarr.json"}
+)
+
+
 def looks_like_kerchunk_filename(path: Path) -> bool:
     """True for names that opt in to Kerchunk without a context-menu command.
 
@@ -39,8 +45,14 @@ def kerchunk_json_error(path: Path) -> str | None:
             "This JSON file is not a Kerchunk / virtual Zarr reference "
             "(expected a mapping with a 'refs' key)."
         )
-    if not isinstance(payload["refs"], dict):
+    refs = payload["refs"]
+    if not isinstance(refs, dict):
         return "Kerchunk 'refs' must be a JSON object."
+    if not any(key.rsplit("/", 1)[-1] in ZARR_METADATA_KEYS for key in refs):
+        return (
+            "This Kerchunk reference file has no Zarr metadata "
+            "(no .zgroup, .zarray or zarr.json entry in 'refs'): nothing to open."
+        )
     return None
 
 

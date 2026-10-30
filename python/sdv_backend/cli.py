@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 from dataclasses import asdict
 from pathlib import Path
 
@@ -29,13 +30,40 @@ def main() -> int:
     Unexpected exceptions still produce a JSON line (``{"error": "<message>"}``,
     exit code 1) so the extension can show the message instead of a traceback.
     """
-    args = build_parser().parse_args()
+    args = parse_cli_args(sys.argv[1:])
     try:
         return _run(args)
     except Exception as exc:
         logger.exception(f"Unexpected error in {args.mode} mode")
         print(to_json_best_effort({"error": f"{type(exc).__name__}: {exc}"}))
         return 1
+
+
+def parse_cli_args(argv: list[str]) -> argparse.Namespace:
+    """Parse ``argv``, reading the value after an option as a value even when it
+    starts with ``-``.
+
+    argparse takes ``--vmin -1e-7`` or ``--plot-x -x`` for an option without
+    its value (only ``-5`` / ``-0.5`` look like negative numbers to it), and
+    JavaScript writes small or huge numbers in exponent notation. Each value
+    option is joined with the token after it (``--vmin=-1e-7``) before parsing.
+    """
+    parser = build_parser()
+    takes_value = {
+        option
+        for action in parser._actions
+        if isinstance(action, argparse._StoreAction) and action.option_strings
+        for option in action.option_strings
+    }
+    joined: list[str] = []
+    tokens = iter(argv)
+    for token in tokens:
+        if token in takes_value:
+            value = next(tokens, None)
+            joined.append(token if value is None else f"{token}={value}")
+        else:
+            joined.append(token)
+    return parser.parse_args(joined)
 
 
 def _run(args: argparse.Namespace) -> int:

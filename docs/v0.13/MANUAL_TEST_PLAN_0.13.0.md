@@ -62,7 +62,7 @@ npm test
 ✅ Expected:
 
 - pytest ends with `… passed` and **no** `failed`.
-- golden check ends with `… cases, 0 failing`. (If it says `NEW … run record` for every case, your snapshot folder is empty: run `python python/tools/golden_snapshots.py record` on a known-good commit first, or skip this line.)
+- golden check ends with `… cases, 0 failing`. The snapshots (`python/.golden/`) are local, not in git: they compare against whatever was recorded last on your machine. If it says `NEW … run record` for every case, the folder is empty: run `python python/tools/golden_snapshots.py record` on a known-good commit first, or skip this line. Snapshots recorded before the end of v0.13 fail on every `info` case (the xarray encoding moved out of the attributes, `NaN` reads `nan`): check that the diffs are only these, then `record` again.
 - `npm test` ends with `… passing` and no `failing`.
 
 > If `npm test` fails immediately with `bad option: --extensionDevelopmentPath`, you are inside VS Code's own terminal: run `env -u ELECTRON_RUN_AS_NODE npm test` instead.

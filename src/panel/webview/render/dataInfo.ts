@@ -6,6 +6,7 @@ import {
     renderDimensionSliceInputs,
     renderPlotParameters,
     setDimensionOptions,
+    showInheritedCheckboxes,
 } from '../plotParams';
 import { globalState } from '../state';
 import {
@@ -165,6 +166,7 @@ function displayDataInfo(
                     }),
                 )
                 .join('');
+            showInheritedCheckboxes(groupInfoContainer);
             // Open the first group by default
             const firstGroup = groupInfoContainer.querySelector('details');
             if (firstGroup) {
@@ -393,7 +395,7 @@ function renderGroupPlotControls(
                     </div>
                     <div class="plot-controls-subsection plot-parameters">
                         ${heading('Plot parameters <code>plot</code>', 'clear-plot-controls', 'Reset the plot parameters')}
-                        <p class="dimension-slices-hint">Override the global plot parameters for this group; empty fields use the global ones. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                        <p class="dimension-slices-hint">Override the global plot parameters for this group; empty fields and checkboxes showing a dash use the global ones. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
                         <div class="dimension-slices-facets">
                             ${renderPlotParameters(scope, dimNames)}
                         </div>

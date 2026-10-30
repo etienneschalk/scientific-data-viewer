@@ -18,6 +18,7 @@ import {
     getShowInheritedCoordinates,
     getShowLoadTimeInLocalTime,
     getFacetgridFigsize,
+    getMaxSize,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
@@ -106,6 +107,51 @@ suite('Config Test Suite', () => {
             getFacetgridFigsize() === null ||
                 (Array.isArray(getFacetgridFigsize()) &&
                     getFacetgridFigsize()!.length === 2),
+        );
+    });
+
+    /** Run `check` with `key` set in the user settings, then restore it. */
+    async function withSetting(
+        key: string,
+        value: unknown,
+        check: () => void,
+    ): Promise<void> {
+        const config = vscode.workspace.getConfiguration(
+            'scientificDataViewer',
+        );
+        const previous = config.inspect(key)?.globalValue;
+        await config.update(key, value, vscode.ConfigurationTarget.Global);
+        try {
+            check();
+        } finally {
+            await config.update(
+                key,
+                previous,
+                vscode.ConfigurationTarget.Global,
+            );
+        }
+    }
+
+    test('maxFileSize of 0 or less means no limit, not "refuse every file"', async () => {
+        const noLimit =
+            getPackageJsonDefaults()['scientificDataViewer.maxFileSize']
+                .default;
+        for (const value of [0, -1]) {
+            await withSetting('maxFileSize', value, () =>
+                assert.strictEqual(getMaxSize(), noLimit),
+            );
+        }
+        await withSetting('maxFileSize', 0.5, () =>
+            assert.strictEqual(getMaxSize(), 0.5),
+        );
+    });
+
+    test('facetgridFigsize below the 0.1 inch minimum is ignored', async () => {
+        await withSetting('facetgridFigsize', [1e-9, 1e-9], () =>
+            assert.strictEqual(getFacetgridFigsize(), null),
+        );
+        await withSetting('facetgridFigsize', [0.1, 2], () =>
+            assert.deepStrictEqual(getFacetgridFigsize(), [0.1, 2]),
         );
     });
 

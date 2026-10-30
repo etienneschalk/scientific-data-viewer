@@ -262,7 +262,8 @@ INTERPRETER_REFS = {
         "prepareOwnEnvironment",
         "ownEnvironmentIssue",
         "uvMissing",
-        "hasCorePackages",
+        "corePackagesIssue",
+        "notReadyReason",
         "getOverridePythonInterpreter",
         "getUseExtensionOwnEnvironment",
         "getPythonInterpreterFromPythonExtension",
@@ -288,7 +289,7 @@ def interpreter_dot() -> str:
   s_ext [label="source: python-extension", class="ext pick"];
   s_sys [label="source: system", class="ext pick"];
   none [label="no interpreter\\n(viewer shows setup error)", class="warn"];
-  core [label="hasCorePackages()\\nimport xarray → ready", class="host key"];
+  core [label="corePackagesIssue()\\nimport xarray → ready, else notReadyReason\\n(missing packages, Python too old…)", class="host key"];
 
   start -> ovr;
   ovr -> s_ovr [label=" yes"];

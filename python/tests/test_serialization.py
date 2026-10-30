@@ -21,6 +21,8 @@ def test_non_finite_inside_tuples() -> None:
 
 
 def test_numpy_non_finite_scalars() -> None:
+    """np.float64 is a float subclass: its repr ``np.float64(inf)`` reached the
+    viewer (QA 0.13.0 bug 3); every numpy float now reads like a float."""
     out = json.loads(
         to_json_best_effort(
             {
@@ -30,7 +32,7 @@ def test_numpy_non_finite_scalars() -> None:
             }
         )
     )
-    assert out == {"f64": "np.float64(inf)", "f32": "nan", "f16": "-inf"}
+    assert out == {"f64": "inf", "f32": "nan", "f16": "-inf"}
 
 
 def test_numpy_numbers_stay_numbers() -> None:

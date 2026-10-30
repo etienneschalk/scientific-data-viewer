@@ -202,7 +202,9 @@ export class DataProcessor {
             `[DataProcessor] [getDataInfo] Getting data info for file: ${uri.fsPath}`,
         );
         if (!this.pythonManager.ready) {
-            throw new Error('Python environment not ready');
+            throw new Error(
+                `Python environment not ready: ${this.pythonManager.notReadyReason ?? 'unknown reason'}`,
+            );
         }
 
         const args = buildGetDataInfoCliArgs(uri.fsPath, {
@@ -246,7 +248,9 @@ export class DataProcessor {
         timeoutMs: number = getPlotTimeoutMs(),
     ): Promise<CreatePlotPythonResponse> {
         if (!this.pythonManager.ready) {
-            throw new Error('Python environment not ready');
+            throw new Error(
+                `Python environment not ready: ${this.pythonManager.notReadyReason ?? 'unknown reason'}`,
+            );
         }
 
         const style = getMatplotlibStyle();

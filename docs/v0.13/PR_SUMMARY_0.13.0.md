@@ -2,7 +2,7 @@
 
 ## Summary
 
-Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules).
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`QA_REPORT_0.13.0.md`](./QA_REPORT_0.13.0.md)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`QA_FIXES_0.13.0.md`](./QA_FIXES_0.13.0.md); its harnesses are kept in `scripts/qa/`.
 
 **Version:** `0.13.0` in `package.json` / `package-lock.json`
 
@@ -182,13 +182,25 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                                                                                                                                                                                                     |
 | Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated                                                                                                                                                                                 |
 
+### Phase 15 — QA pass
+
+| Area     | Work                                                                                                                                                                                                  |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method   | Backend differential vs v0.12.1 (same interpreter: info, every variable plotted, ~80 option scenarios); real webview in headless Chromium with real input; suites inside VS Code; packaging           |
+| Backend  | CLI joins value options with their value (`--vmin=-1e-7`, `--plot-x=-x`); `nan` / `inf` instead of `np.float64(…)`; precise Kerchunk errors; `describe_exception`; Python < 3.10 reported in JSON     |
+| Host     | Stale / post-close loads ignored (outline, notification, latest load wins); close aborts the panel's plots; focused panel exported; requirement specifiers only for installs; "not ready" says why    |
+| Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture |
+| Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                             |
+| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `.qa/`                                                                                       |
+| Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §27, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
-- `.vsix` ships only runtime files: `docs/`, host TypeScript sources, caches, repository scripts / configs, `python/` dev scripts and notebooks, unused media excluded; `.vscodeignore` allow-lists `src/` (`styles.css`) and `python/` (backend `.py`). `npx vsce ls`: 252 → 98 files, 2.5 → 1.1 MB; unpacked `.vsix` checked (requires resolve, assets present, backend info / plot run)
+- `.vsix` ships only runtime files: `.vscodeignore` is an allow-list (`**` excluded, each runtime file named; no source maps) and `vscode:prepublish` deletes `out/` before compiling. `npx vsce ls`: 252 → 70 files, 2.5 → 1.05 MB; the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10` (119 tests, backend run from the package)
 
 ---
 
@@ -286,13 +298,22 @@ Results after the upgrade-safety work: `npm test` 290 passing; `pytest python/te
 
 Results at the end of the code review pass: `npm test` 284 passing / 0 failing; `pytest python/tests` 159 passing (was 112); golden snapshots 83 cases, 0 failing (re-recorded after reviewing the 27 intended info diffs); non-regression plot gallery byte-identical.
 
+Results after the QA pass: `npm test` 325 passing; `pytest python/tests` 195 passing; golden snapshots 82 / 0 failing (re-recorded after checking that every info diff is the encoding move or `nan`); `npm run typecheck`, `generate.py --check` and pre-commit clean. QA harnesses: webview scenarios (render, controls, time, cancel) and VS Code suites passing; backend differential against v0.12.1 without regression.
+
+```bash
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
+.venv/bin/python scripts/qa/backend/diff_info.py && .venv/bin/python scripts/qa/backend/diff_plot.py
+node scripts/qa/webview/run-all.mjs
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all
+```
+
 **Sample data** (written under `sample-data/`):
 
 ```bash
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot, §27: QA pass fixes).
 
 ---
 
@@ -314,6 +335,7 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `docs/v0.13/CODE_REVIEW_TODO.md` — code review items, all checked
 - [x] `docs/v0.13/GETTING_STARTED.md` — hub: reading order, risks, review and release plan
 - [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
+- [x] `docs/v0.13/QA_REPORT_0.13.0.md` / `QA_FIXES_0.13.0.md` — QA report and fix tracker; `scripts/qa/README.md`
 - [ ] Release date set in `CHANGELOG.md` / release notes, README regenerated (at release time)
 
 ---
@@ -416,3 +438,7 @@ Group attributes alignment:
 Load time in local time:
 
 60. feat(webview): show the load time in local time (new setting)
+
+QA pass:
+
+63. fix: apply the v0.13.0 QA pass fixes, add the QA harnesses

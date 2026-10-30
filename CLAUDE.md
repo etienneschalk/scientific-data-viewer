@@ -21,6 +21,10 @@ npm run screenshots         # full-page viewer screenshots -> screenshots/v<majo
 python python/create_sample_data.py [--overwrite]   # create sample-data/ (generators in python/sample_data/)
 python scripts/generate_readme.py     # regenerate README.md
 .venv/bin/python scripts/architecture/generate.py [--check]   # regenerate docs/architecture/ diagrams (Graphviz) / check they match the code
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # QA: hostile files -> .qa/fixtures (scripts/qa/README.md)
+.venv/bin/python scripts/qa/backend/diff_info.py        # QA: backend vs baseline checkout (make_baseline.sh <ref>); also diff_plot.py, diff_scen.py
+node scripts/qa/webview/run-all.mjs                     # QA: real webview in headless Chromium, real backend
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in a real VS Code
 ```
 
 ## Architecture
@@ -42,7 +46,7 @@ python scripts/generate_readme.py     # regenerate README.md
 - **README.md is auto-generated** from `package.json` + `docs/documentation.json` — edit those and run `scripts/generate_readme.py`, never README.md directly.
 - **`docs/architecture/` is generated** by `scripts/architecture/generate.py` — never edit it by hand. After adding / moving / renaming a module, a webview protocol message or a function named in a flow, run `generate.py --check`, fix what it reports in `scripts/architecture/` (layers, refs, notes, flows), then regenerate and commit (see `docs/DEVELOPMENT.md` § Architecture diagrams).
 - New settings/commands go in `package.json` `contributes` and are read through `src/common/config.ts`.
-- **`.vscodeignore` allow-lists the runtime files of `src/` and `python/`** (only `src/panel/webview/styles.css`; `python/get_data_info.py`, `check_package_availability.py`, `sdv_backend/**/*.py`). A new file read at runtime from those folders must be added there, else the `.vsix` breaks while F5 still works. vsce applies `!` patterns whatever their order. Check with `npx vsce ls`.
+- **The `.vsix` holds the strict minimum**: `.vscodeignore` excludes everything (`**`) and names each runtime file (`package.json`, README, LICENSE, two icons, `out/src/**/*.js` without source maps, `out/webview/webview.js`, `src/panel/webview/styles.css`, `python/get_data_info.py`, `check_package_availability.py`, `sdv_backend/**/*.py`). A new file read at runtime must be added there, else the `.vsix` breaks while F5 still works; anything else is never packaged. `vscode:prepublish` deletes `out/` before compiling, so compiled files of deleted sources cannot ship. vsce applies `!` patterns whatever their order. Check with `npx vsce ls` (70 files).
 - Python code: ruff (config in `pyproject.toml`), double quotes, Python 3.13+.
 - Releases: bump `package.json` version, update `CHANGELOG.md`, add `docs/RELEASE_NOTES_<ver>.md` (stays in `docs/`: `publish.sh` and the README generator read it there; see `docs/PUBLISHING.md`, `publish.sh`). Run `scripts/upgrade-sandbox.sh` before releasing a change to the uv environment.
 - **Python requirements of the uv env** live in `ALL_REQUIREMENTS` (`src/python/ExtensionVirtualEnvironmentManager.ts`); pins on indirect dependencies that are not imported (e.g. `eccodeslib<2.48`, exit crash with pyproj) go in `ENVIRONMENT_CONSTRAINTS`. When a release needs existing envs changed, bump `ENVIRONMENT_REVISION` there: users with `useExtensionOwnEnvironment` get their env deleted and rebuilt once at next start (state in `sdv-environment.json` in the env folder; the old env is kept in `python-environment.previous` and restored if the rebuild fails). Python-extension / override interpreters are never modified.

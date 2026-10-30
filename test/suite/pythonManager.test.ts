@@ -3,8 +3,15 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { PythonManager } from '../../src/python/PythonManager';
-import { ExtensionVirtualEnvironmentManager } from '../../src/python/ExtensionVirtualEnvironmentManager';
+import {
+    isRequirementSpecifier,
+    PythonManager,
+} from '../../src/python/PythonManager';
+import {
+    ALL_REQUIREMENTS,
+    ENVIRONMENT_CONSTRAINTS,
+    ExtensionVirtualEnvironmentManager,
+} from '../../src/python/ExtensionVirtualEnvironmentManager';
 import {
     getPythonExtensionApi,
     getPythonInterpreterFromPythonExtension,
@@ -754,5 +761,42 @@ suite('PythonManager initialization and execution', () => {
                 /pip install "xarray>=2026\.4\.0" matplotlib/,
             );
         });
+    });
+});
+
+suite('isRequirementSpecifier', () => {
+    test('accepts every requirement the extension installs', () => {
+        for (const spec of [
+            ...ALL_REQUIREMENTS,
+            ...ENVIRONMENT_CONSTRAINTS,
+            'netCDF4',
+            'h5netcdf',
+            'rioxarray',
+            'kerchunk',
+            'zarr>=3',
+            'numpy>=2,<3',
+            'xarray[io,viz]>=2026.4.0',
+        ]) {
+            assert.ok(isRequirementSpecifier(spec), spec);
+        }
+    });
+
+    test('rejects options, URLs, paths and anything else (QA 0.13.0 H1)', () => {
+        for (const spec of [
+            '--index-url',
+            '-r',
+            '-e',
+            'http://127.0.0.1:9/simple',
+            'git+https://example.com/x.git',
+            '../local',
+            '/abs/path',
+            'pkg; rm -rf ~',
+            'a b',
+            '',
+            ['nested'],
+            42,
+        ]) {
+            assert.ok(!isRequirementSpecifier(spec), JSON.stringify(spec));
+        }
     });
 });

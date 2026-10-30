@@ -51,7 +51,11 @@ export class OutlineProvider
         this.treeView = undefined;
     }
 
+    /** Incremented by each refresh: reveals started before it are stale. */
+    private treeGeneration = 0;
+
     refresh(): void {
+        this.treeGeneration++;
         this._onDidChangeTreeData.fire();
     }
 
@@ -257,10 +261,7 @@ export class OutlineProvider
             );
         }
 
-        // Expand all elements by revealing them with expand: true
-        expandableElements.forEach((element) => {
-            this.revealExpanded(element, true);
-        });
+        void this.revealInOrder(expandableElements, true);
 
         Logger.info(
             `<${this.currentPanelId}> 📋 Expanded ${expandableElements.length} items in tree view`,
@@ -437,30 +438,72 @@ export class OutlineProvider
         );
 
         // Find and expand all elements that should be expanded
-        const allElements = this.getAllElements(this.currentHeaders);
-        allElements.forEach((element) => {
-            const elementId = this.getElementId(element);
-            if (expandedIds.has(elementId) && element.children.length > 0) {
-                this.revealExpanded(element, forceExpand);
-            }
-        });
+        const toExpand = this.getAllElements(this.currentHeaders).filter(
+            (element) =>
+                expandedIds.has(this.getElementId(element)) &&
+                element.children.length > 0,
+        );
+        void this.revealInOrder(toExpand, forceExpand);
     }
 
     /**
-     * Reveal (and expand) an element. reveal() is asynchronous: its rejection
-     * (e.g. element no longer in the tree) is logged, never left unhandled.
+     * Reveal elements one after the other, parents first (`getAllElements`
+     * order). Hundreds of concurrent reveal() calls make VS Code fail on
+     * children whose parent is still being resolved ("Cannot resolve tree
+     * item"); a reveal can still fail while a freshly shown tree loads, so the
+     * failed ones are tried once more after the others. Stops at the next
+     * refresh of the tree: its nodes are rebuilt, and the items saved as
+     * expanded are rendered expanded anyway.
      */
-    private revealExpanded(element: HeaderItem, expand: boolean): void {
-        if (!this.treeView) {
-            return;
+    private async revealInOrder(
+        elements: HeaderItem[],
+        expand: boolean,
+    ): Promise<void> {
+        const generation = this.treeGeneration;
+        let pending = elements;
+        for (const lastAttempt of [false, true]) {
+            const failed: HeaderItem[] = [];
+            for (const element of pending) {
+                if (this.treeGeneration !== generation) {
+                    return;
+                }
+                if (
+                    !(await this.revealExpanded(element, expand, lastAttempt))
+                ) {
+                    failed.push(element);
+                }
+            }
+            pending = failed;
         }
-        this.treeView
-            .reveal(element, { select: false, focus: false, expand })
-            .then(undefined, (error) => {
+    }
+
+    /**
+     * Reveal (and expand) an element; false when reveal() rejected (e.g.
+     * element no longer in the tree), logged on the last attempt only.
+     */
+    private async revealExpanded(
+        element: HeaderItem,
+        expand: boolean,
+        logFailure = true,
+    ): Promise<boolean> {
+        if (!this.treeView) {
+            return false;
+        }
+        try {
+            await this.treeView.reveal(element, {
+                select: false,
+                focus: false,
+                expand,
+            });
+            return true;
+        } catch (error) {
+            if (logFailure) {
                 Logger.debug(
                     `<${this.currentPanelId}> 📋 Failed to expand element: ${element.label}, ${error}`,
                 );
-            });
+            }
+            return false;
+        }
     }
 
     /**

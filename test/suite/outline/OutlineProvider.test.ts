@@ -316,6 +316,47 @@ suite('OutlineProvider Test Suite', () => {
         assert.strictEqual(outlineProvider.getCurrentPanelId(), undefined);
     });
 
+    test('expand all reveals one element at a time, parents first', async () => {
+        const order: string[] = [];
+        let running = 0;
+        let maxRunning = 0;
+        const fakeTreeView = {
+            reveal: async (element: HeaderItem) => {
+                running += 1;
+                maxRunning = Math.max(maxRunning, running);
+                order.push(element.id ?? '');
+                await new Promise((resolve) => setTimeout(resolve, 2));
+                running -= 1;
+            },
+            onDidExpandElement: () => ({ dispose: () => {} }),
+            onDidCollapseElement: () => ({ dispose: () => {} }),
+        } as unknown as vscode.TreeView<HeaderItem>;
+        const leaf = (id: string): HeaderItem => ({
+            label: id,
+            level: 3,
+            id,
+            children: [],
+        });
+        outlineProvider.setTreeView(fakeTreeView);
+        outlineProvider.updateHeaders(4, [
+            {
+                label: 'A',
+                level: 1,
+                id: 'a',
+                children: [
+                    { label: 'A1', level: 2, id: 'a1', children: [leaf('x')] },
+                    { label: 'A2', level: 2, id: 'a2', children: [leaf('y')] },
+                ],
+            },
+            { label: 'B', level: 1, id: 'b', children: [leaf('z')] },
+        ]);
+        outlineProvider.expandAll();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        assert.strictEqual(maxRunning, 1, 'no concurrent reveal()');
+        assert.deepStrictEqual(order, ['a', 'a1', 'a2', 'b']);
+    });
+
     test('rejected reveal() during expand all is handled', async () => {
         const unhandled: unknown[] = [];
         const onUnhandled = (reason: unknown) => unhandled.push(reason);
@@ -348,7 +389,8 @@ suite('OutlineProvider Test Suite', () => {
             ]);
             outlineProvider.expandAll();
             await new Promise((resolve) => setTimeout(resolve, 20));
-            assert.strictEqual(revealCalls, 1);
+            // One attempt, then one retry after the other elements
+            assert.strictEqual(revealCalls, 2);
             assert.deepStrictEqual(unhandled, []);
 
             // dispose() releases the tree view listeners and the emitter

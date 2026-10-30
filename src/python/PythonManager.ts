@@ -40,6 +40,8 @@ interface InterpreterState {
     pythonPath: string | null;
     source: EnvironmentSource | null;
     corePackagesInstalled: boolean;
+    /** Why the environment cannot be used (null when it can) */
+    notReadyReason: string | null;
     ownEnvironmentIssue: OwnEnvironmentIssue | null;
 }
 
@@ -70,6 +72,8 @@ export class PythonManager {
     private _initialized: boolean = false;
     private _environmentSource: EnvironmentSource | null = null;
     private _corePackagesInstalled: boolean = false;
+    private _notReadyReason: string | null =
+        'Python initialisation has not run yet';
     private _ownEnvironmentIssue: OwnEnvironmentIssue | null = null;
 
     /** Promise of the initialisation in flight, if any. */
@@ -100,6 +104,14 @@ export class PythonManager {
             this._pythonPath !== null &&
             this._corePackagesInstalled
         );
+    }
+
+    /**
+     * Why the environment is not ready (null when it is): no interpreter, an
+     * interpreter that does not run, or missing core packages.
+     */
+    get notReadyReason(): string | null {
+        return this.ready ? null : this._notReadyReason;
     }
 
     /**
@@ -166,11 +178,12 @@ export class PythonManager {
             this._pythonPath = state.pythonPath;
             this._environmentSource = state.source;
             this._corePackagesInstalled = state.corePackagesInstalled;
+            this._notReadyReason = state.notReadyReason;
             this._ownEnvironmentIssue = state.ownEnvironmentIssue;
             this._initialized = true;
             Logger.info(
                 state.pythonPath
-                    ? `🐍 📦 ${state.corePackagesInstalled ? '✅ Python environment ready' : '⚠️ Python environment not ready (missing core packages)'}: ${state.pythonPath} (${state.source})`
+                    ? `🐍 📦 ${state.corePackagesInstalled ? '✅ Python environment ready' : `⚠️ Python environment not ready (${state.notReadyReason})`}: ${state.pythonPath} (${state.source})`
                     : '🐍 ⚠️ No suitable Python interpreter found. Please install Python and use VSCode\'s "Python: Select Interpreter" command.',
             );
         } while (this._reinitializeRequested);
@@ -356,12 +369,14 @@ export class PythonManager {
         Logger.info('🐍 🔧 [INIT] Initializing Python manager');
         const issue: { value: OwnEnvironmentIssue | null } = { value: null };
         const selected = await this.selectInterpreter(issue);
+        const notReadyReason = selected
+            ? await this.corePackagesIssue(selected.pythonPath)
+            : 'No Python interpreter found. Select one with "Python: Select Interpreter", or turn on scientificDataViewer.python.useExtensionOwnEnvironment.';
         return {
             pythonPath: selected?.pythonPath ?? null,
             source: selected?.source ?? null,
-            corePackagesInstalled: selected
-                ? await this.hasCorePackages(selected.pythonPath)
-                : false,
+            corePackagesInstalled: notReadyReason === null,
+            notReadyReason,
             ownEnvironmentIssue: issue.value,
         };
     }
@@ -513,8 +528,14 @@ export class PythonManager {
         }
     }
 
-    /** True when every core package can be found by the interpreter. */
-    private async hasCorePackages(pythonPath: string): Promise<boolean> {
+    /**
+     * Null when every core package can be found by the interpreter, else why
+     * it cannot be used (missing packages, interpreter that does not run or
+     * is too old), for the "not ready" messages.
+     */
+    private async corePackagesIssue(
+        pythonPath: string,
+    ): Promise<string | null> {
         try {
             const availability = await this.checkPackagesAvailability(
                 pythonPath,
@@ -524,17 +545,20 @@ export class PythonManager {
                 `🐍 📦 Package availability: ${JSON.stringify(availability)}`,
             );
             const missing = CORE_PACKAGES.filter((pkg) => !availability[pkg]);
-            if (missing.length > 0) {
-                Logger.info(
-                    `🐍 📦 ⚠️ Missing core packages: ${missing.join(', ')}`,
-                );
+            if (missing.length === 0) {
+                return null;
             }
-            return missing.length === 0;
+            Logger.info(
+                `🐍 📦 ⚠️ Missing core packages: ${missing.join(', ')}`,
+            );
+            return `missing core packages in ${pythonPath}: ${missing.join(', ')}. Install them with: ${formatPipInstallCommand()}`;
         } catch (error) {
             Logger.error(
                 `🐍 📦 ❌ Python environment validation failed: ${error}`,
             );
-            return false;
+            const message =
+                error instanceof Error ? error.message : String(error);
+            return `the interpreter ${pythonPath} could not be used: ${message.replace(/^Failed to check package availability: (Error: )?/, '')}`;
         }
     }
 
@@ -592,6 +616,15 @@ export class PythonManager {
         const pythonPath = this._pythonPath;
         if (!pythonPath) {
             throw new Error('No Python interpreter configured');
+        }
+        // The command can be run from the webview: never pass options to pip / uv
+        const invalid = packages.filter(
+            (spec) => !isRequirementSpecifier(spec),
+        );
+        if (invalid.length > 0) {
+            throw new Error(
+                `Not a package requirement: ${invalid.map((spec) => JSON.stringify(spec)).join(', ')}`,
+            );
         }
         Logger.info(
             `🐍 📦 🔍 Installing packages: ${packages.join(', ')} using Python: ${pythonPath}`,
@@ -694,6 +727,17 @@ function forwardPythonLogs(chunk: string): void {
  * Parse the JSON printed by a script, or turn a failed run into an Error.
  * Exported for unit tests.
  */
+/**
+ * `name`, `name[extra]` or `name` with version constraints (`xarray>=2026.4.0`,
+ * `eccodeslib<2.48`, `numpy>=2,<3`): a requirement for pip / uv, not an option.
+ */
+const REQUIREMENT_SPECIFIER =
+    /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[A-Za-z0-9._-]+(?:,[A-Za-z0-9._-]+)*\])?(?:(?:===|==|!=|~=|>=|<=|>|<)[A-Za-z0-9.*+!_-]+(?:,(?:===|==|!=|~=|>=|<=|>|<)[A-Za-z0-9.*+!_-]+)*)?$/;
+
+export function isRequirementSpecifier(spec: unknown): boolean {
+    return typeof spec === 'string' && REQUIREMENT_SPECIFIER.test(spec);
+}
+
 export function parseScriptResult(
     result: RunProcessResult,
     timeoutMs?: number,

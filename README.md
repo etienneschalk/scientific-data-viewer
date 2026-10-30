@@ -326,7 +326,7 @@ The extension can be configured through VSCode settings:
 
 - **`scientificDataViewer.maxFileSize`**
   - (type: `number`, default: `1000000000000`)
-  - Maximum file size in **MB** to load automatically. Files above this limit are not loaded.
+  - Maximum file size in **MB** to load automatically. Files above this limit are not loaded. Applies to files only: directory stores (Zarr) are not checked. 0 or a negative value means no limit.
 - **`scientificDataViewer.defaultView`**
   - (type: `string`, default: `"default"`)
   - Default view mode for data display (currently unused)

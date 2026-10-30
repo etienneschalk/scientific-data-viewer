@@ -145,11 +145,30 @@ def create_plot(
         )
 
     except Exception as exc:
-        logger.error(f"Error creating plot: {exc!r} ({file_path=} {variable_path=})")
+        described = describe_exception(exc)
+        logger.error(
+            f"Error creating plot: {described} ({file_path=} {variable_path=})"
+        )
         return CreatePlotError(
-            error=f"Error creating plot: {exc!r} ({file_path=} {variable_path=})",
+            error=f"Error creating plot: {described} ({file_path=} {variable_path=})",
             format_info=file_format_info,
         )
+
+
+def describe_exception(exc: Exception) -> str:
+    """``repr`` of an exception, or ``Type: str`` when the repr says nothing.
+
+    Some exceptions keep their message out of ``args``: fsspec's
+    ``ReferenceNotReachable`` (Kerchunk target missing) has the repr
+    ``ReferenceNotReachable()`` while its ``str`` names the reference and the
+    file it could not read.
+    """
+    described = repr(exc)
+    if described == f"{type(exc).__name__}()" and str(exc):
+        described = f"{type(exc).__name__}: {exc}"
+        if exc.__cause__ is not None:
+            described += f" ({exc.__cause__!r})"
+    return described
 
 
 def _build_plot_kwargs(options: PlotOptions) -> tuple[PlotKwargsBundle, dict]:

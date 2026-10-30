@@ -89,6 +89,8 @@ const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
 const ALLOWED_NETCDF_ENGINES = new Set(DEFAULT_NETCDF_ENGINE_ORDER);
 const DEFAULT_SHOW_INHERITED_COORDINATES = true;
 const DEFAULT_FACETGRID_FIGSIZE: readonly number[] = [];
+/** Smallest panel side in inches, as in the package.json schema */
+const MIN_FACETGRID_FIGSIZE = 0.1;
 const DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME = true;
 
 // Configuration functions
@@ -104,11 +106,15 @@ export function getWorkspaceConfig() {
     return vscode.workspace.getConfiguration(SDV_EXTENSION_ID);
 }
 
+/** Maximum file size in MB; 0, negative or invalid values mean no limit (the default). */
 export function getMaxSize(): number {
-    return getWorkspaceConfig().get<number>(
+    const value = getWorkspaceConfig().get<number>(
         MAX_FILE_SIZE,
         DEFAULT_MAX_FILE_SIZE,
     );
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+        ? value
+        : DEFAULT_MAX_FILE_SIZE;
 }
 
 export function getAllowMultipleTabsForSameFile(): boolean {
@@ -301,8 +307,8 @@ export function getFacetgridFigsize(): [number, number] | null {
         typeof height !== 'number' ||
         !Number.isFinite(width) ||
         !Number.isFinite(height) ||
-        width <= 0 ||
-        height <= 0
+        width < MIN_FACETGRID_FIGSIZE ||
+        height < MIN_FACETGRID_FIGSIZE
     ) {
         return null;
     }

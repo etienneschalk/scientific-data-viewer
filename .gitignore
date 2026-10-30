@@ -16,3 +16,6 @@ python/.golden/
 
 # Viewer screenshots (npm run screenshots)
 /screenshots/
+
+# QA harness outputs (scripts/qa)
+/.qa/

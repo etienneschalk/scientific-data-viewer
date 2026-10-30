@@ -333,6 +333,22 @@ Run `--check` after adding, moving or renaming a module, a message of the webvie
 - **What `--check` catches**: a module that is not placed in the diagrams (or a placed one that no longer exists), a named symbol missing from its file, a protocol message without a note in `content.py` (or the reverse). It cannot see a changed order of calls: when you change a flow, update its figure.
 - **Styles**: `diagram.css` (colors as tokens, light and dark, embedded in each SVG) and `page.css` (layout of `architecture.html`). Layouts can differ slightly between Graphviz versions; the committed files were made with Graphviz 2.43.
 
+#### QA harnesses
+
+[`scripts/qa/`](../scripts/qa/README.md) holds the tools of the v0.13.0 QA campaign, to run again before a release (outputs in the git-ignored `.qa/`):
+
+```bash
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # hostile / degenerate files -> .qa/fixtures/
+scripts/qa/backend/make_baseline.sh v0.12.1             # baseline checkout for the differential tests
+.venv/bin/python scripts/qa/backend/diff_info.py        # info: baseline vs working tree, same interpreter
+.venv/bin/python scripts/qa/backend/diff_plot.py        # every variable plotted by both, images compared
+.venv/bin/python scripts/qa/backend/diff_scen.py        # ~80 plot-option scenarios
+node scripts/qa/webview/run-all.mjs                     # real page in headless Chromium, real input (Node 22)
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # suites inside a real VS Code
+```
+
+The webview and e2e harnesses load the compiled `out/` (`npm run compile` first). See the README of the folder for what each scenario covers and the environment variables (`SDV_PYTHON`, `SDV_QA_OUT`, `CHROME_PATH`…).
+
 ### 3. Debugging
 
 #### VSCode Debugging
@@ -397,6 +413,7 @@ Run `--check` after adding, moving or renaming a module, a message of the webvie
 
 ### End-to-End Tests
 
+- `scripts/qa/e2e/` (real VS Code) and `scripts/qa/webview/` (real page, real input): see [QA harnesses](#qa-harnesses)
 - **Test complete user workflows**
 - **Test with various file types and sizes**
 - **Test error handling** and recovery

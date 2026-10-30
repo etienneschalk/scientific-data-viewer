@@ -86,6 +86,11 @@ export class UIController {
     private fileUri?: vscode.Uri;
     private dataInfo: DataInfoResult | null = null;
     private lastLoadTime: Date | null = null;
+    private disposed = false;
+    /** Incremented by each load: only the latest one may update the panel. */
+    private loadSequence = 0;
+    /** Operation ids of the plots this panel is running (aborted on dispose). */
+    private readonly runningPlotOperations = new Set<string>();
 
     constructor(
         id: number,
@@ -214,7 +219,10 @@ export class UIController {
             vscode.Uri.file(fileUri.fsPath),
         );
         const maxSizeMB = getMaxSize();
-        if (stat.size > maxSizeMB * 1024 * 1024) {
+        // A directory (Zarr store) reports the size of its entry, not of its
+        // data: the limit is for files only (see the setting's description)
+        const isDirectory = (stat.type & vscode.FileType.Directory) !== 0;
+        if (!isDirectory && stat.size > maxSizeMB * 1024 * 1024) {
             throw new Error(
                 `File too large (${Math.round(
                     stat.size / 1024 / 1024,
@@ -247,11 +255,22 @@ export class UIController {
         if (!this.fileUri) {
             throw new Error('No file loaded');
         }
-        const response = await this.dataProcessor.createPlot(
-            this.fileUri,
-            plot,
-            this.shouldConvertBandsToVariables(this.fileUri.fsPath),
-        );
+        const operationId = plot.operationId;
+        if (operationId) {
+            this.runningPlotOperations.add(operationId);
+        }
+        let response;
+        try {
+            response = await this.dataProcessor.createPlot(
+                this.fileUri,
+                plot,
+                this.shouldConvertBandsToVariables(this.fileUri.fsPath),
+            );
+        } finally {
+            if (operationId) {
+                this.runningPlotOperations.delete(operationId);
+            }
+        }
         if (response.error) {
             const msg = `Data processing error: ${response.error.error}`;
             Logger.error(`[UIController] [createPlot] ${msg}`);
@@ -422,6 +441,10 @@ export class UIController {
     ): Promise<SaveResult> {
         try {
             const currentFile = this.requireCurrentFile();
+            // Checked before the save dialog, so the user does not pick a file for nothing
+            if (typeof htmlContent !== 'string' || htmlContent === '') {
+                throw new Error('The page content could not be captured');
+            }
             const defaultFileName = `${path.basename(
                 currentFile,
             )}_webview_${timestampForFileName()}.html`;
@@ -502,9 +525,19 @@ export class UIController {
             `load:${path.basename(fileUri.fsPath)}`,
         );
         this.fileUri = fileUri;
+        const sequence = ++this.loadSequence;
+        // A closed panel, or a load superseded by a later one (refresh after a
+        // settings change), must not update the webview, outline or notifications.
+        const isStale = () => this.disposed || sequence !== this.loadSequence;
         try {
             const dataInfo = await this.fetchDataInfo(fileUri);
             timer.mark('getDataInfo');
+            if (isStale()) {
+                Logger.debug(
+                    `[UIController] <${this.id}> Ignoring a stale load of ${fileUri.fsPath}`,
+                );
+                return;
+            }
 
             this.dataInfo = dataInfo;
             this.lastLoadTime = new Date();
@@ -531,6 +564,12 @@ export class UIController {
         } catch (caught) {
             const error =
                 caught instanceof Error ? caught : new Error(String(caught));
+            if (isStale()) {
+                Logger.debug(
+                    `[UIController] <${this.id}> Ignoring the error of a stale load: ${error.message}`,
+                );
+                return;
+            }
             this.onErrorPanelCallback(error);
             this.errorBoundary.handleError(error, {
                 component: this.getComponentName(),
@@ -561,6 +600,12 @@ export class UIController {
     }
 
     public dispose(): void {
+        this.disposed = true;
+        // Nobody can see their result any more
+        for (const operationId of this.runningPlotOperations) {
+            this.dataProcessor.abortPlot(operationId);
+        }
+        this.runningPlotOperations.clear();
         this.errorBoundary.unregisterHandler(this.getComponentName());
         this.messageBus.dispose();
     }

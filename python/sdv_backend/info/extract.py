@@ -19,6 +19,7 @@ import xarray as xr
 from sdv_backend._bootstrap import logger
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.formats.geotiff import refine_geotiff_display_name
+from sdv_backend.formats.kerchunk import kerchunk_json_error
 from sdv_backend.info.datatree import flatten_datatree_groups, inherited_coord_sources
 from sdv_backend.info.display import XR_HTML_OPTIONS, XR_TEXT_OPTIONS
 from sdv_backend.info.encoding import collect_attributes, collect_encoding
@@ -66,7 +67,7 @@ def get_file_info(
         if file_format_info.available_engines and not file_format_info.missing_packages:
             # Raised by an installed engine: a reading failure, not a setup one
             return _file_info_error(exc, file_format_info, versions_text)
-        return _open_import_error(file_format_info, versions_text)
+        return _open_import_error(file_path, file_format_info, versions_text)
     except Exception as exc:
         # Missing, corrupt or unreadable file: every engine failed
         return _file_info_error(exc, file_format_info, versions_text)
@@ -125,7 +126,7 @@ def _file_info_error(
 
 
 def _open_import_error(
-    file_format_info: FileFormatInfo, versions_text: str
+    file_path: Path, file_format_info: FileFormatInfo, versions_text: str
 ) -> FileInfoError:
     """Explain an ImportError raised while opening (not-a-Zarr ZIP, not-Kerchunk
     JSON, or genuinely missing packages)."""
@@ -146,10 +147,10 @@ def _open_import_error(
         file_format_info.extension == ".kerchunk"
         and not file_format_info.missing_packages
     ):
+        reason = None if file_path.is_dir() else kerchunk_json_error(file_path)
         return FileInfoError(
-            error=(
-                "This file is not a Kerchunk / virtual Zarr reference (no 'refs' mapping)."
-            ),
+            error=reason
+            or "This file is not a Kerchunk / virtual Zarr reference (no 'refs' mapping).",
             error_type="ValueError",
             format_info=file_format_info,
             suggestion=(

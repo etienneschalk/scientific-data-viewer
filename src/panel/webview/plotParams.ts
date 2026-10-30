@@ -304,7 +304,10 @@ function renderPlotParameterControl(
         case 'dimension':
             return /*html*/ `<select id="${id}" class="facet-select" data-param="${param.key}"${groupAttr} title="${title}">${dimensionOptionsHtml(dimNames)}</select>`;
         case 'bool':
-            return /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${groupAttr}${param.default ? ' checked' : ''} title="${title}" /></span>`;
+            // A group checkbox starts at "use the global value" (indeterminate)
+            return scope.groupName === null
+                ? /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${param.default ? ' checked' : ''} title="${title}" /></span>`
+                : /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${groupAttr} data-inherit="true" title="${escapeHtml(INHERIT_TITLE)}" /></span>`;
         case 'colWrap': {
             const autoId = plotParamElementId(scope, param, 'auto');
             return /*html*/ `
@@ -390,6 +393,129 @@ function readNumber(
     return n;
 }
 
+const PLOT_PARAMETER_BY_KEY = new Map(
+    PLOT_PARAMETERS.map((param) => [param.key, param]),
+);
+
+/** Why the number typed in a control is rejected, or null when it is fine or empty. */
+function plotParameterError(
+    element: HTMLInputElement,
+    param: PlotParameter,
+): string | null {
+    if (!['int', 'float', 'colWrap'].includes(param.kind) || element.disabled) {
+        return null;
+    }
+    // A number input holds '' for text it cannot parse, flagged as badInput
+    if (element.validity?.badInput) {
+        return `${param.label}: not a number`;
+    }
+    const raw = element.value.trim();
+    if (raw === '') {
+        return null;
+    }
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+        return `${param.label}: "${raw}" is not a number${raw.includes(',') ? ' (use a dot as decimal separator)' : ''}`;
+    }
+    const min = param.min ?? 1;
+    if (
+        (param.kind === 'int' || param.kind === 'colWrap') &&
+        (!Number.isInteger(n) || n < min)
+    ) {
+        return `${param.label}: must be a whole number, at least ${min}`;
+    }
+    if (param.positive && n <= 0) {
+        return `${param.label}: must be greater than 0`;
+    }
+    return null;
+}
+
+function showPlotParameterError(
+    element: HTMLInputElement,
+    param: PlotParameter,
+    message: string | null,
+): void {
+    element.setCustomValidity(message ?? '');
+    // An attribute, unlike the custom validity, is kept by the HTML export
+    if (message) {
+        element.setAttribute('aria-invalid', 'true');
+    } else {
+        element.removeAttribute('aria-invalid');
+    }
+    element.title = message ?? param.title;
+}
+
+/** `input` / `change` listener: outline a numeric plot parameter typed wrong. */
+export function validatePlotParameterInput(target: EventTarget | null): void {
+    if (
+        !(target instanceof HTMLInputElement) ||
+        !target.classList.contains('plot-input')
+    ) {
+        return;
+    }
+    const param = PLOT_PARAMETER_BY_KEY.get(target.dataset.param ?? '');
+    if (param) {
+        showPlotParameterError(
+            target,
+            param,
+            plotParameterError(target, param),
+        );
+    }
+}
+
+/** Numeric controls under `root` whose value cannot be used, with the reason. */
+export function invalidPlotParameters(
+    root: ParentNode,
+): Array<{ key: string; message: string }> {
+    return PLOT_PARAMETERS.flatMap((param) => {
+        const element = paramElement(root, param.key);
+        const message = element ? plotParameterError(element, param) : null;
+        return message ? [{ key: param.key, message }] : [];
+    });
+}
+
+const INHERIT_TITLE =
+    'Uses the global value. Click to set a value for this group; Reset goes back to the global value.';
+
+/** Group checkbox: "use the global value" (indeterminate) or the group's own value. */
+function setInherited(element: HTMLInputElement, inherited: boolean): void {
+    element.indeterminate = inherited;
+    if (inherited) {
+        element.checked = false;
+        element.setAttribute('data-inherit', 'true');
+        element.title = INHERIT_TITLE;
+    } else {
+        element.removeAttribute('data-inherit');
+        const param = PLOT_PARAMETER_BY_KEY.get(element.dataset.param ?? '');
+        element.title = param?.title ?? '';
+    }
+}
+
+/**
+ * Show the group checkboxes still at "use the global value" as indeterminate
+ * (a property, not an attribute: set it after rendering or loading a page).
+ */
+export function showInheritedCheckboxes(root: ParentNode): void {
+    root.querySelectorAll<HTMLInputElement>(
+        'input.plot-checkbox[data-inherit]',
+    ).forEach((element) => {
+        element.indeterminate = true;
+    });
+}
+
+/** `change` listener: a click gives a group checkbox its own value. */
+export function handleInheritedCheckboxChange(
+    target: EventTarget | null,
+): void {
+    if (
+        target instanceof HTMLInputElement &&
+        target.classList.contains('plot-checkbox') &&
+        target.hasAttribute('data-inherit')
+    ) {
+        setInherited(target, false);
+    }
+}
+
 /** Value of one parameter, or undefined when the control is empty or invalid. */
 function readPlotParameter(
     root: ParentNode,
@@ -401,7 +527,9 @@ function readPlotParameter(
     }
     switch (param.kind) {
         case 'bool':
-            return element.checked;
+            return element.hasAttribute('data-inherit')
+                ? undefined
+                : element.checked;
         case 'colWrap': {
             const auto = paramElement(root, `${param.key}Auto`);
             if (auto && auto.checked) {
@@ -434,16 +562,13 @@ function isPlotParameterSet(
     param: PlotParameter,
     value: PlotControlsValues[string],
 ): boolean {
-    if (value === undefined) {
-        return false;
-    }
-    return param.kind !== 'bool' || value !== param.default;
+    return value !== undefined;
 }
 
 /**
  * Group values win when set; a group control left empty (or a checkbox left
- * at its default) falls back to the global control. Dimension slices: the
- * group's slices replace the global ones when the group has any.
+ * at "use the global value") falls back to the global control. Dimension
+ * slices: the group's slices replace the global ones when the group has any.
  */
 export function mergePlotControls(
     groupValues: PlotControlsValues | null,
@@ -473,11 +598,14 @@ export function resetPlotControls(root: ParentNode): void {
         if (!element) {
             continue;
         }
-        if (param.kind === 'bool') {
+        if (param.kind === 'bool' && element.hasAttribute('data-group')) {
+            setInherited(element, true);
+        } else if (param.kind === 'bool') {
             element.checked = param.default === true;
         } else {
             element.value = '';
             element.disabled = false;
+            showPlotParameterError(element, param, null);
         }
         if (param.kind === 'colWrap') {
             const auto = paramElement(root, `${param.key}Auto`);
@@ -494,6 +622,7 @@ export function syncColWrapAutoCheckbox(autoCheckbox: HTMLInputElement): void {
     const numberInput = root ? paramElement(root, 'colWrap') : null;
     if (numberInput) {
         numberInput.disabled = autoCheckbox.checked;
+        validatePlotParameterInput(numberInput);
     }
 }
 

@@ -503,9 +503,10 @@
                 "scientificDataViewer.maxFileSize": {
                     "type": "number",
                     "default": 1000000000000,
+                    "exclusiveMinimum": 0,
                     "order": 1000,
                     "description": "Maximum file size in MB to load automatically",
-                    "markdownDescription": "Maximum file size in **MB** to load automatically. Files above this limit are not loaded."
+                    "markdownDescription": "Maximum file size in **MB** to load automatically. Files above this limit are not loaded. Applies to files only: directory stores (Zarr) are not checked. 0 or a negative value means no limit."
                 },
                 "scientificDataViewer.defaultView": {
                     "type": "string",
@@ -713,7 +714,7 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && npm run compile",
         "compile": "npm run build:webview && tsc -p ./ && tsc -p src/panel/webview",
         "build:webview": "node scripts/build-webview.mjs",
         "watch": "node scripts/build-webview.mjs --watch --with-tsc",
