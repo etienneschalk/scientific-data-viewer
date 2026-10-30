@@ -2,7 +2,7 @@
 
 ## Summary
 
-Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`QA_REPORT_0.13.0.md`](./QA_REPORT_0.13.0.md)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`QA_FIXES_0.13.0.md`](./QA_FIXES_0.13.0.md); its harnesses are kept in `scripts/qa/`.
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`QA_REPORT_0.13.0.md`](./QA_REPORT_0.13.0.md)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`QA_FIXES_0.13.0.md`](./QA_FIXES_0.13.0.md); its harnesses are kept in `scripts/qa/`. The little-used **Time Controls** (off by default) are removed with their two settings: Dimension Slices cover time.
 
 **Version:** `0.13.0` in `package.json` / `package-lock.json`
 
@@ -165,13 +165,13 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 13 — Plot controls layout
 
-| Area      | Work                                                                                                                                                              |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Layout    | Blocks Time range / Dimension slices `isel` / Plot parameters `plot`: one heading style, one-line hint, Reset per block, hairlines; global controls in one card   |
-| Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                          |
-| Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                   |
-| Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged |
-| Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                          |
+| Area      | Work                                                                                                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout    | Blocks Dimension slices `isel` / Plot parameters `plot` (Time range later removed): one heading style, one-line hint, Reset per block, hairlines; global controls in one card |
+| Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                                      |
+| Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                               |
+| Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged             |
+| Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                                      |
 
 ### Phase 14 — Dimension slice boxes and slider
 
@@ -205,6 +205,16 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                           |
 | Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30         |
 
+### Phase 17 — Time Controls removed
+
+| Area     | Work                                                                                                                                                                                                        |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why      | Off by default since v0.9, little tested, overlapping with Dimension Slices (`0:24:2`); focus on the generic plot controls, a label-based `sel` can come back later                                         |
+| Settings | `globalTimeControls` / `groupTimeControls` removed, not deprecated: VS Code ignores unknown keys (greyed out in `settings.json`), and a `deprecationMessage` only helps a setting that still does something |
+| Webview  | Time range block (global, group), `timeControls.ts`, `data-baseline` of `changedFields.ts`, time CSS removed; `PlotOptions` / `buildCreatePlotCliArgs` drop the datetime fields                             |
+| Backend  | Unchanged: `--datetime-variable` / `--start-datetime` / `--end-datetime` and `datetime_variables` still available from the CLI                                                                              |
+| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed and §29; manual test plan B17 / B26          |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -230,7 +240,7 @@ See [`docs/v0.13/OUT_OF_SCOPE.md`](./OUT_OF_SCOPE.md): pyfive (P1.4), OME-Zarr (
 | `facetgridFigsize`         | `[]`                             | Optional `[width, height]` inches for faceted plots                |
 | `showLoadTimeInLocalTime`  | `true`                           | **Loaded:** time in local time (with UTC offset); `false` → UTC    |
 
-Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, …).
+Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, …), except `globalTimeControls` / `groupTimeControls`, removed.
 
 ---
 
@@ -243,6 +253,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 - JSON output: numeric attributes are numbers / arrays; xarray encoding in `encoding` / `encoding_flattened` instead of `__xarray_encoding.*` attribute keys; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
 - Group plot overrides apply field by field (empty group field → global value).
 - Plots keep the automatic layout when one control is set (a sliced 3D variable is no longer a histogram); result JSON gains `plot_layout`; `createPlot` answers `{plotData, layout, appliedSlices}` instead of the PNG string.
+- Time Controls removed: settings `globalTimeControls` / `groupTimeControls` gone (ignored if left in `settings.json`); the webview no longer sends datetime fields; the backend CLI keeps its datetime flags.
 - `npm run compile` also bundles the webview (esbuild); run `npm install` first.
 
 ---
@@ -314,6 +325,8 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 Results after the QA pass: `npm test` 325 passing; `pytest python/tests` 195 passing; golden snapshots 82 / 0 failing (re-recorded after checking that every info diff is the encoding move or `nan`); `npm run typecheck`, `generate.py --check` and pre-commit clean. QA harnesses: webview scenarios (render, controls, time, cancel) and VS Code suites passing; backend differential against v0.12.1 without regression.
 
 Results after the progressive plot layout: `npm test` 328 passing; `pytest python/tests` 218 passing; `node scripts/qa/webview/run-all.mjs` all scenarios passing; `generate.py --check` clean. Golden snapshots: plot cases differ by the new `plot_layout` field (and the `5:15` slice text): re-record after review.
+
+Results after removing the Time Controls: `npm test` 310 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
 
 ```bash
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
@@ -464,3 +477,8 @@ Progressive plot layout:
 64. feat(plot): keep the automatic layout for every control the user leaves empty
 65. feat(webview): outline changed plot controls and show the layout under each plot
 66. docs: explain how a plot is made, with generated decision diagrams
+
+Time Controls removed:
+
+67. feat(webview): remove the Time Controls and their settings
+68. docs: document the removal of the Time Controls

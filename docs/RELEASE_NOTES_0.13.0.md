@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.13.0 Release Notes
 
-**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections. A running plot can be **cancelled on its own**, next to its **Create Plot** button. The **Loaded:** time at the top right is now shown in **local time** (new setting `showLoadTimeInLocalTime`, on by default). A final **QA pass** (adversarial, differential and end-to-end testing; tools kept in `scripts/qa/`) found no regression in what is read or plotted and fixed 20 issues: small negative **vmin / vmax** (`-1e-7`) that broke the plot, `np.float64(nan)` shown for `NaN`, viewers closed while loading that left their outline or kept plotting, Plot All re-running a running plot, numbers typed wrong silently ignored, group checkboxes that could not override the global ones, unclear Kerchunk and Python-environment errors (see [§ QA pass](#qa-pass)). Finally, **plots keep their automatic layout when you change one control**: slicing a dimension, or setting only `col_wrap`, `x` or `row`, used to switch the whole plot to manual (slicing `lat` of a `(time, lat, lon)` variable gave a histogram); now every empty control is still chosen automatically, the **controls you changed are outlined**, and a line under each plot shows what was set by you and what was chosen (see [§ Progressive plot layout](#progressive-plot-layout), and [`docs/PLOTTING.md`](./PLOTTING.md) for the whole mechanism).
+**TL;DR** — Aligns with **xarray 2026.4+** and **zarr-python 3**: better Zarr discovery (unsuffixed dirs, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality settings, experimental **Kerchunk** references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Internally, the Python backend is restructured from one 3,700-line script into the **`sdv_backend`** package (no user-visible behaviour change), and sample data generation becomes a reproducible package with **`--overwrite`**. A full **code review** pass fixes a security issue (HTML injection from file metadata → arbitrary VS Code commands), uv installs that silently dropped version pins, broken **Open as Kerchunk**, Windows save paths, several backend crashes, and removes a large amount of dead or duplicated code (webview rewritten as bundled TypeScript modules). The viewer also gets a **modern, VS Code-native look** (rounded cards, wider gutters, icon toolbar, consistent form controls), and the unused one-option **plot type selector** ("Auto (Recommended)") is removed. The **xarray encoding** moves out of the attributes into its own collapsed **Xarray Encoding** section, and each variable becomes a card with collapsible **Attributes**, **Xarray Encoding** and **Plot** sections. A running plot can be **cancelled on its own**, next to its **Create Plot** button. The **Loaded:** time at the top right is now shown in **local time** (new setting `showLoadTimeInLocalTime`, on by default). A final **QA pass** (adversarial, differential and end-to-end testing; tools kept in `scripts/qa/`) found no regression in what is read or plotted and fixed 20 issues: small negative **vmin / vmax** (`-1e-7`) that broke the plot, `np.float64(nan)` shown for `NaN`, viewers closed while loading that left their outline or kept plotting, Plot All re-running a running plot, numbers typed wrong silently ignored, group checkboxes that could not override the global ones, unclear Kerchunk and Python-environment errors (see [§ QA pass](#qa-pass)). Finally, **plots keep their automatic layout when you change one control**: slicing a dimension, or setting only `col_wrap`, `x` or `row`, used to switch the whole plot to manual (slicing `lat` of a `(time, lat, lon)` variable gave a histogram); now every empty control is still chosen automatically, the **controls you changed are outlined**, and a line under each plot shows what was set by you and what was chosen (see [§ Progressive plot layout](#progressive-plot-layout), and [`docs/PLOTTING.md`](./PLOTTING.md) for the whole mechanism). The little-used **Time Controls** (datetime range, off by default) are removed with their two settings: **Dimension Slices** subset time by index (see [§ Time Controls removed](#time-controls-removed)).
 
 **Start here** to review, test or release v0.13: [`docs/v0.13/GETTING_STARTED.md`](./v0.13/GETTING_STARTED.md). **Planning docs** (what shipped vs deferred): [`docs/v0.13/`](./v0.13/README.md)
 
@@ -26,6 +26,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Plot layout**       | One control changed keeps the automatic choice of the others; changed controls outlined; layout line under each plot (see [§ Progressive plot layout](#progressive-plot-layout))             |
 | **Maintainability**   | Python backend split into the **`sdv_backend`** package; sample generators into **`sample_data`** (see [§ Backend restructuring](#python-backend-restructuring))                             |
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                                                |
+| **Time Controls**     | Removed (off by default, little tested); **Dimension Slices** subset time; two settings gone (see [§ Time Controls removed](#time-controls-removed))                                         |
 | **QA pass**           | 20 fixes from adversarial / differential / end-to-end testing; harnesses in `scripts/qa/` (see [§ QA pass](#qa-pass))                                                                        |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
@@ -60,6 +61,10 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 - `scientificDataViewer.orderGroupsAlphabetically`
 - `scientificDataViewer.showXarrayEncodingAttributes`
 
+### Time Controls removed
+
+- The settings `scientificDataViewer.globalTimeControls` and `scientificDataViewer.groupTimeControls` no longer exist. If you set them, the line stays in `settings.json`, greyed out as _Unknown Configuration Setting_, and is ignored: delete it when convenient. Subset time with **Dimension Slices** (e.g. `0:24:2`). See [§ Time Controls removed](#time-controls-removed).
+
 ### Outline / sidebar
 
 - Kerchunk editor id **`kerchunkEditor`** is included in outline `when` clauses (same as other custom editors).
@@ -70,7 +75,6 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 - **vmin / vmax** now apply when a dimension slice, a facet or x / y / hue is set (they were silently dropped unless a `cmap` was given); unchecking **add_colorbar** works there too. Checking **robust** on a 1D variable no longer fails with `unexpected keyword argument 'robust'`.
 - **Group plot overrides** now apply **field by field**: an empty group field (or a group checkbox left at its default) uses the global value. Before, any non-default group setting made all of the group's checkboxes win.
 - **Numeric attributes** show as numbers / arrays (`-999`, `[0.0, 2.0]`) instead of numpy text (`"[0. 2.]"`).
-- **Time selector** lists only real datetime variables (`datetime64`, cftime); variables such as temperature `t` no longer appear.
 - **Healthcheck** report: the **Logging System** and **Performance** sections are gone (one always passed, the other duplicated Memory).
 - **xarray older than 2024.10** in your own interpreter: the viewer now shows _"xarray X is too old…"_ with the `pip install` command, instead of `module 'xarray' has no attribute 'DataTree'` (v0.12 failed the same way). xarray 2024.10 – 2026.3 still works for NetCDF / HDF5; 2026.4+ is recommended.
 - Plotting a **cftime** time axis needs `nc-time-axis` (not in the uv bundle); without it the plot error says so.
@@ -264,7 +268,7 @@ The plot controls were hard to scan: each row was a flow of `label: input` pairs
 
 ### What changed
 
-- **Blocks**: **Time range**, **Dimension slices** (`isel`) and **Plot parameters** (`plot`) share one heading style with a one-line hint and their own **Reset** button on the right, separated by hairlines. Global Plot Controls are one card; Group Plot Controls draw no box inside the group card.
+- **Blocks**: **Dimension slices** (`isel`) and **Plot parameters** (`plot`) share one heading style with a one-line hint and their own **Reset** button on the right, separated by hairlines. Global Plot Controls are one card; Group Plot Controls draw no box inside the group card.
 - **Fields**: each parameter shows its xarray name (editor font) with a short hint (`hue colors`, `robust 2–98 %`, `size height, in`), and its control below at full width. Fields sit in a grid whose columns line up across blocks; it falls back to two columns on narrow editors.
 - **Fieldsets**: plot parameters are sorted by meaning: **Facets** (row, col, col_wrap), **Axes** (x, y, hue, xincrease, yincrease), **Color** (vmin, vmax, cmap, robust, add_colorbar), **Figure** (size, aspect, bins, add_legend).
 - **Reset per block**: **Reset** next to Dimension slices clears only the slices (before, the single "Clear Dimension Slices and Plot Parameters" button cleared both); Plot parameters have their own Reset.
@@ -290,7 +294,7 @@ The automatic plot works well, but it was all or nothing: the backend chose the 
 - **Backend (`plotting/layout.py`, new)**: `resolve_layout` keeps every role the user set (x, y, hue, row, col, col_wrap, size, aspect) and fills the others from the dimensions left free, in a fixed order: `bins` → histogram; plot kind from the dimensions left (hue → lines, two or more → image, one → line); empty axes take the last free dimensions (x the last, y the one before); remaining dimensions become `col`, or `row` and `col`; `col_wrap` and figure size get defaults. Dimension slices and the time range only select data and never change the mode. Size-1 dimensions not chosen are taken at index 0. With no control set, the result is the historical automatic mode.
 - **Each choice is tagged** `user` or `auto`, and user choices that cannot be used (a facet dimension the variable lacks — global controls apply to every variable —, the same dimension in two roles, `col_wrap` without column facets, more dimensions than facets) are dropped with a note instead of silently. The result JSON gains `plot_layout`.
 - **`draw.py`** makes one xarray call per kind (`imshow` / `pcolormesh` / `line` / `hist`) and `kwargs.py` passes each kind only the style options it accepts (`for_kind`). `PlotOptions.has_user_layout`, `draws_color_mesh` and the two drawing routes are removed.
-- **Webview, changed outline (`changedFields.ts`, new)**: a field whose value differs from its default is outlined, with a dot after its name: time range, dimension slices and plot parameters, global and group. A group checkbox showing the dash, and time bounds prefilled with the full range, count as defaults. Reset clears the outlines; exported HTML keeps them.
+- **Webview, changed outline (`changedFields.ts`, new)**: a field whose value differs from its default is outlined, with a dot after its name: dimension slices and plot parameters, global and group. A group checkbox showing the dash counts as default. Reset clears the outlines; exported HTML keeps them.
 - **Webview, layout line (`render/plotLayout.ts`, new)**: under each plot, the plot kind then every slice and role with its value; the items you set are outlined like the changed fields, the others were chosen automatically. Notes list the choices that could not be used.
 - **Docs**: [`docs/PLOTTING.md`](./PLOTTING.md) explains the whole mechanism; two new generated diagrams, _Plot parameters_ and _Plot layout decision_ (`docs/architecture/`).
 
@@ -363,6 +367,25 @@ Many things changed in v0.13; a tester's pass was needed before the release, try
 - `npm test` (325 passing), `pytest python/tests` (195 passing), `npm run typecheck`, `generate.py --check`, golden snapshots re-recorded after checking that every difference is the encoding move or `nan`.
 - `scripts/qa/`: webview scenarios (render, controls, time, cancel), end-to-end suites in VS Code 1.144, backend differential against v0.12.1 (no regression).
 
+## Time Controls removed
+
+### Why
+
+The **Time range** block (datetime variable, start / end) has been off by default since v0.9 and was little tested, while **Dimension Slices** subset any dimension by index, time included (`0:24:2`). Keeping two ways to select time doubled the controls to maintain and to explain. The plot controls now focus on the generic ones; a label-based selection (`sel`) working for every coordinate can come back once it is defined.
+
+### What changed
+
+- The **Time range** block is gone from **Global Plot Controls** and **Group Plot Controls**, with the settings **`scientificDataViewer.globalTimeControls`** and **`scientificDataViewer.groupTimeControls`**.
+- **Settings left in `settings.json`**: nothing breaks. VS Code does not validate unknown keys strictly: a removed setting is greyed out as _Unknown Configuration Setting_ in `settings.json` and ignored. A `deprecationMessage` is only useful while a setting still has an effect (or is renamed); this one does nothing any more, so it is removed, not deprecated. You can delete the line.
+- The webview no longer sends `datetimeVariableName` / `startDatetime` / `endDatetime`, and `PlotOptions` / `buildCreatePlotCliArgs` drop them.
+- **Python backend unchanged**: `get_data_info.py plot … --datetime-variable time --start-datetime … --end-datetime …` and the `datetime_variables` field of `info` still work from the command line, so the feature can be re-added on the webview side only.
+
+### How it was checked
+
+- `npm test` (310 passing; a file with datetime variables shows no time control), `npm run typecheck`, `generate.py --check` (diagrams regenerated), pre-commit.
+
+---
+
 ## New settings (summary)
 
 | Setting                    | Default                          | Effect                                                                                             |
@@ -372,7 +395,7 @@ Many things changed in v0.13; a tester's pass was needed before the release, try
 | `facetgridFigsize`         | `[]` (unset)                     | Optional `[width, height]` inches → `xr.set_options(facetgrid_figsize=...)` during plot subprocess |
 | `showLoadTimeInLocalTime`  | `true`                           | **Loaded:** time (top right) in local time with its UTC offset; `false` → UTC                      |
 
-Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, etc.).
+Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, etc.), except **`globalTimeControls`** and **`groupTimeControls`**, removed (see [§ Time Controls removed](#time-controls-removed)).
 
 ---
 
@@ -621,7 +644,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
    ```
 
 2. Open a few files of different formats (NetCDF with groups, Zarr, GeoTIFF, Kerchunk) and create plots with facets and dimension slices: results should match v0.13 before the restructuring.
-3. Plot with a datetime range that matches no data → clear _"No data to plot"_ error instead of a `ZeroDivisionError`.
+3. Plot with a dimension slice that selects nothing (`time` start `5`, stop `2`) → clear _"No data to plot"_ error instead of a `ZeroDivisionError`.
 4. `python python/create_sample_data.py --overwrite` completes with exit code 0 and rewrites the generated files; running it twice yields the same snapshots.
 
 ### 14. Issue templates (repository)
@@ -790,7 +813,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → one card: **Dimension slices** and **Plot parameters** (and **Time range** with `globalTimeControls` on), each with a bold title, a hint and **Reset** on the right.
+1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → one card: **Dimension slices** and **Plot parameters**, each with a bold title, a hint and **Reset** on the right.
 2. Plot parameters show four captions (**Facets**, **Axes**, **Color**, **Figure**); every field has its name above its control, and the controls line up in columns across captions. Checkboxes sit in the same columns as the inputs.
 3. Type `0` in a dimension slice and `20` in **bins** → **Reset** of Dimension slices clears the slice only → **Reset** of Plot parameters clears `bins` and restores the default checkboxes.
 4. Expand a group → **Group Plot Controls** has the same layout, without a box of its own. A group value still overrides the global one (`bins` 10 in the group, 30 globally → the group's variable uses 10).
@@ -844,8 +867,18 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Open `sample-data/sample_data_many_vars.nc` → plot `temperature_00` (time, depth, lat, lon) → rows by `time`, columns by `depth`. Set **col** `time` → columns by `time` (outlined in the layout line), rows by `depth` (automatic).
 7. Set **bins** `20` with **col** `time` → a histogram; the note says `col not used: bins draws a histogram of all values`.
 8. Click **robust** twice → the outline appears then goes (back to its default). In a group's **Group Plot Controls**, click a checkbox showing a dash → outlined; **Reset** → dash, no outline.
-9. Turn **globalTimeControls** on, **Refresh**, pick a datetime variable → only the variable field is outlined (start / end prefilled with the full range are not); change the end → it is outlined.
-10. Export the webview and open the HTML in a browser → the outlines and the layout line are kept.
+9. Export the webview and open the HTML in a browser → the outlines and the layout line are kept.
+
+### 29. Time Controls removed
+
+**Expect:** no time range control anywhere; old settings are harmless.
+
+**Test:**
+
+1. Open `sample-data/sample_data.nc` (it has a `time` coordinate) → **Global Plot Controls** and a group's **Group Plot Controls** show **Dimension slices** and **Plot parameters** only, no **Time range**.
+2. Settings UI → search `Time Controls` → no Scientific Data Viewer result.
+3. Add `"scientificDataViewer.globalTimeControls": true` to `settings.json` → the key is greyed out (_Unknown Configuration Setting_), no error notification; **Reload Window** → the viewer opens and plots as before. Remove the line.
+4. Type `0` : `24` : `2` in the `time` slice → **Create Plot** → every other time step, as the time range used to allow by date.
 
 ---
 
@@ -870,17 +903,17 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                                                                                       |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic                                                                                                                           |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                         |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                           |
-| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                   |
-| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                    |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot |
-| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md)                                                                                                                                                                                                  |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                            |
+| Area          | Change                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                                                                                                              |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic                                                                                                                                                  |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                                                |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                                                  |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                          |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                           |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed |
+| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md)                                                                                                                                                                                                                         |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                   |
 
 ---
 

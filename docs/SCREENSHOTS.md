@@ -103,7 +103,7 @@ Examples:
 npm run screenshots -- --skip-compile --theme dark-modern --scenario plots
 
 # Features that are off by default
-npm run screenshots -- --setting globalTimeControls=true --setting groupTimeControls=true
+npm run screenshots -- --setting groupDimensionSlices=false
 
 # Sharper and wider images for a blog post, written elsewhere
 npm run screenshots -- --scale 2 --width 1280 --out /tmp/sdv-shots
@@ -241,7 +241,7 @@ The fonts are part of the recording: `--vscode-font-family` is `system-ui, "Ubun
 
 Coordinates: `time` (12 months of 2025, `datetime64`), `lat` (36), `lon` (72), with CF attributes and units. Global attributes include a title, an institution, a source and `Conventions = CF-1.8`.
 
-It covers every part of the viewer: groups, coordinates, 1D / 2D / 3D variables, attributes, datetime variables (for the time controls), and plots that take one or two seconds each. Next to it, `not_a_netcdf_file.nc` is a text file, for the error page.
+It covers every part of the viewer: groups, coordinates, 1D / 2D / 3D variables, attributes, datetime variables, and plots that take one or two seconds each. Next to it, `not_a_netcdf_file.nc` is a text file, for the error page.
 
 ---
 
@@ -299,7 +299,7 @@ Some differences are expected and do not come from the UI: the load time, the pl
 ## Limitations
 
 - The screenshots show the webview only, not VS Code around it: no tab bar, sidebar, outline or notifications.
-- Settings are the defaults (plus `--setting`), not the user's. Global and group time controls are off by default, so they only appear with `--setting globalTimeControls=true` / `groupTimeControls=true`.
+- Settings are the defaults (plus `--setting`), not the user's.
 - `plot-error` relies on the first dimension slice input of the page and on the first **Create Plot** button. It depends on the dataset (default: first dimension alphabetically, of size < 9999).
 - The theme files are a recording. A theme change in a newer VS Code shows up only after `capture-themes.mjs` runs again.
 - Chromium applies `@media (prefers-color-scheme)` and native form controls (date picker icon, select arrow) its own way. VS Code's Electron is also Chromium, so they match in practice, but the Chromium versions differ.

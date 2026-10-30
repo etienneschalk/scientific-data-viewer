@@ -289,20 +289,15 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 3. Remove that line, save.
 
-### B17. Empty time range gives a clear message (bug fixed during the refactor)
+### B17. Empty selection gives a clear message (bug fixed during the refactor)
 
-1. In settings add: `"scientificDataViewer.globalTimeControls": true,` → save → **Reload Window**.
-2. Open **`sample_data.netcdf`**.
-3. In **Time range**, choose `time` as the **Datetime variable**, **Start** `2020-01-02`, **End** `2020-01-04`.
-4. **Create Plot** on **`precipitation`**.
+1. Open **`sample_data.netcdf`**, open **Global Plot Controls**.
+2. In **Dimension slices**, type `5` in the **start** box of `time` and `2` in its **stop** box (the stop box turns red: nothing is selected).
+3. **Create Plot** on **`precipitation`**.
 
-✅ The error reads **"No data to plot: dimension(s) time are empty after selection. Check the time range …"** ❌ if it says `ZeroDivisionError`.
+✅ The error reads **"No data to plot: dimension(s) time are empty after selection. Check the dimension slices …"** ❌ if it says `ZeroDivisionError`.
 
-5. Change to **Start** `2020-01-15`, **End** `2020-04-15`, **Create Plot**.
-
-✅ A plot appears; its title mentions the start and end times.
-
-6. Click **Reset** next to **Time range**; remove the `globalTimeControls` line, save.
+4. Click **Reset** next to **Dimension slices**.
 
 ### B18. Sentinel ".safe" is no longer offered
 
@@ -482,7 +477,7 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 1. Open `sample_data.nc`, open **Global Plot Controls**.
 
-✅ One box with up to three parts, each with a bold title and a **Reset** button on the right: **Time range** (only if turned on in settings), **Dimension slices**, **Plot parameters**. Under Plot parameters, the settings are sorted in four small groups (**Facets**, **Axes**, **Color**, **Figure**); each one shows its name above its box, and the boxes line up in columns from one group to the next.
+✅ One box with two parts, each with a bold title and a **Reset** button on the right: **Dimension slices**, **Plot parameters** (the former **Time range** part is removed in v0.13, and **Settings** no longer lists **Time Controls**). Under Plot parameters, the settings are sorted in four small groups (**Facets**, **Axes**, **Color**, **Figure**); each one shows its name above its box, and the boxes line up in columns from one group to the next.
 
 2. Type `0` in a dimension slice and `20` in **bins**, then click **Reset** next to **Dimension slices**.
 
@@ -641,7 +636,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B14 COG label                              |        |       |
 | B15 col_wrap auto / number                 |        |       |
 | B16 facetgridFigsize                       |        |       |
-| B17 Empty time range message               |        |       |
+| B17 Empty selection message                |        |       |
 | B18 No `.safe` menu                        |        |       |
 | B19 uv environment auto-rebuild            |        |       |
 | B19 failed rebuild keeps old env, retries  |        |       |

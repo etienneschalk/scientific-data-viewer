@@ -311,7 +311,7 @@ Full technical note: [`SCREENSHOTS.md`](./SCREENSHOTS.md).
 ```bash
 npm run screenshots                                   # compile, then all themes and scenarios
 npm run screenshots -- --skip-compile --theme dark-modern --scenario plots
-npm run screenshots -- --setting globalTimeControls=true --setting groupTimeControls=true
+npm run screenshots -- --setting groupDimensionSlices=false
 npm run screenshots -- --scale 2 --width 1280         # sharper images for docs
 ```
 

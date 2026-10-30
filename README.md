@@ -253,14 +253,14 @@ Dimension Slices let you subset data by dimension index or slice before plotting
   - **Color**: **vmin** / **vmax** / **cmap** for the color scale; **robust** uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)); **add_colorbar**.
   - **Figure**: **size** / **aspect** for the figure size (xarray: `figsize = (aspect * size, size)` in inches); **bins** for histogram-style plots; **add_legend**.
 
-**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices and the time range only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields you changed are outlined** (with a dot after their name), so you can see at a glance what differs from the defaults. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically, and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
+**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields you changed are outlined** (with a dot after their name), so you can see at a glance what differs from the defaults. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically, and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
 
 The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
 **Global vs. Group (inheritance)**
 The extension uses **inheritance** per field: for each plot parameter, the **group** value is used when set (non-empty), otherwise **global** is used. So the two can be mixed (e.g. group's dimension slices with global's facet row when the group left facet at "None"). Empty or "None" in group selectors (facet row/col, plot x/y/hue, cmap) falls back to global. **Only dimension slices are atomic**: they form one set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we do not merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; all other fields (facet row/col, plot x/y/hue, colWrap, aspect, size, robust, cmap, bins, checkboxes) inherit per field (group when set, else global).
 
-**Feature flags**: Four settings control whether each block is shown. **Global Dimension Slices** and **Group Dimension Slices** are **on by default**; **Global Time Controls** and **Group Time Controls** are **off by default** (use Dimension Slices for time instead, e.g. `0:24:2`). You can turn any block on or off in [Settings](#️-settings) under **Feature Flags**.
+**Feature flags**: **Global Dimension Slices** and **Group Dimension Slices** (both **on by default**) control whether each block is shown. You can turn them on or off in [Settings](#️-settings). To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
 
 ### 🖼️ Export Webview Content
 
@@ -398,17 +398,9 @@ The extension includes specific settings for virtual environment management:
 
 **Plot controls (Global and Group)**
 
-- **`scientificDataViewer.globalTimeControls`**
-  - (type: `boolean`, default: `false`)
-  - When enabled, shows datetime variable selection and start/end time inputs in the plot area. **Off by default** — use **Global Dimension Slices** to subset time by index (e.g. `0:24:2`) instead.
-  - Dimension Slices (isel) is data-agnostic; a future **sel** (label-based) feature could complement isel for datetime and other coordinates.
 - **`scientificDataViewer.globalDimensionSlices`**
   - (type: `boolean`, default: `true`)
   - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**
-- **`scientificDataViewer.groupTimeControls`**
-  - (type: `boolean`, default: `false`)
-  - Show **Group Time Controls** per group (datetime, start/end) in each group's Plot Controls section. **Off by default** — use **Group Dimension Slices** to subset time by index instead (e.g. `0:24:2`).
-  - When enabled, each group gets its own time/datetime controls.
 - **`scientificDataViewer.groupDimensionSlices`**
   - (type: `boolean`, default: `true`)
   - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).

@@ -46,15 +46,14 @@ Each line says `SAME`, `DIFF` (images differ: check that the change is intended)
 `harness.mjs` serves the page exactly as the panel builds it (HTMLGenerator markup, Content-Security-Policy, compiled `out/webview/webview.js`, `styles.css`, the VS Code theme variables recorded for `npm run screenshots`) to headless Chromium over the DevTools protocol, with a host shim on a CDP binding. Plot, refresh and load requests run the backend through the extension's compiled `buildCreatePlotCliArgs`, `runProcess` and `parseScriptResult`; abort really stops the process. Scenarios type with the keyboard and drag with the mouse, and record alerts, CSP violations and script errors.
 
 ```bash
-node scripts/qa/webview/run-all.mjs            # render, controls, time, cancel (~5 min)
+node scripts/qa/webview/run-all.mjs            # render, controls, cancel (~5 min)
 node scripts/qa/webview/cancel.mjs             # one file
 ```
 
 | File           | Covers                                                                                                                       |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `render.mjs`   | injection through every hostile fixture (live page and exported HTML), error pages, cards, narrow widths, refresh, big files |
-| `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, time zones, load time   |
-| `time.mjs`     | time selector on cftime, GRIB and a datetime data variable                                                                   |
+| `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, load time in time zones |
 | `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                  |
 
 Each check prints `PASS` / `FAIL` with its evidence; the exit code is 1 when one fails. Screenshots and exported pages go to `.qa/webview/`.

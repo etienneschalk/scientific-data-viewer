@@ -8,8 +8,8 @@ sections _Plot parameters_ and _Plot layout decision_).
 
 ## The principle: every control is optional
 
-Each plot control (dimension slices, time range, row / col / col_wrap, x / y /
-hue, colors, figure size, bins) can be left empty. **An empty control means
+Each plot control (dimension slices, row / col / col_wrap, x / y / hue,
+colors, figure size, bins) can be left empty. **An empty control means
 “choose it for me”; a control you set is kept as you set it.** The backend
 fills the empty ones from the dimensions of the variable, after your choices.
 
@@ -51,13 +51,12 @@ A field whose value differs from its default is outlined, with a dot after its
 name (`changedFields.ts`). The outlines are therefore exactly what the request
 overrides; everything else is automatic. The default of a field is:
 
-| Field                  | Default (not outlined)                                      |
-| ---------------------- | ----------------------------------------------------------- |
-| text / number / select | empty, `None`                                               |
-| checkbox (global)      | its initial state (`xincrease` on, `robust` off...)         |
-| checkbox (group)       | the dash: use the global value                              |
-| dimension slice        | the three boxes empty (the slider only mirrors them)        |
-| time start / end       | the full range prefilled when a datetime variable is chosen |
+| Field                  | Default (not outlined)                               |
+| ---------------------- | ---------------------------------------------------- |
+| text / number / select | empty, `None`                                        |
+| checkbox (global)      | its initial state (`xincrease` on, `robust` off...)  |
+| checkbox (group)       | the dash: use the global value                       |
+| dimension slice        | the three boxes empty (the slider only mirrors them) |
 
 **Reset** clears its block, and the outlines with it. Exported HTML keeps the
 outlines of the moment of the export.
@@ -80,7 +79,9 @@ that could not be used are listed below it, with the reason.
 ![Plot layout decision](architecture/svg/plot-layout.svg)
 
 `create_plot` (`python/sdv_backend/plotting/api.py`) selects the data first:
-`apply_dimension_slices` (`isel`), then `apply_datetime_filter`. **These only
+`apply_dimension_slices` (`isel`), then `apply_datetime_filter` (a datetime
+range, only given by the command line since the viewer's Time Controls were
+removed). **These only
 select data; they never change how it is laid out.** Then
 `resolve_layout` (`plotting/layout.py`) decides, in this order:
 
@@ -109,7 +110,8 @@ select data; they never change how it is laid out.** Then
    aspect 1 unless you set them; a single plot keeps matplotlib's size unless
    you set one (an `aspect` alone gets the default height, xarray needs both).
 8. A **1D line** whose x-axis was chosen automatically is drawn against the
-   selected **datetime variable** when there is one of the same shape.
+   selected **datetime variable** (command line only) when there is one of
+   the same shape.
 
 With nothing set, this is the automatic mode of earlier versions: 2D image,
 3D column facets along the first dimension (4 per row), 4D row and column
