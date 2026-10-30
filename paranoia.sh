@@ -16,14 +16,17 @@
 #   regression    backend info / plots / ~80 plot scenarios vs the last release,
 #                 real webview in headless Chromium, e2e suites in a real VS Code
 #                 on the packaged extension
-#   users         uv environment change, upgrade sandbox (normal, offline,
-#                 interrupted), viewer screenshots, npm audit, CI status
+#   users         uv environment change; migration from every older release
+#                 to this one, played as a user (environment rebuilt or kept as
+#                 ENVIRONMENT_REVISION says, settings kept, file shown); failed
+#                 and interrupted rebuilds; screenshots, npm audit, CI status
 #
 # Usage: ./paranoia.sh [options]
 #   --quick            static checks, build, package, unit tests (~5 min)
 #   --standard         (default) + golden snapshots, backend vs last release, webview
 #                      harness, npm audit, CI status (~20 min)
-#   --full             + e2e suites, upgrade sandbox, screenshots (~30 min). Only
+#   --full             + e2e suites, migration from every release, upgrade
+#                      failure modes, screenshots (~45 min). Only
 #                      a full run can conclude READY.
 #   --only a,b         run only these steps (ids: --list)
 #   --skip a,b         skip these steps
@@ -40,10 +43,11 @@
 #
 # Needs: Node 22 (nvm), the repository .venv (Python 3.13, see setup.sh),
 # pre-commit. Default profile: Chromium (Playwright). --full: uv, a display
-# (or xvfb-run), the previous release .vsix in the repository root.
-# pre-commit may reformat files, like the commit hook: check `git diff` after.
+# (or xvfb-run), the .vsix of older releases in the repository root (migration).
+# Fixes of the pre-commit hooks are saved to <run>/pre-commit.patch, not applied.
 # Env: PARANOIA_PYTHON (tooling, pytest: .venv/bin/python), SDV_PYTHON
-# (backend interpreter of the QA harnesses, see scripts/qa/README.md).
+# (backend interpreter of the QA harnesses, see scripts/qa/README.md),
+# PARANOIA_MIGRATION_FROM (releases to migrate from, e.g. "0.11.2 0.12.1").
 # =============================================================================
 
 set -uo pipefail
@@ -85,7 +89,8 @@ STEPS=(
     "npm-audit|standard|Dependencies|npm audit"
     "ci|standard|Release|CI status of this commit"
     "qa-e2e|full|Regression|End-to-end suites in VS Code (packaged extension)"
-    "upgrade|full|Users|Upgrade sandbox from the last release"
+    "migration|full|Users|Migration from every release (uv environment, settings, viewer)"
+    "upgrade|full|Users|Failed and interrupted environment rebuilds"
     "screenshots|full|Users|Viewer screenshots"
 )
 
@@ -96,7 +101,7 @@ BASELINE=""
 OUT=""
 VERBOSE=false
 
-usage() { sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,50p' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -275,9 +280,9 @@ step_uv_env() {
     [ "$STATUS" = WARN ] || return
     UV_ENV_CHANGED=true
     # The upgrade step answers the question: no warning when it runs
-    if selected upgrade; then
+    if selected migration; then
         STATUS=PASS
-        SUMMARY="changed since $BASELINE: users' uv environments are rebuilt at first start (checked by the upgrade step)"
+        SUMMARY="changed since $BASELINE: users' uv environments are rebuilt at first start (checked by the migration step)"
     fi
 }
 
@@ -498,26 +503,84 @@ step_qa_e2e() {
     ARTIFACTS+=("End-to-end observations: \`$SDV_QA_OUT/e2e/runs/paranoia/results.json\` (most suites record rather than assert: read it when a behaviour changes)")
 }
 
+# Releases to migrate from: the last patch of each minor release older than
+# this one, among the .vsix files of the repository root, that has the own
+# environment (PARANOIA_MIGRATION_FROM="0.11.2 0.12.1" to choose)
+migration_sources() {
+    if [ -n "${PARANOIA_MIGRATION_FROM:-}" ]; then
+        tr ' ' '\n' <<<"$PARANOIA_MIGRATION_FROM"
+        return
+    fi
+    local v
+    for v in $(find "$ROOT" -maxdepth 1 -name 'scientific-data-viewer-*.vsix' | sed -n 's/.*scientific-data-viewer-\([0-9.]*\)\.vsix$/\1/p' | sort -V); do
+        [ "$v" != "$VERSION" ] && [ "$(printf '%s\n' "$v" "$VERSION" | sort -V | head -1)" = "$v" ] || continue
+        unzip -p "$ROOT/scientific-data-viewer-$v.vsix" extension/package.json | grep -q useExtensionOwnEnvironment && echo "$v"
+    done | awk -F. '{ last[$1 "." $2] = $0; if (!seen[$1 "." $2]++) order[++n] = $1 "." $2 } END { for (i = 1; i <= n; i++) print last[order[i]] }'
+}
+
+# One run of the migration test (scripts/upgrade-sandbox.sh) per case; the
+# expectation (rebuild or keep) follows from each release, except for the two
+# synthetic cases that pin the rule of ENVIRONMENT_REVISION down
+step_migration() {
+    [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
+    local cases=() case name old expect extra outcome passed=() failed=() untested=()
+    for v in $(migration_sources); do
+        cases+=("v$v|$ROOT/scientific-data-viewer-$v.vsix||")
+    done
+    cases+=("same release|$VSIX|keep|" "next revision|$VSIX|rebuild|--bump-new")
+    for case in "${cases[@]}"; do
+        IFS='|' read -r name old expect extra <<<"$case"
+        local dir="$OUT/migration/${name// /-}"
+        echo "===== $name -> $VERSION ====="
+        mkdir -p "$dir"
+        # shellcheck disable=SC2086
+        with_display scripts/upgrade-sandbox.sh --old "$old" --new "$VSIX" ${expect:+--expect "$expect"} $extra --dir "$dir" 2>&1 |
+            tee "$dir.log"
+        local rc=${PIPESTATUS[0]}
+        outcome="$(sed -n 's/.*== Result: .*(\(rebuild\|keep\)).*/\1/p' "$dir.log" | tail -1)"
+        case $rc in
+            0) passed+=("$name: ${outcome:-?}") ;;
+            3) untested+=("$name") ;;
+            125) skip "no display and no xvfb-run"; return ;;
+            *) failed+=("$name") ;;
+        esac
+    done
+    echo
+    printf 'passed: %s\n' "${passed[@]}"
+    if [ ${#failed[@]} -gt 0 ]; then
+        fail "migration to $VERSION fails from: ${failed[*]} (see migration/<case>.log)"
+    elif [ ${#untested[@]} -gt 0 ]; then
+        warn "${untested[*]} could not create their environment on this machine: not tested; ${#passed[@]} migration(s) passed"
+    else
+        note "${#passed[@]} migrations keep users working ($(IFS=';'; echo "${passed[*]}" | sed 's/;/, /g'))"
+    fi
+}
+
+# What happens when the rebuild goes wrong. The rebuild code is the new
+# release's: from the last release when it rebuilds, else from this release
+# with its revision raised (as the next release that needs a rebuild)
 step_upgrade() {
     [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
-    [ -f "$PREVIOUS_VSIX" ] || { skip "$(basename "$PREVIOUS_VSIX") missing: download it from the GitHub release of $BASELINE"; return; }
+    local from=(--old "$VSIX" --bump-new) label="$VERSION with a raised revision"
+    if $UV_ENV_CHANGED && [ -f "$PREVIOUS_VSIX" ]; then
+        from=(--old "$PREVIOUS_VSIX")
+        label="$BASELINE"
+    fi
     local scenario failed=()
-    for scenario in normal offline interrupted; do
+    for scenario in offline interrupted; do
         echo "===== scenario: $scenario ====="
         mkdir -p "$OUT/upgrade/$scenario"
-        with_display scripts/upgrade-sandbox.sh --old "$PREVIOUS_VSIX" --new "$VSIX" --scenario "$scenario" --dir "$OUT/upgrade/$scenario"
+        with_display scripts/upgrade-sandbox.sh "${from[@]}" --new "$VSIX" --scenario "$scenario" --dir "$OUT/upgrade/$scenario"
         case $? in
             0) ;;
             125) skip "no display and no xvfb-run"; return ;;
             *) failed+=("$scenario") ;;
         esac
     done
-    local rebuilt=""
-    $UV_ENV_CHANGED && rebuilt=" (uv environment rebuilt)"
     if [ ${#failed[@]} -eq 0 ]; then
-        note "$BASELINE -> $VERSION$rebuilt: normal, offline and interrupted upgrades keep users working"
+        note "from $label: a failed (offline) or interrupted rebuild keeps the previous environment, the next start rebuilds it"
     else
-        fail "upgrade from $BASELINE$rebuilt fails: ${failed[*]}"
+        fail "rebuild from $label fails when: ${failed[*]}"
     fi
 }
 

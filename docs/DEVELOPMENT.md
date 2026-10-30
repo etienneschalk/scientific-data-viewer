@@ -356,12 +356,13 @@ The webview and e2e harnesses load the compiled `out/` (`npm run compile` first)
 ```bash
 ./paranoia.sh --quick        # static checks, build, package, pytest, npm test (~5 min)
 ./paranoia.sh                # + golden snapshots, backend / webview vs the last release, npm audit, CI status (~20 min)
-./paranoia.sh --full         # + e2e suites on the packaged extension, upgrade sandbox x3, screenshots (~30 min)
+./paranoia.sh --full         # + e2e suites on the packaged extension, migration from every release, failed rebuilds, screenshots (~45 min)
 ./paranoia.sh --list         # step ids; --only a,b / --skip a,b; --baseline v0.12.1; -v shows the output
 ```
 
 - **Verdict**: `NOT READY` (a check failed), `NOT FULLY VERIFIED` (nothing failed, but steps were skipped or the profile is not `--full`), `READY AFTER REVIEW` (warnings: differences a human must judge, such as plots that look different from the last release), `READY`. Exit code 1 when a check failed.
 - **Checks that exist only here**: what the users install, rather than the working tree. The `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` resolves, nothing leaked); its Python backend is run on sample files from outside the repository; the e2e suites and the upgrade sandbox use it. Also: the version is above the one on the Marketplace and Open VSX and its tag does not exist, the relative links of README / CHANGELOG / release documents resolve, and the uv environment changed since the last release (then the upgrade sandbox must pass). Commits missing from the commit list of the PR summary are listed in the `release` log for information only: that list always lags one commit behind.
+- **Migration** (`--full`): `scripts/upgrade-sandbox.sh` plays an update from each older release to this one as a user would (settings of their own, a data file opened before and after) and checks that the uv environment is rebuilt or kept as `ENVIRONMENT_REVISION` and the requirements say, that the viewer shows the file with that environment, and that `settings.json` is unchanged. Two synthetic cases pin the counter down: the same release must keep the environment, the same release with its revision raised must rebuild it. See [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
 - **The working tree is left as it was**: when pre-commit hooks reformat files that had no changes, the fixes are saved to `<run>/pre-commit.patch` and the files restored (`git apply` the patch to keep them). QA outputs (fixtures, baseline checkout, images) stay in the run folder; the baseline worktree is removed at the end.
 - The helpers are in `scripts/paranoia/checks.py` (standard library only). To add a step: a `step_<id>` function in `paranoia.sh` that calls `fail` / `warn` / `skip` / `note`, and a line in `STEPS`.
 

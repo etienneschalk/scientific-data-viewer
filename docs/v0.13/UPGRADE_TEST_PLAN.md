@@ -22,16 +22,24 @@ The extension never modifies an interpreter it does not own (Python extension or
 
 ## 1. Automated: `scripts/upgrade-sandbox.sh`
 
-The script plays a real user upgrade in a **throw-away VS Code profile**. Your own VS Code settings, extensions and environment are not touched. Each step:
+The script plays a real user update in a **throw-away VS Code profile**, from any release to any other. Your own VS Code settings, extensions and environment are not touched. Each step:
 
-1. Starts the **old release** (`scientific-data-viewer-0.12.1.vsix` by default) with `useExtensionOwnEnvironment` on. It opens a NetCDF file and waits until v0.12 has created its uv environment, then drops a marker file into that environment.
-2. Starts the **new build** on the same profile (same extension id, so the same storage folder) and waits for the rebuild.
-3. Checks the result:
-   - the state file has the current revision;
-   - the marker is gone (the environment was rebuilt, not patched);
-   - no `python-environment.previous` folder is left;
-   - `eccodeslib` < 2.48;
-   - the backend of the new build opens `sample_data.nc`, `.grib`, `_cog.tif` and `.cdf` with the rebuilt environment.
+1. **The user runs the old release** (`scientific-data-viewer-0.12.1.vsix` by default) with `useExtensionOwnEnvironment` on and a few settings of their own (plot style, bands, file size limit, and `globalTimeControls`, removed in 0.13). They open a NetCDF file; the script waits until the release has created its uv environment, then drops a marker file into it.
+2. **VS Code updates the extension to the new release** on the same profile (same extension id, so the same storage folder) and the user opens the file again. Whether the environment must be rebuilt is worked out from what is on disk and from the new release, by the rule of `getUpdateReason`: no state file (every release before 0.13), a lower `ENVIRONMENT_REVISION`, or other requirements → **rebuild**; same revision and requirements, or a higher revision (downgrade) → **keep**. The script prints the expectation and why.
+3. **What the user gets**:
+   - **rebuild**: the marker is gone (the environment was deleted, not patched), the state file has the new revision, no `python-environment.previous` folder is left, the log shows the rebuild;
+   - **keep**: the marker and the state file are untouched, nothing in the log says _Recreating_;
+   - **always**: the viewer shows the file (`load complete` in the log), with the extension's own environment; every requirement and constraint of the new release is installed (`xarray>=2026.4.0` … `eccodeslib<2.48`); the user's `settings.json` is byte for byte the same; the backend of the new release opens `sample_data.nc`, `.grib`, `_cog.tif` and `.cdf`.
+
+`--bump-new` raises `ENVIRONMENT_REVISION` of the new release by one, as the next release that needs a rebuild would do: with `--old` = `--new`, it tests the revision counter itself. `--expect rebuild|keep` fails when the rule says otherwise. Exit code 3 means the old release could not create its environment on this machine (nothing to migrate, not tested).
+
+`./paranoia.sh --full` runs it as the **`migration`** step for every case below (the last patch of each older minor release found in the repository root, `PARANOIA_MIGRATION_FROM="0.11.2 0.12.1"` to choose), and the `offline` / `interrupted` scenarios as the **`upgrade`** step.
+
+| Case           | Command                                                         | Must                                                                         |
+| -------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Older releases | `--old scientific-data-viewer-<old>.vsix`                       | What the rule says (every release before 0.13: rebuild, no state file)       |
+| Same release   | `--old <new>.vsix --new <new>.vsix --expect keep`               | Keep: a release that does not bump the revision leaves the environment alone |
+| Next revision  | `--old <new>.vsix --new <new>.vsix --bump-new --expect rebuild` | Rebuild: a release that bumps the revision rebuilds it                       |
 
 Each `.vsix` is unpacked and loaded as a development extension. Recent VS Code builds don't load extensions installed from the command line into a custom extensions folder, but the storage folder and environment are the same as with a Marketplace update.
 
@@ -45,6 +53,7 @@ scripts/upgrade-sandbox.sh                   # scenario "normal"
 scripts/upgrade-sandbox.sh --scenario offline
 scripts/upgrade-sandbox.sh --scenario interrupted
 scripts/upgrade-sandbox.sh --keep-open       # leaves v0.13 open at the end, to look around
+scripts/upgrade-sandbox.sh --old scientific-data-viewer-0.13.0.vsix --bump-new --expect rebuild   # the revision counter
 ```
 
 - **Needs:** uv, `unzip`, a display, and VS Code. By default the script uses the newest build that `npm test` downloaded into `.vscode-test/`. A snap-installed `code` did not load the sandbox extension; use `--code <path>` to choose another build.
@@ -67,6 +76,16 @@ scripts/upgrade-sandbox.sh --keep-open       # leaves v0.13 open at the end, to 
 | `normal`      | 0.12.1 → 0.13.0 | ✅ 11/11 checks: environment rebuilt with `eccodeslib 2.47.3.23`; NetCDF, GRIB, COG and CDF open. With a warm uv cache the package install itself takes well under a second. |
 | `offline`     | 0.12.1 → 0.13.0 | ✅ 3/3 checks after the failed rebuild (old environment back, no backup folder, no state file), then 11/11 after the next start.                                             |
 | `interrupted` | 0.12.1 → 0.13.0 | ✅ old environment found in `python-environment.previous` after the kill; the next start restored it and rebuilt (11/11).                                                    |
+
+### Migration results (2026-10-30, Linux, VS Code 1.144, uv 0.10.2, `paranoia.sh` step `migration`)
+
+| From → 0.13.0                                             | Expected (worked out)                       | Result                                                                                                          |
+| --------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 0.5.0, 0.6.0, 0.7.0, 0.8.2, 0.9.0, 0.10.1, 0.11.2, 0.12.1 | rebuild: no state file                      | ✅ each: environment deleted and recreated (revision 2), file shown with it, settings unchanged, 4 samples open |
+| 0.13.0 (same release)                                     | keep: same revision 2 and same requirements | ✅ environment and state file untouched, _up to date_ in the log, file shown, settings unchanged                |
+| 0.13.0 with `ENVIRONMENT_REVISION` raised to 3            | rebuild: revision 2 < 3                     | ✅ deleted and recreated at revision 3                                                                          |
+
+129 checks, 14 minutes. The test can fail: a package whose `getUpdateReason` always returns `null` (never rebuilds), with the revision raised, fails 3 checks within seconds (environment not deleted, no new state file, no rebuild in the log).
 
 ---
 

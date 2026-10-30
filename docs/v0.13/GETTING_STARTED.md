@@ -114,7 +114,7 @@ scripts/upgrade-sandbox.sh --scenario offline
 scripts/upgrade-sandbox.sh --scenario interrupted
 ```
 
-The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profile; details and results are in [UPGRADE_TEST_PLAN.md](./UPGRADE_TEST_PLAN.md).
+The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profile (any other pair with `--old` / `--new`; `./paranoia.sh --full` runs it from every older release and checks the revision counter); details and results are in [UPGRADE_TEST_PLAN.md](./UPGRADE_TEST_PLAN.md).
 
 ### 3. Manual test plan (about 2 h)
 

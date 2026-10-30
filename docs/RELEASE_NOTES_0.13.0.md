@@ -394,10 +394,11 @@ v0.13 added several safety nets (golden snapshots, architecture `--check`, QA ha
 
 ### What changed
 
-- **`./paranoia.sh`** runs them in order, in three profiles: `--quick` (release documents, pre-commit, clean build, package, `.vsix` audit, pytest, `npm test`; ~5 min), the default (+ golden snapshots, backend `info` / plots / ~80 plot scenarios against the last release, real webview in headless Chromium, npm audit, CI status; ~20 min) and `--full` (+ e2e suites in VS Code, the three upgrade scenarios, screenshots; ~30 min). `--only` / `--skip` select steps, `--list` shows them.
+- **`./paranoia.sh`** runs them in order, in three profiles: `--quick` (release documents, pre-commit, clean build, package, `.vsix` audit, pytest, `npm test`; ~5 min), the default (+ golden snapshots, backend `info` / plots / ~80 plot scenarios against the last release, real webview in headless Chromium, npm audit, CI status; ~20 min) and `--full` (+ e2e suites in VS Code, the three upgrade scenarios, screenshots; ~45 min). `--only` / `--skip` select steps, `--list` shows them.
 - **What users install is tested**: the `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` of the compiled code resolves, no source map, test, script or data, files added / removed since the previous release); its Python backend answers `info` and `plot` on sample files from outside the repository; the e2e suites and the upgrade sandbox run on it.
 - **New release checks**: the version is above the Marketplace and Open VSX ones and has no tag elsewhere; `package-lock.json`, CHANGELOG section, release notes and PR summary exist for it; relative links of README / CHANGELOG / release documents resolve; a change of the uv environment since the last release makes the upgrade sandbox mandatory.
 - **Report**: `.qa/paranoia/<date-time>/REPORT.md` (`.qa/paranoia/latest`) with a verdict (`NOT READY`, `NOT FULLY VERIFIED`, `READY AFTER REVIEW`, `READY`; only a `--full` run can be ready), a table of the checks with links to their logs, the end of the log of each failure or warning, the files to look at, and what is left to check by hand. Exit code 1 when a check fails.
+- **Migration** (`--full`): an update from each older release, played as a user (own environment on, settings of their own, a file opened before and after): the uv environment is rebuilt or kept as `ENVIRONMENT_REVISION` says, the viewer shows the file with it, the settings are unchanged. Two synthetic cases test the counter: same release → kept, revision raised → rebuilt.
 - **Read-only**: nothing is published, tagged or committed (`./publish.sh` comes after). When pre-commit hooks reformat files, their fix is saved to `pre-commit.patch` and the files are restored. QA outputs and the baseline checkout stay in the run folder.
 
 ### How it was checked
@@ -679,7 +680,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Expect:** with **`useExtensionOwnEnvironment`** on, an environment created by an older version (or recorded with a lower `ENVIRONMENT_REVISION`) is deleted and created again from scratch once at startup; later starts reuse it without reinstalling. If the rebuild fails, the previous environment is restored.
 
-**Automated:** `scripts/upgrade-sandbox.sh` runs a real v0.12.1 → v0.13.0 upgrade in a throw-away VS Code profile, with the scenarios `normal`, `offline` and `interrupted`; see [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
+**Automated:** `scripts/upgrade-sandbox.sh` runs a real update in a throw-away VS Code profile (v0.12.1 → v0.13.0 by default, any pair with `--old` / `--new`), with the scenarios `normal`, `offline` and `interrupted`; `./paranoia.sh --full` runs it from every older release, and checks that the same release keeps the environment and that a raised revision rebuilds it; see [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
 
 **Test by hand:**
 
@@ -906,11 +907,12 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. `./paranoia.sh --list` → 26 steps with their profile.
+1. `./paranoia.sh --list` → 27 steps with their profile.
 2. `./paranoia.sh --quick` → one line per step, then `VERDICT: NOT FULLY VERIFIED` at best (not a full run); `.qa/paranoia/latest/REPORT.md` has the table of checks, each linked to its log.
 3. `git status` → unchanged by the run. If pre-commit would reformat files, `pre-commit.patch` is in the run folder and the `pre-commit` row is `FAIL`.
 4. Change one word of `README.md`, `./paranoia.sh --only readme` → `FAIL`, exit code 1, the report shows the diff; `git checkout README.md`.
 5. `./paranoia.sh --full` before publishing (opens VS Code windows; needs uv and `scientific-data-viewer-0.12.1.vsix` in the repository root) → `READY` or `READY AFTER REVIEW`; read each warning.
+6. Migration of a single pair, like a user: `scripts/upgrade-sandbox.sh --old scientific-data-viewer-0.13.0.vsix --new scientific-data-viewer-0.13.0.vsix --expect keep` → _Expected: keep: same revision 2 and same requirements_, the environment is kept and the viewer shows the file; the same command with `--bump-new --expect rebuild` → _Expected: rebuild: environment revision 2 < 3_, the environment is deleted and recreated; `settings.json` unchanged in both.
 
 ---
 
