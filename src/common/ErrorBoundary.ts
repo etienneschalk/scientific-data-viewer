@@ -9,7 +9,7 @@ import { getDisplayName } from './vscodeutils';
 
 export class ErrorBoundary {
     private static instance: ErrorBoundary;
-    private errorHandlers: Map<any, ErrorHandler> = new Map();
+    private errorHandlers: Map<string, ErrorHandler> = new Map();
     private globalErrorHandler?: ErrorHandler;
     private errorHistory: Array<{
         error: Error;
@@ -18,9 +18,11 @@ export class ErrorBoundary {
     }> = [];
     private maxHistorySize = 100;
 
-    private constructor() {
-        this.setupGlobalErrorHandling();
-    }
+    // No process-wide hooks (e.g. process.on('uncaughtException')): the
+    // extension host is shared with other extensions, whose errors must not be
+    // reported (or counted) as ours. Only errors passed to handleError /
+    // wrapAsync are handled here.
+    private constructor() {}
 
     static getInstance(): ErrorBoundary {
         if (!ErrorBoundary.instance) {
@@ -29,19 +31,18 @@ export class ErrorBoundary {
         return ErrorBoundary.instance;
     }
 
-    private setupGlobalErrorHandling(): void {
-        // Handle uncaught errors
-        process.on('uncaughtException', (error) => {
-            this.handleError(error, {
-                component: this.constructor.name,
-                operation: 'uncaughtException',
-            });
-        });
-    }
-
-    registerHandler(component: any, handler: ErrorHandler): void {
+    registerHandler(component: string, handler: ErrorHandler): void {
         this.errorHandlers.set(component, handler);
         Logger.info(`🩹 Error handler registered for component: ${component}`);
+    }
+
+    /** Remove a component's handler (call it when the component is disposed). */
+    unregisterHandler(component: string): void {
+        if (this.errorHandlers.delete(component)) {
+            Logger.info(
+                `🩹 Error handler unregistered for component: ${component}`,
+            );
+        }
     }
 
     registerGlobalHandler(handler: ErrorHandler): void {
@@ -125,7 +126,8 @@ export class ErrorBoundary {
     ): string {
         // Map technical errors to user-friendly messages
         if (error.message.includes('Python environment not ready')) {
-            return 'Python environment is not ready. Please configure Python interpreter.';
+            // The message says why (no interpreter, missing packages...)
+            return `${error.message}. Please configure the Python interpreter.`;
         }
 
         if (error.message.includes('Missing Python package')) {
@@ -195,19 +197,6 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
         return [...this.errorHistory];
     }
 
-    clearErrorHistory(): void {
-        this.errorHistory = [];
-    }
-
-    getErrorCount(component?: any): number {
-        if (component) {
-            return this.errorHistory.filter(
-                (entry) => entry.context.component === component,
-            ).length;
-        }
-        return this.errorHistory.length;
-    }
-
     // Wrapper for async operations
     async wrapAsync<T>(
         operation: () => Promise<T>,
@@ -215,19 +204,6 @@ ${context.userAction ? `- User Action: ${context.userAction}` : ''}
     ): Promise<T | null> {
         try {
             return await operation();
-        } catch (error) {
-            this.handleError(
-                error instanceof Error ? error : new Error(String(error)),
-                context,
-            );
-            return null;
-        }
-    }
-
-    // Wrapper for sync operations
-    wrapSync<T>(operation: () => T, context: ErrorContext): T | null {
-        try {
-            return operation();
         } catch (error) {
             this.handleError(
                 error instanceof Error ? error : new Error(String(error)),

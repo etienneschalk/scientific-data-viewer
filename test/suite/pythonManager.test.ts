@@ -1,7 +1,17 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
-import { PythonManager } from '../../src/python/PythonManager';
-import { ExtensionVirtualEnvironmentManager } from '../../src/python/ExtensionVirtualEnvironmentManager';
+import {
+    isRequirementSpecifier,
+    PythonManager,
+} from '../../src/python/PythonManager';
+import {
+    ALL_REQUIREMENTS,
+    ENVIRONMENT_CONSTRAINTS,
+    ExtensionVirtualEnvironmentManager,
+} from '../../src/python/ExtensionVirtualEnvironmentManager';
 import {
     getPythonExtensionApi,
     getPythonInterpreterFromPythonExtension,
@@ -306,7 +316,6 @@ suite('PythonManager Test Suite', () => {
 
         const listener = await setupOfficialPythonExtensionChangeListeners(
             async () => {},
-            async (environment: any) => {},
         );
         assert.ok(listener?.dispose);
     });
@@ -320,7 +329,6 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -336,7 +344,6 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -354,7 +361,6 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -372,7 +378,6 @@ suite('PythonManager Test Suite', () => {
         try {
             const listener = await setupOfficialPythonExtensionChangeListeners(
                 async () => {},
-                async (environment: any) => {},
             );
             assert.strictEqual(listener, undefined);
         } finally {
@@ -545,9 +550,253 @@ suite('PythonManager Test Suite', () => {
 
             await Promise.all(promises);
 
-            // Should have been called multiple times
-            assert.ok(callCount == 5);
+            // Single flight: calls made before the run started are served
+            // by that single run.
+            assert.strictEqual(callCount, 1);
         } finally {
+        }
+    });
+});
+
+suite('PythonManager initialization and execution', () => {
+    function newManager(): PythonManager {
+        return new PythonManager(
+            new ExtensionVirtualEnvironmentManager(
+                path.join(os.tmpdir(), 'sdv-pm-test-unused'),
+            ),
+        );
+    }
+
+    type State = {
+        pythonPath: string | null;
+        source: string | null;
+        corePackagesInstalled: boolean;
+        ownEnvironmentIssue: null;
+    };
+    const state = (pythonPath: string | null): State => ({
+        pythonPath,
+        source: pythonPath ? 'system' : null,
+        corePackagesInstalled: pythonPath !== null,
+        ownEnvironmentIssue: null,
+    });
+
+    test('concurrent refreshes: single flight, the latest run wins', async () => {
+        const manager = newManager();
+        const results = [state('/old/python'), state('/new/python')];
+        let calls = 0;
+        (manager as any).resolveInterpreterState = async () => {
+            const result = results[calls++];
+            await new Promise((resolve) => setTimeout(resolve, 30));
+            return result;
+        };
+
+        const first = manager.forceInitialize();
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        assert.strictEqual(calls, 1);
+        // Requested while the first run is in flight: coalesced into one
+        // more run after it
+        const second = manager.forceInitialize();
+        const third = manager.forceInitialize();
+        await Promise.all([first, second, third]);
+
+        assert.strictEqual(calls, 2);
+        assert.strictEqual(manager.pythonPath, '/new/python');
+        assert.strictEqual(manager.ready, true);
+    });
+
+    test('an outdated run does not commit its result', async () => {
+        const manager = newManager();
+        const committed: Array<string | null> = [];
+        let calls = 0;
+        (manager as any).resolveInterpreterState = async () => {
+            calls += 1;
+            const current = calls;
+            if (current === 1) {
+                // A refresh is requested while the first run is in flight
+                void manager.forceInitialize();
+            }
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            return state(current === 1 ? '/stale/python' : '/fresh/python');
+        };
+        Object.defineProperty(manager, '_pythonPath', {
+            get: () => committed[committed.length - 1] ?? null,
+            set: (value: string | null) => committed.push(value),
+            configurable: true,
+        });
+
+        await manager.forceInitialize();
+        await manager.waitForInitialization();
+
+        assert.deepStrictEqual(committed, ['/fresh/python']);
+    });
+
+    test('no interpreter found resets the previous interpreter state', async () => {
+        const manager = newManager();
+        let next = state('/usr/bin/python3');
+        (manager as any).resolveInterpreterState = async () => next;
+        await manager.forceInitialize();
+        assert.strictEqual(manager.ready, true);
+
+        next = state(null);
+        await manager.forceInitialize();
+
+        const info = manager.getCurrentEnvironmentInfo();
+        assert.strictEqual(info.path, null);
+        assert.strictEqual(info.source, null);
+        assert.strictEqual(info.ready, false);
+        assert.strictEqual(info.initialized, true);
+    });
+
+    test('install packages in the own uv environment uses uv, not pip', async () => {
+        const envManager = new ExtensionVirtualEnvironmentManager(
+            path.join(os.tmpdir(), 'sdv-pm-test-unused'),
+        );
+        const manager = new PythonManager(envManager);
+        const calls: Array<[string, readonly string[]]> = [];
+        (envManager as any).uvInstallPackages = async (
+            pythonPath: string,
+            packages: readonly string[],
+        ) => {
+            calls.push([pythonPath, packages]);
+        };
+        (manager as any).hasPip = async () => {
+            throw new Error('pip must not be used');
+        };
+        (manager as any)._pythonPath = '/env/bin/python';
+        (manager as any)._environmentSource = 'own-uv-env';
+
+        await manager.installPackages(['cfgrib', 'zarr>=3']);
+
+        assert.deepStrictEqual(calls, [
+            ['/env/bin/python', ['cfgrib', 'zarr>=3']],
+        ]);
+    });
+
+    suite('executePythonFile', () => {
+        let dir: string;
+        const previousRunAsNode = process.env.ELECTRON_RUN_AS_NODE;
+
+        function readyManager(): PythonManager {
+            const manager = newManager();
+            // The extension host binary runs scripts as Node.js
+            (manager as any)._pythonPath = process.execPath;
+            (manager as any)._initialized = true;
+            (manager as any)._corePackagesInstalled = true;
+            return manager;
+        }
+
+        function script(name: string, code: string): string {
+            const file = path.join(dir, name);
+            fs.writeFileSync(file, code);
+            return file;
+        }
+
+        setup(() => {
+            dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdv-pm-exec-'));
+            process.env.ELECTRON_RUN_AS_NODE = '1';
+        });
+
+        teardown(() => {
+            fs.rmSync(dir, { recursive: true, force: true });
+            if (previousRunAsNode === undefined) {
+                delete process.env.ELECTRON_RUN_AS_NODE;
+            } else {
+                process.env.ELECTRON_RUN_AS_NODE = previousRunAsNode;
+            }
+        });
+
+        test('resolves the JSON printed on stdout', async () => {
+            const file = script(
+                'ok.js',
+                'console.log("library noise"); console.log(JSON.stringify({ args: process.argv.slice(2) }))',
+            );
+            const result = await readyManager().executePythonFile(file, [
+                'a b',
+                'x>=1',
+            ]);
+            assert.deepStrictEqual(result, { args: ['a b', 'x>=1'] });
+        });
+
+        test('rejects non-JSON output on exit code 0', async () => {
+            const file = script('text.js', 'console.log("not json")');
+            await assert.rejects(
+                readyManager().executePythonFile(file),
+                /invalid output \(expected JSON\): not json/,
+            );
+        });
+
+        test('timeout applies without an operation id', async () => {
+            const file = script('slow.js', 'setTimeout(() => {}, 60000)');
+            await assert.rejects(
+                readyManager().executePythonFile(
+                    file,
+                    [],
+                    false,
+                    undefined,
+                    300,
+                ),
+                /timed out after 300 ms/,
+            );
+        });
+
+        test('abortProcess stops a tracked operation', async () => {
+            const manager = readyManager();
+            const file = script('slow.js', 'setTimeout(() => {}, 60000)');
+            const running = manager.executePythonFile(file, [], false, 'op-1');
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            assert.strictEqual(manager.isOperationActive('op-1'), true);
+            assert.strictEqual(manager.abortProcess('op-1'), true);
+            await assert.rejects(running, /Process was aborted/);
+            assert.strictEqual(manager.isOperationActive('op-1'), false);
+            assert.strictEqual(manager.abortProcess('op-1'), false);
+        });
+
+        test('missing module error suggests the extension requirements', async () => {
+            const file = script(
+                'missing.js',
+                'process.stderr.write("ModuleNotFoundError: No module named xarray"); process.exit(1)',
+            );
+            await assert.rejects(
+                readyManager().executePythonFile(file),
+                /pip install "xarray>=2026\.4\.0" matplotlib/,
+            );
+        });
+    });
+});
+
+suite('isRequirementSpecifier', () => {
+    test('accepts every requirement the extension installs', () => {
+        for (const spec of [
+            ...ALL_REQUIREMENTS,
+            ...ENVIRONMENT_CONSTRAINTS,
+            'netCDF4',
+            'h5netcdf',
+            'rioxarray',
+            'kerchunk',
+            'zarr>=3',
+            'numpy>=2,<3',
+            'xarray[io,viz]>=2026.4.0',
+        ]) {
+            assert.ok(isRequirementSpecifier(spec), spec);
+        }
+    });
+
+    test('rejects options, URLs, paths and anything else (QA 0.13.0 H1)', () => {
+        for (const spec of [
+            '--index-url',
+            '-r',
+            '-e',
+            'http://127.0.0.1:9/simple',
+            'git+https://example.com/x.git',
+            '../local',
+            '/abs/path',
+            'pkg; rm -rf ~',
+            'a b',
+            '',
+            ['nested'],
+            42,
+        ]) {
+            assert.ok(!isRequirementSpecifier(spec), JSON.stringify(spec));
         }
     });
 });

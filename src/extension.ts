@@ -17,6 +17,7 @@ import {
     getDisplayName,
     getAllSupportedExtensions,
     getShowDialogFilters,
+    getCustomEditorViewTypes,
 } from './common/vscodeutils';
 import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
 import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
@@ -26,6 +27,7 @@ import {
     CMD_OPEN_VIEWER,
     CMD_OPEN_VIEWER_MULTIPLE,
     CMD_OPEN_VIEWER_FOLDER,
+    CMD_OPEN_AS_KERCHUNK,
     CMD_REFRESH_PYTHON_ENVIRONMENT,
     CMD_SHOW_LOGS,
     CMD_SHOW_SETTINGS,
@@ -45,9 +47,16 @@ import {
     getUseExtensionOwnEnvironmentConfigFullKey,
     getOutlineEnabled,
     updateDevMode,
+    withKerchunkOpenQuery,
 } from './common/config';
 import { updateStatusBarItem } from './StatusBarItem';
-import { HealthcheckManager } from './common/HealthcheckManager';
+import {
+    openHealthcheckReport,
+    runHealthcheck,
+} from './common/HealthcheckManager';
+
+/** Kept for `deactivate`, which must stop running Python subprocesses. */
+let activePythonManager: PythonManager | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     setPackageJson(getPackageJsonFromExtensionContext(context));
@@ -91,14 +100,24 @@ export function activate(context: vscode.ExtensionContext) {
     const extensionEnvManager = new ExtensionVirtualEnvironmentManager(
         context.globalStorageUri.fsPath,
     );
-    const extensionVirtualEnvironmentManagerUI =
-        new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager);
     const pythonManager = new PythonManager(extensionEnvManager);
-    const dataProcessor = DataProcessor.createInstance(pythonManager);
+    const extensionVirtualEnvironmentManagerUI =
+        new ExtensionVirtualEnvironmentManagerUI(extensionEnvManager, () =>
+            refreshPython(pythonManager, statusBarItem),
+        );
+    const dataProcessor = new DataProcessor(pythonManager);
+    activePythonManager = pythonManager;
+    DataViewerPanel.setDataProcessor(dataProcessor);
     Logger.info('🧩 🚀 Extension managers initialized successfully');
 
     Logger.info('🧩 🔧 Refreshing Python environment...');
-    refreshPython(pythonManager, statusBarItem);
+    refreshPython(pythonManager, statusBarItem).then(() => {
+        // Don't fall back to another interpreter silently (e.g. after a
+        // failed environment rebuild on upgrade)
+        if (pythonManager.ownEnvironmentIssue) {
+            reportOwnEnvironmentNotUsed(pythonManager, extensionEnvManager);
+        }
+    });
     Logger.info('🧩 🚀 Python environment refreshed successfully');
 
     Logger.info('🧩 🔧 Registering custom editor providers...');
@@ -116,7 +135,7 @@ export function activate(context: vscode.ExtensionContext) {
     // via the onDidChangeViewState listener in DataViewerPanel
     Logger.info(`🧩 🔧 Creating outline provider...`);
     const outlineProvider = getOutlineEnabled()
-        ? createOutlineProvider()
+        ? createOutlineProvider(context)
         : undefined;
     if (outlineProvider) {
         Logger.info(`🧩 🚀 Outline provider created successfully`);
@@ -124,33 +143,63 @@ export function activate(context: vscode.ExtensionContext) {
         Logger.info(`🧩 ⏭️ Outline provider disabled by configuration`);
     }
 
+    const openPanel: OpenPanel = (uri) =>
+        waitThenCreateOrRevealPanel(
+            uri,
+            iconPath,
+            webviewOptions,
+            webviewPanelOptions,
+            pythonManager,
+        );
+
     Logger.info(`🧩 🔧 Registering commands...`);
     context.subscriptions.push(
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER,
-            commandHandlerOpenViewer(
-                iconPath,
-                webviewOptions,
-                webviewPanelOptions,
-                pythonManager,
-            ),
+            commandHandlerOpenWithDialog('Open data viewer', openPanel, {
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: true,
+                filters: getShowDialogFilters([
+                    'netcdf',
+                    'cdf',
+                    'hdf5',
+                    'grib',
+                    'geotiff',
+                    'jp2',
+                ]),
+            }),
         ),
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER_MULTIPLE,
-            commandHandlerOpenViewerMultiple(
-                iconPath,
-                webviewOptions,
-                webviewPanelOptions,
-                pythonManager,
-            ),
+            commandHandlerOpenViewerMultiple(openPanel),
         ),
         vscode.commands.registerCommand(
             CMD_OPEN_VIEWER_FOLDER,
-            commandHandlerOpenViewerFolder(
-                iconPath,
-                webviewOptions,
-                webviewPanelOptions,
-                pythonManager,
+            commandHandlerOpenWithDialog(
+                'Open data viewer (folder)',
+                openPanel,
+                {
+                    canSelectFiles: false,
+                    canSelectFolders: true,
+                    canSelectMany: true,
+                    filters: getShowDialogFilters(['zarr']),
+                },
+            ),
+        ),
+        vscode.commands.registerCommand(
+            CMD_OPEN_AS_KERCHUNK,
+            commandHandlerOpenWithDialog(
+                'Open as Kerchunk / virtual Zarr',
+                (uri) => openPanel(withKerchunkOpenQuery(uri)),
+                {
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: true,
+                    filters: {
+                        'Kerchunk references': ['json', 'parquet', 'parq'],
+                    },
+                },
             ),
         ),
         vscode.commands.registerCommand(
@@ -200,7 +249,7 @@ export function activate(context: vscode.ExtensionContext) {
         ),
         vscode.commands.registerCommand(
             CMD_HEALTHCHECK,
-            commandHandlerHealthcheck(pythonManager),
+            commandHandlerHealthcheck(pythonManager, extensionEnvManager),
         ),
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
@@ -239,15 +288,8 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await refreshPython(pythonManager, statusBarItem);
     };
-    const handleOnDidEnvironmentsChanged = async () => {
-        Logger.info(
-            '🧩 🐍 🔧 Python environment changed, refreshing Python environment...',
-        );
-        await refreshPython(pythonManager, statusBarItem);
-    };
     setupOfficialPythonExtensionChangeListeners(
         handleOnDidChangeActiveEnvironmentPath,
-        handleOnDidEnvironmentsChanged,
     )
         .then((listener: vscode.Disposable | undefined) => {
             if (listener) {
@@ -274,10 +316,8 @@ export function deactivate() {
 
     // Abort all active Python processes to prevent orphan processes
     // This is important for long-running operations like plot generation
-    const dataProcessor = DataProcessor.getInstance();
-    if (dataProcessor) {
-        const abortedCount =
-            dataProcessor.pythonManagerInstance.abortAllProcesses();
+    if (activePythonManager) {
+        const abortedCount = activePythonManager.abortAllProcesses();
         if (abortedCount > 0) {
             Logger.info(
                 `🧩 🧹 Aborted ${abortedCount} active Python process(es) during deactivation`,
@@ -377,25 +417,12 @@ function handlerOnDidChangeConfiguration(
                     showInformationMessage(message, true, true);
                 }
 
-                refreshPython(pythonManager, statusBarItem).then(() => {
-                    if (
-                        !getUseExtensionOwnEnvironment() ||
-                        pythonManager.getCurrentEnvironmentInfo()?.source ===
-                            'own-uv-env'
-                    ) {
-                        return;
-                    }
-                    const uvInstallationUrl =
-                        extensionEnvManager.UV_INSTALLATION_URL;
-                    const error = `
-                            You tried to activate the usage of the extension's own environment,
-                            but it seems that uv is not installed.
-                            Please install uv from ${uvInstallationUrl} and try again.`;
-                    showErrorMessageAndProposeHelpToInstallUv(
-                        error,
-                        uvInstallationUrl,
-                    );
-                });
+                refreshPython(pythonManager, statusBarItem).then(() =>
+                    reportOwnEnvironmentNotUsed(
+                        pythonManager,
+                        extensionEnvManager,
+                    ),
+                );
             }
         } else if (
             event.affectsConfiguration('python.condaPath') ||
@@ -411,6 +438,46 @@ function handlerOnDidChangeConfiguration(
             refreshPython(pythonManager, statusBarItem);
         }
     };
+}
+
+/**
+ * At startup or after useExtensionOwnEnvironment was turned on, tell the user
+ * why the extension's own environment is not the one in use, if it is not.
+ */
+function reportOwnEnvironmentNotUsed(
+    pythonManager: PythonManager,
+    extensionEnvManager: ExtensionVirtualEnvironmentManager,
+): void {
+    if (
+        !getUseExtensionOwnEnvironment() ||
+        pythonManager.getCurrentEnvironmentInfo().source === 'own-uv-env'
+    ) {
+        return;
+    }
+    if (getOverridePythonInterpreter()) {
+        showInformationMessage(
+            `The extension's own environment is enabled, but ${getOverridePythonInterpreterConfigFullKey()} is set and takes precedence. Clear it to use the extension's own environment.`,
+            false,
+            true,
+        );
+        return;
+    }
+    const issue = pythonManager.ownEnvironmentIssue;
+    if (issue?.uvMissing) {
+        const uvInstallationUrl = extensionEnvManager.UV_INSTALLATION_URL;
+        showErrorMessageAndProposeHelpToInstallUv(
+            `uv is not installed. Please install uv from ${uvInstallationUrl} and try again.`,
+            uvInstallationUrl,
+        );
+        return;
+    }
+    showErrorMessage(
+        `The extension's own environment could not be set up${
+            issue ? `: ${issue.message}` : ''
+        }. Another interpreter is used for now; see the logs for details, or run "Scientific Data Viewer: Manage Extension Virtual Environment" → Recreate.`,
+        true,
+        true,
+    );
 }
 
 function handlerOnDidChangeWorkspaceFolders(
@@ -484,18 +551,19 @@ function commandHandlerToggleDevMode(): () => void {
     };
 }
 
-function commandHandlerHealthcheck(pythonManager: PythonManager): () => void {
+function commandHandlerHealthcheck(
+    pythonManager: PythonManager,
+    extensionEnvManager: ExtensionVirtualEnvironmentManager,
+): () => void {
     return async () => {
         Logger.info('🎮 🏥 Command: Run Healthcheck');
 
         try {
-            const healthcheckManager = HealthcheckManager.getInstance();
-            const report =
-                await healthcheckManager.runHealthcheck(pythonManager);
-            await healthcheckManager.openHealthcheckReport(
-                report,
+            const report = await runHealthcheck(
                 pythonManager,
+                extensionEnvManager,
             );
+            await openHealthcheckReport(report, pythonManager);
 
             const statusMessage =
                 report.overallStatus === 'healthy'
@@ -628,144 +696,51 @@ function commandHandlerScrollToHeader(
     };
 }
 
-function commandHandlerOpenViewerFolder(
-    iconPath: vscode.Uri,
-    webviewOptions: vscode.WebviewOptions,
-    webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager,
-): (uri?: vscode.Uri) => void {
-    return async (uri?: vscode.Uri) => {
-        Logger.info('🎮 👁️ 📁 Command: Open data viewer (folder)...');
-        if (uri) {
-            Logger.info(
-                `🎮 👁️ 📁 Opening data viewer for folder: ${uri.fsPath}`,
-            );
-            await waitThenCreateOrRevealPanel(
-                uri,
-                iconPath,
-                webviewOptions,
-                webviewPanelOptions,
-                pythonManager,
-            );
-        } else {
-            Logger.info(
-                '🎮 👁️ 📁 Opening folder selection dialog for data viewer',
-            );
-            const folderUriList = await vscode.window.showOpenDialog({
-                canSelectFiles: false,
-                canSelectFolders: true,
-                canSelectMany: true,
-                filters: getShowDialogFilters(['zarr']),
-            });
-            folderUriList?.forEach(async (uri) => {
-                Logger.info(
-                    `🎮 👁️ 📁 Folder selected for data viewer: ${uri.fsPath}`,
-                );
-                await waitThenCreateOrRevealPanel(
-                    uri,
-                    iconPath,
-                    webviewOptions,
-                    webviewPanelOptions,
-                    pythonManager,
-                );
-            });
-        }
-    };
-}
+type OpenPanel = (uri: vscode.Uri) => Promise<void>;
 
-function commandHandlerOpenViewer(
-    iconPath: vscode.Uri,
-    webviewOptions: vscode.WebviewOptions,
-    webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager,
-): (uri?: vscode.Uri) => void {
+/**
+ * Command handler that opens the given URI (explorer context menu), or the
+ * URIs picked in an open dialog when called without one.
+ */
+function commandHandlerOpenWithDialog(
+    label: string,
+    openPanel: OpenPanel,
+    dialogOptions: vscode.OpenDialogOptions,
+): (uri?: vscode.Uri) => Promise<void> {
     return async (uri?: vscode.Uri) => {
-        Logger.info('🎮 👁️ 📄 Command: Open data viewer...');
-        if (uri) {
-            Logger.info(`🎮 👁️ 📄 Opening data viewer for file: ${uri.fsPath}`);
-            await waitThenCreateOrRevealPanel(
-                uri,
-                iconPath,
-                webviewOptions,
-                webviewPanelOptions,
-                pythonManager,
-            );
-        } else {
-            Logger.info(
-                '🎮 👁️ 📄 Opening file selection dialog for data viewer',
-            );
-            const fileUriList = await vscode.window.showOpenDialog({
-                canSelectFiles: true,
-                canSelectFolders: false,
-                canSelectMany: true,
-                filters: getShowDialogFilters([
-                    'netcdf',
-                    'cdf',
-                    'hdf5',
-                    'grib',
-                    'geotiff',
-                    'jp2',
-                ]),
-            });
-            fileUriList?.forEach(async (uri) => {
-                Logger.info(
-                    `🎮 👁️ 📄 File selected for data viewer: ${uri.fsPath}`,
-                );
-                await waitThenCreateOrRevealPanel(
-                    uri,
-                    iconPath,
-                    webviewOptions,
-                    webviewPanelOptions,
-                    pythonManager,
-                );
-            });
+        Logger.info(`🎮 👁️ Command: ${label}...`);
+        const uris = uri
+            ? [uri]
+            : ((await vscode.window.showOpenDialog(dialogOptions)) ?? []);
+        for (const selected of uris) {
+            Logger.info(`🎮 👁️ ${label}: ${selected.fsPath}`);
+            await openPanel(selected);
         }
     };
 }
 
 function commandHandlerOpenViewerMultiple(
-    iconPath: vscode.Uri,
-    webviewOptions: vscode.WebviewOptions,
-    webviewPanelOptions: vscode.WebviewPanelOptions,
-    pythonManager: PythonManager,
-): (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => void {
+    openPanel: OpenPanel,
+): (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => Promise<void> {
     return async (clickedUri: vscode.Uri, allSelectedUriList: vscode.Uri[]) => {
         Logger.info('🎮 👁️ 📄📄 Command: Open multiple data viewers...');
         // Context selection is the clicked file or folder (ignored in this handler)
         Logger.debug(`🎮 👁️ 📄📄 Command arguments: clickedUri: ${clickedUri}`);
         // All selections is the list of all selected files or folders (we want it to be opened in data viewers)
-        Logger.debug(
-            `🎮 👁️ 📄📄 Command arguments: allSelectedUriList: [${allSelectedUriList.join(
-                ' , ',
-            )}]`,
+        const uris = (allSelectedUriList ?? []).filter(
+            (uri) => uri instanceof vscode.Uri,
         );
-
-        // Try to use command arguments (if VSCode passes them)
-        if (!(allSelectedUriList && allSelectedUriList.length > 0)) {
+        if (uris.length === 0) {
             Logger.info('🎮 👁️ 📄📄 No files to open, ignore this command.');
             return;
         }
-
-        Logger.info(
-            `🎮 👁️ 📄📄 Found ${allSelectedUriList.length} files from command arguments`,
-        );
-        for (const uri of allSelectedUriList) {
-            if (uri instanceof vscode.Uri) {
-                Logger.info(
-                    `🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`,
-                );
-                await waitThenCreateOrRevealPanel(
-                    uri,
-                    iconPath,
-                    webviewOptions,
-                    webviewPanelOptions,
-                    pythonManager,
-                );
-            }
+        for (const uri of uris) {
+            Logger.info(
+                `🎮 👁️ 📄📄 Opening data viewer for file: ${uri.fsPath}`,
+            );
+            await openPanel(uri);
         }
-        Logger.info(
-            `🎮 👁️ 📄📄 Opened ${allSelectedUriList.length} files in data viewers`,
-        );
+        Logger.info(`🎮 👁️ 📄📄 Opened ${uris.length} files in data viewers`);
     };
 }
 
@@ -784,15 +759,7 @@ function registerCustomEditorProviders(
         // Allow Split Editor
         supportsMultipleEditorsPerDocument: true,
     };
-    const editorRegistrations = [
-        'netcdfEditor',
-        'cdfEditor',
-        'hdf5Editor',
-        'zarrEditor',
-        'gribEditor',
-        'geotiffEditor',
-        'jp2Editor',
-    ].map((viewType) =>
+    const editorRegistrations = getCustomEditorViewTypes().map((viewType) =>
         vscode.window.registerCustomEditorProvider(
             viewType,
             sciEditorProvider,
@@ -802,12 +769,13 @@ function registerCustomEditorProviders(
     return editorRegistrations;
 }
 
-function createOutlineProvider() {
+function createOutlineProvider(context: vscode.ExtensionContext) {
     const outlineProvider = new OutlineProvider();
     const outlineTreeView = vscode.window.createTreeView(OUTLINE_TREE_VIEW_ID, {
         treeDataProvider: outlineProvider,
         showCollapseAll: true,
     });
+    context.subscriptions.push(outlineTreeView, outlineProvider);
 
     // Set tree view reference for collapse/expand operations
     outlineProvider.setTreeView(outlineTreeView);

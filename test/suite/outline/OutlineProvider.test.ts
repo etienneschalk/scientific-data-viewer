@@ -299,4 +299,105 @@ suite('OutlineProvider Test Suite', () => {
         assert.notStrictEqual(treeItem1.contextValue, treeItem2.contextValue);
         assert.notStrictEqual(treeItem2.contextValue, treeItem3.contextValue);
     });
+    test('closing the displayed panel clears the outline', () => {
+        const headers: HeaderItem[] = [
+            { label: 'A', level: 1, id: 'a', children: [] },
+        ];
+        outlineProvider.updateHeaders(7, headers);
+        outlineProvider.updateHeaders(8, headers);
+
+        // Closing another panel keeps the displayed outline
+        outlineProvider.disposeForPanel(7);
+        assert.strictEqual(outlineProvider.getChildren().length, 1);
+        assert.strictEqual(outlineProvider.getCurrentPanelId(), 8);
+
+        outlineProvider.disposeForPanel(8);
+        assert.strictEqual(outlineProvider.getChildren().length, 0);
+        assert.strictEqual(outlineProvider.getCurrentPanelId(), undefined);
+    });
+
+    test('expand all reveals one element at a time, parents first', async () => {
+        const order: string[] = [];
+        let running = 0;
+        let maxRunning = 0;
+        const fakeTreeView = {
+            reveal: async (element: HeaderItem) => {
+                running += 1;
+                maxRunning = Math.max(maxRunning, running);
+                order.push(element.id ?? '');
+                await new Promise((resolve) => setTimeout(resolve, 2));
+                running -= 1;
+            },
+            onDidExpandElement: () => ({ dispose: () => {} }),
+            onDidCollapseElement: () => ({ dispose: () => {} }),
+        } as unknown as vscode.TreeView<HeaderItem>;
+        const leaf = (id: string): HeaderItem => ({
+            label: id,
+            level: 3,
+            id,
+            children: [],
+        });
+        outlineProvider.setTreeView(fakeTreeView);
+        outlineProvider.updateHeaders(4, [
+            {
+                label: 'A',
+                level: 1,
+                id: 'a',
+                children: [
+                    { label: 'A1', level: 2, id: 'a1', children: [leaf('x')] },
+                    { label: 'A2', level: 2, id: 'a2', children: [leaf('y')] },
+                ],
+            },
+            { label: 'B', level: 1, id: 'b', children: [leaf('z')] },
+        ]);
+        outlineProvider.expandAll();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        assert.strictEqual(maxRunning, 1, 'no concurrent reveal()');
+        assert.deepStrictEqual(order, ['a', 'a1', 'a2', 'b']);
+    });
+
+    test('rejected reveal() during expand all is handled', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        let revealCalls = 0;
+        const disposed: string[] = [];
+        const fakeTreeView = {
+            reveal: () => {
+                revealCalls += 1;
+                return Promise.reject(new Error('element not found'));
+            },
+            onDidExpandElement: () => ({
+                dispose: () => disposed.push('expand'),
+            }),
+            onDidCollapseElement: () => ({
+                dispose: () => disposed.push('collapse'),
+            }),
+        } as unknown as vscode.TreeView<HeaderItem>;
+        try {
+            outlineProvider.setTreeView(fakeTreeView);
+            outlineProvider.updateHeaders(3, [
+                {
+                    label: 'Parent',
+                    level: 1,
+                    id: 'parent',
+                    children: [
+                        { label: 'Child', level: 2, id: 'child', children: [] },
+                    ],
+                },
+            ]);
+            outlineProvider.expandAll();
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            // One attempt, then one retry after the other elements
+            assert.strictEqual(revealCalls, 2);
+            assert.deepStrictEqual(unhandled, []);
+
+            // dispose() releases the tree view listeners and the emitter
+            outlineProvider.dispose();
+            assert.deepStrictEqual(disposed.sort(), ['collapse', 'expand']);
+        } finally {
+            process.off('unhandledRejection', onUnhandled);
+        }
+    });
 });

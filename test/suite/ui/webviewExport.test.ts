@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 import { HTMLGenerator } from '../../../src/panel/HTMLGenerator';
 import { ThemeManager } from '../../../src/panel/ThemeManager';
 
@@ -10,6 +11,7 @@ import { ThemeManager } from '../../../src/panel/ThemeManager';
  */
 const CDN =
     'https://file+.vscode-resource.vscode-cdn.net/ext/src/panel/webview';
+const OUT = 'https://file+.vscode-resource.vscode-cdn.net/ext/out/webview';
 
 function capturedWebviewHtml(
     options: {
@@ -29,13 +31,14 @@ function capturedWebviewHtml(
         '<head>' +
         '<style id="_defaultStyles">@layer vscode-default { body { color: var(--vscode-editor-foreground); } }</style>' +
         '<meta charset="UTF-8">' +
+        `<meta http-equiv="Content-Security-Policy" content="${HTMLGenerator.getContentSecurityPolicy('https://file+.vscode-resource.vscode-cdn.net')}">` +
         '<title>Scientific Data Viewer</title>' +
         `<link rel="stylesheet" href="${CDN}/styles.css">` +
         '</head>' +
         `<body class="${bodyClasses}" data-vscode-theme-kind="${themeKind}" ` +
         'data-vscode-theme-name="Dark Modern" data-vscode-theme-id="Default Dark Modern">' +
         '<div class="header">content</div>' +
-        `<script src="${CDN}/webview-script.js"></script>` +
+        `<script src="${OUT}/webview.js"></script>` +
         '</body></html>'
     );
 }
@@ -65,7 +68,7 @@ suite('Webview Export Test Suite', () => {
         test('replaces the vscode-resource script with inline JS', () => {
             const exported = exportHtml(capturedWebviewHtml());
 
-            assert.ok(!exported.includes(`${CDN}/webview-script.js`));
+            assert.ok(!exported.includes(`${OUT}/webview.js`));
             assert.ok(exported.includes('captureWebviewContent'));
         });
 
@@ -78,6 +81,42 @@ suite('Webview Export Test Suite', () => {
             const exported = exportHtml(captured);
 
             assert.ok(!exported.includes('styles.css?v='));
+            assert.ok(
+                exported.includes('<style id="scientific-data-viewer-style">'),
+            );
+        });
+
+        test('drops the webview Content-Security-Policy', () => {
+            const exported = exportHtml(capturedWebviewHtml());
+
+            assert.ok(
+                !exported.includes('Content-Security-Policy'),
+                'the vscode-resource-only policy would block the inlined script',
+            );
+        });
+
+        test('live page carries a CSP and no inline script or handler', () => {
+            const webview = {
+                cspSource: 'https://res.example',
+                asWebviewUri: (uri: vscode.Uri) => uri,
+            } as unknown as vscode.Webview;
+            const live = HTMLGenerator.generateMainHTML(false, null, 1, {
+                webview,
+                extensionUri: vscode.Uri.file('/ext'),
+            });
+
+            assert.ok(
+                live.includes(
+                    `content="${HTMLGenerator.getContentSecurityPolicy('https://res.example')}"`,
+                ),
+            );
+            assert.ok(live.includes("default-src 'none'"));
+            assert.ok(!/<script>/.test(live), 'no inline <script>');
+            assert.ok(!/\son[a-z]+=/i.test(live), 'no inline event handler');
+
+            const exported = HTMLGenerator.inlineWebviewAssets(live, false);
+            assert.ok(!exported.includes('Content-Security-Policy'));
+            assert.ok(exported.includes('<script>'));
             assert.ok(
                 exported.includes('<style id="scientific-data-viewer-style">'),
             );

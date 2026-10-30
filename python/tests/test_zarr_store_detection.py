@@ -1,0 +1,206 @@
+"""Tests for detecting Zarr stores that are not named ``*.zarr``."""
+
+from __future__ import annotations
+
+import zipfile
+from typing import TYPE_CHECKING
+
+import numpy as np
+import pytest
+import xarray as xr
+
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.formats.zarr import (
+    detect_zarr_format_version,
+    is_zarr_store,
+    resolve_store_path,
+    zip_zarr_root_prefix,
+)
+from sdv_backend.info.encoding import collect_encoding
+from sdv_backend.info.extract import get_file_info
+from sdv_backend.results import FileInfoError, FileInfoResult
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def _write_store(path: Path, zarr_format: int) -> Path:
+    ds = xr.Dataset(
+        {"temperature": (("t", "x"), np.zeros((2, 3), dtype="float32"))},
+        coords={"t": np.arange(2), "x": np.arange(3)},
+    )
+    ds.to_zarr(path, zarr_format=zarr_format, consolidated=False)
+    return path
+
+
+def _zip_directory(source: Path, archive: Path, *, prefix: str = "") -> Path:
+    with zipfile.ZipFile(archive, "w") as handle:
+        for member in source.rglob("*"):
+            if member.is_file():
+                relative = member.relative_to(source).as_posix()
+                arcname = f"{prefix}/{relative}" if prefix else relative
+                handle.write(member, arcname)
+    return archive
+
+
+@pytest.mark.parametrize("zarr_format", [2, 3])
+def test_store_without_zarr_suffix_is_detected(
+    tmp_path: Path, zarr_format: int
+) -> None:
+    store = _write_store(tmp_path / "ocean_reanalysis", zarr_format)
+
+    assert is_zarr_store(store)
+
+    format_info = detect_file_format(store)
+    assert format_info.extension == ".zarr"
+    assert format_info.display_name == f"Zarr v{zarr_format}"
+
+
+def test_store_with_zarr_suffix_still_detected(tmp_path: Path) -> None:
+    store = _write_store(tmp_path / "ocean.zarr", zarr_format=3)
+
+    format_info = detect_file_format(store)
+    assert format_info.extension == ".zarr"
+
+
+def test_plain_directory_is_not_a_store(tmp_path: Path) -> None:
+    plain = tmp_path / "outputs"
+    plain.mkdir()
+    (plain / "notes.txt").write_text("not a store")
+
+    assert not is_zarr_store(plain)
+    assert detect_file_format(plain).extension == ""
+
+
+def test_known_suffix_takes_precedence_over_store_markers(tmp_path: Path) -> None:
+    # A directory carrying a recognised data suffix must keep that format,
+    # so Zarr detection never hijacks another engine's path.
+    store = _write_store(tmp_path / "scene.tif", zarr_format=3)
+
+    assert detect_file_format(store).extension == ".tif"
+
+
+@pytest.mark.parametrize("marker", ["zarr.json", ".zgroup", ".zmetadata"])
+def test_metadata_file_resolves_to_store_directory(tmp_path: Path, marker: str) -> None:
+    store = tmp_path / "store"
+    store.mkdir()
+    (store / marker).write_text("{}")
+
+    assert resolve_store_path(store / marker) == store
+
+
+def test_resolve_store_path_leaves_other_paths_untouched(tmp_path: Path) -> None:
+    dataset = tmp_path / "sample.nc"
+    dataset.write_bytes(b"")
+
+    assert resolve_store_path(dataset) == dataset
+
+    store = _write_store(tmp_path / "ocean", zarr_format=3)
+    assert resolve_store_path(store) == store
+
+
+@pytest.mark.parametrize(("zarr_format", "expected"), [(2, 2), (3, 3)])
+def test_detect_zarr_format_version(
+    tmp_path: Path, zarr_format: int, expected: int
+) -> None:
+    store = _write_store(tmp_path / "store", zarr_format)
+
+    assert detect_zarr_format_version(store) == expected
+
+
+def test_detect_zarr_format_version_is_none_for_non_store(tmp_path: Path) -> None:
+    plain = tmp_path / "plain"
+    plain.mkdir()
+
+    assert detect_zarr_format_version(plain) is None
+
+
+def test_encoding_reports_codec_names_and_shards(tmp_path: Path) -> None:
+    # Zarr v3 codecs are dataclasses, so without describing them by name the
+    # UI would show a bare configuration such as {"level": 0}.
+    store = tmp_path / "sharded"
+    ds = xr.Dataset(
+        {"temp": (("t", "x"), np.zeros((8, 8), dtype="float32"))},
+        coords={"t": np.arange(8), "x": np.arange(8)},
+    )
+    ds.to_zarr(
+        store,
+        zarr_format=3,
+        consolidated=False,
+        encoding={"temp": {"chunks": (2, 2), "shards": (4, 4)}},
+    )
+
+    opened = xr.open_dataset(store, engine="zarr", consolidated=False)
+    encoding = collect_encoding(opened["temp"])
+
+    assert encoding["shards"] == (4, 4)
+    compressors = encoding["compressors"]
+    assert [codec["name"] for codec in compressors] == ["zstd"]
+    assert encoding["serializer"]["name"] == "bytes"
+
+
+def test_encoding_values_that_are_not_codecs_are_untouched() -> None:
+    variable = xr.DataArray([1, 2], dims=("x",), name="a")
+    variable.encoding["chunks"] = (2,)
+    variable.encoding["dtype"] = "int32"
+
+    encoding = collect_encoding(variable)
+
+    assert encoding["chunks"] == (2,)
+    assert encoding["dtype"] == "int32"
+
+
+def test_unrelated_json_file_is_not_resolved_to_its_directory(tmp_path: Path) -> None:
+    # Only Zarr metadata names redirect to the parent, so ordinary JSON files
+    # keep pointing at themselves and fail as an unsupported format.
+    stray = tmp_path / "config.json"
+    stray.write_text("{}")
+
+    assert resolve_store_path(stray) == stray
+
+
+@pytest.mark.parametrize("zarr_format", [2, 3])
+def test_zip_of_store_root_is_detected_and_opens(
+    tmp_path: Path, zarr_format: int
+) -> None:
+    store = _write_store(tmp_path / "ocean", zarr_format)
+    archive = _zip_directory(store, tmp_path / "ocean.zip")
+
+    assert zip_zarr_root_prefix(archive) == ""
+    format_info = detect_file_format(archive)
+    assert format_info.extension == ".zarr"
+    assert format_info.display_name == f"Zarr v{zarr_format} (ZIP)"
+
+    result = get_file_info(archive)
+    assert isinstance(result, FileInfoResult)
+    variables = result.variables_flattened["/"]
+    assert [item.name for item in variables] == ["temperature"]
+
+
+def test_zip_with_nested_store_prefix_opens(tmp_path: Path) -> None:
+    store = _write_store(tmp_path / "ocean", 3)
+    archive = _zip_directory(store, tmp_path / "ocean.zarr.zip", prefix="ocean.zarr")
+
+    assert zip_zarr_root_prefix(archive) == "ocean.zarr"
+    format_info = detect_file_format(archive)
+    assert format_info.display_name == "Zarr v3 (ZIP)"
+
+    result = get_file_info(archive)
+    assert isinstance(result, FileInfoResult)
+    assert [item.name for item in result.variables_flattened["/"]] == ["temperature"]
+
+
+def test_ordinary_zip_is_not_treated_as_zarr(tmp_path: Path) -> None:
+    archive = tmp_path / "notes.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        handle.writestr("readme.txt", "not a store")
+
+    assert zip_zarr_root_prefix(archive) is None
+    format_info = detect_file_format(archive)
+    assert format_info.extension == ".zip"
+    assert format_info.available_engines == []
+
+    result = get_file_info(archive)
+    assert isinstance(result, FileInfoError)
+    assert result.error_type == "ValueError"
+    assert "not a Zarr store" in result.error

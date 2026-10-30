@@ -2,19 +2,27 @@ import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { DataViewerPanel } from '../DataViewerPanel';
 import { PythonManager } from '../python/PythonManager';
+import {
+    CORE_PACKAGES,
+    EXTENDED_PACKAGES,
+    ExtensionVirtualEnvironmentManager,
+    PLOT_PACKAGES,
+} from '../python/ExtensionVirtualEnvironmentManager';
 import { ErrorBoundary } from './ErrorBoundary';
 import { getDisplayName, getVersion } from './vscodeutils';
 import {
     getDevMode,
     getOverridePythonInterpreter,
     getUseExtensionOwnEnvironment,
+    SDV_EXTENSION_ID,
 } from './config';
 
+export type HealthStatus = 'healthy' | 'warning' | 'error';
+
 export interface HealthcheckResult {
-    status: 'healthy' | 'warning' | 'error';
+    status: HealthStatus;
     message: string;
     details?: string;
-    timestamp: Date;
 }
 
 export interface HealthcheckReport {
@@ -23,1162 +31,673 @@ export interface HealthcheckReport {
         version: string;
         timestamp: Date;
     };
-    overallStatus: 'healthy' | 'warning' | 'error';
+    overallStatus: HealthStatus;
     issues: HealthcheckResult[];
     components: {
         panes: HealthcheckResult;
         panesWithErrors: HealthcheckResult;
         pythonEnvironment: HealthcheckResult;
         dependencies: HealthcheckResult;
+        supportedFormats: HealthcheckResult;
         configuration: HealthcheckResult;
         errorBoundary: HealthcheckResult;
         memory: HealthcheckResult;
-        supportedFormats: HealthcheckResult;
-        logging: HealthcheckResult;
-        performance: HealthcheckResult;
     };
     recommendations: string[];
 }
 
-export class HealthcheckManager {
-    private static instance: HealthcheckManager | null = null;
+const COMPONENT_LABELS: Record<keyof HealthcheckReport['components'], string> =
+    {
+        panes: 'Panes',
+        panesWithErrors: 'Panes with Error',
+        pythonEnvironment: 'Python Environment',
+        dependencies: 'Dependencies',
+        supportedFormats: 'Supported Formats',
+        configuration: 'Configuration',
+        errorBoundary: 'Error Boundary',
+        memory: 'Memory Usage',
+    };
 
-    public static getInstance(): HealthcheckManager {
-        if (!HealthcheckManager.instance) {
-            HealthcheckManager.instance = new HealthcheckManager();
-        }
-        return HealthcheckManager.instance;
-    }
+/** xarray engine → package providing it. */
+const FORMAT_ENGINES: Record<string, string> = {
+    netcdf4: 'netCDF4',
+    h5netcdf: 'h5netcdf',
+    scipy: 'scipy',
+    zarr: 'zarr',
+    cfgrib: 'cfgrib',
+    rasterio: 'rioxarray',
+    cdflib: 'cdflib',
+};
 
-    private constructor() {}
+const STATUS_ICON: Record<HealthStatus, string> = {
+    healthy: '✅',
+    warning: '⚠️',
+    error: '❌',
+};
+const STATUS_COLOR: Record<HealthStatus, string> = {
+    healthy: '🟢',
+    warning: '🟡',
+    error: '🔴',
+};
 
-    /**
-     * Run a comprehensive healthcheck and generate a report
-     */
-    public async runHealthcheck(
-        pythonManager: PythonManager,
-    ): Promise<HealthcheckReport> {
-        Logger.info('🏥 Running comprehensive healthcheck...');
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HIGH_HEAP_MB = 500;
+const MAX_ERRORS_PER_COMPONENT = 5;
 
-        const timestamp = new Date();
-        const issues: HealthcheckResult[] = [];
-        const recommendations: string[] = [];
+const errorDetails = (error: unknown) =>
+    `Error: ${error instanceof Error ? error.message : String(error)}`;
 
-        // Check panes
-        const panesResult = this.checkPanes();
-        if (panesResult.status !== 'healthy') {
-            issues.push(panesResult);
-        }
+/**
+ * Run the healthcheck and build its report.
+ */
+export async function runHealthcheck(
+    pythonManager: PythonManager,
+    extensionEnvManager: ExtensionVirtualEnvironmentManager,
+): Promise<HealthcheckReport> {
+    Logger.info('🏥 Running healthcheck...');
 
-        // Check panes with errors
-        const panesWithErrorsResult = this.checkPanesWithErrors();
-        if (panesWithErrorsResult.status !== 'healthy') {
-            issues.push(panesWithErrorsResult);
-        }
+    const packages = await checkPackages(pythonManager);
+    const components: HealthcheckReport['components'] = {
+        panes: checkPanes(),
+        panesWithErrors: checkPanesWithErrors(),
+        pythonEnvironment: checkPythonEnvironment(pythonManager),
+        dependencies: packages.dependencies,
+        supportedFormats: packages.supportedFormats,
+        configuration: await checkConfiguration(extensionEnvManager),
+        errorBoundary: checkErrorBoundary(),
+        memory: checkMemoryUsage(),
+    };
+    const issues = Object.values(components).filter(
+        (result) => result.status !== 'healthy',
+    );
+    const overallStatus: HealthStatus = issues.some(
+        (issue) => issue.status === 'error',
+    )
+        ? 'error'
+        : issues.length > 0
+          ? 'warning'
+          : 'healthy';
 
-        // Check Python environment
-        const pythonResult = await this.checkPythonEnvironment(pythonManager);
-        if (pythonResult.status !== 'healthy') {
-            issues.push(pythonResult);
-        }
+    Logger.info(`🏥 Healthcheck completed with status: ${overallStatus}`);
+    return {
+        extensionInfo: {
+            name: getDisplayName(),
+            version: getVersion(),
+            timestamp: new Date(),
+        },
+        overallStatus,
+        issues,
+        components,
+        recommendations: generateRecommendations(components),
+    };
+}
 
-        // Check dependencies
-        const dependenciesResult = await this.checkDependencies(pythonManager);
-        if (dependenciesResult.status !== 'healthy') {
-            issues.push(dependenciesResult);
-        }
+/**
+ * Generate a markdown report from the healthcheck results
+ */
+export function generateMarkdownReport(
+    report: HealthcheckReport,
+    pythonManager: PythonManager,
+): string {
+    const lines: string[] = [];
+    const envInfo = pythonManager.getCurrentEnvironmentInfo();
 
-        // Check configuration
-        const configResult = await this.checkConfiguration();
-        if (configResult.status !== 'healthy') {
-            issues.push(configResult);
-        }
-
-        // Check error boundary
-        const errorBoundaryResult = this.checkErrorBoundary();
-        if (errorBoundaryResult.status !== 'healthy') {
-            issues.push(errorBoundaryResult);
-        }
-
-        // Check memory usage
-        const memoryResult = this.checkMemoryUsage();
-        if (memoryResult.status !== 'healthy') {
-            issues.push(memoryResult);
-        }
-
-        // Check supported formats
-        const supportedFormatsResult =
-            await this.checkSupportedFormats(pythonManager);
-        if (supportedFormatsResult.status !== 'healthy') {
-            issues.push(supportedFormatsResult);
-        }
-
-        // Check logging system
-        const loggingResult = this.checkLoggingSystem();
-        if (loggingResult.status !== 'healthy') {
-            issues.push(loggingResult);
-        }
-
-        // Check performance metrics
-        const performanceResult = this.checkPerformanceMetrics();
-        if (performanceResult.status !== 'healthy') {
-            issues.push(performanceResult);
-        }
-
-        // Generate recommendations
-        this.generateRecommendations(issues, recommendations);
-
-        // Determine overall status
-        const overallStatus = this.determineOverallStatus(issues);
-
-        const report: HealthcheckReport = {
-            extensionInfo: {
-                name: getDisplayName(),
-                version: getVersion(),
-                timestamp,
-            },
-            overallStatus,
-            issues,
-            components: {
-                panes: panesResult,
-                panesWithErrors: panesWithErrorsResult,
-                pythonEnvironment: pythonResult,
-                dependencies: dependenciesResult,
-                configuration: configResult,
-                errorBoundary: errorBoundaryResult,
-                memory: memoryResult,
-                supportedFormats: supportedFormatsResult,
-                logging: loggingResult,
-                performance: performanceResult,
-            },
-            recommendations,
-        };
-
-        Logger.info(`🏥 Healthcheck completed with status: ${overallStatus}`);
-        return report;
-    }
-
-    /**
-     * Generate a markdown report from the healthcheck results
-     */
-    public generateMarkdownReport(
-        report: HealthcheckReport,
-        pythonManager: PythonManager,
-    ): string {
-        const statusIcon = {
-            healthy: '✅',
-            warning: '⚠️',
-            error: '❌',
-        };
-
-        const statusColor = {
-            healthy: '🟢',
-            warning: '🟡',
-            error: '🔴',
-        };
-
-        let markdown = `# ${report.extensionInfo.name} Healthcheck Report\n\n`;
-        markdown += `- **Generated:** ${report.extensionInfo.timestamp.toISOString()}\n`;
-        markdown += `- **Extension Version:** ${report.extensionInfo.version}\n`;
-        markdown += `- **Overall Status:** ${
-            statusIcon[report.overallStatus]
-        } ${
-            statusColor[report.overallStatus]
-        } ${report.overallStatus.toUpperCase()}\n\n`;
-
-        // System information
-        markdown += `## ℹ️ System Information\n\n`;
-        markdown += `- **VS Code Version:** ${vscode.version}\n`;
-        markdown += `- **Platform:** ${process.platform}\n`;
-        markdown += `- **Node.js Version:** ${process.version}\n`;
-        markdown += `- **Extension Path:** ${
+    lines.push(
+        `# ${report.extensionInfo.name} Healthcheck Report`,
+        '',
+        `- **Generated:** ${report.extensionInfo.timestamp.toISOString()}`,
+        `- **Extension Version:** ${report.extensionInfo.version}`,
+        `- **Overall Status:** ${STATUS_ICON[report.overallStatus]} ${
+            STATUS_COLOR[report.overallStatus]
+        } ${report.overallStatus.toUpperCase()}`,
+        '',
+        '## ℹ️ System Information',
+        '',
+        `- **VS Code Version:** ${vscode.version}`,
+        `- **Platform:** ${process.platform}`,
+        `- **Node.js Version:** ${process.version}`,
+        `- **Extension Path:** ${
             vscode.extensions.getExtension('eschalk0.scientific-data-viewer')
                 ?.extensionPath || 'Unknown'
-        }\n\n`;
-
-        // Environment Information
-        markdown += `## 🐍 Environment Information\n\n`;
-        const envInfo = pythonManager.getCurrentEnvironmentInfo();
-        if (envInfo) {
-            markdown += `- **Status:** ${
-                envInfo.initialized
-                    ? envInfo.ready
-                        ? '✅ Ready'
-                        : '⚠️ Not Ready'
-                    : '❌ Not Initialized'
-            }\n`;
-            markdown += `- **Source:** ${envInfo.source || 'Unknown'}\n`;
-            markdown += `- **Python Path:** ${envInfo.path || 'Not set'}\n`;
-            markdown += `- **Initialized:** ${
-                envInfo.initialized ? 'Yes' : 'No'
-            }\n`;
-            markdown += `- **Ready:** ${envInfo.ready ? 'Yes' : 'No'}\n\n`;
-        } else {
-            markdown += `- **Status:** ❌ No environment information available\n`;
-            markdown += `- **Source:** Unknown\n`;
-            markdown += `- **Python Path:** Not set\n`;
-            markdown += `- **Initialized:** No\n`;
-            markdown += `- **Ready:** No\n\n`;
-        }
-
-        // Component details - bullet points
-        markdown = this.generateComponentDetails(markdown, statusIcon, report);
-
-        // Issues section - separate by status
-        const errorIssues = report.issues.filter(
-            (issue) => issue.status === 'error',
+        }`,
+        '',
+        '## 🐍 Environment Information',
+        '',
+        `- **Status:** ${
+            envInfo.initialized
+                ? envInfo.ready
+                    ? '✅ Ready'
+                    : '⚠️ Not Ready'
+                : '❌ Not Initialized'
+        }`,
+        `- **Source:** ${envInfo.source || 'Unknown'}`,
+        `- **Python Path:** ${envInfo.path || 'Not set'}`,
+        `- **Initialized:** ${envInfo.initialized ? 'Yes' : 'No'}`,
+        `- **Ready:** ${envInfo.ready ? 'Yes' : 'No'}`,
+        '',
+        '## 🔧 Component Status',
+        '',
+    );
+    for (const [key, label] of Object.entries(COMPONENT_LABELS)) {
+        const result =
+            report.components[key as keyof HealthcheckReport['components']];
+        lines.push(
+            `- **${label}**: ${STATUS_ICON[result.status]} ${result.status} - ${result.message}`,
         );
-        const warningIssues = report.issues.filter(
-            (issue) => issue.status === 'warning',
+    }
+    lines.push('');
+
+    const sections: Array<[HealthStatus, string]> = [
+        ['error', '## ❌ Errors Found'],
+        ['warning', '## ⚠️ Warnings'],
+    ];
+    for (const [status, heading] of sections) {
+        const issues = report.issues.filter((issue) => issue.status === status);
+        if (issues.length === 0) {
+            continue;
+        }
+        lines.push(heading, '');
+        issues.forEach((issue, index) => {
+            lines.push(`### ${index + 1}. ${issue.message}`, '');
+            if (issue.details) {
+                lines.push(issue.details, '');
+            }
+        });
+    }
+    if (report.issues.length === 0) {
+        lines.push(
+            '## ✅ All Systems Healthy',
+            '',
+            'All systems are operating normally.',
+            '',
         );
+    }
 
-        if (errorIssues.length > 0) {
-            markdown += `## ❌ Errors Found\n\n`;
-            errorIssues.forEach((issue, index) => {
-                markdown += `### ${index + 1}. ${issue.message}\n\n`;
-                if (issue.details) {
-                    markdown += `${issue.details}\n\n`;
-                }
-            });
-        }
+    lines.push(...errorHistoryMarkdown());
 
-        if (warningIssues.length > 0) {
-            markdown += `## ⚠️ Warnings\n\n`;
-            warningIssues.forEach((issue, index) => {
-                markdown += `### ${index + 1}. ${issue.message}\n\n`;
-                if (issue.details) {
-                    markdown += `${issue.details}\n\n`;
-                }
-            });
-        }
-
-        if (errorIssues.length === 0 && warningIssues.length === 0) {
-            markdown += `## ✅ All Systems Healthy\n\n`;
-            markdown += `All systems are operating normally.\n\n`;
-        }
-
-        // Error History Section
-        const errorBoundary = ErrorBoundary.getInstance();
-        const errorHistory = errorBoundary.getErrorHistory();
-        if (errorHistory.length > 0) {
-            markdown += `## 🚨 Error History\n\n`;
-            markdown += `Total errors recorded: **${errorHistory.length}**\n\n`;
-
-            // Group errors by component
-            const errorsByComponent = errorHistory.reduce(
-                (acc, entry) => {
-                    const component = entry.context.component || 'Unknown';
-                    if (!acc[component]) {
-                        acc[component] = [];
-                    }
-                    acc[component].push(entry);
-                    return acc;
-                },
-                {} as Record<string, typeof errorHistory>,
-            );
-
-            // Show errors by component
-            Object.entries(errorsByComponent).forEach(([component, errors]) => {
-                markdown += `### Component: ${component} (${errors.length} errors)\n\n`;
-                errors.forEach((entry, index) => {
-                    const timeAgo = this.getTimeAgo(entry.timestamp);
-                    markdown += `${index + 1}. [${entry.timestamp.toISOString()}] (*${timeAgo}*) - \`${entry.context.operation}\`\n`;
-                    markdown += `   - **Error:** ${entry.error.message}\n`;
-                    if (entry.context.data) {
-                        markdown += `   - **Data:** \`${JSON.stringify(entry.context.data)}\`\n`;
-                    }
-                    if (entry.context.userAction) {
-                        markdown += `   - **User Action:** ${entry.context.userAction}\n`;
-                    }
-                    markdown += `\n`;
-                });
-                if (errors.length > 5) {
-                    markdown += `*... and ${errors.length - 5} more errors*\n\n`;
-                }
-            });
-        } else {
-            markdown += `## ✅ Error History\n\n`;
-            markdown += `No errors have been recorded. The extension is running smoothly!\n\n`;
-        }
-
-        // Recommendations
-        if (report.recommendations.length > 0) {
-            markdown += `## 💡 Recommendations\n\n`;
-            report.recommendations.forEach((rec, index) => {
-                markdown += `${index + 1}. ${rec}\n`;
-            });
-            markdown += `\n`;
-        }
-
-        // Configuration Details
-        markdown += `## ⚙️ Configuration Details\n\n`;
-        const config = vscode.workspace.getConfiguration(
-            'scientificDataViewer',
+    if (report.recommendations.length > 0) {
+        lines.push('## 💡 Recommendations', '');
+        report.recommendations.forEach((rec, index) =>
+            lines.push(`${index + 1}. ${rec}`),
         );
-        markdown += `\`\`\`json\n${JSON.stringify(
-            config,
+        lines.push('');
+    }
+
+    lines.push(
+        '## ⚙️ Configuration Details',
+        '',
+        '```json',
+        JSON.stringify(
+            vscode.workspace.getConfiguration(SDV_EXTENSION_ID),
             null,
             2,
-        )}\n\`\`\`\n\n`;
+        ),
+        '```',
+        '',
+    );
+    return lines.join('\n');
+}
 
-        return markdown;
-    }
+/**
+ * Open the healthcheck report in a new (untitled) editor
+ */
+export async function openHealthcheckReport(
+    report: HealthcheckReport,
+    pythonManager: PythonManager,
+): Promise<void> {
+    const markdown = generateMarkdownReport(report, pythonManager);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const untitledUri = vscode.Uri.parse(
+        `untitled:SDV-Healthcheck-${timestamp}.md`,
+    );
+    const doc = await vscode.workspace.openTextDocument(untitledUri);
+    const edit = new vscode.WorkspaceEdit();
+    edit.insert(untitledUri, new vscode.Position(0, 0), markdown);
+    await vscode.workspace.applyEdit(edit);
+    await vscode.window.showTextDocument(doc, {
+        preview: false,
+        preserveFocus: false,
+        viewColumn: vscode.ViewColumn.One,
+    });
+}
 
-    private generateComponentDetails(
-        markdown: string,
-        statusIcon: { healthy: string; warning: string; error: string },
-        report: HealthcheckReport,
-    ) {
-        markdown += `## 🔧 Component Status\n\n`;
-        markdown += `- **Panes**: ${statusIcon[report.components.panes.status]} ${report.components.panes.status} - ${report.components.panes.message}\n`;
-        markdown += `- **Panes with Error**: ${statusIcon[report.components.panesWithErrors.status]} ${report.components.panesWithErrors.status} - ${report.components.panesWithErrors.message}\n`;
-        markdown += `- **Python Environment**: ${statusIcon[report.components.pythonEnvironment.status]} ${report.components.pythonEnvironment.status} - ${report.components.pythonEnvironment.message}\n`;
-        markdown += `- **Dependencies**: ${statusIcon[report.components.dependencies.status]} ${report.components.dependencies.status} - ${report.components.dependencies.message}\n`;
-        markdown += `- **Configuration**: ${statusIcon[report.components.configuration.status]} ${report.components.configuration.status} - ${report.components.configuration.message}\n`;
-        markdown += `- **Error Boundary**: ${statusIcon[report.components.errorBoundary.status]} ${report.components.errorBoundary.status} - ${report.components.errorBoundary.message}\n`;
-        markdown += `- **Memory Usage**: ${statusIcon[report.components.memory.status]} ${report.components.memory.status} - ${report.components.memory.message}\n`;
-        markdown += `- **Supported Formats**: ${statusIcon[report.components.supportedFormats.status]} ${report.components.supportedFormats.status} - ${report.components.supportedFormats.message}\n`;
-        markdown += `- **Logging System**: ${statusIcon[report.components.logging.status]} ${report.components.logging.status} - ${report.components.logging.message}\n`;
-        markdown += `- **Performance**: ${statusIcon[report.components.performance.status]} ${report.components.performance.status} - ${report.components.performance.message}\n\n`;
-        return markdown;
-    }
-
-    /**
-     * Open the healthcheck report in a new editor
-     */
-    public async openHealthcheckReport(
-        report: HealthcheckReport,
-        pythonManager: PythonManager,
-    ): Promise<void> {
-        const markdown = this.generateMarkdownReport(report, pythonManager);
-
-        // Create an untitled document with a custom name
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const untitledUri = vscode.Uri.parse(
-            `untitled:SDV-Healthcheck-${timestamp}.md`,
-        );
-
-        // Open the untitled document
-        const doc = await vscode.workspace.openTextDocument(untitledUri);
-
-        // Set the content
-        const edit = new vscode.WorkspaceEdit();
-        edit.insert(untitledUri, new vscode.Position(0, 0), markdown);
-        await vscode.workspace.applyEdit(edit);
-
-        // Show the document
-        await vscode.window.showTextDocument(doc, {
-            preview: false,
-            preserveFocus: false,
-            viewColumn: vscode.ViewColumn.One,
-        });
-        await vscode.window.showTextDocument(doc);
-    }
-
-    private checkPanes(): HealthcheckResult {
-        const paneCount = DataViewerPanel.getPanelCount();
-        const activePaneCount = DataViewerPanel.getActivePanelCount();
-
-        if (paneCount === 0) {
-            return {
-                status: 'healthy',
-                message: 'No data viewer panes are currently open',
-                timestamp: new Date(),
-            };
-        }
-
-        if (paneCount > 10) {
-            return {
-                status: 'warning',
-                message: `High number of open panes: ${paneCount}`,
-                details:
-                    'Having many open panes may impact performance. Consider closing unused panes.',
-                timestamp: new Date(),
-            };
-        }
-
+function checkPanes(): HealthcheckResult {
+    const paneCount = DataViewerPanel.getPanelCount();
+    if (paneCount === 0) {
         return {
             status: 'healthy',
-            message: `${paneCount} panes open (${activePaneCount} active)`,
-            timestamp: new Date(),
+            message: 'No data viewer panes are currently open',
         };
     }
+    if (paneCount > 10) {
+        return {
+            status: 'warning',
+            message: `High number of open panes: ${paneCount}`,
+            details:
+                'Having many open panes may impact performance. Consider closing unused panes.',
+        };
+    }
+    return {
+        status: 'healthy',
+        message: `${paneCount} panes open (${DataViewerPanel.getActivePanelCount()} active)`,
+    };
+}
 
-    private checkPanesWithErrors(): HealthcheckResult {
-        try {
-            const panesWithErrors = DataViewerPanel.getPanelsWithErrorsCount();
-            const totalPanes = DataViewerPanel.getPanelCount();
-            const errorPanels = DataViewerPanel.getPanelsWithErrors();
-
-            if (panesWithErrors > 0) {
-                const errorDetails = errorPanels
-                    .map(
-                        (panel) =>
-                            `- ⚠️ Panel <${panel.getId()}>: ${
-                                panel.getFileUri().fsPath
-                            }`,
-                    )
-                    .join('\n');
-
-                return {
-                    status: 'warning',
-                    message: `${panesWithErrors} of ${totalPanes} panes have errors`,
-                    details:
-                        `Some data viewer panes encountered errors while loading data.\n\n` +
-                        `- Total panes: ${totalPanes}\n` +
-                        `- Panes with errors: ${panesWithErrors}\n\n` +
-                        `${errorDetails}\n\n` +
-                        `Consider refreshing or reopening these panes.`,
-                    timestamp: new Date(),
-                };
-            }
-
+function checkPanesWithErrors(): HealthcheckResult {
+    try {
+        const totalPanes = DataViewerPanel.getPanelCount();
+        const errorPanels = DataViewerPanel.getPanelsWithErrors();
+        if (errorPanels.length === 0) {
             return {
                 status: 'healthy',
                 message: 'No panes with errors',
                 details: `All ${totalPanes} data viewer panes are functioning normally.`,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check panes with errors',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
             };
         }
+        const panelList = errorPanels
+            .map(
+                (panel) =>
+                    `- ⚠️ Panel <${panel.getId()}>: ${panel.getFileUri().fsPath}`,
+            )
+            .join('\n');
+        return {
+            status: 'warning',
+            message: `${errorPanels.length} of ${totalPanes} panes have errors`,
+            details:
+                `Some data viewer panes encountered errors while loading data.\n\n` +
+                `${panelList}\n\n` +
+                `Consider refreshing or reopening these panes.`,
+        };
+    } catch (error) {
+        return {
+            status: 'error',
+            message: 'Failed to check panes with errors',
+            details: errorDetails(error),
+        };
+    }
+}
+
+function checkPythonEnvironment(
+    pythonManager: PythonManager,
+): HealthcheckResult {
+    const envInfo = pythonManager.getCurrentEnvironmentInfo();
+    if (!envInfo.initialized) {
+        return {
+            status: 'warning',
+            message: 'Python environment not yet initialized',
+            details:
+                'The Python environment is still being initialized. This is normal during startup.',
+        };
+    }
+    if (!envInfo.path) {
+        return {
+            status: 'error',
+            message: 'Python environment not ready: no interpreter found',
+            details:
+                'Install Python, or select an interpreter with "Python: Select Interpreter".',
+        };
+    }
+    if (!envInfo.ready) {
+        return {
+            status: 'error',
+            message: 'Python environment not ready',
+            details: `Python environment is initialized but missing core packages. Source: ${
+                envInfo.source || 'unknown'
+            }. Path: ${envInfo.path}`,
+        };
+    }
+    return {
+        status: 'healthy',
+        message: `Python environment ready (${envInfo.source || 'unknown'})`,
+        details: `Interpreter: ${envInfo.path}`,
+    };
+}
+
+const listOrNone = (items: readonly string[]) =>
+    items.length > 0 ? items.join(', ') : 'None';
+
+/**
+ * Package availability (one Python call) and the format engines it enables.
+ */
+async function checkPackages(pythonManager: PythonManager): Promise<{
+    dependencies: HealthcheckResult;
+    supportedFormats: HealthcheckResult;
+}> {
+    const pythonPath = pythonManager.pythonPath;
+    if (!pythonPath) {
+        const result: HealthcheckResult = {
+            status: 'error',
+            message: 'Python interpreter not available',
+            details:
+                'Cannot check packages or format support without a Python interpreter.',
+        };
+        return { dependencies: result, supportedFormats: result };
     }
 
-    private async checkPythonEnvironment(
-        pythonManager: PythonManager,
-    ): Promise<HealthcheckResult> {
-        try {
-            const envInfo = pythonManager.getCurrentEnvironmentInfo();
-
-            if (!envInfo) {
-                return {
-                    status: 'error',
-                    message: 'Python environment not initialized',
-                    details:
-                        'The Python environment has not been properly initialized. Try refreshing the Python environment.',
-                    timestamp: new Date(),
-                };
-            }
-
-            if (!envInfo.initialized) {
-                return {
-                    status: 'warning',
-                    message: 'Python environment not yet initialized',
-                    details:
-                        'The Python environment is still being initialized. This is normal during startup.',
-                    timestamp: new Date(),
-                };
-            }
-
-            if (!envInfo.ready) {
-                return {
-                    status: 'error',
-                    message: 'Python environment not ready',
-                    details: `Python environment is initialized but missing core packages. Source: ${
-                        envInfo.source || 'unknown'
-                    }. Path: ${envInfo.path || 'unknown'}`,
-                    timestamp: new Date(),
-                };
-            }
-
-            return {
-                status: 'healthy',
-                message: `Python environment ready (${
-                    envInfo.source || 'unknown'
-                })`,
-                details: `Interpreter: ${envInfo.path || 'unknown'}`,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check Python environment',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
+    let availability: Record<string, boolean>;
+    try {
+        availability = await pythonManager.checkPackagesAvailability(
+            pythonPath,
+            [...CORE_PACKAGES, ...PLOT_PACKAGES, ...EXTENDED_PACKAGES],
+        );
+    } catch (error) {
+        const result: HealthcheckResult = {
+            status: 'error',
+            message: 'Failed to check package availability',
+            details: errorDetails(error),
+        };
+        return { dependencies: result, supportedFormats: result };
     }
 
-    private async checkDependencies(
-        pythonManager: PythonManager,
-    ): Promise<HealthcheckResult> {
-        try {
-            const corePackages = ['xarray'];
-            const plotPackages = ['matplotlib'];
-            const extendedPackages = [
-                'netCDF4',
-                'h5netcdf',
-                'zarr',
-                'h5py',
-                'scipy',
-                'cfgrib',
-                'rioxarray',
-                'cdflib',
-            ];
+    return {
+        dependencies: dependenciesResult(availability),
+        supportedFormats: supportedFormatsResult(availability),
+    };
+}
 
-            const allPackages = [
-                ...corePackages,
-                ...plotPackages,
-                ...extendedPackages,
-            ];
+function dependenciesResult(
+    availability: Record<string, boolean>,
+): HealthcheckResult {
+    const split = (packages: readonly string[]) => ({
+        available: packages.filter((pkg) => availability[pkg] === true),
+        missing: packages.filter((pkg) => availability[pkg] !== true),
+    });
+    const core = split(CORE_PACKAGES);
+    const plot = split(PLOT_PACKAGES);
+    const extended = split(EXTENDED_PACKAGES);
+    const details = [
+        `- ✅ Available core packages: ${listOrNone(core.available)}`,
+        `- ❌ Missing core packages: ${listOrNone(core.missing)}`,
+        `- ✅ Available plotting packages: ${listOrNone(plot.available)}`,
+        `- ⚠️ Missing plotting packages: ${listOrNone(plot.missing)}`,
+        `- ✅ Available extended packages: ${listOrNone(extended.available)}`,
+        `- ⚠️ Missing extended packages: ${listOrNone(extended.missing)}`,
+    ].join('\n');
 
-            if (!pythonManager.pythonPath) {
-                return {
-                    status: 'error',
-                    message: 'Python interpreter not available',
-                    details:
-                        'Cannot check package availability without a Python interpreter.',
-                    timestamp: new Date(),
-                };
-            }
+    if (core.missing.length > 0) {
+        return {
+            status: 'error',
+            message: `Missing core packages: ${core.missing.join(', ')}`,
+            details: `Core packages are required for basic functionality.\n\n${details}`,
+        };
+    }
+    const optionalMissing = [...plot.missing, ...extended.missing];
+    if (optionalMissing.length > 0) {
+        return {
+            status: 'warning',
+            message: `Missing optional packages: ${optionalMissing.join(', ')}`,
+            details: `All core packages are available, but some optional packages are missing.\n\n${details}`,
+        };
+    }
+    const total =
+        CORE_PACKAGES.length + PLOT_PACKAGES.length + EXTENDED_PACKAGES.length;
+    return {
+        status: 'healthy',
+        message: `All packages available (${total}/${total})`,
+        details,
+    };
+}
 
-            const packageAvailability =
-                await pythonManager.checkPackagesAvailability(
-                    pythonManager.pythonPath,
-                    allPackages,
+function supportedFormatsResult(
+    availability: Record<string, boolean>,
+): HealthcheckResult {
+    const engines = Object.keys(FORMAT_ENGINES);
+    const available = engines.filter(
+        (engine) => availability[FORMAT_ENGINES[engine]] === true,
+    );
+    const missing = engines.filter((engine) => !available.includes(engine));
+
+    if (available.length === 0) {
+        return {
+            status: 'error',
+            message: 'No format engines available',
+            details:
+                `No data format engines are available.\n\n` +
+                `- ❌ Missing engines: ${missing.join(', ')}\n` +
+                `- 📦 Required packages: ${Object.values(FORMAT_ENGINES).join(', ')}`,
+        };
+    }
+    if (missing.length > 0) {
+        return {
+            status: 'warning',
+            message: `Limited format support: ${available.length}/${engines.length} engines available`,
+            details:
+                `Some format engines are missing, limiting data format support.\n\n` +
+                `- ✅ Available engines: ${available.join(', ')}\n` +
+                `- ❌ Missing engines: ${missing.join(', ')}`,
+        };
+    }
+    return {
+        status: 'healthy',
+        message: `Full format support: ${available.length}/${engines.length} engines available`,
+        details: `- ✅ Available engines: ${available.join(', ')}`,
+    };
+}
+
+async function checkConfiguration(
+    extensionEnvManager: ExtensionVirtualEnvironmentManager,
+): Promise<HealthcheckResult> {
+    const devMode = getDevMode();
+    const overridePython = getOverridePythonInterpreter();
+    const useExtensionOwnEnv = getUseExtensionOwnEnvironment();
+    const summary = `Dev mode: ${devMode}, Override Python: ${!!overridePython}, Use own env: ${useExtensionOwnEnv}`;
+
+    if (
+        useExtensionOwnEnv &&
+        !overridePython &&
+        !extensionEnvManager.ready &&
+        !(await extensionEnvManager.isUvAvailable())
+    ) {
+        return {
+            status: 'error',
+            message: 'Configuration has errors',
+            details: `- Using extension own environment but uv is not available (${extensionEnvManager.UV_INSTALLATION_URL})\n\n${summary}`,
+        };
+    }
+    if (useExtensionOwnEnv && overridePython) {
+        return {
+            status: 'warning',
+            message: 'Configuration has warnings',
+            details: `- The override Python interpreter takes precedence over the extension own environment\n\n${summary}`,
+        };
+    }
+    if (devMode) {
+        return {
+            status: 'warning',
+            message: 'Configuration has warnings',
+            details: `- Development mode is enabled (this is normal for development)\n\n${summary}`,
+        };
+    }
+    return {
+        status: 'healthy',
+        message: 'Configuration is valid',
+        details: summary,
+    };
+}
+
+function recentErrors() {
+    const since = Date.now() - DAY_MS;
+    return ErrorBoundary.getInstance()
+        .getErrorHistory()
+        .filter((entry) => entry.timestamp.getTime() > since);
+}
+
+function checkErrorBoundary(): HealthcheckResult {
+    const history = ErrorBoundary.getInstance().getErrorHistory();
+    const recent = recentErrors();
+    if (history.length === 0) {
+        return {
+            status: 'healthy',
+            message: 'No errors recorded',
+        };
+    }
+    if (recent.length === 0) {
+        return {
+            status: 'healthy',
+            message: `${history.length} errors recorded, none in the last 24 hours`,
+        };
+    }
+    return {
+        status: 'warning',
+        message: `${recent.length} errors recorded in the last 24 hours`,
+        details: recent
+            .map(
+                (entry, index) =>
+                    `${index + 1}. [${entry.timestamp.toISOString()}] ${entry.context.component || 'Unknown'}.${entry.context.operation}: ${entry.error.message}`,
+            )
+            .join('\n'),
+    };
+}
+
+function checkMemoryUsage(): HealthcheckResult {
+    const toMB = (bytes: number) => Math.round(bytes / 1024 / 1024);
+    const memUsage = process.memoryUsage();
+    const heapUsedMB = toMB(memUsage.heapUsed);
+    const details = `Heap used: ${heapUsedMB}MB, Heap total: ${toMB(
+        memUsage.heapTotal,
+    )}MB, RSS: ${toMB(memUsage.rss)}MB, External: ${toMB(memUsage.external)}MB (extension host process, shared with other extensions)`;
+    return heapUsedMB > HIGH_HEAP_MB
+        ? {
+              status: 'warning',
+              message: `High memory usage: ${heapUsedMB}MB heap used`,
+              details,
+          }
+        : {
+              status: 'healthy',
+              message: `Memory usage normal: ${heapUsedMB}MB heap used`,
+              details,
+          };
+}
+
+function generateRecommendations(
+    components: HealthcheckReport['components'],
+): string[] {
+    const recommendations: string[] = [];
+    const statusOf = (key: keyof HealthcheckReport['components']) =>
+        components[key].status;
+
+    if (Object.values(components).some((c) => c.status === 'error')) {
+        recommendations.push(
+            '🚨 **URGENT**: Address all error-level issues first as they may prevent the extension from working properly',
+        );
+    }
+    if (statusOf('pythonEnvironment') === 'error') {
+        recommendations.push(
+            '🔧 **Error Fix**: Try refreshing the Python environment using the "Refresh Python Environment" command',
+        );
+    }
+    if (statusOf('dependencies') === 'error') {
+        recommendations.push(
+            '🔧 **Error Fix**: Install missing core packages using the "Install Python Packages" command or refresh the Python environment',
+        );
+    }
+    if (statusOf('dependencies') === 'warning') {
+        recommendations.push(
+            '⚠️ **Warning**: Consider installing missing optional packages for enhanced functionality',
+        );
+    }
+    if (statusOf('panes') === 'warning') {
+        recommendations.push(
+            '⚠️ **Warning**: Consider closing unused data viewer panes to improve performance',
+        );
+    }
+    if (statusOf('memory') === 'warning') {
+        recommendations.push(
+            '⚠️ **Warning**: Consider restarting VS Code if memory usage continues to be high',
+        );
+    }
+    if (statusOf('configuration') !== 'healthy') {
+        recommendations.push(
+            '⚠️ **Warning**: Review your extension configuration settings',
+        );
+    }
+    if (recentErrors().length > 0) {
+        recommendations.push(
+            '⚠️ **Recent Errors**: Some errors have been recorded recently. Check the error history section for details.',
+        );
+    }
+    if (recommendations.length === 0) {
+        recommendations.push(
+            '✅ No specific recommendations at this time - all systems are healthy!',
+        );
+    }
+    return recommendations;
+}
+
+function errorHistoryMarkdown(): string[] {
+    const history = ErrorBoundary.getInstance().getErrorHistory();
+    if (history.length === 0) {
+        return [
+            '## ✅ Error History',
+            '',
+            'No errors have been recorded. The extension is running smoothly!',
+            '',
+        ];
+    }
+    const lines = [
+        '## 🚨 Error History',
+        '',
+        `Total errors recorded: **${history.length}**`,
+        '',
+    ];
+    const byComponent = new Map<string, typeof history>();
+    for (const entry of history) {
+        const component = String(entry.context.component || 'Unknown');
+        byComponent.set(component, [
+            ...(byComponent.get(component) ?? []),
+            entry,
+        ]);
+    }
+    for (const [component, errors] of byComponent) {
+        lines.push(`### Component: ${component} (${errors.length} errors)`, '');
+        // Most recent first
+        errors
+            .slice(-MAX_ERRORS_PER_COMPONENT)
+            .reverse()
+            .forEach((entry, index) => {
+                lines.push(
+                    `${index + 1}. [${entry.timestamp.toISOString()}] (*${timeAgo(entry.timestamp)}*) - \`${entry.context.operation}\``,
+                    `   - **Error:** ${entry.error.message}`,
                 );
-
-            const availablePackages = Object.keys(packageAvailability).filter(
-                (pkg) => packageAvailability[pkg] === true,
-            );
-            const missingPackages = Object.keys(packageAvailability).filter(
-                (pkg) => packageAvailability[pkg] === false,
-            );
-
-            const coreMissing = missingPackages.filter((pkg) =>
-                corePackages.includes(pkg),
-            );
-            const plotMissing = missingPackages.filter((pkg) =>
-                plotPackages.includes(pkg),
-            );
-            const extendedMissing = missingPackages.filter((pkg) =>
-                extendedPackages.includes(pkg),
-            );
-
-            // Create detailed package lists
-            const coreAvailable = corePackages.filter(
-                (pkg) => packageAvailability[pkg] === true,
-            );
-            const plotAvailable = plotPackages.filter(
-                (pkg) => packageAvailability[pkg] === true,
-            );
-            const extendedAvailable = extendedPackages.filter(
-                (pkg) => packageAvailability[pkg] === true,
-            );
-
-            let status: 'healthy' | 'warning' | 'error' = 'healthy';
-            let message = '';
-            let details = '';
-
-            if (coreMissing.length > 0) {
-                status = 'error';
-                message = `Missing core packages: ${coreMissing.join(', ')}`;
-                details =
-                    `Core packages are required for basic functionality.\n\n` +
-                    `- ✅ Available core packages: ${
-                        coreAvailable.length > 0
-                            ? coreAvailable.join(', ')
-                            : 'None'
-                    }\n` +
-                    `- ❌ Missing core packages: ${coreMissing.join(', ')}\n` +
-                    `- ✅ Available plotting packages: ${
-                        plotAvailable.length > 0
-                            ? plotAvailable.join(', ')
-                            : 'None'
-                    }\n` +
-                    `- ⚠️ Missing plotting packages: ${
-                        plotMissing.length > 0 ? plotMissing.join(', ') : 'None'
-                    }\n` +
-                    `- ✅ Available extended packages: ${
-                        extendedAvailable.length > 0
-                            ? extendedAvailable.join(', ')
-                            : 'None'
-                    }\n` +
-                    `- ⚠️ Missing extended packages: ${
-                        extendedMissing.length > 0
-                            ? extendedMissing.join(', ')
-                            : 'None'
-                    }`;
-            } else if (plotMissing.length > 0 || extendedMissing.length > 0) {
-                status = 'warning';
-                message = `Missing optional packages: ${[
-                    ...plotMissing,
-                    ...extendedMissing,
-                ].join(', ')}`;
-                details =
-                    `All core packages are available, but some optional packages are missing.\n\n` +
-                    `- ✅ Available core packages: ${coreAvailable.join(
-                        ', ',
-                    )}\n` +
-                    `- ✅ Available plotting packages: ${
-                        plotAvailable.length > 0
-                            ? plotAvailable.join(', ')
-                            : 'None'
-                    }\n` +
-                    `- ⚠️ Missing plotting packages: ${
-                        plotMissing.length > 0 ? plotMissing.join(', ') : 'None'
-                    }\n` +
-                    `- ✅ Available extended packages: ${
-                        extendedAvailable.length > 0
-                            ? extendedAvailable.join(', ')
-                            : 'None'
-                    }\n` +
-                    `- ⚠️ Missing extended packages: ${
-                        extendedMissing.length > 0
-                            ? extendedMissing.join(', ')
-                            : 'None'
-                    }`;
-            } else {
-                message = `All packages available (${availablePackages.length}/${allPackages.length})`;
-                details =
-                    `- ✅ Available core packages: ${coreAvailable.join(
-                        ', ',
-                    )}\n` +
-                    `- ✅ Available plotting packages: ${plotAvailable.join(
-                        ', ',
-                    )}\n` +
-                    `- ✅ Available extended packages: ${extendedAvailable.join(
-                        ', ',
-                    )}`;
-            }
-
-            return {
-                status,
-                message,
-                details,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check package availability',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
-    }
-
-    private async checkConfiguration(): Promise<HealthcheckResult> {
-        try {
-            const devMode = getDevMode();
-            const overridePython = getOverridePythonInterpreter();
-            const useExtensionOwnEnv = getUseExtensionOwnEnvironment();
-
-            const issues: string[] = [];
-            const warnings: string[] = [];
-
-            if (devMode) {
-                warnings.push(
-                    '- Development mode is enabled (this is normal for development)',
-                );
-            }
-
-            if (overridePython && !overridePython.trim()) {
-                issues.push('- Python interpreter override is set but empty');
-            }
-
-            if (useExtensionOwnEnv && !overridePython) {
-                // Check if uv is available when using extension own environment
-                const uvAvailable = await this.checkUvAvailability();
-                if (!uvAvailable) {
-                    issues.push(
-                        '- Using extension own environment but uv is not available',
+                if (entry.context.data) {
+                    lines.push(
+                        `   - **Data:** \`${JSON.stringify(entry.context.data)}\``,
                     );
                 }
-            }
-
-            if (issues.length === 0 && warnings.length === 0) {
-                return {
-                    status: 'healthy',
-                    message: 'Configuration is valid',
-                    details: `Dev mode: ${devMode}, Override Python: ${!!overridePython}, Use own env: ${useExtensionOwnEnv}`,
-                    timestamp: new Date(),
-                };
-            }
-
-            if (issues.length > 0) {
-                return {
-                    status: 'error',
-                    message: 'Configuration has errors',
-                    details: `Errors: ${issues.join('; ')}${
-                        warnings.length > 0
-                            ? ` Warnings: \n\n${warnings.join('\n')}`
-                            : ''
-                    }`,
-                    timestamp: new Date(),
-                };
-            } else {
-                return {
-                    status: 'warning',
-                    message: 'Configuration has warnings',
-                    details: `Warnings: \n\n${warnings.join('\n')}`,
-                    timestamp: new Date(),
-                };
-            }
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check configuration',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
-    }
-
-    private async checkUvAvailability(): Promise<boolean> {
-        try {
-            // Check if uv command is available in the system PATH
-            const { exec } = await import('child_process');
-            const { promisify } = await import('util');
-            const execAsync = promisify(exec);
-
-            try {
-                const { stdout } = await execAsync('uv --version', {
-                    timeout: 5000,
-                });
-                // If we get here, uv is available
-                Logger.debug(`uv is available: ${stdout.trim()}`);
-                return true;
-            } catch (error) {
-                Logger.debug(
-                    `uv is not available: ${
-                        error instanceof Error ? error.message : String(error)
-                    }`,
-                );
-                return false;
-            }
-        } catch (error) {
-            Logger.debug(
-                `Failed to check uv availability: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-            );
-            return false;
-        }
-    }
-
-    private checkErrorBoundary(): HealthcheckResult {
-        try {
-            const errorBoundary = ErrorBoundary.getInstance();
-            const errorHistory = errorBoundary.getErrorHistory();
-            const errorCount = errorHistory.length;
-
-            // Get recent errors (last 24 hours)
-            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            const recentErrors = errorHistory.filter(
-                (entry) => entry.timestamp > oneDayAgo,
-            );
-
-            // Get errors by component
-            const errorsByComponent = errorHistory.reduce(
-                (acc, entry) => {
-                    const component = entry.context.component || 'Unknown';
-                    acc[component] = (acc[component] || 0) + 1;
-                    return acc;
-                },
-                {} as Record<string, number>,
-            );
-
-            let status: 'healthy' | 'warning' | 'error' = 'healthy';
-            let message = '';
-            let details = '';
-
-            if (errorCount === 0) {
-                message = 'Error boundary is active - no errors recorded';
-                details =
-                    'Error boundary is properly initialized and monitoring for errors. No errors have been recorded.';
-            } else if (recentErrors.length === 0) {
-                status = 'warning';
-                message = `Error boundary active - ${errorCount} historical errors (none recent)`;
-                details =
-                    `Error boundary is properly initialized. ${errorCount} errors recorded historically, but none in the last 24 hours.\n\n` +
-                    `Historical errors by component:\n${Object.entries(
-                        errorsByComponent,
-                    )
-                        .map(([component, count]) => `- ${component}: ${count}`)
-                        .join('\n')}`;
-            } else {
-                status = 'warning';
-                message = `Error boundary active - ${recentErrors.length} recent errors`;
-                details =
-                    `Error boundary is properly initialized. ${recentErrors.length} errors recorded in the last 24 hours.\n\n` +
-                    `Recent errors by component:\n${Object.entries(
-                        errorsByComponent,
-                    )
-                        .map(([component, count]) => `- ${component}: ${count}`)
-                        .join('\n')}\n\n` +
-                    `Recent error details:\n${recentErrors
-                        .map(
-                            (entry, index) =>
-                                `${index + 1}. [${entry.timestamp.toISOString()}] ${entry.context.component || 'Unknown'}.${entry.context.operation}: ${entry.error.message}`,
-                        )
-                        .join('\n')}`;
-            }
-
-            return {
-                status,
-                message,
-                details,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Error boundary not properly initialized',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
-    }
-
-    private checkMemoryUsage(): HealthcheckResult {
-        try {
-            const memUsage = process.memoryUsage();
-            const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
-            const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
-            const rssMB = Math.round(memUsage.rss / 1024 / 1024);
-
-            if (heapUsedMB > 500) {
-                return {
-                    status: 'warning',
-                    message: `High memory usage: ${heapUsedMB}MB heap used`,
-                    details: `Heap used: ${heapUsedMB}MB, Heap total: ${heapTotalMB}MB, RSS: ${rssMB}MB`,
-                    timestamp: new Date(),
-                };
-            }
-
-            return {
-                status: 'healthy',
-                message: `Memory usage normal: ${heapUsedMB}MB heap used`,
-                details: `Heap used: ${heapUsedMB}MB, Heap total: ${heapTotalMB}MB, RSS: ${rssMB}MB`,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check memory usage',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
-    }
-
-    private generateRecommendations(
-        issues: HealthcheckResult[],
-        recommendations: string[],
-    ): void {
-        const errorIssues = issues.filter((issue) => issue.status === 'error');
-        const warningIssues = issues.filter(
-            (issue) => issue.status === 'warning',
-        );
-
-        if (errorIssues.length > 0) {
-            recommendations.push(
-                '🚨 **URGENT**: Address all error-level issues first as they may prevent the extension from working properly',
-            );
-        }
-
-        if (
-            errorIssues.some((issue) =>
-                issue.message.includes('Python environment'),
-            )
-        ) {
-            recommendations.push(
-                '🔧 **Error Fix**: Try refreshing the Python environment using the "Refresh Python Environment" command',
-            );
-        }
-
-        if (
-            errorIssues.some((issue) => issue.message.includes('core packages'))
-        ) {
-            recommendations.push(
-                '🔧 **Error Fix**: Install missing core packages using the "Install Python Packages" command or refresh the Python environment',
-            );
-        }
-
-        if (warningIssues.some((issue) => issue.message.includes('packages'))) {
-            recommendations.push(
-                '⚠️ **Warning**: Consider installing missing optional packages for enhanced functionality',
-            );
-        }
-
-        if (warningIssues.some((issue) => issue.message.includes('panes'))) {
-            recommendations.push(
-                '⚠️ **Warning**: Consider closing unused data viewer panes to improve performance',
-            );
-        }
-
-        if (warningIssues.some((issue) => issue.message.includes('memory'))) {
-            recommendations.push(
-                '⚠️ **Warning**: Consider restarting VS Code if memory usage continues to be high',
-            );
-        }
-
-        if (
-            warningIssues.some((issue) =>
-                issue.message.includes('configuration'),
-            )
-        ) {
-            recommendations.push(
-                '⚠️ **Warning**: Review your extension configuration settings',
-            );
-        }
-
-        // Error-related recommendations
-        const errorBoundary = ErrorBoundary.getInstance();
-        const errorHistory = errorBoundary.getErrorHistory();
-        const recentErrors = errorHistory.filter(
-            (entry) =>
-                entry.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000),
-        );
-
-        if (recentErrors.length > 10) {
-            recommendations.push(
-                '🚨 **High Error Rate**: The extension is experiencing many errors. Consider restarting VS Code or checking the error logs for patterns.',
-            );
-        } else if (recentErrors.length > 0) {
-            recommendations.push(
-                '⚠️ **Recent Errors**: Some errors have been recorded recently. Check the error history section for details.',
-            );
-        }
-
-        if (errorHistory.length > 50) {
-            recommendations.push(
-                '🧹 **Cleanup**: Consider clearing the error history if it contains many old errors that are no longer relevant.',
-            );
-        }
-
-        if (recommendations.length === 0) {
-            recommendations.push(
-                '✅ No specific recommendations at this time - all systems are healthy!',
-            );
-        }
-    }
-
-    private async checkSupportedFormats(
-        pythonManager: PythonManager,
-    ): Promise<HealthcheckResult> {
-        try {
-            // Use the same format mapping as generateSupportedFormatsInfo
-            const formatEngines = {
-                netcdf4: ['netCDF4'],
-                h5netcdf: ['h5netcdf'],
-                scipy: ['scipy'],
-                zarr: ['zarr'],
-                h5py: ['h5py'],
-                cfgrib: ['cfgrib'],
-                rasterio: ['rioxarray'],
-                cdflib: ['cdflib'],
-            };
-
-            if (!pythonManager.pythonPath) {
-                return {
-                    status: 'error',
-                    message:
-                        'Cannot check supported formats without Python interpreter',
-                    details:
-                        'Python interpreter is required to check format support.',
-                    timestamp: new Date(),
-                };
-            }
-
-            // Collect all unique packages needed for engines
-            const allEnginePackages = [
-                ...new Set(Object.values(formatEngines).flat()),
-            ];
-
-            // Single call to check all packages
-            const packageAvailability =
-                await pythonManager.checkPackagesAvailability(
-                    pythonManager.pythonPath,
-                    allEnginePackages,
-                );
-
-            // Check which engines are available
-            const availableEngines: string[] = [];
-            const missingEngines: string[] = [];
-
-            for (const [engine, packages] of Object.entries(formatEngines)) {
-                const allPackagesAvailable = packages.every(
-                    (pkg) => packageAvailability[pkg] === true,
-                );
-                if (allPackagesAvailable) {
-                    availableEngines.push(engine);
-                } else {
-                    missingEngines.push(engine);
+                if (entry.context.userAction) {
+                    lines.push(
+                        `   - **User Action:** ${entry.context.userAction}`,
+                    );
                 }
-            }
-
-            const totalEngines = Object.keys(formatEngines).length;
-            const availableEngineCount = availableEngines.length;
-
-            if (availableEngineCount === 0) {
-                return {
-                    status: 'error',
-                    message: 'No format engines available',
-                    details:
-                        `No data format engines are available.\n\n` +
-                        `- ❌ Missing engines: ${missingEngines.join(', ')}\n` +
-                        `- 📦 Required packages: ${allEnginePackages.join(
-                            ', ',
-                        )}`,
-                    timestamp: new Date(),
-                };
-            }
-
-            if (availableEngineCount < totalEngines) {
-                return {
-                    status: 'warning',
-                    message: `Limited format support: ${availableEngineCount}/${totalEngines} engines available`,
-                    details:
-                        `Some format engines are missing, limiting data format support.\n\n` +
-                        `- ✅ Available engines: ${availableEngines.join(
-                            ', ',
-                        )}\n` +
-                        `- ❌ Missing engines: ${missingEngines.join(', ')}`,
-                    timestamp: new Date(),
-                };
-            }
-
-            return {
-                status: 'healthy',
-                message: `Full format support: ${availableEngineCount}/${totalEngines} engines available`,
-                details:
-                    `All format engines are available for comprehensive data format support.\n\n` +
-                    `- ✅ Available engines: ${availableEngines.join(', ')}`,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check supported formats',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
+                lines.push('');
+            });
+        if (errors.length > MAX_ERRORS_PER_COMPONENT) {
+            lines.push(
+                `*... and ${errors.length - MAX_ERRORS_PER_COMPONENT} more errors*`,
+                '',
+            );
         }
     }
+    return lines;
+}
 
-    private checkLoggingSystem(): HealthcheckResult {
-        try {
-            // Check if logging is properly initialized
-            const logger = Logger;
-
-            // Test logging functionality
-            const testMessage = 'Healthcheck logging test';
-            logger.debug(testMessage);
-
-            return {
-                status: 'healthy',
-                message: 'Logging system operational',
-                details: 'Logger is properly initialized and functional.',
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Logging system not operational',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
+function timeAgo(timestamp: Date): string {
+    const diffMinutes = Math.floor((Date.now() - timestamp.getTime()) / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const plural = (n: number, unit: string) =>
+        `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+    if (diffMinutes < 1) {
+        return 'Just now';
     }
-
-    private checkPerformanceMetrics(): HealthcheckResult {
-        try {
-            const memUsage = process.memoryUsage();
-            const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
-            const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
-            const rssMB = Math.round(memUsage.rss / 1024 / 1024);
-            const externalMB = Math.round(memUsage.external / 1024 / 1024);
-
-            // Check if we're using too much memory
-            if (heapUsedMB > 1000) {
-                return {
-                    status: 'warning',
-                    message: `High memory usage: ${heapUsedMB}MB heap used`,
-                    details: `Heap used: ${heapUsedMB}MB, Heap total: ${heapTotalMB}MB, RSS: ${rssMB}MB, External: ${externalMB}MB`,
-                    timestamp: new Date(),
-                };
-            }
-
-            // Check if we have reasonable memory usage
-            if (heapUsedMB > 500) {
-                return {
-                    status: 'warning',
-                    message: `Moderate memory usage: ${heapUsedMB}MB heap used`,
-                    details: `Heap used: ${heapUsedMB}MB, Heap total: ${heapTotalMB}MB, RSS: ${rssMB}MB, External: ${externalMB}MB`,
-                    timestamp: new Date(),
-                };
-            }
-
-            return {
-                status: 'healthy',
-                message: `Good performance: ${heapUsedMB}MB heap used`,
-                details: `Heap used: ${heapUsedMB}MB, Heap total: ${heapTotalMB}MB, RSS: ${rssMB}MB, External: ${externalMB}MB`,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                message: 'Failed to check performance metrics',
-                details: `Error: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-                timestamp: new Date(),
-            };
-        }
+    if (diffMinutes < 60) {
+        return plural(diffMinutes, 'minute');
     }
-
-    private determineOverallStatus(
-        issues: HealthcheckResult[],
-    ): 'healthy' | 'warning' | 'error' {
-        if (issues.some((issue) => issue.status === 'error')) {
-            return 'error';
-        }
-        if (issues.some((issue) => issue.status === 'warning')) {
-            return 'warning';
-        }
-        return 'healthy';
+    if (diffHours < 24) {
+        return plural(diffHours, 'hour');
     }
-
-    private getTimeAgo(timestamp: Date): string {
-        const now = new Date();
-        const diffMs = now.getTime() - timestamp.getTime();
-        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffMinutes < 1) {
-            return 'Just now';
-        } else if (diffMinutes < 60) {
-            return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
-        } else if (diffHours < 24) {
-            return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-        } else if (diffDays < 7) {
-            return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-        } else {
-            return timestamp.toLocaleDateString();
-        }
+    if (diffDays < 7) {
+        return plural(diffDays, 'day');
     }
+    return timestamp.toLocaleDateString();
 }

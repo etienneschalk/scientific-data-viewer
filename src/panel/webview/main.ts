@@ -1,0 +1,295 @@
+/**
+ * Webview entry point for Scientific Data Viewer, bundled by esbuild into
+ * out/webview/webview.js (scripts/build-webview.mjs).
+ *
+ * No inline event handlers (the webview CSP forbids them): every click goes
+ * through one delegated listener, using element ids for the header/global
+ * buttons and `data-action` attributes for everything rendered dynamically.
+ */
+import { ICONS } from '../../shared/icons';
+import { messageBus } from './bus';
+import {
+    displayGlobalError,
+    executeInstallPackagesCommand,
+    executeShowLogsCommand,
+    executeShowSettingsCommand,
+} from './errors';
+import { handleChangedFieldEvent, refreshChangedFields } from './changedFields';
+import { handleDimensionSliceEvent } from './dimensionSlices';
+import { handleExportWebview } from './export';
+import {
+    cancelVariablePlot,
+    createVariablePlot,
+    handleCancelAllPlots,
+    handleCreateAllPlots,
+    handleResetAllPlots,
+    handleSaveAllPlots,
+    hidePlotControlsForBrowser,
+    openVariablePlot,
+    resetVariablePlot,
+    saveVariablePlot,
+    saveVariablePlotAs,
+} from './plotActions';
+import {
+    handleInheritedCheckboxChange,
+    resetPlotControls,
+    showInheritedCheckboxes,
+    syncColWrapAutoCheckbox,
+    validatePlotParameterInput,
+} from './plotParams';
+import {
+    DataLoadedPayload,
+    displayAll,
+    renderGlobalPlotParameters,
+} from './render/dataInfo';
+import { displayTimestamp } from './render/representations';
+
+function showDegradedModeIndicator(): void {
+    const indicator = document.createElement('span');
+    indicator.id = 'degraded-mode-indicator';
+    indicator.innerHTML = `${ICONS.globe} Browser Mode`;
+    indicator.title =
+        'Running in browser mode - VSCode features disabled. Existing plots are still viewable.';
+    (document.getElementById('top-level-title') ?? document.body).appendChild(
+        indicator,
+    );
+
+    // Hide VSCode-specific buttons in degraded mode
+    [
+        'refreshButton',
+        'exportWebviewButton',
+        'createAllPlotsButton',
+        'resetAllPlotsButton',
+        'saveAllPlotsButton',
+    ].forEach((buttonId) => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.style.display = 'none';
+        }
+    });
+
+    hidePlotControlsForBrowser();
+    // The exported controls are a frozen record: nothing to reset
+    document
+        .querySelectorAll<HTMLElement>('.plot-reset-button')
+        .forEach((button) => button.classList.add('hidden'));
+}
+
+async function handleTextCopy(button: HTMLElement): Promise<void> {
+    const targetElement = document.getElementById(
+        button.dataset.targetId ?? '',
+    );
+    const text = targetElement?.textContent ?? '';
+    try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = 'Copied';
+        button.classList.add('copied');
+        setTimeout(() => {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy text:', err);
+        button.textContent = 'Failed';
+        setTimeout(() => {
+            button.textContent = 'Copy';
+        }, 2000);
+    }
+}
+
+async function handleRefresh(): Promise<void> {
+    if (messageBus.isDegradedMode) {
+        return;
+    }
+    displayTimestamp(null, true);
+    try {
+        await messageBus.refresh();
+    } catch (error) {
+        console.error('Failed to refresh data:', error);
+        displayGlobalError(
+            'Failed to refresh data: ' + (error as Error).message,
+        );
+    }
+}
+
+function setAllDetailsOpen(open: boolean): void {
+    document.querySelectorAll('details').forEach((details) => {
+        details.open = open;
+    });
+}
+
+/** Scroll to an outline target, opening every enclosing <details>. */
+function doScrollToHeader(
+    headerId: string,
+    headerLabel: string,
+    verticalOffset = 80,
+    highlightTimeout = 3000,
+): void {
+    const element = document.getElementById(headerId);
+    if (!element) {
+        console.warn(`📋 Header not found: ${headerLabel} (${headerId})`);
+        return;
+    }
+    let current: Element | null = element;
+    while (current) {
+        const parentDetails: HTMLDetailsElement | null =
+            current.closest('details');
+        if (parentDetails && !parentDetails.open) {
+            parentDetails.open = true;
+        }
+        current = parentDetails ? parentDetails.parentElement : null;
+    }
+    const top =
+        element.getBoundingClientRect().top +
+        window.pageYOffset -
+        verticalOffset;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    element.classList.add('highlighted');
+    setTimeout(() => element.classList.remove('highlighted'), highlightTimeout);
+}
+
+/** Header and global buttons (by id). */
+const BUTTON_HANDLERS: Record<string, () => unknown> = {
+    refreshButton: handleRefresh,
+    expandAllButton: () => setAllDetailsOpen(true),
+    collapseAllButton: () => setAllDetailsOpen(false),
+    exportWebviewButton: handleExportWebview,
+    createAllPlotsButton: handleCreateAllPlots,
+    cancelAllPlotsButton: handleCancelAllPlots,
+    resetAllPlotsButton: handleResetAllPlots,
+    saveAllPlotsButton: handleSaveAllPlots,
+};
+
+/** Per-variable plot actions (`data-action` inside `.variable-plot-controls`). */
+const PLOT_ACTIONS: Record<string, (controls: HTMLElement) => unknown> = {
+    'create-plot': createVariablePlot,
+    'cancel-plot': cancelVariablePlot,
+    'reset-plot': resetVariablePlot,
+    'save-plot': saveVariablePlot,
+    'save-plot-as': saveVariablePlotAs,
+    'open-plot': openVariablePlot,
+};
+
+/** Other `data-action` elements. */
+const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
+    'show-logs': () => executeShowLogsCommand(),
+    'show-settings': () => executeShowSettingsCommand(),
+    'install-packages': (element) =>
+        executeInstallPackagesCommand(
+            (element.dataset.packages ?? '').split(',').filter(Boolean),
+        ),
+    // Resets the block of the button: dimension slices or plot parameters
+    'clear-plot-controls': (element) => {
+        const section = element.closest('.plot-controls-subsection');
+        if (section) {
+            resetPlotControls(section);
+            refreshChangedFields(section);
+        }
+    },
+};
+
+async function handleDocumentClick(event: MouseEvent): Promise<void> {
+    if (!(event.target instanceof Element)) {
+        return;
+    }
+    const target = event.target;
+    const copyButton = target.closest<HTMLElement>('.text-copy-button');
+    if (copyButton) {
+        await handleTextCopy(copyButton);
+        return;
+    }
+    const button = target.closest('button[id]');
+    if (button && BUTTON_HANDLERS[button.id]) {
+        await BUTTON_HANDLERS[button.id]();
+        return;
+    }
+    const actionElement = target.closest<HTMLElement>('[data-action]');
+    if (!actionElement) {
+        return;
+    }
+    const action = actionElement.dataset.action ?? '';
+    if (actionElement.tagName === 'A') {
+        event.preventDefault();
+    }
+    const controls = actionElement.closest<HTMLElement>(
+        '.variable-plot-controls',
+    );
+    if (controls && PLOT_ACTIONS[action]) {
+        if (messageBus.isDegradedMode && action !== 'reset-plot') {
+            return;
+        }
+        await PLOT_ACTIONS[action](controls);
+    } else if (ACTIONS[action]) {
+        await ACTIONS[action](actionElement);
+    }
+}
+
+function setupEventListeners(): void {
+    document.addEventListener('click', (event) => {
+        handleDocumentClick(event).catch((error) =>
+            console.error('Click handler failed:', error),
+        );
+    });
+    document.addEventListener('change', (event) => {
+        const target = event.target;
+        if (
+            target instanceof HTMLInputElement &&
+            target.classList.contains('plot-col-wrap-auto')
+        ) {
+            syncColWrapAutoCheckbox(target);
+        }
+        handleInheritedCheckboxChange(target);
+        handleDimensionSliceEvent(target);
+        validatePlotParameterInput(target);
+        // Last: the handlers above may rewrite other controls
+        handleChangedFieldEvent(target);
+    });
+    document.addEventListener('input', (event) => {
+        handleDimensionSliceEvent(event.target);
+        validatePlotParameterInput(event.target);
+        handleChangedFieldEvent(event.target);
+    });
+}
+
+function setupMessageHandlers(): void {
+    messageBus.onEvent('dataLoaded', (state: DataLoadedPayload) =>
+        displayAll(state),
+    );
+    messageBus.onEvent('error', (error) =>
+        displayGlobalError(
+            error?.message || 'Unknown error',
+            error?.details,
+            error?.errorType,
+        ),
+    );
+    // When the user clicks on a TreeItem from the Data Structure TreeView
+    messageBus.onEvent('scrollToHeaderCommandEvent', (payload) =>
+        doScrollToHeader(payload?.headerId, payload?.headerLabel),
+    );
+    // When the user triggers the 'Export Webview Content' command
+    messageBus.onEvent('exportWebviewCommandEvent', () =>
+        handleExportWebview(),
+    );
+}
+
+function initialize(): void {
+    renderGlobalPlotParameters();
+    setupEventListeners();
+    if (messageBus.isDegradedMode) {
+        // Exported HTML viewed in a browser: static content, no extension.
+        showDegradedModeIndicator();
+        showInheritedCheckboxes(document);
+    }
+}
+
+// Listen right away (the script is at the end of <body>, so the page
+// elements exist) so no extension message is missed before DOMContentLoaded.
+if (!messageBus.isDegradedMode) {
+    setupMessageHandlers();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
+}

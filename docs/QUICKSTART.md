@@ -42,8 +42,8 @@ code .
 1. **Create sample data**:
 
    ```bash
-   cd sample-data
-   python3 ../python/create_sample_data.py
+   # from the repository root (writes ./sample-data/)
+   python python/create_sample_data.py
    ```
 
 2. **Open a sample file**:
@@ -74,11 +74,11 @@ The extension will automatically detect Python installations. If needed:
 
 Access settings via **File → Preferences → Settings**:
 
-- **Auto Refresh**: Enable/disable automatic file updates
 - **Max File Size**: Set limit for automatic loading (MB)
-- **Default View**: Choose initial display mode
-- **Allow Multiple Tabs For Same File**: Experimental feature for multiple tabs
-- **Plotting Capabilities**: Experimental feature for data visualization
+- **Use Extension Own Environment**: let the extension manage its own Python environment with uv
+- **Override Python Interpreter**: use a specific interpreter
+
+The full list is in the README (**Settings** section), or run "Scientific Data Viewer: Show Settings".
 
 ### Available Commands
 
@@ -91,9 +91,7 @@ Access via **Command Palette** (`Ctrl+Shift+P`):
 
 ## 📁 Supported File Types
 
-- **NetCDF**: `.nc`, `.netcdf`
-- **Zarr**: `.zarr`
-- **HDF5**: `.h5`, `.hdf5`
+NetCDF, NASA CDF, HDF5, Zarr (folders and ZIP archives), GRIB, GeoTIFF / COG, JPEG-2000 and Kerchunk references (experimental). See the **Supported Formats** table in the README for the extensions and the Python packages each one needs.
 
 ## 🎨 Features
 
@@ -106,10 +104,7 @@ Access via **Command Palette** (`Ctrl+Shift+P`):
 
 ### Visualization
 
-- **Line plots** for 1D data
-- **Heatmaps** for 2D data
-- **Histograms** for data distribution
-- **Interactive** plot generation
+- **Plots** chosen by xarray from the variable's dimensions (experimental), with dimension slices, facets and colour controls
 
 ### Python Integration
 
@@ -163,24 +158,23 @@ pip install xarray netCDF4 zarr h5py numpy matplotlib
 ### Run Tests
 
 ```bash
-# Run all tests
+# Run all tests (from a VS Code terminal: env -u ELECTRON_RUN_AS_NODE npm test)
 npm test
 
-# Run specific test
-npx mocha out/test/suite/extension.test.js
+# Python backend
+pytest python/tests
 ```
 
 ### Test with Sample Data
 
 ```bash
-# Create test data
-cd sample-data
-python3 python/create_sample_data.py
+# Create test data (from the repository root)
+python python/create_sample_data.py
 
 # Test different file types
-# - sample_data.nc (NetCDF)
-# - sample_data.zarr (Zarr)
-# - sample_data.h5 (HDF5)
+# - artefacts/sample-data/sample_data.nc (NetCDF)
+# - artefacts/sample-data/sample_zarr_single_group_from_dataset.zarr (Zarr)
+# - artefacts/sample-data/sample_data.h5 (HDF5)
 ```
 
 ## 🚀 Development
@@ -221,7 +215,7 @@ npm run package
 
 ```bash
 # Install the package locally for testing
-code --install-extension scientific-data-viewer-0.2.0.vsix
+code --install-extension artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
 ```
 
 Note: for Cursor users, the command seems to do nothing.

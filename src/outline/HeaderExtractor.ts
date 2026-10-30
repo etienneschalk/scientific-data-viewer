@@ -1,138 +1,65 @@
 import { Logger } from '../common/Logger';
+import { getNestedAttributesView } from '../common/config';
 import { getDisplayName } from '../common/vscodeutils';
 import { DataInfoResult, HeaderItem } from '../types';
+import { joinId } from '../shared/ids';
+
+export interface DataViewerHeaderOptions {
+    /**
+     * Group attributes shown as a collapsible tree (webview
+     * `nestedAttributesView`); defaults to the extension setting.
+     */
+    nestedAttributesView?: boolean;
+}
+
+function formatAttributeLabel(name: string, value: unknown): string {
+    return `${name}: ${typeof value === 'string' ? value : JSON.stringify(value)}`;
+}
+
+type VariableEntry = DataInfoResult['variables_flattened'][string][number];
+
+function isAttributeObject(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 export class HeaderExtractor {
-    // JoinId is used to join parts of an id together with a separator
-    // Must be similar to the one used in the HeaderExtractor.ts
-    static joinId(parts: string[]) {
-        return parts
-            .map((part) => part.replace(/[^a-zA-Z0-9_]/g, '-'))
-            .join('___');
+    // Same ids as the webview renders (shared implementation)
+    static joinId(parts: string[]): string {
+        return joinId(parts);
     }
 
     /**
-     * Extract headers from HTML content and organize them into a hierarchical structure
+     * Main sections of the data viewer page
      */
-    static extractHeaders(htmlContent: string): HeaderItem[] {
-        try {
-            // Create a temporary DOM parser
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlContent, 'text/html');
-
-            // Find all header elements (h1, h2, h3, h4, h5, h6)
-            const headerElements = doc.querySelectorAll(
-                'h1, h2, h3, h4, h5, h6',
-            );
-
-            const headers: HeaderItem[] = [];
-            const stack: HeaderItem[] = [];
-
-            headerElements.forEach((element, index) => {
-                const level = parseInt(element.tagName.charAt(1));
-                const text = element.textContent?.trim() || '';
-                const id = element.id || `header-${index}`;
-
-                // Ensure element has an ID for navigation
-                if (!element.id) {
-                    element.id = id;
-                }
-
-                const headerItem: HeaderItem = {
-                    label: text,
-                    level: level,
-                    id: id,
-                    children: [],
-                };
-
-                // Find the appropriate parent based on header level
-                while (
-                    stack.length > 0 &&
-                    stack[stack.length - 1].level >= level
-                ) {
-                    stack.pop();
-                }
-
-                if (stack.length === 0) {
-                    // Top-level header
-                    headers.push(headerItem);
-                } else {
-                    // Child header
-                    stack[stack.length - 1].children.push(headerItem);
-                }
-
-                stack.push(headerItem);
-            });
-
-            Logger.info(
-                `📋 Extracted ${headers.length} top-level headers from HTML content`,
-            );
-            return headers;
-        } catch (error) {
-            Logger.error(`📋 ❌ Error extracting headers from HTML: ${error}`);
-            return [];
-        }
-    }
-
-    /**
-     * Create a simple header structure for the main sections of the data viewer
-     */
-    static createDataViewerHeaders(): HeaderItem[] {
+    private static createDataViewerHeaders(): HeaderItem[] {
+        const section = (label: string, id: string): HeaderItem => ({
+            label,
+            level: 1,
+            id,
+            children: [],
+        });
         return [
-            {
-                label: getDisplayName(),
-                level: 1,
-                id: 'top-level-title',
-                children: [],
-            },
-            {
-                label: 'File Information',
-                level: 1,
-                id: 'section-file-information',
-                children: [],
-            },
-            {
-                label: 'Xarray HTML Representation',
-                level: 1,
-                id: 'section-html-representation',
-                children: [],
-            },
-            {
-                label: 'Xarray Text Representation',
-                level: 1,
-                id: 'section-text-representation',
-                children: [],
-            },
-            {
-                label: 'Xarray HTML Representation (for each group)',
-                level: 1,
-                id: 'section-html-representation-for-groups',
-                children: [],
-            },
-            {
-                label: 'Xarray Text Representation (for each group)',
-                level: 1,
-                id: 'section-text-representation-for-groups',
-                children: [],
-            },
-            {
-                label: 'Global Plot Controls',
-                level: 1,
-                id: 'section-global-plot-controls',
-                children: [],
-            },
-            {
-                label: 'Data Groups',
-                level: 1,
-                id: 'section-data-groups',
-                children: [],
-            },
-            {
-                label: 'Troubleshooting',
-                level: 1,
-                id: 'section-troubleshooting',
-                children: [],
-            },
+            section(getDisplayName(), 'top-level-title'),
+            section('File Information', 'section-file-information'),
+            section(
+                'Xarray HTML Representation',
+                'section-html-representation',
+            ),
+            section(
+                'Xarray Text Representation',
+                'section-text-representation',
+            ),
+            section(
+                'Xarray HTML Representation (for each group)',
+                'section-html-representation-for-groups',
+            ),
+            section(
+                'Xarray Text Representation (for each group)',
+                'section-text-representation-for-groups',
+            ),
+            section('Global Plot Controls', 'section-global-plot-controls'),
+            section('Data Groups', 'section-data-groups'),
+            section('Troubleshooting', 'section-troubleshooting'),
         ];
     }
 
@@ -141,8 +68,11 @@ export class HeaderExtractor {
      */
     static createDynamicDataViewerHeaders(
         dataInfo?: DataInfoResult,
+        options: DataViewerHeaderOptions = {},
     ): HeaderItem[] {
         const baseHeaders = this.createDataViewerHeaders();
+        const nestedAttributesView =
+            options.nestedAttributesView ?? getNestedAttributesView();
 
         if (!dataInfo) {
             return baseHeaders;
@@ -197,6 +127,7 @@ export class HeaderExtractor {
                             children: this.createDataGroupSubHeaders(
                                 groupName,
                                 dataInfo,
+                                nestedAttributesView,
                             ),
                         }),
                     );
@@ -223,6 +154,7 @@ export class HeaderExtractor {
     private static createDataGroupSubHeaders(
         groupName: string,
         dataInfo: DataInfoResult,
+        nestedAttributesView: boolean,
     ): HeaderItem[] {
         const subHeaders: HeaderItem[] = [];
 
@@ -254,92 +186,32 @@ export class HeaderExtractor {
             });
         }
 
-        // Add coordinates section
-        const coordinates = dataInfo.coordinates_flattened[groupName] || [];
-        if (coordinates.length > 0) {
+        // Add coordinates and variables sections
+        const variableSections: Array<
+            ['coordinate' | 'variable', string, VariableEntry[]]
+        > = [
+            [
+                'coordinate',
+                'Coordinates',
+                dataInfo.coordinates_flattened[groupName] || [],
+            ],
+            [
+                'variable',
+                'Variables',
+                dataInfo.variables_flattened[groupName] || [],
+            ],
+        ];
+        for (const [kind, label, variables] of variableSections) {
+            if (variables.length === 0) {
+                continue;
+            }
             subHeaders.push({
-                label: `Coordinates (${coordinates.length})`,
+                label: `${label} (${variables.length})`,
                 level: 3,
                 id: HeaderExtractor.joinId([
                     'data-group',
                     groupName,
-                    'coordinates',
-                ]),
-                children: coordinates
-                    .filter((coord) => coord.name && coord.name.trim() !== '') // Filter out empty coordinate names
-                    .map((coord) => {
-                        const coordChildren: HeaderItem[] = [];
-
-                        // Add attributes for this coordinate if they exist
-                        if (
-                            coord.attributes &&
-                            Object.keys(coord.attributes).length > 0
-                        ) {
-                            const attrEntries = Object.entries(
-                                coord.attributes,
-                            ).filter(
-                                ([attrName]) =>
-                                    attrName && attrName.trim() !== '',
-                            ); // Filter out empty attribute names
-                            if (attrEntries.length > 0) {
-                                coordChildren.push({
-                                    label: `Attributes (${attrEntries.length})`,
-                                    level: 5,
-                                    id: HeaderExtractor.joinId([
-                                        'data-group',
-                                        groupName,
-                                        'coordinate',
-                                        coord.name,
-                                        'attributes',
-                                    ]),
-                                    children: attrEntries.map(
-                                        ([attrName, value]) => ({
-                                            label: `${attrName}: ${
-                                                typeof value === 'string'
-                                                    ? value
-                                                    : JSON.stringify(value)
-                                            }`,
-                                            level: 6,
-                                            id: HeaderExtractor.joinId([
-                                                'data-group',
-                                                groupName,
-                                                'coordinate',
-                                                coord.name,
-                                                'attribute',
-                                                attrName,
-                                            ]),
-                                            children: [],
-                                        }),
-                                    ),
-                                });
-                            }
-                        }
-
-                        return {
-                            label: `${coord.name} (${coord.dtype})`,
-                            level: 4,
-                            id: HeaderExtractor.joinId([
-                                'data-group',
-                                groupName,
-                                'coordinate',
-                                coord.name,
-                            ]),
-                            children: coordChildren,
-                        };
-                    }),
-            });
-        }
-
-        // Add variables section
-        const variables = dataInfo.variables_flattened[groupName] || [];
-        if (variables.length > 0) {
-            subHeaders.push({
-                label: `Variables (${variables.length})`,
-                level: 3,
-                id: HeaderExtractor.joinId([
-                    'data-group',
-                    groupName,
-                    'variables',
+                    `${kind}s`,
                 ]),
                 children: variables
                     .filter(
@@ -347,100 +219,152 @@ export class HeaderExtractor {
                             variable.name && variable.name.trim() !== '',
                     ) // Filter out empty variable names
                     .map((variable) => {
-                        const varChildren: HeaderItem[] = [];
-
-                        // Add attributes for this variable if they exist
-                        if (
-                            variable.attributes &&
-                            Object.keys(variable.attributes).length > 0
-                        ) {
-                            const attrEntries = Object.entries(
-                                variable.attributes,
-                            ).filter(
-                                ([attrName]) =>
-                                    attrName && attrName.trim() !== '',
-                            ); // Filter out empty attribute names
-                            if (attrEntries.length > 0) {
-                                varChildren.push({
-                                    label: `Attributes (${attrEntries.length})`,
-                                    level: 5,
-                                    id: HeaderExtractor.joinId([
-                                        'data-group',
-                                        groupName,
-                                        'variable',
-                                        variable.name,
-                                        'attributes',
-                                    ]),
-                                    children: attrEntries.map(
-                                        ([attrName, value]) => ({
-                                            label: `${attrName}: ${
-                                                typeof value === 'string'
-                                                    ? value
-                                                    : JSON.stringify(value)
-                                            }`,
-                                            level: 6,
-                                            id: HeaderExtractor.joinId([
-                                                'data-group',
-                                                groupName,
-                                                'variable',
-                                                variable.name,
-                                                'attribute',
-                                                attrName,
-                                            ]),
-                                            children: [],
-                                        }),
-                                    ),
-                                });
-                            }
-                        }
-
+                        const idParts = [
+                            'data-group',
+                            groupName,
+                            kind,
+                            variable.name,
+                        ];
                         return {
                             label: `${variable.name} (${variable.dtype})`,
                             level: 4,
-                            id: HeaderExtractor.joinId([
-                                'data-group',
-                                groupName,
-                                'variable',
-                                variable.name,
-                            ]),
-                            children: varChildren,
+                            id: HeaderExtractor.joinId(idParts),
+                            children: [
+                                this.createKeyValueSection(
+                                    'Attributes',
+                                    variable.attributes,
+                                    idParts,
+                                    'attributes',
+                                    'attribute',
+                                    5,
+                                ),
+                                this.createKeyValueSection(
+                                    'Xarray Encoding',
+                                    variable.encoding,
+                                    idParts,
+                                    'encoding',
+                                    'encoding-entry',
+                                    5,
+                                ),
+                            ].filter(
+                                (header): header is HeaderItem =>
+                                    header !== undefined,
+                            ),
                         };
                     }),
             });
         }
 
-        // Add attributes section
+        // Add attributes section (ids follow the webview: flat list, or
+        // collapsible tree when nestedAttributesView is on)
         const attributes = dataInfo.attributes_flattened[groupName] || {};
         const attributeEntries = Object.entries(attributes);
         if (attributeEntries.length > 0) {
+            const sectionIdParts = ['data-group', groupName, 'attributes'];
             subHeaders.push({
                 label: `Attributes (${attributeEntries.length})`,
                 level: 3,
-                id: HeaderExtractor.joinId([
-                    'data-group',
-                    groupName,
-                    'attributes',
-                ]),
-                children: attributeEntries
-                    .filter(([attrName]) => attrName && attrName.trim() !== '') // Filter out empty attribute names
-                    .map(([attrName, value]) => ({
-                        label: `${attrName}: ${
-                            typeof value === 'string'
-                                ? value
-                                : JSON.stringify(value)
-                        }`,
-                        level: 4,
-                        id: HeaderExtractor.joinId([
-                            'data-group',
-                            groupName,
-                            'attribute',
-                            attrName,
-                        ]),
-                        children: [],
-                    })),
+                id: HeaderExtractor.joinId(sectionIdParts),
+                children: nestedAttributesView
+                    ? this.createNestedAttributeHeaders(
+                          attributes,
+                          sectionIdParts,
+                          4,
+                      )
+                    : attributeEntries
+                          .filter(
+                              ([attrName]) =>
+                                  attrName && attrName.trim() !== '',
+                          ) // Filter out empty attribute names
+                          .map(([attrName, value]) => ({
+                              label: formatAttributeLabel(attrName, value),
+                              level: 4,
+                              id: HeaderExtractor.joinId([
+                                  'data-group',
+                                  groupName,
+                                  'attribute',
+                                  attrName,
+                              ]),
+                              children: [],
+                          })),
             });
         }
 
+        // Add xarray encoding section (same ids as the webview)
+        const encodingSection = this.createKeyValueSection(
+            'Xarray Encoding',
+            dataInfo.encoding_flattened?.[groupName],
+            ['data-group', groupName],
+            'encoding',
+            'encoding-entry',
+            3,
+        );
+        if (encodingSection) {
+            subHeaders.push(encodingSection);
+        }
+
         return subHeaders;
+    }
+
+    /**
+     * Header of a flat `name: value` section (attributes or encoding) with
+     * one child per entry, or undefined when there is no entry. Ids are the
+     * webview's: `[...parentIdParts, sectionId]` and
+     * `[...parentIdParts, itemKind, name]`.
+     */
+    private static createKeyValueSection(
+        label: string,
+        entries: Record<string, unknown> | undefined,
+        parentIdParts: string[],
+        sectionId: string,
+        itemKind: string,
+        level: number,
+    ): HeaderItem | undefined {
+        const items = Object.entries(entries ?? {}).filter(
+            ([name]) => name && name.trim() !== '',
+        ); // Filter out empty names
+        if (items.length === 0) {
+            return undefined;
+        }
+        return {
+            label: `${label} (${items.length})`,
+            level,
+            id: HeaderExtractor.joinId([...parentIdParts, sectionId]),
+            children: items.map(([name, value]) => ({
+                label: formatAttributeLabel(name, value),
+                level: level + 1,
+                id: HeaderExtractor.joinId([...parentIdParts, itemKind, name]),
+                children: [],
+            })),
+        };
+    }
+
+    /**
+     * Headers of a nested attributes tree, with the webview's ids:
+     * `[...parentIdParts, 'attr', key]`, recursively for object values.
+     */
+    private static createNestedAttributeHeaders(
+        attributes: Record<string, unknown>,
+        parentIdParts: string[],
+        level: number,
+    ): HeaderItem[] {
+        return Object.entries(attributes)
+            .filter(([key]) => key && key.trim() !== '')
+            .map(([key, value]) => {
+                const idParts = [...parentIdParts, 'attr', key];
+                const nested = isAttributeObject(value);
+                return {
+                    label: nested ? key : formatAttributeLabel(key, value),
+                    level,
+                    id: HeaderExtractor.joinId(idParts),
+                    children: nested
+                        ? this.createNestedAttributeHeaders(
+                              value,
+                              idParts,
+                              level + 1,
+                          )
+                        : [],
+                };
+            });
     }
 }

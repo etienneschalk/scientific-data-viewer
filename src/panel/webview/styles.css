@@ -1,16 +1,102 @@
 /* https://gist.github.com/estruyf/ba49203e1a7d6868e9320a4ea480c27a All VS Code theme variables */
 /* https://marketplace.visualstudio.com/items?itemName=phoenisx.cssvar */
 
-/* Base styles */
-body {
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-    font-weight: var(--vscode-font-weight);
-    color: var(--vscode-foreground);
-    background-color: var(--vscode-editor-background);
-    max-width: 768px;
+/*
+ * Design tokens. Colors always come from the active VS Code theme; the
+ * tokens only add spacing, radii and a few derived surfaces on top of it.
+ */
+:root {
+    --sdv-gutter: 24px;
+    --sdv-indent: 20px; /* twistie width: nested content lines up with its title */
+    --sdv-header-height: 40px;
+    --sdv-max-width: 960px;
+
+    --sdv-radius-sm: 4px;
+    --sdv-radius: 6px;
+    --sdv-radius-lg: 8px;
+    --sdv-control-height: 26px;
+
+    --sdv-mono: var(
+        --vscode-editor-font-family,
+        'Consolas',
+        'Monaco',
+        monospace
+    );
+    --sdv-mono-size: 0.92em;
+    --sdv-transition: 120ms ease;
+
+    /* Fallbacks for webviews without color-mix() (VS Code < 1.77) */
+    --sdv-border: var(
+        --vscode-widget-border,
+        var(--vscode-panel-border, rgba(128, 128, 128, 0.35))
+    );
+    --sdv-surface: rgba(128, 128, 128, 0.06);
+    --sdv-surface-hover: var(--vscode-list-hoverBackground);
+    --sdv-error-surface: transparent;
+    --sdv-success-color: var(--vscode-testing-iconPassed, #4caf50);
+    --sdv-success-surface: transparent;
+    --sdv-highlight: transparent;
+    /* Plot controls the user changed, and their items in the plot layout line */
+    --sdv-changed: var(
+        --vscode-inputOption-activeBorder,
+        var(--vscode-focusBorder)
+    );
 }
 
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+    :root {
+        --sdv-border: color-mix(
+            in srgb,
+            var(--vscode-foreground) 14%,
+            transparent
+        );
+        --sdv-surface: color-mix(
+            in srgb,
+            var(--vscode-foreground) 3.5%,
+            transparent
+        );
+        --sdv-surface-hover: color-mix(
+            in srgb,
+            var(--vscode-foreground) 7%,
+            transparent
+        );
+        --sdv-error-surface: color-mix(
+            in srgb,
+            var(--vscode-errorForeground) 8%,
+            transparent
+        );
+        --sdv-success-surface: color-mix(
+            in srgb,
+            var(--sdv-success-color) 10%,
+            transparent
+        );
+        --sdv-highlight: color-mix(
+            in srgb,
+            var(--vscode-focusBorder) 14%,
+            transparent
+        );
+    }
+}
+
+/* High contrast themes: explicit borders, no tinted surfaces */
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+    --sdv-border: var(--vscode-contrastBorder);
+    --sdv-surface: transparent;
+    --sdv-surface-hover: transparent;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) {
+    color-scheme: dark;
+}
+
+body.vscode-light,
+body.vscode-high-contrast-light {
+    color-scheme: light;
+}
+
+/* Base styles */
 * {
     box-sizing: border-box;
     padding: 0;
@@ -18,498 +104,595 @@ body {
     text-decoration: none;
 }
 
+/* Keep room for the scrollbar: content does not shift when it appears after loading. */
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    font-weight: var(--vscode-font-weight);
+    line-height: 1.45;
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+    max-width: var(--sdv-max-width);
+    margin: 0 auto;
+    padding: 0 var(--sdv-gutter) 48px;
+}
+
+a {
+    color: var(--vscode-textLink-foreground);
+}
+
+a:hover {
+    color: var(--vscode-textLink-activeForeground);
+    text-decoration: underline;
+}
+
+code {
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-textPreformat-foreground);
+    background-color: var(
+        --vscode-textPreformat-background,
+        var(--vscode-textCodeBlock-background)
+    );
+    padding: 1px 5px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+kbd {
+    display: inline-block;
+    font-family: inherit;
+    font-size: 0.9em;
+    line-height: 1.3;
+    padding: 1px 5px;
+    color: var(--vscode-keybindingLabel-foreground, inherit);
+    background-color: var(--vscode-keybindingLabel-background, transparent);
+    border: 1px solid var(--vscode-keybindingLabel-border, var(--sdv-border));
+    border-bottom-color: var(
+        --vscode-keybindingLabel-bottomBorder,
+        var(--sdv-border)
+    );
+    border-radius: var(--sdv-radius-sm);
+    box-shadow: inset 0 -1px 0
+        var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
 .hidden {
     display: none !important;
-}
-
-.highlighted {
-    box-shadow: -4px 0px 0px 0px var(--vscode-button-background);
-}
-
-.loading {
-    text-align: center;
-    padding: 20px;
-    color: var(--vscode-descriptionForeground);
-}
-
-.error {
-    color: var(--vscode-foreground);
-    border: 2px solid var(--vscode-errorForeground);
-    padding: 15px;
-    margin: 15px 0;
-    margin-left: 15px;
-    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
-}
-
-.error h3 {
-    color: var(--vscode-errorForeground);
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.error p {
-    margin: 8px 0;
-}
-
-.error strong {
-    color: var(--vscode-errorForeground);
-}
-
-.error code {
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textPreformat-foreground);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-}
-
-.error ol {
-    margin: 10px 0;
-    padding-left: 20px;
-}
-
-.error li {
-    margin: 5px 0;
-}
-
-/* Header styles */
-.header {
-    position: sticky;
-    top: 0;
-    left: 0;
-    z-index: 100;
-    background-color: var(--vscode-editor-background);
-    
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-left: 15px;
-    height: 30px; /* same as offset for sticky headers */
-}
-
-.title {
-    font-size: 1.2em;
-}
-
-.controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.timestamp {
-    color: var(--vscode-descriptionForeground);
-    margin-left: 10px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-/* Button styles */
-button {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    font-family: var(--vscode-font-family, 'Consolas', 'Monaco', monospace);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: inherit;
-    transition: background-color 0.2s ease;
-}
-
-button:hover {
-    background-color: var(--vscode-button-hoverBackground);
-    color: var(--vscode-button-foreground);
-}
-
-button:disabled {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    cursor: not-allowed;
-}
-
-.small-button-link {
-    padding: 0;
-    margin:0;
-    /* Add opacity to css variable (does not work) */
-    /* https://stackoverflow.com/questions/40010597/how-do-i-apply-opacity-to-a-css-color-variable */
-    border: 1px solid var(--vscode-textLink-foreground);
-    border-radius: 2px;
-}
-
-/* Copy button variant */
-.text-copy-button {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    padding: 4px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 80px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.text-copy-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
-}
-
-.text-copy-button.copied {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-}
-
-/* Form styles */
-select {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: inherit;
-}
-
-select:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-/* Info section styles */
-.info-section {
-    margin: 0;
-    /* padding: 0 15px; */
-    background-color: var(--vscode-editor-background);
-    /* border: 1px solid var(--vscode-panel-border); */
-    /* margin: 2px 0; */
-    padding-left: 15px;
-}
-
-.info-section h3 {
-    margin-top: 0;
-    color: var(--vscode-foreground);
-    top: 0;
-    background-color: var(--vscode-editor-background);
-    padding: 10px 0;
-    font-size: 1.1em;
-    font-weight: normal;
-}
-
-.info-section h4 {
-    margin: 0;
-    padding: 10px 0;
-    color: var(--vscode-foreground);
-}
-
-.dimensions,
-.variables,
-.coordinates {
-    display: grid;
-    grid-template-columns: 1fr;
-}
-
-.dimensions-compact {
-    padding: 6px 8px;
-    background-color: var(--vscode-list-hoverBackground);
-    color: var(--vscode-foreground);
-    border: 1px solid var(--vscode-panel-border);
-}
-
-.dimensions-compact strong {
-    color: var(--vscode-foreground);
-    font-weight: 600;
-}
-
-.dimension-item,
-.variable-item {
-    padding: 6px 8px;
-    background-color: var(--vscode-list-hoverBackground);
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    border: 1px solid var(--vscode-panel-border);
-}
-
-.variable-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.variable-item.selected {
-    background-color: var(--vscode-list-activeSelectionBackground);
-    color: var(--vscode-list-activeSelectionForeground);
-}
-
-.variable-item {
-    flex: 1;
-}
-
-.variable-item .dims {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-}
-
-.variable-item .variable-name {
-    font-weight: bold;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 300px;
-}
-
-.variable-item .dtype-shape {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
-    max-width: 100px;
-}
-
-.variable-item .size {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    text-align: right;
-    max-width: 100px;
-}
-
-/* Variable details styling */
-.variable-details {
-    margin: 0;
-    border: 1px solid var(--vscode-panel-border);
-    background-color: var(--vscode-list-hoverBackground);
-    margin-top: 8px;
-}
-
-.variable-details:first-child {
-    margin-top: 0;
-}
-
-.variable-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    padding: 6px 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    list-style: none; /* Remove default list style */
-}
-
-.variable-summary::-webkit-details-marker {
-    display: none; /* Hide default arrow */
-}
-
-.variable-summary::before {
-    content: '📄';
-    margin-left: 8px;
-    order: 999; /* Move to the right */
-}
-
-.variable-details[open] .variable-summary::before {
-    content: '📄';
-}
-
-.variable-summary.not-clickable::before {
-    opacity: 0.5;
-}
-
-.variable-summary.not-clickable {
-    cursor: default;
-}
-
-.variable-summary .variable-name {
-    font-weight: bold;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 300px;
-}
-
-.variable-summary .dims {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 300px;
-}
-
-.variable-summary .dtype-shape {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
-    max-width: 120px;
-}
-
-.variable-summary .size {
-    flex: 1;
-    color: var(--vscode-descriptionForeground);
-    white-space: nowrap;
-    text-align: right;
-    max-width: 80px;
-}
-
-/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
-.variable-details-content {
-    display: block;
-}
-
-.variable-display-value {
-    margin: 4px 0 4px 1em;
-    padding: 4px 6px;
-    font-size: 0.9em;
-    color: var(--vscode-descriptionForeground);
-    word-break: break-all;
-    display: block;
-}
-
-.variable-display-value code {
-    font-family: var(--vscode-editor-font-family);
-}
-
-/* Attributes details styling */
-.attributes-container {
-    background-color: var(--vscode-textCodeBlock-background);
-    padding: 4px 8px;
-    margin: 0;
-    border-top: 1px solid var(--vscode-panel-border);
-}
-
-.attribute-name {
-    font-weight: bold;
-    min-width: 180px;
-    flex-shrink: 0;
-}
-
-.attribute-value {
-    word-break: break-word;
-    flex: 1;
-}
-
-/* Collapsible nested attributes tree (Issue #120) */
-.attributes-tree-node {
-    margin-left: 0.75rem;
-    margin-top: 2px;
-}
-.attributes-tree-node details {
-    margin-left: 0.5rem;
-}
-.attribute-tree-summary {
-    cursor: pointer;
-    list-style: none;
-    user-select: none;
-}
-.attribute-tree-summary::-webkit-details-marker {
-    display: none;
-}
-.attribute-tree-summary::before {
-    content: '▸ ';
-    display: inline-block;
-    width: 1em;
-}
-.attributes-tree-node[open] > .attribute-tree-summary::before {
-    content: '▾ ';
-}
-.attributes-tree-children {
-    margin-left: 0.5rem;
-    border-left: 1px solid var(--vscode-panel-border);
-    padding-left: 0.5rem;
 }
 
 .muted-text {
     color: var(--vscode-descriptionForeground);
 }
 
-/* Enhanced highlighting for individual attributes */
-/* .attribute-item.highlighted {q
-    background-color: var(--vscode-textBlockQuote-background) !important;
-    border-left: 3px solid var(--vscode-textBlockQuote-border) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    animation: attributePulse 0.5s ease-in-out;
-} */
+/* Loading states */
+.loading,
+.plot-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--vscode-descriptionForeground);
+}
 
-/* @keyframes attributePulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}  */
+.loading {
+    padding: 48px 0;
+}
 
-/* Responsive design for small screens */
-@media (max-width: 480px) {
-    .variable-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1px;
-        padding: 4px 8px;
-    }
+.plot-loading {
+    padding: 24px 0;
+}
 
-    .variable-item .variable-name,
-    .variable-item .dtype-shape,
-    .variable-item .dims,
-    .variable-item .size {
-        flex: none;
-        min-width: auto;
-        width: 100%;
-        padding: 1px 0;
-        text-align: left;
+.loading::before,
+.plot-loading::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--sdv-border);
+    border-top-color: var(
+        --vscode-progressBar-background,
+        var(--vscode-focusBorder)
+    );
+    animation: sdv-spin 0.8s linear infinite;
+}
+
+@keyframes sdv-spin {
+    to {
+        transform: rotate(360deg);
     }
 }
 
+/* Global error panel */
+#error {
+    margin: 16px 0;
+    padding: 16px 20px;
+    color: var(--vscode-foreground);
+    background-color: var(--sdv-error-surface);
+    border: 1px solid var(--vscode-errorForeground);
+    border-left-width: 4px;
+    border-radius: var(--sdv-radius-lg);
+}
+
+#error h3 {
+    color: var(--vscode-errorForeground);
+    font-size: 1.15em;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+#error h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 16px 0 8px;
+}
+
+#error p {
+    margin: 8px 0;
+}
+
+#error strong {
+    color: var(--vscode-errorForeground);
+}
+
+#error ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+#error li {
+    margin: 6px 0;
+}
+
+.troubleshooting-sublist {
+    margin: 4px 0 4px 20px;
+}
+
+.error-help {
+    margin-top: 16px;
+}
+
+.error-help-note {
+    margin-top: 16px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+/* Inline action link of the error panel (install packages, settings...) */
+.small-button-link {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: var(--sdv-radius-sm);
+    border: 1px solid var(--vscode-textLink-foreground);
+    color: var(--vscode-textLink-foreground);
+    transition: background-color var(--sdv-transition);
+}
+
+.small-button-link:hover {
+    text-decoration: none;
+    background-color: var(--sdv-surface-hover);
+}
+
+/* Header: sticky toolbar, full bleed over the body gutters */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    height: var(--sdv-header-height);
+    margin: 0 calc(-1 * var(--sdv-gutter)) 8px;
+    padding: 0 var(--sdv-gutter);
+    background-color: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--sdv-border);
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.title small {
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 16px;
+    padding: 0 7px;
+    border-radius: 8px;
+    color: var(--vscode-badge-foreground);
+    background-color: var(--vscode-badge-background);
+}
+
+#degraded-mode-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 16px;
+    padding: 0 7px;
+    border-radius: 8px;
+    color: var(--vscode-editorWarning-foreground, #cca700);
+    border: 1px solid var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.controls {
+    display: flex;
+    flex-shrink: 0;
+    gap: 12px;
+    align-items: center;
+}
+
+.timestamp {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+}
+
+.timestamp-icon {
+    display: inline-flex;
+}
+
+.tree-controls {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+/* Buttons: primary by default, secondary variants below */
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--sdv-control-height);
+    padding: 3px 12px;
+    font: inherit;
+    line-height: 18px;
+    white-space: nowrap;
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+    border: 1px solid var(--vscode-button-border, transparent);
+    border-radius: var(--sdv-radius-sm);
+    cursor: pointer;
+    transition:
+        background-color var(--sdv-transition),
+        opacity var(--sdv-transition);
+}
+
+button:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+button:focus {
+    outline: none;
+}
+
+button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.plot-control-button,
+.plot-action-button,
+.text-copy-button {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryBackground);
+}
+
+.plot-control-button:hover:not(:disabled),
+.plot-action-button:hover:not(:disabled),
+.text-copy-button:hover:not(:disabled) {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.plot-install-button {
+    margin-bottom: 8px;
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+}
+
+.plot-install-button:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.text-copy-button {
+    min-height: 22px;
+    padding: 1px 8px;
+    font-size: 12px;
+}
+
+.text-copy-button.copied {
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+}
+
+.cancel-button {
+    color: var(--vscode-errorForeground);
+    background-color: var(--sdv-error-surface);
+    border-color: var(--vscode-errorForeground);
+}
+
+.cancel-button:hover:not(:disabled) {
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-inputValidation-errorBorder, #be1100);
+}
+
+/* Toolbar icon buttons, like the editor title actions */
+.header-control-button {
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    background-color: transparent;
+    border: none;
+    border-radius: var(--sdv-radius);
+}
+
+.header-control-button:hover:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-hoverBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+.header-control-button:active:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-activeBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+/* Line icons (src/shared/icons.ts): drawn in the text color of their parent */
+.sdv-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.header-control-button .sdv-icon {
+    width: 16px;
+    height: 16px;
+}
+
+h3 .sdv-icon,
+h4 .sdv-icon {
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.2em;
+    margin-right: 2px;
+}
+
+#error h4 .sdv-icon {
+    color: var(--vscode-editorLightBulb-foreground, currentColor);
+}
+
+.external-link .sdv-icon {
+    width: 11px;
+    height: 11px;
+    vertical-align: 0;
+}
+
+#degraded-mode-indicator .sdv-icon {
+    width: 12px;
+    height: 12px;
+}
+
+/* Form controls */
+select,
+input[type='text'],
+input[type='number'] {
+    min-height: var(--sdv-control-height);
+    padding: 2px 8px;
+    font: inherit;
+    color: var(--vscode-input-foreground);
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, var(--sdv-border));
+    border-radius: var(--sdv-radius-sm);
+}
+
+select {
+    padding-right: 4px;
+    color: var(--vscode-dropdown-foreground);
+    background-color: var(--vscode-dropdown-background);
+    border-color: var(--vscode-dropdown-border, var(--sdv-border));
+    cursor: pointer;
+}
+
+select:focus,
+input:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+input::placeholder {
+    color: var(--vscode-input-placeholderForeground);
+}
+
+input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--vscode-button-background);
+    cursor: pointer;
+}
+
+input[type='checkbox']:focus {
+    outline-offset: 1px;
+}
+
+/*
+ * Collapsible sections. Every <details> of the viewer gets a VS Code style
+ * twistie (the xarray HTML repr uses checkboxes, not <details>).
+ */
+details > summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    color: var(--vscode-foreground);
+}
+
+details > summary::-webkit-details-marker {
+    display: none;
+}
+
+details > summary::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin: 0 4px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    opacity: 0.7;
+    transform: rotate(-45deg);
+    transition: transform var(--sdv-transition);
+}
+
+details[open] > summary::before {
+    transform: rotate(45deg);
+}
+
+details > summary:focus {
+    outline: none;
+}
+
+details > summary:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+/* Nested content lines up with its section title */
+.info-section > details > :not(summary) {
+    margin-left: var(--sdv-indent);
+}
+
+/* Top-level sections: sticky titles under the header */
+details.sticky-group-details {
+    margin-bottom: 4px;
+}
+
+details.sticky-group-details > summary {
+    position: sticky;
+    top: calc(var(--sdv-header-height) - 1px);
+    z-index: 10;
+    padding: 10px 0;
+    background-color: var(--vscode-editor-background);
+}
+
+details.sticky-group-details > summary h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+details.sticky-group-details[open] {
+    padding-bottom: 12px;
+}
+
+/* Sub-sections (Dimensions, Variables...): pane header style */
+.info-section h4 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--vscode-descriptionForeground);
+}
+
+.info-section details > summary:hover h4 {
+    color: var(--vscode-foreground);
+}
+
+/* Number of entries after a section title (VS Code pane header badge) */
+.count-badge {
+    flex: none;
+    min-width: 18px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 16px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--vscode-badge-foreground);
+    background-color: var(--vscode-badge-background);
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+    border-radius: 9px;
+}
+
+/* File information */
 .file-path-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 8px 0;
+    margin: 4px 0 8px;
+}
+
+.file-path-container > p {
+    flex: none;
 }
 
 .file-path-code {
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textPreformat-foreground);
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-    padding: 4px 8px;
-    border-radius: 3px;
-    border: 1px solid var(--vscode-panel-border);
+    order: 1;
     flex: 1;
+    min-width: 0;
+    padding: 4px 10px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-textPreformat-foreground);
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius);
     word-break: break-all;
 }
 
-/* Representation styles */
+.file-path-container .text-copy-button {
+    order: 2;
+}
+
+#fileInfo p {
+    color: var(--vscode-descriptionForeground);
+}
+
+#fileInfo strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+}
+
+/* Representations */
 .html-representation {
-    /* max-height: 500px; */
-    margin-top: 2px;
+    margin-top: 4px;
     overflow: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-    padding: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
     background-color: var(--vscode-editor-background);
 }
 
@@ -521,531 +704,812 @@ select:focus {
 
 .html-representation th,
 .html-representation td {
-    border: 1px solid var(--vscode-panel-border);
+    border: 1px solid var(--sdv-border);
     padding: 4px 8px;
     text-align: left;
 }
 
 .html-representation th {
-    background-color: var(--vscode-list-hoverBackground);
-    font-weight: bold;
+    background-color: var(--sdv-surface);
+    font-weight: 600;
 }
 
 .text-representation-container {
     position: relative;
-}
-
-pre {
-    /* white    -space: pre-wrap; */
-    /* word-wrap: break-word; */
-    max-height: 400px;
-    overflow: auto;
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-    padding: 10px;
-    font-family: var(
-        --vscode-editor-font-family,
-        'Consolas',
-        'Monaco',
-        monospace
-    );
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textPreformat-foreground);
-}
-
-details summary {
-    cursor: pointer;
-    padding: 8px 0;
-    font-weight: 500;
-    color: var(--vscode-foreground);
-}
-
-details.sticky-group-details {
-    margin-top: 0;
-    color: var(--vscode-foreground);
-    top: 0;
-    background-color: var(--vscode-editor-background);
-    /* z-index: 10; */
-    margin-bottom: 8px;
-}
-
-details.sticky-group-details > summary {
-    top: -1px; /* fix empirical one pixel gap observed in VS Code */
-    top: 30px; /* offset for the header */
-    top: 29px; /* fix empirical one pixel gap observed in VS Code */
-    position: sticky;
-    display: list-item;
-    width: 100%;
-    background-color: var(--vscode-editor-background);
-    z-index: 10;
-    margin-bottom: 0;
-    padding: 10px 0;
-}
-
-/* details[open].sticky-group-details {
-    margin-bottom: 15px;
-} */
-
-details.sticky-group-details summary > * {
-    display: inline;
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-
-.plot-image-container {
-    height: auto;
-    margin: auto;
-    width: 100%;
-    text-align: center;
-    padding: 6px 8px;
-    padding-top: 0;
-}
-/* Plot image styles */
-.plot-image-container img {
-    height: auto;
-    margin: auto;
-}
-
-/* Plot control button variant */
-.plot-control-button {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    padding: 8px 16px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.plot-control-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
-}
-
-.plot-control-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* Cancel button variant - more prominent styling */
-.plot-control-button.cancel-button {
-    background-color: var(--vscode-inputValidation-errorBackground, #5a1d1d);
-    color: var(--vscode-inputValidation-errorForeground, #f48771);
-    border: 1px solid var(--vscode-inputValidation-errorBorder, #be1100);
-}
-
-.plot-control-button.cancel-button:hover {
-    background-color: var(--vscode-inputValidation-errorBorder, #be1100);
-    color: #ffffff;
-}
-
-/* Tree control button styles */
-.tree-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-button:active {
-    transform: translateY(1px);
-}
-
-.header-control-button {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    font-size: 0.9em;
-    padding: 6px;
-}
-
-.header-control-button:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-    color: var(--vscode-button-secondaryForeground);
-}
-
-.header-control-button:active {
-    background-color: var(--vscode-button-secondaryHoverBackground);
-}
-
-.plot-error {
-    color: var(--vscode-errorForeground);
-    border: 1px solid var(--vscode-errorForeground);
-    max-width: 650px; /* XXX hardcoded value, hack to avoid overflow (layout issues)... */
-}
-
-.plot-error.success {
-    color: #4caf50;
-    border: 1px solid #4caf50;
-}
-
-/* Per-variable plot controls */
-.variable-plot-controls {
-    padding: 0;
-    margin: 0;
-    background-color: var(--vscode-list-hoverBackground);
-}
-
-.plot-controls-row {
-    padding: 6px 8px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.plot-type-select {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-}
-
-/* Plot action button variant */
-.create-plot-button,
-.plot-action-button {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.create-plot-button:hover:not(:disabled),
-.plot-action-button:hover:not(:disabled) {
-    background-color: var(--vscode-button-hoverBackground);
-    color: var(--vscode-button-foreground);
-}
-
-.create-plot-button:disabled,
-.plot-action-button:disabled {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    cursor: not-allowed;
-}
-
-.plot-image-container {
-    margin-top: 6px;
-}
-
-.plot-actions {
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    padding: 0 8px;
-    justify-content: left;
-    flex-wrap: wrap;
-}
-
-.global-plot-controls {
-    display: flex;
-    gap: 10px;
-    margin: 0;
-    justify-content: left;
-    flex-wrap: wrap;
-}
-
-.plot-progress {
-    margin-top: 10px;
-    padding: 8px;
-    background-color: var(--vscode-input-background);
-    border: 1px solid var(--vscode-input-border);
-    font-size: 14px;
-    color: var(--vscode-foreground);
-}
-
-#degraded-mode-indicator {
-    margin-left: 10px;
-    background: #ffa500;
-    color: #000;
-    padding: 2px 3px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.dimension-slices-section {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-}
-
-.dimension-slices-section h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--vscode-foreground);
-}
-
-.dimension-slices-hint {
-    font-size: 0.9em;
-    color: var(--vscode-descriptionForeground);
-    margin: 0 0 12px 0;
-}
-
-.dimension-slices-hint a {
-    color: var(--vscode-textLink-foreground);
-    text-decoration: none;
-}
-
-.dimension-slices-hint a:hover {
-    text-decoration: underline;
-}
-
-.plot-controls-subsection {
-    margin-top: 16px;
-}
-
-.plot-controls-subsection:first-of-type {
-    margin-top: 0;
-}
-
-.plot-controls-subsection-title {
-    font-size: 0.95em;
-    font-weight: 600;
-    color: var(--vscode-foreground);
-    margin: 0 0 6px 0;
-}
-
-.dimension-slice-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.dimension-slice-row label {
-    min-width: 180px;
-    color: var(--vscode-foreground);
-}
-
-.dimension-slice-row input {
-    flex: 1;
-    max-width: 220px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slice-row input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 12px 0;
-}
-
-.dimension-slices-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.dimension-slices-facets label {
-    color: var(--vscode-foreground);
-}
-
-.dimension-slices-facets .facet-select {
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .facet-select:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-col-wrap-input {
-    width: 4em;
-    max-width: 100px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-col-wrap-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-aspect-size-input {
-    width: 8em;
-    max-width: 160px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-aspect-size-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .bins-input {
-    width: 6em;
-    max-width: 140px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .bins-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-vmin-vmax-input {
-    width: 6em;
-    max-width: 140px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-vmin-vmax-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-facets .plot-cmap-input {
-    width: 12em;
-    max-width: 210px;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
-}
-
-.dimension-slices-facets .plot-cmap-input:focus {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
-}
-
-.dimension-slices-section .plot-control-button {
     margin-top: 4px;
 }
 
-/* Group Plot Controls: per-group time and dimension slices (same structure as Dimensions/Coordinates) */
-.group-plot-controls-section {
+/* Copy button floats in the corner of its code block */
+.text-representation-container > .text-copy-button {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    opacity: 0.85;
+}
+
+.text-representation-container > .text-copy-button:hover,
+.text-representation-container > .text-copy-button:focus-visible {
+    opacity: 1;
+}
+
+pre:not(.html-representation pre) {
+    max-height: 400px;
+    overflow: auto;
+    padding: 12px 14px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    line-height: 1.5;
+    color: var(--vscode-textPreformat-foreground);
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+/* Troubleshooting: copy button at the end of the summary row */
+#section-troubleshooting details:not(.sticky-group-details) {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+#section-troubleshooting details:not(.sticky-group-details) > .text-copy-button {
+    position: absolute;
+    top: 6px;
+    right: 0;
+}
+
+/*
+ * Group cards: a sticky header row (group name and counts), then sections
+ * divided by hairlines (Group Plot Controls, Dimensions, Coordinates,
+ * Variables, Attributes, Xarray Encoding), built like the variable cards.
+ * overflow: clip (not hidden) rounds the corners without breaking the
+ * sticky header.
+ */
+.group-card {
+    margin: 4px 0 12px;
+    overflow: clip;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+.group-card > .group-card-summary {
+    position: sticky;
+    top: calc(var(--sdv-header-height) - 1px);
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    padding: 8px 12px 8px 8px;
+    /* Tinted but opaque: content scrolling under the sticky row stays hidden */
+    background:
+        linear-gradient(var(--sdv-surface), var(--sdv-surface)),
+        var(--vscode-editor-background);
+    transition: background var(--sdv-transition);
+}
+
+/* The divider under the header moves with it while it is stuck */
+.group-card[open] > .group-card-summary {
+    border-bottom: 1px solid var(--sdv-border);
+}
+
+.group-card-body > .group-section:first-child {
+    border-top: none;
+}
+
+.group-card > .group-card-summary:hover {
+    background:
+        linear-gradient(var(--sdv-surface-hover), var(--sdv-surface-hover)),
+        var(--vscode-editor-background);
+}
+
+.group-card-summary h3 {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.group-card-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Section twisties line up with the group name, contents with the section titles */
+.info-section > .group-card > .group-card-body {
+    margin-left: 0;
+    --sdv-section-indent: 28px;
+    --sdv-section-content-indent: 48px;
+}
+
+.group-section > :not(summary) {
+    padding: 2px 12px 12px var(--sdv-section-content-indent);
+}
+
+.dimensions-compact {
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+    color: var(--vscode-descriptionForeground);
+}
+
+.dimensions-compact strong {
+    color: var(--vscode-foreground);
+    font-weight: 600;
+}
+
+/*
+ * Variable cards: a summary row (name, dims, dtype, shape, size) that shows or
+ * hides the card's sections (Attributes, Xarray Encoding, Plot), each one
+ * collapsible on its own.
+ */
+.variable-details {
+    margin-top: 8px;
+    overflow: hidden;
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+.variable-details:first-child {
     margin-top: 0;
 }
 
-.group-plot-controls-section details summary {
+.variable-summary {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 7px 12px 7px 8px;
+    transition: background-color var(--sdv-transition);
+}
+
+.variable-summary:hover {
+    background-color: var(--sdv-surface-hover);
+}
+
+.variable-summary.not-clickable {
+    cursor: default;
+}
+
+.variable-summary.not-clickable:hover {
+    background-color: transparent;
+}
+
+.variable-summary.not-clickable::before {
+    visibility: hidden;
+}
+
+.variable-summary .variable-name {
+    flex: 1;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+.variable-summary .dims,
+.variable-summary .dtype-shape,
+.variable-summary .size {
+    flex: 1;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.variable-summary .dims {
+    max-width: 300px;
+    font-family: var(--sdv-mono);
+    font-size: var(--sdv-mono-size);
+}
+
+.variable-summary .dtype-shape {
+    text-align: right;
+    max-width: 120px;
+}
+
+.variable-summary .size {
+    text-align: right;
+    max-width: 80px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Wrapper for expandable content so summary row flex layout is not affected (Issue #102) */
+.variable-details-content {
+    display: block;
+    /* Section twisties line up with the variable name, contents with the section titles */
+    --sdv-section-indent: 28px;
+    --sdv-section-content-indent: 48px;
+}
+
+/* Sections of variable and group cards: pane headers divided by hairlines */
+.variable-section,
+.group-section {
+    border-top: 1px solid var(--sdv-border);
+}
+
+.variable-section > summary,
+.group-section > summary {
+    gap: 8px;
+    padding: 5px 12px 5px var(--sdv-section-indent);
+    transition: background-color var(--sdv-transition);
+}
+
+.variable-section > summary:hover,
+.group-section > summary:hover {
+    background-color: var(--sdv-surface-hover);
+}
+
+.variable-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--vscode-descriptionForeground);
+}
+
+.variable-section-summary:hover .variable-section-title {
+    color: var(--vscode-foreground);
+}
+
+.variable-display-value {
+    padding: 8px 12px 8px var(--sdv-section-indent);
+    font-size: 0.9em;
+    color: var(--vscode-descriptionForeground);
+    word-break: break-all;
+    border-top: 1px solid var(--sdv-border);
+}
+
+.variable-display-value code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Attributes and encoding of a variable card */
+.attributes-container {
+    padding: 0 12px 10px var(--sdv-section-content-indent);
+}
+
+.attribute-item {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+}
+
+.attribute-name {
+    font-weight: 600;
+    min-width: 180px;
+    flex-shrink: 0;
+}
+
+.attribute-value {
+    word-break: break-word;
+    flex: 1;
+}
+
+/* Collapsible nested attributes tree (Issue #120) */
+.attributes-tree-node {
+    margin-top: 2px;
+}
+
+.attributes-tree-node > .attribute-tree-summary {
+    padding: 2px 0;
+    gap: 4px;
+}
+
+.attributes-tree-children {
+    margin-left: 7px;
+    padding-left: 13px;
+    border-left: 1px solid var(--sdv-border);
+}
+
+/* Plot section of a data variable card */
+.plot-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 2px 12px 10px var(--sdv-section-content-indent);
+}
+
+.plot-container {
+    padding: 0 12px 12px var(--sdv-section-content-indent);
+}
+
+.plot-actions,
+.global-plot-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.plot-image-container {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.plot-image-container:empty {
+    display: none;
+}
+
+.plot-image-container img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: var(--sdv-radius);
+}
+
+.plot-error {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--sdv-border);
+    border-left-width: 3px;
+    border-radius: var(--sdv-radius);
+    min-width: 0;
+}
+
+.plot-error.error {
+    color: var(--vscode-errorForeground);
+    background-color: var(--sdv-error-surface);
+    border-color: var(--vscode-errorForeground);
+}
+
+.plot-error.success {
+    color: var(--sdv-success-color);
+    background-color: var(--sdv-success-surface);
+    border-color: var(--sdv-success-color);
+}
+
+/* Plot layout line: plot kind, then where each dimension went */
+.plot-layout {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-layout-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.plot-layout-kind {
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.plot-layout-item {
+    padding: 1px 6px;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-sm);
+    white-space: nowrap;
+}
+
+/* Same outline as a changed control */
+.plot-layout-item--user {
+    border-color: var(--sdv-changed);
+    color: var(--vscode-foreground);
+}
+
+.plot-layout-legend {
+    margin-left: auto;
+    font-size: 11px;
+}
+
+.plot-layout-notes {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    color: var(
+        --vscode-editorWarning-foreground,
+        var(--vscode-descriptionForeground)
+    );
+}
+
+/* Plot error: the message sits in the callout, copy button in its corner */
+.plot-error > div {
+    position: relative;
+}
+
+.plot-error .text-copy-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.plot-error pre:not(.html-representation pre) {
+    max-height: 240px;
+    padding: 0 64px 0 0;
+    color: inherit;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/*
+ * Plot controls (Global Plot Controls card, Group Plot Controls section):
+ * blocks (Dimension slices, Plot parameters) divided by
+ * hairlines, each a heading row with its Reset button, a one-line hint and a
+ * grid of fields (name above, control below) whose columns line up across
+ * blocks and fieldsets.
+ */
+.plot-controls-card {
+    margin-top: 12px;
+    padding: 0 16px;
+    background-color: var(--sdv-surface);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+}
+
+/* Clips the hairline above the first visible block (blocks hide themselves) */
+.plot-controls-content {
+    clip-path: inset(1px -8px -8px -8px);
+}
+
+.group-section > .plot-controls-content {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.plot-controls-subsection {
+    padding: 12px 0 14px;
+    border-top: 1px solid var(--sdv-border);
+}
+
+.plot-controls-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+
+.plot-controls-subsection-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.plot-controls-subsection-title code {
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.plot-reset-button {
+    margin-left: auto;
+    min-height: 0;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    background-color: transparent;
+    border-color: var(--sdv-border);
+}
+
+.plot-reset-button:hover:not(:disabled) {
+    color: var(--vscode-foreground);
+    background-color: var(--sdv-surface-hover);
+}
+
+.dimension-slices-hint {
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+}
+
+/* Fieldsets of the plot parameters (Facets, Axes...): caption and hairline */
+.plot-fieldset + .plot-fieldset {
+    margin-top: 14px;
+}
+
+.plot-fieldset-caption {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-fieldset-caption::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--sdv-border);
+}
+
+/* Same column tracks everywhere, so fields line up across fieldsets */
+.plot-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px 16px;
+}
+
+.plot-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+/*
+ * Changed from its default (changedFields.ts): an outline, which leaves the
+ * grid in place, and a marker after the name. The other fields are chosen
+ * automatically by the backend.
+ */
+.plot-field--changed {
+    outline: 1px solid var(--sdv-changed);
+    outline-offset: 4px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+.plot-field--changed .plot-field-name::after {
+    content: ' •';
+    color: var(--sdv-changed);
+}
+
+.plot-field-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.plot-field-name {
+    font-family: var(--sdv-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.plot-field-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-field > select,
+.plot-field > input:not([type='checkbox']),
+.plot-field-pair > .plot-input {
+    width: 100%;
+    min-width: 0;
+}
+
+.plot-field-check,
+.plot-field-pair {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--sdv-control-height);
+}
+
+.plot-inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    white-space: nowrap;
     cursor: pointer;
 }
 
-/* Content wrapper aligned with .dimensions / .coordinates */
-.group-plot-controls-content {
-    display: grid;
-    grid-template-columns: 1fr;
+/*
+ * Dimension slices: start : stop : step boxes joined into one control
+ * (rounded outer corners, colons in the gutters), then a two-handle slider.
+ */
+.plot-fields--slices {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-.group-plot-controls-section .group-plot-controls {
-    margin-top: 10px;
-    padding: 12px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+.slice-boxes {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
 }
 
-.group-plot-controls-section .group-plot-controls h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: var(--vscode-foreground);
+.slice-boxes > .slice-part {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    border-radius: 0;
 }
 
-.time-controls-section {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
+.slice-boxes > .slice-part:first-child {
+    border-radius: var(--sdv-radius-sm) 0 0 var(--sdv-radius-sm);
 }
 
-.time-controls-section h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--vscode-foreground);
+.slice-boxes > .slice-part:last-child {
+    border-radius: 0 var(--sdv-radius-sm) var(--sdv-radius-sm) 0;
 }
 
-.time-controls-row {
+.slice-part:invalid,
+.slice-part[aria-invalid='true'],
+.plot-input:invalid,
+.plot-input[aria-invalid='true'] {
+    border-color: var(
+        --vscode-inputValidation-errorBorder,
+        var(--vscode-errorForeground)
+    );
+}
+
+/* Start alone selects an index: a step typed meanwhile is not used */
+.slice-step-ignored .slice-part[data-part='step'] {
+    color: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+    text-decoration: line-through;
+}
+
+.slice-colon {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    padding: 0 3px;
+    font-family: var(--sdv-mono);
+    color: var(--vscode-descriptionForeground);
 }
 
-.time-controls-row label {
-    min-width: 180px;
-    color: var(--vscode-foreground);
+/* Rail (::before), selection between the handles (::after), two overlaid range inputs */
+.slice-range {
+    --sdv-thumb: 12px;
+    position: relative;
+    height: 16px;
 }
 
-.datetime-variable-select,
-.datetime-input {
-    flex: 1;
-    background-color: var(--vscode-dropdown-background);
-    color: var(--vscode-dropdown-foreground);
-    border: 1px solid var(--vscode-dropdown-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
+.slice-range::before,
+.slice-range::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    height: 4px;
+    border-radius: 2px;
+    pointer-events: none;
 }
 
-.datetime-text-input {
-    flex: 1;
-    background-color: var(--vscode-input-background);
-    color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: var(--vscode-font-family);
-    font-size: var(--vscode-font-size);
+.slice-range::before {
+    left: calc(var(--sdv-thumb) / 2);
+    right: calc(var(--sdv-thumb) / 2);
+    background-color: var(--sdv-border);
 }
 
-.datetime-variable-select:focus,
-.datetime-input:focus,
-.datetime-text-input:focus {
+.slice-range::after {
+    left: calc(
+        var(--sdv-thumb) / 2 + (100% - var(--sdv-thumb)) * var(--slice-from)
+    );
+    right: calc(
+        var(--sdv-thumb) / 2 + (100% - var(--sdv-thumb)) *
+            (1 - var(--slice-to))
+    );
+    background-color: var(--vscode-button-background);
+}
+
+/* Only the thumbs take the pointer, so both handles stay reachable */
+.slice-range-handle {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slice-range-handle:focus {
+    outline: none;
+}
+
+.slice-range-handle::-webkit-slider-runnable-track {
+    height: 16px;
+    background: transparent;
+}
+
+.slice-range-handle::-webkit-slider-thumb {
+    width: var(--sdv-thumb);
+    height: var(--sdv-thumb);
+    margin-top: 2px;
+    background-color: var(--vscode-button-background);
+    border: 2px solid var(--vscode-editor-background);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--vscode-button-background);
+    cursor: grab;
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Negative step: the slider cannot show a reversed slice */
+.slice-range--disabled::after {
+    display: none;
+}
+
+.slice-range--disabled .slice-range-handle::-webkit-slider-thumb {
+    background-color: var(--sdv-border);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* Exported page: the slider shows the selection but does not move */
+.slice-range-handle:disabled::-webkit-slider-thumb {
+    cursor: default;
+}
+
+.slice-range-handle:active::-webkit-slider-thumb {
+    cursor: grabbing;
+}
+
+.slice-range-handle:focus-visible::-webkit-slider-thumb {
     outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: -1px;
+    outline-offset: 2px;
+}
+
+/* Outline navigation target */
+.highlighted {
+    background-color: var(--sdv-highlight);
+    box-shadow: inset 3px 0 0 var(--vscode-focusBorder);
+    border-radius: var(--sdv-radius);
+    transition: background-color 300ms ease;
+}
+
+/* Small screens: stack the variable summary fields */
+@media (max-width: 480px) {
+    :root {
+        --sdv-gutter: 12px;
+    }
+
+    .variable-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        padding: 6px 12px;
+    }
+
+    .variable-summary::before {
+        display: none;
+    }
+
+    .variable-details-content,
+    .info-section > .group-card > .group-card-body {
+        --sdv-section-indent: 8px;
+        --sdv-section-content-indent: 12px;
+    }
+
+    .plot-fields {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .variable-summary .variable-name,
+    .variable-summary .dtype-shape,
+    .variable-summary .dims,
+    .variable-summary .size {
+        flex: none;
+        max-width: none;
+        width: 100%;
+        padding: 1px 0;
+        text-align: left;
+    }
+}
+
+@media (max-width: 600px) {
+    .timestamp {
+        display: none;
+    }
+}
+
+/* The toolbar keeps its four buttons: the version badge goes first */
+@media (max-width: 380px) {
+    .title small {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before {
+        transition: none !important;
+        animation-duration: 0s !important;
+    }
 }

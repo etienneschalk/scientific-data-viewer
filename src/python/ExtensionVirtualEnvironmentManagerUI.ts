@@ -1,17 +1,28 @@
 import * as vscode from 'vscode';
 import { Logger } from '../common/Logger';
-import { quoteIfNeeded } from '../common/utils';
 import {
     showErrorMessage,
     showErrorMessageAndProposeHelpToInstallUv,
 } from '../common/vscodeutils';
-import { ExtensionVirtualEnvironmentManager } from './ExtensionVirtualEnvironmentManager';
-import { updateUseExtensionOwnEnvironment } from '../common/config';
-import { ExtensionVirtualEnvironment } from '../types';
+import {
+    ExtensionVirtualEnvironment,
+    ExtensionVirtualEnvironmentManager,
+} from './ExtensionVirtualEnvironmentManager';
+import {
+    getUseExtensionOwnEnvironment,
+    updateUseExtensionOwnEnvironment,
+} from '../common/config';
 
 export class ExtensionVirtualEnvironmentManagerUI {
+    /**
+     * @param extensionEnvManager  The environment manager
+     * @param refreshPython        Re-initialise the Python environment; called
+     *                             when the setting written by this UI does not
+     *                             change (no configuration change event fires)
+     */
     constructor(
         private extensionEnvManager: ExtensionVirtualEnvironmentManager,
+        private refreshPython: () => Promise<void>,
     ) {}
 
     /**
@@ -53,6 +64,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
                         description: 'Update all packages in the environment',
                     },
                     {
+                        label: '$(refresh) Recreate',
+                        description:
+                            'Delete and rebuild the environment from scratch (fixes a broken environment)',
+                    },
+                    {
                         label: '$(trash) Delete',
                         description: 'Remove the environment',
                     },
@@ -78,11 +94,11 @@ export class ExtensionVirtualEnvironmentManagerUI {
             );
 
             switch (action?.label) {
-                case '$(plus) Create':
-                    await this.create();
-                    break;
                 case '$(sync) Update Packages':
                     await this.update();
+                    break;
+                case '$(refresh) Recreate':
+                    await this.recreate();
                     break;
                 case '$(trash) Delete':
                     await this.delete();
@@ -113,12 +129,6 @@ export class ExtensionVirtualEnvironmentManagerUI {
     private async create(): Promise<void> {
         try {
             await this.extensionEnvManager.create();
-
-            // Update the configuration to use the extension environment
-            await updateUseExtensionOwnEnvironment(true);
-            vscode.window.showInformationMessage(
-                'Extension virtual environment created successfully! The extension will now use its own isolated environment.',
-            );
         } catch (error) {
             Logger.error(
                 `🔧 ❌ Failed to create extension environment: ${error}`,
@@ -126,6 +136,46 @@ export class ExtensionVirtualEnvironmentManagerUI {
             const uvInstallationUrl =
                 this.extensionEnvManager.UV_INSTALLATION_URL;
             showErrorMessageAndProposeHelpToInstallUv(error, uvInstallationUrl);
+            return;
+        }
+
+        // The environment exists from here on: a failure to write the
+        // setting must not be reported as a failed creation.
+        await this.setUseExtensionOwnEnvironment(true);
+        vscode.window.showInformationMessage(
+            getUseExtensionOwnEnvironment()
+                ? 'Extension virtual environment created successfully! The extension will now use its own isolated environment.'
+                : 'Extension virtual environment created successfully.',
+        );
+    }
+
+    /**
+     * Write useExtensionOwnEnvironment (user settings) and make sure the
+     * Python environment is refreshed: when the effective value does not
+     * change, no configuration event fires, so refresh explicitly.
+     */
+    private async setUseExtensionOwnEnvironment(value: boolean): Promise<void> {
+        const before = getUseExtensionOwnEnvironment();
+        try {
+            await updateUseExtensionOwnEnvironment(value);
+        } catch (error) {
+            Logger.error(
+                `🔧 ❌ Failed to update useExtensionOwnEnvironment: ${error}`,
+            );
+            showErrorMessage(
+                `Could not set scientificDataViewer.python.useExtensionOwnEnvironment to ${value}: ${error}`,
+                true,
+                true,
+            );
+        }
+        const after = getUseExtensionOwnEnvironment();
+        if (after !== value) {
+            vscode.window.showWarningMessage(
+                `scientificDataViewer.python.useExtensionOwnEnvironment is set to ${after} in the workspace settings, which take precedence over the user setting just written.`,
+            );
+        }
+        if (after === before) {
+            await this.refreshPython();
         }
     }
 
@@ -152,6 +202,37 @@ export class ExtensionVirtualEnvironmentManagerUI {
             );
             showErrorMessage(`Failed to update packages: ${error}`, true, true);
         }
+    }
+
+    /**
+     * Delete the environment and build it again from scratch. The previous
+     * environment is restored if that fails.
+     */
+    private async recreate(): Promise<void> {
+        try {
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Recreating the extension virtual environment (this can take a few minutes)…',
+                },
+                () => this.extensionEnvManager.recreate(),
+            );
+        } catch (error) {
+            Logger.error(
+                `🔧 ❌ Failed to recreate extension environment: ${error}`,
+            );
+            showErrorMessageAndProposeHelpToInstallUv(
+                error,
+                this.extensionEnvManager.UV_INSTALLATION_URL,
+            );
+            return;
+        }
+        // The interpreter may have changed (e.g. the extension had fallen
+        // back to another one while this environment was broken)
+        await this.refreshPython();
+        vscode.window.showInformationMessage(
+            'Extension virtual environment recreated successfully!',
+        );
     }
 
     /**
@@ -183,10 +264,10 @@ export class ExtensionVirtualEnvironmentManagerUI {
                 const deleted = await this.extensionEnvManager.delete();
 
                 if (deleted) {
-                    await updateUseExtensionOwnEnvironment(false);
                     vscode.window.showInformationMessage(
                         'Extension virtual environment deleted successfully!',
                     );
+                    await this.setUseExtensionOwnEnvironment(false);
                 } else {
                     showErrorMessage(
                         'Failed to delete extension virtual environment.',
@@ -210,18 +291,17 @@ export class ExtensionVirtualEnvironmentManagerUI {
         envInfo: ExtensionVirtualEnvironment,
     ): Promise<void> {
         try {
-            const lastUpdated = envInfo.lastUpdated.toLocaleString();
+            const lastUpdated =
+                this.extensionEnvManager.getLastUpdated()?.toLocaleString() ??
+                'Unknown';
             const packageVersions =
                 await this.extensionEnvManager.getInstalledPackageVersions();
             const installedCount = packageVersions.filter(
                 (pkg) => pkg.version !== null,
             ).length;
 
-            const toolUsed = envInfo.createdWithUv
-                ? `uv (Python ${quoteIfNeeded(
-                      this.extensionEnvManager.PYTHON_VERSION,
-                  )})`
-                : 'Unknown';
+            // The extension only ever creates its environment with uv
+            const toolUsed = `uv (Python ${this.extensionEnvManager.PYTHON_VERSION})`;
 
             const packageLines =
                 packageVersions.length > 0

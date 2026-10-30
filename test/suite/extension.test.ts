@@ -415,6 +415,26 @@ suite('Extension Test Suite', () => {
                 'HDF5 editor should have display name',
             );
             assert.ok(hdf5Editor.selector, 'HDF5 editor should have selector');
+
+            const kerchunkEditor = customEditors.find(
+                (editor: any) => editor.viewType === 'kerchunkEditor',
+            );
+            assert.ok(kerchunkEditor, 'Should have Kerchunk editor');
+            const kerchunkPatterns = kerchunkEditor.selector.map(
+                (s: { filenamePattern: string }) => s.filenamePattern,
+            );
+            assert.ok(
+                kerchunkPatterns.includes('*.kerchunk.json'),
+                'Kerchunk editor should handle *.kerchunk.json',
+            );
+            assert.ok(
+                kerchunkPatterns.includes('*.ref.json'),
+                'Kerchunk editor should handle *.ref.json',
+            );
+            assert.ok(
+                !kerchunkPatterns.includes('*.json'),
+                'Kerchunk editor must not steal all JSON files',
+            );
         }
     });
 
@@ -463,6 +483,10 @@ suite('Extension Test Suite', () => {
 
             assert.ok(menus, 'Should have menus');
             assert.ok(
+                !packageJson.keywords.includes('sentinel'),
+                'Marketplace keywords should not advertise unsupported Sentinel data',
+            );
+            assert.ok(
                 menus['explorer/context'],
                 'Should have explorer context menu',
             );
@@ -475,6 +499,21 @@ suite('Extension Test Suite', () => {
             assert.ok(
                 Array.isArray(explorerContext),
                 'Explorer context should be an array',
+            );
+            assert.ok(
+                explorerContext.every(
+                    (menuItem: { when?: string; command?: string }) =>
+                        !menuItem.when?.includes('resourceExtname == .safe'),
+                ),
+                'Explorer context should not advertise unsupported SAFE files',
+            );
+            assert.ok(
+                explorerContext.some(
+                    (menuItem: { command?: string }) =>
+                        menuItem.command ===
+                        'scientificDataViewer.openAsKerchunk',
+                ),
+                'Explorer context should offer Open as Kerchunk / virtual Zarr',
             );
 
             const commandPalette = menus['commandPalette'];

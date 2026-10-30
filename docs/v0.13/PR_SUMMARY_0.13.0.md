@@ -1,0 +1,513 @@
+# Pull Request: Release 0.13.0 — xarray 2026 / Zarr 3 alignment
+
+## Summary
+
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`QA_REPORT_0.13.0.md`](./QA_REPORT_0.13.0.md)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`QA_FIXES_0.13.0.md`](./QA_FIXES_0.13.0.md); its harnesses are kept in `scripts/qa/`. The little-used **Time Controls** (off by default) are removed with their two settings: Dimension Slices cover time.
+
+**Version:** `0.13.0` in `package.json` / `package-lock.json`
+
+**Planning docs:** [`docs/v0.13/`](./README.md) (what shipped vs deferred)
+
+---
+
+## Shipped (by phase)
+
+### Phase 0 — Remove stale format claims
+
+| ID  | Work                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------- |
+| R1  | Strip `.safe` from menus, keywords, Python `SupportedExtensionType`, sample generator, webview comments |
+
+### Phase 1 — Xarray 2026 / Zarr 3 (P0)
+
+| ID   | Feature                                                                                                   |
+| ---- | --------------------------------------------------------------------------------------------------------- |
+| P0.1 | Pin `xarray>=2026.4.0`, `zarr>=3`, `h5netcdf>=1.8` in uv env; reject zarr 2.x as too old                  |
+| P0.2 | Detect Zarr stores without `.zarr` suffix (`zarr.json`, `.zgroup`, …); folder open + `resolve_store_path` |
+| P0.3 | Open `.zip` / `.zarr.zip` via `zarr.storage.ZipStore`                                                     |
+| P0.4 | Zarr v2/v3 format label; v3 codecs/shards in the **Xarray Encoding** section                              |
+| P0.5 | Plot `col_wrap='auto'` checkbox in Global/Group plot controls                                             |
+
+### Phase 2 — NetCDF / DataTree quality (P1)
+
+| ID   | Feature                                                                                               |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| P1.1 | Setting `scientificDataViewer.netcdfEngineOrder`                                                      |
+| P1.2 | HDF5 compression keys of the encoding (`zlib`, `complevel`…) with netcdf4 and h5netcdf                |
+| P1.3 | Setting `scientificDataViewer.showInheritedCoordinates` + `DataTree.to_dataset(inherit='all_coords')` |
+
+### Phase 3 — Virtual Zarr (P1.5)
+
+| ID   | Feature                                                                                               |
+| ---- | ----------------------------------------------------------------------------------------------------- |
+| P1.5 | Kerchunk custom editor (`*.kerchunk.json`, `*.ref.json`); **Open as Kerchunk / virtual Zarr** command |
+
+### Phase 4 — Stretch (P2)
+
+| ID   | Feature                                                     |
+| ---- | ----------------------------------------------------------- |
+| P2.3 | **Cloud Optimized GeoTIFF (COG)** label in File Information |
+| P2.7 | Setting `scientificDataViewer.facetgridFigsize`             |
+
+### Phase 5 — Backend restructuring (maintainability)
+
+| Work          | Detail                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Safety net    | Golden snapshot harness `python/tools/golden_snapshots.py` (68 info/plot cases recorded before any move, 83 with the v0.13 samples; frozen clock)                                                   |
+| Package split | `python/get_data_info.py` (3,700 lines) → `python/sdv_backend/`; `get_data_info.py` kept as entry point                                                                                             |
+| Decomposition | `create_plot` ~540 → ~110 lines (`selection.py`, `render.py`, `PlotOptions`); `get_file_info` split into steps (`InfoOptions`); shared `OpenedData`; CLI `build_parser`                             |
+| Fixes         | Unsupported `plot_type` crash; empty selection `ZeroDivisionError`; files left open on plot errors; Kerchunk relative references unreachable when plotting                                          |
+| Sample data   | `create_sample_data.py` (6,000 lines) → `python/sample_data/`; table-driven `main`; reproducible; `--overwrite`, `--disposable`; `.geotiff` generator fix (all v0.13 fixtures were never generated) |
+| Tests         | Moved to `python/tests/`; `python/pyproject.toml`; new `test_empty_selection.py`                                                                                                                    |
+
+### Phase 6 — Automatic uv environment update
+
+| Work          | Detail                                                                                                                                               |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Revision mark | `ENVIRONMENT_REVISION` in `ExtensionVirtualEnvironmentManager` (1 = v0.13 pins, 2 = `eccodeslib<2.48`); requirement-list change also triggers        |
+| State file    | `sdv-environment.json` in the env folder records revision + requirements on create / update                                                          |
+| Startup       | Existing env reused; deleted and rebuilt once (progress notification) when outdated; on failure the old env is restored and kept, retried next start |
+| Fix           | Env was rebuilt (`uv venv --clear` + full reinstall) at every start                                                                                  |
+| Scope         | Python-extension / override interpreters untouched (user's responsibility)                                                                           |
+
+### Phase 7 — Code review fixes
+
+| Area             | Work                                                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security         | Escape all file-derived values in the webview; CSP (no inline scripts / handlers); `executeCommand` allowlist (3 commands); plot file names validated (relative, no `..`)                      |
+| Extension host   | `runProcess` (no shell) fixes uv version pins; single-flight init + serialised env operations; uv-based package install; accurate uv / override messages; Global config target                 |
+| Error handling   | No `uncaughtException` hook in the shared host; per-panel handlers unregistered on dispose; backend errors keep suggestion / type                                                              |
+| Panel            | `MessageBus` → `handle` / `emit` with typed `Requests` / `Events`; `StateManager` removed (1 message per load instead of ~9); `PlotOptions` object end to end; `DataProcessor` not a singleton |
+| Bugs             | Kerchunk URI kept; "File too large" MB; Windows paths; save no longer awaits the notification; outline ids in nested view; outline cleared on close                                            |
+| Webview          | `webview-script.js` (4,000 lines) → `src/panel/webview/*.ts` bundled by esbuild; one plot-parameter table; display bugs (no groups, group time inputs, stale time variable after Refresh)      |
+| Healthcheck      | 1,184 → ~700 lines, plain functions, one package check                                                                                                                                         |
+| Python backend   | Always JSON (corrupt files, `inf`); numpy values as numbers; time filter / NaT / cftime; equal aspect only for spatial plots; no `h5py` engine; strategies → `plotting/draw.py`                |
+| eccodeslib crash | `eccodeslib` ≥ 2.48 aborts Python at exit with pyproj loaded (GRIB / TIFF errors); `ENVIRONMENT_CONSTRAINTS = ['eccodeslib<2.48']`, revision 2                                                 |
+| Dead code        | Unused types, helpers, handlers, CSS, Python branches; `axios` dependency; `jsdom` → devDependencies                                                                                           |
+
+### Phase 8 — Upgrade safety (v0.12 → v0.13)
+
+| Work                 | Detail                                                                                                                                                                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rebuild, not upgrade | Outdated uv env deleted and created again from scratch (an in-place `--upgrade` keeps leftovers of older versions); old env moved to `python-environment.previous` and restored if the rebuild fails or VS Code is closed mid-rebuild                                                                         |
+| Recreate action      | **Manage Extension Virtual Environment → Recreate**                                                                                                                                                                                                                                                           |
+| No silent fallback   | At startup, an error says why the extension's own environment is not used                                                                                                                                                                                                                                     |
+| Old xarray           | xarray < 2024.10 gets a JSON error with the `pip install` command instead of an `AttributeError` (v0.12 crashed the same way)                                                                                                                                                                                 |
+| Upgrade test         | `scripts/upgrade-sandbox.sh`: real update in a throw-away VS Code profile, from any release to any other (rebuild or keep worked out from `ENVIRONMENT_REVISION`, viewer and settings checked); scenarios `normal`, `offline`, `interrupted`; `paranoia.sh` step `migration` runs it from every older release |
+| Docs                 | `docs/v0.13/GETTING_STARTED.md` (hub), `docs/v0.13/UPGRADE_TEST_PLAN.md` (profiles, results, support playbook); README troubleshooting entry; v0.13 working docs moved to `docs/v0.13/`; stale developer docs fixed                                                                                           |
+
+### Phase 9 — Viewer styling refresh
+
+| Area        | Work                                                                                                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stylesheet  | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                                        |
+| Layout      | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                                   |
+| Components  | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                                     |
+| Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                              |
+| Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                                   |
+| Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                              |
+| Fix         | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                                 |
+| Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `artefacts/screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
+| Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                                   |
+| Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                                  |
+
+### Phase 10 — Plot type selector removed
+
+| Area     | Work                                                                                                                                                      |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webview  | "Auto (Recommended)" `<select>` removed from each variable's plot row (it had one option; the backend refused any other)                                  |
+| Protocol | `plotType` dropped from `PlotOptions` (`src/types.ts`) and from the argv built by `buildCreatePlotCliArgs`                                                |
+| Backend  | `plot_type` positional argument and `PlotOptions.plot_type` removed; `create_plot` error messages no longer end with `plot_type='auto'`                   |
+| Tests    | TS and Python tests updated; golden harness drops the plot-type column and the `plot__histogram` case (82 cases); release notes §22, manual test plan B24 |
+
+### Phase 11 — Architecture diagrams (contributors)
+
+| Area      | Work                                                                                                                                                                                                                                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Diagrams  | `docs/architecture/`: 9 SVG figures (processes, host modules, webview bundle, opening a file, plot and cancel, interpreter choice, uv environment, backend packages, backend pipelines), the webview protocol tables, a `README.md` index rendered by GitHub and a single-page `architecture.html` |
+| Generator | `python scripts/architecture/generate.py` (standard library + Graphviz `dot`): module graphs from the import statements, protocol tables from `MessageTypes.ts`, version / counts / timeouts from `package.json` and constants; flows drawn by `figures.py`; deterministic output, light and dark  |
+| Drift     | `--check` (no Graphviz): fails when a module is not placed in the diagrams, a symbol named by a figure or the text no longer exists in its file, or the protocol notes do not match `MessageTypes.ts`                                                                                              |
+| Packaging | `docs/architecture/**` excluded from the `.vsix` (`.vscodeignore`)                                                                                                                                                                                                                                 |
+| Docs      | `DEVELOPMENT.md` § Architecture diagrams; link from `TECHNICAL_ARCHITECTURE.md`; `CLAUDE.md`; release notes § Architecture diagrams and manual step §23                                                                                                                                            |
+
+### Phase 12 — Xarray Encoding section, collapsible variable sections
+
+| Area     | Work                                                                                                                                                                                                                                                                 |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend  | `collect_attributes` / `collect_encoding` replace `collect_dataarray_attributes`; `encoding` on `VariableInfo` / `CoordinateInfo`, `encoding_flattened` on `FileInfoResult`; no more `__xarray_encoding.*` keys in `attributes`; duplicated `filters.*` keys dropped |
+| Webview  | Variable card = summary row + **Attributes** (open) / **Xarray Encoding** (collapsed) / **Plot** (open) sections, each collapsible; the summary row shows or hides them all; cards start collapsed                                                                   |
+| Webview  | Group **Xarray Encoding** section (collapsed); entry-count badges on group and variable section headers; creating a plot opens its card and Plot section                                                                                                             |
+| Webview  | Groups as cards: sticky header row with counts (dimensions · coordinates · variables), sections divided by hairlines like a variable card's; no box-in-box for dimensions / plot panels                                                                              |
+| Outline  | **Xarray Encoding (n)** under groups, coordinates, variables (webview ids `…___encoding`, `…___encoding-entry___<key>`); coordinate / variable branches share one helper                                                                                             |
+| Styles   | Pane-header style for card sections, contents aligned with section titles; the last `:has()` rule (plot-controls corner radius) is gone                                                                                                                              |
+| Fix      | Group **Attributes** (nested view): `:` right after the name like the other attribute / encoding rows, not next to the value                                                                                                                                         |
+| Settings | `showXarrayEncodingAttributes` keeps its key; description now refers to the encoding sections                                                                                                                                                                        |
+| Docs     | `documentation.json` / README; release notes § Xarray Encoding section and manual step §24; manual test plan B7–B9 and B25                                                                                                                                           |
+
+### Phase 13 — Cancel a single plot
+
+| Area    | Work                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Webview | **Cancel** button next to **Create Plot**, shown while the variable's plot runs (Create Plot disabled meanwhile); `cancelVariablePlot` sends `abortPlot` for that operation id and shows **Plot cancelled.** |
+| Webview | Responses of cancelled operations are ignored; **Cancel All** marks running plots the same way; `createVariablePlot` returns `'success' / 'error' / 'cancelled'`, so Plot All counts cancelled plots         |
+| Styles  | `.cancel-button` applies to the per-variable button as well as **Cancel All**                                                                                                                                |
+| Host    | No change: same `abortPlot` request and `PythonManager.abortProcess` path as **Cancel All**                                                                                                                  |
+| Docs    | Architecture text of the plot / cancel figure; release notes § Cancel a single plot and manual step §25; manual test plan B26                                                                                |
+
+### Phase 14 — Load time in local time
+
+| Area    | Work                                                                                                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Setting | `showLoadTimeInLocalTime` (default `true`), sent to the webview in `extensionConfig`                                                    |
+| Webview | `displayTimestamp` formats the **Loaded:** time with `formatLoadTime` (`src/shared/time.ts`): ISO 8601 with UTC offset, or UTC when off |
+| Host    | `HTMLGenerator` placeholder uses the same formatter (`UIController.setHtml` passes the setting)                                         |
+| Docs    | `documentation.json` / README (Display settings); release notes § Load time in local time and manual step §26; manual test plan B27     |
+
+### Phase 13 — Plot controls layout
+
+| Area      | Work                                                                                                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout    | Blocks Dimension slices `isel` / Plot parameters `plot` (Time range later removed): one heading style, one-line hint, Reset per block, hairlines; global controls in one card |
+| Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                                      |
+| Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                               |
+| Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged             |
+| Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                                      |
+
+### Phase 14 — Dimension slice boxes and slider
+
+| Area     | Work                                                                                                                                                                                                                                                                                                                                               |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input                                                                                                                                                                        |
+| Rules    | Start with empty stop = index (step ignored, struck through); one handle rewrites one box (a box keeps its text while its index is unchanged); crossing changes both; handles at both ends = no selection; `5::2` → stop = size; negative = from the end, kept until its handle moves; negative step disables the slider; empty selection outlined |
+| Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                                                                                                                                                                                                     |
+| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated                                                                                                                                                                                 |
+
+### Phase 15 — QA pass
+
+| Area     | Work                                                                                                                                                                                                  |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method   | Backend differential vs v0.12.1 (same interpreter: info, every variable plotted, ~80 option scenarios); real webview in headless Chromium with real input; suites inside VS Code; packaging           |
+| Backend  | CLI joins value options with their value (`--vmin=-1e-7`, `--plot-x=-x`); `nan` / `inf` instead of `np.float64(…)`; precise Kerchunk errors; `describe_exception`; Python < 3.10 reported in JSON     |
+| Host     | Stale / post-close loads ignored (outline, notification, latest load wins); close aborts the panel's plots; focused panel exported; requirement specifiers only for installs; "not ready" says why    |
+| Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture |
+| Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                             |
+| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `artefacts/qa/`                                                                              |
+| Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §27, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
+
+### Phase 16 — Progressive plot layout
+
+| Area     | Work                                                                                                                                                                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Problem  | One slice or layout control set switched the whole plot to a user layout (`has_user_layout`): slicing `lat` of `root_data(time, lat, lon)` gave a histogram instead of time facets                                                              |
+| Backend  | New `plotting/layout.py`: `resolve_layout` keeps each role the user set (x, y, hue, row, col, col_wrap, size, aspect) and fills the others from the free dimensions; slices / time range only select data; unusable choices dropped with a note |
+| Drawing  | `draw.py`: one xarray call per kind (imshow / pcolormesh / line / hist); `kwargs.py`: `for_kind` passes each kind only the style options it accepts; `has_user_layout`, `draws_color_mesh` and the two routes removed                           |
+| Contract | Result JSON gains `plot_layout` (kind, choices with `user` / `auto`, squeezed, notes); `applied_isel_kwargs` slices as `5:15`; `createPlot` answers `{plotData, layout, appliedSlices}` (`src/shared/plotLayout.ts`)                            |
+| Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                           |
+| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30         |
+
+### Phase 17 — Time Controls removed
+
+| Area     | Work                                                                                                                                                                                                        |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why      | Off by default since v0.9, little tested, overlapping with Dimension Slices (`0:24:2`); focus on the generic plot controls, a label-based `sel` can come back later                                         |
+| Settings | `globalTimeControls` / `groupTimeControls` removed, not deprecated: VS Code ignores unknown keys (greyed out in `settings.json`), and a `deprecationMessage` only helps a setting that still does something |
+| Webview  | Time range block (global, group), `timeControls.ts`, `data-baseline` of `changedFields.ts`, time CSS removed; `PlotOptions` / `buildCreatePlotCliArgs` drop the datetime fields                             |
+| Backend  | Unchanged: `--datetime-variable` / `--start-datetime` / `--end-datetime` and `datetime_variables` still available from the CLI                                                                              |
+| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed and §29; manual test plan B17 / B26          |
+
+### Phase 18 — Paranoia: every check before a release
+
+| Area      | Work                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why       | The safety nets added in v0.13 (golden snapshots, `generate.py --check`, QA harnesses, upgrade sandbox, screenshots) each had their own command and setup, and all of them tested the working tree, not the `.vsix` users install                                                                                                                                                                                             |
+| Script    | `paranoia.sh`: 28 steps in three profiles (`--quick` ~5 min, default ~20 min, `--full` ~45 min); `--only` / `--skip` / `--baseline` / `--list`; publishes, tags and commits nothing; pre-commit fixes saved to a patch, the working tree restored                                                                                                                                                                             |
+| Package   | `.vsix` built in the run folder and audited (runtime files, relative `require()`s, nothing leaked, diff with the previous release); its backend run from outside the repository; e2e suites and upgrade sandbox run on it                                                                                                                                                                                                     |
+| Release   | Version above Marketplace / Open VSX and not tagged elsewhere; lockfile, CHANGELOG section, release notes, PR summary (its commit list is only reported: it lags one commit behind); relative links; uv environment change → upgrade sandbox mandatory                                                                                                                                                                        |
+| Report    | `artefacts/paranoia/<date-time>/REPORT.md`: verdict (`NOT READY` / `NOT FULLY VERIFIED` / `READY AFTER REVIEW` / `READY`), checks with links to logs, end of each failing log, files to look at, what is left to check by hand                                                                                                                                                                                                |
+| Migration | `migration` step (`--full`): `upgrade-sandbox.sh` from the last patch of every older minor release, then same release (must keep) and same release with the revision raised (must rebuild); per case: environment rebuilt or kept as the rule says, file shown with the own environment, `settings.json` unchanged                                                                                                            |
+| Artefacts | Every output in the git-ignored `artefacts/` (sample data, golden, non-regression plots, screenshots, QA, paranoia runs, `vsix-releases/`); `scripts/release-vsix.sh` rebuilds an old release from its tag; every development script is a step (sample data regenerated, non-regression plots, diagrams regenerated)                                                                                                          |
+| CI        | `.github/workflows/paranoia.yml`: `paranoia.sh` on an Ubuntu runner (PR label `paranoia`, Run workflow, Mondays); report on the summary page, files as an artifact; `requirements-dev.txt` (pinned); golden vs the merge-base with `main` when there are no local snapshots                                                                                                                                                   |
+| Fixes     | Found by its first runs: `publish.sh` uses the `.venv` Python (system `python3` 3.8 crashed in `generate_readme.py`); `npm audit fix` (lockfile only, 9 findings); prettier on `OUT_OF_SCOPE.md` / `TO_REMOVE.md`; commit list below rebuilt from `git log`; `upgrade-sandbox.sh` interrupted scenario (`grep -q` + `pipefail` missed the awaited log line); flaky `UIController` test (two `fs.stat` resolving out of order) |
+| Files     | `paranoia.sh`, `scripts/paranoia/checks.py` (standard library only); `DEVELOPMENT.md` § Paranoia, `CLAUDE.md`, `GETTING_STARTED.md`, release notes § Paranoia and §30                                                                                                                                                                                                                                                         |
+
+### Sample data & docs
+
+- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
+- `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
+- README regenerated from `docs/documentation.json` + `package.json`
+- GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
+- `.vsix` ships only runtime files: `.vscodeignore` is an allow-list (`**` excluded, each runtime file named; no source maps) and `vscode:prepublish` deletes `out/` before compiling. `npx vsce ls`: 252 → 70 files, 2.5 → 1.05 MB; the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10` (119 tests, backend run from the package)
+
+---
+
+## Not shipped (deferred)
+
+See [`docs/v0.13/OUT_OF_SCOPE.md`](./OUT_OF_SCOPE.md): pyfive (P1.4), OME-Zarr (P2.1), Sentinel SAFE re-implementation (P2.2), HDF4 `.hdf` (P2.4), NWB/FITS, STAC/OPeNDAP, Icechunk UX.
+
+---
+
+## New settings
+
+| Setting                    | Default                          | Effect                                                             |
+| -------------------------- | -------------------------------- | ------------------------------------------------------------------ |
+| `netcdfEngineOrder`        | `["netcdf4","h5netcdf","scipy"]` | Try-order for `.nc` / `.nc4` / `.netcdf` only                      |
+| `showInheritedCoordinates` | `true`                           | Parent DataTree coords on child groups; `inherited_from` attribute |
+| `facetgridFigsize`         | `[]`                             | Optional `[width, height]` inches for faceted plots                |
+| `showLoadTimeInLocalTime`  | `true`                           | **Loaded:** time in local time (with UTC offset); `false` → UTC    |
+
+Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncodingAttributes`, plot controls, …), except `globalTimeControls` / `groupTimeControls`, removed.
+
+---
+
+## Upgrade / breaking notes
+
+- **xarray ≥ 2026.4.0 requires zarr-python ≥ 3.** Users on zarr 2.x see `zarr>=3` in missing-package messages.
+- **Extension uv environment:** upgraded automatically once at first start (`ENVIRONMENT_REVISION` = 2: v0.13 pins, then `eccodeslib<2.48` against an exit crash with pyproj); Python-extension / override interpreters must be upgraded by the user.
+- **Kerchunk** is opt-in (`pip install kerchunk`); not in default uv bundle.
+- Webview protocol: `getDataInfo` / `getCurrentFilePath` / `updateHeaders` requests and `uiStateChanged` / `pythonEnvironmentChanged` events removed; `executeCommand` allowlisted. New Python CLI flags are additive.
+- JSON output: numeric attributes are numbers / arrays; xarray encoding in `encoding` / `encoding_flattened` instead of `__xarray_encoding.*` attribute keys; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
+- Group plot overrides apply field by field (empty group field → global value).
+- Plots keep the automatic layout when one control is set (a sliced 3D variable is no longer a histogram); result JSON gains `plot_layout`; `createPlot` answers `{plotData, layout, appliedSlices}` instead of the PNG string.
+- Time Controls removed: settings `globalTimeControls` / `groupTimeControls` gone (ignored if left in `settings.json`); the webview no longer sends datetime fields; the backend CLI keeps its datetime flags.
+- `npm run compile` also bundles the webview (esbuild); run `npm install` first.
+
+---
+
+## Key files
+
+| Area      | Files                                                                                                                                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python    | `python/sdv_backend/` (entry `python/get_data_info.py`), `python/sample_data/` (entry `python/create_sample_data.py`), `python/tests/`, `python/tools/golden_snapshots.py`                                             |
+| Extension | `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/extension.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `src/python/PythonManager.ts`, `package.json`                                           |
+| Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/webview/styles.css`, `src/shared/icons.ts`, `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts` |
+| Tooling   | `scripts/screenshots/` (`npm run screenshots`, `capture-themes.mjs`), `scripts/architecture/` (`generate.py` → `docs/architecture/`)                                                                                   |
+| Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`                                                  |
+| Plotting  | `python/sdv_backend/plotting/layout.py`, `draw.py`, `kwargs.py`, `src/panel/webview/changedFields.ts`, `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`, `docs/PLOTTING.md`                        |
+| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                                                             |
+
+---
+
+## Testing
+
+**Automated:**
+
+```bash
+./paranoia.sh [--quick|--full]   # everything below + the QA harnesses -> artefacts/paranoia/latest/REPORT.md
+source .venv/bin/activate   # or extension interpreter
+python -m pytest python/tests -q
+python python/tools/golden_snapshots.py check   # after `record` on a known-good commit
+npm run compile && npm test       # 290 passing (VS Code integration + webview bundle in jsdom)
+npm run typecheck                 # extension host + webview
+pre-commit run --all-files
+npm run package && scripts/upgrade-sandbox.sh [--scenario offline|interrupted]   # upgrade from v0.12.1
+```
+
+Results after adding the architecture diagrams: `generate.py --check` passes; drift injected on purpose (unplaced `src/shared/icons.ts`, missing module, renamed symbol, missing protocol note) is reported; two runs give byte-identical output; the 9 SVG files parse as XML and render as images in light and dark; pre-commit clean (prettier leaves the generated `README.md` unchanged); `docs/architecture/` absent from `vsce ls`.
+
+```bash
+python scripts/architecture/generate.py          # docs/architecture/ (needs Graphviz)
+python scripts/architecture/generate.py --check  # diagrams still match the code (no Graphviz)
+```
+
+Results after adding the local load time setting: `npm test` 300 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+Results after adding the per-variable Cancel button: `npm test` 296 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+Results after the export fixes: `npm test` 311 passing (export reopened in degraded mode keeps section states and slice widgets, frozen); `npm run typecheck` and pre-commit clean.
+
+Results after the vmin / vmax fix: `pytest python/tests` 175 passing; frozen-clock PNG comparison through the CLI (vmin / vmax change the image with a slice, facets or a `0:1` slice; 1D + robust draws); golden plot snapshots unchanged (info snapshots need a re-`record` since the encoding moved).
+
+Results after the dimension slice boxes and slider: `npm test` 305 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots (dark, light) and real mouse drags in headless Chromium.
+
+Results after the plot controls layout: `npm test` 301 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; screenshots of the global and group plot controls (dark, light, 420 px).
+
+Results after turning groups into cards: `npm test` 301 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` checked (overview, plots, narrow; dark and light) plus a one-off scrolled capture for the sticky group header.
+
+Results after moving the xarray encoding to its own section: `npm test` 294 passing; `pytest python/tests` 165 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean; `npm run screenshots` checked (overview, expanded, plots, narrow). Golden snapshots: re-`record` needed (every info case changes: `encoding` / `encoding_flattened` fields, no `__xarray_encoding.*` attributes).
+
+Results after removing the plot type selector: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 82 / 0 failing (re-recorded: only `plot__err_broken_file` changed, losing `plot_type='auto'`); `npm run typecheck` and pre-commit clean.
+
+Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` 24 / 24 screenshots (4 themes × 6 scenarios, ~18 s).
+
+```bash
+npm run screenshots                              # artefacts/screenshots/v0.13/<theme>/*.png + index.html
+node scripts/screenshots/capture-themes.mjs      # re-record VS Code theme variables (needs a display)
+```
+
+Results after the upgrade-safety work: `npm test` 290 passing; `pytest python/tests` 165 passing; golden snapshots 83 / 0 failing; `upgrade-sandbox.sh` normal, offline and interrupted passing (see [`UPGRADE_TEST_PLAN.md`](./UPGRADE_TEST_PLAN.md#results-2026-10-29-linux-vs-code-1144-uv-0102)).
+
+Results at the end of the code review pass: `npm test` 284 passing / 0 failing; `pytest python/tests` 159 passing (was 112); golden snapshots 83 cases, 0 failing (re-recorded after reviewing the 27 intended info diffs); non-regression plot gallery byte-identical.
+
+Results after the QA pass: `npm test` 325 passing; `pytest python/tests` 195 passing; golden snapshots 82 / 0 failing (re-recorded after checking that every info diff is the encoding move or `nan`); `npm run typecheck`, `generate.py --check` and pre-commit clean. QA harnesses: webview scenarios (render, controls, time, cancel) and VS Code suites passing; backend differential against v0.12.1 without regression.
+
+Results after the progressive plot layout: `npm test` 328 passing; `pytest python/tests` 218 passing; `node scripts/qa/webview/run-all.mjs` all scenarios passing; `generate.py --check` clean. Golden snapshots: plot cases differ by the new `plot_layout` field (and the `5:15` slice text): re-record after review.
+
+Results after removing the Time Controls: `npm test` 310 passing; `npm run typecheck`, `generate.py --check` and pre-commit clean.
+
+```bash
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
+.venv/bin/python scripts/qa/backend/diff_info.py && .venv/bin/python scripts/qa/backend/diff_plot.py
+node scripts/qa/webview/run-all.mjs
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all
+```
+
+**Sample data** (written under `artefacts/sample-data/`):
+
+```bash
+python python/create_sample_data.py --overwrite   # from the repository root
+```
+
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot, §27: QA pass fixes).
+
+---
+
+## Documentation checklist
+
+- [x] `CHANGELOG.md` — [0.13.0] entry
+- [x] `docs/RELEASE_NOTES_0.13.0.md` — release notes + verification guide
+- [x] `docs/v0.13/PR_SUMMARY_0.13.0.md` — this file (MR description)
+- [x] `docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md` — click-by-click manual test plan with results sheet
+- [ ] Manual test plan executed, results sheet pasted in the MR
+- [x] `docs/v0.13/` — planning docs (shipped vs deferred)
+- [x] `README.md` — regenerated (`python scripts/generate_readme.py --no-timestamp`)
+- [x] `docs/documentation.json` — prose, format table, troubleshooting
+- [x] Version `0.13.0` in `package.json`
+- [x] `docs/DEVELOPMENT.md` — backend package layout, sample data commands
+- [x] `CLAUDE.md` — commands and architecture for AI-assisted development
+- [x] `docs/TECHNICAL_ARCHITECTURE.md` — rewritten for the actual architecture (code review)
+- [x] `docs/architecture/` — architecture diagrams, generated by `scripts/architecture/generate.py`
+- [x] `docs/v0.13/CODE_REVIEW_TODO.md` — code review items, all checked
+- [x] `docs/v0.13/GETTING_STARTED.md` — hub: reading order, risks, review and release plan
+- [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
+- [x] `docs/v0.13/QA_REPORT_0.13.0.md` / `QA_FIXES_0.13.0.md` — QA report and fix tracker; `scripts/qa/README.md`
+- [x] `docs/PLOTTING.md` — how a plot is made (plot parameters, layout decision, diagrams)
+- [x] `docs/DEVELOPMENT.md` § Paranoia — `paranoia.sh` profiles, verdicts, what it checks
+- [ ] Release date set in `CHANGELOG.md` / release notes, README regenerated (at release time)
+
+---
+
+## Commits (oldest → newest)
+
+Informational: generated from `git log --reverse --format=%s main..HEAD`, so it can lag one commit behind the commit that updates it.
+
+1. docs: plan v0.13 technology updates
+2. feat: drop stale Sentinel-1 SAFE support claims
+3. feat: require zarr 3 and pin the xarray 2026 stack
+4. feat: detect Zarr stores that are not named *.zarr
+5. feat: identify Zarr codecs and format version in metadata
+6. feat: open Zarr stores packaged as ZIP archives
+7. feat: support xarray col_wrap=auto in plot controls
+8. feat: add NetCDF engine order, HDF5 filters, and inherited DataTree coords
+9. feat: open Kerchunk virtual Zarr references experimentally
+10. feat: label Cloud Optimized GeoTIFF files in file info
+11. feat: add facetgridFigsize setting for faceted xarray plots
+12. chore: release v0.13.0 with changelog and release notes
+13. feat: add v0.13 sample data generators for new formats
+14. docs: complete v0.13.0 release and MR documentation
+
+Backend restructuring:
+
+15. test: add golden snapshot harness for Python backend refactoring
+16. refactor: split get_data_info.py into the sdv_backend package
+17. fix: return a JSON error instead of crashing on unsupported plot types
+18. refactor: decompose create_plot into a selection/render pipeline
+19. refactor: decompose get_file_info and the CLI; share OpenedData
+20. docs: describe the sdv_backend package layout
+21. fix: explain empty plot selections instead of failing in xarray
+22. refactor: make helpers shared across backend modules public
+23. refactor: split create_sample_data.py into the sample_data package
+24. fix(artefacts/sample-data): write sample_data.geotiff with an explicit GTiff driver
+25. docs: mention the sample_data package
+26. feat(artefacts/sample-data): reproducible generation; table-driven main
+27. test: cover v0.13 sample formats in the golden snapshot harness
+28. feat(artefacts/sample-data): add --overwrite and --disposable flags
+29. docs: add CLAUDE.md with project commands and architecture
+30. docs: document the backend restructuring in the v0.13.0 release docs
+31. fix: resolve relative Kerchunk reference paths from the reference folder
+32. docs: add a step-by-step manual test plan for v0.13.0
+33. chore: make all GitHub issue template fields optional
+34. feat: update the extension's uv environment automatically on new versions
+35. docs: update the v0.13.0 manual test plan
+36. chore: say all fields are optional in the question issue form intro
+
+Code review pass (items in `docs/v0.13/CODE_REVIEW_TODO.md`):
+
+37. fix(backend): always return JSON errors, fix serialization and time handling
+38. fix(host): spawn without a shell, serialise Python init, clean up host code
+39. refactor(panel): simplify message bus and panel state; fix Kerchunk and save paths
+40. refactor(webview): TypeScript modules bundled with esbuild; escape data, add CSP
+41. docs: document the code review pass for v0.13.0
+42. docs: list the code review commits in the v0.13.0 PR summary
+43. fix(env): pin eccodeslib<2.48 to stop a crash at exit with pyproj
+44. chore(vscode): run the compile task with nvm's Node
+45. chmoding ensure.sh
+
+Upgrade safety (v0.12 → v0.13):
+
+46. feat(env): delete and rebuild the uv environment when a version needs it
+47. fix(backend): explain when xarray is too old instead of crashing
+48. test: add an upgrade test running v0.12 -> v0.13 in a sandbox profile
+49. docs: add the v0.13 getting-started hub and upgrade test plan
+50. docs: fix stale developer docs
+51. docs: list the upgrade-safety commits in the v0.13.0 PR summary
+
+Viewer styling refresh and screenshots:
+
+52. feat(webview): modernise the viewer styling to match current VS Code
+53. feat(webview): replace the remaining emoji with line icons
+54. feat(tooling): add npm run screenshots for full-page viewer screenshots
+
+Plot type selector:
+
+55. feat(webview): remove the unused plot type selector
+
+Architecture diagrams:
+
+56. feat(tooling): generate architecture diagrams from the code
+57. fix(package): stop shipping docs/ in the .vsix
+58. fix(package): ship only runtime files in the .vsix
+
+Xarray Encoding section:
+
+59. feat(webview): show the xarray encoding in its own collapsible sections
+
+Cancel a single plot:
+
+60. feat(webview): add a Cancel button to each variable's plot
+61. docs: run nvm use before Node commands in CLAUDE.md
+
+Scrollbar space:
+
+62. fix(webview): keep room for the scrollbar so content does not jump after loading
+
+Group attributes alignment:
+
+63. fix(webview): align the colon of group attributes with the other sections
+
+Load time in local time:
+
+64. feat(webview): show the load time in local time (new setting)
+
+Group cards, plot controls layout, dimension slices:
+
+65. feat(webview): show each group as a card with collapsible sections
+66. feat(webview): lay out the plot controls as aligned fields
+67. feat(webview): add start / stop / step boxes and a slider to dimension slices
+68. fix(webview): let one slider handle rewrite only its own slice box
+69. fix(plot): apply vmin / vmax to color meshes of user layouts
+70. fix(webview): keep slice widgets frozen in the exported HTML
+
+QA pass:
+
+71. fix: apply the v0.13.0 QA pass fixes, add the QA harnesses
+
+Progressive plot layout:
+
+72. feat(plot): keep the automatic layout for every control the user leaves empty
+73. feat(webview): outline changed plot controls and show the layout under each plot
+74. docs: explain how a plot is made, with generated decision diagrams
+
+Time Controls removed:
+
+75. feat(webview): remove the Time Controls and their settings
+76. docs: document the removal of the Time Controls

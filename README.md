@@ -14,7 +14,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.12.1** • [Changelog](./CHANGELOG.md#0121---2026-09-14) • [v0.12.1 release notes](./docs/RELEASE_NOTES_0.12.1.md)
+**Current Version: v0.13.0** • [Changelog](./CHANGELOG.md#0130---2026-09-15) • [v0.13.0 release notes](./docs/RELEASE_NOTES_0.13.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -36,6 +36,8 @@ Available on:
 | GRIB       | .grib, .grib2, .grb, .grb2 |
 | GeoTIFF    | .tif, .tiff, .geotiff      |
 | JPEG-2000  | .jp2, .jpeg2000            |
+| Kerchunk   | .kerchunk.json, .ref.json  |
+| Zarr (ZIP) | .zip, .zarr.zip            |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
@@ -52,6 +54,8 @@ Available on:
 - **Easy Settings Access**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> ➜ _Scientific Data Viewer: Show Settings_
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
+- **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and `.zip` / `.zarr.zip` archives; requires **zarr-python ≥ 3** with xarray 2026.4+
+- **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
 
 ## 📸 Screenshot Gallery
 
@@ -111,7 +115,7 @@ Available on:
 3. **Install optional Python dependencies**: (prompted by extension)
 
    ```bash
-   pip install netCDF4 h5py rioxarray cfgrib zarr cdflib
+   pip install netCDF4 h5py rioxarray cfgrib zarr>=3 h5netcdf>=1.8 cdflib
    ```
 
 4. **Open a supported file 🎉**
@@ -134,10 +138,11 @@ The extension will prompt you to install the following packages if they are not 
    - h5py
    - rioxarray
    - cfgrib
-   - zarr
+   - zarr>=3
+   - h5netcdf>=1.8
    - cdflib (for NASA CDF files)
 
-Note: Former Python versions may work, but it is not guaranteed nor supported.
+Note: Former Python versions may work, but it is not guaranteed nor supported. **xarray 2026.4+ requires zarr-python ≥ 3** — upgrade with `pip install "zarr>=3"` if you still have zarr 2.x.
 
 ---
 
@@ -172,7 +177,8 @@ The extension supports multiple ways to configure your Python environment:
    - **Manage Extension Environment**:
      - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (open command palette)
      - Type "Scientific Data Viewer: Manage Extension Virtual Environment"
-     - Choose a command: create, update, delete, view information
+     - Choose a command: create, update, recreate (delete and rebuild from scratch), delete, view information
+   - **Updates**: when a new extension version needs different packages, the environment is deleted and rebuilt automatically at the next start (a notification shows the progress). If the rebuild fails (e.g. offline), the previous environment keeps being used and the rebuild is retried at the next start
    - **Benefits of this approach**:
      - **Python 3.13**: Uses uv to install and use Python 3.13 for optimal performance
      - **Self-Contained**: Works without external Python environment setup
@@ -197,6 +203,8 @@ The extension supports multiple ways to configure your Python environment:
    - Select "Open Scientific Data Viewer" for single file or folder
    - Select "Open Scientific Data Viewer for Selection" to open multiple selected files or folders
    - Command "View: Split Editor" is NOT supported
+   - **Zarr stores**: `.zarr` folders, directories with `zarr.json` / `.zgroup` (even without a `.zarr` suffix), and `.zip` / `.zarr.zip` archives that contain a Zarr store. Use **Open Scientific Data Viewer (Folder)** for directory stores (shown on all folders because metadata cannot be sniffed in menu `when` clauses).
+   - **Kerchunk / virtual Zarr** (:warning: experimental): files named `*.kerchunk.json` or `*.ref.json` open in a dedicated editor. For other `.json` / `.parquet` / `.parq` files, use **Open as Kerchunk / virtual Zarr**. Ordinary JSON is not hijacked. Requires the optional `kerchunk` package (`pip install kerchunk`). Not installed in the extension uv environment by default.
 
 4. **From command palette**:
    - Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>
@@ -213,41 +221,46 @@ You can explore the data via the editor itself, or via the _Data Structure_ tree
 
 The data viewer editor shows:
 
-- **File Information**: Path, size, format, and basic metadata
+- **File Information**: Path, size, format, and basic metadata. GeoTIFF files (`.tif` / `.tiff`) opened via rasterio are labeled **Cloud Optimized GeoTIFF (COG)** when GDAL reports `LAYOUT=COG` or tiled overviews; plain striped TIFFs stay **GeoTIFF**.
 - **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
-- **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dict()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dict.html). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups.
+- **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dataset()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dataset.html) (`inherit='all_coords'` by default). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups. Parent coordinates appear on child groups when **`scientificDataViewer.showInheritedCoordinates`** is enabled (default); they are marked with an `inherited_from` attribute.
 - **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
 - **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
   - **Dimensions**: Dataset dimensions and their sizes
-  - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a coordinate.
-  - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Attributes can be revealed when clicking on a variable.
-    - **Plot Controls** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
-  - **Attributes**: Show group's attributes. Coordinate and variable attributes may include `__xarray_encoding.*` entries when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
+  - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Clicking on a coordinate reveals its attributes and its xarray encoding.
+  - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Clicking on a variable's row reveals or hides all its sections at once: **Attributes** (open by default), **Xarray Encoding** (collapsed by default) and **Plot**; each section can also be collapsed on its own. Creating a plot opens the variable.
+    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
+  - **Attributes**: Show group's attributes.
+  - **Xarray Encoding** (collapsed by default): the group's xarray encoding (e.g. `source`, `unlimited_dims`). Groups, coordinates and variables show this section when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
 
 ### 📐 Dimension Slices
 
 Dimension Slices let you subset data by dimension index or slice before plotting. They are available in **Global Plot Controls** (dimensions merged from all groups) and, when enabled, in each group's **Group Plot Controls**.
 
-- **Where to find it**: In the plot controls area, look for the **Dimension Slices** section. Each dimension of the dataset (or group) has a text input.
-- **Slice syntax** (Python-style):
-  - **Single index**: `130` — use one position along that dimension.
-  - **Range**: `100:120` — from index 100 up to (but not including) 120.
-  - **Range with step**: `0:24:2` — from 0 to 24 in steps of 2 (e.g. every other time step).
-- Slices are applied as xarray's `isel()` before plotting. Invalid slice strings produce a clear error.
-- **Facet row / Facet col**: Use the dropdowns in the same section to choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels).
-- **col_wrap**: Optional positive integer (next to facet row/col) to limit the number of columns in the faceted grid (xarray `col_wrap` kwarg).
-- **x, y, hue**: Optional plot kwargs (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)): choose a dimension or coordinate for the **x**-axis, **y**-axis, or **hue** (e.g. multiple lines). Same dropdown options as facet row/col.
-- **x increase / y increase**: Checkboxes to control axes direction (xarray `xincrease`/`yincrease`; uncheck to reverse an axis).
-- **Aspect / Size**: Optional integer inputs for figure size (xarray: `figsize = (aspect * size, size)` in inches).
-- **Robust**: When checked, uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate the color scale (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)).
-- **Bins**: For histogram-style plots, you can set the number of bins in the Dimension Slices row.
+- **Where to find it**: In the plot controls area, look for the **Dimension slices** block. Each dimension of the dataset (or group) has three boxes, **start : stop : step**, and a slider below them.
+- **Slice syntax** (Python-style, stop excluded):
+  - **Single index**: start with an empty stop, e.g. `130` — use one position along that dimension (a step is then ignored and shown struck through).
+  - **Range**: start and stop, e.g. `100` : `120` — from index 100 up to (but not including) 120.
+  - **Range with step**: e.g. `0` : `24` : `2` — from 0 to 24 in steps of 2 (e.g. every other time step).
+  - Typing or pasting a whole slice such as `0:24:2` in a box spreads it over the three boxes. An open slice keeps its Python meaning: `5:` or `5::2` fills stop with the dimension size (to the end).
+  - **Negative indices** count from the end, as in Python (`-1` is the last one). The slider shows them at their positive position, and the box keeps what you typed until you drag its own handle.
+  - A stop at or before start selects nothing: the stop box is outlined in red. A negative step reverses the slice: the slider is then disabled (use the boxes).
+- **Slider**: drag its two handles to set start and stop (the step is kept); typing in the boxes moves the handles. Dragging one handle only changes its own box (both change when the handles cross). Put the handles on top of each other to select a single index; bring them back to both ends to clear the selection.
+- Slices are applied as xarray's `isel()` before plotting. Invalid slice strings produce a clear error. **Reset** next to the block title clears the slices.
+- **Plot parameters** are grouped below the slices, each with its xarray name above its control:
+  - **Facets**: **row** / **col** choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels); **col_wrap** is an optional positive integer limiting the number of columns, or check **auto** to use xarray `col_wrap='auto'` (xarray 2026.04+).
+  - **Axes**: **x**, **y**, **hue** (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)) choose a dimension or coordinate for the x-axis, y-axis, or hue (e.g. multiple lines); **xincrease** / **yincrease** control the axes direction (uncheck to reverse an axis).
+  - **Color**: **vmin** / **vmax** / **cmap** for the color scale; **robust** uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)); **add_colorbar**.
+  - **Figure**: **size** / **aspect** for the figure size (xarray: `figsize = (aspect * size, size)` in inches); **bins** for histogram-style plots; **add_legend**.
+
+**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields you changed are outlined** (with a dot after their name), so you can see at a glance what differs from the defaults. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically, and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
 
 The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
 **Global vs. Group (inheritance)**
 The extension uses **inheritance** per field: for each plot parameter, the **group** value is used when set (non-empty), otherwise **global** is used. So the two can be mixed (e.g. group's dimension slices with global's facet row when the group left facet at "None"). Empty or "None" in group selectors (facet row/col, plot x/y/hue, cmap) falls back to global. **Only dimension slices are atomic**: they form one set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we do not merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; all other fields (facet row/col, plot x/y/hue, colWrap, aspect, size, robust, cmap, bins, checkboxes) inherit per field (group when set, else global).
 
-**Feature flags**: Four settings control whether each block is shown. **Global Dimension Slices** and **Group Dimension Slices** are **on by default**; **Global Time Controls** and **Group Time Controls** are **off by default** (use Dimension Slices for time instead, e.g. `0:24:2`). You can turn any block on or off in [Settings](#️-settings) under **Feature Flags**.
+**Feature flags**: **Global Dimension Slices** and **Group Dimension Slices** (both **on by default**) control whether each block is shown. You can turn them on or off in [Settings](#️-settings). To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
 
 ### 🖼️ Export Webview Content
 
@@ -255,7 +268,7 @@ The extension allows you to export complete data viewer content as self-containe
 
 1. **Using the Export Button**:
    - Open a scientific data file in the Scientific Data Viewer
-   - Click the export button (🖼️) in the header controls
+   - Click the export button (download icon) in the header toolbar
    - Choose a location and filename for the HTML report
    - The report will be generated and you can choose to open it or reveal it in explorer
 
@@ -284,18 +297,19 @@ The extension allows you to export complete data viewer content as self-containe
 
 Access these commands via the Command Palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>):
 
-| Command                                                        | Description                                                                     |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info) |
-| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                     |
-| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                     |
-| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                          |
-| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                  |
-| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                    |
-| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                       |
-| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report        |
-| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                     |
-| `Scientific Data Viewer: Run Healthcheck`                      | Run a health check on the Python environment and required packages              |
+| Command                                                        | Description                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Scientific Data Viewer: Manage Extension Virtual Environment` | View status and manage the extension environment (create, update, delete, info)                                     |
+| `Scientific Data Viewer: Open Scientific Data Viewer`          | Opens the Scientific Data Viewer for a file                                                                         |
+| `Scientific Data Viewer: Open Scientific Data Viewer (Folder)` | Opens the Scientific Data Viewer for a folder (eg for Zarr)                                                         |
+| `Scientific Data Viewer: Open as Kerchunk / virtual Zarr`      | Experimental: open a Kerchunk JSON or Parquet reference file as virtual Zarr (does not steal ordinary JSON editors) |
+| `Scientific Data Viewer: Refresh Python Environment`           | Refreshes the Python environment used by the extension                                                              |
+| `Scientific Data Viewer: Show Extension Logs`                  | Opens the extension's log output for debugging                                                                      |
+| `Scientific Data Viewer: Show Settings`                        | Opens the extension settings                                                                                        |
+| `Scientific Data Viewer: Open Developer Tools`                 | Opens the developer tools for the webview                                                                           |
+| `Scientific Data Viewer: Export Webview Content`               | Export the active Scientific Data Viewer as a self-contained HTML report                                            |
+| `Scientific Data Viewer: Toggle Dev Mode`                      | Quickly enable/disable dev mode without navigating settings                                                         |
+| `Scientific Data Viewer: Run Healthcheck`                      | Run a health check on the Python environment and required packages                                                  |
 
 ### 🖱️ Context Menu Commands
 
@@ -303,6 +317,8 @@ Right-click on supported file types in the Explorer to access:
 
 - **Scientific Data Viewer: Open Scientific Data Viewer** - Opens the file in the Scientific Data Viewer
 - **Scientific Data Viewer: Open Scientific Data Viewer for Selection** - Opens all selected supported files or folders in the Scientific Data Viewer
+- **Scientific Data Viewer: Open Scientific Data Viewer (Folder)** - Opens a folder in the Scientific Data Viewer. Shown on every folder because Zarr stores are identified by their metadata rather than by name, which a menu 'when' clause cannot inspect
+- **Scientific Data Viewer: Open as Kerchunk / virtual Zarr** - Experimental: open Kerchunk JSON/Parquet references as virtual Zarr. Ordinary JSON is not a custom editor.
 
 ## ⚙️ Settings
 
@@ -312,7 +328,7 @@ The extension can be configured through VSCode settings:
 
 - **`scientificDataViewer.maxFileSize`**
   - (type: `number`, default: `1000000000000`)
-  - Maximum file size in **MB** to load automatically. Files above this limit are not loaded.
+  - Maximum file size in **MB** to load automatically. Files above this limit are not loaded. Applies to files only: directory stores (Zarr) are not checked. 0 or a negative value means no limit.
 - **`scientificDataViewer.defaultView`**
   - (type: `string`, default: `"default"`)
   - Default view mode for data display (currently unused)
@@ -339,6 +355,9 @@ The extension can be configured through VSCode settings:
 - **`scientificDataViewer.smallValueDisplayMaxLen`**
   - (type: `number`, default: `500`)
   - Maximum character length for the string representation of small variable/coordinate values. Longer representations are truncated with "...". Only used when **smallVariableBytes** is greater than 0.
+- **`scientificDataViewer.facetgridFigsize`**
+  - (type: `array`, default: `[]`)
+  - Optional `[width, height]` in **inches** passed to xarray `set_options(facetgrid_figsize=...)` for **faceted** plots only (when facet row/col is used). Leave empty to use xarray defaults. Example: `[4, 3]`.
 - **`scientificDataViewer.plotTimeoutMs`**
   - (type: `number`, default: `20000`)
   - Maximum time in **milliseconds** to wait for a plot before it is cancelled and the backend process is terminated. Use a higher value (e.g. 120000 for 2 minutes) for large datasets when you want a quicklook without slicing first. Minimum 1000 (1s), maximum 600000 (10 min). Default: 20000 (20s).
@@ -379,17 +398,9 @@ The extension includes specific settings for virtual environment management:
 
 **Plot controls (Global and Group)**
 
-- **`scientificDataViewer.globalTimeControls`**
-  - (type: `boolean`, default: `false`)
-  - When enabled, shows datetime variable selection and start/end time inputs in the plot area. **Off by default** — use **Global Dimension Slices** to subset time by index (e.g. `0:24:2`) instead.
-  - Dimension Slices (isel) is data-agnostic; a future **sel** (label-based) feature could complement isel for datetime and other coordinates.
 - **`scientificDataViewer.globalDimensionSlices`**
   - (type: `boolean`, default: `true`)
   - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**
-- **`scientificDataViewer.groupTimeControls`**
-  - (type: `boolean`, default: `false`)
-  - Show **Group Time Controls** per group (datetime, start/end) in each group's Plot Controls section. **Off by default** — use **Group Dimension Slices** to subset time by index instead (e.g. `0:24:2`).
-  - When enabled, each group gets its own time/datetime controls.
 - **`scientificDataViewer.groupDimensionSlices`**
   - (type: `boolean`, default: `true`)
   - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
@@ -401,31 +412,51 @@ The extension includes specific settings for virtual environment management:
   - When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Use **Refresh** (🔄) after changing.
 - **`scientificDataViewer.showXarrayEncodingAttributes`**
   - (type: `boolean`, default: `true`)
-  - When enabled (**default**), the viewer includes xarray encoding metadata as `__xarray_encoding.*` attribute entries (e.g. `_FillValue`, `dtype`, chunking) for groups, coordinates, and variables. Disable to hide these from attribute tables. Use **Refresh** (🔄) after changing.
+  - When enabled (**default**), groups, coordinates, and variables get an **Xarray Encoding** section (collapsed by default, next to their attributes) listing their xarray encoding (e.g. `_FillValue`, `dtype`, chunking, compression, Zarr codecs). Disable to hide these sections. Use **Refresh** (🔄) after changing.
+- **`scientificDataViewer.showInheritedCoordinates`**
+  - (type: `boolean`, default: `true`)
+  - When enabled (**default**), child groups in multi-group NetCDF / Zarr DataTrees include coordinates inherited from parent nodes (`DataTree.to_dataset(inherit='all_coords')`). Inherited coordinates are tagged with an `inherited_from` attribute. Disable to list only coordinates stored on that group. Use **Refresh** (🔄) after changing.
+- **`scientificDataViewer.netcdfEngineOrder`**
+  - (type: `array`, default: `['netcdf4', 'h5netcdf', 'scipy']`)
+  - Order of xarray engines to try when opening **NetCDF** files (`.nc`, `.nc4`, `.netcdf`). Default matches xarray: `netcdf4`, then `h5netcdf`, then `scipy`. **Does not apply to NASA CDF (`.cdf`)**, which always uses `cdflib`. Missing engines are skipped. Use **Refresh** (🔄) after changing.
 - **`scientificDataViewer.nestedAttributesView`**
   - (type: `boolean`, default: `true`)
   - When enabled, group attributes are shown as an **expandable/collapsible tree** instead of a flat list. Useful for Zarr (and similar formats) where attributes are stored as nested JSON (e.g. `.zattrs`). **On by default.** Set to `false` to opt out and use the flat list. See [Issue #120](https://github.com/etienneschalk/scientific-data-viewer/issues/120).
+- **`scientificDataViewer.showLoadTimeInLocalTime`**
+  - (type: `boolean`, default: `true`)
+  - When enabled (**default**), the **Loaded:** timestamp at the top right of the viewer is shown in your local time zone, with its UTC offset (e.g. `2026-10-29T14:03:12.345+01:00`). Disable to show it in UTC (e.g. `2026-10-29T13:03:12.345Z`). Applies at the next load or **Refresh** (🔄).
 
 ## 🔧 Troubleshooting
 
 ### ⚠️ Common Issues
 
-1. **Windows: extension not working (0.8.0 / 0.8.1)**:
+1. **The extension stopped working after an update**:
+   - Try these steps in order:
+     1. **Check the logs**: run "Scientific Data Viewer: Show Extension Logs" (lines starting with `[uv]` describe the extension's own environment).
+     2. **Rebuild the extension's own environment** (if you use **Use Extension Own Environment**): run "Scientific Data Viewer: Manage Extension Virtual Environment" → **Recreate**. It deletes the environment and builds it again from scratch; the previous one is kept if the rebuild fails.
+     3. **Use another interpreter for now**: turn off `scientificDataViewer.python.useExtensionOwnEnvironment` to use the Python extension's interpreter, or set `scientificDataViewer.python.overridePythonInterpreter`.
+     4. **Delete the environment by hand**: close VS Code and delete the `python-environment` folder in the extension's storage ("Manage Extension Virtual Environment" → **Open in Explorer** shows it): `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/` (Linux), `~/Library/Application Support/Code/User/globalStorage/eschalk0.scientific-data-viewer/` (macOS), `%APPDATA%\Code\User\globalStorage\eschalk0.scientific-data-viewer\` (Windows). It is recreated at the next start.
+     5. **Go back to the previous version**: in the Extensions view, click the gear of Scientific Data Viewer → **Install Specific Version…**, and [report the issue](https://github.com/etienneschalk/scientific-data-viewer/issues/new?template=bug_report.yml) with the logs.
+
+2. **Windows: extension not working (0.8.0 / 0.8.1)**:
    - Versions 0.8.0 and 0.8.1 have [known issues](https://github.com/etienneschalk/scientific-data-viewer/issues/118) on Windows (e.g. "Invalid response format", "Python environment not ready"). **v0.8.2 attempts to fix this.** If the problem persists after updating to 0.8.2, use [version 0.7.0](https://github.com/etienneschalk/scientific-data-viewer/releases/tag/v0.7.0) as a workaround.
 
-2. **Python not found**:
+3. **Python not found**:
    - Ensure Python is installed and in your PATH. Use the "Python: Select Interpreter" command to manually set the path. Consider using the extension's own virtual environment for a self-contained solution.
 
-3. **uv not available**:
+4. **uv not available**:
    - Consult the documentation: [uv installation](https://docs.astral.sh/uv/getting-started/installation/). Install uv manually: `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`. If uv is not installed, the extension will fall back to using the Python extension's interpreter.
 
-4. **Missing packages**:
-   - Install required packages: `pip install xarray matplotlib`. Install per-format packages: `pip install netCDF4 zarr h5py numpy rioxarray`. Or let the extension install them automatically (prompt when opening a file).
+5. **Missing packages**:
+   - Install required packages: `pip install xarray matplotlib`. Install per-format packages: `pip install netCDF4 "zarr>=3" h5netcdf h5py numpy rioxarray`. Or let the extension install them automatically (prompt when opening a file). If xarray is 2026.4+ but zarr is still 2.x, upgrade with `pip install "zarr>=3"`.
 
-5. **Large files not loading**:
+6. **zarr 2.x reported as missing or too old**:
+   - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, the environment is rebuilt automatically after the extension update; otherwise run **Manage Extension Virtual Environment → Recreate**.
+
+7. **Large files not loading**:
    - Increase the `maxFileSize` setting. Consider using data slicing for very large datasets.
 
-6. **Permission errors**:
+8. **Permission errors**:
    - Ensure the extension has permission to read your data files. Check file permissions and VSCode workspace settings.
 
 ### 💬 Getting Help

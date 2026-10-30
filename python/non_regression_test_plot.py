@@ -7,13 +7,15 @@ v0.11+ plot controls (20-25: vmin/vmax maps, colorbar, legend, issue #134) on th
 sample file. See:
 https://github.com/etienneschalk/scientific-data-viewer/issues/117#issuecomment-4025666878
 
-Default input: ``sample-data/hs-issue-0117.nc`` (expected to be the ``hs`` array
-after ``isel(rlat=slice(200,500), rlon=slice(2000,2250))`` on the original grid).
+Default input: ``artefacts/sample-data/hs-issue-0117.nc``, the ``hs`` array after
+``isel(rlat=slice(200,500), rlon=slice(2000,2250))`` on the original grid; a
+seeded synthetic stand-in of the same shape is written there by
+``create_sample_data.py`` (``sample_data/waves.py``).
 
 By default, PNG outputs go under
-``sample-data/non_regression_test_plot/v<version>/`` where ``<version>`` is read
-from the repository ``package.json`` (e.g. ``v0.11.1``). Pass ``--out-dir`` to
-override. ``setup.sh`` runs this after ``create_sample_data.py`` for visual checks.
+``artefacts/non-regression-plots/v<version>/`` where ``<version>`` is read from
+the repository ``package.json`` (e.g. ``v0.13.0``). Pass ``--out-dir`` to
+override. ``setup.sh`` and ``paranoia.sh`` run it for visual checks.
 Also writes ``summary.md`` next to ``summary.txt`` (markdown with embedded PNGs).
 
 Use ``--full-grid`` when the NetCDF is the full domain; the script then applies
@@ -29,7 +31,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 # Run from repo: python/python is on path
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -37,10 +39,12 @@ _REPO_ROOT = _SCRIPT_DIR.parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from get_data_info import CreatePlotError, CreatePlotResult, create_plot  # noqa: E402
+from sdv_backend.plotting.api import create_plot  # noqa: E402
+from sdv_backend.plotting.options import PlotOptions  # noqa: E402
+from sdv_backend.results import CreatePlotError, CreatePlotResult  # noqa: E402
 
-DEFAULT_DATA_REL = Path("sample-data") / "hs-issue-0117.nc"
-DEFAULT_OUT_BASE_REL = Path("sample-data") / "non_regression_test_plot"
+DEFAULT_DATA_REL = Path("artefacts") / "sample-data" / "hs-issue-0117.nc"
+DEFAULT_OUT_BASE_REL = Path("artefacts") / "non-regression-plots"
 DEFAULT_VARIABLE_PATH = "/hs"
 
 ISSUE_117_URL = "https://github.com/etienneschalk/scientific-data-viewer/issues/117"
@@ -48,7 +52,7 @@ ISSUE_117_COMMENT_URL = f"{ISSUE_117_URL}#issuecomment-4025666878"
 
 
 def _default_out_dir(repo_root: Path) -> Path:
-    """``sample-data/non_regression_test_plot/v<version>`` from ``package.json``."""
+    """``artefacts/non-regression-plots/v<version>`` from ``package.json``."""
     pkg = repo_root / "package.json"
     if pkg.is_file():
         try:
@@ -87,7 +91,7 @@ class PlotCase:
     bins: int | None = None
     facet_row: str | None = None
     facet_col: str | None = None
-    col_wrap: int | None = None
+    col_wrap: int | Literal["auto"] | None = None
     plot_x: str | None = None
     plot_y: str | None = None
     plot_hue: str | None = None
@@ -802,7 +806,7 @@ def _write_summary_md(
     )
     parts: list[str] = [
         "# Non-regression plot report (Issue #117)\n\n",
-        f"_Generated {now} with `create_plot` from `get_data_info.py`._\n\n",
+        f"_Generated {now} with `create_plot` from `sdv_backend`._\n\n",
         "## Background\n\n",
         "This report mirrors the workflows discussed in "
         f"[Issue #117]({ISSUE_117_URL}) "
@@ -916,7 +920,7 @@ def main() -> int:
     if not data_path.is_file():
         print(
             f"error: data file not found: {data_path}\n"
-            f"Place hs-issue-0117.nc under sample-data/ or pass --data-file.",
+            "Create it with python python/create_sample_data.py, or pass --data-file.",
             file=sys.stderr,
         )
         return 1
@@ -961,26 +965,27 @@ def main() -> int:
         result = create_plot(
             data_path,
             args.variable_path,
-            plot_type="auto",
-            style=args.style,
-            dimension_slices=case.dimension_slices,
-            facet_row=case.facet_row,
-            facet_col=case.facet_col,
-            col_wrap=case.col_wrap,
-            plot_x=case.plot_x,
-            plot_y=case.plot_y,
-            plot_hue=case.plot_hue,
-            xincrease=case.xincrease,
-            yincrease=case.yincrease,
-            aspect=case.aspect,
-            size=case.size,
-            robust=case.robust,
-            cmap=case.cmap,
-            bins=case.bins,
-            vmin=case.vmin,
-            vmax=case.vmax,
-            add_colorbar=(True if case.add_colorbar is None else case.add_colorbar),
-            add_legend=(False if case.add_legend is None else case.add_legend),
+            PlotOptions(
+                style=args.style,
+                dimension_slices=case.dimension_slices,
+                facet_row=case.facet_row,
+                facet_col=case.facet_col,
+                col_wrap=case.col_wrap,
+                plot_x=case.plot_x,
+                plot_y=case.plot_y,
+                plot_hue=case.plot_hue,
+                xincrease=case.xincrease,
+                yincrease=case.yincrease,
+                aspect=case.aspect,
+                size=case.size,
+                robust=case.robust,
+                cmap=case.cmap,
+                bins=case.bins,
+                vmin=case.vmin,
+                vmax=case.vmax,
+                add_colorbar=True if case.add_colorbar is None else case.add_colorbar,
+                add_legend=False if case.add_legend is None else case.add_legend,
+            ),
         )
 
         if isinstance(result, CreatePlotError):
