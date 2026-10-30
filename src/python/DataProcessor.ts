@@ -99,9 +99,6 @@ export function buildCreatePlotCliArgs(
         args.push('--convert-bands-to-variables');
     }
     const stringFlags: Array<[string, string | null | undefined]> = [
-        ['--datetime-variable', plot.datetimeVariableName],
-        ['--start-datetime', plot.startDatetime],
-        ['--end-datetime', plot.endDatetime],
         ['--facet-row', plot.facetRow],
         ['--facet-col', plot.facetCol],
         ['--plot-x', plot.plotX],

@@ -89,7 +89,7 @@ Read: `src/panel/webview/plotParams.ts` · `src/panel/webview/changedFields.ts` 
 
 ## 8. Plot layout decision in the backend
 
-`resolve_layout` keeps every role the user set and fills the others from the dimensions left free, so changing one parameter keeps the automatic choice of the rest. Dimension slices and the time range only select data: slicing `lat` of a 3D variable still gives one image per time step.
+`resolve_layout` keeps every role the user set and fills the others from the dimensions left free, so changing one parameter keeps the automatic choice of the rest. Dimension slices only select data: slicing `lat` of a 3D variable still gives one image per time step.
 
 ![Plot layout decision in the backend](svg/plot-layout.svg)
 

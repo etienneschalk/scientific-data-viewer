@@ -9,11 +9,6 @@ import {
 import { renderPlotLayout } from './render/plotLayout';
 import { activePlotOperations, globalState, plotAllState } from './state';
 import {
-    convertDatetimeLocalToISO,
-    globalTimeControlsSection,
-    readTimeControls,
-} from './timeControls';
-import {
     findByData,
     generateDefaultFileName,
     setMultilineText,
@@ -266,10 +261,6 @@ function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
     const { variable } = plotParts(controls);
     const { globalSection, groupSection } = plotControlSections(variable);
 
-    const globalTime = readTimeControls(globalTimeControlsSection());
-    const groupTime = readTimeControls(
-        groupSection?.querySelector('.time-controls-section') ?? null,
-    );
     const params = mergePlotControls(
         groupSection ? readPlotControls(groupSection) : null,
         readPlotControls(globalSection ?? document.createElement('div')),
@@ -277,14 +268,6 @@ function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
 
     return {
         variable,
-        datetimeVariableName:
-            groupTime.datetimeVariableName ?? globalTime.datetimeVariableName,
-        startDatetime: convertDatetimeLocalToISO(
-            groupTime.startDatetime ?? globalTime.startDatetime,
-        ),
-        endDatetime: convertDatetimeLocalToISO(
-            groupTime.endDatetime ?? globalTime.endDatetime,
-        ),
         ...params,
     };
 }

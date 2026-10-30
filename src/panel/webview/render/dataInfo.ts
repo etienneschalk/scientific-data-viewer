@@ -10,12 +10,6 @@ import {
     showInheritedCheckboxes,
 } from '../plotParams';
 import { globalState } from '../state';
-import {
-    collectDatetimeVariables,
-    DatetimeVariablesByGroup,
-    datetimeOptionsHtml,
-    populateDatetimeVariables,
-} from '../timeControls';
 import { clampPlotTimeout, escapeHtml, formatFileSize } from '../util';
 import {
     displayExtensionConfig,
@@ -48,7 +42,6 @@ export interface DataInfo {
     variables_flattened?: Record<string, VariableInfo[]>;
     attributes_flattened?: Record<string, Record<string, unknown>>;
     encoding_flattened?: Record<string, Record<string, unknown>>;
-    datetime_variables?: DatetimeVariablesByGroup;
     xarray_html_repr?: string;
     xarray_text_repr?: string;
     xarray_html_repr_flattened?: Record<string, string>;
@@ -68,9 +61,7 @@ export interface DataLoadedPayload {
 }
 
 interface DisplayFlags {
-    globalTimeControls: boolean;
     globalDimensionSlices: boolean;
-    groupTimeControls: boolean;
     groupDimensionSlices: boolean;
     nestedAttributesView: boolean;
     isFirstRootGroup?: boolean;
@@ -124,9 +115,7 @@ function displayDataInfo(
     // Feature flags (default true when config not available)
     const config = extensionConfig ?? {};
     const flags: DisplayFlags = {
-        globalTimeControls: config.globalTimeControls !== false,
         globalDimensionSlices: config.globalDimensionSlices !== false,
-        groupTimeControls: config.groupTimeControls !== false,
         groupDimensionSlices: config.groupDimensionSlices !== false,
         nestedAttributesView: config.nestedAttributesView !== false,
     };
@@ -144,12 +133,6 @@ function displayDataInfo(
     if (fileInfo) {
         fileInfo.innerHTML = renderFileInformation(data);
     }
-
-    // Datetime variables first: group time selects prefill from this map.
-    populateDatetimeVariables(
-        data.datetime_variables,
-        flags.globalTimeControls,
-    );
 
     const groupInfoContainer = document.getElementById('group-info-container');
     if (groupInfoContainer) {
@@ -337,57 +320,25 @@ function renderGroupSection(
                     </details>`;
 }
 
-/** Group time controls and plot parameters (same markup roles as the global ones). */
+/** Group dimension slices and plot parameters (same markup roles as the global ones). */
 function renderGroupPlotControls(
     data: DataInfo,
     groupName: string,
     flags: DisplayFlags,
 ): string {
     const scope = groupPlotScope(groupName);
-    const safeId = scope.safeId;
-    const groupAttr = `data-group="${escapeHtml(groupName)}"`;
     const groupDims = data.dimensions_flattened?.[groupName] ?? {};
     const dimNames = Object.keys(groupDims).sort();
-    const timeVars = collectDatetimeVariables(data.datetime_variables ?? {}, [
-        groupName,
-    ]);
+    if (!flags.groupDimensionSlices || dimNames.length === 0) {
+        return '';
+    }
 
     const heading = (title: string, action: string, help: string) => /*html*/ `
                         <div class="plot-controls-heading">
                             <h5 class="plot-controls-subsection-title">${title}</h5>
                             <button type="button" class="plot-reset-button" data-action="${action}" title="${help}">Reset</button>
                         </div>`;
-    const timeField = (role: 'start' | 'end', label: string) => /*html*/ `
-                            <div class="plot-field">
-                                <label for="group-${role}-datetime-${safeId}" class="plot-field-label"><span class="plot-field-name">${label}</span></label>
-                                <input type="datetime-local" id="group-${role}-datetime-${safeId}" class="datetime-input" data-time="${role}" ${groupAttr} />
-                                <input type="text" id="group-${role}-datetime-text-${safeId}" class="datetime-text-input" data-time="${role}-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="${label} (text)" ${groupAttr} />
-                            </div>`;
-
-    const timeControlsHtml =
-        flags.groupTimeControls && timeVars.length > 0
-            ? /*html*/ `
-                <div class="group-plot-controls time-controls-section">
-                    <div class="plot-controls-subsection">
-                        ${heading('Time range', 'clear-time', 'Clear the time range')}
-                        <p class="dimension-slices-hint">Plot only the values between two dates of a datetime variable; overrides the global time range.</p>
-                        <div class="plot-fields plot-fields--time">
-                            <div class="plot-field">
-                                <label for="group-datetime-select-${safeId}" class="plot-field-label"><span class="plot-field-name">Datetime variable</span></label>
-                                <select id="group-datetime-select-${safeId}" class="datetime-variable-select" data-time="variable" ${groupAttr}>
-                                    ${datetimeOptionsHtml('Select...', timeVars)}
-                                </select>
-                            </div>
-                            ${timeField('start', 'Start')}
-                            ${timeField('end', 'End')}
-                        </div>
-                    </div>
-                </div>`
-            : '';
-
-    const dimensionSlicesHtml =
-        flags.groupDimensionSlices && dimNames.length > 0
-            ? /*html*/ `
+    const dimensionSlicesHtml = /*html*/ `
                 <div class="group-plot-controls dimension-slices-section">
                     <div class="plot-controls-subsection dimension-slices-isel">
                         ${heading('Dimension slices <code>isel</code>', 'clear-plot-controls', 'Clear the dimension slices')}
@@ -403,17 +354,12 @@ function renderGroupPlotControls(
                             ${renderPlotParameters(scope, dimNames)}
                         </div>
                     </div>
-                </div>`
-            : '';
-
-    if (!timeControlsHtml && !dimensionSlicesHtml) {
-        return '';
-    }
+                </div>`;
 
     return renderGroupSection(
         joinId(['data-group', groupName, 'group-plot-controls']),
         'Group Plot Controls',
-        /*html*/ `<div class="plot-controls-content">${timeControlsHtml}${dimensionSlicesHtml}</div>`,
+        /*html*/ `<div class="plot-controls-content">${dimensionSlicesHtml}</div>`,
         { open: !!flags.isFirstRootGroup, plotGroup: groupName },
     );
 }

@@ -484,7 +484,6 @@ suite('buildCreatePlotCliArgs', () => {
             '/d/a.nc',
             {
                 variable: 't',
-                datetimeVariableName: '   ',
                 facetRow: '',
                 cmap: null as unknown as string,
                 colWrap: 0,
@@ -507,9 +506,6 @@ suite('buildCreatePlotCliArgs', () => {
             '/d/a.nc',
             {
                 variable: 't',
-                datetimeVariableName: 'time',
-                startDatetime: '2020-01-01',
-                endDatetime: '2020-02-01',
                 dimensionSlices: { time: '0:2' },
                 facetRow: 'time',
                 facetCol: 'lev',
@@ -538,9 +534,6 @@ suite('buildCreatePlotCliArgs', () => {
             },
         );
         const flagValue = (flag: string) => args[args.indexOf(flag) + 1];
-        assert.strictEqual(flagValue('--datetime-variable'), 'time');
-        assert.strictEqual(flagValue('--start-datetime'), '2020-01-01');
-        assert.strictEqual(flagValue('--end-datetime'), '2020-02-01');
         assert.strictEqual(flagValue('--dimension-slices'), '{"time":"0:2"}');
         assert.strictEqual(flagValue('--facet-row'), 'time');
         assert.strictEqual(flagValue('--facet-col'), 'lev');

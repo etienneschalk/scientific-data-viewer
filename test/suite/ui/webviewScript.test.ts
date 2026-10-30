@@ -524,7 +524,6 @@ suite('Webview script (jsdom)', () => {
         const doc = harness.document;
 
         // Global controls
-        harness.setValue(doc.getElementById('datetimeVariableSelect'), 'time');
         harness.setValue(doc.getElementById('plotBinsInput'), '20');
         harness.setValue(doc.getElementById('plotCmapInput'), 'viridis');
         harness.setValue(doc.getElementById('plotAspectInput'), '-1');
@@ -557,9 +556,6 @@ suite('Webview script (jsdom)', () => {
         assert.ok(String(operationId).startsWith('plot-'));
         assert.deepStrictEqual(payload, {
             variable: '/temperature',
-            datetimeVariableName: 'time',
-            startDatetime: '2020-01-01T00:00:00',
-            endDatetime: '2020-01-03T00:00:00',
             dimensionSlices: { time: '0:2' },
             colWrap: 3,
             xincrease: false,
@@ -573,52 +569,13 @@ suite('Webview script (jsdom)', () => {
         });
     });
 
-    test('group time text inputs and variable select drive the filter', () => {
+    test('no time range controls, even for datetime variables', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;
-        const safeId = 'group-plot___-';
-
-        const select = doc.getElementById(`group-datetime-select-${safeId}`);
-        harness.setValue(select, 'time');
         assert.strictEqual(
-            doc.getElementById(`group-start-datetime-${safeId}`).value,
-            '2020-01-01T00:00',
-            'group select prefills the range',
+            doc.querySelectorAll('.time-controls-section, [data-time]').length,
+            0,
         );
-        harness.setValue(
-            doc.getElementById(`group-end-datetime-text-${safeId}`),
-            '2020-01-02 12:00:00',
-            'input',
-        );
-
-        harness.click(
-            harness
-                .plotControls('/temperature')
-                .querySelector('[data-action="create-plot"]'),
-        );
-        const [request] = harness.requests('createPlot');
-        assert.strictEqual(request.payload.datetimeVariableName, 'time');
-        assert.strictEqual(request.payload.endDatetime, '2020-01-02T12:00:00');
-    });
-
-    test('refresh does not keep a stale datetime variable', () => {
-        harness.loadData(sampleDataInfo());
-        harness.setValue(
-            harness.document.getElementById('datetimeVariableSelect'),
-            'time',
-        );
-
-        const withoutTime = sampleDataInfo();
-        withoutTime.datetime_variables = {};
-        harness.loadData(withoutTime);
-
-        harness.click(
-            harness
-                .plotControls('/temperature')
-                .querySelector('[data-action="create-plot"]'),
-        );
-        const [request] = harness.requests('createPlot');
-        assert.strictEqual(request.payload.datetimeVariableName, undefined);
     });
 
     suite('dimension slices: start / stop / step boxes and slider', () => {
@@ -830,35 +787,6 @@ suite('Webview script (jsdom)', () => {
         assert.ok(!changed(groupColorbar.id), 'group uses the global value');
         groupColorbar.click();
         assert.ok(changed(groupColorbar.id), 'group value of its own');
-    });
-
-    test('a time range prefilled with the full range is not a change', () => {
-        harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        const changed = (id: string) =>
-            doc
-                .getElementById(id)
-                .closest('.plot-field')
-                .classList.contains('plot-field--changed');
-
-        harness.setValue(doc.getElementById('datetimeVariableSelect'), 'time');
-        assert.ok(changed('datetimeVariableSelect'));
-        assert.ok(!changed('startDatetimeInput'), 'prefilled minimum');
-        assert.ok(!changed('endDatetimeInput'), 'prefilled maximum');
-
-        harness.setValue(
-            doc.getElementById('endDatetimeTextInput'),
-            '2020-01-02 12:00:00',
-            'input',
-        );
-        assert.ok(changed('endDatetimeInput'), 'end moved');
-
-        harness.click(doc.getElementById('clearTimeControlsButton'));
-        assert.strictEqual(
-            doc.querySelectorAll('.time-controls-section .plot-field--changed')
-                .length,
-            0,
-        );
     });
 
     test('the plot shows its layout: set by the user or automatic', async () => {

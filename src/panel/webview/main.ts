@@ -43,7 +43,6 @@ import {
     renderGlobalPlotParameters,
 } from './render/dataInfo';
 import { displayTimestamp } from './render/representations';
-import { clearTimeControls, handleTimeControlEvent } from './timeControls';
 
 function showDegradedModeIndicator(): void {
     const indicator = document.createElement('span');
@@ -179,13 +178,6 @@ const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
         executeInstallPackagesCommand(
             (element.dataset.packages ?? '').split(',').filter(Boolean),
         ),
-    'clear-time': (element) => {
-        const section = element.closest('.time-controls-section');
-        if (section) {
-            clearTimeControls(section);
-            refreshChangedFields(section);
-        }
-    },
     // Resets the block of the button: dimension slices or plot parameters
     'clear-plot-controls': (element) => {
         const section = element.closest('.plot-controls-subsection');
@@ -247,14 +239,12 @@ function setupEventListeners(): void {
             syncColWrapAutoCheckbox(target);
         }
         handleInheritedCheckboxChange(target);
-        handleTimeControlEvent(target);
         handleDimensionSliceEvent(target);
         validatePlotParameterInput(target);
         // Last: the handlers above may rewrite other controls
         handleChangedFieldEvent(target);
     });
     document.addEventListener('input', (event) => {
-        handleTimeControlEvent(event.target);
         handleDimensionSliceEvent(event.target);
         validatePlotParameterInput(event.target);
         handleChangedFieldEvent(event.target);

@@ -3,9 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-    getGlobalTimeControls,
     getGlobalDimensionSlices,
-    getGroupTimeControls,
     getGroupDimensionSlices,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
@@ -42,18 +40,8 @@ function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
 }
 
 suite('Config Test Suite', () => {
-    test('getGlobalTimeControls returns a boolean', () => {
-        const value = getGlobalTimeControls();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
     test('getGlobalDimensionSlices returns a boolean', () => {
         const value = getGlobalDimensionSlices();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
-    test('getGroupTimeControls returns a boolean', () => {
-        const value = getGroupTimeControls();
         assert.strictEqual(typeof value, 'boolean');
     });
 
@@ -80,9 +68,7 @@ suite('Config Test Suite', () => {
     test('getExtensionConfigForWebview returns object with expected keys', () => {
         const config = getExtensionConfigForWebview();
         assert.strictEqual(typeof config, 'object');
-        assert.strictEqual(typeof config.globalTimeControls, 'boolean');
         assert.strictEqual(typeof config.globalDimensionSlices, 'boolean');
-        assert.strictEqual(typeof config.groupTimeControls, 'boolean');
         assert.strictEqual(typeof config.groupDimensionSlices, 'boolean');
         assert.strictEqual(typeof config.nestedAttributesView, 'boolean');
         assert.strictEqual(typeof config.outlineEnabled, 'boolean');

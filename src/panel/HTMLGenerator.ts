@@ -356,37 +356,8 @@ export class HTMLGenerator {
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
 
-                <!-- One card: time range, dimension slices, plot parameters -->
+                <!-- One card: dimension slices, plot parameters -->
                 <div class="plot-controls-card"><div class="plot-controls-content">
-                    <div class="time-controls-section" style="display: none;">
-                        <div class="plot-controls-subsection">
-                            <div class="plot-controls-heading">
-                                <h5 class="plot-controls-subsection-title">Time range</h5>
-                                <button type="button" id="clearTimeControlsButton" class="plot-reset-button" data-action="clear-time" title="Clear the time range">Reset</button>
-                            </div>
-                            <p class="dimension-slices-hint">Plot only the values between two dates of a datetime variable.</p>
-                            <div class="plot-fields plot-fields--time">
-                                <div class="plot-field">
-                                    <label for="datetimeVariableSelect" class="plot-field-label"><span class="plot-field-name">Datetime variable</span></label>
-                                    <select id="datetimeVariableSelect" class="datetime-variable-select" data-time="variable">
-                                        <option value="">Select datetime variable...</option>
-                                        <!-- Options will be populated dynamically -->
-                                    </select>
-                                </div>
-                                <div class="plot-field">
-                                    <label for="startDatetimeInput" class="plot-field-label"><span class="plot-field-name">Start</span></label>
-                                    <input type="datetime-local" id="startDatetimeInput" class="datetime-input" data-time="start" />
-                                    <input type="text" id="startDatetimeTextInput" class="datetime-text-input" data-time="start-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="Start (text)" />
-                                </div>
-                                <div class="plot-field">
-                                    <label for="endDatetimeInput" class="plot-field-label"><span class="plot-field-name">End</span></label>
-                                    <input type="datetime-local" id="endDatetimeInput" class="datetime-input" data-time="end" />
-                                    <input type="text" id="endDatetimeTextInput" class="datetime-text-input" data-time="end-text" placeholder="YYYY-MM-DD HH:MM:SS" aria-label="End (text)" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Dimension Slices (Issue #117) and plot parameters -->
                     <div class="dimension-slices-section" style="display: none;">
                         <div class="plot-controls-subsection dimension-slices-isel">

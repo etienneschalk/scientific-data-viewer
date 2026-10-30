@@ -19,7 +19,7 @@ async function waitAllPlots(p) {
 
 // ---------- XSS through every place file data reaches ----------
 for (const f of ['xss_names.nc', 'xss_groups.nc', 'xss_names.zarr', 'zarr_with_nested_attrs.zarr', 'nodata_float.tif', 'unicode_names.nc', 'dash_names.zarr', 'attr_zoo.nc']) {
-    const p = await openViewer(`${ADV}/${f}`, { config: { globalTimeControls: true, groupTimeControls: true } });
+    const p = await openViewer(`${ADV}/${f}`);
     await p.eval(`document.getElementById('expandAllButton').click(); true`);
     await sleep(300);
     // Plot every variable (names go into payloads, errors, alt text)
@@ -90,7 +90,7 @@ for (const f of [`${SD}/broken_file.nc`, `${ADV}/text_as.nc`, `${ADV}/corrupt.zi
     check('showXarrayEncodingAttributes=false → no Xarray Encoding sections', off === 0, { off });
     await p2.close();
     for (const w of [420, 320]) {
-        const p3 = await openViewer(`${SD}/sample_data_multiple_groups.nc`, { width: w, config: { globalTimeControls: true, groupTimeControls: true } });
+        const p3 = await openViewer(`${SD}/sample_data_multiple_groups.nc`, { width: w });
         await p3.eval(`document.getElementById('expandAllButton').click(); true`);
         await sleep(300);
         const m = await p3.eval(`({ scrollW: document.documentElement.scrollWidth, innerW: window.innerWidth, overflowing: [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > window.innerWidth + 1 && getComputedStyle(e).position !== 'fixed'; }).slice(0, 8).map(e => e.tagName + '.' + e.className + ' right=' + Math.round(e.getBoundingClientRect().right)) })`);

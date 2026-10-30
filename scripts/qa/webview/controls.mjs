@@ -180,23 +180,12 @@ const typeChars = async (p, sel, text) => {
     await p.close();
 }
 
-// ---------- time controls ----------
+// ---------- load time in time zones ----------
 for (const tz of ['Europe/Paris', 'America/New_York', 'Asia/Tokyo']) {
-    const p = await openViewer(NC, { config: { globalTimeControls: true, groupTimeControls: true } });
+    const p = await openViewer(NC);
     await p.send('Emulation.setTimezoneOverride', { timezoneId: tz });
-    await p.eval(`document.querySelectorAll('details').forEach(d => d.open = true); true`);
-    const T = `${G('/')} .time-controls-section`;
-    const options = await p.eval(`[...document.querySelectorAll('${T} [data-time="variable"] option')].map(o => o.value)`);
-    await p.eval(`(() => { const s = document.querySelector('${T} [data-time="variable"]'); s.value = s.options[1].value; s.dispatchEvent(new Event('change', {bubbles:true})); })(); true`);
-    const prefilled = await p.eval(`({ start: document.querySelector('${T} [data-time="start"]').value, end: document.querySelector('${T} [data-time="end"]').value, startText: document.querySelector('${T} [data-time="start-text"]').value, endText: document.querySelector('${T} [data-time="end-text"]').value })`);
-    await typeText(p, `${T} [data-time="start-text"]`, '2020-01-31 00:00:00');
-    await p.eval(`document.querySelector('${T} [data-time="start-text"]').dispatchEvent(new Event('change', {bubbles:true})); true`);
-    await typeText(p, `${T} [data-time="end-text"]`, '2020-03-31 00:00:00');
-    await p.eval(`document.querySelector('${T} [data-time="end-text"]').dispatchEvent(new Event('change', {bubbles:true})); true`);
-    const r = await plot(p, '/precipitation');
-    check(`time range [${tz}]: options only datetime vars; prefilled with data range; range sent naive; inclusive bounds (3 steps)`, options.join(',') === ',time' && r.payload?.startDatetime === '2020-01-31T00:00:00' && r.payload?.endDatetime === '2020-03-31T00:00:00' && r.img, { options, prefilled, sent: [r.payload?.datetimeVariableName, r.payload?.startDatetime, r.payload?.endDatetime], msg: r.msg.slice(0, 300) });
-    if (tz === 'Europe/Paris') await p.screenshot(`${IMG_DIR}/ui_time_paris.png`);
-    // timestamp shown in header
+    await p.eval(`document.getElementById('refreshButton').click(); true`);
+    await sleep(2500);
     const ts = await p.eval(`document.getElementById('timestamp')?.textContent.trim()`);
     check(`Loaded time [${tz}] shows an ISO time with an offset`, /Loaded: \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}([+-]\d\d:\d\d|Z)/.test(ts), { ts, tz, host: p.lastLoadTime });
     await p.close();

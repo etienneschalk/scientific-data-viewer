@@ -16,9 +16,6 @@ export interface EnvironmentInfo {
  */
 export interface PlotOptions {
     variable: string;
-    datetimeVariableName?: string;
-    startDatetime?: string;
-    endDatetime?: string;
     /** Dimension index/slice per dimension (Issue #117). e.g. { time: "0:24:2", rlat: "100:120", rlon: 130 } */
     dimensionSlices?: Record<string, string | number>;
     /** Dimension name for faceted plot row (Issue #117) */

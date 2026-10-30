@@ -214,8 +214,8 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             "plot-layout",
             "Plot layout decision in the backend",
             "`resolve_layout` keeps every role the user set and fills the others from the dimensions left "
-            "free, so changing one parameter keeps the automatic choice of the rest. Dimension slices and the "
-            "time range only select data: slicing `lat` of a 3D variable still gives one image per time step.",
+            "free, so changing one parameter keeps the automatic choice of the rest. Dimension slices only "
+            "select data: slicing `lat` of a 3D variable still gives one image per time step.",
             "With no parameter set, the result is the historical automatic mode: 2D image, 3D one column facet "
             "per index of the first dimension (4 per row), 4D row and column facets, 1D line. Style options "
             "(cmap, vmin / vmax, robust, colorbar, legend, axis direction) only go to the plot kinds that accept "

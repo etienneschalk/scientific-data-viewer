@@ -18,7 +18,7 @@
 //   --file <path>       screenshot this data file instead of the generated one
 //   --theme <id>        only this theme (repeatable; see themes.mjs)
 //   --scenario <name>   only this scenario (repeatable)
-//   --setting <k=v>     override an extension setting, e.g. globalTimeControls=true
+//   --setting <k=v>     override an extension setting, e.g. groupDimensionSlices=false
 //                       (repeatable; defaults come from package.json)
 //   --out <dir>         root folder (default: screenshots)
 //   --width <px>        viewport width (default: 1024)

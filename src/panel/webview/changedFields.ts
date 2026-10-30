@@ -1,16 +1,13 @@
 /**
  * Visual cue on the plot controls the user changed: every `.plot-field`
- * (time range, dimension slice, plot parameter; global or group) whose
- * controls differ from their default gets the `plot-field--changed` class,
- * outlined by the stylesheet. Everything left at its default is chosen
- * automatically by the backend, so the outlines are exactly what the user
- * asked for.
+ * (dimension slice, plot parameter; global or group) whose controls differ
+ * from their default gets the `plot-field--changed` class, outlined by the
+ * stylesheet. Everything left at its default is chosen automatically by the
+ * backend, so the outlines are exactly what the user asked for.
  *
  * The default of a control is what its markup says: empty for text, number
  * and select (first option ''), the `checked` attribute for checkboxes, and
- * "use the global value" (`data-inherit`) for group checkboxes. A
- * `data-baseline` attribute overrides it (time bounds prefilled with the
- * full range of the datetime variable do not restrict anything). Sliders
+ * "use the global value" (`data-inherit`) for group checkboxes. Sliders
  * mirror the slice boxes and are not looked at.
  */
 
@@ -27,8 +24,7 @@ function isControlChanged(
             ? false
             : control.checked !== control.defaultChecked;
     }
-    const baseline = control.dataset.baseline ?? '';
-    return control.value.trim() !== baseline;
+    return control.value.trim() !== '';
 }
 
 /** Outline one `.plot-field` when any of its controls is changed. */
@@ -48,8 +44,8 @@ export function refreshChangedFields(root: ParentNode = document): void {
 
 /**
  * `input` / `change` listener of the document. A control can rewrite its
- * neighbours (a slider its boxes, a datetime variable the start and end), so
- * the whole subsection of the target is updated.
+ * neighbours (a slider its boxes), so the whole subsection of the target is
+ * updated.
  */
 export function handleChangedFieldEvent(target: EventTarget | null): void {
     if (!(target instanceof Element) || !target.closest('.plot-field')) {

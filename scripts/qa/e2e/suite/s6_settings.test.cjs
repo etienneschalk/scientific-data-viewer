@@ -189,19 +189,4 @@ describe('S6 settings', function () {
         h.record({ s: 'S6', label: 'convertBandsToVariables false', vars: r.vars, plot: resp.success, err: resp.error });
         if (!resp.success) throw new Error(resp.error);
     });
-
-    it('datetime filter on a real datetime variable', async function () {
-        const p = await h.openWith(S('temporal-datasets/temporal_netcdf_datetime64.nc'), 'netcdfEditor');
-        const r = await h.waitLoaded(p);
-        const di = p._uiController.getDataInfo();
-        const dtv = di.datetime_variables;
-        const v = Object.values(di.variables_flattened).flat()[0];
-        const dtName = Object.values(dtv).flat()[0];
-        const resp = await h.request(p, 'createPlot', {
-            variable: '/' + v.name, datetimeVariableName: typeof dtName === 'string' ? dtName : dtName && (dtName.name || dtName.path),
-            startDatetime: '2000-01-01T00:00', endDatetime: '2100-01-01T00:00', operationId: 'dt',
-        });
-        h.record({ s: 'S6', label: 'datetime filter', dtv, v: v.name, dims: v.dimensions, success: resp.success, error: resp.error && resp.error.slice(0, 400) });
-        if (!resp.success) throw new Error(resp.error);
-    });
 });

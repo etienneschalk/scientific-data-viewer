@@ -376,7 +376,6 @@ PLOT_PARAMETERS_REFS = {
         "showPlotLayout",
     ],
     "src/panel/webview/plotParams.ts": ["readPlotControls", "mergePlotControls"],
-    "src/panel/webview/timeControls.ts": ["readTimeControls", "baseline"],
     "src/panel/webview/changedFields.ts": [
         "refreshChangedFields",
         "handleChangedFieldEvent",
@@ -403,10 +402,10 @@ def plot_parameters_dot() -> str:
   click [label="Create Plot\\ncreateVariablePlot()", class="f-web key"];
   valid [label="a number\\ntyped wrong?", {DECISION}];
   stop [label="message under the plot,\\nnothing is sent", class="warn"];
-  read [label="readPlotControls(global) · readPlotControls(group)\\nreadTimeControls(global, group)", class="f-web"];
+  read [label="readPlotControls(global) · readPlotControls(group)", class="f-web"];
   merge [label="mergePlotControls()\\neach field: the group's value if set, else the global one\\nslices: the group's replace the global ones if it has any", class="f-web"];
   compact [label="compactPlotPayload()\\nfields left empty are not sent:\\nthe backend chooses them", class="f-web key"];
-  cue [label="changedFields.ts\\na field that differs from its default is outlined\\n(empty · checkbox default · group checkbox = global ·\\ntime bound = prefilled full range)", class="f-web"];
+  cue [label="changedFields.ts\\na field that differs from its default is outlined\\n(empty · checkbox default · group checkbox = global)", class="f-web"];
   host [label="UIController → DataProcessor\\nbuildCreatePlotCliArgs(): one flag per field sent", class="host"];
   py [label="create_plot()\\nslices · time filter → resolve_layout() → draw_plot()", class="py key"];
   back [label="CreatePlotResponse\\nplotData · layout (plot_layout) · appliedSlices", class="host"];

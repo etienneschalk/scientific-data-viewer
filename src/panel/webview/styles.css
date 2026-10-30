@@ -505,8 +505,7 @@ h4 .sdv-icon {
 /* Form controls */
 select,
 input[type='text'],
-input[type='number'],
-input[type='datetime-local'] {
+input[type='number'] {
     min-height: var(--sdv-control-height);
     padding: 2px 8px;
     font: inherit;
@@ -1131,7 +1130,7 @@ pre:not(.html-representation pre) {
 
 /*
  * Plot controls (Global Plot Controls card, Group Plot Controls section):
- * blocks (Time range, Dimension slices, Plot parameters) divided by
+ * blocks (Dimension slices, Plot parameters) divided by
  * hairlines, each a heading row with its Reset button, a one-line hint and a
  * grid of fields (name above, control below) whose columns line up across
  * blocks and fieldsets.
@@ -1228,10 +1227,6 @@ pre:not(.html-representation pre) {
     gap: 12px 16px;
 }
 
-.plot-fields--time {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-
 .plot-field {
     display: flex;
     flex-direction: column;
@@ -1268,11 +1263,6 @@ pre:not(.html-representation pre) {
     font-size: 12px;
     font-weight: 600;
     color: var(--vscode-foreground);
-}
-
-/* Time fields are not xarray names */
-.plot-fields--time .plot-field-name {
-    font-family: inherit;
 }
 
 .plot-field-hint {
