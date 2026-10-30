@@ -391,18 +391,39 @@ step_npm_test() {
     if [ $rc -eq 0 ]; then note "${passing:-passed}"; else fail "${failing:-npm test exit $rc}${passing:+, $passing}"; fi
 }
 
+GOLDEN_REF_DIR=""
+# Local snapshots (artefacts/golden, recorded on a known-good commit) when there
+# are some; else (CI, fresh clone) against a reference commit, recorded and
+# checked in this run with the same interpreter: PARANOIA_GOLDEN_REF, default
+# the merge-base with main (the parent commit on main itself)
 step_golden() {
-    if [ -z "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ]; then
-        skip "no snapshots recorded (python python/tools/golden_snapshots.py record, on a known-good commit)"
+    if [ -n "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ] && [ -z "${PARANOIA_GOLDEN_REF:-}" ]; then
+        run "$PY" python/tools/golden_snapshots.py check
+        local rc=$? last
+        last="$(tail -1 "$LOGS/golden.log")"
+        if [ $rc -eq 0 ]; then
+            note "$last"
+        else
+            warn "$last: output changed since the snapshots were recorded; re-record if intended"
+        fi
         return
     fi
-    run "$PY" python/tools/golden_snapshots.py check
+    local ref="${PARANOIA_GOLDEN_REF:-$(git merge-base HEAD main 2>/dev/null)}"
+    [ "$(git rev-parse "$ref" 2>/dev/null)" = "$(git rev-parse HEAD)" ] && ref="HEAD~1"
+    local label
+    label="$(git rev-parse --short "$ref" 2>/dev/null)" || { skip "no reference commit for the snapshots ($ref)"; return; }
+    GOLDEN_REF_DIR="$OUT/golden-ref"
+    run git worktree add --detach "$GOLDEN_REF_DIR" "$ref" || { fail "cannot check out $ref"; return; }
+    run "$PY" python/tools/golden_snapshots.py record --golden-dir "$OUT/golden" \
+        --entry "$GOLDEN_REF_DIR/python/get_data_info.py" >/dev/null || true
+    run "$PY" python/tools/golden_snapshots.py check --golden-dir "$OUT/golden"
     local rc=$? last
     last="$(tail -1 "$LOGS/golden.log")"
+    git worktree remove --force "$GOLDEN_REF_DIR" && GOLDEN_REF_DIR=""
     if [ $rc -eq 0 ]; then
-        note "$last"
+        note "$last: same backend output as $label ($ref)"
     else
-        warn "$last: output changed since the snapshots were recorded; re-record if intended"
+        warn "$last: backend output differs from $label ($ref); check that it is intended"
     fi
 }
 
@@ -506,6 +527,11 @@ step_npm_audit() {
 step_ci() {
     local sha
     sha="$(git rev-parse HEAD)"
+    if [ "${GITHUB_ACTIONS:-}" = true ]; then
+        # This run is a CI run: the other workflows of the commit run beside it
+        note "running in GitHub Actions; other checks of this commit: ${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/commit/$sha"
+        return
+    fi
     if ! git branch -r --contains "$sha" 2>/dev/null | grep -q .; then
         warn "HEAD is not pushed: the CI (Linux and Windows) has not run on it"
         return
@@ -660,6 +686,9 @@ trap 'INTERRUPTED=true' INT
 cleanup() {
     if $BASELINE_CREATED; then
         scripts/qa/backend/make_baseline.sh --remove >/dev/null 2>&1 || true
+    fi
+    if [ -n "$GOLDEN_REF_DIR" ]; then
+        git worktree remove --force "$GOLDEN_REF_DIR" >/dev/null 2>&1 || true
     fi
 }
 trap cleanup EXIT

@@ -1,0 +1,123 @@
+name: Paranoia (publication readiness)
+
+# ./paranoia.sh on a GitHub runner: every automated check before a release,
+# without windows on your screen. The verdict and REPORT.md are on the run's
+# summary page; logs, plot differences, screenshots and the .vsix are in the
+# run's artifact. See docs/DEVELOPMENT.md § Paranoia.
+#
+# Start it:
+#   - on a pull request: add the label "paranoia" (full profile; runs again on
+#     each push while the label is there)
+#   - by hand, once this file is on the default branch: Actions > Paranoia >
+#     Run workflow, or `gh workflow run paranoia.yml -f profile=full --ref <branch>`
+#   - every Monday on the default branch (full profile): new releases of the
+#     packages of the extension's uv environment can break users without any
+#     change here
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "quick (~10 min), standard (~35 min) or full (~75 min)"
+        type: choice
+        options: [full, standard, quick]
+        default: full
+  pull_request:
+    types: [labeled, synchronize, reopened]
+  schedule:
+    - cron: "0 3 * * 1"
+
+concurrency:
+  group: paranoia-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  paranoia:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'paranoia')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      PROFILE: ${{ inputs.profile || 'full' }}
+      # Chrome of the GitHub Ubuntu image, for the webview harness and screenshots
+      CHROME_PATH: /usr/bin/google-chrome
+      PARANOIA_PYTHON: ${{ github.workspace }}/.venv/bin/python
+
+    steps:
+      - name: "Checkout (full history and tags: last release, merge-base, old releases)"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # The branch head, as a local run tests it (not the PR merge commit)
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Local main branch (release documents, reference of the golden snapshots)
+        run: git show-ref --verify --quiet refs/heads/main || git branch main origin/main
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Python 3.13 and uv
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Development environment (.venv, pinned in requirements-dev.txt)
+        run: |
+          uv venv --python "$(command -v python)" .venv
+          uv pip install --python .venv/bin/python -r requirements-dev.txt
+
+      - name: pre-commit hook environments (cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Virtual display (VS Code) and Graphviz (architecture diagrams)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb graphviz
+
+      - name: paranoia.sh --${{ env.PROFILE }}
+        run: ./paranoia.sh --"$PROFILE"
+
+      - name: Report on the summary page
+        if: always()
+        run: |
+          report=artefacts/paranoia/latest/REPORT.md
+          if [ -f "$report" ]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No report: paranoia.sh did not get to the end (see the step log)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Logs, plot differences, screenshots, the .vsix; not the VS Code /
+      # uv sandboxes, checkouts and unpacked packages (about 1 GB)
+      - name: Upload the run folder
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paranoia-${{ env.PROFILE }}-${{ github.run_number }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artefacts/paranoia/
+            artefacts/screenshots/
+            !artefacts/paranoia/latest
+            !artefacts/paranoia/*/migration/*/**
+            !artefacts/paranoia/*/upgrade/**
+            !artefacts/paranoia/*/vsix/**
+            !artefacts/paranoia/*/baseline/**
+            !artefacts/paranoia/*/golden-ref/**
+            !artefacts/paranoia/*/qa/fixtures/**
+            !artefacts/paranoia/*/qa/e2e/ws/**
+            !artefacts/paranoia/*/qa/e2e/throwaway-venv/**
+            !artefacts/paranoia/*/qa/e2e/runs/*/userdata/**
+            !artefacts/paranoia/*/qa/e2e/runs/*/exts/**

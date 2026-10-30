@@ -19,6 +19,19 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 - Extension packaging
 - 20-minute timeout per job
 
+### 2. Paranoia (`.github/workflows/paranoia.yml`)
+
+**Triggers**: the `paranoia` label on a pull request (full profile, again on each push while labelled); **Run workflow** by hand (`quick` / `standard` / `full`, once the file is on the default branch); every Monday 03:00 UTC on the default branch (full)
+**Purpose**: every automated check before a release (`./paranoia.sh`, see [DEVELOPMENT.md § Paranoia](./DEVELOPMENT.md#paranoia-every-check-before-a-release)) without running it on your machine
+
+**Features**:
+
+- Ubuntu 24.04 runner: Node from `.nvmrc`, Python 3.13 with `requirements-dev.txt` (pinned) in `.venv`, uv, Xvfb, Graphviz, the image's Chrome
+- Full history and tags (last release, merge-base with `main` for the golden snapshots, old releases rebuilt from their tags)
+- Verdict and `REPORT.md` on the run's summary page; logs, plot differences, screenshots and the `.vsix` uploaded as an artifact (14 days)
+- 150-minute timeout; a new push cancels the run in progress for the same pull request
+- Create the `paranoia` label once (Issues → Labels, or `gh label create paranoia`)
+
 ## Workflow Features
 
 ### Pre-commit Integration

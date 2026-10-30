@@ -17,6 +17,13 @@ Usage:
 
 Plot images are compared by SHA-256 of the PNG bytes; pass ``--ignore-png`` to
 compare only the JSON metadata (e.g. after a matplotlib upgrade).
+
+Against another commit, with no local snapshots (what ``paranoia.sh`` does in
+CI): record with the backend of a checkout of that commit, then check:
+
+    python python/tools/golden_snapshots.py record --golden-dir /tmp/g \
+        --entry <checkout>/python/get_data_info.py
+    python python/tools/golden_snapshots.py check --golden-dir /tmp/g
 """
 
 from __future__ import annotations
@@ -37,6 +44,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = REPO_ROOT / "artefacts" / "sample-data"
 GOLDEN_DIR = REPO_ROOT / "artefacts" / "golden"
+# Root of another checkout whose backend is run (--entry), written <REPO> too
+ENTRY_ROOT: Path | None = None
 FROZEN_CLOCK = Path(__file__).with_name("_frozen_clock_entry.py")
 DEFAULT_ENTRY = [str(REPO_ROOT / "python" / "get_data_info.py")]
 
@@ -359,7 +368,10 @@ def _normalize(obj, ignore_png: bool):
     if isinstance(obj, list):
         return [_normalize(v, ignore_png) for v in obj]
     if isinstance(obj, str):
-        s = obj.replace(str(SAMPLE), "<SAMPLES>").replace(str(REPO_ROOT), "<REPO>")
+        s = obj.replace(str(SAMPLE), "<SAMPLES>")
+        if ENTRY_ROOT is not None:
+            s = s.replace(str(ENTRY_ROOT), "<REPO>")
+        s = s.replace(str(REPO_ROOT), "<REPO>")
         # cfgrib records the path relative to the current directory (the repository)
         s = s.replace(str(SAMPLE.relative_to(REPO_ROOT)), "<SAMPLES>")
         s = _HTML_ID_RE.sub("<uuid>", s)
@@ -395,6 +407,7 @@ def _golden_path(case: Case) -> Path:
 
 
 def main() -> int:
+    global GOLDEN_DIR, ENTRY_ROOT
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("mode", choices=["record", "check"])
     parser.add_argument("-k", default="", help="substring filter on case id")
@@ -404,10 +417,20 @@ def main() -> int:
         default=None,
         help="backend entry as argv, e.g. '-m sdv_backend' (default: get_data_info.py)",
     )
+    parser.add_argument(
+        "--golden-dir",
+        type=Path,
+        default=GOLDEN_DIR,
+        help="snapshot folder (default: artefacts/golden)",
+    )
     parser.add_argument("-j", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
 
+    GOLDEN_DIR = args.golden_dir.resolve()
     entry = args.entry.split() if args.entry else DEFAULT_ENTRY
+    if entry[0].endswith(".py"):
+        # <checkout>/python/get_data_info.py of a reference commit
+        ENTRY_ROOT = Path(entry[0]).resolve().parents[1]
     cases = [c for c in build_cases() if args.k in c.case_id]
     missing = [c for c in cases if not Path(c.argv[1]).exists()]
     for c in missing:

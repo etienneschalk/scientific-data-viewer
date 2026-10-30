@@ -28,6 +28,8 @@ python scripts/generate_readme.py     # regenerate README.md
 node scripts/qa/webview/run-all.mjs                     # QA: real webview in headless Chromium, real backend
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in a real VS Code
 ./paranoia.sh [--quick|--full]   # all of the above + package audit -> artefacts/paranoia/latest/REPORT.md (readiness verdict)
+# On GitHub: label a PR `paranoia`, or Actions > Paranoia > Run workflow (.github/workflows/paranoia.yml)
+.venv/bin/pip install -r requirements-dev.txt   # development Python packages (pinned; used by the CI paranoia run)
 ```
 
 ## Architecture

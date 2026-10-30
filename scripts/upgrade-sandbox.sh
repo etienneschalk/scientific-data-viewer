@@ -48,6 +48,14 @@
 # create its environment on this machine (nothing to migrate: not tested).
 # Needs: VS Code, uv, Node, a display, and artefacts/sample-data/ (python python/create_sample_data.py).
 # Linux / macOS only. VS Code windows open on your screen: don't close them.
+# Node of .nvmrc: the system Node can be too old for the checks below (v10 has
+# no String.matchAll). Before `set -u`, which nvm does not support; in CI,
+# setup-node has already put Node on the PATH
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    source "$HOME/.nvm/nvm.sh" >/dev/null
+    nvm use "$(cat "$(dirname "${BASH_SOURCE[0]}")/../.nvmrc")" >/dev/null 2>&1 || true
+fi
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -130,13 +138,14 @@ launch() {
     shift
     touch "$SANDBOX/.launch"
     sleep 1
+    # --no-sandbox, as npm test: CI runners (Ubuntu 24.04) block Chromium's sandbox
     env "$@" "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
         --disable-extensions --extensionDevelopmentPath="$extension" \
-        --new-window >/dev/null 2>&1
+        --no-sandbox --new-window >/dev/null 2>&1
     for _ in $(seq 12); do
         sleep 5
         "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
-            --reuse-window "$DATA_FILE" >/dev/null 2>&1 || true
+            --no-sandbox --reuse-window "$DATA_FILE" >/dev/null 2>&1 || true
         if [ -n "$(extension_logs)" ]; then
             return 0
         fi
@@ -267,6 +276,10 @@ if $BUMP_NEW; then
     NEW_NAME="$NEW_NAME (ENVIRONMENT_REVISION raised to $bumped)"
 fi
 REVISION="$(revision_of "$NEW_EXT")"
+if [ -z "$(requirements_of "$NEW_EXT")" ]; then
+    echo "Cannot read the requirements of the new release ($(manager_js "$NEW_EXT")) with Node $(node -v)" >&2
+    exit 2
+fi
 
 step "1. The user runs $OLD_NAME with its own environment and opens $(basename "$DATA_FILE")"
 launch "$OLD_EXT"
