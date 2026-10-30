@@ -215,6 +215,18 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Backend  | Unchanged: `--datetime-variable` / `--start-datetime` / `--end-datetime` and `datetime_variables` still available from the CLI                                                                              |
 | Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed and §29; manual test plan B17 / B26          |
 
+### Phase 18 — Paranoia: every check before a release
+
+| Area    | Work                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why     | The safety nets added in v0.13 (golden snapshots, `generate.py --check`, QA harnesses, upgrade sandbox, screenshots) each had their own command and setup, and all of them tested the working tree, not the `.vsix` users install                                                                                                                                                                                             |
+| Script  | `paranoia.sh`: 26 steps in three profiles (`--quick` ~5 min, default ~20 min, `--full` ~30 min); `--only` / `--skip` / `--baseline` / `--list`; publishes, tags and commits nothing; pre-commit fixes saved to a patch, the working tree restored                                                                                                                                                                             |
+| Package | `.vsix` built in the run folder and audited (runtime files, relative `require()`s, nothing leaked, diff with the previous release); its backend run from outside the repository; e2e suites and upgrade sandbox run on it                                                                                                                                                                                                     |
+| Release | Version above Marketplace / Open VSX and not tagged elsewhere; lockfile, CHANGELOG section, release notes, PR summary (its commit list is only reported: it lags one commit behind); relative links; uv environment change → upgrade sandbox mandatory                                                                                                                                                                        |
+| Report  | `.qa/paranoia/<date-time>/REPORT.md`: verdict (`NOT READY` / `NOT FULLY VERIFIED` / `READY AFTER REVIEW` / `READY`), checks with links to logs, end of each failing log, files to look at, what is left to check by hand                                                                                                                                                                                                      |
+| Fixes   | Found by its first runs: `publish.sh` uses the `.venv` Python (system `python3` 3.8 crashed in `generate_readme.py`); `npm audit fix` (lockfile only, 9 findings); prettier on `OUT_OF_SCOPE.md` / `TO_REMOVE.md`; commit list below rebuilt from `git log`; `upgrade-sandbox.sh` interrupted scenario (`grep -q` + `pipefail` missed the awaited log line); flaky `UIController` test (two `fs.stat` resolving out of order) |
+| Files   | `paranoia.sh`, `scripts/paranoia/checks.py` (standard library only); `DEVELOPMENT.md` § Paranoia, `CLAUDE.md`, `GETTING_STARTED.md`, release notes § Paranoia and §30                                                                                                                                                                                                                                                         |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -277,6 +289,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 **Automated:**
 
 ```bash
+./paranoia.sh [--quick|--full]   # everything below + the QA harnesses -> .qa/paranoia/latest/REPORT.md
 source .venv/bin/activate   # or extension interpreter
 python -m pytest python/tests -q
 python python/tools/golden_snapshots.py check   # after `record` on a known-good commit
@@ -365,11 +378,14 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
 - [x] `docs/v0.13/QA_REPORT_0.13.0.md` / `QA_FIXES_0.13.0.md` — QA report and fix tracker; `scripts/qa/README.md`
 - [x] `docs/PLOTTING.md` — how a plot is made (plot parameters, layout decision, diagrams)
+- [x] `docs/DEVELOPMENT.md` § Paranoia — `paranoia.sh` profiles, verdicts, what it checks
 - [ ] Release date set in `CHANGELOG.md` / release notes, README regenerated (at release time)
 
 ---
 
 ## Commits (oldest → newest)
+
+Informational: generated from `git log --reverse --format=%s main..HEAD`, so it can lag one commit behind the commit that updates it.
 
 1. docs: plan v0.13 technology updates
 2. feat: drop stale Sentinel-1 SAFE support claims
@@ -432,53 +448,63 @@ Upgrade safety (v0.12 → v0.13):
 50. docs: fix stale developer docs
 51. docs: list the upgrade-safety commits in the v0.13.0 PR summary
 
+Viewer styling refresh and screenshots:
+
+52. feat(webview): modernise the viewer styling to match current VS Code
+53. feat(webview): replace the remaining emoji with line icons
+54. feat(tooling): add npm run screenshots for full-page viewer screenshots
+
 Plot type selector:
 
-52. feat(webview): remove the unused plot type selector
+55. feat(webview): remove the unused plot type selector
 
 Architecture diagrams:
 
-53. feat(tooling): generate architecture diagrams from the code
-54. fix(package): stop shipping docs/ in the .vsix
-55. fix(package): ship only runtime files in the .vsix
+56. feat(tooling): generate architecture diagrams from the code
+57. fix(package): stop shipping docs/ in the .vsix
+58. fix(package): ship only runtime files in the .vsix
 
 Xarray Encoding section:
 
-56. feat(webview): show the xarray encoding in its own collapsible sections
-57. feat(webview): show each group as a card with collapsible sections
-58. feat(webview): lay out the plot controls as aligned fields
-59. feat(webview): add start / stop / step boxes and a slider to dimension slices
-60. fix(webview): let one slider handle rewrite only its own slice box
-61. fix(plot): apply vmin / vmax to color meshes of user layouts
-62. fix(webview): keep slice widgets frozen in the exported HTML
+59. feat(webview): show the xarray encoding in its own collapsible sections
 
 Cancel a single plot:
 
-57. feat(webview): add a Cancel button to each variable's plot
+60. feat(webview): add a Cancel button to each variable's plot
+61. docs: run nvm use before Node commands in CLAUDE.md
 
 Scrollbar space:
 
-58. fix(webview): keep room for the scrollbar so content does not jump after loading
+62. fix(webview): keep room for the scrollbar so content does not jump after loading
 
 Group attributes alignment:
 
-59. fix(webview): align the colon of group attributes with the other sections
+63. fix(webview): align the colon of group attributes with the other sections
 
 Load time in local time:
 
-60. feat(webview): show the load time in local time (new setting)
+64. feat(webview): show the load time in local time (new setting)
+
+Group cards, plot controls layout, dimension slices:
+
+65. feat(webview): show each group as a card with collapsible sections
+66. feat(webview): lay out the plot controls as aligned fields
+67. feat(webview): add start / stop / step boxes and a slider to dimension slices
+68. fix(webview): let one slider handle rewrite only its own slice box
+69. fix(plot): apply vmin / vmax to color meshes of user layouts
+70. fix(webview): keep slice widgets frozen in the exported HTML
 
 QA pass:
 
-63. fix: apply the v0.13.0 QA pass fixes, add the QA harnesses
+71. fix: apply the v0.13.0 QA pass fixes, add the QA harnesses
 
 Progressive plot layout:
 
-64. feat(plot): keep the automatic layout for every control the user leaves empty
-65. feat(webview): outline changed plot controls and show the layout under each plot
-66. docs: explain how a plot is made, with generated decision diagrams
+72. feat(plot): keep the automatic layout for every control the user leaves empty
+73. feat(webview): outline changed plot controls and show the layout under each plot
+74. docs: explain how a plot is made, with generated decision diagrams
 
 Time Controls removed:
 
-67. feat(webview): remove the Time Controls and their settings
-68. docs: document the removal of the Time Controls
+75. feat(webview): remove the Time Controls and their settings
+76. docs: document the removal of the Time Controls

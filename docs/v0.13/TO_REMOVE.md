@@ -8,7 +8,7 @@ If P2.2 (xarray-sentinel) is implemented in the same release, **re-add** SAFE pr
 
 ## R1 — Sentinel-1 SAFE leftovers (required)
 
-**History.** v0.5.0 changelog: *Removed untested Sentinel-1 SAFE (.safe) format support*. The webview already comments out `'.safe'`. Explorer menus and Python types were not fully cleaned.
+**History.** v0.5.0 changelog: _Removed untested Sentinel-1 SAFE (.safe) format support_. The webview already comments out `'.safe'`. Explorer menus and Python types were not fully cleaned.
 
 ### R1.1 `package.json` explorer context menus
 
@@ -117,15 +117,15 @@ Not a user-facing feature removal; it prevents the next ghost format.
 
 Do **not** delete in v0.13:
 
-| Item | Reason |
-| ---- | ------ |
-| NASA CDF / `cdflib` | Distinct from NetCDF; working dedicated path |
-| `open_dataset` fallback for cfgrib / rasterio | DataTree is not implemented there |
-| Nested attributes view / encoding attributes settings | Still valid; v0.13 extends encoding, does not replace it |
-| Isolated uv env / Python 3.13 | Unrelated to format watch |
-| Custom editors for `.zarr` folders | Still the main Zarr UX; P0.2 **adds** detection, does not replace `*.zarr` |
-| Experimental plotting | v0.13 extends `col_wrap`; does not remove the plot GUI |
-| `.safe` mentions in **CHANGELOG** / old **RELEASE_NOTES_0.5.0** | Historical; leave them |
+| Item                                                            | Reason                                                                     |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| NASA CDF / `cdflib`                                             | Distinct from NetCDF; working dedicated path                               |
+| `open_dataset` fallback for cfgrib / rasterio                   | DataTree is not implemented there                                          |
+| Nested attributes view / encoding attributes settings           | Still valid; v0.13 extends encoding, does not replace it                   |
+| Isolated uv env / Python 3.13                                   | Unrelated to format watch                                                  |
+| Custom editors for `.zarr` folders                              | Still the main Zarr UX; P0.2 **adds** detection, does not replace `*.zarr` |
+| Experimental plotting                                           | v0.13 extends `col_wrap`; does not remove the plot GUI                     |
+| `.safe` mentions in **CHANGELOG** / old **RELEASE_NOTES_0.5.0** | Historical; leave them                                                     |
 
 ---
 

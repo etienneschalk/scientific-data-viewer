@@ -349,6 +349,22 @@ env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # suites inside
 
 The webview and e2e harnesses load the compiled `out/` (`npm run compile` first). See the README of the folder for what each scenario covers and the environment variables (`SDV_PYTHON`, `SDV_QA_OUT`, `CHROME_PATH`…).
 
+#### Paranoia: every check before a release
+
+`./paranoia.sh` runs all of the above in one go (release documents, pre-commit, clean build, package, tests, golden snapshots, QA harnesses against the last release, upgrade sandbox, screenshots) and writes a **publication readiness report**, `.qa/paranoia/<date-time>/REPORT.md` (`.qa/paranoia/latest` points at the last run). It publishes, tags and commits nothing: `./publish.sh` comes after.
+
+```bash
+./paranoia.sh --quick        # static checks, build, package, pytest, npm test (~5 min)
+./paranoia.sh                # + golden snapshots, backend / webview vs the last release, npm audit, CI status (~20 min)
+./paranoia.sh --full         # + e2e suites on the packaged extension, upgrade sandbox x3, screenshots (~30 min)
+./paranoia.sh --list         # step ids; --only a,b / --skip a,b; --baseline v0.12.1; -v shows the output
+```
+
+- **Verdict**: `NOT READY` (a check failed), `NOT FULLY VERIFIED` (nothing failed, but steps were skipped or the profile is not `--full`), `READY AFTER REVIEW` (warnings: differences a human must judge, such as plots that look different from the last release), `READY`. Exit code 1 when a check failed.
+- **Checks that exist only here**: what the users install, rather than the working tree. The `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` resolves, nothing leaked); its Python backend is run on sample files from outside the repository; the e2e suites and the upgrade sandbox use it. Also: the version is above the one on the Marketplace and Open VSX and its tag does not exist, the relative links of README / CHANGELOG / release documents resolve, and the uv environment changed since the last release (then the upgrade sandbox must pass). Commits missing from the commit list of the PR summary are listed in the `release` log for information only: that list always lags one commit behind.
+- **The working tree is left as it was**: when pre-commit hooks reformat files that had no changes, the fixes are saved to `<run>/pre-commit.patch` and the files restored (`git apply` the patch to keep them). QA outputs (fixtures, baseline checkout, images) stay in the run folder; the baseline worktree is removed at the end.
+- The helpers are in `scripts/paranoia/checks.py` (standard library only). To add a step: a `step_<id>` function in `paranoia.sh` that calls `fail` / `warn` / `skip` / `note`, and a line in `STEPS`.
+
 ### 3. Debugging
 
 #### VSCode Debugging

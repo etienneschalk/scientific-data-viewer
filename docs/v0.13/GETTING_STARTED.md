@@ -93,6 +93,8 @@ Commits are grouped by area and listed with a one-line description in the [PR su
 
 ### 1. Automated checks (10 min)
 
+`./paranoia.sh` runs all of the automated checks of this page (and the QA harnesses against v0.12.1) and writes a readiness report in `.qa/paranoia/latest/REPORT.md`; `./paranoia.sh --full` adds the upgrade test of § 2 and the e2e suites, and is the one to run before publishing ([DEVELOPMENT.md § Paranoia](../DEVELOPMENT.md#paranoia-every-check-before-a-release)). By hand:
+
 ```bash
 nvm use                                         # Node 22
 npm install && npm run compile && npm run typecheck
@@ -122,7 +124,7 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
 
 ## Releasing safely
 
-1. **All green**: automated checks, the three upgrade scenarios, the manual results sheet. Run B20 on Windows if you can.
+1. **All green**: `./paranoia.sh --full` says `READY` or `READY AFTER REVIEW` (automated checks and the three upgrade scenarios), plus the manual results sheet. Run B20 on Windows if you can.
 2. **Set the release date**:
    - in the CHANGELOG heading `## [0.13.0] - …`, which still says 2026-09-15, the date of the feature work;
    - in the CHANGELOG link at the bottom of the release notes;

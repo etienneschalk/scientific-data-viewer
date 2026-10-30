@@ -386,7 +386,10 @@ suite('UIController Test Suite', () => {
             processor,
         );
         try {
+            // One at a time: each load awaits fs.stat before calling the
+            // processor, and two stats can resolve in any order
             const first = racing.loadFile(dataFile);
+            await until(() => pending.length === 1);
             const second = racing.loadFile(dataFile);
             await until(() => pending.length === 2);
             // The newer load fails first, the older one succeeds afterwards

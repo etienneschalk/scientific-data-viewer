@@ -126,7 +126,9 @@ stop() {
 
 wait_for_log() {
     local pattern="$1" waited=0
-    while ! extension_logs | grep -qE "$pattern"; do
+    # Not grep -q: it stops at the first match, cat gets SIGPIPE and, with
+    # pipefail, the pipeline fails although the line is there
+    while ! extension_logs | grep -E "$pattern" >/dev/null; do
         if [ "$waited" -ge "$TIMEOUT_S" ]; then
             ko "timed out after ${TIMEOUT_S}s waiting for log: $pattern"
             return 1
