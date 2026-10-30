@@ -453,6 +453,24 @@ def log_tail(path: Path, n: int = 25) -> str:
     return "\n".join(line[:300] for line in lines[-n:])
 
 
+# A failed check in a log: "FAIL ..." (checks.py, QA webview), "  1) ..." (mocha)
+FAILED_LINE = re.compile(r"^(FAIL\b|\s+\d+\) )")
+
+
+def failed_checks(path: Path, n: int = 15) -> str:
+    """Each failed check of a log with the line after it (its evidence or error)."""
+    if not path.exists():
+        return ""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    out: list[str] = []
+    for i, line in enumerate(lines):
+        if FAILED_LINE.match(line) and line[:300] not in out:
+            # mocha: "  1) Suite" / "       test:" / "     Error: ..."
+            after = 1 if line.startswith("FAIL") else 2
+            out += [x[:300] for x in lines[i : i + 1 + after]]
+    return "\n".join(out[: 3 * n])
+
+
 def verdict(rows: list[dict], profile: str) -> tuple[str, str]:
     count = {s: sum(r["status"] == s for r in rows) for s in ICON}
     if count["FAIL"]:
@@ -524,11 +542,17 @@ def cmd_report(args: argparse.Namespace) -> int:
     if attention:
         out += ["", "## Failures and warnings", ""]
         for r in sorted(attention, key=lambda r: r["status"] != "FAIL"):
+            log = run / "logs" / f"{r['id']}.log"
+            failed = failed_checks(log) if r["status"] == "FAIL" else ""
             out += [
                 f"### {ICON[r['status']]} — {r['title']} (`{r['id']}`)",
                 "",
                 r["summary"],
                 "",
+            ]
+            if failed:
+                out += ["Failed checks:", "", "```text", failed, "```", ""]
+            out += [
                 f"Last lines of [logs/{r['id']}.log](logs/{r['id']}.log):",
                 "",
                 "```text",

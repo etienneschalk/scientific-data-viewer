@@ -117,6 +117,10 @@ jobs:
             !artefacts/paranoia/*/baseline/**
             !artefacts/paranoia/*/golden-ref/**
             !artefacts/paranoia/*/qa/fixtures/**
+            # Named after the hostile QA fixtures (has?question.nc, C:x.png...),
+            # which artifacts refuse; their differences are in logs/qa-info.log
+            !artefacts/paranoia/*/backend/info/**
+            !artefacts/paranoia/*/qa/e2e/data/**
             !artefacts/paranoia/*/qa/e2e/ws/**
             !artefacts/paranoia/*/qa/e2e/throwaway-venv/**
             !artefacts/paranoia/*/qa/e2e/runs/*/userdata/**

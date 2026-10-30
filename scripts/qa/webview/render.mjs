@@ -1,5 +1,6 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import { FIXTURES, IMG_DIR, SAMPLES, makeChecker, openViewer, openStaticHtml, shutdown } from './harness.mjs';
+import { FIXTURES, IMG_DIR, PY, SAMPLES, makeChecker, openViewer, openStaticHtml, shutdown } from './harness.mjs';
 
 const ADV = FIXTURES;
 const SD = SAMPLES;
@@ -63,8 +64,18 @@ for (const f of ['xss_names.nc', 'xss_groups.nc', 'xss_names.zarr', 'zarr_with_n
 }
 
 // ---------- error page and its buttons ----------
+// Kerchunk is optional: with it, the Kerchunk sample opens; without it, the
+// error page says so (with an install button)
+const kerchunkInstalled = spawnSync(PY, ['-c', 'import kerchunk']).status === 0;
 for (const f of [`${SD}/broken_file.nc`, `${ADV}/text_as.nc`, `${ADV}/corrupt.zip`, `${ADV}/inline_plain.json`, `${SD}/sample_data.kerchunk.json`]) {
     const p = await openViewer(f);
+    if (f.endsWith('.kerchunk.json') && kerchunkInstalled) {
+        const shown = await p.eval(`({ error: !document.getElementById('error')?.classList.contains('hidden'), groups: document.querySelectorAll('.group-card, details.group-details, [data-group]').length })`);
+        const q = await p.qa();
+        check(`${f.split('/').pop()} (kerchunk installed in ${PY}): opens without an error page`, !shown.error && q.csp.length === 0 && q.errors.length === 0, { shown, q });
+        await p.close();
+        continue;
+    }
     const err = await p.eval(`({ visible: !document.getElementById('error')?.classList.contains('hidden'), text: document.getElementById('error')?.innerText.slice(0, 600), buttons: [...document.querySelectorAll('#error [data-action], #error button, #error a')].map(b => (b.dataset.action || b.tagName) + ':' + b.textContent.trim()) })`);
     await p.eval(`[...document.querySelectorAll('#error [data-action]')].forEach(b => b.click()); true`);
     await sleep(500);

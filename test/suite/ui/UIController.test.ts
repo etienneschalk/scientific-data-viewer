@@ -278,7 +278,12 @@ suite('UIController Test Suite', () => {
             'data.nc',
             'temperature.png',
         );
-        assert.strictEqual(response.payload.filePath, expected);
+        // As the extension returns it (Uri.fsPath): on Windows, VS Code writes
+        // the drive letter in lower case (c:\), path.join keeps C:\
+        assert.strictEqual(
+            response.payload.filePath,
+            vscode.Uri.file(expected).fsPath,
+        );
         const written = await vscode.workspace.fs.readFile(
             vscode.Uri.file(expected),
         );

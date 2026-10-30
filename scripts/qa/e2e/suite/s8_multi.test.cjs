@@ -135,6 +135,10 @@ describe('S8 multiple panels / races / leaks', function () {
             p._webviewPanel.dispose();
         }
         await h.sleep(4000);
+        // Closing a viewer aborts its plots; its metadata load runs to the end
+        // and is ignored. A leak is a process still there long after: on a slow
+        // machine (CI runner) the 15 loads take more than the 4 s above
+        await h.waitFor(() => myPythonProcs().length === 0, 60000);
         const res = {
             ms: Date.now() - t0,
             panels: h.DataViewerPanel.getPanelCount(),

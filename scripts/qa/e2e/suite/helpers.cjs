@@ -128,11 +128,14 @@ async function waitLoaded(panel, timeoutMs = 120000) {
     };
 }
 
-async function openWith(fsPath, viewType) {
+async function openWith(fsPath, viewType, timeoutMs = 120000) {
     const before = maxId();
     const uri = vscode.Uri.file(fsPath);
     await vscode.commands.executeCommand('vscode.openWith', uri, viewType);
-    const panel = await waitNewPanel(before, fsPath, 30000);
+    // The panel is created once Python is initialised: on a CI runner the
+    // first imports of a fresh environment (byte-compiling) can take a minute
+    const panel = await waitNewPanel(before, fsPath, timeoutMs);
+    if (!panel) throw new Error(`no viewer panel for ${fsPath} (${viewType}) after ${timeoutMs / 1000} s`);
     return panel;
 }
 
