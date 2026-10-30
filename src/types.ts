@@ -1,3 +1,5 @@
+import { PlotLayoutReport } from './shared/plotLayout';
+
 export type EnvironmentSource =
     'override' | 'own-uv-env' | 'python-extension' | 'system';
 
@@ -67,8 +69,10 @@ export interface CreatePlotResult {
     format_info: DataInfoFormatInfo;
     /** Final applied isel kwargs (dimension slices); values are int or string for slice */
     applied_isel_kwargs?: Record<string, number | string>;
-    /** Final applied plot kwargs (row, col, xincrease, etc.) */
+    /** Kwargs of the xarray plot call (row, col, x, y, cmap, etc.) */
     applied_plot_kwargs?: Record<string, unknown>;
+    /** Plot kind and where each dimension went, with who chose it */
+    plot_layout?: PlotLayoutReport;
     /** Matplotlib style used for the plot */
     matplotlib_style?: string;
     /** Variable path that was plotted (e.g. '/temperature') */

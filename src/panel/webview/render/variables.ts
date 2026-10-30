@@ -269,6 +269,7 @@ function renderPlotControls(): string {
                             <button class="plot-action-button" data-action="open-plot">Open</button>
                         </div>
                         <div class="plot-error hidden"></div>
+                        <div class="plot-layout hidden"></div>
                         <div class="plot-image-container"></div>
                     </div>`;
 }

@@ -1,3 +1,4 @@
+import { CreatePlotResponse } from '../../shared/plotLayout';
 import { clampPlotTimeout } from './util';
 
 /**
@@ -158,7 +159,7 @@ export class WebviewMessageBus {
     createPlot(
         payload: { operationId: string } & Record<string, unknown>,
         timeoutMs: number,
-    ): Promise<string> {
+    ): Promise<CreatePlotResponse> {
         const timeout = clampPlotTimeout(timeoutMs);
         return this.sendRequest('createPlot', payload, {
             timeout,

@@ -12,7 +12,7 @@ async function plot(panel, opts, label) {
         s: 'S3', label, file: path.basename(panel.getFileUri().fsPath), opts,
         ms: Date.now() - t0, success: resp.success,
         error: resp.error ? String(resp.error).slice(0, 600) : undefined,
-        pngLen: resp.payload ? resp.payload.length : undefined,
+        pngLen: resp.payload && resp.payload.plotData ? resp.payload.plotData.length : undefined,
     };
     h.record(rec);
     return rec;

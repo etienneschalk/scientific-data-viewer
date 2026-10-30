@@ -12,6 +12,12 @@ import { ErrorBoundary } from '../../../src/common/ErrorBoundary';
 
 const PNG_BASE64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+const PLOT_LAYOUT = {
+    kind: 'image',
+    choices: [{ role: 'col', value: 'time', source: 'auto' }],
+    squeezed: [],
+    notes: [],
+};
 
 suite('UIController Test Suite', () => {
     let tmpDir: string;
@@ -34,7 +40,13 @@ suite('UIController Test Suite', () => {
             getDataInfo: async () => dataInfoResponse,
             createPlot: async (uri: vscode.Uri, plot: any) => {
                 plotCalls.push({ uri, plot });
-                return { result: { plot_data: PNG_BASE64 } };
+                return {
+                    result: {
+                        plot_data: PNG_BASE64,
+                        plot_layout: PLOT_LAYOUT,
+                        applied_isel_kwargs: { lat: '5:15' },
+                    },
+                };
             },
             abortPlot: () => false,
         };
@@ -218,7 +230,11 @@ suite('UIController Test Suite', () => {
         });
 
         assert.strictEqual(response.success, true);
-        assert.strictEqual(response.payload, PNG_BASE64);
+        assert.deepStrictEqual(response.payload, {
+            plotData: PNG_BASE64,
+            layout: PLOT_LAYOUT,
+            appliedSlices: { lat: '5:15' },
+        });
         assert.strictEqual(plotCalls[0].uri.query, 'openAs=kerchunk');
         assert.deepStrictEqual(plotCalls[0].plot, {
             variable: '/temperature',

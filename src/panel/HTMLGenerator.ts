@@ -402,7 +402,7 @@ export class HTMLGenerator {
                                 <h5 class="plot-controls-subsection-title">Plot parameters <code>plot</code></h5>
                                 <button type="button" id="clearPlotParametersButton" class="plot-reset-button" data-action="clear-plot-controls" title="Reset the plot parameters">Reset</button>
                             </div>
-                            <p class="dimension-slices-hint">Passed to the xarray plot call; empty fields keep xarray's defaults. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                            <p class="dimension-slices-hint">Passed to the xarray plot call. Each field you set is outlined and kept; the empty ones are chosen automatically for each variable (shown under its plot). See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
                             <!-- Rendered by the webview script from its plot-parameter table -->
                             <div id="globalPlotParameters" class="dimension-slices-facets"></div>
                         </div>

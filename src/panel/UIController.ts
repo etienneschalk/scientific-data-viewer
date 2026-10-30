@@ -25,6 +25,7 @@ import {
 } from '../common/config';
 import { DataInfoResult, PlotOptions } from '../types';
 import { SaveResult } from './communication/MessageTypes';
+import { CreatePlotResponse } from '../shared/plotLayout';
 import { ThemeManager } from './ThemeManager';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
@@ -251,7 +252,7 @@ export class UIController {
 
     private async handleCreatePlot(
         plot: PlotOptions,
-    ): Promise<string | undefined> {
+    ): Promise<CreatePlotResponse> {
         if (!this.fileUri) {
             throw new Error('No file loaded');
         }
@@ -279,7 +280,11 @@ export class UIController {
         if (!response.result) {
             throw new Error('Failed to create plot');
         }
-        return response.result.plot_data;
+        return {
+            plotData: response.result.plot_data,
+            layout: response.result.plot_layout,
+            appliedSlices: response.result.applied_isel_kwargs,
+        };
     }
 
     private handleAbortPlot(operationId: string): {

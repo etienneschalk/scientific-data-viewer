@@ -94,10 +94,16 @@ function timeElement<T extends HTMLElement = HTMLInputElement>(
     return section.querySelector<T>(`[data-time="${role}"]`);
 }
 
+/**
+ * Set a bound (both inputs). As the baseline, the value is the default the
+ * changed-field outline compares with (see changedFields.ts); otherwise the
+ * baseline is removed.
+ */
 function setTimeBound(
     section: ParentNode,
     bound: 'start' | 'end',
     datetimeLocal: string,
+    asBaseline = false,
 ): void {
     const input = timeElement(section, bound);
     const text = timeElement(section, `${bound}-text`);
@@ -107,16 +113,26 @@ function setTimeBound(
     if (text) {
         text.value = convertDatetimeLocalToText(datetimeLocal);
     }
+    for (const element of [input, text]) {
+        if (element && asBaseline) {
+            element.dataset.baseline = element.value;
+        } else if (element) {
+            delete element.dataset.baseline;
+        }
+    }
 }
 
-/** Prefill start/end with the selected datetime variable's min/max. */
+/**
+ * Prefill start/end with the selected datetime variable's min/max: the full
+ * range, which restricts nothing, so it is not shown as changed.
+ */
 function prefillTimeRange(section: ParentNode, fullPath: string): void {
     const varData = fullPath ? globalState.datetimeVarsMap.get(fullPath) : null;
     if (!varData) {
         return;
     }
-    setTimeBound(section, 'start', isoToDatetimeLocal(varData.min));
-    setTimeBound(section, 'end', isoToDatetimeLocal(varData.max));
+    setTimeBound(section, 'start', isoToDatetimeLocal(varData.min), true);
+    setTimeBound(section, 'end', isoToDatetimeLocal(varData.max), true);
 }
 
 export function clearTimeControls(section: ParentNode): void {

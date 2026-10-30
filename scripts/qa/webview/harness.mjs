@@ -371,7 +371,7 @@ class Page {
                         const response = await runBackend(args, { timeoutMs: this.cfg.plotTimeoutMs ?? 300000, signal: controller.signal });
                         if (response.error) throw new Error(`Data processing error: ${response.error.error}`);
                         if (!response.result) throw new Error('Failed to create plot');
-                        reply = response.result.plot_data;
+                        reply = { plotData: response.result.plot_data, layout: response.result.plot_layout, appliedSlices: response.result.applied_isel_kwargs };
                     } finally {
                         this.processes.delete(payload.operationId);
                     }

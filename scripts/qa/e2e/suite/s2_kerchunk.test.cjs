@@ -60,7 +60,7 @@ describe('S2 kerchunk', function () {
         if (r.hasError) throw new Error(JSON.stringify(r.error));
         // plot through the real host
         const resp = await h.request(p, 'createPlot', { variable: '/v', operationId: 'k1' });
-        h.record({ s: 'S2', step: 'plot inline_plain v', success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.length });
+        h.record({ s: 'S2', step: 'plot inline_plain v', success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.plotData && resp.payload.plotData.length });
         if (!resp.success) throw new Error(resp.error);
     });
 
@@ -97,9 +97,9 @@ describe('S2 kerchunk', function () {
         if (n !== 2) throw new Error('expected 2 panels, got ' + n);
         const t0 = Date.now();
         const resp = await h.request(p2, 'createPlot', { variable: '/temperature', dimensionSlices: { time: 0 }, operationId: 'k2' });
-        h.record({ s: 'S2', step: 'plot kerchunk temperature time=0', ms: Date.now() - t0, success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.length });
+        h.record({ s: 'S2', step: 'plot kerchunk temperature time=0', ms: Date.now() - t0, success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.plotData && resp.payload.plotData.length });
         const resp2 = await h.request(p1, 'createPlot', { variable: '/temperature', dimensionSlices: { time: '0:2' }, facetCol: 'time', operationId: 'k3' });
-        h.record({ s: 'S2', step: 'plot kerchunkEditor /temperature facet', success: resp2.success, error: resp2.error, pngLen: resp2.payload && resp2.payload.length });
+        h.record({ s: 'S2', step: 'plot kerchunkEditor /temperature facet', success: resp2.success, error: resp2.error, pngLen: resp2.payload && resp2.payload.plotData && resp2.payload.plotData.length });
         await h.closeAll();
         if (!resp.success) throw new Error(resp.error);
         if (!resp2.success) throw new Error(resp2.error);

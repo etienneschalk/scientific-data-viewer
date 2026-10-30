@@ -36,6 +36,11 @@
     --sdv-success-color: var(--vscode-testing-iconPassed, #4caf50);
     --sdv-success-surface: transparent;
     --sdv-highlight: transparent;
+    /* Plot controls the user changed, and their items in the plot layout line */
+    --sdv-changed: var(
+        --vscode-inputOption-activeBorder,
+        var(--vscode-focusBorder)
+    );
 }
 
 @supports (color: color-mix(in srgb, red 50%, blue)) {
@@ -1056,6 +1061,52 @@ pre:not(.html-representation pre) {
     border-color: var(--sdv-success-color);
 }
 
+/* Plot layout line: plot kind, then where each dimension went */
+.plot-layout {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-layout-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.plot-layout-kind {
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.plot-layout-item {
+    padding: 1px 6px;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-sm);
+    white-space: nowrap;
+}
+
+/* Same outline as a changed control */
+.plot-layout-item--user {
+    border-color: var(--sdv-changed);
+    color: var(--vscode-foreground);
+}
+
+.plot-layout-legend {
+    margin-left: auto;
+    font-size: 11px;
+}
+
+.plot-layout-notes {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    color: var(
+        --vscode-editorWarning-foreground,
+        var(--vscode-descriptionForeground)
+    );
+}
+
 /* Plot error: the message sits in the callout, copy button in its corner */
 .plot-error > div {
     position: relative;
@@ -1186,6 +1237,22 @@ pre:not(.html-representation pre) {
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+}
+
+/*
+ * Changed from its default (changedFields.ts): an outline, which leaves the
+ * grid in place, and a marker after the name. The other fields are chosen
+ * automatically by the backend.
+ */
+.plot-field--changed {
+    outline: 1px solid var(--sdv-changed);
+    outline-offset: 4px;
+    border-radius: var(--sdv-radius-sm);
+}
+
+.plot-field--changed .plot-field-name::after {
+    content: ' •';
+    color: var(--sdv-changed);
 }
 
 .plot-field-label {

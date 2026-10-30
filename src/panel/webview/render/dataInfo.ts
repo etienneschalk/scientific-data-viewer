@@ -1,4 +1,5 @@
 import { joinId } from '../../../shared/ids';
+import { refreshChangedFields } from '../changedFields';
 import { displayGlobalError, hideGlobalError } from '../errors';
 import {
     globalPlotScope,
@@ -80,6 +81,8 @@ export function displayAll(state: DataLoadedPayload): void {
     const dataInfo = data.dataInfo ?? null;
     const extensionConfig = state?.extension?.extensionConfig;
     displayDataInfo(dataInfo, data.currentFile ?? null, extensionConfig);
+    // Rendering resets some controls (Refresh keeps the others)
+    refreshChangedFields(document);
     if (dataInfo && !dataInfo.error) {
         displayHtmlRepresentation(dataInfo.xarray_html_repr, false);
         displayTextRepresentation(dataInfo.xarray_text_repr, false);

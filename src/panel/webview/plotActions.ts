@@ -1,10 +1,12 @@
 import { ICONS } from '../../shared/icons';
+import { CreatePlotResponse } from '../../shared/plotLayout';
 import { messageBus } from './bus';
 import {
     invalidPlotParameters,
     mergePlotControls,
     readPlotControls,
 } from './plotParams';
+import { renderPlotLayout } from './render/plotLayout';
 import { activePlotOperations, globalState, plotAllState } from './state';
 import {
     convertDatetimeLocalToISO,
@@ -27,6 +29,8 @@ interface PlotParts {
     container: HTMLElement;
     image: HTMLElement;
     message: HTMLElement;
+    /** Absent from pages exported before 0.13 */
+    layout: HTMLElement | null;
 }
 
 function plotParts(controls: HTMLElement): PlotParts {
@@ -42,6 +46,7 @@ function plotParts(controls: HTMLElement): PlotParts {
         container: part('.plot-container'),
         image: part('.plot-image-container'),
         message: part('.plot-error'),
+        layout: controls.querySelector<HTMLElement>('.plot-layout'),
     };
 }
 
@@ -81,24 +86,43 @@ function revealPlotSection(controls: HTMLElement): void {
     }
 }
 
+/** Layout line under the plot (empty and hidden without a layout). */
+function showPlotLayout(
+    controls: HTMLElement,
+    response: CreatePlotResponse | null,
+): void {
+    const { layout } = plotParts(controls);
+    if (!layout) {
+        return;
+    }
+    layout.innerHTML = response ? renderPlotLayout(response) : '';
+    layout.classList.toggle('hidden', layout.innerHTML === '');
+}
+
 function displayVariablePlotLoading(controls: HTMLElement): void {
     const { container, image } = plotParts(controls);
     revealPlotSection(controls);
     hidePlotMessage(controls);
+    showPlotLayout(controls, null);
     image.innerHTML = '<p class="plot-loading">Loading...</p>';
     container.classList.remove('hidden');
 }
 
-function displayVariablePlot(controls: HTMLElement, plotData: unknown): void {
+function displayVariablePlot(
+    controls: HTMLElement,
+    response: CreatePlotResponse | undefined,
+): void {
     const { variable, container, image } = plotParts(controls);
     hidePlotMessage(controls);
     image.innerHTML = '';
     container.classList.remove('hidden');
+    const plotData = response?.plotData;
     if (typeof plotData === 'string' && plotData.startsWith('iVBOR')) {
         const img = document.createElement('img');
         img.src = `data:image/png;base64,${plotData}`;
         img.alt = `Plot for ${variable}`;
         image.appendChild(img);
+        showPlotLayout(controls, response ?? null);
     } else {
         displayVariablePlotError(
             controls,
@@ -138,6 +162,7 @@ function displayVariablePlotSuccess(controls: HTMLElement, text: string): void {
 
 function displayVariablePlotCancelled(controls: HTMLElement): void {
     const { image, message } = plotParts(controls);
+    showPlotLayout(controls, null);
     image.innerHTML = '';
     setMultilineText(message, 'Plot cancelled.');
     message.classList.remove('hidden', 'error', 'success');
@@ -292,6 +317,7 @@ export async function createVariablePlot(
     if (invalid.length > 0) {
         revealPlotSection(controls);
         plotParts(controls).image.innerHTML = '';
+        showPlotLayout(controls, null);
         displayVariablePlotError(
             controls,
             `Invalid plot parameters, nothing was plotted:\n${invalid.join('\n')}`,
@@ -310,14 +336,14 @@ export async function createVariablePlot(
     setPlotRunning(controls, true);
     updateCancelButtonVisibility();
     try {
-        const plotData = await messageBus.createPlot(
+        const response = await messageBus.createPlot(
             payload,
             globalState.plotTimeoutMs,
         );
         if (cancelledPlotOperations.has(operationId)) {
             return 'cancelled';
         }
-        displayVariablePlot(controls, plotData);
+        displayVariablePlot(controls, response);
         return 'success';
     } catch (error) {
         if (cancelledPlotOperations.has(operationId)) {
@@ -503,6 +529,7 @@ export async function handleCancelAllPlots(): Promise<void> {
 
 export function resetVariablePlot(controls: HTMLElement): void {
     const { container, image } = plotParts(controls);
+    showPlotLayout(controls, null);
     image.innerHTML = '';
     container.classList.add('hidden');
     hidePlotMessage(controls);

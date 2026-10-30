@@ -158,7 +158,7 @@ describe('S6 settings', function () {
             const mark = h.logs.length;
             const resp = await h.request(p, 'createPlot', { variable: '/temperature_4d', dimensionSlices: { level: 0 }, facetCol: 'time', operationId: 'fg' + Math.random() });
             const cmd = lastCmd(mark, 'plot');
-            out[JSON.stringify(v)] = { success: resp.success, error: resp.error && resp.error.slice(0, 300), pngLen: resp.payload && resp.payload.length, flag: cmd && (cmd.match(/--facetgrid-figsize (\S+)/) || [])[1] };
+            out[JSON.stringify(v)] = { success: resp.success, error: resp.error && resp.error.slice(0, 300), pngLen: resp.payload && resp.payload.plotData && resp.payload.plotData.length, flag: cmd && (cmd.match(/--facetgrid-figsize (\S+)/) || [])[1] };
         }
         await h.setConfig('facetgridFigsize', undefined);
         h.record({ s: 'S6', label: 'facetgridFigsize', out });

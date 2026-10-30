@@ -790,12 +790,134 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('changed controls are outlined until reset', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const field = (id: string) =>
+            doc.getElementById(id).closest('.plot-field');
+        const changed = (id: string) =>
+            field(id).classList.contains('plot-field--changed');
+        assert.strictEqual(
+            doc.querySelectorAll('.plot-field--changed').length,
+            0,
+            'nothing changed after loading',
+        );
+
+        harness.setValue(doc.getElementById('dim-slice-lat'), '0:1', 'input');
+        harness.setValue(doc.getElementById('plotBinsInput'), '20', 'input');
+        doc.getElementById('robustCheckbox').click();
+        doc.getElementById('xIncreaseCheckbox').click();
+        doc.getElementById('xIncreaseCheckbox').click();
+        assert.ok(changed('dim-slice-lat'), 'slice');
+        assert.ok(changed('plotBinsInput'), 'number');
+        assert.ok(changed('robustCheckbox'), 'checkbox off by default');
+        assert.ok(!changed('xIncreaseCheckbox'), 'back to its default');
+        assert.ok(!changed('plotCmapInput'), 'untouched');
+
+        // Every box of the slice emptied
+        harness.setValue(doc.getElementById('dim-slice-lat'), '', 'input');
+        assert.ok(changed('dim-slice-lat'), 'the stop box is still set');
+        harness.setValue(doc.getElementById('dim-slice-lat-stop'), '', 'input');
+        assert.ok(!changed('dim-slice-lat'), 'all boxes empty');
+
+        harness.click(doc.getElementById('clearPlotParametersButton'));
+        assert.ok(!changed('plotBinsInput'));
+        assert.ok(!changed('robustCheckbox'));
+
+        const groupColorbar = doc.getElementById(
+            'group-add-colorbar-group-plot___-',
+        );
+        assert.ok(!changed(groupColorbar.id), 'group uses the global value');
+        groupColorbar.click();
+        assert.ok(changed(groupColorbar.id), 'group value of its own');
+    });
+
+    test('a time range prefilled with the full range is not a change', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const changed = (id: string) =>
+            doc
+                .getElementById(id)
+                .closest('.plot-field')
+                .classList.contains('plot-field--changed');
+
+        harness.setValue(doc.getElementById('datetimeVariableSelect'), 'time');
+        assert.ok(changed('datetimeVariableSelect'));
+        assert.ok(!changed('startDatetimeInput'), 'prefilled minimum');
+        assert.ok(!changed('endDatetimeInput'), 'prefilled maximum');
+
+        harness.setValue(
+            doc.getElementById('endDatetimeTextInput'),
+            '2020-01-02 12:00:00',
+            'input',
+        );
+        assert.ok(changed('endDatetimeInput'), 'end moved');
+
+        harness.click(doc.getElementById('clearTimeControlsButton'));
+        assert.strictEqual(
+            doc.querySelectorAll('.time-controls-section .plot-field--changed')
+                .length,
+            0,
+        );
+    });
+
+    test('the plot shows its layout: set by the user or automatic', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        const layoutLine = controls.querySelector('.plot-layout');
+        assert.ok(layoutLine.classList.contains('hidden'));
+
+        harness.click(controls.querySelector('[data-action="create-plot"]'));
+        const [request] = harness.requests('createPlot');
+        harness.respond(request.id, {
+            plotData: 'iVBORw0KGgo=',
+            appliedSlices: { lat: '0:1' },
+            layout: {
+                kind: 'image',
+                choices: [
+                    { role: 'col', value: 'time', source: 'auto' },
+                    { role: 'col_wrap', value: 2, source: 'user' },
+                ],
+                squeezed: ['band'],
+                notes: [`row=${EVIL} ignored`],
+            },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        assert.ok(!layoutLine.classList.contains('hidden'));
+        assert.strictEqual(
+            layoutLine.querySelector('.plot-layout-kind').textContent,
+            'image',
+        );
+        const items = Array.from(
+            layoutLine.querySelectorAll('.plot-layout-item'),
+        ).map((item: any) => [
+            item.textContent,
+            item.classList.contains('plot-layout-item--user'),
+        ]);
+        assert.deepStrictEqual(items, [
+            ['lat 0:1', true],
+            ['band 0', false],
+            ['col time', false],
+            ['col_wrap 2', true],
+        ]);
+        assert.strictEqual(
+            layoutLine.querySelector('.plot-layout-notes li').textContent,
+            `row=${EVIL} ignored`,
+        );
+        assert.strictEqual(layoutLine.querySelector('img'), null);
+
+        harness.click(controls.querySelector('[data-action="reset-plot"]'));
+        assert.ok(layoutLine.classList.contains('hidden'));
+        assert.strictEqual(layoutLine.innerHTML, '');
+    });
+
     test('displays the plot and saves it under a relative path', () => {
         harness.loadData(sampleDataInfo());
         const controls = harness.plotControls(`/g${EVIL}/v${EVIL}`);
         harness.click(controls.querySelector('[data-action="create-plot"]'));
         const [request] = harness.requests('createPlot');
-        harness.respond(request.id, 'iVBORw0KGgo=');
+        harness.respond(request.id, { plotData: 'iVBORw0KGgo=' });
 
         return new Promise<void>((resolve) => setTimeout(resolve, 0)).then(
             () => {
@@ -837,7 +959,7 @@ suite('Webview script (jsdom)', () => {
                 .textContent.includes('Plot request timeout'),
         );
         // A late response for the timed-out request is ignored
-        harness.respond(request.id, 'iVBORw0KGgo=');
+        harness.respond(request.id, { plotData: 'iVBORw0KGgo=' });
         await new Promise((resolve) => setTimeout(resolve, 0));
         assert.strictEqual(controls.querySelector('img'), null);
     });
@@ -939,7 +1061,7 @@ suite('Webview script (jsdom)', () => {
             abort.payload.operationId,
             first.payload.operationId,
         );
-        harness.respond(first.id, 'iVBORfake');
+        harness.respond(first.id, { plotData: 'iVBORfake' });
         await new Promise((resolve) => setTimeout(resolve, 0));
         assert.strictEqual(
             controls.querySelector('.plot-error').textContent,
@@ -1002,7 +1124,7 @@ suite('Webview script (jsdom)', () => {
                 .querySelector('[data-action="cancel-plot"]')
                 .classList.contains('hidden'),
         );
-        harness.respond(request.id, 'iVBORw0KGgo=');
+        harness.respond(request.id, { plotData: 'iVBORw0KGgo=' });
         await new Promise((resolve) => setTimeout(resolve, 0));
         assert.strictEqual(controls.querySelector('img'), null);
     });

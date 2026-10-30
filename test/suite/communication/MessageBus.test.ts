@@ -50,7 +50,9 @@ suite('MessageBus Test Suite', () => {
     });
 
     test('answers a request with the handler result', async () => {
-        messageBus.handle('createPlot', async (plot) => `png:${plot.variable}`);
+        messageBus.handle('createPlot', async (plot) => ({
+            plotData: `png:${plot.variable}`,
+        }));
 
         const response = await request('createPlot', { variable: 'temp' });
 
@@ -58,7 +60,7 @@ suite('MessageBus Test Suite', () => {
             type: 'response',
             requestId: response.requestId,
             success: true,
-            payload: 'png:temp',
+            payload: { plotData: 'png:temp' },
         });
     });
 

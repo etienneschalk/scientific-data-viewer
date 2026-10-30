@@ -5,6 +5,7 @@
  * emits events. Keep these maps in sync with `src/panel/webview/`.
  */
 
+import { CreatePlotResponse } from '../../shared/plotLayout';
 import { DataInfoResult, PlotOptions } from '../../types';
 
 export interface RequestMessage {
@@ -44,7 +45,7 @@ export interface PlotFilePayload {
 
 /** Requests sent by the webview: command → [payload, result]. */
 export interface Requests {
-    createPlot: [PlotOptions, string | undefined];
+    createPlot: [PlotOptions, CreatePlotResponse];
     abortPlot: [{ operationId: string }, { success: boolean; message: string }];
     savePlot: [PlotFilePayload, SaveResult];
     savePlotAs: [{ plotData: string; variable: string }, SaveResult];
