@@ -139,7 +139,8 @@ class PlotOptions:
     end_datetime: str | None = None
     dimension_slices: dict[str, str | int] | None = None
 
-    # Layout (xarray facets and axes)
+    # Layout (xarray facets and axes): each one left empty is chosen by
+    # layout.resolve_layout, which keeps the ones set
     facet_row: str | None = None
     facet_col: str | None = None
     col_wrap: ColWrap = None
@@ -148,7 +149,7 @@ class PlotOptions:
     plot_hue: str | None = None
     facetgrid_figsize: tuple[float, float] | None = None
 
-    # xarray plot kwargs
+    # xarray plot kwargs (aspect / size: layout; the others: kwargs.py)
     xincrease: bool | None = None
     yincrease: bool | None = None
     aspect: int | float | None = None
@@ -160,24 +161,3 @@ class PlotOptions:
     vmax: int | float | None = None
     add_colorbar: bool = True
     add_legend: bool = False
-
-    @property
-    def has_user_layout(self) -> bool:
-        """True when the user set any slice/facet/x/y/hue/bins/aspect/size option.
-
-        In that case the plot is built from user input only. When only ``cmap`` is
-        set, the automatic strategies are kept so cmap is passed to the relevant
-        plot calls there.
-        """
-        return bool(
-            (self.dimension_slices and len(self.dimension_slices) > 0)
-            or (self.facet_row and self.facet_row.strip())
-            or (self.facet_col and self.facet_col.strip())
-            or col_wrap_is_set(self.col_wrap)
-            or (self.plot_x and self.plot_x.strip())
-            or (self.plot_y and self.plot_y.strip())
-            or (self.plot_hue and self.plot_hue.strip())
-            or (self.bins is not None and self.bins >= 1)
-            or (self.aspect is not None and self.aspect > 0)
-            or (self.size is not None and self.size > 0)
-        )

@@ -1,4 +1,4 @@
-"""Choice of the xarray plot call (automatic and user layouts)."""
+"""xarray plot call made for each resolved layout."""
 
 import matplotlib
 
@@ -11,28 +11,17 @@ import xarray as xr
 from matplotlib.collections import QuadMesh
 
 from sdv_backend.plotting.draw import draw_plot, is_spatial_dimension
-from sdv_backend.plotting.kwargs import PlotKwargsBundle, draws_color_mesh
+from sdv_backend.plotting.kwargs import PlotKwargsBundle
+from sdv_backend.plotting.layout import resolve_layout
 from sdv_backend.plotting.options import PlotOptions
 from sdv_backend.plotting.selection import DatetimeSelection
 
 
-def _bundle(**kwargs) -> PlotKwargsBundle:
-    defaults = {
-        "bins": None,
-        "robust": None,
-        "xincrease": None,
-        "yincrease": None,
-        "aspect": None,
-        "size": None,
-        "cmap": None,
-        "col_wrap": None,
-    }
-    return PlotKwargsBundle.build(**{**defaults, **kwargs})
-
-
-def _draw(var: xr.DataArray, options: PlotOptions = PlotOptions(), **bundle_kw):
+def _draw(var: xr.DataArray, options: PlotOptions = PlotOptions(), **style):
     plt.close("all")
-    draw_plot(var, _bundle(**bundle_kw), options, DatetimeSelection(var=var), "v")
+    selection = DatetimeSelection(var=var)
+    var, layout = resolve_layout(var, options, selection)
+    draw_plot(var, layout, PlotKwargsBundle.build(**style), selection, "v")
     return plt.gcf()
 
 
@@ -89,13 +78,9 @@ def test_1d_against_datetime_variable() -> None:
         dims=("obs",),
     )
     plt.close("all")
-    draw_plot(
-        var,
-        _bundle(),
-        PlotOptions(),
-        DatetimeSelection(var=var, datetime_var=when, datetime_var_name="when"),
-        "v",
-    )
+    selection = DatetimeSelection(var=var, datetime_var=when, datetime_var_name="when")
+    var, layout = resolve_layout(var, PlotOptions(), selection)
+    draw_plot(var, layout, PlotKwargsBundle.build(), selection, "v")
     assert plt.gca().get_xlabel() == "when"
 
 
@@ -105,7 +90,7 @@ def test_user_histogram() -> None:
     assert len(fig.axes[0].patches) == 7
 
 
-def test_user_facets_with_cmap_use_imshow() -> None:
+def test_user_facets_with_cmap() -> None:
     var = xr.DataArray(np.zeros((3, 4, 5)), dims=("time", "y", "x"), name="v")
     fig = _draw(var, PlotOptions(facet_col="time"), cmap="magma")
     images = [ax.images[0] for ax in fig.axes if ax.images]
@@ -113,27 +98,24 @@ def test_user_facets_with_cmap_use_imshow() -> None:
     assert images[0].get_cmap().name == "magma"
 
 
-def test_user_invalid_facet_falls_back_to_default_plot() -> None:
+def test_user_invalid_facet_is_ignored() -> None:
     var = xr.DataArray(np.arange(4.0), dims=("x",), name="v")
     fig = _draw(var, PlotOptions(facet_row="nope"))
     assert len(fig.axes[0].lines) == 1
 
 
-def _mesh_limits(fig) -> list[tuple[float, float]]:
-    """Color limits of the pcolormesh artists (a colorbar draws one too)."""
+def _image_limits(fig) -> list[tuple[float, float]]:
+    """Color limits of the images."""
     return [
-        (mesh.norm.vmin, mesh.norm.vmax)
-        for ax in fig.axes
-        for mesh in ax.collections
-        if isinstance(mesh, QuadMesh)
+        (image.norm.vmin, image.norm.vmax) for ax in fig.axes for image in ax.images
     ]
 
 
-def test_user_layout_color_mesh_keeps_vmin_vmax() -> None:
+def test_image_keeps_vmin_vmax() -> None:
     """vmin / vmax used to be dropped by every DataArray.plot() call."""
     var = xr.DataArray(np.arange(12.0).reshape(3, 4), dims=("y", "x"), name="v")
-    fig = _draw(var, PlotOptions(dimension_slices={"t": 0}), vmin=2.0, vmax=5.0)
-    assert set(_mesh_limits(fig)) == {(2.0, 5.0)}  # mesh and its colorbar
+    fig = _draw(var, vmin=2.0, vmax=5.0)
+    assert _image_limits(fig) == [(2.0, 5.0)]
 
 
 def test_user_facets_keep_vmin_vmax_and_add_colorbar() -> None:
@@ -141,8 +123,22 @@ def test_user_facets_keep_vmin_vmax_and_add_colorbar() -> None:
     fig = _draw(
         var, PlotOptions(facet_col="time"), vmin=-1.0, vmax=1.0, add_colorbar=False
     )
-    assert _mesh_limits(fig) == [(-1.0, 1.0)] * 3
+    assert _image_limits(fig) == [(-1.0, 1.0)] * 3
     assert len(fig.axes) == 3, "no colorbar axis"
+
+
+def test_coordinate_axis_uses_pcolormesh() -> None:
+    """imshow needs dimension axes: a 2D coordinate goes to pcolormesh."""
+    lon2d = np.add.outer(np.arange(3.0), np.arange(4.0))
+    var = xr.DataArray(
+        np.zeros((3, 4)),
+        dims=("j", "i"),
+        coords={"lon2d": (("j", "i"), lon2d), "lat2d": (("j", "i"), lon2d.T.T)},
+        name="v",
+    )
+    fig = _draw(var, PlotOptions(plot_x="lon2d", plot_y="lat2d"), vmin=0.0, vmax=1.0)
+    meshes = [c for ax in fig.axes for c in ax.collections if isinstance(c, QuadMesh)]
+    assert meshes and (meshes[0].norm.vmin, meshes[0].norm.vmax) == (0.0, 1.0)
 
 
 @pytest.mark.parametrize("options", [PlotOptions(), PlotOptions(bins=None, size=3)])
@@ -153,20 +149,24 @@ def test_lines_ignore_color_options(options) -> None:
     assert len(fig.axes[0].lines) == 1
 
 
-@pytest.mark.parametrize(
-    ("shape", "dims", "plot_kw", "expected"),
-    [
-        ((3, 4), ("y", "x"), {}, True),
-        ((1, 3, 4), ("t", "y", "x"), {}, True),  # size-1 dimension squeezed
-        ((2, 3, 4), ("t", "y", "x"), {"col": "t"}, True),
-        ((3, 4), ("y", "x"), {"hue": "y"}, False),  # lines
-        ((4,), ("x",), {}, False),  # line
-        ((2, 3, 4), ("t", "y", "x"), {}, False),  # histogram
-    ],
-)
-def test_draws_color_mesh(shape, dims, plot_kw, expected) -> None:
-    var = xr.DataArray(np.zeros(shape), dims=dims)
-    assert draws_color_mesh(var, plot_kw) is expected
+def test_hue_lines_get_a_legend() -> None:
+    var = xr.DataArray(np.zeros((3, 4)), dims=("t", "x"), name="v")
+    fig = _draw(var, PlotOptions(plot_hue="t"), add_legend=True, cmap="magma")
+    assert len(fig.axes[0].lines) == 3
+
+
+def test_histogram_takes_user_size() -> None:
+    var = xr.DataArray(np.zeros(10), dims=("x",), name="v")
+    fig = _draw(var, PlotOptions(bins=4, size=2, aspect=3), bins=4)
+    assert tuple(fig.get_size_inches()) == (6.0, 2.0)
+
+
+def test_slicing_keeps_the_automatic_facets() -> None:
+    """A slice used to switch to the user route: a 3D histogram instead of facets."""
+    var = xr.DataArray(np.zeros((5, 6, 7)), dims=("time", "lat", "lon"), name="v")
+    var = var.isel(lat=slice(1, 4))
+    fig = _draw(var, PlotOptions(dimension_slices={"lat": "1:4"}))
+    assert len([ax for ax in fig.axes if ax.images]) == 5
 
 
 def test_is_spatial_dimension() -> None:

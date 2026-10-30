@@ -199,9 +199,14 @@ class CreatePlotResult:
     format_info : FileFormatInfo
         File format metadata
     applied_isel_kwargs : dict
-        Final applied dimension slices (isel kwargs); values are int or str for slice
+        Final applied dimension slices (isel kwargs): an int index, or a slice
+        as ``'start:stop[:step]'``
     applied_plot_kwargs : dict
-        Final applied plot kwargs (row, col, xincrease, etc.)
+        Kwargs of the xarray plot call (row, col, x, y, cmap, ...)
+    plot_layout : dict
+        ``PlotLayout.to_json()``: plot kind, each layout choice with its
+        source (``user`` or ``auto``), squeezed dimensions and notes on the
+        user choices that could not be used
     matplotlib_style : str
         Matplotlib style used for the plot
     variable_path : str
@@ -212,6 +217,7 @@ class CreatePlotResult:
     format_info: FileFormatInfo
     applied_isel_kwargs: dict[str, int | str] = field(default_factory=dict)
     applied_plot_kwargs: dict[str, Any] = field(default_factory=dict)
+    plot_layout: dict[str, Any] = field(default_factory=dict)
     matplotlib_style: str = ""
     variable_path: str = ""
 

@@ -4,10 +4,16 @@ from __future__ import annotations
 
 import argparse
 
+import numpy as np
 import pytest
+import xarray as xr
 
-from sdv_backend.plotting.kwargs import PlotKwargsBundle
-from sdv_backend.plotting.options import parse_col_wrap, xarray_supports_col_wrap_auto
+from sdv_backend.plotting.layout import Choice, resolve_layout
+from sdv_backend.plotting.options import (
+    PlotOptions,
+    parse_col_wrap,
+    xarray_supports_col_wrap_auto,
+)
 
 
 def test_parse_col_wrap_accepts_auto() -> None:
@@ -25,38 +31,24 @@ def test_parse_col_wrap_rejects_invalid(value: str) -> None:
         parse_col_wrap(value)
 
 
-def test_plot_kwargs_include_col_wrap_auto(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "sdv_backend.plotting.kwargs.xarray_supports_col_wrap_auto", lambda: True
-    )
-    bundle = PlotKwargsBundle.build(
-        bins=None,
-        robust=None,
-        xincrease=None,
-        yincrease=None,
-        aspect=None,
-        size=None,
-        cmap=None,
-        col_wrap="auto",
-    )
-    assert bundle.raw["col_wrap"] == "auto"
+def _col_wrap(col_wrap) -> object:
+    var = xr.DataArray(np.zeros((6, 2, 3)), dims=("t", "y", "x"))
+    _, layout = resolve_layout(var, PlotOptions(col_wrap=col_wrap))
+    return layout.choices.get("col_wrap")
 
 
-def test_plot_kwargs_omit_auto_on_old_xarray(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_layout_keeps_col_wrap_auto(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "sdv_backend.plotting.kwargs.xarray_supports_col_wrap_auto", lambda: False
+        "sdv_backend.plotting.layout.xarray_supports_col_wrap_auto", lambda: True
     )
-    bundle = PlotKwargsBundle.build(
-        bins=None,
-        robust=None,
-        xincrease=None,
-        yincrease=None,
-        aspect=None,
-        size=None,
-        cmap=None,
-        col_wrap="auto",
+    assert _col_wrap("auto") == Choice("auto", "user")
+
+
+def test_layout_replaces_auto_on_old_xarray(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "sdv_backend.plotting.layout.xarray_supports_col_wrap_auto", lambda: False
     )
-    assert "col_wrap" not in bundle.raw
+    assert _col_wrap("auto") == Choice(4, "auto")
 
 
 def test_current_xarray_supports_col_wrap_auto() -> None:
