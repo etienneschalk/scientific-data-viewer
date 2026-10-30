@@ -86,15 +86,15 @@ python python/get_data_info.py info sample-data/sample_data.nc
 python python/get_data_info.py plot sample-data/sample_data.nc /temperature --style default
 ```
 
-| Module                           | Responsibility                                                                                     |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope                   |
-| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                        |
-| `environment/`                   | Installed packages, xarray engine selection per extension                                          |
-| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                        |
-| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)                   |
-| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                |
-| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, drawing (`draw.py`), PNG rendering |
+| Module                           | Responsibility                                                                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope                                                                           |
+| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                                                                                |
+| `environment/`                   | Installed packages, xarray engine selection per extension                                                                                                  |
+| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                                                                                |
+| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)                                                                           |
+| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                                                                        |
+| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, layout (`layout.py`), drawing (`draw.py`), PNG rendering; see [PLOTTING.md](./PLOTTING.md) |
 
 Dependencies point one way: `cli → info / plotting → opening → formats → environment`.
 
@@ -319,7 +319,7 @@ The theme variables come from `scripts/screenshots/themes/*.json`. They were rec
 
 #### Architecture diagrams
 
-[`docs/architecture/`](./architecture/README.md) holds the architecture diagrams: processes and their boundaries, the webview protocol, the module graphs of the extension host, the webview bundle and the Python backend, the file-opening and plot sequences, the interpreter choice and the uv environment lifecycle. They are generated, never edited by hand, and committed (`README.md` with `svg/*.svg` for GitHub, `architecture.html` to open in a browser). `docs/architecture/` is not packaged in the `.vsix`.
+[`docs/architecture/`](./architecture/README.md) holds the architecture diagrams: processes and their boundaries, the webview protocol, the module graphs of the extension host, the webview bundle and the Python backend, the file-opening and plot sequences, the plot parameters and the plot layout decision (explained in [PLOTTING.md](./PLOTTING.md)), the interpreter choice and the uv environment lifecycle. They are generated, never edited by hand, and committed (`README.md` with `svg/*.svg` for GitHub, `architecture.html` to open in a browser). `docs/architecture/` is not packaged in the `.vsix`.
 
 ```bash
 .venv/bin/python scripts/architecture/generate.py          # regenerate docs/architecture/ (needs Graphviz: apt install graphviz / brew install graphviz)

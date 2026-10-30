@@ -63,7 +63,13 @@ HOST_LAYERS = [
         "python/officialPythonExtensionApiUtils",
         "common/PerformanceTimer",
     ],
-    ["common/runProcess", "shared/ids", "shared/icons", "shared/time"],
+    [
+        "common/runProcess",
+        "shared/ids",
+        "shared/icons",
+        "shared/time",
+        "shared/plotLayout",
+    ],
 ]
 # The main request path, drawn with a thick border
 HOST_KEY = {
@@ -358,6 +364,140 @@ def environment_dot(facts: Facts) -> str:
   build -> fail [label=" failure\\n (offline, uv missing)"];
   {{ rank=same; leftover; fix; }}
   {{ rank=same; ok; fail; }}
+}}"""
+
+
+PLOT_PARAMETERS_REFS = {
+    "src/panel/webview/plotActions.ts": [
+        "createVariablePlot",
+        "invalidPlotOptions",
+        "resolvePlotOptions",
+        "compactPlotPayload",
+        "showPlotLayout",
+    ],
+    "src/panel/webview/plotParams.ts": ["readPlotControls", "mergePlotControls"],
+    "src/panel/webview/timeControls.ts": ["readTimeControls", "baseline"],
+    "src/panel/webview/changedFields.ts": [
+        "refreshChangedFields",
+        "handleChangedFieldEvent",
+        "plot-field--changed",
+        "data-inherit",
+    ],
+    "src/panel/webview/render/plotLayout.ts": ["renderPlotLayout"],
+    "src/panel/UIController.ts": ["handleCreatePlot", "plot_layout"],
+    "src/python/DataProcessor.ts": ["buildCreatePlotCliArgs"],
+    "src/shared/plotLayout.ts": ["CreatePlotResponse", "appliedSlices"],
+    "python/sdv_backend/plotting/api.py": [
+        "create_plot",
+        "resolve_layout",
+        "draw_plot",
+        "plot_layout",
+    ],
+}
+
+
+def plot_parameters_dot() -> str:
+    return f"""digraph plot_parameters {{{BASE}
+  rankdir=TB; ranksep=0.3; nodesep=0.35;
+  node [margin="0.2,0.07"];
+  click [label="Create Plot\\ncreateVariablePlot()", class="f-web key"];
+  valid [label="a number\\ntyped wrong?", {DECISION}];
+  stop [label="message under the plot,\\nnothing is sent", class="warn"];
+  read [label="readPlotControls(global) · readPlotControls(group)\\nreadTimeControls(global, group)", class="f-web"];
+  merge [label="mergePlotControls()\\neach field: the group's value if set, else the global one\\nslices: the group's replace the global ones if it has any", class="f-web"];
+  compact [label="compactPlotPayload()\\nfields left empty are not sent:\\nthe backend chooses them", class="f-web key"];
+  cue [label="changedFields.ts\\na field that differs from its default is outlined\\n(empty · checkbox default · group checkbox = global ·\\ntime bound = prefilled full range)", class="f-web"];
+  host [label="UIController → DataProcessor\\nbuildCreatePlotCliArgs(): one flag per field sent", class="host"];
+  py [label="create_plot()\\nslices · time filter → resolve_layout() → draw_plot()", class="py key"];
+  back [label="CreatePlotResponse\\nplotData · layout (plot_layout) · appliedSlices", class="host"];
+  line [label="showPlotLayout() → renderPlotLayout()\\nplot kind, then each choice: outlined if set by you\\nnotes: choices that could not be used", class="f-web"];
+
+  click -> valid;
+  valid -> stop [label=" yes"];
+  valid -> read [label=" no"];
+  read -> merge -> compact -> host -> py -> back -> line;
+  cue -> read [label=" same defaults ", class="e-faint", style=dashed, arrowhead=none];
+  {{ rank=same; valid; stop; }}
+  {{ rank=same; read; cue; }}
+}}"""
+
+
+PLOT_LAYOUT_REFS = {
+    "python/sdv_backend/plotting/layout.py": [
+        "resolve_layout",
+        "_user_pins",
+        "_histogram",
+        "_col_wrap",
+        "_figure_size",
+        "squeezed",
+        "notes",
+        "against_datetime",
+        "AUTO_COL_WRAP",
+        "AUTO_FACET_SIZE",
+        "AUTO_FACET_ASPECT",
+        "to_json",
+    ],
+    "python/sdv_backend/plotting/selection.py": [
+        "apply_dimension_slices",
+        "apply_datetime_filter",
+    ],
+    "python/sdv_backend/plotting/draw.py": [
+        "draw_plot",
+        "imshow",
+        "pcolormesh",
+        "_equal_aspect_if_map",
+    ],
+    "python/sdv_backend/plotting/kwargs.py": ["for_kind", "COLOR_MESH_KEYS"],
+}
+
+
+def plot_layout_dot() -> str:
+    return f"""digraph plot_layout {{{BASE}
+  rankdir=TB; ranksep=0.28; nodesep=0.3;
+  node [margin="0.2,0.07"];
+  sel [label="apply_dimension_slices() · apply_datetime_filter()\\nselect data only: they never change the mode", class="py"];
+  pins [label="_user_pins(): x, y, hue, col, row (that order)\\nkept if on the variable and not used by an earlier role,\\nelse dropped with a note", class="py key"];
+  bins [label="bins set?", {DECISION}];
+  hist_user [label="histogram of all values\\nx / y / hue / facets: note “not used”", class="state"];
+  fix [label="hue with x and y → y dropped\\nhue with no other dimension → hue dropped\\nsize-1 dimensions not chosen → index 0 (squeezed)", class="py"];
+  kind [label="what is left\\nfor the axes?", {DECISION}];
+  line_hue [label="line, colored by hue\\nx = last free dimension\\nunless x or y is set", class="py pick"];
+  image [label="image\\nx = last free dimension, y = the one before\\n(each only if not set)", class="py pick"];
+  line [label="line\\nx = the free dimension", class="py pick"];
+  hist_none [label="histogram\\n(single value, or nothing left inside a panel)", class="state"];
+  facets [label="dimensions still free?", {DECISION}];
+  none [label="no facets", class="py"];
+  one [label="col (row if col is set)", class="py"];
+  two [label="row, col", class="py"];
+  many [label="histogram + hint\\n“slice one of them to an index”", class="warn"];
+  wrap [label="_col_wrap(): column facets only\\nyours, else min(AUTO_COL_WRAP, size)\\n_figure_size(): facets 4 in high, aspect 1 unless set;\\na single plot keeps yours (size added for aspect)", class="py"];
+  dt [label="1D line, x automatic, datetime variable selected\\n→ x = that variable (against_datetime)", class="py"];
+  draw [label="draw_plot(): hist · line · imshow (dimension axes)\\n· pcolormesh (coordinate axes); single map → equal axes\\nstyle kwargs filtered by for_kind()", class="py key"];
+  out [label="PlotLayout.to_json() → plot_layout\\nkind · choices (role, value, user | auto) · squeezed · notes", class="host"];
+
+  sel -> pins -> bins;
+  bins -> hist_user [label=" yes"];
+  bins -> fix [label=" no"];
+  fix -> kind;
+  kind -> line_hue [label=" hue set"];
+  kind -> image [label=" ≥ 2 dimensions"];
+  kind -> line [label=" 1"];
+  kind -> hist_none [label=" 0"];
+  line_hue -> facets;
+  image -> facets;
+  line -> facets;
+  facets -> none [label=" 0"];
+  facets -> one [label=" 1"];
+  facets -> two [label=" 2, no row / col set"];
+  facets -> many [label=" more than\\n row / col left"];
+  none -> wrap;
+  one -> wrap;
+  two -> wrap;
+  wrap -> dt -> draw -> out;
+  hist_user -> draw [class="e-faint"];
+  hist_none -> draw [class="e-faint"];
+  many -> draw [class="e-faint"];
+  {{ rank=same; bins; hist_user; }}
 }}"""
 
 

@@ -703,6 +703,7 @@ PIPELINES_REFS = {
         "apply_dimension_slices",
         "apply_datetime_filter",
         "ensure_not_empty",
+        "resolve_layout",
         "draw_plot",
         "setup_pyplot",
         "CreatePlotError",
@@ -795,8 +796,8 @@ def pipelines() -> str:
             ("PlotOptions", ["layout flags +", "dimension slices JSON"]),
             ("select", ["group path →", "DataArray"]),
             ("subset", ["isel slices, datetime", "filter, not empty"]),
-            ("draw_plot()", ["auto by ndim, or", "x / y / hue / facets"]),
-            ("CreatePlotResult", ["base64 PNG +", "applied kwargs"]),
+            ("draw_plot()", ["resolve_layout(): yours,", "the rest automatic"]),
+            ("CreatePlotResult", ["base64 PNG +", "layout, kwargs"]),
         ],
     }
     for name, y in lanes.items():

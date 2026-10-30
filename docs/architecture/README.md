@@ -24,7 +24,7 @@ The webview sends requests and gets one response per request id; the host only e
 
 | Request          | Payload                                                     | Result                                  | Host side                                       |
 | ---------------- | ----------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
-| createPlot       | `PlotOptions`                                               | `string \| undefined`                   | `DataProcessor.createPlot`                      |
+| createPlot       | `PlotOptions`                                               | `CreatePlotResponse`                    | `DataProcessor.createPlot`                      |
 | abortPlot        | `{ operationId: string }`                                   | `{ success: boolean; message: string }` | `PythonManager.abortProcess`                    |
 | savePlot         | `PlotFilePayload`                                           | `SaveResult`                            | writes next to the data file                    |
 | savePlotAs       | `{ plotData: string; variable: string }`                    | `SaveResult`                            | save dialog                                     |
@@ -53,7 +53,7 @@ _Thick borders mark the four classes on the main request path: DataViewerPanel, 
 
 ## 4. Webview bundle
 
-Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/icons.ts`, `src/shared/ids.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls.
+Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/icons.ts`, `src/shared/ids.ts`, `src/shared/plotLayout.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls.
 
 ![Webview bundle](svg/webview-modules.svg)
 
@@ -77,7 +77,27 @@ _Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and sho
 
 Read: `src/panel/webview/plotActions.ts` · `src/python/PythonManager.ts (runPythonScript, abortProcess, parseScriptResult)` · `src/common/runProcess.ts`
 
-## 7. Choosing the Python interpreter
+## 7. Plot parameters, from the controls to the request
+
+Every plot control is optional. The webview merges the variable's Group Plot Controls over the Global ones field by field, then sends only the fields that are set: an empty field means “choose it for me”. A field that differs from its default is outlined, so the outlines are exactly what the request overrides.
+
+![Plot parameters, from the controls to the request](svg/plot-parameters.svg)
+
+_The result carries, next to the PNG, the layout the backend resolved: the plot kind and each role (x, y, hue, row, col, col_wrap, size, aspect) with its value and whether it was set by the user or chosen automatically. The line under the plot outlines the user's items the same way, and lists the choices that could not be used._
+
+Read: `src/panel/webview/plotParams.ts` · `src/panel/webview/changedFields.ts` · `src/panel/webview/plotActions.ts` · `src/panel/webview/render/plotLayout.ts` · `docs/PLOTTING.md`
+
+## 8. Plot layout decision in the backend
+
+`resolve_layout` keeps every role the user set and fills the others from the dimensions left free, so changing one parameter keeps the automatic choice of the rest. Dimension slices and the time range only select data: slicing `lat` of a 3D variable still gives one image per time step.
+
+![Plot layout decision in the backend](svg/plot-layout.svg)
+
+_With no parameter set, the result is the historical automatic mode: 2D image, 3D one column facet per index of the first dimension (4 per row), 4D row and column facets, 1D line. Style options (cmap, vmin / vmax, robust, colorbar, legend, axis direction) only go to the plot kinds that accept them._
+
+Read: `python/sdv_backend/plotting/layout.py` · `python/sdv_backend/plotting/draw.py` · `python/sdv_backend/plotting/kwargs.py` · `docs/PLOTTING.md`
+
+## 9. Choosing the Python interpreter
 
 Runs at activation and again when an interpreter-related setting changes, when workspace folders change, or when the Python extension reports a new active environment. Runs are single-flight: a request made during a run queues one more run, and only the latest run commits its result.
 
@@ -87,7 +107,7 @@ _When the extension's own environment is enabled but unusable, the reason is kep
 
 Read: `src/python/PythonManager.ts (forceInitialize, selectInterpreter, prepareOwnEnvironment)` · `src/python/officialPythonExtensionApiUtils.ts`
 
-## 8. The extension-owned uv environment
+## 10. The extension-owned uv environment
 
 Applies only with `useExtensionOwnEnvironment` on; override and Python-extension interpreters are never modified. Bumping `ENVIRONMENT_REVISION`, or changing `ALL_REQUIREMENTS` or `ENVIRONMENT_CONSTRAINTS`, makes every existing environment rebuild once at the next start. All operations on the folder go through one promise queue, so startup, a settings change and the Manage command never install at the same time.
 
@@ -97,7 +117,7 @@ _The environment lives in the extension's globalStorage as `python-environment/`
 
 Read: `src/python/ExtensionVirtualEnvironmentManager.ts` · `src/python/ExtensionVirtualEnvironmentManagerUI.ts` · `scripts/upgrade-sandbox.sh`
 
-## 9. Python backend packages
+## 11. Python backend packages
 
 At package level, with each edge labelled by the modules it imports. Dependencies only flow downward, from `cli` through `info` / `plotting` and `opening` to `formats` and `environment`. The one sideways edge is `plotting → info`, which reuses the DataTree inheritance mode and the monotonicity check.
 
@@ -105,7 +125,7 @@ At package level, with each edge labelled by the modules it imports. Dependencie
 
 _`cli → formats` is `resolve_store_path`: opening a Zarr metadata file opens the store that contains it. `python/get_data_info.py` only puts the package on `sys.path` and calls `cli.main`._
 
-## 10. Backend pipelines
+## 12. Backend pipelines
 
 Both subcommands share format detection and opening, then diverge. Info walks every group to describe it; plot selects one variable, subsets it and draws it with xarray's plotting on the Agg backend.
 

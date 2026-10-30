@@ -192,6 +192,42 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             },
         ),
         Section(
+            "plot-parameters",
+            "Plot parameters, from the controls to the request",
+            "Every plot control is optional. The webview merges the variable's Group Plot Controls over the "
+            "Global ones field by field, then sends only the fields that are set: an empty field means "
+            "“choose it for me”. A field that differs from its default is outlined, so the outlines are "
+            "exactly what the request overrides.",
+            "The result carries, next to the PNG, the layout the backend resolved: the plot kind and each role "
+            "(x, y, hue, row, col, col_wrap, size, aspect) with its value and whether it was set by the user or "
+            "chosen automatically. The line under the plot outlines the user's items the same way, and lists "
+            "the choices that could not be used.",
+            read=[
+                "src/panel/webview/plotParams.ts",
+                "src/panel/webview/changedFields.ts",
+                "src/panel/webview/plotActions.ts",
+                "src/panel/webview/render/plotLayout.ts",
+                "docs/PLOTTING.md",
+            ],
+        ),
+        Section(
+            "plot-layout",
+            "Plot layout decision in the backend",
+            "`resolve_layout` keeps every role the user set and fills the others from the dimensions left "
+            "free, so changing one parameter keeps the automatic choice of the rest. Dimension slices and the "
+            "time range only select data: slicing `lat` of a 3D variable still gives one image per time step.",
+            "With no parameter set, the result is the historical automatic mode: 2D image, 3D one column facet "
+            "per index of the first dimension (4 per row), 4D row and column facets, 1D line. Style options "
+            "(cmap, vmin / vmax, robust, colorbar, legend, axis direction) only go to the plot kinds that accept "
+            "them.",
+            read=[
+                "python/sdv_backend/plotting/layout.py",
+                "python/sdv_backend/plotting/draw.py",
+                "python/sdv_backend/plotting/kwargs.py",
+                "docs/PLOTTING.md",
+            ],
+        ),
+        Section(
             "interpreter",
             "Choosing the Python interpreter",
             "Runs at activation and again when an interpreter-related setting changes, when workspace folders "

@@ -37,6 +37,8 @@ GV_SCALE = {
     "webview-modules": 1.25,
     "interpreter": 1.15,
     "environment": 1.15,
+    "plot-parameters": 1.15,
+    "plot-layout": 1.15,
 }
 
 
@@ -49,6 +51,8 @@ def all_refs() -> dict[str, list[str]]:
         figures.PIPELINES_REFS,
         graphs.INTERPRETER_REFS,
         graphs.ENVIRONMENT_REFS,
+        graphs.PLOT_PARAMETERS_REFS,
+        graphs.PLOT_LAYOUT_REFS,
     ]
     sources += [
         s.refs for s in content.sections(facts(), graphs.webview_host_imports())
@@ -97,6 +101,17 @@ def build_figures(f) -> dict[str, str]:
         ),
         "open-file": figures.open_file(f),
         "plot": figures.plot(f),
+        "plot-parameters": graphs.render(
+            graphs.plot_parameters_dot(),
+            "Plot parameters: the webview merges the group and global controls and sends only the fields "
+            "set; the backend resolves the rest and returns the layout, shown under the plot.",
+        ),
+        "plot-layout": graphs.render(
+            graphs.plot_layout_dot(),
+            "Plot layout decision: user choices are kept, bins gives a histogram, the plot kind follows "
+            "from the dimensions left, empty axes and facets take the free dimensions, then col_wrap and "
+            "figure size get defaults.",
+        ),
         "interpreter": graphs.render(
             graphs.interpreter_dot(),
             "Interpreter selection: override setting, then the extension's own uv environment, then the Python "

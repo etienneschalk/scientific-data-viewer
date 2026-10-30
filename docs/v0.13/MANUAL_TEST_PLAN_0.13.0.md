@@ -522,6 +522,36 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The `time` boxes show `1` and `3` and the handles are at the same place. You cannot type in the boxes or move the handles, and there is no **Reset** button.
 
+### B28. Changing one plot setting keeps the rest automatic
+
+1. Open `sample_data_multiple_groups.nc`, find the variable `root_data` and click **Create Plot**.
+
+✅ One small map per day, 4 per row. Under the plot, a line starts with `image` and lists `col time`, `col_wrap 4`, `y lat`, `x lon`; none of them has a colored border.
+
+2. In **Global Plot Controls** → **Dimension slices**, type `5:15` in the **start** box of `lat`.
+
+✅ The `lat` field gets a colored border and a dot after its name. The other fields have no border.
+
+3. Click **Create Plot** on `root_data` again.
+
+✅ Still one map per day (before this version: a bar chart, called a histogram). The maps are shorter (10 latitudes). Under the plot, `lat 5:15` has a colored border.
+
+4. In **Plot parameters**, type `5` in **col_wrap**, then **Create Plot**.
+
+✅ 5 maps per row. `col_wrap 5` has a colored border under the plot; `col time` does not (it was chosen automatically).
+
+5. Tick **robust**, then untick it.
+
+✅ The border of **robust** appears, then goes away.
+
+6. Click **Reset** next to **Plot parameters** and next to **Dimension slices**.
+
+✅ No field has a border any more.
+
+7. Type `20` in **bins** and choose `time` in **col**, then **Create Plot**.
+
+✅ A histogram. Under it, a note says `col not used: bins draws a histogram of all values`.
+
 ---
 
 ## Part C — Quick check that old features still work
@@ -624,6 +654,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B25 Variable sections, Xarray Encoding     |        |       |
 | B26 Plot controls layout                   |        |       |
 | B27 Dimension slices boxes and slider      |        |       |
+| B28 One setting changed, rest automatic    |        |       |
 | B26 Cancel one plot                        |        |       |
 | B27 Load time in local time                |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |

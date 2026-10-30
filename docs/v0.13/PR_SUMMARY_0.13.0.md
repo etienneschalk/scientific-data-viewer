@@ -194,6 +194,17 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `.qa/`                                                                                       |
 | Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §27, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
 
+### Phase 16 — Progressive plot layout
+
+| Area     | Work                                                                                                                                                                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Problem  | One slice or layout control set switched the whole plot to a user layout (`has_user_layout`): slicing `lat` of `root_data(time, lat, lon)` gave a histogram instead of time facets                                                              |
+| Backend  | New `plotting/layout.py`: `resolve_layout` keeps each role the user set (x, y, hue, row, col, col_wrap, size, aspect) and fills the others from the free dimensions; slices / time range only select data; unusable choices dropped with a note |
+| Drawing  | `draw.py`: one xarray call per kind (imshow / pcolormesh / line / hist); `kwargs.py`: `for_kind` passes each kind only the style options it accepts; `has_user_layout`, `draws_color_mesh` and the two routes removed                           |
+| Contract | Result JSON gains `plot_layout` (kind, choices with `user` / `auto`, squeezed, notes); `applied_isel_kwargs` slices as `5:15`; `createPlot` answers `{plotData, layout, appliedSlices}` (`src/shared/plotLayout.ts`)                            |
+| Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                           |
+| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30         |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
@@ -231,6 +242,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 - Webview protocol: `getDataInfo` / `getCurrentFilePath` / `updateHeaders` requests and `uiStateChanged` / `pythonEnvironmentChanged` events removed; `executeCommand` allowlisted. New Python CLI flags are additive.
 - JSON output: numeric attributes are numbers / arrays; xarray encoding in `encoding` / `encoding_flattened` instead of `__xarray_encoding.*` attribute keys; `datetime_variables` only lists datetime / cftime variables; no `h5py` engine.
 - Group plot overrides apply field by field (empty group field → global value).
+- Plots keep the automatic layout when one control is set (a sliced 3D variable is no longer a histogram); result JSON gains `plot_layout`; `createPlot` answers `{plotData, layout, appliedSlices}` instead of the PNG string.
 - `npm run compile` also bundles the webview (esbuild); run `npm install` first.
 
 ---
@@ -244,6 +256,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 | Webview   | `src/panel/webview/*.ts` (bundled to `out/webview/webview.js` by `scripts/build-webview.mjs`), `src/panel/webview/styles.css`, `src/shared/icons.ts`, `src/panel/HTMLGenerator.ts` (CSP), `src/panel/WebviewAssets.ts` |
 | Tooling   | `scripts/screenshots/` (`npm run screenshots`, `capture-themes.mjs`), `scripts/architecture/` (`generate.py` → `docs/architecture/`)                                                                                   |
 | Panel     | `src/panel/UIController.ts`, `src/panel/communication/MessageBus.ts`, `src/panel/communication/MessageTypes.ts`, `src/DataViewerPanel.ts`, `src/common/runProcess.ts`                                                  |
+| Plotting  | `python/sdv_backend/plotting/layout.py`, `draw.py`, `kwargs.py`, `src/panel/webview/changedFields.ts`, `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`, `docs/PLOTTING.md`                        |
 | Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/`, `README.md`                                                                                                                                             |
 
 ---
@@ -300,6 +313,8 @@ Results at the end of the code review pass: `npm test` 284 passing / 0 failing; 
 
 Results after the QA pass: `npm test` 325 passing; `pytest python/tests` 195 passing; golden snapshots 82 / 0 failing (re-recorded after checking that every info diff is the encoding move or `nan`); `npm run typecheck`, `generate.py --check` and pre-commit clean. QA harnesses: webview scenarios (render, controls, time, cancel) and VS Code suites passing; backend differential against v0.12.1 without regression.
 
+Results after the progressive plot layout: `npm test` 328 passing; `pytest python/tests` 218 passing; `node scripts/qa/webview/run-all.mjs` all scenarios passing; `generate.py --check` clean. Golden snapshots: plot cases differ by the new `plot_layout` field (and the `5:15` slice text): re-record after review.
+
 ```bash
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
 .venv/bin/python scripts/qa/backend/diff_info.py && .venv/bin/python scripts/qa/backend/diff_plot.py
@@ -336,6 +351,7 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `docs/v0.13/GETTING_STARTED.md` — hub: reading order, risks, review and release plan
 - [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
 - [x] `docs/v0.13/QA_REPORT_0.13.0.md` / `QA_FIXES_0.13.0.md` — QA report and fix tracker; `scripts/qa/README.md`
+- [x] `docs/PLOTTING.md` — how a plot is made (plot parameters, layout decision, diagrams)
 - [ ] Release date set in `CHANGELOG.md` / release notes, README regenerated (at release time)
 
 ---
@@ -442,3 +458,9 @@ Load time in local time:
 QA pass:
 
 63. fix: apply the v0.13.0 QA pass fixes, add the QA harnesses
+
+Progressive plot layout:
+
+64. feat(plot): keep the automatic layout for every control the user leaves empty
+65. feat(webview): outline changed plot controls and show the layout under each plot
+66. docs: explain how a plot is made, with generated decision diagrams
