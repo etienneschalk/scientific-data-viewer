@@ -14,14 +14,14 @@ npm run compile                      # the harnesses load out/
 
 `make_fixtures.py` needs xarray, netCDF4, h5netcdf, h5py, zarr, rasterio and kerchunk (the repository `.venv` has them). The harnesses also use `artefacts/sample-data/` (`python python/create_sample_data.py`).
 
-| Variable              | Default                                                              | Used by                   |
-| --------------------- | -------------------------------------------------------------------- | ------------------------- |
-| `SDV_QA_OUT`          | `<repo>/artefacts/qa`                                                | all                       |
-| `SDV_PYTHON`          | the extension's uv environment if it exists, else `.venv/bin/python` | all (backend interpreter) |
-| `SDV_KERCHUNK_PYTHON` | `.venv/bin/python`                                                   | e2e (Kerchunk suites)     |
-| `SDV_QA_BASELINE`     | `$SDV_QA_OUT/baseline`                                               | backend                   |
-| `CHROME_PATH`         | newest Playwright Chromium (`npx playwright install chromium`)       | webview                   |
-| `SDV_VSCODE_VERSION`  | `1.144.0`                                                            | e2e                       |
+| Variable              | Default                                                                                                                                                                                                     | Used by                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `SDV_QA_OUT`          | `<repo>/artefacts/qa`                                                                                                                                                                                       | all                       |
+| `SDV_PYTHON`          | the extension's uv environment if it exists, else `.venv/bin/python` (`paranoia.sh` builds `artefacts/backend-env` instead, like the extension's; the e2e suite S2 needs an interpreter without `kerchunk`) | all (backend interpreter) |
+| `SDV_KERCHUNK_PYTHON` | `.venv/bin/python`                                                                                                                                                                                          | e2e (Kerchunk suites)     |
+| `SDV_QA_BASELINE`     | `$SDV_QA_OUT/baseline`                                                                                                                                                                                      | backend                   |
+| `CHROME_PATH`         | newest Playwright Chromium (`npx playwright install chromium`)                                                                                                                                              | webview                   |
+| `SDV_VSCODE_VERSION`  | `1.144.0`                                                                                                                                                                                                   | e2e                       |
 
 ## Fixtures — `fixtures/make_fixtures.py`
 

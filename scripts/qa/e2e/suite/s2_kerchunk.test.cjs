@@ -14,8 +14,17 @@ describe('S2 kerchunk', function () {
     before(async () => {
         await h.setup();
     });
+    // A failing test must not leave its viewer open: opening the same file
+    // again would only reveal it, and the next test would wait for a new panel
+    afterEach(async () => {
+        await h.closeAll();
+    });
 
     it('uv env (no kerchunk): sample_data.kerchunk.json -> clean error, then switching interpreter auto-refreshes the errored panel', async function () {
+        // Needs a backend interpreter without the optional kerchunk, as the
+        // extension's own environment (paranoia.sh builds one in CI)
+        const probe = h.cp.spawnSync(h.UV_PY, ['-c', 'import kerchunk']);
+        if (probe.status === 0) throw new Error(`precondition: ${h.UV_PY} has kerchunk; set SDV_PYTHON to an interpreter without it`);
         const p = await h.openWith(S('sample_data.kerchunk.json'), 'kerchunkEditor');
         const r = await h.waitLoaded(p);
         h.record({ s: 'S2', step: 'uv-no-kerchunk', python: h.pm().pythonPath, ...r });
@@ -65,6 +74,11 @@ describe('S2 kerchunk', function () {
     });
 
     it('openViewer (plain) on inline_plain.json -> second tab', async function () {
+        // The same file as Kerchunk, then as a plain file: two tabs (opened
+        // here, as afterEach closes every viewer)
+        const k = await openCmd('scientificDataViewer.openAsKerchunk', A('inline_plain.json'));
+        if (!k) throw new Error('no Kerchunk panel');
+        await h.waitLoaded(k);
         const p = await openCmd('scientificDataViewer.openViewer', A('inline_plain.json'));
         if (!p) throw new Error('no panel');
         const r = await h.waitLoaded(p);

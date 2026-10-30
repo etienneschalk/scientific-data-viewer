@@ -141,8 +141,17 @@ unset ELECTRON_RUN_AS_NODE
 
 PY="${PARANOIA_PYTHON:-$ROOT/.venv/bin/python}"
 EXTENSION_ENV_PY="$HOME/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/bin/python"
-if [ -z "${SDV_PYTHON:-}" ]; then
-    if [ -x "$EXTENSION_ENV_PY" ]; then SDV_PYTHON="$EXTENSION_ENV_PY"; else SDV_PYTHON="$ROOT/.venv/bin/python"; fi
+# Backend interpreter of the QA harnesses: what users get, the extension's own uv
+# environment. Without one (CI, fresh machine) the env step builds the same in
+# artefacts/backend-env; .venv (pinned, with kerchunk) is for the tooling
+if [ -n "${SDV_PYTHON:-}" ]; then
+    BACKEND_SOURCE="SDV_PYTHON"
+elif [ -x "$EXTENSION_ENV_PY" ]; then
+    SDV_PYTHON="$EXTENSION_ENV_PY"
+    BACKEND_SOURCE="extension environment"
+else
+    SDV_PYTHON="$ROOT/.venv/bin/python"
+    BACKEND_SOURCE="default"
 fi
 export SDV_PYTHON
 
@@ -220,6 +229,24 @@ count() { grep -c "^$1" "$2" 2>/dev/null || true; }
 # Steps
 # =============================================================================
 
+# artefacts/backend-env: the environment the extension creates for its users
+# (uv, Python 3.13, ALL_REQUIREMENTS + ENVIRONMENT_CONSTRAINTS, unpinned),
+# rebuilt when those requirements change
+backend_env() {
+    local dir="$ARTEFACTS/backend-env" requirements
+    requirements="$("$PY" scripts/paranoia/checks.py requirements)" || return 1
+    if [ ! -x "$dir/bin/python" ] || [ "$(cat "$dir/requirements.txt" 2>/dev/null)" != "$requirements" ]; then
+        rm -rf "$dir"
+        run uv venv --python 3.13 "$dir" || return 1
+        # shellcheck disable=SC2086
+        run uv pip install --python "$dir/bin/python" $requirements || return 1
+        echo "$requirements" >"$dir/requirements.txt"
+    fi
+    SDV_PYTHON="$dir/bin/python"
+    BACKEND_SOURCE="artefacts/backend-env, built like the extension's environment"
+    export SDV_PYTHON
+}
+
 step_env() {
     local node_major
     node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
@@ -228,7 +255,10 @@ step_env() {
     [ -x "$PY" ] || { fail "$PY missing: create the .venv (setup.sh) or set PARANOIA_PYTHON"; return; }
     "$PY" -c 'import sys; assert sys.version_info >= (3, 13), sys.version' || { fail "$PY is older than Python 3.13"; return; }
     echo "tooling python: $PY ($("$PY" --version))"
-    echo "backend python: $SDV_PYTHON"
+    if [ "$BACKEND_SOURCE" = default ] && command -v uv >/dev/null; then
+        backend_env || { fail "cannot build artefacts/backend-env (the extension's environment)"; return; }
+    fi
+    echo "backend python: $SDV_PYTHON ($BACKEND_SOURCE)"
     "$SDV_PYTHON" -c 'import xarray, zarr, matplotlib; print("xarray", xarray.__version__, "zarr", zarr.__version__, "matplotlib", matplotlib.__version__)' \
         || { fail "backend interpreter $SDV_PYTHON cannot import xarray / zarr / matplotlib"; return; }
     command -v pre-commit >/dev/null || "$PY" -m pre_commit --version >/dev/null 2>&1 || warn "pre-commit not found: pip install pre-commit"

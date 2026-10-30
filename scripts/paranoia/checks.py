@@ -5,6 +5,7 @@ Standard library only. Each check prints its evidence, then a last line
 review by a human). ``report`` writes REPORT.md from the results of a run.
 
     python scripts/paranoia/checks.py release <version> --base main [--published marketplace=0.12.1]
+    python scripts/paranoia/checks.py requirements    # of the extension's own uv environment
     python scripts/paranoia/checks.py env-change <baseline-ref>
     python scripts/paranoia/checks.py vsix <file.vsix> [--previous <old.vsix>]
     python scripts/paranoia/checks.py smoke <extension-dir> --python <py> --samples <dir>
@@ -203,6 +204,19 @@ def env_spec(source: str) -> dict:
     m = re.search(r"ENVIRONMENT_REVISION\s*=\s*(\d+)", source)
     spec["ENVIRONMENT_REVISION"] = int(m.group(1)) if m else None
     return spec
+
+
+def cmd_requirements(_args: argparse.Namespace) -> int:
+    """What the extension installs in its own uv environment, one per line."""
+    spec = env_spec((REPO / ENV_FILE).read_text(encoding="utf-8"))
+    requirements = (spec["ALL_REQUIREMENTS"] or []) + (
+        spec["ENVIRONMENT_CONSTRAINTS"] or []
+    )
+    if not requirements:
+        print(f"no ALL_REQUIREMENTS found in {ENV_FILE}", file=sys.stderr)
+        return FAIL
+    print("\n".join(requirements))
+    return PASS
 
 
 def cmd_env_change(args: argparse.Namespace) -> int:
@@ -607,6 +621,8 @@ def main() -> int:
     p.add_argument("--base", default="main", help="branch the release is merged into")
     p.add_argument("--published", action="append", default=[], help="store=version")
     p.set_defaults(func=cmd_release)
+    p = sub.add_parser("requirements")
+    p.set_defaults(func=cmd_requirements)
     p = sub.add_parser("env-change")
     p.add_argument("baseline")
     p.set_defaults(func=cmd_env_change)
