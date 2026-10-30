@@ -2,20 +2,18 @@ out
 dist
 node_modules
 .vscode-test/
+# Packages go to artefacts/vsix-releases/; a stray one is never committed
 *.vsix
 .DS_Store
 *.log
-sample-data/
 **/__pycache__/
 **/*.pyc
 .venv/
 venv/
 blog-article.md
-python/.golden/
 .pytest_cache/
 
-# Viewer screenshots (npm run screenshots)
-/screenshots/
-
-# QA harness outputs (scripts/qa)
-/.qa/
+# Everything the development scripts write: sample data, golden snapshots,
+# non-regression plots, screenshots, QA and paranoia runs, .vsix packages
+# (artefacts/vsix-releases/). See docs/DEVELOPMENT.md.
+/artefacts/

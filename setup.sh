@@ -57,15 +57,15 @@ python3 python/create_sample_data.py
 # Issue #117 non-regression plot PNGs (versioned folder from package.json)
 _PKG_VERSION=$(node -p "require('./package.json').version")
 echo "📈 Generating non-regression plot snapshots (Issue #117)..."
-echo "   Output: sample-data/non_regression_test_plot/v${_PKG_VERSION}/"
+echo "   Output: artefacts/non-regression-plots/v${_PKG_VERSION}/"
 set +e
 python3 python/non_regression_test_plot.py
 NON_REG_PLOT_EXIT=$?
 set -e
 if [ $NON_REG_PLOT_EXIT -eq 0 ]; then
-    echo "✅ Non-regression plots generated (open sample-data/non_regression_test_plot/v*/ for visual check)"
+    echo "✅ Non-regression plots generated (open artefacts/non-regression-plots/v*/summary.md for visual check)"
 else
-    echo "⚠️  Non-regression plot script failed or data missing (exit $NON_REG_PLOT_EXIT). Place sample-data/hs-issue-0117.nc or run from repo root."
+    echo "⚠️  Non-regression plot script failed or data missing (exit $NON_REG_PLOT_EXIT). Check that python/create_sample_data.py created artefacts/sample-data/hs-issue-0117.nc."
 fi
 
 # Compile TypeScript
@@ -106,12 +106,12 @@ echo ""
 echo "Next steps:"
 echo "1. Open VSCode: code ."
 echo "2. Press F5 to run the extension in development mode"
-echo "3. Test with sample data files in the sample-data/ directory"
+echo "3. Test with sample data files in the artefacts/sample-data/ directory"
 echo ""
 echo "Useful commands:"
 echo "- npm run watch    # Watch for changes and recompile"
 echo "- npm test         # Run tests"
 echo "- npm run lint     # Check code style"
-echo "- npm run package  # Create .vsix package"
+echo "- npm run package  # Create .vsix package in artefacts/vsix-releases/"
 echo ""
 echo "Happy coding! 🚀"

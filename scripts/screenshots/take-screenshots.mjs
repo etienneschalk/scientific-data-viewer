@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Full-page screenshots of the data viewer, saved per version and theme:
 //
-//   screenshots/v0.13/<theme>/<NN>-<scenario>.png  (+ screenshots/v0.13/index.html)
+//   artefacts/screenshots/v0.13/<theme>/<NN>-<scenario>.png  (+ artefacts/screenshots/v0.13/index.html)
 //
 // The page is the real one: HTMLGenerator markup with the compiled webview
 // bundle and styles.css, fed by the real Python backend (info and plots run
@@ -20,7 +20,7 @@
 //   --scenario <name>   only this scenario (repeatable)
 //   --setting <k=v>     override an extension setting, e.g. groupDimensionSlices=false
 //                       (repeatable; defaults come from package.json)
-//   --out <dir>         root folder (default: screenshots)
+//   --out <dir>         root folder (default: artefacts/screenshots)
 //   --width <px>        viewport width (default: 1024)
 //   --scale <n>         device pixel ratio (default: 1; 2 for sharp docs images)
 //   --skip-compile      do not run `npm run compile` first
@@ -51,7 +51,7 @@ const { values: options } = parseArgs({
         theme: { type: 'string', multiple: true },
         scenario: { type: 'string', multiple: true },
         setting: { type: 'string', multiple: true },
-        out: { type: 'string', default: 'screenshots' },
+        out: { type: 'string', default: path.join('artefacts', 'screenshots') },
         width: { type: 'string', default: '1024' },
         scale: { type: 'string', default: '1' },
         'skip-compile': { type: 'boolean', default: false },

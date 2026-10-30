@@ -17,9 +17,9 @@
 ### Step 2: Test File Recognition
 
 1. Right-click on any of these files in the explorer:
-   - `sample-data/sample_data.nc` (NetCDF)
-   - `sample-data/sample_data.h5` (HDF5)
-   - `sample-data/sample_data.zarr` (Zarr)
+   - `artefacts/sample-data/sample_data.nc` (NetCDF)
+   - `artefacts/sample-data/sample_data.h5` (HDF5)
+   - `artefacts/sample-data/sample_data.zarr` (Zarr)
 2. You should see "Open in Scientific Data Viewer" option
 
 ### Step 3: Test the Viewer
@@ -88,7 +88,7 @@ If something doesn't work:
    - Run: `python3 -c "import xarray, netCDF4, zarr, h5py, numpy, matplotlib; print('All packages installed!')"`
 
 3. **Test with Sample Data**:
-   - Make sure sample data files exist in `sample-data/` folder
+   - Make sure sample data files exist in `artefacts/sample-data/` folder
    - Try opening them with the extension
 
 ## 🎯 Success Indicators

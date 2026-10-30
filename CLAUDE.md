@@ -13,19 +13,21 @@ npm run watch               # incremental webview bundle + tsc
 npm run typecheck           # tsc --noEmit for the extension host and the webview
 npm run lint                # eslint --fix on src/
 npm test                    # VSCode integration tests (mocha via @vscode/test-electron, out/test/runTest.js); needs a display (CI uses Xvfb)
-npm run package             # build .vsix with vsce
+npm run package             # build .vsix with vsce -> artefacts/vsix-releases/
 pytest python/tests         # Python-side tests (need xarray etc. installed)
-python python/tools/golden_snapshots.py check   # backend JSON vs local snapshots (record first)
+python python/tools/golden_snapshots.py check   # backend JSON vs snapshots in artefacts/golden/ (record first)
 pre-commit run --all-files  # prettier, eslint, tsc --noEmit, ruff, ruff-format, detect-secrets...
-npm run screenshots         # full-page viewer screenshots -> screenshots/v<major.minor>/<theme>/ (scripts/screenshots/, docs/SCREENSHOTS.md)
-python python/create_sample_data.py [--overwrite]   # create sample-data/ (generators in python/sample_data/)
+npm run screenshots         # full-page viewer screenshots -> artefacts/screenshots/v<major.minor>/<theme>/ (scripts/screenshots/, docs/SCREENSHOTS.md)
+python python/create_sample_data.py [--overwrite]   # create artefacts/sample-data/ (generators in python/sample_data/)
+python python/non_regression_test_plot.py   # plot gallery -> artefacts/non-regression-plots/v<version>/
+scripts/release-vsix.sh 0.12.1      # rebuild an old release's .vsix from its tag -> artefacts/vsix-releases/
 python scripts/generate_readme.py     # regenerate README.md
 .venv/bin/python scripts/architecture/generate.py [--check]   # regenerate docs/architecture/ diagrams (Graphviz) / check they match the code
-.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # QA: hostile files -> .qa/fixtures (scripts/qa/README.md)
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # QA: hostile files -> artefacts/qa/fixtures (scripts/qa/README.md)
 .venv/bin/python scripts/qa/backend/diff_info.py        # QA: backend vs baseline checkout (make_baseline.sh <ref>); also diff_plot.py, diff_scen.py
 node scripts/qa/webview/run-all.mjs                     # QA: real webview in headless Chromium, real backend
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in a real VS Code
-./paranoia.sh [--quick|--full]   # all of the above + package audit -> .qa/paranoia/latest/REPORT.md (readiness verdict)
+./paranoia.sh [--quick|--full]   # all of the above + package audit -> artefacts/paranoia/latest/REPORT.md (readiness verdict)
 ```
 
 ## Architecture
@@ -52,5 +54,6 @@ env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in
 - Releases: bump `package.json` version, update `CHANGELOG.md`, add `docs/RELEASE_NOTES_<ver>.md` (stays in `docs/`: `publish.sh` and the README generator read it there; see `docs/PUBLISHING.md`, `publish.sh`). Run `scripts/upgrade-sandbox.sh` before releasing a change to the uv environment. `./paranoia.sh --full` runs every automated check (upgrade sandbox included) and writes the readiness report; add a step there when you add a check script.
 - **Python requirements of the uv env** live in `ALL_REQUIREMENTS` (`src/python/ExtensionVirtualEnvironmentManager.ts`); pins on indirect dependencies that are not imported (e.g. `eccodeslib<2.48`, exit crash with pyproj) go in `ENVIRONMENT_CONSTRAINTS`. When a release needs existing envs changed, bump `ENVIRONMENT_REVISION` there: users with `useExtensionOwnEnvironment` get their env deleted and rebuilt once at next start (state in `sdv-environment.json` in the env folder; the old env is kept in `python-environment.previous` and restored if the rebuild fails). Python-extension / override interpreters are never modified.
 - **Document every finished task (traceability)**: before ending a task, update the docs of the release in progress — `CHANGELOG.md` (Keep a Changelog sections; bold title + explanation + nested **Files** / **Tests** bullets), `docs/RELEASE_NOTES_<ver>.md` (TL;DR, rationale, upgrade notes, numbered manual verification steps, known limitations, summary table) and `docs/v<major.minor>/PR_SUMMARY_<ver>.md` (tables, testing commands, commit list as subjects only — no hashes, they change on rebase; informational, it lags one commit behind (`paranoia.sh` only reports missing ones); with the other working docs of the release: `GETTING_STARTED.md` hub, manual / upgrade test plans) — plus any developer doc whose instructions the change makes stale (`docs/DEVELOPMENT.md`, this file). Leave the planning docs of `docs/v0.13/` (`README`, `TO_IMPLEMENT`, `TO_REMOVE`, `OUT_OF_SCOPE`, `PHASES`) and past release entries as historical records.
+- **Every output of a development script goes to `artefacts/`** (git-ignored): sample data, golden snapshots, non-regression plots, screenshots, QA and paranoia runs, `.vsix` packages (`artefacts/vsix-releases/`; `scripts/release-vsix.sh <version>` rebuilds an old release from its tag). Never write to the repository root; a new script follows the same rule and gets a `paranoia.sh` step.
 - Format with `pre-commit run --files <paths>` (pinned ruff/prettier), not tools from PATH; prettier needs Node 22 (`nvm use`).
 - More docs: `docs/TECHNICAL_ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `CONTRIBUTING.md`.

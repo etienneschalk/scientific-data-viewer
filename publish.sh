@@ -413,7 +413,8 @@ fi
 # Check 7: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
-VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+VSIX_DIR="artefacts/vsix-releases"
+VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
 
 if [ "$CHECKS_PASSED" = false ]; then
     print_error "Some checks failed. Please fix the issues above."
@@ -499,7 +500,8 @@ fi
 print_header "Packaging"
 
 print_step "Creating .vsix package..."
-$VSCE_CMD package || {
+mkdir -p "$VSIX_DIR"
+$VSCE_CMD package --out "$VSIX_FILE" || {
     print_error "Packaging failed"
     exit 1
 }
@@ -510,7 +512,7 @@ if [ -f "$VSIX_FILE" ]; then
 else
     print_error "Expected package file not found: ${VSIX_FILE}"
     # Try to find the actual file
-    ACTUAL_VSIX=$(ls -1 *.vsix 2>/dev/null | head -1)
+    ACTUAL_VSIX=$(ls -1t "$VSIX_DIR"/*.vsix 2>/dev/null | head -1)
     if [ -n "$ACTUAL_VSIX" ]; then
         print_info "Found: ${ACTUAL_VSIX}"
         VSIX_FILE="$ACTUAL_VSIX"

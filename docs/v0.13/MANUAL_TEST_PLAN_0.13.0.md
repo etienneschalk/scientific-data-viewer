@@ -62,7 +62,7 @@ npm test
 ✅ Expected:
 
 - pytest ends with `… passed` and **no** `failed`.
-- golden check ends with `… cases, 0 failing`. The snapshots (`python/.golden/`) are local, not in git: they compare against whatever was recorded last on your machine. If it says `NEW … run record` for every case, the folder is empty: run `python python/tools/golden_snapshots.py record` on a known-good commit first, or skip this line. Snapshots recorded before the end of v0.13 fail on every `info` case (the xarray encoding moved out of the attributes, `NaN` reads `nan`): check that the diffs are only these, then `record` again.
+- golden check ends with `… cases, 0 failing`. The snapshots (`artefacts/golden/`) are local, not in git: they compare against whatever was recorded last on your machine. If it says `NEW … run record` for every case, the folder is empty: run `python python/tools/golden_snapshots.py record` on a known-good commit first, or skip this line. Snapshots recorded before the end of v0.13 fail on every `info` case (the xarray encoding moved out of the attributes, `NaN` reads `nan`): check that the diffs are only these, then `record` again.
 - `npm test` ends with `… passing` and no `failing`.
 
 > If `npm test` fails immediately with `bad option: --extensionDevelopmentPath`, you are inside VS Code's own terminal: run `env -u ELECTRON_RUN_AS_NODE npm test` instead.
@@ -83,14 +83,14 @@ import shutil, zipfile
 import numpy as np, xarray as xr
 # 1. A Zarr *version 2* store (all samples are version 3)
 xr.Dataset({"temperature": (("y", "x"), np.random.rand(20, 30).astype("float32"))}).to_zarr(
-    "sample-data/my_v2_store", zarr_format=2, mode="w")
+    "artefacts/sample-data/my_v2_store", zarr_format=2, mode="w")
 # 2. An ordinary ZIP that is NOT a Zarr store
-with zipfile.ZipFile("sample-data/not_zarr.zip", "w") as z:
+with zipfile.ZipFile("artefacts/sample-data/not_zarr.zip", "w") as z:
     z.writestr("hello.txt", "just a text file")
 # 3. A copy of the Kerchunk file with an ordinary .json name
-shutil.copy("sample-data/sample_data.kerchunk.json", "sample-data/my_refs.json")
+shutil.copy("artefacts/sample-data/sample_data.kerchunk.json", "artefacts/sample-data/my_refs.json")
 # 4. An empty file with the old Sentinel ".safe" extension
-open("sample-data/fake.safe", "w").close()
+open("artefacts/sample-data/fake.safe", "w").close()
 print("done")
 EOF
 ```
@@ -103,13 +103,13 @@ EOF
 npm run package
 ```
 
-✅ A file `scientific-data-viewer-0.13.0.vsix` appears in the project folder.
+✅ A file `scientific-data-viewer-0.13.0.vsix` appears in the `artefacts/vsix-releases/` folder of the project.
 
 Install it:
 
 1. Open the Extensions panel (**Ctrl+Shift+X**).
 2. Click the **`…`** menu at the top of the panel → **Install from VSIX…**
-3. Choose `scientific-data-viewer-0.13.0.vsix`.
+3. Choose `artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix`.
 4. When asked, click **Reload** (or press **Ctrl+Shift+P**, type `Reload Window`, press Enter).
 
 ✅ In the Extensions panel, **Scientific Data Viewer** shows version **0.13.0**.
@@ -135,7 +135,7 @@ Install it:
 
 ## Part B — Test the new features
 
-In all tests, files are in the **`sample-data`** folder of the Explorer (left sidebar, **Ctrl+Shift+E**). "Open a file" means **click it once**; it opens in the Scientific Data Viewer. "Right-click" means right-click it in the Explorer.
+In all tests, files are in the **`artefacts/sample-data`** folder of the Explorer (left sidebar, **Ctrl+Shift+E**). "Open a file" means **click it once**; it opens in the Scientific Data Viewer. "Right-click" means right-click it in the Explorer.
 
 At the top of the viewer, the **File Information** section shows **Format:** and **Used Engine:**. You will check those often.
 
@@ -301,7 +301,7 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 ### B18. Sentinel ".safe" is no longer offered
 
-1. Right-click the file **`fake.safe`** (created in A4) in `sample-data`.
+1. Right-click the file **`fake.safe`** (created in A4) in `artefacts/sample-data`.
 
 ✅ There is **no** "Open Scientific Data Viewer" entry for it. (Folders, such as `broken_file.safe`, always offer "Open Scientific Data Viewer (Folder)" — that is expected.)
 
@@ -373,7 +373,7 @@ This repeats B19 the way users will live it: they have v0.12 with its own enviro
 
 1. In the Extensions panel, click **Scientific Data Viewer** → the gear ⚙ → **Install Specific Version…** (called **Install Another Version…** in some VS Code versions) → choose **0.12.1** → **Reload**.
 2. In settings: remove `overridePythonInterpreter`, add `"scientificDataViewer.python.useExtensionOwnEnvironment": true,` → save → **Reload Window**. Wait until the environment is ready (logs), and open a `.nc` file.
-3. Install the v0.13 package again, exactly as in **A5** (Install from VSIX… → `scientific-data-viewer-0.13.0.vsix` → Reload).
+3. Install the v0.13 package again, exactly as in **A5** (Install from VSIX… → `artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix` → Reload).
 
 ✅ At the first start of v0.13, the **"rebuilding its Python environment for this new version…"** notification appears once, then **"rebuilt"**. Files open; B1 (Healthcheck) shows no "too old" warning.
 
@@ -398,7 +398,7 @@ Quick checks of the review fixes (details in [RELEASE_NOTES §16–§19](../RELE
 1. **No stray files**: in the project folder, `ls` shows **no** files named `=2026.4.0`, `=3` or `=1.8`.
 2. **Big-file message**: set `"scientificDataViewer.maxFileSize": 0.001`, open `sample_data.nc` ✅ the error says `Maximum allowed: 0.001MB` (not a byte count). Remove the setting.
 3. **Kerchunk in a second tab**: open `sample_data.nc`, then right-click `my_refs.json` (from A4) → **Open as Kerchunk / virtual Zarr** ✅ a second tab opens and shows the data.
-4. **Save plot**: plot a variable, click **Save** ✅ a PNG appears under `sample-data/sdv-plots/`, with no "timeout" message.
+4. **Save plot**: plot a variable, click **Save** ✅ a PNG appears under `artefacts/sample-data/sdv-plots/`, with no "timeout" message.
 5. **Corrupt file**: open `broken_file.h5` ✅ a clear error message, with its error type, not a blank page.
 6. **GRIB time selector**: open `sample_data.grib` ✅ the time selector does not list `t` (temperature).
 7. **Outline**: in the **Scientific Data Structure** panel, click an attribute of a group of `sample_data_multiple_groups.nc` ✅ the viewer scrolls to it.
@@ -595,7 +595,7 @@ These checks are about the GitHub repository, not the extension. GitHub only rea
 - **Test files:** the extra files from A4 can be deleted:
 
   ```bash
-  rm -rf sample-data/my_v2_store sample-data/not_zarr.zip sample-data/my_refs.json sample-data/fake.safe
+  rm -rf artefacts/sample-data/my_v2_store artefacts/sample-data/not_zarr.zip artefacts/sample-data/my_refs.json artefacts/sample-data/fake.safe
   ```
 
 ---

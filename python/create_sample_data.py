@@ -5,7 +5,8 @@ Script to create sample scientific data files for testing the VSCode extension.
 Creates samples for NetCDF, HDF5, Zarr (v2/v3, unsuffixed dirs, ZIP), Kerchunk
 references, GRIB, GeoTIFF (including COG), and JPEG-2000.
 
-The generators live in the ``sample_data`` package next to this file.
+Writes to ``artefacts/sample-data/`` (git-ignored). The generators live in the
+``sample_data`` package next to this file.
 """
 
 import sys

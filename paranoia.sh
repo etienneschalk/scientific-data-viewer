@@ -7,12 +7,13 @@
 # committed: run ./publish.sh afterwards.
 #
 #   release docs  version, CHANGELOG, release notes, PR summary, links, README
-#                 and architecture diagrams in sync, Marketplace / Open VSX versions
+#                 and architecture diagrams in sync (and regenerated identically), Marketplace / Open VSX versions
 #   code          pre-commit on all files (prettier, eslint, tsc, ruff, secrets...)
 #   build         clean compile, .vsix package
 #   package       .vsix contents (nothing missing, nothing leaked) and the
 #                 packaged Python backend run on sample files
-#   tests         pytest, npm test (VS Code), golden snapshots
+#   tests         sample data regenerated, pytest, npm test (VS Code), golden
+#                 snapshots, non-regression plot gallery
 #   regression    backend info / plots / ~80 plot scenarios vs the last release,
 #                 real webview in headless Chromium, e2e suites in a real VS Code
 #                 on the packaged extension
@@ -32,22 +33,25 @@
 #   --skip a,b         skip these steps
 #   --baseline <ref>   last release to compare with (default: newest v* tag
 #                      other than the current version)
-#   --out <dir>        run folder (default: .qa/paranoia/<date-time>)
+#   --out <dir>        run folder (default: artefacts/paranoia/<date-time>)
 #   --list             list the steps and exit
 #   -v, --verbose      show the output of each step (always in logs/<step>.log)
 #   -h, --help         this help
 #
 # Writes <run>/REPORT.md (verdict, table of checks, failures with the end of
-# their logs, what is left to do by hand) and <run>/logs/; .qa/paranoia/latest
+# their logs, what is left to do by hand) and <run>/logs/; artefacts/paranoia/latest
 # points at the last run. Exit code 1 when a check failed, else 0.
 #
 # Needs: Node 22 (nvm), the repository .venv (Python 3.13, see setup.sh),
 # pre-commit. Default profile: Chromium (Playwright). --full: uv, a display
-# (or xvfb-run), the .vsix of older releases in the repository root (migration).
+# (or xvfb-run). Every output goes to artefacts/ (git-ignored): sample data,
+# golden snapshots, screenshots, the .vsix of older releases, rebuilt from their
+# tags (scripts/release-vsix.sh) into artefacts/vsix-releases/ when missing.
 # Fixes of the pre-commit hooks are saved to <run>/pre-commit.patch, not applied.
 # Env: PARANOIA_PYTHON (tooling, pytest: .venv/bin/python), SDV_PYTHON
 # (backend interpreter of the QA harnesses, see scripts/qa/README.md),
-# PARANOIA_MIGRATION_FROM (releases to migrate from, e.g. "0.11.2 0.12.1").
+# PARANOIA_MIGRATION_FROM (releases to migrate from, e.g. "0.12.1"; default:
+# the last patch of each minor release from PARANOIA_MIGRATION_MIN=0.12.1 on).
 # =============================================================================
 
 set -uo pipefail
@@ -75,11 +79,12 @@ STEPS=(
     "compile|quick|Build|Clean compile"
     "package|quick|Build|Package the .vsix"
     "vsix|quick|Package|.vsix contents"
-    "sample-data|quick|Tests|Sample data"
+    "sample-data|quick|Tests|Sample data regenerated"
     "vsix-backend|quick|Package|Packaged backend on sample files"
     "pytest|quick|Tests|Python tests (pytest)"
     "npm-test|quick|Tests|Extension tests in VS Code (npm test)"
     "golden|standard|Regression|Golden snapshots of the backend"
+    "non-regression|standard|Regression|Non-regression plot gallery (issue #117 cases)"
     "qa-fixtures|standard|Regression|Hostile QA fixtures"
     "qa-baseline|standard|Regression|Checkout of the last release"
     "qa-info|standard|Regression|Backend info vs last release"
@@ -101,7 +106,7 @@ BASELINE=""
 OUT=""
 VERBOSE=false
 
-usage() { sed -n '2,50p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { awk 'NR > 1 && /^set -uo pipefail/ { exit } NR > 1' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -146,15 +151,18 @@ MAJOR_MINOR="${VERSION%.*}"
 if [ -z "$BASELINE" ]; then
     BASELINE="$(git tag --list 'v*' --sort=-v:refname | grep -vx "v$VERSION" | head -1)"
 fi
-PREVIOUS_VSIX="$ROOT/scientific-data-viewer-${BASELINE#v}.vsix"
+ARTEFACTS="$ROOT/artefacts"
+RELEASES="$ARTEFACTS/vsix-releases"
+SAMPLES="$ARTEFACTS/sample-data"
+PREVIOUS_VSIX="$RELEASES/scientific-data-viewer-${BASELINE#v}.vsix"
 
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
-OUT="$(mkdir -p "${OUT:-$ROOT/.qa/paranoia/$RUN_ID}" && cd "${OUT:-$ROOT/.qa/paranoia/$RUN_ID}" && pwd)"
+OUT="$(mkdir -p "${OUT:-$ARTEFACTS/paranoia/$RUN_ID}" && cd "${OUT:-$ARTEFACTS/paranoia/$RUN_ID}" && pwd)"
 LOGS="$OUT/logs"
 RESULTS="$OUT/results.tsv"
 mkdir -p "$LOGS"
 : >"$RESULTS"
-[ "$OUT" = "$ROOT/.qa/paranoia/$RUN_ID" ] && ln -sfn "$RUN_ID" "$ROOT/.qa/paranoia/latest"
+[ "$OUT" = "$ARTEFACTS/paranoia/$RUN_ID" ] && ln -sfn "$RUN_ID" "$ARTEFACTS/paranoia/latest"
 
 # QA harness outputs stay inside the run folder
 export SDV_QA_OUT="$OUT/qa"
@@ -228,8 +236,7 @@ step_env() {
     for t in uv unzip git; do command -v $t >/dev/null || missing+=("$t"); done
     [ -n "${DISPLAY:-}" ] || command -v xvfb-run >/dev/null || missing+=("display/xvfb-run")
     [ -n "$BASELINE" ] || missing+=("baseline tag")
-    [ -f "$PREVIOUS_VSIX" ] || missing+=("$(basename "$PREVIOUS_VSIX")")
-    echo "baseline: ${BASELINE:-none}, previous package: $PREVIOUS_VSIX"
+    echo "baseline: ${BASELINE:-none}, previous package: $PREVIOUS_VSIX$([ -f "$PREVIOUS_VSIX" ] || echo ' (rebuilt from its tag when needed)')"
     [ ${#missing[@]} -eq 0 ] || warn "missing for some steps: ${missing[*]}"
     note "Node $(node -v), $("$PY" --version), backend: $("$SDV_PYTHON" -c 'import xarray; print("xarray", xarray.__version__)')"
 }
@@ -266,10 +273,22 @@ step_readme() {
 }
 
 step_architecture() {
-    if run "$PY" scripts/architecture/generate.py --check; then
-        note "every module placed, every named symbol exists"
-    else
+    if ! run "$PY" scripts/architecture/generate.py --check; then
         fail "docs/architecture/ is stale: fix scripts/architecture/, then generate.py"
+        return
+    fi
+    # Regenerated (Graphviz) into the run folder: must give the committed files
+    if ! command -v dot >/dev/null; then
+        note "every module placed, every named symbol exists (Graphviz missing: not regenerated)"
+        return
+    fi
+    run "$PY" scripts/architecture/generate.py --out "$OUT/architecture" || { fail "generate.py failed"; return; }
+    if diff -rq "$OUT/architecture" docs/architecture; then
+        note "every module placed, every named symbol exists; regenerated identically"
+    elif dot -V 2>&1 | grep -q ' 2\.43\.'; then
+        fail "regenerated diagrams differ from docs/architecture/ (same Graphviz 2.43): run generate.py and commit"
+    else
+        warn "regenerated diagrams differ, Graphviz $(dot -V 2>&1 | grep -o '[0-9][0-9.]*' | head -1) (committed with 2.43): layouts may differ between versions"
     fi
 }
 
@@ -341,10 +360,11 @@ step_vsix() {
 }
 
 step_sample_data() {
-    if [ -f sample-data/sample_data.nc ]; then
-        note "sample-data/ present ($(find sample-data -maxdepth 1 | wc -l) entries)"
-    elif run "$PY" python/create_sample_data.py; then
-        note "sample-data/ created"
+    # Every run regenerates the files (seconds): the generators are tested too,
+    # and the files match the code of this commit. The disposable files are
+    # opened by the e2e suite S8 ("open 20 files quickly")
+    if run "$PY" python/create_sample_data.py --overwrite --disposable; then
+        note "artefacts/sample-data/ regenerated ($(find "$SAMPLES" -mindepth 1 -maxdepth 1 | wc -l) entries)"
     else
         fail "python/create_sample_data.py failed"
     fi
@@ -352,7 +372,7 @@ step_sample_data() {
 
 step_vsix_backend() {
     [ -d "$EXT_DIR" ] || { skip "no unpacked package (package step failed or not run)"; return; }
-    checks smoke "$EXT_DIR" --python "$SDV_PYTHON" --samples "$ROOT/sample-data"
+    checks smoke "$EXT_DIR" --python "$SDV_PYTHON" --samples "$SAMPLES"
 }
 
 step_pytest() {
@@ -372,7 +392,7 @@ step_npm_test() {
 }
 
 step_golden() {
-    if [ -z "$(ls -A python/.golden 2>/dev/null)" ]; then
+    if [ -z "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ]; then
         skip "no snapshots recorded (python python/tools/golden_snapshots.py record, on a known-good commit)"
         return
     fi
@@ -384,6 +404,19 @@ step_golden() {
     else
         warn "$last: output changed since the snapshots were recorded; re-record if intended"
     fi
+}
+
+step_non_regression() {
+    run "$SDV_PYTHON" python/non_regression_test_plot.py --out-dir "$OUT/non-regression-plots"
+    local rc=$? cases failed
+    cases="$(grep -c ': ok -> ' "$LOGS/non-regression.log" || true)"
+    failed="$(grep -c ': FAILED: ' "$LOGS/non-regression.log" || true)"
+    if [ $rc -eq 0 ]; then
+        note "$cases plots drawn (look at summary.md)"
+    else
+        fail "$failed of $((cases + failed)) plot cases fail: see log"
+    fi
+    ARTIFACTS+=("Non-regression plot gallery: \`$OUT/non-regression-plots/summary.md\`")
 }
 
 step_qa_fixtures() {
@@ -503,19 +536,26 @@ step_qa_e2e() {
     ARTIFACTS+=("End-to-end observations: \`$SDV_QA_OUT/e2e/runs/paranoia/results.json\` (most suites record rather than assert: read it when a behaviour changes)")
 }
 
-# Releases to migrate from: the last patch of each minor release older than
-# this one, among the .vsix files of the repository root, that has the own
-# environment (PARANOIA_MIGRATION_FROM="0.11.2 0.12.1" to choose)
+# Releases to migrate from: the last patch of each minor release tagged from
+# PARANOIA_MIGRATION_MIN (0.12.1) up to this version, excluded
+# (PARANOIA_MIGRATION_FROM="0.12.1" to choose)
 migration_sources() {
     if [ -n "${PARANOIA_MIGRATION_FROM:-}" ]; then
         tr ' ' '\n' <<<"$PARANOIA_MIGRATION_FROM"
         return
     fi
-    local v
-    for v in $(find "$ROOT" -maxdepth 1 -name 'scientific-data-viewer-*.vsix' | sed -n 's/.*scientific-data-viewer-\([0-9.]*\)\.vsix$/\1/p' | sort -V); do
-        [ "$v" != "$VERSION" ] && [ "$(printf '%s\n' "$v" "$VERSION" | sort -V | head -1)" = "$v" ] || continue
-        unzip -p "$ROOT/scientific-data-viewer-$v.vsix" extension/package.json | grep -q useExtensionOwnEnvironment && echo "$v"
+    local v min="${PARANOIA_MIGRATION_MIN:-0.12.1}"
+    for v in $(git tag --list 'v*' | sed -n 's/^v\([0-9]*\.[0-9]*\.[0-9]*\)$/\1/p' | sort -V); do
+        [ "$(printf '%s\n' "$min" "$v" | sort -V | head -1)" = "$min" ] || continue
+        [ "$v" != "$VERSION" ] && [ "$(printf '%s\n' "$v" "$VERSION" | sort -V | head -1)" = "$v" ] && echo "$v"
     done | awk -F. '{ last[$1 "." $2] = $0; if (!seen[$1 "." $2]++) order[++n] = $1 "." $2 } END { for (i = 1; i <= n; i++) print last[order[i]] }'
+}
+
+# The .vsix of a release, rebuilt from its tag when missing (scripts/release-vsix.sh)
+release_vsix() {
+    local file="$RELEASES/scientific-data-viewer-$1.vsix"
+    [ -f "$file" ] || run scripts/release-vsix.sh "$1" >&2 || return 1
+    echo "$file"
 }
 
 # One run of the migration test (scripts/upgrade-sandbox.sh) per case; the
@@ -525,7 +565,12 @@ step_migration() {
     [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
     local cases=() case name old expect extra outcome passed=() failed=() untested=()
     for v in $(migration_sources); do
-        cases+=("v$v|$ROOT/scientific-data-viewer-$v.vsix||")
+        local old_vsix
+        if ! old_vsix="$(release_vsix "$v")"; then
+            failed+=("v$v (cannot rebuild its .vsix)")
+            continue
+        fi
+        cases+=("v$v|$old_vsix||")
     done
     cases+=("same release|$VSIX|keep|" "next revision|$VSIX|rebuild|--bump-new")
     for case in "${cases[@]}"; do
@@ -562,7 +607,7 @@ step_migration() {
 step_upgrade() {
     [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
     local from=(--old "$VSIX" --bump-new) label="$VERSION with a raised revision"
-    if $UV_ENV_CHANGED && [ -f "$PREVIOUS_VSIX" ]; then
+    if $UV_ENV_CHANGED && [ -n "$BASELINE" ] && PREVIOUS_VSIX="$(release_vsix "${BASELINE#v}")"; then
         from=(--old "$PREVIOUS_VSIX")
         label="$BASELINE"
     fi
@@ -586,8 +631,8 @@ step_upgrade() {
 
 step_screenshots() {
     if run npm run --silent screenshots -- --skip-compile; then
-        local gallery="$ROOT/screenshots/v$MAJOR_MINOR/index.html"
-        note "gallery: screenshots/v$MAJOR_MINOR/index.html"
+        local gallery="$ARTEFACTS/screenshots/v$MAJOR_MINOR/index.html"
+        note "gallery: artefacts/screenshots/v$MAJOR_MINOR/index.html"
         ARTIFACTS+=("Viewer screenshots in every theme: \`$gallery\`")
     else
         fail "npm run screenshots failed"

@@ -5,7 +5,7 @@ v0.13.0 is the largest release of the extension: about 50 commits and roughly 24
 Most of the line count is **moved or generated** code, checked by tests rather than by reading:
 
 - the Python backend split into a package;
-- the sample-data generators split into modules;
+- the artefacts/sample-data generators split into modules;
 - the webview script rewritten as TypeScript modules;
 - new tests.
 
@@ -93,7 +93,7 @@ Commits are grouped by area and listed with a one-line description in the [PR su
 
 ### 1. Automated checks (10 min)
 
-`./paranoia.sh` runs all of the automated checks of this page (and the QA harnesses against v0.12.1) and writes a readiness report in `.qa/paranoia/latest/REPORT.md`; `./paranoia.sh --full` adds the upgrade test of § 2 and the e2e suites, and is the one to run before publishing ([DEVELOPMENT.md § Paranoia](../DEVELOPMENT.md#paranoia-every-check-before-a-release)). By hand:
+`./paranoia.sh` runs all of the automated checks of this page (and the QA harnesses against v0.12.1) and writes a readiness report in `artefacts/paranoia/latest/REPORT.md`; `./paranoia.sh --full` adds the upgrade test of § 2 and the e2e suites, and is the one to run before publishing ([DEVELOPMENT.md § Paranoia](../DEVELOPMENT.md#paranoia-every-check-before-a-release)). By hand:
 
 ```bash
 nvm use                                         # Node 22

@@ -28,7 +28,7 @@ nvm use                  # Node 22
 npm run screenshots      # compiles, then 4 themes × 6 scenarios (~20 s)
 ```
 
-Then open `screenshots/v0.13/index.html` in a browser.
+Then open `artefacts/screenshots/v0.13/index.html` in a browser.
 
 ---
 
@@ -109,7 +109,7 @@ npm run screenshots -- --setting groupDimensionSlices=false
 npm run screenshots -- --scale 2 --width 1280 --out /tmp/sdv-shots
 
 # A real file
-npm run screenshots -- --file sample-data/sample_data_multiple_groups.nc
+npm run screenshots -- --file artefacts/sample-data/sample_data_multiple_groups.nc
 ```
 
 The script exits with code 1 if any screenshot failed. The other screenshots are still written, and each failure is printed as `FAILED <theme> / <scenario>: <reason>`.
@@ -138,7 +138,7 @@ The script exits with code 1 if any screenshot failed. The other screenshots are
 take-screenshots.mjs
  ├─ npm run compile                         (unless --skip-compile)
  ├─ load out/src/panel/HTMLGenerator.js     (with a stub `vscode` module)
- ├─ python make_fixture.py                  → screenshots/.fixture/*.nc
+ ├─ python make_fixture.py                  → artefacts/screenshots/.fixture/*.nc
  ├─ python get_data_info.py info …          → data for the page
  ├─ python get_data_info.py info <broken>   → data for the error page
  ├─ HTTP server on 127.0.0.1:<random port>
@@ -146,7 +146,7 @@ take-screenshots.mjs
  │    POST /plot           runs get_data_info.py plot …, returns the PNG
  └─ headless Chromium, driven over the DevTools protocol
       for each theme × scenario: open page → run scenario → full-page PNG
- → screenshots/v<major.minor>/<theme>/NN-<scenario>.png, index.html
+ → artefacts/screenshots/v<major.minor>/<theme>/NN-<scenario>.png, index.html
 ```
 
 ### 1. Building the page
@@ -247,8 +247,8 @@ It covers every part of the viewer: groups, coordinates, 1D / 2D / 3D variables,
 
 ## Comparing versions
 
-1. On the old version, run `npm run screenshots` and keep `screenshots/v0.13/` (the folder is ignored by git, so it survives checkouts).
-2. On the new version (with the `package.json` version raised), run it again: it writes `screenshots/v0.14/`.
+1. On the old version, run `npm run screenshots` and keep `artefacts/screenshots/v0.13/` (the folder is ignored by git, so it survives checkouts).
+2. On the new version (with the `package.json` version raised), run it again: it writes `artefacts/screenshots/v0.14/`.
 3. Compare the two folders: open both `index.html` files, or use an image diff tool on files with the same name.
 
 Some differences are expected and do not come from the UI: the load time, the plot creation date and the interpreter path change at every run. A different Python environment (matplotlib version) can change plots slightly.
@@ -313,20 +313,20 @@ Some differences are expected and do not come from the UI: the load time, the pl
 - **No new npm dependency.** Puppeteer or Playwright would add a large dev dependency and a browser download to `npm install`. The DevTools protocol calls needed here (new tab, viewport, navigate, evaluate, screenshot) take about 80 lines over Node 22's built-in `WebSocket`, and any installed Chromium-based browser works.
 - **Real page, real backend.** Mock data would drift from the backend's JSON. Building the page with `HTMLGenerator` and calling the backend with the extension's own `buildGetDataInfoCliArgs` / `buildCreatePlotCliArgs` means the screenshots break when the viewer breaks, and only then.
 - **Recorded themes.** Screenshotting the webview inside VS Code would need to attach to Electron's webview iframes, which is fragile and needs a display at every run. Recording the variables once in a real VS Code gives exact theme colors, and the screenshots then run headless anywhere, including in CI.
-- **Generated dataset.** The files in `sample-data/` are optional, machine-specific and partly very large (a 3D variable of 365 × 180 × 360 takes minutes to plot). A seeded dataset of 270 kB plots in a couple of seconds and stays the same across versions, which is what comparisons need.
+- **Generated dataset.** The files in `artefacts/sample-data/` are optional, machine-specific and partly very large (a 3D variable of 365 × 180 × 360 takes minutes to plot). A seeded dataset of 270 kB plots in a couple of seconds and stays the same across versions, which is what comparisons need.
 - **Version folder `v<major>.<minor>`** matches the `docs/v0.13/` convention: one set per release line, overwritten by patch releases.
 
 ---
 
 ## Files
 
-| File                                           | Role                                                                                              |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `scripts/screenshots/take-screenshots.mjs`     | The tool (`npm run screenshots`): page building, fake host, HTTP server, browser driver, gallery  |
-| `scripts/screenshots/themes.mjs`               | List of themes (`id`, VS Code name) and the location of the theme files                           |
-| `scripts/screenshots/themes/*.json`            | Recorded theme variables, committed                                                               |
-| `scripts/screenshots/capture-themes.mjs`       | Records the theme files from a real VS Code                                                       |
-| `scripts/screenshots/theme-capture-extension/` | Throwaway extension run inside that VS Code (CommonJS, as VS Code requires)                       |
-| `scripts/screenshots/make_fixture.py`          | Generates the screenshot dataset and the unreadable file                                          |
-| `package.json`                                 | `screenshots` npm script                                                                          |
-| `.gitignore`, `.vscodeignore`                  | Keep `screenshots/` out of git and out of the VSIX (`scripts/` is already excluded from the VSIX) |
+| File                                           | Role                                                                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `scripts/screenshots/take-screenshots.mjs`     | The tool (`npm run screenshots`): page building, fake host, HTTP server, browser driver, gallery            |
+| `scripts/screenshots/themes.mjs`               | List of themes (`id`, VS Code name) and the location of the theme files                                     |
+| `scripts/screenshots/themes/*.json`            | Recorded theme variables, committed                                                                         |
+| `scripts/screenshots/capture-themes.mjs`       | Records the theme files from a real VS Code                                                                 |
+| `scripts/screenshots/theme-capture-extension/` | Throwaway extension run inside that VS Code (CommonJS, as VS Code requires)                                 |
+| `scripts/screenshots/make_fixture.py`          | Generates the screenshot dataset and the unreadable file                                                    |
+| `package.json`                                 | `screenshots` npm script                                                                                    |
+| `.gitignore`, `.vscodeignore`                  | Keep `artefacts/screenshots/` out of git and out of the VSIX (`scripts/` is already excluded from the VSIX) |

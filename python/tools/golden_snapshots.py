@@ -2,11 +2,13 @@
 """Golden-snapshot safety net for the Python backend refactoring.
 
 Runs the backend CLI (``get_data_info.py``) as a subprocess on local files from
-``sample-data/`` and stores the normalized JSON output, so that any behaviour
-change introduced while restructuring the code is detected.
+``artefacts/sample-data/`` and stores the normalized JSON output, so that any
+behaviour change introduced while restructuring the code is detected.
 
-``sample-data/`` is git-ignored (regenerate it with ``create_sample_data.py``),
-so the snapshots are local too: they live in ``python/.golden/`` (git-ignored).
+``artefacts/`` is git-ignored (regenerate the samples with
+``create_sample_data.py``), so the snapshots are local too: they live in
+``artefacts/golden/``. Paths are written ``<SAMPLES>/...`` (sample folder) and
+``<REPO>/...``, so the snapshots do not depend on where the repository is.
 
 Usage:
     python python/tools/golden_snapshots.py record   # capture current behaviour
@@ -33,8 +35,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SAMPLE = REPO_ROOT / "sample-data"
-GOLDEN_DIR = REPO_ROOT / "python" / ".golden"
+SAMPLE = REPO_ROOT / "artefacts" / "sample-data"
+GOLDEN_DIR = REPO_ROOT / "artefacts" / "golden"
 FROZEN_CLOCK = Path(__file__).with_name("_frozen_clock_entry.py")
 DEFAULT_ENTRY = [str(REPO_ROOT / "python" / "get_data_info.py")]
 
@@ -55,7 +57,6 @@ INFO_FILES = [
     "broken_file.jp2",
     "broken_file.nc",
     "broken_file.nc4",
-    "broken_file.safe",
     "broken_file.tif",
     "broken_file.zarr",
     "compound_dtype_variable.nc",
@@ -358,7 +359,9 @@ def _normalize(obj, ignore_png: bool):
     if isinstance(obj, list):
         return [_normalize(v, ignore_png) for v in obj]
     if isinstance(obj, str):
-        s = obj.replace(str(REPO_ROOT), "<REPO>")
+        s = obj.replace(str(SAMPLE), "<SAMPLES>").replace(str(REPO_ROOT), "<REPO>")
+        # cfgrib records the path relative to the current directory (the repository)
+        s = s.replace(str(SAMPLE.relative_to(REPO_ROOT)), "<SAMPLES>")
         s = _HTML_ID_RE.sub("<uuid>", s)
         return _ADDR_RE.sub("<addr>", s)
     return obj

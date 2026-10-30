@@ -4,7 +4,7 @@ const os = require('os');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..', '..', '..');
-const QA = path.resolve(process.env.SDV_QA_OUT || path.join(REPO, '.qa'));
+const QA = path.resolve(process.env.SDV_QA_OUT || path.join(REPO, 'artefacts', 'qa'));
 
 /** The extension's own uv environment, as created by "Use Extension Own Environment". */
 const EXTENSION_ENV_PY = path.join(
@@ -18,7 +18,7 @@ const UV_PY =
 
 module.exports = {
     REPO,
-    SAMPLE: path.join(REPO, 'sample-data'),
+    SAMPLE: path.join(REPO, 'artefacts', 'sample-data'),
     QA,
     ADV: path.join(QA, 'fixtures'),
     E: path.join(QA, 'e2e'),

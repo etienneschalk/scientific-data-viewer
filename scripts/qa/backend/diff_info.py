@@ -3,7 +3,7 @@
 Usage: python scripts/qa/backend/diff_info.py [--python PY] [--baseline DIR]
            [--out DIR] [paths...]
 
-Without paths: every data file of sample-data/ plus the QA fixtures. Writes
+Without paths: every data file of artefacts/sample-data/ plus the QA fixtures. Writes
 <out>/info/<name>.{old,new}.json (read by diff_plot.py) and prints, per file, a
 structural diff of what the viewer shows (groups, dims, variables, dtypes,
 shapes, attributes, time selector). Attribute values are compared as numbers

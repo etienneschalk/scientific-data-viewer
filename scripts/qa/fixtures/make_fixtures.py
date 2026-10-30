@@ -2,7 +2,7 @@
 
 Usage: python scripts/qa/fixtures/make_fixtures.py [out_dir]
 
-Default out_dir: $SDV_QA_OUT/fixtures (SDV_QA_OUT defaults to <repo>/.qa). The
+Default out_dir: $SDV_QA_OUT/fixtures (SDV_QA_OUT defaults to <repo>/artefacts/qa). The
 folder is deleted and created again. Needs xarray, netCDF4, h5netcdf, h5py,
 zarr, rasterio and kerchunk (the repository .venv has them).
 """
@@ -24,7 +24,7 @@ REPO = Path(__file__).resolve().parents[3]
 OUT = (
     Path(sys.argv[1])
     if len(sys.argv) > 1
-    else Path(os.environ.get("SDV_QA_OUT", REPO / ".qa")) / "fixtures"
+    else Path(os.environ.get("SDV_QA_OUT", REPO / "artefacts" / "qa")) / "fixtures"
 )
 if OUT.exists():
     shutil.rmtree(OUT)

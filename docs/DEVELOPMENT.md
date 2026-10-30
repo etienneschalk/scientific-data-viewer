@@ -73,7 +73,7 @@ Recommended VSCode extension: [es6-string-html](https://marketplace.visualstudio
    - Open VSCode
    - Go to Extensions view (`Ctrl+Shift+X`)
    - Click the "..." menu and select "Install from VSIX..."
-   - Select the generated `.vsix` file
+   - Select the generated `.vsix` file (in `artefacts/vsix-releases/`)
 
 ### 📜 Python Scripts
 
@@ -82,8 +82,8 @@ through the thin `python/get_data_info.py` entry point (equivalent to
 `python -m sdv_backend` from the `python/` directory), which prints one JSON line:
 
 ```bash
-python python/get_data_info.py info sample-data/sample_data.nc
-python python/get_data_info.py plot sample-data/sample_data.nc /temperature --style default
+python python/get_data_info.py info artefacts/sample-data/sample_data.nc
+python python/get_data_info.py plot artefacts/sample-data/sample_data.nc /temperature --style default
 ```
 
 | Module                           | Responsibility                                                                                                                                             |
@@ -100,10 +100,10 @@ Dependencies point one way: `cli → info / plotting → opening → formats →
 
 Other scripts in `python/`:
 
-- **`create_sample_data.py`**: generates the files in `sample-data/`; the generators live in
+- **`create_sample_data.py`**: generates the files in `artefacts/sample-data/`; the generators live in
   the `python/sample_data/` package (one module per format family: `netcdf`, `zarr`, `geotiff`, …)
-- **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks
-- **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `sample-data/`
+- **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks (issue #117 workflows) from `artefacts/sample-data/hs-issue-0117.nc` into `artefacts/non-regression-plots/v<version>/` (`summary.md`)
+- **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `artefacts/sample-data/`
   (`record` before a refactoring, `check` after it)
 
 Run the Python tests with `pytest python/tests` (pytest config is in `python/pyproject.toml`).
@@ -297,15 +297,31 @@ npm test
 - [ ] Error handling works for invalid files
 - [ ] Large files are handled appropriately
 
+#### Where outputs go: `artefacts/`
+
+Everything a development script writes goes to `artefacts/` at the repository root (git-ignored, never packaged), whatever the current directory:
+
+| Folder                                      | Written by                                                                                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `artefacts/sample-data/`                    | `python python/create_sample_data.py [--overwrite]` (seeded: the same files on every machine)                                                              |
+| `artefacts/golden/`                         | `python/tools/golden_snapshots.py record` (paths written `<SAMPLES>/…`, `<REPO>/…`)                                                                        |
+| `artefacts/non-regression-plots/v<ver>/`    | `python python/non_regression_test_plot.py`                                                                                                                |
+| `artefacts/screenshots/v<major.minor>/`     | `npm run screenshots`                                                                                                                                      |
+| `artefacts/qa/`                             | the QA harnesses of `scripts/qa/` (`$SDV_QA_OUT`)                                                                                                          |
+| `artefacts/paranoia/<date-time>/`, `latest` | `./paranoia.sh` (its own QA outputs, package, logs and report)                                                                                             |
+| `artefacts/vsix-releases/`                  | `npm run package`, `publish.sh`, and `scripts/release-vsix.sh <version>`, which rebuilds a release from its git tag (Open VSX download if the build fails) |
+
+Deleting `artefacts/` loses nothing that cannot be made again: `./paranoia.sh` regenerates the sample data and rebuilds the old releases it needs; only the golden snapshots must be recorded again (`record` on a known-good commit). A new script that writes files puts them there too.
+
 #### Viewer screenshots
 
 Full technical note: [`SCREENSHOTS.md`](./SCREENSHOTS.md).
 
-`npm run screenshots` saves full-page screenshots of the viewer to `screenshots/v<major.minor>/<theme>/` (for example `screenshots/v0.13/dark-modern/03-plots.png`), plus an `index.html` gallery. The folder is git-ignored. Run it after a UI change, or before a release to compare with the previous version's folder.
+`npm run screenshots` saves full-page screenshots of the viewer to `artefacts/screenshots/v<major.minor>/<theme>/` (for example `artefacts/screenshots/v0.13/dark-modern/03-plots.png`), plus an `index.html` gallery. The folder is git-ignored. Run it after a UI change, or before a release to compare with the previous version's folder.
 
 - **What is rendered**: the real page, made of the `HTMLGenerator` markup, the compiled webview bundle and `styles.css`. It is fed by the real Python backend: info and plots run through `python/get_data_info.py` with the extension's CLI arguments and default settings. The page is shown in the built-in VS Code themes (Dark Modern, Light Modern, High Contrast, High Contrast Light).
 - **Scenarios**: `overview`, `expanded` (every section open), `plots` (every data variable plotted), `plot-error` (out-of-range slice), `error-page` (unreadable file) and `narrow` (420 px). Files are numbered in this order, also when you run only some of them.
-- **Data**: a small seeded NetCDF with groups, created by `scripts/screenshots/make_fixture.py` in `screenshots/.fixture/`. It is the same for every version, so screenshots can be compared. `--file <path>` shows another file instead.
+- **Data**: a small seeded NetCDF with groups, created by `scripts/screenshots/make_fixture.py` in `artefacts/screenshots/.fixture/`. It is the same for every version, so screenshots can be compared. `--file <path>` shows another file instead.
 - **Requirements**: Node 22 (`nvm use`); a Python with xarray, netCDF4 and matplotlib (`--python`, `$SDV_PYTHON`, else `.venv`, else `python3`); Chrome, Chromium or Edge (`--chrome`, `$CHROME_PATH`, else Playwright's Chromium, else the usual install locations). No npm package is added: Chromium is driven over the DevTools protocol with Node's built-in WebSocket.
 
 ```bash
@@ -335,10 +351,10 @@ Run `--check` after adding, moving or renaming a module, a message of the webvie
 
 #### QA harnesses
 
-[`scripts/qa/`](../scripts/qa/README.md) holds the tools of the v0.13.0 QA campaign, to run again before a release (outputs in the git-ignored `.qa/`):
+[`scripts/qa/`](../scripts/qa/README.md) holds the tools of the v0.13.0 QA campaign, to run again before a release (outputs in the git-ignored `artefacts/qa/`):
 
 ```bash
-.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # hostile / degenerate files -> .qa/fixtures/
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # hostile / degenerate files -> artefacts/qa/fixtures/
 scripts/qa/backend/make_baseline.sh v0.12.1             # baseline checkout for the differential tests
 .venv/bin/python scripts/qa/backend/diff_info.py        # info: baseline vs working tree, same interpreter
 .venv/bin/python scripts/qa/backend/diff_plot.py        # every variable plotted by both, images compared
@@ -351,7 +367,7 @@ The webview and e2e harnesses load the compiled `out/` (`npm run compile` first)
 
 #### Paranoia: every check before a release
 
-`./paranoia.sh` runs all of the above in one go (release documents, pre-commit, clean build, package, tests, golden snapshots, QA harnesses against the last release, upgrade sandbox, screenshots) and writes a **publication readiness report**, `.qa/paranoia/<date-time>/REPORT.md` (`.qa/paranoia/latest` points at the last run). It publishes, tags and commits nothing: `./publish.sh` comes after.
+`./paranoia.sh` runs all of the above in one go (release documents, pre-commit, clean build, package, tests, golden snapshots, QA harnesses against the last release, upgrade sandbox, screenshots) and writes a **publication readiness report**, `artefacts/paranoia/<date-time>/REPORT.md` (`artefacts/paranoia/latest` points at the last run). It publishes, tags and commits nothing: `./publish.sh` comes after.
 
 ```bash
 ./paranoia.sh --quick        # static checks, build, package, pytest, npm test (~5 min)
@@ -362,6 +378,7 @@ The webview and e2e harnesses load the compiled `out/` (`npm run compile` first)
 
 - **Verdict**: `NOT READY` (a check failed), `NOT FULLY VERIFIED` (nothing failed, but steps were skipped or the profile is not `--full`), `READY AFTER REVIEW` (warnings: differences a human must judge, such as plots that look different from the last release), `READY`. Exit code 1 when a check failed.
 - **Checks that exist only here**: what the users install, rather than the working tree. The `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` resolves, nothing leaked); its Python backend is run on sample files from outside the repository; the e2e suites and the upgrade sandbox use it. Also: the version is above the one on the Marketplace and Open VSX and its tag does not exist, the relative links of README / CHANGELOG / release documents resolve, and the uv environment changed since the last release (then the upgrade sandbox must pass). Commits missing from the commit list of the PR summary are listed in the `release` log for information only: that list always lags one commit behind.
+- **Everything runs**: the sample data is regenerated (`--overwrite`), so the generators are tested and match the commit; the non-regression plot gallery is drawn; the architecture diagrams are regenerated with Graphviz and must equal the committed ones; the `.vsix` of each older release needed by the migration is rebuilt from its tag when `artefacts/vsix-releases/` does not have it. `capture-themes.mjs` (records VS Code theme colors to commit) and `publish.sh` are not checks and are not run.
 - **Migration** (`--full`): `scripts/upgrade-sandbox.sh` plays an update from each older release to this one as a user would (settings of their own, a data file opened before and after) and checks that the uv environment is rebuilt or kept as `ENVIRONMENT_REVISION` and the requirements say, that the viewer shows the file with that environment, and that `settings.json` is unchanged. Two synthetic cases pin the counter down: the same release must keep the environment, the same release with its revision raised must rebuild it. See [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
 - **The working tree is left as it was**: when pre-commit hooks reformat files that had no changes, the fixes are saved to `<run>/pre-commit.patch` and the files restored (`git apply` the patch to keep them). QA outputs (fixtures, baseline checkout, images) stay in the run folder; the baseline worktree is removed at the end.
 - The helpers are in `scripts/paranoia/checks.py` (standard library only). To add a step: a `step_<id>` function in `paranoia.sh` that calls `fail` / `warn` / `skip` / `note`, and a line in `STEPS`.

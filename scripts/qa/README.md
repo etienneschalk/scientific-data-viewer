@@ -2,21 +2,21 @@
 
 Tools used for the v0.13.0 QA campaign ([`docs/v0.13/QA_REPORT_0.13.0.md`](../../docs/v0.13/QA_REPORT_0.13.0.md)), kept to run again before a release. They complement `npm test` and `pytest`: they compare two versions of the backend, drive the real webview page with real input, and drive the extension inside a real VS Code. Nothing here ships in the `.vsix` (`scripts/**` is excluded).
 
-Outputs go to `.qa/` (gitignored), or `$SDV_QA_OUT`.
+Outputs go to `artefacts/qa/` (gitignored), or `$SDV_QA_OUT`.
 
 ## Setup
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use      # Node 22
 npm run compile                      # the harnesses load out/
-.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # hostile / degenerate files -> .qa/fixtures/
+.venv/bin/python scripts/qa/fixtures/make_fixtures.py   # hostile / degenerate files -> artefacts/qa/fixtures/
 ```
 
-`make_fixtures.py` needs xarray, netCDF4, h5netcdf, h5py, zarr, rasterio and kerchunk (the repository `.venv` has them). The harnesses also use `sample-data/` (`python python/create_sample_data.py`).
+`make_fixtures.py` needs xarray, netCDF4, h5netcdf, h5py, zarr, rasterio and kerchunk (the repository `.venv` has them). The harnesses also use `artefacts/sample-data/` (`python python/create_sample_data.py`).
 
 | Variable              | Default                                                              | Used by                   |
 | --------------------- | -------------------------------------------------------------------- | ------------------------- |
-| `SDV_QA_OUT`          | `<repo>/.qa`                                                         | all                       |
+| `SDV_QA_OUT`          | `<repo>/artefacts/qa`                                                | all                       |
 | `SDV_PYTHON`          | the extension's uv environment if it exists, else `.venv/bin/python` | all (backend interpreter) |
 | `SDV_KERCHUNK_PYTHON` | `.venv/bin/python`                                                   | e2e (Kerchunk suites)     |
 | `SDV_QA_BASELINE`     | `$SDV_QA_OUT/baseline`                                               | backend                   |
@@ -32,10 +32,10 @@ HTML / script payloads in every name and value that reaches the page (NetCDF, ne
 Run the backend of a baseline checkout and of the working tree with the **same interpreter**, so differences come from the code.
 
 ```bash
-scripts/qa/backend/make_baseline.sh v0.12.1       # git worktree in .qa/baseline
+scripts/qa/backend/make_baseline.sh v0.12.1       # git worktree in artefacts/qa/baseline
 .venv/bin/python scripts/qa/backend/diff_info.py  # every sample + fixture: structural diff of `info`
 .venv/bin/python scripts/qa/backend/diff_plot.py  # every variable: plot status + pixel comparison
-.venv/bin/python scripts/qa/backend/diff_scen.py  # ~80 plot-option scenarios, images in .qa/backend/scenarios/
+.venv/bin/python scripts/qa/backend/diff_scen.py  # ~80 plot-option scenarios, images in artefacts/qa/backend/scenarios/
 scripts/qa/backend/make_baseline.sh --remove
 ```
 
@@ -56,7 +56,7 @@ node scripts/qa/webview/cancel.mjs             # one file
 | `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, load time in time zones |
 | `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                  |
 
-Each check prints `PASS` / `FAIL` with its evidence; the exit code is 1 when one fails. Screenshots and exported pages go to `.qa/webview/`.
+Each check prints `PASS` / `FAIL` with its evidence; the exit code is 1 when one fails. Screenshots and exported pages go to `artefacts/qa/webview/`.
 
 ## Extension host end to end — `e2e/`
 
@@ -67,7 +67,7 @@ env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all                 #
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs s8 scripts/qa/e2e/suite/s8_multi.test.cjs
 ```
 
-`ELECTRON_RUN_AS_NODE` must be unset when running from the VS Code terminal. Results: `.qa/e2e/runs/<run>/results.json` (observations) and `extension.log`. A VS Code window opens on the display.
+`ELECTRON_RUN_AS_NODE` must be unset when running from the VS Code terminal. Results: `artefacts/qa/e2e/runs/<run>/results.json` (observations) and `extension.log`. A VS Code window opens on the display.
 
 | Suite                         | Covers                                                                         |
 | ----------------------------- | ------------------------------------------------------------------------------ |

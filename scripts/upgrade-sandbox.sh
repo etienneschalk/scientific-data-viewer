@@ -23,8 +23,9 @@
 #      settings.json is unchanged; the backend opens the sample files.
 #
 # Usage: scripts/upgrade-sandbox.sh [options]
-#   --old <vsix>       release to upgrade from (default: scientific-data-viewer-0.12.1.vsix)
-#   --new <vsix>       release to upgrade to (default: scientific-data-viewer-<version>.vsix,
+#   --old <vsix>       release to upgrade from (default: artefacts/vsix-releases/
+#                      scientific-data-viewer-0.12.1.vsix, see scripts/release-vsix.sh)
+#   --new <vsix>       release to upgrade to (default: artefacts/vsix-releases/scientific-data-viewer-<version>.vsix,
 #                      built with `npm run package` when missing); may be the same as --old
 #   --bump-new         raise ENVIRONMENT_REVISION of the new release by one, as the next
 #                      release that needs a rebuild would (with --old = --new: the
@@ -45,14 +46,14 @@
 #
 # Exit code: 0 all checks passed, 1 a check failed, 3 the old release could not
 # create its environment on this machine (nothing to migrate: not tested).
-# Needs: VS Code, uv, Node, a display, and sample-data/ (python python/create_sample_data.py).
+# Needs: VS Code, uv, Node, a display, and artefacts/sample-data/ (python python/create_sample_data.py).
 # Linux / macOS only. VS Code windows open on your screen: don't close them.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
-OLD_VSIX="$ROOT/scientific-data-viewer-0.12.1.vsix"
-NEW_VSIX="$ROOT/scientific-data-viewer-$VERSION.vsix"
+OLD_VSIX="$ROOT/artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix"
+NEW_VSIX="$ROOT/artefacts/vsix-releases/scientific-data-viewer-$VERSION.vsix"
 SCENARIO=normal
 SANDBOX=""
 KEEP_OPEN=false
@@ -72,7 +73,7 @@ while [ $# -gt 0 ]; do
         --dir) SANDBOX="$2"; shift 2 ;;
         --keep-open) KEEP_OPEN=true; shift ;;
         --code) CODE="$2"; shift 2 ;;
-        -h|--help) sed -n '2,51p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
 done
@@ -91,7 +92,8 @@ EXT_DIR="$SANDBOX/extensions"
 ENV_DIR="$USER_DIR/User/globalStorage/eschalk0.scientific-data-viewer/python-environment"
 STATE="$ENV_DIR/sdv-environment.json"
 SETTINGS="$USER_DIR/User/settings.json"
-DATA_FILE="$ROOT/sample-data/sample_data.nc"
+SAMPLES="$ROOT/artefacts/sample-data"
+DATA_FILE="$SAMPLES/sample_data.nc"
 OLD_MARKER="$ENV_DIR/left-by-old-version.txt"
 FAILURES=0
 
@@ -368,7 +370,7 @@ EOF
 
 BACKEND="$NEW_EXT/python/get_data_info.py"
 for sample in sample_data.nc sample_data.grib sample_data_cog.tif sample_data.cdf; do
-    file="$ROOT/sample-data/$sample"
+    file="$SAMPLES/$sample"
     [ -e "$file" ] || continue
     out="$("$ENV_DIR/bin/python" "$BACKEND" info "$file" 2>/dev/null | tail -1)" && status=0 || status=$?
     if [ "$status" -eq 0 ] && ! printf '%s' "$out" | grep -q '^{"error"'; then

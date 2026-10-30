@@ -98,18 +98,18 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 9 — Viewer styling refresh
 
-| Area        | Work                                                                                                                                                                                                                               |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stylesheet  | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                              |
-| Layout      | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                         |
-| Components  | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                           |
-| Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                    |
-| Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                         |
-| Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                    |
-| Fix         | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                       |
-| Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
-| Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                         |
-| Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                        |
+| Area        | Work                                                                                                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stylesheet  | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                                        |
+| Layout      | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                                   |
+| Components  | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                                     |
+| Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                              |
+| Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                                   |
+| Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                              |
+| Fix         | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                                 |
+| Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `artefacts/screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
+| Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                                   |
+| Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                                  |
 
 ### Phase 10 — Plot type selector removed
 
@@ -191,7 +191,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Host     | Stale / post-close loads ignored (outline, notification, latest load wins); close aborts the panel's plots; focused panel exported; requirement specifiers only for installs; "not ready" says why    |
 | Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture |
 | Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                             |
-| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `.qa/`                                                                                       |
+| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `artefacts/qa/`                                                                              |
 | Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §27, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
 
 ### Phase 16 — Progressive plot layout
@@ -220,11 +220,12 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Area      | Work                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Why       | The safety nets added in v0.13 (golden snapshots, `generate.py --check`, QA harnesses, upgrade sandbox, screenshots) each had their own command and setup, and all of them tested the working tree, not the `.vsix` users install                                                                                                                                                                                             |
-| Script    | `paranoia.sh`: 27 steps in three profiles (`--quick` ~5 min, default ~20 min, `--full` ~45 min); `--only` / `--skip` / `--baseline` / `--list`; publishes, tags and commits nothing; pre-commit fixes saved to a patch, the working tree restored                                                                                                                                                                             |
+| Script    | `paranoia.sh`: 28 steps in three profiles (`--quick` ~5 min, default ~20 min, `--full` ~45 min); `--only` / `--skip` / `--baseline` / `--list`; publishes, tags and commits nothing; pre-commit fixes saved to a patch, the working tree restored                                                                                                                                                                             |
 | Package   | `.vsix` built in the run folder and audited (runtime files, relative `require()`s, nothing leaked, diff with the previous release); its backend run from outside the repository; e2e suites and upgrade sandbox run on it                                                                                                                                                                                                     |
 | Release   | Version above Marketplace / Open VSX and not tagged elsewhere; lockfile, CHANGELOG section, release notes, PR summary (its commit list is only reported: it lags one commit behind); relative links; uv environment change → upgrade sandbox mandatory                                                                                                                                                                        |
-| Report    | `.qa/paranoia/<date-time>/REPORT.md`: verdict (`NOT READY` / `NOT FULLY VERIFIED` / `READY AFTER REVIEW` / `READY`), checks with links to logs, end of each failing log, files to look at, what is left to check by hand                                                                                                                                                                                                      |
+| Report    | `artefacts/paranoia/<date-time>/REPORT.md`: verdict (`NOT READY` / `NOT FULLY VERIFIED` / `READY AFTER REVIEW` / `READY`), checks with links to logs, end of each failing log, files to look at, what is left to check by hand                                                                                                                                                                                                |
 | Migration | `migration` step (`--full`): `upgrade-sandbox.sh` from the last patch of every older minor release, then same release (must keep) and same release with the revision raised (must rebuild); per case: environment rebuilt or kept as the rule says, file shown with the own environment, `settings.json` unchanged                                                                                                            |
+| Artefacts | Every output in the git-ignored `artefacts/` (sample data, golden, non-regression plots, screenshots, QA, paranoia runs, `vsix-releases/`); `scripts/release-vsix.sh` rebuilds an old release from its tag; every development script is a step (sample data regenerated, non-regression plots, diagrams regenerated)                                                                                                          |
 | Fixes     | Found by its first runs: `publish.sh` uses the `.venv` Python (system `python3` 3.8 crashed in `generate_readme.py`); `npm audit fix` (lockfile only, 9 findings); prettier on `OUT_OF_SCOPE.md` / `TO_REMOVE.md`; commit list below rebuilt from `git log`; `upgrade-sandbox.sh` interrupted scenario (`grep -q` + `pipefail` missed the awaited log line); flaky `UIController` test (two `fs.stat` resolving out of order) |
 | Files     | `paranoia.sh`, `scripts/paranoia/checks.py` (standard library only); `DEVELOPMENT.md` § Paranoia, `CLAUDE.md`, `GETTING_STARTED.md`, release notes § Paranoia and §30                                                                                                                                                                                                                                                         |
 
@@ -290,7 +291,7 @@ Existing v0.12 settings unchanged (`orderGroupsAlphabetically`, `showXarrayEncod
 **Automated:**
 
 ```bash
-./paranoia.sh [--quick|--full]   # everything below + the QA harnesses -> .qa/paranoia/latest/REPORT.md
+./paranoia.sh [--quick|--full]   # everything below + the QA harnesses -> artefacts/paranoia/latest/REPORT.md
 source .venv/bin/activate   # or extension interpreter
 python -m pytest python/tests -q
 python python/tools/golden_snapshots.py check   # after `record` on a known-good commit
@@ -328,7 +329,7 @@ Results after removing the plot type selector: `npm test` 290 passing; `pytest p
 Results after the viewer styling refresh: `npm test` 290 passing; `npm run typecheck` and pre-commit clean; `npm run screenshots` 24 / 24 screenshots (4 themes × 6 scenarios, ~18 s).
 
 ```bash
-npm run screenshots                              # screenshots/v0.13/<theme>/*.png + index.html
+npm run screenshots                              # artefacts/screenshots/v0.13/<theme>/*.png + index.html
 node scripts/screenshots/capture-themes.mjs      # re-record VS Code theme variables (needs a display)
 ```
 
@@ -349,7 +350,7 @@ node scripts/qa/webview/run-all.mjs
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all
 ```
 
-**Sample data** (written under `sample-data/`):
+**Sample data** (written under `artefacts/sample-data/`):
 
 ```bash
 python python/create_sample_data.py --overwrite   # from the repository root
@@ -414,11 +415,11 @@ Backend restructuring:
 21. fix: explain empty plot selections instead of failing in xarray
 22. refactor: make helpers shared across backend modules public
 23. refactor: split create_sample_data.py into the sample_data package
-24. fix(sample-data): write sample_data.geotiff with an explicit GTiff driver
+24. fix(artefacts/sample-data): write sample_data.geotiff with an explicit GTiff driver
 25. docs: mention the sample_data package
-26. feat(sample-data): reproducible generation; table-driven main
+26. feat(artefacts/sample-data): reproducible generation; table-driven main
 27. test: cover v0.13 sample formats in the golden snapshot harness
-28. feat(sample-data): add --overwrite and --disposable flags
+28. feat(artefacts/sample-data): add --overwrite and --disposable flags
 29. docs: add CLAUDE.md with project commands and architecture
 30. docs: document the backend restructuring in the v0.13.0 release docs
 31. fix: resolve relative Kerchunk reference paths from the reference folder

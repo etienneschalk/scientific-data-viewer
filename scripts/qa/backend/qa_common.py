@@ -11,9 +11,9 @@ import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-QA_OUT = Path(os.environ.get("SDV_QA_OUT", REPO / ".qa"))
+QA_OUT = Path(os.environ.get("SDV_QA_OUT", REPO / "artefacts" / "qa"))
 NEW_SCRIPT = REPO / "python" / "get_data_info.py"
-SAMPLES = REPO / "sample-data"
+SAMPLES = REPO / "artefacts" / "sample-data"
 FIXTURES = QA_OUT / "fixtures"
 EXTENSION_ENV_PY = (
     Path.home()

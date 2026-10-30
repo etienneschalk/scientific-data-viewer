@@ -708,7 +708,7 @@
         "typecheck": "tsc --noEmit -p tsconfig.pre-commit.json && tsc -p src/panel/webview",
         "lint": "eslint src --ext ts --fix",
         "test": "node ./out/test/runTest.js",
-        "package": "vsce package",
+        "package": "node -e \"require('fs').mkdirSync('artefacts/vsix-releases', { recursive: true })\" && vsce package --out artefacts/vsix-releases",
         "publish": "vsce publish",
         "openvsx-publish": "npx ovsx publish -p $OPENVSX_TOKEN"
     },

@@ -5,7 +5,7 @@
 //
 // Without suite files, every scripts/qa/e2e/suite/*.test.cjs runs. Results go
 // to <SDV_QA_OUT>/e2e/runs/<run-name>/ (results.json, extension.log).
-// Env: SDV_QA_OUT (default <repo>/.qa), SDV_PYTHON, SDV_KERCHUNK_PYTHON,
+// Env: SDV_QA_OUT (default <repo>/artefacts/qa), SDV_PYTHON, SDV_KERCHUNK_PYTHON,
 // SDV_VSCODE_VERSION (default 1.144.0), EXT_ROOT (extension folder to test).
 const path = require('path');
 const fs = require('fs');

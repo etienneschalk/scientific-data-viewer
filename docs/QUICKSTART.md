@@ -172,9 +172,9 @@ pytest python/tests
 python python/create_sample_data.py
 
 # Test different file types
-# - sample-data/sample_data.nc (NetCDF)
-# - sample-data/sample_zarr_single_group_from_dataset.zarr (Zarr)
-# - sample-data/sample_data.h5 (HDF5)
+# - artefacts/sample-data/sample_data.nc (NetCDF)
+# - artefacts/sample-data/sample_zarr_single_group_from_dataset.zarr (Zarr)
+# - artefacts/sample-data/sample_data.h5 (HDF5)
 ```
 
 ## 🚀 Development
@@ -215,7 +215,7 @@ npm run package
 
 ```bash
 # Install the package locally for testing
-code --install-extension scientific-data-viewer-<version>.vsix
+code --install-extension artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
 ```
 
 Note: for Cursor users, the command seems to do nothing.

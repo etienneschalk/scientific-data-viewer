@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Check out <git-ref> (e.g. v0.12.1) as the baseline of the backend
-# differential tests, in $SDV_QA_OUT/baseline (default .qa/baseline).
+# differential tests, in $SDV_QA_OUT/baseline (default artefacts/qa/baseline).
 #
 #   scripts/qa/backend/make_baseline.sh v0.12.1
 #   scripts/qa/backend/make_baseline.sh --remove
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
-TARGET="${SDV_QA_BASELINE:-${SDV_QA_OUT:-$REPO/.qa}/baseline}"
+TARGET="${SDV_QA_BASELINE:-${SDV_QA_OUT:-$REPO/artefacts/qa}/baseline}"
 
 if [[ "${1:-}" == "--remove" ]]; then
     git -C "$REPO" worktree remove --force "$TARGET"

@@ -133,7 +133,7 @@ Sample generators moved to **`python/sample_data/`** (one module per format fami
 
 ### How behaviour was preserved
 
-Before any code moved, a **golden snapshot harness** (`python/tools/golden_snapshots.py`) recorded the backend's JSON output for 68 `info` / `plot` invocations (83 today, with the v0.13 sample formats) on `sample-data/` (plot images compared by hash, with a frozen clock). Each refactoring step was checked against it; the code was moved verbatim first and only then decomposed. Snapshots stayed identical except where a bug fix below intentionally changed the output.
+Before any code moved, a **golden snapshot harness** (`python/tools/golden_snapshots.py`) recorded the backend's JSON output for 68 `info` / `plot` invocations (83 today, with the v0.13 sample formats) on `artefacts/sample-data/` (plot images compared by hash, with a frozen clock). Each refactoring step was checked against it; the code was moved verbatim first and only then decomposed. Snapshots stayed identical except where a bug fix below intentionally changed the output.
 
 ### Bugs found and fixed along the way
 
@@ -193,7 +193,7 @@ Element ids, CSS classes used by the script, and the outline are unchanged; expo
 ### How it was checked
 
 - `npm test` (290 passing), `npm run typecheck`, pre-commit hooks.
-- **`npm run screenshots`** (new, for contributors): full-page screenshots of the real page in the four built-in VS Code themes, with real backend data and plots, saved to `screenshots/v0.13/<theme>/`. Run it again for the next version and compare the `screenshots/v0.14/` folder with this one. See [`SCREENSHOTS.md`](./SCREENSHOTS.md).
+- **`npm run screenshots`** (new, for contributors): full-page screenshots of the real page in the four built-in VS Code themes, with real backend data and plots, saved to `artefacts/screenshots/v0.13/<theme>/`. Run it again for the next version and compare the `artefacts/screenshots/v0.14/` folder with this one. See [`SCREENSHOTS.md`](./SCREENSHOTS.md).
 - First pass: the scrolled state (sticky header and section title) was checked with a one-off capture.
 
 ---
@@ -397,8 +397,9 @@ v0.13 added several safety nets (golden snapshots, architecture `--check`, QA ha
 - **`./paranoia.sh`** runs them in order, in three profiles: `--quick` (release documents, pre-commit, clean build, package, `.vsix` audit, pytest, `npm test`; ~5 min), the default (+ golden snapshots, backend `info` / plots / ~80 plot scenarios against the last release, real webview in headless Chromium, npm audit, CI status; ~20 min) and `--full` (+ e2e suites in VS Code, the three upgrade scenarios, screenshots; ~45 min). `--only` / `--skip` select steps, `--list` shows them.
 - **What users install is tested**: the `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` of the compiled code resolves, no source map, test, script or data, files added / removed since the previous release); its Python backend answers `info` and `plot` on sample files from outside the repository; the e2e suites and the upgrade sandbox run on it.
 - **New release checks**: the version is above the Marketplace and Open VSX ones and has no tag elsewhere; `package-lock.json`, CHANGELOG section, release notes and PR summary exist for it; relative links of README / CHANGELOG / release documents resolve; a change of the uv environment since the last release makes the upgrade sandbox mandatory.
-- **Report**: `.qa/paranoia/<date-time>/REPORT.md` (`.qa/paranoia/latest`) with a verdict (`NOT READY`, `NOT FULLY VERIFIED`, `READY AFTER REVIEW`, `READY`; only a `--full` run can be ready), a table of the checks with links to their logs, the end of the log of each failure or warning, the files to look at, and what is left to check by hand. Exit code 1 when a check fails.
+- **Report**: `artefacts/paranoia/<date-time>/REPORT.md` (`artefacts/paranoia/latest`) with a verdict (`NOT READY`, `NOT FULLY VERIFIED`, `READY AFTER REVIEW`, `READY`; only a `--full` run can be ready), a table of the checks with links to their logs, the end of the log of each failure or warning, the files to look at, and what is left to check by hand. Exit code 1 when a check fails.
 - **Migration** (`--full`): an update from each older release, played as a user (own environment on, settings of their own, a file opened before and after): the uv environment is rebuilt or kept as `ENVIRONMENT_REVISION` says, the viewer shows the file with it, the settings are unchanged. Two synthetic cases test the counter: same release → kept, revision raised → rebuilt.
+- **Everything runs, outputs in `artefacts/`**: every development script writes to the git-ignored `artefacts/` folder (sample data, golden snapshots, non-regression plots, screenshots, QA and paranoia runs, `.vsix` packages in `artefacts/vsix-releases/`). Each run regenerates the sample data, draws the non-regression plot gallery, regenerates the architecture diagrams and compares them with the committed ones, and rebuilds the old releases it needs from their git tags (`scripts/release-vsix.sh`).
 - **Read-only**: nothing is published, tagged or committed (`./publish.sh` comes after). When pre-commit hooks reformat files, their fix is saved to `pre-commit.patch` and the files are restored. QA outputs and the baseline checkout stay in the run folder.
 
 ### How it was checked
@@ -447,7 +448,7 @@ python -m pytest python/tests -q
 npm run compile && npm test
 ```
 
-**Regenerate v0.13 sample files** (written under `sample-data/`, run from the repository root):
+**Regenerate v0.13 sample files** (written under `artefacts/sample-data/`, run from the repository root):
 
 ```bash
 python python/create_sample_data.py --overwrite
@@ -564,7 +565,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 **Test:**
 
 1. Generate samples (from the repository root): `python python/create_sample_data.py`.
-2. Open **`sample-data/sample_zarr_inherited_coords.zarr`** as a folder.
+2. Open **`artefacts/sample-data/sample_zarr_inherited_coords.zarr`** as a folder.
 3. Navigate to a child group (e.g. under `root/temperature`) → **Coordinates** should include inherited dims.
 4. Click a coordinate → attributes show `inherited_from`.
 5. Set **`showInheritedCoordinates`** to `false` → Refresh → child groups show **only** locally defined coordinates.
@@ -657,7 +658,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Run the snapshot check (needs `sample-data/`; record a baseline first if `python/.golden/` is empty):
+1. Run the snapshot check (needs `artefacts/sample-data/`; record a baseline first if `artefacts/golden/` is empty):
 
    ```bash
    python python/tools/golden_snapshots.py record   # on a known-good commit
@@ -744,7 +745,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 **Test:**
 
 1. With `useExtensionOwnEnvironment` on and an environment recorded as `"revision": 1` (or with `eccodeslib` ≥ 2.48: check with `uv pip list --python <env>/bin/python`), reload the window → the rebuild notification appears once; afterwards `uv pip list` shows `eccodeslib 2.47.3.23`.
-2. Open `sample-data/sample_data.grib`, `sample_data.grib2`, `sample_data.tif`, `sample_data_cog.tif` → each loads; plot a variable of each.
+2. Open `artefacts/sample-data/sample_data.grib`, `sample_data.grib2`, `sample_data.tif`, `sample_data_cog.tif` → each loads; plot a variable of each.
 3. Command line check: `<env>/bin/python -c "import eccodes, pyproj"` exits with code 0.
 
 ### 21. Viewer styling refresh
@@ -753,7 +754,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` with **Dark Modern**, then **Light Modern**, then a **High Contrast** theme (Preferences: Color Theme) → header toolbar shows four line icons (export, collapse all, expand all, refresh) whose tooltips match; every input / select is readable (no white input in dark themes); high contrast shows visible borders around cards and panels.
+1. Open `artefacts/sample-data/sample_data.nc` with **Dark Modern**, then **Light Modern**, then a **High Contrast** theme (Preferences: Color Theme) → header toolbar shows four line icons (export, collapse all, expand all, refresh) whose tooltips match; every input / select is readable (no white input in dark themes); high contrast shows visible borders around cards and panels.
 2. Scroll down → the header and the current section title stay at the top, with no gap between them.
 3. Click **Collapse all** then **Expand all** → twisties rotate; nested content lines up under its title.
 4. Expand a variable → the card shows its attributes; **Create Plot** → the plot appears inside the same card. Plot a variable that fails → red callout with a **Copy** button in its corner; click it → **Copied** for 2 s.
@@ -761,10 +762,10 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Narrow the editor to ~400 px → variable rows stack, time-control labels go above their inputs, no horizontal scroll.
 7. Explorer → Data Structure: click a variable → the viewer scrolls to it and highlights it with the focus color.
 8. Export the webview (download icon) and open the HTML in a browser → same look as in VS Code.
-9. Open `sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
+9. Open `artefacts/sample-data/broken_file.nc` → the error page is a red-accented callout; the troubleshooting steps show `Ctrl`+`Shift`+`P` as keybinding labels and the install links as small outlined buttons.
 10. No emoji is left: **Plot All** shows a warning line icon (a stop icon on **Cancel All** while plotting), and the error page uses line icons for its title, the troubleshooting heading, the install / settings / logs links and after external links.
-11. _(Contributors)_ `npm run screenshots` → 24 PNG files in `screenshots/v0.13/<theme>/` and `screenshots/v0.13/index.html`; open the gallery and compare it with the steps above.
-12. Make the editor wider than 1000 px and open `sample-data/sample_data.nc` → while **Loading** shows there is no scrollbar; when the content appears and the scrollbar shows up, the header and the content do not move sideways.
+11. _(Contributors)_ `npm run screenshots` → 24 PNG files in `artefacts/screenshots/v0.13/<theme>/` and `artefacts/screenshots/v0.13/index.html`; open the gallery and compare it with the steps above.
+12. Make the editor wider than 1000 px and open `artefacts/sample-data/sample_data.nc` → while **Loading** shows there is no scrollbar; when the content appears and the scrollbar shows up, the header and the content do not move sideways.
 
 ### 22. Plot type selector removed
 
@@ -772,10 +773,10 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc`, expand a group → under each variable there is a **Create Plot** button and no "Auto (Recommended)" drop-down.
+1. Open `artefacts/sample-data/sample_data.nc`, expand a group → under each variable there is a **Create Plot** button and no "Auto (Recommended)" drop-down.
 2. **Create Plot** on `temperature` and on a 1-D variable → both plots appear, same as v0.12 with "Auto" selected.
 3. Make a plot fail (e.g. a dimension slice on a dimension that does not exist, in the group plot controls) → the error text ends with `(file_path=… variable_path=…)`, without `plot_type=`.
-4. _(Contributors)_ `.venv/bin/python python/get_data_info.py plot sample-data/sample_data.nc /precipitation` → one JSON line with `plot_data`; `pytest python/tests` and `python python/tools/golden_snapshots.py check` pass (re-`record` once: error snapshots lose `plot_type='auto'`, and `plot__histogram` no longer exists).
+4. _(Contributors)_ `.venv/bin/python python/get_data_info.py plot artefacts/sample-data/sample_data.nc /precipitation` → one JSON line with `plot_data`; `pytest python/tests` and `python python/tools/golden_snapshots.py check` pass (re-`record` once: error snapshots lose `plot_type='auto'`, and `plot__histogram` no longer exists).
 
 ### 23. Architecture diagrams (contributors)
 
@@ -795,7 +796,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` → under **Variables**, each variable is one collapsed line; the section headers of the group show counts (e.g. **VARIABLES 3**); a collapsed **XARRAY ENCODING** section follows **ATTRIBUTES**.
+1. Open `artefacts/sample-data/sample_data.nc` → under **Variables**, each variable is one collapsed line; the section headers of the group show counts (e.g. **VARIABLES 3**); a collapsed **XARRAY ENCODING** section follows **ATTRIBUTES**.
 2. Click a data variable's row → **ATTRIBUTES n** (open), **XARRAY ENCODING n** (collapsed), **PLOT** (open, **Create Plot**). No `__xarray_encoding.` text anywhere.
 3. Open **Xarray Encoding** → `dtype`, `_FillValue`, `source`… Collapse **Attributes**. Click the variable's row → everything hides; click again → Attributes still collapsed, Encoding still open.
 4. Click a coordinate → **Attributes** and **Xarray Encoding**, no Plot section. A coordinate with neither (and no small value) shows a plain row, without twistie.
@@ -834,7 +835,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → one card: **Dimension slices** and **Plot parameters**, each with a bold title, a hint and **Reset** on the right.
+1. Open `artefacts/sample-data/sample_data.nc` → **Global Plot Controls** → one card: **Dimension slices** and **Plot parameters**, each with a bold title, a hint and **Reset** on the right.
 2. Plot parameters show four captions (**Facets**, **Axes**, **Color**, **Figure**); every field has its name above its control, and the controls line up in columns across captions. Checkboxes sit in the same columns as the inputs.
 3. Type `0` in a dimension slice and `20` in **bins** → **Reset** of Dimension slices clears the slice only → **Reset** of Plot parameters clears `bins` and restores the default checkboxes.
 4. Expand a group → **Group Plot Controls** has the same layout, without a box of its own. A group value still overrides the global one (`bins` 10 in the group, 30 globally → the group's variable uses 10).
@@ -847,7 +848,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` → **Global Plot Controls** → **Dimension slices**: each dimension shows `start : stop : step` boxes and a slider with both handles at the ends.
+1. Open `artefacts/sample-data/sample_data.nc` → **Global Plot Controls** → **Dimension slices**: each dimension shows `start : stop : step` boxes and a slider with both handles at the ends.
 2. Type `2` in **start** of `time` → both handles jump to 2. Type `5` in **stop** → the second handle moves to 4 (stop excluded), the track between them is highlighted.
 3. Drag the right handle → only **stop** follows (handle index + 1), **start** is not rewritten (type `-10` in start first: it stays `-10`). Drag it over the left one and beyond → the handles swap roles, both boxes change and show lower : higher.
 4. Put the two handles on the same position → **stop** empties: a single index. With a **step** typed, stop empties too and the step is struck through (ignored); pull the handles apart → the step counts again.
@@ -863,12 +864,12 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.netcdf`, slice `time` start `0`, **vmin** `-0.0000001` → **Create Plot** → the plot appears (no `expected one argument` error).
+1. Open `artefacts/sample-data/sample_data.netcdf`, slice `time` start `0`, **vmin** `-0.0000001` → **Create Plot** → the plot appears (no `expected one argument` error).
 2. Type **vmin** `1,5` → the box turns red, its tooltip says to use a dot; **Create Plot** → "Invalid plot parameters, nothing was plotted: Global Plot Controls: vmin …". Fix it to `1.5` → the plot is made.
 3. Uncheck **add_colorbar** in the Global Plot Controls; in the group's **Group Plot Controls**, the add_colorbar box shows a dash → **Create Plot** → no colorbar. Click the group box (checked) → colorbar. **Reset** of the group's Plot parameters → dash again.
-4. Open `sample-data/sample_data.nc`, expand a coordinate → **Xarray Encoding** → `_FillValue : nan` (not `np.float64(nan)`).
-5. Open `sample-data/sample_data_multiple_groups.nc` and close the tab at once → once the load would have finished, the **Data Structure** outline is empty. Open `sample-data/broken_file.nc` and close it at once → no error notification.
-6. Set `plotTimeoutMs` to `600000`, start a plot of `/temperature` in `sample-data/sample_data.nc`, close the tab → no `get_data_info.py plot` process left after a few seconds (`ps`).
+4. Open `artefacts/sample-data/sample_data.nc`, expand a coordinate → **Xarray Encoding** → `_FillValue : nan` (not `np.float64(nan)`).
+5. Open `artefacts/sample-data/sample_data_multiple_groups.nc` and close the tab at once → once the load would have finished, the **Data Structure** outline is empty. Open `artefacts/sample-data/broken_file.nc` and close it at once → no error notification.
+6. Set `plotTimeoutMs` to `600000`, start a plot of `/temperature` in `artefacts/sample-data/sample_data.nc`, close the tab → no `get_data_info.py plot` process left after a few seconds (`ps`).
 7. Open two viewers side by side, focus the right one, run **Export Webview Content** → the proposed file name is the right one's.
 8. Start a slow plot, press **Plot All**, then **Cancel** on that variable → "Plot cancelled." stays.
 9. Narrow the editor to 320 px → the four toolbar buttons are separate from the title (the version badge is hidden).
@@ -880,12 +881,12 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data_multiple_groups.nc` → **Create Plot** on `root_data` → one map per time step, 4 per row. Under the plot: `image col time col_wrap 4 y lat x lon size 4 aspect 1`, no item outlined.
+1. Open `artefacts/sample-data/sample_data_multiple_groups.nc` → **Create Plot** on `root_data` → one map per time step, 4 per row. Under the plot: `image col time col_wrap 4 y lat x lon size 4 aspect 1`, no item outlined.
 2. **Global Plot Controls** → **Dimension slices** → `lat` start `5`, stop `15` → the `lat` field is outlined, with a dot after its name. **Create Plot** → still one map per time step, latitudes −5 to 5 only (before: a histogram). Under the plot, `lat 5:15` is outlined.
 3. Set **col_wrap** `5` → outlined → **Create Plot** → 5 maps per row; `col_wrap 5` outlined, the other items not.
 4. Clear the slice, set **x** to `time` → **Create Plot** → time on the x-axis, `lon` on y, one panel per latitude.
 5. Keep **x** `time` and also set **col** `time` → **Create Plot** → same plot, and a note under it: `col=time ignored: already used as x`.
-6. Open `sample-data/sample_data_many_vars.nc` → plot `temperature_00` (time, depth, lat, lon) → rows by `time`, columns by `depth`. Set **col** `time` → columns by `time` (outlined in the layout line), rows by `depth` (automatic).
+6. Open `artefacts/sample-data/sample_data_many_vars.nc` → plot `temperature_00` (time, depth, lat, lon) → rows by `time`, columns by `depth`. Set **col** `time` → columns by `time` (outlined in the layout line), rows by `depth` (automatic).
 7. Set **bins** `20` with **col** `time` → a histogram; the note says `col not used: bins draws a histogram of all values`.
 8. Click **robust** twice → the outline appears then goes (back to its default). In a group's **Group Plot Controls**, click a checkbox showing a dash → outlined; **Reset** → dash, no outline.
 9. Export the webview and open the HTML in a browser → the outlines and the layout line are kept.
@@ -896,7 +897,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Open `sample-data/sample_data.nc` (it has a `time` coordinate) → **Global Plot Controls** and a group's **Group Plot Controls** show **Dimension slices** and **Plot parameters** only, no **Time range**.
+1. Open `artefacts/sample-data/sample_data.nc` (it has a `time` coordinate) → **Global Plot Controls** and a group's **Group Plot Controls** show **Dimension slices** and **Plot parameters** only, no **Time range**.
 2. Settings UI → search `Time Controls` → no Scientific Data Viewer result.
 3. Add `"scientificDataViewer.globalTimeControls": true` to `settings.json` → the key is greyed out (_Unknown Configuration Setting_), no error notification; **Reload Window** → the viewer opens and plots as before. Remove the line.
 4. Type `0` : `24` : `2` in the `time` slice → **Create Plot** → every other time step, as the time range used to allow by date.
@@ -907,12 +908,12 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. `./paranoia.sh --list` → 27 steps with their profile.
-2. `./paranoia.sh --quick` → one line per step, then `VERDICT: NOT FULLY VERIFIED` at best (not a full run); `.qa/paranoia/latest/REPORT.md` has the table of checks, each linked to its log.
+1. `./paranoia.sh --list` → 28 steps with their profile.
+2. `./paranoia.sh --quick` → one line per step, then `VERDICT: NOT FULLY VERIFIED` at best (not a full run); `artefacts/paranoia/latest/REPORT.md` has the table of checks, each linked to its log.
 3. `git status` → unchanged by the run. If pre-commit would reformat files, `pre-commit.patch` is in the run folder and the `pre-commit` row is `FAIL`.
 4. Change one word of `README.md`, `./paranoia.sh --only readme` → `FAIL`, exit code 1, the report shows the diff; `git checkout README.md`.
-5. `./paranoia.sh --full` before publishing (opens VS Code windows; needs uv and `scientific-data-viewer-0.12.1.vsix` in the repository root) → `READY` or `READY AFTER REVIEW`; read each warning.
-6. Migration of a single pair, like a user: `scripts/upgrade-sandbox.sh --old scientific-data-viewer-0.13.0.vsix --new scientific-data-viewer-0.13.0.vsix --expect keep` → _Expected: keep: same revision 2 and same requirements_, the environment is kept and the viewer shows the file; the same command with `--bump-new --expect rebuild` → _Expected: rebuild: environment revision 2 < 3_, the environment is deleted and recreated; `settings.json` unchanged in both.
+5. `./paranoia.sh --full` before publishing (opens VS Code windows; needs uv; the v0.12.1 `.vsix` is rebuilt from its tag into `artefacts/vsix-releases/` when missing) → `READY` or `READY AFTER REVIEW`; read each warning.
+6. Migration of a single pair, like a user: `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix --new artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix --expect keep` (after `npm run package`) → _Expected: keep: same revision 2 and same requirements_, the environment is kept and the viewer shows the file; the same command with `--bump-new --expect rebuild` → _Expected: rebuild: environment revision 2 < 3_, the environment is deleted and recreated; `settings.json` unchanged in both.
 
 ---
 

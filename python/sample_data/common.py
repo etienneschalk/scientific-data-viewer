@@ -15,5 +15,5 @@ warnings.filterwarnings("ignore")
 
 
 # Fixed "creation" time written into history/processing_date attributes, so that
-# regenerating sample-data produces identical files (golden snapshots depend on it).
+# regenerating the sample data produces identical files (golden snapshots depend on it).
 CREATION_DATETIME = datetime(2025, 1, 1)

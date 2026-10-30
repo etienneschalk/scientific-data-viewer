@@ -12,9 +12,9 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-export const QA_OUT = path.resolve(process.env.SDV_QA_OUT ?? path.join(REPO, '.qa'));
+export const QA_OUT = path.resolve(process.env.SDV_QA_OUT ?? path.join(REPO, 'artefacts', 'qa'));
 export const FIXTURES = path.join(QA_OUT, 'fixtures');
-export const SAMPLES = path.join(REPO, 'sample-data');
+export const SAMPLES = path.join(REPO, 'artefacts', 'sample-data');
 /** Screenshots and exported pages of the scenarios */
 export const IMG_DIR = path.join(QA_OUT, 'webview');
 fs.mkdirSync(IMG_DIR, { recursive: true });

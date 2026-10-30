@@ -229,7 +229,7 @@ def cmd_env_change(args: argparse.Namespace) -> int:
 
 FORBIDDEN = re.compile(
     r"(\.map|\.ts|\.pyc|\.vsix|\.env)$|(^|/)(node_modules|test|tests|scripts|docs|sample-data|"
-    r"\.qa|\.venv|__pycache__|notebooks|screenshots|\.vscode-test)/"
+    r"\.qa|artefacts|\.venv|__pycache__|notebooks|screenshots|\.vscode-test)/"
 )
 REQUIRE = re.compile(r"require\(\"(\.{1,2}/[^\"]+)\"\)")
 
@@ -593,7 +593,7 @@ def main() -> int:
     p = sub.add_parser("smoke")
     p.add_argument("extension", type=Path)
     p.add_argument("--python", required=True)
-    p.add_argument("--samples", type=Path, default=REPO / "sample-data")
+    p.add_argument("--samples", type=Path, default=REPO / "artefacts" / "sample-data")
     p.set_defaults(func=cmd_smoke)
     p = sub.add_parser("info-diff")
     p.add_argument("out", type=Path)

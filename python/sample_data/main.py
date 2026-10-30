@@ -1,4 +1,4 @@
-"""Entry point: create every sample file under sample-data/."""
+"""Entry point: create every sample file under artefacts/sample-data/."""
 
 import argparse
 import os
@@ -48,6 +48,8 @@ from sample_data.netcdf import (
 )
 from sample_data.netcdf_encoding import create_sample_netcdf_many_encoding
 from sample_data.netcdf_groups import (
+    create_sample_netcdf_many_groups_light,
+    create_sample_netcdf_many_groups_light_x5,
     create_sample_netcdf_multiple_groups,
     create_sample_netcdf_unordered_groups,
 )
@@ -57,6 +59,7 @@ from sample_data.netcdf_names import (
     create_sample_netcdf_many_vars,
 )
 from sample_data.temporal import create_temporal_datasets
+from sample_data.waves import create_sample_netcdf_issue_0117_waves
 from sample_data.zarr import (
     create_sample_zarr_arborescence,
     create_sample_zarr_deeply_nested_attributes,
@@ -103,6 +106,16 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
                 "NetCDF (Unordered Groups)",
                 "NetCDF Unordered Groups (netCDF4 not available)",
             ),
+            G(
+                create_sample_netcdf_many_groups_light,
+                "NetCDF (28 lightweight groups, load testing)",
+                "NetCDF many groups (netCDF4 not available)",
+            ),
+            G(
+                create_sample_netcdf_many_groups_light_x5,
+                "NetCDF (140 lightweight groups, load testing)",
+                "NetCDF many groups x5 (netCDF4 not available)",
+            ),
             G(create_sample_netcdf_long_variable_names, "NetCDF (Long Variable Names)"),
             G(create_sample_netcdf_complex_long_names, "NetCDF (Complex Long Names)"),
             # Large 4D dataset for timeout testing (issue #97)
@@ -115,6 +128,10 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             ),
             G(create_sample_netcdf_compound_dtype_variable, "NetCDF (Compound Dtype)"),
             G(create_sample_netcdf_gzip, "NetCDF (gzip / filters)"),
+            G(
+                create_sample_netcdf_issue_0117_waves,
+                "NetCDF (wave height, issue #117 non-regression plots)",
+            ),
         ],
     ),
     (
@@ -301,23 +318,24 @@ class Report:
             self.created.append((filename, generator.label))
 
 
-OUTPUT_DIR = Path("sample-data")
+# artefacts/sample-data of the repository, wherever the script is run from
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artefacts" / "sample-data"
 
 
 def main(do_create_disposable_files: bool = False, overwrite: bool = False) -> int:
-    """Create all sample data files under ``sample-data/``.
+    """Create all sample data files under ``artefacts/sample-data/``.
 
     Existing files are kept (each generator skips files that exist) unless
     ``overwrite`` is set: then everything is generated into an empty staging
     directory and each produced entry replaces its counterpart in
-    ``sample-data/``. Entries no generator produces are left untouched.
+    ``artefacts/sample-data/``. Entries no generator produces are left untouched.
 
     Returns 1 if any generator failed.
     """
     print("🔬 Creating sample scientific data files for VSCode extension testing...")
     print("=" * 80)
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     work_dir = (
         Path(tempfile.mkdtemp(prefix=".sample-data-staging-", dir=OUTPUT_DIR.parent))
         if overwrite
@@ -373,7 +391,7 @@ def _replace_entries(source: Path, target: Path) -> int:
 
 def cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Create sample scientific data files in ./sample-data/"
+        description="Create sample scientific data files in artefacts/sample-data/"
     )
     parser.add_argument(
         "--overwrite",

@@ -24,7 +24,7 @@ The extension never modifies an interpreter it does not own (Python extension or
 
 The script plays a real user update in a **throw-away VS Code profile**, from any release to any other. Your own VS Code settings, extensions and environment are not touched. Each step:
 
-1. **The user runs the old release** (`scientific-data-viewer-0.12.1.vsix` by default) with `useExtensionOwnEnvironment` on and a few settings of their own (plot style, bands, file size limit, and `globalTimeControls`, removed in 0.13). They open a NetCDF file; the script waits until the release has created its uv environment, then drops a marker file into it.
+1. **The user runs the old release** (`artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix` by default, rebuilt from its tag by `scripts/release-vsix.sh 0.12.1`) with `useExtensionOwnEnvironment` on and a few settings of their own (plot style, bands, file size limit, and `globalTimeControls`, removed in 0.13). They open a NetCDF file; the script waits until the release has created its uv environment, then drops a marker file into it.
 2. **VS Code updates the extension to the new release** on the same profile (same extension id, so the same storage folder) and the user opens the file again. Whether the environment must be rebuilt is worked out from what is on disk and from the new release, by the rule of `getUpdateReason`: no state file (every release before 0.13), a lower `ENVIRONMENT_REVISION`, or other requirements → **rebuild**; same revision and requirements, or a higher revision (downgrade) → **keep**. The script prints the expectation and why.
 3. **What the user gets**:
    - **rebuild**: the marker is gone (the environment was deleted, not patched), the state file has the new revision, no `python-environment.previous` folder is left, the log shows the rebuild;
@@ -35,11 +35,11 @@ The script plays a real user update in a **throw-away VS Code profile**, from an
 
 `./paranoia.sh --full` runs it as the **`migration`** step for every case below (the last patch of each older minor release found in the repository root, `PARANOIA_MIGRATION_FROM="0.11.2 0.12.1"` to choose), and the `offline` / `interrupted` scenarios as the **`upgrade`** step.
 
-| Case           | Command                                                         | Must                                                                         |
-| -------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Older releases | `--old scientific-data-viewer-<old>.vsix`                       | What the rule says (every release before 0.13: rebuild, no state file)       |
-| Same release   | `--old <new>.vsix --new <new>.vsix --expect keep`               | Keep: a release that does not bump the revision leaves the environment alone |
-| Next revision  | `--old <new>.vsix --new <new>.vsix --bump-new --expect rebuild` | Rebuild: a release that bumps the revision rebuilds it                       |
+| Case           | Command                                                           | Must                                                                         |
+| -------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Older releases | `--old artefacts/vsix-releases/scientific-data-viewer-<old>.vsix` | What the rule says (every release before 0.13: rebuild, no state file)       |
+| Same release   | `--old <new>.vsix --new <new>.vsix --expect keep`                 | Keep: a release that does not bump the revision leaves the environment alone |
+| Next revision  | `--old <new>.vsix --new <new>.vsix --bump-new --expect rebuild`   | Rebuild: a release that bumps the revision rebuilds it                       |
 
 Each `.vsix` is unpacked and loaded as a development extension. Recent VS Code builds don't load extensions installed from the command line into a custom extensions folder, but the storage folder and environment are the same as with a Marketplace update.
 
@@ -47,19 +47,20 @@ Each `.vsix` is unpacked and loaded as a development extension. Recent VS Code b
 
 ```bash
 nvm use
-npm run package                              # builds scientific-data-viewer-0.13.0.vsix
-python python/create_sample_data.py          # if sample-data/ is missing
+npm run package                              # builds artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix
+scripts/release-vsix.sh 0.12.1               # rebuilds artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix from its tag
+python python/create_sample_data.py          # if artefacts/sample-data/ is missing
 scripts/upgrade-sandbox.sh                   # scenario "normal"
 scripts/upgrade-sandbox.sh --scenario offline
 scripts/upgrade-sandbox.sh --scenario interrupted
 scripts/upgrade-sandbox.sh --keep-open       # leaves v0.13 open at the end, to look around
-scripts/upgrade-sandbox.sh --old scientific-data-viewer-0.13.0.vsix --bump-new --expect rebuild   # the revision counter
+scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix --bump-new --expect rebuild   # the revision counter
 ```
 
 - **Needs:** uv, `unzip`, a display, and VS Code. By default the script uses the newest build that `npm test` downloaded into `.vscode-test/`. A snap-installed `code` did not load the sandbox extension; use `--code <path>` to choose another build.
 - **Windows:** VS Code windows open on your screen during the run. Don't close them; the script closes them.
 - **From a VS Code terminal:** the script clears the `VSCODE_*` / `ELECTRON_*` variables it inherits, otherwise the sandbox would talk to your own VS Code.
-- **Other starting versions:** `--old scientific-data-viewer-0.11.2.vsix` (older `.vsix` files are in the repository root, git-ignored).
+- **Other starting versions:** `scripts/release-vsix.sh <version>` rebuilds a release from its git tag into `artefacts/vsix-releases/` (git-ignored), or downloads it from Open VSX if the build fails; then `--old artefacts/vsix-releases/scientific-data-viewer-<version>.vsix`. `paranoia.sh` does it for the releases from 0.12.1 on.
 
 ### Scenarios
 
@@ -122,9 +123,9 @@ To repeat the check:
 ```bash
 uv venv /tmp/midstack --python 3.12
 uv pip install --python /tmp/midstack/bin/python "xarray==2025.1.2" netCDF4 matplotlib "zarr<3" h5netcdf h5py scipy
-/tmp/midstack/bin/python python/get_data_info.py info sample-data/sample_data.nc | tail -1
-unzip -p scientific-data-viewer-0.12.1.vsix extension/python/get_data_info.py > /tmp/get_data_info_v012.py
-/tmp/midstack/bin/python /tmp/get_data_info_v012.py info sample-data/sample_data.nc | tail -1
+/tmp/midstack/bin/python python/get_data_info.py info artefacts/sample-data/sample_data.nc | tail -1
+unzip -p artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix extension/python/get_data_info.py > /tmp/get_data_info_v012.py
+/tmp/midstack/bin/python /tmp/get_data_info_v012.py info artefacts/sample-data/sample_data.nc | tail -1
 ```
 
 ---
@@ -162,7 +163,7 @@ The same steps are in the README under **Troubleshooting → The extension stopp
 
 1. Fix on a branch from the release tag, bump to **0.13.1** (CHANGELOG, `docs/RELEASE_NOTES_0.13.1.md`).
 2. If the fix changes the uv environment: change `ALL_REQUIREMENTS` / `ENVIRONMENT_CONSTRAINTS` and bump `ENVIRONMENT_REVISION` to 3, with a line in its history comment. Users then get a rebuild at their next start.
-3. Run `scripts/upgrade-sandbox.sh --old scientific-data-viewer-0.12.1.vsix` **and** `--old scientific-data-viewer-0.13.0.vsix`, in all three scenarios.
+3. Run `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix` **and** `--old artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix` (`scripts/release-vsix.sh` rebuilds them), in all three scenarios.
 4. Publish (see [PUBLISHING.md](../PUBLISHING.md)).
 
 A published version cannot be taken back from users who already updated. The fastest way out is a fixed version, plus **Install Specific Version…** in the meantime.
