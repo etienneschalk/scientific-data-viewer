@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import {
     isRequirementSpecifier,
     PythonManager,
+    pythonScriptEnvironment,
 } from '../../src/python/PythonManager';
 import {
     ALL_REQUIREMENTS,
@@ -797,6 +798,46 @@ suite('isRequirementSpecifier', () => {
             42,
         ]) {
             assert.ok(!isRequirementSpecifier(spec), JSON.stringify(spec));
+        }
+    });
+});
+
+suite('pythonScriptEnvironment', () => {
+    const base = {
+        PATH: '/usr/bin',
+        ECCODES_DEFINITION_PATH: '/usr/src/eccodes/share/eccodes/definitions',
+        ECCODES_DIR: '/usr/src/eccodes',
+    };
+
+    test('drops ECCODES_DEFINITION_PATH for the own environment (paranoia 0.13.0: GRIB unreadable)', () => {
+        const env = pythonScriptEnvironment(base, 'own-uv-env');
+        assert.strictEqual(env.ECCODES_DEFINITION_PATH, undefined);
+        assert.strictEqual(env.ECCODES_DIR, '/usr/src/eccodes');
+        assert.strictEqual(env.PATH, '/usr/bin');
+        assert.strictEqual(env.PYTHONUNBUFFERED, '1');
+        assert.ok(base.ECCODES_DEFINITION_PATH, 'the input is not modified');
+    });
+
+    test('drops it whatever its case (Windows)', () => {
+        const env = pythonScriptEnvironment(
+            { eccodes_definition_path: '/x' },
+            'own-uv-env',
+        );
+        assert.deepStrictEqual(Object.keys(env), ['PYTHONUNBUFFERED']);
+    });
+
+    test("keeps it for the user's interpreters", () => {
+        for (const source of [
+            'override',
+            'python-extension',
+            'system',
+            null,
+        ] as const) {
+            assert.strictEqual(
+                pythonScriptEnvironment(base, source).ECCODES_DEFINITION_PATH,
+                base.ECCODES_DEFINITION_PATH,
+                String(source),
+            );
         }
     });
 });

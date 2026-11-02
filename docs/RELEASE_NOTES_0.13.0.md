@@ -409,6 +409,24 @@ v0.13 added several safety nets (golden snapshots, architecture `--check`, QA ha
 
 ---
 
+## GRIB files and `ECCODES_DEFINITION_PATH`
+
+### Why
+
+`ECCODES_DEFINITION_PATH` tells eccodes where its definitions are. Set in a shell profile for a system install (common on meteorology workstations), it reached the extension's uv environment, whose eccodes is another version (2.47 against 2.31 in the case found): every GRIB message failed to decode, and the viewer reported `No valid message found … Check if the file is corrupted or in an unsupported format`, for valid files.
+
+### What changed
+
+- The extension no longer passes `ECCODES_DEFINITION_PATH` to the Python scripts it runs with **its own environment**: the eccodes installed there uses the definitions it ships. The log says it once at start: `ECCODES_DEFINITION_PATH (…) is not passed to the extension's own environment`.
+- Interpreters you choose (`overridePythonInterpreter`, the Python extension, the system Python) keep your environment variables unchanged: there the variable may be what makes your eccodes work.
+
+### How it was checked
+
+- Same file, same interpreter, same packaged backend: `No valid message found` with `ECCODES_DEFINITION_PATH` pointing at eccodes 2.31, the file opens without it (`ECCODES_DIR` alone has no effect).
+- Unit tests of `pythonScriptEnvironment` (dropped for the own environment whatever the case of the name, kept for the other sources); `scripts/upgrade-sandbox.sh --scenario interrupted` with the variable set: the backend of the new environment opens `sample_data.grib`.
+
+---
+
 ## New settings (summary)
 
 | Setting                    | Default                          | Effect                                                                                             |
@@ -917,6 +935,16 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 6. Migration of a single pair, like a user: `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix --new artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix --expect keep` (after `npm run package`) → _Expected: keep: same revision 2 and same requirements_, the environment is kept and the viewer shows the file; the same command with `--bump-new --expect rebuild` → _Expected: rebuild: environment revision 2 < 3_, the environment is deleted and recreated; `settings.json` unchanged in both.
 7. On GitHub: create the label once (`gh label create paranoia`), push the branch, add the label **`paranoia`** to its pull request → a **Paranoia (publication readiness)** run starts (about 75 min); at the end its summary page shows the verdict and the report, and the artifact `paranoia-full-<n>` holds the logs, plot differences, screenshots and the `.vsix`. Remove the label to stop the runs on later pushes.
 
+### 31. GRIB with `ECCODES_DEFINITION_PATH` set
+
+**Expect:** GRIB files open with the extension's own environment whatever `ECCODES_DEFINITION_PATH` says; your own interpreters still get it.
+
+**Test:**
+
+1. Point the variable at definitions eccodes 2.47 cannot use: those of an old system install (2.31 in the case found), or a folder with an empty `boot.def` (`mkdir /tmp/bad-definitions && touch /tmp/bad-definitions/boot.def`), and start VS Code from that shell: `ECCODES_DEFINITION_PATH=/tmp/bad-definitions code .`
+2. With `useExtensionOwnEnvironment` on, open `artefacts/sample-data/sample_data.grib` → it loads (variable `t`, 4 times); the output channel shows `ECCODES_DEFINITION_PATH (/tmp/bad-definitions) is not passed to the extension's own environment`.
+3. Set `scientificDataViewer.python.overridePythonInterpreter` to the same environment's `bin/python` and **Refresh** → an error again (your interpreter, your variables): `No valid message found` with old definitions; with the empty `boot.def`, eccodes aborts the Python process (exit code 134). Remove the setting.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -949,7 +977,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                          |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                           |
 | **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed |
-| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md)                                                                                                                                                           |
+| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md); GRIB readable with `ECCODES_DEFINITION_PATH` set                                                                                                         |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                   |
 
 ---

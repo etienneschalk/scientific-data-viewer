@@ -181,6 +181,14 @@ export class PythonManager {
             this._notReadyReason = state.notReadyReason;
             this._ownEnvironmentIssue = state.ownEnvironmentIssue;
             this._initialized = true;
+            if (
+                state.source === 'own-uv-env' &&
+                process.env.ECCODES_DEFINITION_PATH
+            ) {
+                Logger.info(
+                    `🐍 🌦️ ECCODES_DEFINITION_PATH (${process.env.ECCODES_DEFINITION_PATH}) is not passed to the extension's own environment: its eccodes uses the definitions it ships`,
+                );
+            }
             Logger.info(
                 state.pythonPath
                     ? `🐍 📦 ${state.corePackagesInstalled ? '✅ Python environment ready' : `⚠️ Python environment not ready (${state.notReadyReason})`}: ${state.pythonPath} (${state.source})`
@@ -270,7 +278,10 @@ export class PythonManager {
         let result: RunProcessResult;
         try {
             result = await runProcess(pythonPath, [scriptPath, ...args], {
-                env: { ...process.env, PYTHONUNBUFFERED: '1' },
+                env: pythonScriptEnvironment(
+                    process.env,
+                    this._environmentSource,
+                ),
                 timeoutMs,
                 signal: controller.signal,
                 onStderr: enableLogs ? forwardPythonLogs : undefined,
@@ -695,6 +706,33 @@ export class PythonManager {
             return false;
         }
     }
+}
+
+/** eccodes variables tied to one eccodes version, dropped for the own environment. */
+const ECCODES_VERSIONED_VARIABLES = ['ECCODES_DEFINITION_PATH'];
+
+/**
+ * Environment of the Python scripts. For the extension's own environment,
+ * ECCODES_DEFINITION_PATH is dropped: its eccodes ships its definitions, and
+ * the definitions of another eccodes version (a system install named in the
+ * user's shell) make every GRIB message fail to decode ("No valid message
+ * found"). Other interpreters are the user's: their environment is kept.
+ * Exported for unit tests.
+ */
+export function pythonScriptEnvironment(
+    baseEnv: NodeJS.ProcessEnv,
+    source: EnvironmentSource | null,
+): NodeJS.ProcessEnv {
+    const env: NodeJS.ProcessEnv = { ...baseEnv, PYTHONUNBUFFERED: '1' };
+    if (source === 'own-uv-env') {
+        // Variable names are case-insensitive on Windows
+        for (const key of Object.keys(env)) {
+            if (ECCODES_VERSIONED_VARIABLES.includes(key.toUpperCase())) {
+                delete env[key];
+            }
+        }
+    }
+    return env;
 }
 
 /** Forward the Python logger lines (` - LEVEL - message`) to the Logger. */
