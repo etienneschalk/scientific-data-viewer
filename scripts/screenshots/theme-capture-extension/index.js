@@ -3,7 +3,7 @@
 // what a webview receives from VS Code for each of them (--vscode-* variables
 // on <html>, theme classes and data attributes on <body>, default styles).
 // CommonJS: VS Code loads extension test entry points with require().
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');

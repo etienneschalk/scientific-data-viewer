@@ -99,6 +99,7 @@ After toggling these, use the viewer **Refresh** control (or reopen the file):
 ### Building from source (contributors)
 
 - `npm run compile` now also bundles the webview (`src/panel/webview/*.ts` → `out/webview/webview.js`, esbuild); `npm run typecheck` checks the extension host and the webview. Run `npm install` first (new devDependency `esbuild`).
+- Development dependencies on their current major versions, so that `npm audit` is clean: eslint 10 with a flat config (`eslint.config.mjs` replaces `.eslintrc.js`, same rules), `typescript-eslint` 8, mocha 12, `glob` 14, `@vscode/vsce` 4, and `overrides` forcing `minimatch` 11 and `glob` 14. Run `npm install` (Node 22.12 or newer).
 - The `.vsix` now contains only what the extension runs: 72 files / 1.05 MB instead of 252 files / 2.5 MB. Gone: `docs/`, the TypeScript sources of the extension host and their source maps, tool caches, repository scripts and configs, the sample data generators, notebooks and test scripts of `python/`, unused icons and the README screenshots. `.vscodeignore` is an allow-list: it excludes everything and names each runtime file, so **a new runtime file must be added to it**, and nothing else can be packaged by accident (vsce applies `!` patterns whatever their order). `vscode:prepublish` deletes `out/` before compiling. Check with `npx vsce ls`.
 
 ### Python backend location (contributors)
@@ -966,7 +967,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - **Architecture diagrams**: the sequence diagrams, the process overview and the pipelines are drawn by hand in `scripts/architecture/figures.py`; `--check` only catches renamed or removed symbols, not a changed order of calls. Graph layouts can differ slightly between Graphviz versions (generated with 2.43).
 - **Cancelling a plot right after clicking Create Plot**: if the abort reaches the extension before the Python process is started, nothing is stopped and the process runs to the end (its result is ignored; the plot timeout still applies). The same was already true of **Cancel All**.
 - **Load time setting** applies at the next load or **Refresh** (🔄), like the other display settings; an exported webview keeps the time as shown at export.
-- **`npm audit`** (development dependencies only, nothing of `node_modules` is in the `.vsix`): 17 moderate findings are fixed only by major upgrades (eslint 9 and `@typescript-eslint` 8 with a flat config, `glob` 11, `mocha`, `@vscode/vsce` 4); the `npm-audit` step of `paranoia.sh` stays a warning until then.
 - **Timedelta units decoding** is not restored (xarray 2026 removed it); degraded `decode_cf=False` retry from v0.11.2 still applies.
 
 ---

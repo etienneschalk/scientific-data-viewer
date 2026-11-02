@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { HTMLGenerator } from '../../../src/panel/HTMLGenerator';
 
 // jsdom ships without type declarations in this repo.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { JSDOM } = require('jsdom');
 
 /**
