@@ -64,11 +64,11 @@ scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-
 
 ### Scenarios
 
-| Scenario      | What it simulates                                                                                                  | Expected                                                                                                                                                  |
-| ------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `normal`      | Plain update.                                                                                                      | Environment rebuilt, all checks pass.                                                                                                                     |
-| `offline`     | First start of v0.13 with no package index (`UV_NO_CACHE=1`, unreachable `UV_DEFAULT_INDEX`), then a normal start. | The first start logs `recreation failed`: old environment back in place (marker present), no backup left, no state file. The second start rebuilds it.    |
-| `interrupted` | VS Code killed (`kill -9`) while the new environment is being installed, then a normal start.                      | During the kill, the old environment sits in `python-environment.previous`. The next start logs `recreation was interrupted`, restores it, then rebuilds. |
+| Scenario      | What it simulates                                                                                                                                                                        | Expected                                                                                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `normal`      | Plain update.                                                                                                                                                                            | Environment rebuilt, all checks pass.                                                                                                                     |
+| `offline`     | First start of v0.13 with no package index (`UV_NO_CACHE=1`, unreachable `UV_DEFAULT_INDEX`), then a normal start.                                                                       | The first start logs `recreation failed`: old environment back in place (marker present), no backup left, no state file. The second start rebuilds it.    |
+| `interrupted` | VS Code killed (`kill -9`) while the new environment is being installed (its package index accepts connections and never answers, so the install is still running), then a normal start. | During the kill, the old environment sits in `python-environment.previous`. The next start logs `recreation was interrupted`, restores it, then rebuilds. |
 
 ### Results (2026-10-29, Linux, VS Code 1.144, uv 0.10.2)
 
@@ -77,6 +77,8 @@ scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-
 | `normal`      | 0.12.1 → 0.13.0 | ✅ 11/11 checks: environment rebuilt with `eccodeslib 2.47.3.23`; NetCDF, GRIB, COG and CDF open. With a warm uv cache the package install itself takes well under a second. |
 | `offline`     | 0.12.1 → 0.13.0 | ✅ 3/3 checks after the failed rebuild (old environment back, no backup folder, no state file), then 11/11 after the next start.                                             |
 | `interrupted` | 0.12.1 → 0.13.0 | ✅ old environment found in `python-environment.previous` after the kill; the next start restored it and rebuilt (11/11).                                                    |
+
+The `interrupted` scenario counted on `UV_NO_CACHE=1` making the install slow. In the `paranoia.sh` run of 2026-10-31, uv installed everything in 3 s: VS Code was killed after the rebuild and the backup-folder check failed. The scenario now uses a local package index that never answers: from 0.12.1, every check passes (2026-11-02, 97 s).
 
 ### Migration results (2026-10-30, Linux, VS Code 1.144, uv 0.10.2, `paranoia.sh` step `migration`)
 

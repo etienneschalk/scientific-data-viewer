@@ -35,8 +35,10 @@
 #                      offline      the rebuild fails (no package index): the old
 #                                   environment must be kept; then a normal start
 #                                   must rebuild it
-#                      interrupted  VS Code is killed during the rebuild: the next
-#                                   start must restore the old environment and rebuild
+#                      interrupted  VS Code is killed during the rebuild (its package
+#                                   index never answers, so the install is still
+#                                   running): the next start must restore the old
+#                                   environment and rebuild
 #                      (offline and interrupted need an upgrade that rebuilds)
 #   --dir <path>       sandbox folder (default: a new temporary folder)
 #   --keep-open        leave the new version open at the end, to look around
@@ -67,7 +69,12 @@ SANDBOX=""
 KEEP_OPEN=false
 BUMP_NEW=false
 REQUIRED_OUTCOME=""
-TIMEOUT_S=900
+# Waits for a log line (wait_for_log): a rebuild took 3 to 20 s on a warm uv
+# cache in the run of 2026-10-31; room for a cold cache on CI
+TIMEOUT_S=600
+# VS Code CLI calls: they return within a second, but one hung a paranoia run
+# for 90 min (2026-10-31)
+CLI_TIMEOUT_S=60
 CODE="$(ls -d "$ROOT"/.vscode-test/vscode-*/bin/code 2>/dev/null | sort -V | tail -1)"
 CODE="${CODE:-code}"
 
@@ -139,12 +146,13 @@ launch() {
     touch "$SANDBOX/.launch"
     sleep 1
     # --no-sandbox, as npm test: CI runners (Ubuntu 24.04) block Chromium's sandbox
-    env "$@" "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
+    env "$@" timeout "$CLI_TIMEOUT_S" "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
         --disable-extensions --extensionDevelopmentPath="$extension" \
-        --no-sandbox --new-window >/dev/null 2>&1
+        --no-sandbox --new-window >/dev/null 2>&1 ||
+        echo "  (the VS Code CLI did not return within ${CLI_TIMEOUT_S}s: stopped)"
     for _ in $(seq 12); do
         sleep 5
-        "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
+        timeout "$CLI_TIMEOUT_S" "$CODE" --user-data-dir "$USER_DIR" --extensions-dir "$EXT_DIR" \
             --no-sandbox --reuse-window "$DATA_FILE" >/dev/null 2>&1 || true
         if [ -n "$(extension_logs)" ]; then
             return 0
@@ -165,18 +173,54 @@ stop() {
 
 # wait_for_log <regex> [timeout in s]
 wait_for_log() {
-    local pattern="$1" timeout="${2:-$TIMEOUT_S}" waited=0
+    local pattern="$1" timeout="${2:-$TIMEOUT_S}"
+    local deadline=$((SECONDS + timeout))
     # Not grep -q: it stops at the first match, cat gets SIGPIPE and, with
     # pipefail, the pipeline fails although the line is there
     while ! extension_logs | grep -E "$pattern" >/dev/null; do
-        if [ "$waited" -ge "$timeout" ]; then
+        if [ "$SECONDS" -ge "$deadline" ]; then
             ko "timed out after ${timeout}s waiting for log: $pattern"
             return 1
         fi
         sleep 2
-        waited=$((waited + 2))
     done
     extension_logs | grep -E "$pattern" | tail -1 | sed 's/^/  log: /'
+}
+
+# A package index that accepts connections and never answers (scenario
+# interrupted): the install hangs until VS Code is killed, however fast the
+# machine (with UV_NO_CACHE alone, uv installed everything in 3 s, before the
+# kill). Sets SILENT_INDEX_URL
+SILENT_INDEX_PID=""
+start_silent_index() {
+    local port_file="$SANDBOX/silent-index.port"
+    rm -f "$port_file"
+    python3 - "$port_file" <<'EOF' &
+import os
+import socket
+import sys
+
+server = socket.socket()
+server.bind(("127.0.0.1", 0))
+server.listen(64)
+with open(sys.argv[1] + ".tmp", "w") as f:
+    f.write(str(server.getsockname()[1]))
+os.rename(sys.argv[1] + ".tmp", sys.argv[1])
+connections = []
+while True:
+    connections.append(server.accept()[0])
+EOF
+    SILENT_INDEX_PID=$!
+    for _ in $(seq 50); do
+        [ -s "$port_file" ] && break
+        sleep 0.1
+    done
+    [ -s "$port_file" ] || { echo "Cannot start the silent package index" >&2; exit 1; }
+    SILENT_INDEX_URL="http://127.0.0.1:$(cat "$port_file")/simple"
+}
+stop_silent_index() {
+    [ -z "$SILENT_INDEX_PID" ] || kill "$SILENT_INDEX_PID" 2>/dev/null || true
+    SILENT_INDEX_PID=""
 }
 
 # Compiled environment manager of an unpacked release
@@ -226,7 +270,7 @@ if (state.revision < revision) {
 EOF
 }
 
-trap stop EXIT
+trap 'stop; stop_silent_index' EXIT
 
 step "Sandbox: $SANDBOX (scenario: $SCENARIO)"
 command -v "$CODE" >/dev/null || { echo "VS Code CLI not found: $CODE (use --code)" >&2; exit 1; }
@@ -321,11 +365,15 @@ if [ "$SCENARIO" = offline ]; then
 fi
 
 if [ "$SCENARIO" = interrupted ]; then
-    # Without the uv cache the install takes long enough to be interrupted
-    launch "$NEW_EXT" UV_NO_CACHE=1
-    wait_for_log 'Creating extension virtual environment'
+    # No cache and an index that never answers: the package install is still
+    # running when VS Code is killed
+    start_silent_index
+    launch "$NEW_EXT" UV_NO_CACHE=1 UV_DEFAULT_INDEX="$SILENT_INDEX_URL" UV_HTTP_TIMEOUT=3600
+    wait_for_log 'Executing: uv -v pip install'
+    sleep 2
     pkill -9 -f -- "$USER_DIR" || true
     sleep 2
+    stop_silent_index
     check "previous environment moved aside during the rebuild" test -d "$ENV_DIR.previous"
     step "2b. Next start after the interruption"
     launch "$NEW_EXT"
@@ -385,7 +433,9 @@ BACKEND="$NEW_EXT/python/get_data_info.py"
 for sample in sample_data.nc sample_data.grib sample_data_cog.tif sample_data.cdf; do
     file="$SAMPLES/$sample"
     [ -e "$file" ] || continue
-    out="$("$ENV_DIR/bin/python" "$BACKEND" info "$file" 2>/dev/null | tail -1)" && status=0 || status=$?
+    # As the extension runs its own environment: without ECCODES_DEFINITION_PATH
+    # (pythonScriptEnvironment, PythonManager.ts)
+    out="$(env -u ECCODES_DEFINITION_PATH timeout 300 "$ENV_DIR/bin/python" "$BACKEND" info "$file" 2>/dev/null | tail -1)" && status=0 || status=$?
     if [ "$status" -eq 0 ] && ! printf '%s' "$out" | grep -q '^{"error"'; then
         ok "backend opens $sample"
     else

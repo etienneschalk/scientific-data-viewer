@@ -67,36 +67,41 @@ DIM='\033[2m'
 NC='\033[0m'
 [ -t 1 ] || { RED=''; GREEN=''; YELLOW=''; BLUE=''; DIM=''; NC=''; }
 
-# id|profile|area|title — run in this order; a profile includes the ones before it
+# id|profile|area|title|limit — run in this order; a profile includes the ones
+# before it. limit: seconds after which the step is stopped and fails (a hung
+# VS Code once blocked a run for 90 min): about 4x its duration in the run of
+# 2026-10-31, 5 min at least; more for the steps that download on a fresh
+# machine (env, pre-commit, npm-test) and for the sandbox steps (migration,
+# upgrade: each sandbox run also has its own limit, SANDBOX_LIMIT_S)
 STEPS=(
-    "env|quick|Setup|Tools and versions"
-    "git|quick|Setup|Repository state"
-    "release|quick|Release|Version and release documents"
-    "readme|quick|Release|README.md matches its generator"
-    "architecture|quick|Release|Architecture diagrams match the code"
-    "uv-env|quick|Users|uv environment change since the last release"
-    "pre-commit|quick|Code|pre-commit on all files"
-    "compile|quick|Build|Clean compile"
-    "package|quick|Build|Package the .vsix"
-    "vsix|quick|Package|.vsix contents"
-    "sample-data|quick|Tests|Sample data regenerated"
-    "vsix-backend|quick|Package|Packaged backend on sample files"
-    "pytest|quick|Tests|Python tests (pytest)"
-    "npm-test|quick|Tests|Extension tests in VS Code (npm test)"
-    "golden|standard|Regression|Golden snapshots of the backend"
-    "non-regression|standard|Regression|Non-regression plot gallery (issue #117 cases)"
-    "qa-fixtures|standard|Regression|Hostile QA fixtures"
-    "qa-baseline|standard|Regression|Checkout of the last release"
-    "qa-info|standard|Regression|Backend info vs last release"
-    "qa-plot|standard|Regression|Every variable plotted vs last release"
-    "qa-scen|standard|Regression|Plot-option scenarios vs last release"
-    "qa-webview|standard|Regression|Real webview in headless Chromium"
-    "npm-audit|standard|Dependencies|npm audit"
-    "ci|standard|Release|CI status of this commit"
-    "qa-e2e|full|Regression|End-to-end suites in VS Code (packaged extension)"
-    "migration|full|Users|Migration from every release (uv environment, settings, viewer)"
-    "upgrade|full|Users|Failed and interrupted environment rebuilds"
-    "screenshots|full|Users|Viewer screenshots"
+    "env|quick|Setup|Tools and versions|600"
+    "git|quick|Setup|Repository state|300"
+    "release|quick|Release|Version and release documents|300"
+    "readme|quick|Release|README.md matches its generator|300"
+    "architecture|quick|Release|Architecture diagrams match the code|300"
+    "uv-env|quick|Users|uv environment change since the last release|300"
+    "pre-commit|quick|Code|pre-commit on all files|900"
+    "compile|quick|Build|Clean compile|300"
+    "package|quick|Build|Package the .vsix|300"
+    "vsix|quick|Package|.vsix contents|300"
+    "sample-data|quick|Tests|Sample data regenerated|300"
+    "vsix-backend|quick|Package|Packaged backend on sample files|600"
+    "pytest|quick|Tests|Python tests (pytest)|600"
+    "npm-test|quick|Tests|Extension tests in VS Code (npm test)|900"
+    "golden|standard|Regression|Golden snapshots of the backend|600"
+    "non-regression|standard|Regression|Non-regression plot gallery (issue #117 cases)|300"
+    "qa-fixtures|standard|Regression|Hostile QA fixtures|300"
+    "qa-baseline|standard|Regression|Checkout of the last release|300"
+    "qa-info|standard|Regression|Backend info vs last release|600"
+    "qa-plot|standard|Regression|Every variable plotted vs last release|1500"
+    "qa-scen|standard|Regression|Plot-option scenarios vs last release|300"
+    "qa-webview|standard|Regression|Real webview in headless Chromium|1200"
+    "npm-audit|standard|Dependencies|npm audit|300"
+    "ci|standard|Release|CI status of this commit|300"
+    "qa-e2e|full|Regression|End-to-end suites in VS Code (packaged extension)|1500"
+    "migration|full|Users|Migration from every release (uv environment, settings, viewer)|3600"
+    "upgrade|full|Users|Failed and interrupted environment rebuilds|2400"
+    "screenshots|full|Users|Viewer screenshots|1200"
 )
 
 PROFILE=standard
@@ -119,8 +124,8 @@ while [ $# -gt 0 ]; do
         --out) OUT="$2"; shift 2 ;;
         -v|--verbose) VERBOSE=true; shift ;;
         --list)
-            printf '%-14s %-9s %-13s %s\n' ID PROFILE AREA TITLE
-            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title <<<"$s"; printf '%-14s %-9s %-13s %s\n' "$id" "$prof" "$area" "$title"; done
+            printf '%-14s %-9s %-13s %-6s %s\n' ID PROFILE AREA LIMIT TITLE
+            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title limit <<<"$s"; printf '%-14s %-9s %-13s %-6s %s\n' "$id" "$prof" "$area" "${limit}s" "$title"; done
             exit 0 ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
@@ -140,6 +145,13 @@ fi
 unset ELECTRON_RUN_AS_NODE
 
 PY="${PARANOIA_PYTHON:-$ROOT/.venv/bin/python}"
+# eccodes variables of the shell, recorded by step env. The extension does not
+# pass ECCODES_DEFINITION_PATH to its own environment (pythonScriptEnvironment,
+# PythonManager.ts): the definitions of another eccodes version make every GRIB
+# message unreadable. The harnesses do the same when the backend is that
+# environment (or artefacts/backend-env, built like it)
+SHELL_ECCODES="$(env | grep '^ECCODES_' | sort)"
+as_own_environment() { unset ECCODES_DEFINITION_PATH; }
 EXTENSION_ENV_PY="$HOME/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/bin/python"
 # Backend interpreter of the QA harnesses: what users get, the extension's own uv
 # environment. Without one (CI, fresh machine) the env step builds the same in
@@ -149,6 +161,7 @@ if [ -n "${SDV_PYTHON:-}" ]; then
 elif [ -x "$EXTENSION_ENV_PY" ]; then
     SDV_PYTHON="$EXTENSION_ENV_PY"
     BACKEND_SOURCE="extension environment"
+    as_own_environment
 else
     SDV_PYTHON="$ROOT/.venv/bin/python"
     BACKEND_SOURCE="default"
@@ -245,6 +258,7 @@ backend_env() {
     SDV_PYTHON="$dir/bin/python"
     BACKEND_SOURCE="artefacts/backend-env, built like the extension's environment"
     export SDV_PYTHON
+    as_own_environment
 }
 
 step_env() {
@@ -259,6 +273,16 @@ step_env() {
         backend_env || { fail "cannot build artefacts/backend-env (the extension's environment)"; return; }
     fi
     echo "backend python: $SDV_PYTHON ($BACKEND_SOURCE)"
+    if [ -n "$SHELL_ECCODES" ]; then
+        local dropped=""
+        if grep -q '^ECCODES_DEFINITION_PATH=' <<<"$SHELL_ECCODES" && [ -z "${ECCODES_DEFINITION_PATH+set}" ]; then
+            dropped=" (ECCODES_DEFINITION_PATH not passed to the backend, as the extension does for its own environment)"
+        fi
+        echo "eccodes variables of the shell$dropped:"
+        sed 's/^/  /' <<<"$SHELL_ECCODES"
+    else
+        echo "eccodes variables of the shell: none"
+    fi
     "$SDV_PYTHON" -c 'import xarray, zarr, matplotlib; print("xarray", xarray.__version__, "zarr", zarr.__version__, "matplotlib", matplotlib.__version__)' \
         || { fail "backend interpreter $SDV_PYTHON cannot import xarray / zarr / matplotlib"; return; }
     command -v pre-commit >/dev/null || "$PY" -m pre_commit --version >/dev/null 2>&1 || warn "pre-commit not found: pip install pre-commit"
@@ -614,6 +638,10 @@ release_vsix() {
     echo "$file"
 }
 
+# Limit of one sandbox run (scripts/upgrade-sandbox.sh): 93 to 136 s in the run
+# of 2026-10-31; room for a cold uv cache and one failing wait (600 s)
+SANDBOX_LIMIT_S=900
+
 # One run of the migration test (scripts/upgrade-sandbox.sh) per case; the
 # expectation (rebuild or keep) follows from each release, except for the two
 # synthetic cases that pin the rule of ENVIRONMENT_REVISION down
@@ -635,13 +663,14 @@ step_migration() {
         echo "===== $name -> $VERSION ====="
         mkdir -p "$dir"
         # shellcheck disable=SC2086
-        with_display scripts/upgrade-sandbox.sh --old "$old" --new "$VSIX" ${expect:+--expect "$expect"} $extra --dir "$dir" 2>&1 |
+        with_display timeout -k 60 "$SANDBOX_LIMIT_S" scripts/upgrade-sandbox.sh --old "$old" --new "$VSIX" ${expect:+--expect "$expect"} $extra --dir "$dir" 2>&1 |
             tee "$dir.log"
         local rc=${PIPESTATUS[0]}
         outcome="$(sed -n 's/.*== Result: .*(\(rebuild\|keep\)).*/\1/p' "$dir.log" | tail -1)"
         case $rc in
             0) passed+=("$name: ${outcome:-?}") ;;
             3) untested+=("$name") ;;
+            124) failed+=("$name (timed out after ${SANDBOX_LIMIT_S}s)") ;;
             125) skip "no display and no xvfb-run"; return ;;
             *) failed+=("$name") ;;
         esac
@@ -671,9 +700,10 @@ step_upgrade() {
     for scenario in offline interrupted; do
         echo "===== scenario: $scenario ====="
         mkdir -p "$OUT/upgrade/$scenario"
-        with_display scripts/upgrade-sandbox.sh "${from[@]}" --new "$VSIX" --scenario "$scenario" --dir "$OUT/upgrade/$scenario"
+        with_display timeout -k 60 "$SANDBOX_LIMIT_S" scripts/upgrade-sandbox.sh "${from[@]}" --new "$VSIX" --scenario "$scenario" --dir "$OUT/upgrade/$scenario"
         case $? in
             0) ;;
+            124) failed+=("$scenario (timed out after ${SANDBOX_LIMIT_S}s)") ;;
             125) skip "no display and no xvfb-run"; return ;;
             *) failed+=("$scenario") ;;
         esac
@@ -711,6 +741,39 @@ selected() {
     ! in_list "$1" "$SKIP_LIST" && [ "$(profile_rank "$(step_profile "$1")")" -le "$(profile_rank "$PROFILE")" ]
 }
 
+# Process ids below <pid>, except the subtrees of the other arguments
+descendants() {
+    local pid=$1 child
+    shift
+    for child in $(pgrep -P "$pid"); do
+        in_list "$child" "$(IFS=,; echo "$*")" && continue
+        echo "$child"
+        descendants "$child" "$@"
+    done
+}
+
+# Run in the background during a step: after <limit> seconds, create <marker>
+# and stop every process the step started (SIGTERM, SIGKILL 30 s later). The
+# step goes on with their failure; the runner then fails it
+watchdog() {
+    local limit=$1 marker=$2 me=$BASHPID sleeper signal pids
+    trap 'kill "$sleeper" 2>/dev/null; exit 0' TERM
+    sleep "$limit" &
+    sleeper=$!
+    wait "$sleeper" || exit 0
+    : >"$marker"
+    echo "paranoia.sh: the step reached its limit of ${limit}s: stopping it"
+    for signal in TERM KILL; do
+        pids="$(descendants $$ "$me" ${tail_pid:-})"
+        # shellcheck disable=SC2086
+        [ -z "$pids" ] || kill -"$signal" $pids 2>/dev/null
+        [ "$signal" = KILL ] && break
+        sleep 30 &
+        sleeper=$!
+        wait "$sleeper" || exit 0
+    done
+}
+
 INTERRUPTED=false
 trap 'INTERRUPTED=true' INT
 cleanup() {
@@ -726,7 +789,7 @@ trap cleanup EXIT
 echo -e "${BLUE}Paranoia: v$VERSION vs $BASELINE, profile ${ONLY:+--only }${ONLY:-$PROFILE}${NC}"
 echo -e "${DIM}$OUT${NC}"
 for s in "${STEPS[@]}"; do
-    IFS='|' read -r id prof area title <<<"$s"
+    IFS='|' read -r id prof area title limit <<<"$s"
     STATUS=PASS
     SUMMARY=""
     start=$SECONDS
@@ -742,12 +805,23 @@ for s in "${STEPS[@]}"; do
         printf "${BLUE}▶${NC} %-14s %s ... " "$id" "$title"
         # The log is written directly (steps read it back); --verbose follows it
         : >"$LOGS/$id.log"
+        tail_pid=""
         if $VERBOSE; then
             echo
             tail -n +1 -f "$LOGS/$id.log" &
             tail_pid=$!
         fi
+        timed_out="$OUT/.timed-out"
+        rm -f "$timed_out"
+        watchdog "$limit" "$timed_out" >>"$LOGS/$id.log" 2>&1 &
+        watchdog_pid=$!
         "step_${id//-/_}" >>"$LOGS/$id.log" 2>&1
+        kill "$watchdog_pid" 2>/dev/null
+        wait "$watchdog_pid" 2>/dev/null
+        if [ -e "$timed_out" ]; then
+            rm -f "$timed_out"
+            fail "timed out: stopped after ${limit}s, the limit of the step (STEPS in paranoia.sh); see the log"
+        fi
         if $VERBOSE; then
             sleep 0.5
             kill "$tail_pid" 2>/dev/null
