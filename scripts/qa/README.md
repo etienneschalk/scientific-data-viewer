@@ -34,12 +34,53 @@ Run the backend of a baseline checkout and of the working tree with the **same i
 ```bash
 scripts/qa/backend/make_baseline.sh v0.12.1       # git worktree in artefacts/qa/baseline
 .venv/bin/python scripts/qa/backend/diff_info.py  # every sample + fixture: structural diff of `info`
-.venv/bin/python scripts/qa/backend/diff_plot.py  # every variable: plot status + pixel comparison
-.venv/bin/python scripts/qa/backend/diff_scen.py  # ~80 plot-option scenarios, images in artefacts/qa/backend/scenarios/
+.venv/bin/python scripts/qa/backend/diff_plot.py  # every variable: plot status + pixel comparison, report in artefacts/qa/backend/plots/plots.md
+.venv/bin/python scripts/qa/backend/diff_scen.py  # ~80 plot-option scenarios, report in artefacts/qa/backend/scenarios/scenarios.md
 scripts/qa/backend/make_baseline.sh --remove
 ```
 
-Each line says `SAME`, `DIFF` (images differ: check that the change is intended), `FIXED?`, `REGRESSION?` or `BOTH-ERR`. `diff_plot.py` and `diff_scen.py` exit with 1 when a plot that worked in the baseline fails now. The scripts are run with any Python that has numpy and Pillow; `--python` (default `$SDV_PYTHON`) is the interpreter of the backend.
+Each line says `SAME`, `DIFF` (images differ: check that the change is intended), `FIXED?`, `REGRESSION?`, `FLAKY?` or `BOTH-ERR`. `diff_plot.py` and `diff_scen.py` exit with 1 when a plot that worked in the baseline fails now. The scripts are run with any Python that has numpy and Pillow; `--python` (default `$SDV_PYTHON`) is the interpreter of the backend.
+
+### Reading the results of `diff_plot.py` and `diff_scen.py`
+
+Each case (a variable for `diff_plot.py`; a file, a variable and plot options for `diff_scen.py`) is plotted twice, by the **old** backend (the baseline) and the **new** one, and the two images are compared pixel by pixel below the title (the top 60 rows, which hold the creation time).
+
+**Start with the report**, a Markdown file next to the images (open it with the Markdown preview): `scenarios/scenarios.md` and `plots/plots.md` in the output folder (`<run>/backend/` in a `paranoia.sh` run). One section per tag, the most worrying first; each case with its options, both statuses, image sizes, full error messages and the two images side by side. Identical cases are only listed (`diff_plot.py` keeps no image of them). A run of 20 or more times the same character, as in the names of the hostile fixtures, is shown as its start and length: `xxxxxxxx…[300 times 'x']`. The images themselves are `<name>.old.png` and `<name>.new.png`; `scenarios.json` / `plots.json` hold the same data.
+
+The log (`qa-scen.log`, `qa-plot.log` in a `paranoia.sh` run) is an index of the same results. `diff_scen.py` writes two lines per scenario, the error message quoted (`''`: no error):
+
+```text
+TAG          name                       old=STATUS  'error message of the baseline'
+                                        new=STATUS  'error message now'
+```
+
+`diff_plot.py` writes one line: `TAG file :: variable | old=STATUS message | new=STATUS message`.
+
+**Status**, what one backend gave:
+
+| Status    | Meaning                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `OK`      | a plot image                                                                                        |
+| `ERR`     | a clean error message (in the JSON)                                                                 |
+| `NOJSON`  | no JSON at all: a crash, or the baseline rejects an option it does not know (argparse, exit code 2) |
+| `TIMEOUT` | longer than `--timeout` (90 s)                                                                      |
+
+**Tag**, the comparison (`classify` in `diff_plot.py`):
+
+| Tag                     | Meaning                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SAME`                  | both plot, pixel-identical images                                                                                                                              |
+| `DIFF pixeldiff=0.0118` | both plot, images of the same size, 1.18 % of the pixels differ: something is drawn differently                                                                |
+| `DIFF False`            | both plot, but the **images have different sizes** (figure size, layout, facets), so pixels cannot be compared: `False` is that comparison. Look at the images |
+| `FIXED?`                | the baseline fails, the plot works now; also a new option, which the baseline rejects (`old=NOJSON`)                                                           |
+| `REGRESSION?`           | the plot worked in the baseline and fails now: the only tag that fails the step (exit code 1)                                                                  |
+| `FLAKY?`                | first `REGRESSION?` or `FIXED?`, but one of 4 runs again gave other statuses: a backend is random on this case (a warning, not a failure)                      |
+| `BOTH-ERR`              | both fail, with the same message (first 60 characters)                                                                                                         |
+| `ERR-CHANGED`           | both fail, with another message (`diff_scen.py` only): check that the new one is at least as clear                                                             |
+
+Some cases are random: `unicode_names.nc` has a variable name of 300 characters, which the netcdf4 engine reads past netCDF-C's 256-byte limit (release notes, Known limitations), so both versions find the variable or not at random. Hence `FLAKY?`: a case tagged `REGRESSION?` or `FIXED?` is run 4 more times (`RETRIES` in `diff_plot.py`), and if any run gives other statuses it is `FLAKY?`. A random case can still come out `SAME` or `BOTH-ERR` (only `REGRESSION?` / `FIXED?` are run again), or, rarely, keep its first statuses 4 times.
+
+`paranoia.sh` counts these tags: `DIFF`, `ERR-CHANGED` and `FLAKY?` make the step a warning (look at the report), `REGRESSION?` a failure.
 
 ## Webview scenarios — `webview/`
 

@@ -18,12 +18,19 @@ Usage:
 Plot images are compared by SHA-256 of the PNG bytes; pass ``--ignore-png`` to
 compare only the JSON metadata (e.g. after a matplotlib upgrade).
 
-Against another commit, with no local snapshots (what ``paranoia.sh`` does in
-CI): record with the backend of a checkout of that commit, then check:
+Against another commit, with no local snapshots (what ``paranoia.sh`` does
+with the last release): record with the backend of a checkout of that commit,
+then check:
 
     python python/tools/golden_snapshots.py record --golden-dir /tmp/g \
         --entry <checkout>/python/get_data_info.py
     python python/tools/golden_snapshots.py check --golden-dir /tmp/g
+
+An older backend rejects the options it does not know (argparse, exit code 2).
+When they are only the defaults the extension passes (``INFO_DEFAULT_FLAGS``,
+e.g. ``--netcdf-engine-order``), the case is recorded again without them and
+compared; when they are what the case tests, it is recorded as not comparable
+(``N/A``) and does not fail the check.
 """
 
 from __future__ import annotations
@@ -321,19 +328,23 @@ _HTML_ID_RE = re.compile(
     r"(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
 )
 _ADDR_RE = re.compile(r"0x[0-9a-f]{6,}")
+_UNRECOGNIZED_RE = re.compile(r"error: unrecognized arguments: (.+)")
+_ARGPARSE_ERROR_RE = re.compile(r"^\S+: error: (.+)$", re.MULTILINE)
 
 
 @dataclass
 class Case:
     case_id: str
     argv: list[str]
+    # The options this case tests (not the defaults of the extension)
+    own: list[str]
 
 
 def build_cases() -> list[Case]:
     cases = []
     for rel in INFO_FILES:
         cases.append(
-            Case(f"info__{rel}", ["info", str(SAMPLE / rel), *INFO_DEFAULT_FLAGS])
+            Case(f"info__{rel}", ["info", str(SAMPLE / rel), *INFO_DEFAULT_FLAGS], [])
         )
     for variant, files in INFO_VARIANT_FILES.items():
         for rel in files:
@@ -345,10 +356,13 @@ def build_cases() -> list[Case]:
                 Case(
                     f"info_{variant}__{rel}",
                     ["info", str(SAMPLE / rel), *flags, *extra],
+                    extra,
                 )
             )
     for case_id, rel, var, extra in PLOT_CASES:
-        cases.append(Case(f"plot__{case_id}", ["plot", str(SAMPLE / rel), var, *extra]))
+        cases.append(
+            Case(f"plot__{case_id}", ["plot", str(SAMPLE / rel), var, *extra], extra)
+        )
     return cases
 
 
@@ -379,21 +393,53 @@ def _normalize(obj, ignore_png: bool):
     return obj
 
 
+def _without(argv: list[str], options: list[str]) -> list[str]:
+    """``argv`` without ``options`` and their values.
+
+    Options come after the positionals in every case, so the token after an
+    option is its value unless it is an option too. argparse may list a value
+    as a positional instead (``info file [variable_name]``): it goes anyway.
+    """
+    out = list(argv)
+    for opt in (t for t in options if t.startswith("--")):
+        if opt in out:
+            i = out.index(opt)
+            has_value = i + 1 < len(out) and not out[i + 1].startswith("--")
+            del out[i : i + 1 + has_value]
+    return out
+
+
 def run_case(case: Case, entry: list[str], ignore_png: bool) -> str:
     env = dict(os.environ, MPLBACKEND="Agg", PYTHONHASHSEED="0")
-    try:
-        proc = subprocess.run(
-            [sys.executable, str(FROZEN_CLOCK), *entry, *case.argv],
+
+    def run(argv: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(FROZEN_CLOCK), *entry, *argv],
             capture_output=True,
             text=True,
             env=env,
             timeout=CASE_TIMEOUT_S,
             cwd=REPO_ROOT,
         )
+
+    payload: dict = {}
+    try:
+        proc = run(case.argv)
+        rejected = proc.returncode == 2 and not proc.stdout.strip()
+        unknown = _UNRECOGNIZED_RE.search(proc.stderr) if rejected else None
+        if unknown and not set(unknown.group(1).split()) & set(case.own):
+            # Only defaults of the extension that this (older) backend lacks
+            dropped = unknown.group(1).split()
+            proc = run(_without(case.argv, dropped))
+            payload["reference_dropped_arguments"] = dropped
+        elif rejected and (error := _ARGPARSE_ERROR_RE.search(proc.stderr)):
+            reason = f"the backend rejects the arguments: {error.group(1)}"
+            payload = {"not_comparable": _normalize(reason, ignore_png)}
+            return json.dumps(payload, indent=1, sort_keys=True) + "\n"
     except subprocess.TimeoutExpired:
         return json.dumps({"timeout": CASE_TIMEOUT_S}) + "\n"
     lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
-    payload = {"returncode": proc.returncode}
+    payload["returncode"] = proc.returncode
     try:
         payload["stdout"] = _normalize(json.loads(lines[-1]), ignore_png)
     except (IndexError, json.JSONDecodeError):
@@ -442,6 +488,7 @@ def main() -> int:
         outputs = list(pool.map(lambda c: run_case(c, entry, args.ignore_png), cases))
 
     failures = 0
+    not_comparable = 0
     for case, out in zip(cases, outputs, strict=True):
         path = _golden_path(case)
         if args.mode == "record":
@@ -453,18 +500,39 @@ def main() -> int:
             failures += 1
             continue
         expected = path.read_text(encoding="utf-8")
+        recorded = json.loads(expected)
+        if "not_comparable" in recorded:
+            not_comparable += 1
+            print(f"N/A  {case.case_id} ({recorded['not_comparable']})")
+            continue
+        dropped = recorded.pop("reference_dropped_arguments", None)
+        if dropped:
+            expected = json.dumps(
+                recorded, indent=1, sort_keys=True, ensure_ascii=False
+            )
+            expected += "\n"
         if args.ignore_png:
             expected = re.sub(r'"sha256:[0-9a-f]+"', '"<png>"', expected)
         if out == expected:
             print(f"OK   {case.case_id}")
         else:
             failures += 1
-            print(f"FAIL {case.case_id}")
+            note = (
+                f" (recorded without {' '.join(dropped)}: unknown there)"
+                if dropped
+                else ""
+            )
+            print(f"FAIL {case.case_id}{note}")
             diff = difflib.unified_diff(
                 expected.splitlines(), out.splitlines(), "golden", "actual", lineterm=""
             )
             print("\n".join(list(diff)[:60]))
-    print(f"\n{len(cases)} cases, {failures} failing")
+    summary = f"{len(cases)} cases, {failures} failing"
+    if not_comparable:
+        summary += (
+            f", {not_comparable} not comparable (options unknown to the reference)"
+        )
+    print(f"\n{summary}")
     return 1 if failures else 0
 
 

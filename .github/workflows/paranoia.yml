@@ -46,7 +46,7 @@ jobs:
       PARANOIA_PYTHON: ${{ github.workspace }}/.venv/bin/python
 
     steps:
-      - name: "Checkout (full history and tags: last release, merge-base, old releases)"
+      - name: "Checkout (full history and tags: last release, old releases)"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0

@@ -4,16 +4,19 @@ Usage: python scripts/qa/backend/diff_scen.py [--python PY] [--baseline DIR]
            [--out DIR] [scenario names...]
 
 Each scenario is (name, sample file, variable, plot flags). Images go to
-<out>/scenarios/<name>.{old,new}.png for review. Exit code 1 when a scenario
-that worked in the baseline fails now.
+<out>/scenarios/<name>.{old,new}.png, with scenarios.md, a report of both side
+by side grouped by tag (plot_report.py), and scenarios.json. Exit code 1 when a
+scenario that worked in the baseline fails now.
 """
 
 import argparse
 import json
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 
-from diff_plot import classify, job
+from diff_plot import classify, job, settle
+from plot_report import baseline_label, write_report
 from qa_common import QA_OUT, SAMPLES, baseline_script, default_python
 
 NC = "sample_data.netcdf"  # precipitation(time 6, lat 45, lon 90)
@@ -332,7 +335,20 @@ def main() -> int:
     rows = []
     with ThreadPoolExecutor(8) as ex:
         for (name, f, var, flags), (old, new, same) in ex.map(one, scenarios):
-            tag = classify(old, new, same)
+            tag = settle(
+                classify(old, new, same),
+                old,
+                new,
+                partial(
+                    job,
+                    args.python,
+                    old_script,
+                    str(SAMPLES / f),
+                    var,
+                    flags,
+                    args.timeout,
+                ),
+            )
             if tag == "BOTH-ERR" and old.get("err", "")[:60] != new.get("err", "")[:60]:
                 tag = "ERR-CHANGED"
             rows.append(
@@ -344,6 +360,7 @@ def main() -> int:
                     "old": old,
                     "new": new,
                     "tag": tag,
+                    "image": name,
                 }
             )
             print(
@@ -351,6 +368,11 @@ def main() -> int:
                 flush=True,
             )
     (out / "scenarios.json").write_text(json.dumps(rows, indent=1, default=str))
+    report = out / "scenarios.md"
+    write_report(
+        rows, report, "Plot scenarios", baseline_label(old_script), "qa-scen.log"
+    )
+    print(f"\nreport: {report}")
     return 1 if any(r["tag"] == "REGRESSION?" for r in rows) else 0
 
 

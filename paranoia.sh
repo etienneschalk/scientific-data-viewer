@@ -110,6 +110,7 @@ SKIP_LIST=""
 BASELINE=""
 OUT=""
 VERBOSE=false
+ARGS=("$@")
 
 usage() { awk 'NR > 1 && /^set -uo pipefail/ { exit } NR > 1' "$0" | sed 's/^# \{0,1\}//'; }
 
@@ -131,6 +132,16 @@ while [ $# -gt 0 ]; do
         *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
     esac
 done
+
+# Keep the machine awake: on 2026-11-02 a laptop suspended mid-run, froze an
+# e2e plot for 5 min and failed the step. Re-run under a logind inhibitor when
+# one can be taken (desktop Linux); closing the lid still suspends
+if [ -z "${PARANOIA_SLEEP_INHIBITED:-}" ] && command -v systemd-inhibit >/dev/null \
+    && systemd-inhibit --what=idle:sleep --who=paranoia.sh --why=probe true >/dev/null 2>&1; then
+    export PARANOIA_SLEEP_INHIBITED=1
+    exec systemd-inhibit --what=idle:sleep --who=paranoia.sh --why="release checks running" \
+        "$ROOT/paranoia.sh" ${ARGS[@]+"${ARGS[@]}"}
+fi
 
 # =============================================================================
 # Environment shared by every step
@@ -273,6 +284,7 @@ step_env() {
         backend_env || { fail "cannot build artefacts/backend-env (the extension's environment)"; return; }
     fi
     echo "backend python: $SDV_PYTHON ($BACKEND_SOURCE)"
+    echo "sleep: $([ -n "${PARANOIA_SLEEP_INHIBITED:-}" ] && echo 'blocked while the run lasts (systemd-inhibit)' || echo 'not blocked (no systemd-inhibit): keep the machine awake')"
     if [ -n "$SHELL_ECCODES" ]; then
         local dropped=""
         if grep -q '^ECCODES_DEFINITION_PATH=' <<<"$SHELL_ECCODES" && [ -z "${ECCODES_DEFINITION_PATH+set}" ]; then
@@ -447,9 +459,9 @@ step_npm_test() {
 
 GOLDEN_REF_DIR=""
 # Local snapshots (artefacts/golden, recorded on a known-good commit) when there
-# are some; else (CI, fresh clone) against a reference commit, recorded and
-# checked in this run with the same interpreter: PARANOIA_GOLDEN_REF, default
-# the merge-base with main (the parent commit on main itself)
+# are some; else (CI, fresh clone) against a reference, recorded and checked in
+# this run with the same interpreter: PARANOIA_GOLDEN_REF, default the last
+# release ($BASELINE). Cases whose options that release does not know are N/A
 step_golden() {
     if [ -n "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ] && [ -z "${PARANOIA_GOLDEN_REF:-}" ]; then
         run "$PY" python/tools/golden_snapshots.py check
@@ -462,10 +474,10 @@ step_golden() {
         fi
         return
     fi
-    local ref="${PARANOIA_GOLDEN_REF:-$(git merge-base HEAD main 2>/dev/null)}"
-    [ "$(git rev-parse "$ref" 2>/dev/null)" = "$(git rev-parse HEAD)" ] && ref="HEAD~1"
+    local ref="${PARANOIA_GOLDEN_REF:-$BASELINE}"
+    [ -n "$ref" ] || { skip "no release tag to record the snapshots with (--baseline or PARANOIA_GOLDEN_REF)"; return; }
     local label
-    label="$(git rev-parse --short "$ref" 2>/dev/null)" || { skip "no reference commit for the snapshots ($ref)"; return; }
+    label="$(git rev-parse --short "$ref^{commit}" 2>/dev/null)" || { skip "no reference commit for the snapshots ($ref)"; return; }
     GOLDEN_REF_DIR="$OUT/golden-ref"
     run git worktree add --detach "$GOLDEN_REF_DIR" "$ref" || { fail "cannot check out $ref"; return; }
     run "$PY" python/tools/golden_snapshots.py record --golden-dir "$OUT/golden" \
@@ -475,9 +487,9 @@ step_golden() {
     last="$(tail -1 "$LOGS/golden.log")"
     git worktree remove --force "$GOLDEN_REF_DIR" && GOLDEN_REF_DIR=""
     if [ $rc -eq 0 ]; then
-        note "$last: same backend output as $label ($ref)"
+        note "$last: same backend output as $ref ($label)"
     else
-        warn "$last: backend output differs from $label ($ref); check that it is intended"
+        warn "$last: backend output differs from $ref ($label); check that it is intended (diffs in the log)"
     fi
 }
 
@@ -527,15 +539,16 @@ step_qa_info() {
 
 # Status of diff_plot.py / diff_scen.py from their exit code and tags
 plot_tags() {
-    local rc=$1 log=$2 what=$3 same diff regress errchg fixed
+    local rc=$1 log=$2 what=$3 report=$4 same diff regress errchg fixed flaky
     same="$(count SAME "$log")"; diff="$(count DIFF "$log")"; regress="$(count 'REGRESSION?' "$log")"
-    errchg="$(count ERR-CHANGED "$log")"; fixed="$(count 'FIXED?' "$log")"
+    errchg="$(count ERR-CHANGED "$log")"; fixed="$(count 'FIXED?' "$log")"; flaky="$(count 'FLAKY?' "$log")"
     local counts="$same same, $diff differ, $fixed fixed, $regress regressed"
+    [ "$flaky" -eq 0 ] || counts="$counts, $flaky flaky (not the same result when run again)"
     if [ "$regress" -gt 0 ] || [ "$rc" -ne 0 ]; then
         fail "$regress $what worked in $BASELINE and fail now ($counts)"
-    elif [ "$diff" -gt 0 ] || [ "$errchg" -gt 0 ]; then
+    elif [ "$diff" -gt 0 ] || [ "$errchg" -gt 0 ] || [ "$flaky" -gt 0 ]; then
         [ "$errchg" -eq 0 ] || counts="$counts, $errchg error message(s) changed"
-        warn "$diff $what look different from $BASELINE: check that it is intended ($counts)"
+        warn "$diff $what look different from $BASELINE: check that it is intended in ${report#"$OUT"/} ($counts)"
     else
         note "$counts"
     fi
@@ -545,15 +558,15 @@ step_qa_plot() {
     need_baseline || return
     [ -d "$OUT/backend/info" ] || { skip "needs the info of qa-info"; return; }
     run "$PY" scripts/qa/backend/diff_plot.py --out "$OUT/backend"
-    plot_tags $? "$LOGS/qa-plot.log" "plots"
-    ARTIFACTS+=("Plot differences vs $BASELINE: \`$OUT/backend/plots.json\`")
+    plot_tags $? "$LOGS/qa-plot.log" "plots" "$OUT/backend/plots/plots.md"
+    ARTIFACTS+=("Every variable plotted, old / new side by side: \`$OUT/backend/plots/plots.md\`")
 }
 
 step_qa_scen() {
     need_baseline || return
     run "$PY" scripts/qa/backend/diff_scen.py --out "$OUT/backend"
-    plot_tags $? "$LOGS/qa-scen.log" "scenarios"
-    ARTIFACTS+=("Scenario images (old / new side by side): \`$OUT/backend/scenarios/\`")
+    plot_tags $? "$LOGS/qa-scen.log" "scenarios" "$OUT/backend/scenarios/scenarios.md"
+    ARTIFACTS+=("Plot scenarios, old / new side by side: \`$OUT/backend/scenarios/scenarios.md\`")
 }
 
 step_qa_webview() {
