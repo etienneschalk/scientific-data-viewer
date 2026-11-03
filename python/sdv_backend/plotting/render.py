@@ -9,10 +9,12 @@ from sdv_backend._bootstrap import logger
 from sdv_backend.plotting.selection import DatetimeSelection
 
 
-def setup_pyplot(style: str) -> tuple[ModuleType, ModuleType]:
-    """Import matplotlib headless and apply ``style``; returns ``(mpl, plt)``.
+def setup_pyplot(style: str) -> tuple[ModuleType, ModuleType, str | None]:
+    """Import matplotlib headless and apply ``style``.
 
-    Imported lazily because matplotlib is only needed in plot mode.
+    Returns ``(mpl, plt, note)``: ``note`` says why the style could not be
+    applied (the default style is used instead), else None. Imported lazily
+    because matplotlib is only needed in plot mode.
     """
     import matplotlib as mpl
 
@@ -22,6 +24,7 @@ def setup_pyplot(style: str) -> tuple[ModuleType, ModuleType]:
     import matplotlib.pyplot as plt
 
     # Apply matplotlib style provided by VSCode extension
+    note = None
     if style and style.strip():
         try:
             logger.info(f"Using matplotlib style: {style}")
@@ -29,10 +32,14 @@ def setup_pyplot(style: str) -> tuple[ModuleType, ModuleType]:
         except Exception as exc:
             logger.warning(f"Failed to apply style '{style}': {exc}, using default")
             plt.style.use("default")
+            note = (
+                f"Style {style!r} not found: default style used "
+                "(setting scientificDataViewer.matplotlibStyle)"
+            )
     else:
         logger.info("No style specified, using default")
         plt.style.use("default")
-    return mpl, plt
+    return mpl, plt, note
 
 
 def build_suptitle(

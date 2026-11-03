@@ -18,7 +18,7 @@ from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.draw import draw_plot
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
-from sdv_backend.plotting.layout import resolve_layout
+from sdv_backend.plotting.layout import PlotLayout, resolve_layout
 from sdv_backend.plotting.options import PlotOptions
 from sdv_backend.plotting.render import (
     build_suptitle,
@@ -31,6 +31,7 @@ from sdv_backend.plotting.selection import (
     apply_dimension_slices,
     ensure_not_empty,
     get_variable,
+    ignored_slice_notes,
     split_variable_path,
 )
 from sdv_backend.plotting.style import MATPLOTLIB_RC_CONTEXT
@@ -89,7 +90,7 @@ def create_plot(
                 format_info=file_format_info,
             )
 
-        mpl, plt = setup_pyplot(options.style)
+        mpl, plt, style_note = setup_pyplot(options.style)
 
         opened = OpenedData.open(
             file_path, file_format_info, options.convert_bands_to_variables
@@ -102,6 +103,7 @@ def create_plot(
                     datatree_inherit_mode(options.show_inherited_coordinates),
                 )
                 var = get_variable(group, variable_name)
+                slice_notes = ignored_slice_notes(var, options.dimension_slices)
                 var, applied_isel = apply_dimension_slices(
                     var, options.dimension_slices
                 )
@@ -112,8 +114,11 @@ def create_plot(
             except PlotInputError as exc:
                 return CreatePlotError(error=str(exc), format_info=file_format_info)
             var, layout = resolve_layout(selection.var, options, selection)
+            bundle = _build_plot_kwargs(options, layout)
+            layout.notes[:0] = slice_notes
+            if style_note:
+                layout.notes.append(style_note)
             logger.info("Plot layout: %s", layout.to_json())
-            bundle = _build_plot_kwargs(options)
 
             # Start with a clean figure state (avoids "Current Serial #N" / stale-figure issues)
             plt.close("all")
@@ -184,8 +189,12 @@ def describe_exception(exc: Exception) -> str:
     return described
 
 
-def _build_plot_kwargs(options: PlotOptions) -> PlotKwargsBundle:
-    """Style kwargs the user set (the layout ones are resolved separately)."""
+def _build_plot_kwargs(options: PlotOptions, layout: PlotLayout) -> PlotKwargsBundle:
+    """Style kwargs the user set (the layout ones are resolved separately).
+
+    vmin above vmax is swapped, with a note in ``layout`` when the plot is
+    color-mapped (lines and histograms ignore both).
+    """
     logger.info(
         "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
         "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, "
@@ -208,14 +217,21 @@ def _build_plot_kwargs(options: PlotOptions) -> PlotKwargsBundle:
         options.add_colorbar,
         options.add_legend,
     )
+    vmin, vmax = options.vmin, options.vmax
+    if vmin is not None and vmax is not None and vmin > vmax:
+        if layout.kind == "image":
+            layout.notes.append(
+                f"vmin={vmin:g} is above vmax={vmax:g}: the two are swapped"
+            )
+        vmin, vmax = vmax, vmin
     return PlotKwargsBundle.build(
         bins=options.bins,
         robust=options.robust,
         xincrease=options.xincrease,
         yincrease=options.yincrease,
         cmap=options.cmap,
-        vmin=options.vmin,
-        vmax=options.vmax,
+        vmin=vmin,
+        vmax=vmax,
         add_colorbar=options.add_colorbar,
         add_legend=options.add_legend,
     )

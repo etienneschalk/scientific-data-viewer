@@ -84,6 +84,28 @@ def test_1d_against_datetime_variable() -> None:
     assert plt.gca().get_xlabel() == "when"
 
 
+def test_1d_against_datetime_variable_keeps_label_and_title() -> None:
+    """The line used to lose the attributes (y label) and the sliced indexes
+    (title) of the variable when redrawn against the datetime variable."""
+    var = xr.DataArray(
+        np.arange(3.0),
+        dims=("obs",),
+        coords={"lat": 1.0},
+        name="v",
+        attrs={"long_name": "Precipitation", "units": "mm"},
+    )
+    when = xr.DataArray(
+        np.array(["2020-01-01", "2020-01-02", "2020-01-03"], dtype="datetime64[ns]"),
+        dims=("obs",),
+    )
+    plt.close("all")
+    selection = DatetimeSelection(var=var, datetime_var=when, datetime_var_name="when")
+    var, layout = resolve_layout(var, PlotOptions(), selection)
+    draw_plot(var, layout, PlotKwargsBundle.build(), selection, "v")
+    assert plt.gca().get_ylabel() == "Precipitation [mm]"
+    assert plt.gca().get_title() == "lat = 1.0"
+
+
 def test_user_histogram() -> None:
     var = xr.DataArray(np.random.default_rng(0).normal(size=50), dims=("x",))
     fig = _draw(var, PlotOptions(bins=7), bins=7)

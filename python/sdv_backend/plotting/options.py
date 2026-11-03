@@ -111,7 +111,7 @@ class PlotOptions:
     Attributes
     ----------
     style : str
-        Matplotlib style to use (e.g., 'default', 'dark_background')
+        Matplotlib style to use (e.g., 'default', 'dark_background'); empty: matplotlib's default
     vmin, vmax : float, optional
         Color scale limits (passed to colormap plots only; not histograms or plain
         line plots).
@@ -125,7 +125,7 @@ class PlotOptions:
         (e.g. ``QuadMesh``). Default False.
     """
 
-    style: str = "auto"
+    style: str = ""
 
     # Opening the file
     convert_bands_to_variables: bool = False

@@ -435,6 +435,27 @@ v0.13 added several safety nets (golden snapshots, architecture `--check`, QA ha
 
 ---
 
+## Plot options that cannot be used are explained
+
+### Why
+
+The review of the `qa-scen` images of the `paranoia.sh` run of 2026-11-03 found four plot options that could not be used and gave no sign of it, unlike `x` / `col` on a missing dimension, which already had a note: a slice on a dimension the variable does not have, `vmin` above `vmax`, an unknown matplotlib style, and the line drawn against a datetime variable, which lost its axis label and title. None of them is a regression from v0.12.1.
+
+### What changed
+
+- **Slice on a missing dimension**: still skipped (the global slices apply to every variable), now with a note under the plot: `Slice on depth ignored: not a dimension of this variable (dimensions: time, lat, lon)`.
+- **vmin above vmax** on an image: the two are swapped, with a note `vmin=5 is above vmax=1: the two are swapped` (lines and histograms ignore both, no note there).
+- **Unknown style** in `scientificDataViewer.matplotlibStyle`: the default style is used, as before, with a note naming the setting.
+- **Line against the datetime variable** (command line `--datetime-variable` only): keeps the variable's attributes and scalar coordinates, so the y-axis reads `Monthly Precipitation [mm]` again instead of `precipitation`, and the title shows the sliced indexes.
+- `PlotOptions.style` defaults to `""` (matplotlib's default, as the command line) instead of `"auto"`, a name matplotlib does not know.
+
+### How it was checked
+
+- `pytest python/tests` (new `test_plot_notes.py`: each note, no note on a line or a known style; `test_plot_drawing.py`: label and title of the datetime line).
+- The `qa-scen` scenarios `slice_unknown_dim`, `vmin_inverted`, `style_bad` run with the packaged backend and the extension's environment: each returns its note; `style_dark` none.
+
+---
+
 ## New settings (summary)
 
 | Setting                    | Default                          | Effect                                                                                             |
@@ -917,6 +938,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 7. Set **bins** `20` with **col** `time` → a histogram; the note says `col not used: bins draws a histogram of all values`.
 8. Click **robust** twice → the outline appears then goes (back to its default). In a group's **Group Plot Controls**, click a checkbox showing a dash → outlined; **Reset** → dash, no outline.
 9. Export the webview and open the HTML in a browser → the outlines and the layout line are kept.
+10. `sample_data_multiple_groups.nc`: set **vmin** `5`, **vmax** `1`, slice `time` `0` → **Create Plot** on `root_data` → colour scale from 1 to 5, note `vmin=5 is above vmax=1: the two are swapped`.
+11. Set the setting `scientificDataViewer.matplotlibStyle` to `doesnotexist` → **Create Plot** → default (light) style, note `Style 'doesnotexist' not found: default style used …`. Clear the setting.
 
 ### 29. Time Controls removed
 
@@ -958,7 +981,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Known limitations (unchanged or noted)
 
-- **Plotting** remains **experimental** (timeout). Images use `imshow`, which assumes evenly spaced coordinates; pick a non-dimension coordinate as x / y to get `pcolormesh`. A size-1 datetime dimension chosen as an image axis cannot be drawn by xarray (the error is shown). More than four dimensions without slices give a histogram (the note under the plot says which dimensions to slice).
+- **Plotting** remains **experimental** (timeout). Images use `imshow`, which assumes evenly spaced coordinates; pick a non-dimension coordinate as x / y to get `pcolormesh`. A size-1 datetime dimension chosen as an image axis cannot be drawn by xarray (the error is shown). More than four dimensions without slices give a histogram (the note under the plot says which dimensions to slice). The automatic facets have no upper limit: `sample_data.nc :: /temperature` (365 days) draws 365 panels and exceeds the plot timeout, as in v0.12.1; slice the first dimension first.
 - **`fileSize`** for directory stores is still `os.path.getsize` on the directory inode (rough size, not store bytes).
 - **eccodeslib** stays below 2.48 in the extension environment until a fixed release exists; other interpreters with eccodeslib ≥ 2.48 and pyproj still crash at exit (`pip install "eccodeslib<2.48"`).
 - **cftime axes** need `nc-time-axis` to be plotted (not in the uv bundle).
@@ -980,14 +1003,14 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | Area          | Change                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                                                                                                              |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic                                                                                                                                                  |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic; notes for a slice on a missing dimension, vmin above vmax and an unknown style                                                                  |
 | **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                                                |
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                                                  |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                          |
 | **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                           |
 | **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed |
 | **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                        |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                   |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                             |
 
 ---
 

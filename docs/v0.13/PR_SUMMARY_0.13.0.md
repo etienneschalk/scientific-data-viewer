@@ -196,14 +196,15 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 16 — Progressive plot layout
 
-| Area     | Work                                                                                                                                                                                                                                            |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Problem  | One slice or layout control set switched the whole plot to a user layout (`has_user_layout`): slicing `lat` of `root_data(time, lat, lon)` gave a histogram instead of time facets                                                              |
-| Backend  | New `plotting/layout.py`: `resolve_layout` keeps each role the user set (x, y, hue, row, col, col_wrap, size, aspect) and fills the others from the free dimensions; slices / time range only select data; unusable choices dropped with a note |
-| Drawing  | `draw.py`: one xarray call per kind (imshow / pcolormesh / line / hist); `kwargs.py`: `for_kind` passes each kind only the style options it accepts; `has_user_layout`, `draws_color_mesh` and the two routes removed                           |
-| Contract | Result JSON gains `plot_layout` (kind, choices with `user` / `auto`, squeezed, notes); `applied_isel_kwargs` slices as `5:15`; `createPlot` answers `{plotData, layout, appliedSlices}` (`src/shared/plotLayout.ts`)                            |
-| Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                           |
-| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30         |
+| Area     | Work                                                                                                                                                                                                                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Problem  | One slice or layout control set switched the whole plot to a user layout (`has_user_layout`): slicing `lat` of `root_data(time, lat, lon)` gave a histogram instead of time facets                                                                                                              |
+| Backend  | New `plotting/layout.py`: `resolve_layout` keeps each role the user set (x, y, hue, row, col, col_wrap, size, aspect) and fills the others from the free dimensions; slices / time range only select data; unusable choices dropped with a note                                                 |
+| Drawing  | `draw.py`: one xarray call per kind (imshow / pcolormesh / line / hist); `kwargs.py`: `for_kind` passes each kind only the style options it accepts; `has_user_layout`, `draws_color_mesh` and the two routes removed                                                                           |
+| Contract | Result JSON gains `plot_layout` (kind, choices with `user` / `auto`, squeezed, notes); `applied_isel_kwargs` slices as `5:15`; `createPlot` answers `{plotData, layout, appliedSlices}` (`src/shared/plotLayout.ts`)                                                                            |
+| Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                                                                           |
+| Notes    | Review of the paranoia run of 2026-11-03: a slice on a missing dimension, vmin above vmax (swapped) and an unknown matplotlib style leave a note under the plot; the line against a datetime variable keeps its label and title; `PlotOptions.style` defaults to `""`; new `test_plot_notes.py` |
+| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30                                                         |
 
 ### Phase 17 — Time Controls removed
 
@@ -349,6 +350,8 @@ Results after removing the Time Controls: `npm test` 310 passing; `npm run typec
 Results after the fixes of the paranoia run of 2026-10-31: `npm test` 313 passing; `upgrade-sandbox.sh --scenario interrupted` from 0.12.1 passing (97 s, with `ECCODES_DEFINITION_PATH` set); `./paranoia.sh --only env,package,vsix,vsix-backend` passing; `npx vsce ls` 72 files.
 
 Results after the dependency upgrades: `npm audit` 0 vulnerabilities; eslint 10 reports the same 44 warnings as eslint 8; `pre-commit run --all-files` clean; `npm test` 313 passing; e2e `s1_open` 74 passing; `.vsix` file list unchanged (74 entries, `vsce ls` 72).
+
+Results after the plot notes (review of the paranoia run of 2026-11-03): `pytest python/tests` 224 passing (6 new); `qa-scen` scenarios `slice_unknown_dim`, `vmin_inverted`, `style_bad` return their note with the extension's environment.
 
 ```bash
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
@@ -517,3 +520,23 @@ Time Controls removed:
 
 75. feat(webview): remove the Time Controls and their settings
 76. docs: document the removal of the Time Controls
+
+Sample data:
+
+77. fix(sample-data): write sample_data.geotiff with an explicit GTiff driver
+78. feat(sample-data): reproducible generation; table-driven main
+79. feat(sample-data): add --overwrite and --disposable flags
+
+Paranoia: every check before a release:
+
+80. feat(tooling): add paranoia.sh, every check before a release in one run
+81. feat(tooling): test the uv environment migration from every release
+82. feat(tooling): centralize outputs in artefacts/, paranoia runs every script
+83. ci: run paranoia.sh on GitHub Actions
+84. fix(ci): checks that depended on the developer's machine
+85. fix(ci): test the backend with the environment users get
+86. fix(python): do not pass ECCODES_DEFINITION_PATH to the extension's own environment
+87. chore(deps): npm audit fix
+88. fix(tooling): deterministic interrupted upgrade, time limits in paranoia.sh
+89. chore(deps): upgrade development dependencies, npm audit clean
+90. feat(tooling): plot reports, flaky detection, golden vs last release, no sleep during paranoia

@@ -101,7 +101,11 @@ def _equal_aspect_if_map(layout: PlotLayout) -> None:
 def _with_datetime_dimension(
     var: xr.DataArray, selection: DatetimeSelection, variable_name: str
 ) -> xr.DataArray:
-    """``var`` (1D) with the selected datetime variable as its dimension."""
+    """``var`` (1D) with the selected datetime variable as its dimension.
+
+    Keeps the attributes (axis label: long_name, units) and the scalar
+    coordinates (title: the sliced indexes) of ``var``.
+    """
     assert selection.datetime_var is not None
     datetime_values = selection.datetime_var.values
     if np.issubdtype(datetime_values.dtype, np.datetime64):
@@ -109,9 +113,15 @@ def _with_datetime_dimension(
 
         datetime_values = pd.DatetimeIndex(datetime_values)
     dt_name = selection.datetime_var_name
+    scalar_coords = {
+        name: coord
+        for name, coord in var.coords.items()
+        if coord.ndim == 0 and name != dt_name
+    }
     return xr.DataArray(
         var.values,
-        coords={dt_name: datetime_values},
+        coords={**scalar_coords, dt_name: datetime_values},
         dims=[dt_name],
         name=variable_name,
+        attrs=var.attrs,
     )

@@ -131,6 +131,16 @@ options only where they are accepted (`PlotKwargsBundle.for_kind`):
 A single map (both axes named like `lat` / `lon` / `x` / `y`, no facets, no
 aspect set) gets equal x / y scales.
 
+`create_plot` adds the notes that do not come from the layout:
+
+- a **slice** on a dimension the variable does not have (the global slices
+  apply to every variable): `Slice on depth ignored: not a dimension of this
+variable (dimensions: time, lat, lon)`, listed first;
+- **vmin above vmax** on an image: the two are swapped, with a note;
+- a **style** matplotlib does not know (setting
+  `scientificDataViewer.matplotlibStyle`): the default style is used, with a
+  note.
+
 The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 `plot_layout`:
 
@@ -159,15 +169,18 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
   `imshow` and `pcolormesh`); the error is shown under the plot.
 - More than four dimensions without slices give a histogram: slice one
   dimension to an index, or choose it as `row` / `col`.
+- The automatic facets have no upper limit: a 3D variable gets one panel per
+  index of its first dimension. `sample_data.nc :: /temperature` (365 days)
+  draws 365 panels and exceeds the plot timeout; slice that dimension first.
 
 ## Code and tests
 
-| What                  | Where                                                                    |
-| --------------------- | ------------------------------------------------------------------------ |
-| layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`) |
-| xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                       |
-| controls table, merge | `src/panel/webview/plotParams.ts`                                        |
-| changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                       |
-| layout line           | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`     |
-| backend tests         | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`               |
-| webview tests         | `test/suite/ui/webviewScript.test.ts`                                    |
+| What                  | Where                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
+| xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
+| controls table, merge | `src/panel/webview/plotParams.ts`                                                |
+| changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |
+| layout line           | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`             |
+| backend tests         | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`, `test_plot_notes.py` |
+| webview tests         | `test/suite/ui/webviewScript.test.ts`                                            |

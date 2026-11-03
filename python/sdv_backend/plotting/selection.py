@@ -36,6 +36,22 @@ def get_variable(group: xr.Dataset, variable_name: str) -> xr.DataArray:
     raise PlotInputError(f"Variable '{variable_name}' not found in dataset")
 
 
+def ignored_slice_notes(
+    var: xr.DataArray, dimension_slices: dict[str, str | int] | None
+) -> list[str]:
+    """Notes for the slices ``apply_dimension_slices`` skips: not dimensions of ``var``.
+
+    The global slices apply to every variable of the file, so a variable
+    without that dimension is plotted without it, and the note says so.
+    """
+    dims = ", ".join(map(str, var.dims)) or "none"
+    return [
+        f"Slice on {name} ignored: not a dimension of this variable (dimensions: {dims})"
+        for name in dimension_slices or {}
+        if name not in var.dims
+    ]
+
+
 def apply_dimension_slices(
     var: xr.DataArray, dimension_slices: dict[str, str | int] | None
 ) -> tuple[xr.DataArray, dict[str, int | slice]]:
