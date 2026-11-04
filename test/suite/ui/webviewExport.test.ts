@@ -17,12 +17,14 @@ function capturedWebviewHtml(
     options: {
         themeKind?: string;
         bodyClasses?: string;
+        bodyAttributes?: string;
         htmlStyle?: string;
     } = {},
 ): string {
     const {
         themeKind = 'vscode-dark',
         bodyClasses = themeKind,
+        bodyAttributes = '',
         htmlStyle = '--vscode-editor-background: #1f1f1f; --vscode-editor-foreground: #cccccc; --vscode-chat-slashCommandForeground: #40a6ff; --vscode-font-size: 14px;',
     } = options;
 
@@ -35,7 +37,7 @@ function capturedWebviewHtml(
         '<title>Scientific Data Viewer</title>' +
         `<link rel="stylesheet" href="${CDN}/styles.css">` +
         '</head>' +
-        `<body class="${bodyClasses}" data-vscode-theme-kind="${themeKind}" ` +
+        `<body class="${bodyClasses}"${bodyAttributes} data-vscode-theme-kind="${themeKind}" ` +
         'data-vscode-theme-name="Dark Modern" data-vscode-theme-id="Default Dark Modern">' +
         '<div class="header">content</div>' +
         `<script src="${OUT}/webview.js"></script>` +
@@ -213,6 +215,23 @@ suite('Webview Export Test Suite', () => {
                 exported.includes('data-vscode-theme-kind="vscode-light"'),
             );
             assert.ok(!exported.includes('"vscode-dark"'));
+        });
+
+        test('drops the high contrast data-theme when retagging the body', () => {
+            const exported = exportHtml(
+                capturedWebviewHtml({
+                    themeKind: 'vscode-high-contrast',
+                    bodyAttributes: ' data-theme="dark"',
+                }),
+                'Default Light+',
+            );
+
+            const bodyTag = /<body\b[^>]*>/i.exec(exported)?.[0] ?? '';
+            assert.ok(bodyTag.includes('vscode-light'));
+            assert.ok(
+                !bodyTag.includes('data-theme='),
+                'a dark xarray repr must not leak into a light export',
+            );
         });
 
         test('preserves non-theme body classes', () => {

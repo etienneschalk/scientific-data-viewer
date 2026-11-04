@@ -745,6 +745,17 @@ pre:not(.html-representation pre) {
     border-radius: var(--sdv-radius-lg);
 }
 
+/*
+ * High contrast themes invert `textPreformat` (white on dark blue in HC light,
+ * black on white in HC dark): its foreground only reads on its own background,
+ * not on `textCodeBlock`. Blocks take the editor text color there instead.
+ * `:where` keeps the specificity of the rules above, so `.plot-error` still wins.
+ */
+:where(body.vscode-high-contrast, body.vscode-high-contrast-light)
+    :is(.file-path-code, pre:not(.html-representation pre)) {
+    color: var(--vscode-editor-foreground);
+}
+
 /* Troubleshooting: copy button at the end of the summary row */
 #section-troubleshooting details:not(.sticky-group-details) {
     position: relative;

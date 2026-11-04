@@ -43,6 +43,7 @@ import {
     renderGlobalPlotParameters,
 } from './render/dataInfo';
 import { displayTimestamp } from './render/representations';
+import { watchThemeKind } from './theme';
 
 function showDegradedModeIndicator(): void {
     const indicator = document.createElement('span');
@@ -273,6 +274,7 @@ function setupMessageHandlers(): void {
 }
 
 function initialize(): void {
+    watchThemeKind();
     renderGlobalPlotParameters();
     setupEventListeners();
     if (messageBus.isDegradedMode) {

@@ -456,6 +456,25 @@ The review of the `qa-scen` images of the `paranoia.sh` run of 2026-11-03 found 
 
 ---
 
+## High contrast themes
+
+### Why
+
+In **High Contrast Light**, the file path and the xarray text representation were white text on a light gray background. In **High Contrast Dark**, the xarray HTML representation stayed light, and so did the plots: neither recognised it as a dark theme.
+
+### What changed
+
+- **Code blocks** (file path, text representations): VS Code inverts `textPreformat` in high contrast (white on dark blue in HC light, black on white in HC dark). That foreground is meant for its own background, but the blocks drew it on the `textCodeBlock` background (`#F2F2F2` in HC light, black in HC dark). In high contrast they now use the editor text color. Light and dark themes are unchanged.
+- **xarray HTML repr**: xarray switches to its dark palette on `body.vscode-dark` or `body[data-theme="dark"]`. VS Code tags High Contrast Dark as `vscode-high-contrast` only, so the webview now sets `data-theme="dark"` there, and updates it when the theme changes, without a reload (`src/panel/webview/theme.ts`). The HTML export removes the attribute when it applies the export theme, so a page captured in HC dark and exported as a light theme gets a light repr.
+- **Plots**: the automatic matplotlib style (empty `scientificDataViewer.matplotlibStyle`) is `dark_background` in High Contrast Dark, as in dark themes.
+
+### How it was checked
+
+- `npm test` (314 passing, new export test included), `npm run typecheck`, `generate.py --check`, pre-commit.
+- QA webview harness (`scripts/qa/webview/harness.mjs`) in the four captured themes. HC light: file path and text repr `rgb(41, 41, 41)` on `#F2F2F2`. HC dark: white on black, xarray background `#111111`. Dark / Light Modern unchanged. The attribute follows a live switch HC dark → HC light → HC dark.
+
+---
+
 ## New settings (summary)
 
 | Setting                    | Default                          | Effect                                                                                             |
@@ -977,6 +996,18 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 2. With `useExtensionOwnEnvironment` on, open `artefacts/sample-data/sample_data.grib` → it loads (variable `t`, 4 times); the output channel shows `ECCODES_DEFINITION_PATH (/tmp/bad-definitions) is not passed to the extension's own environment`.
 3. Set `scientificDataViewer.python.overridePythonInterpreter` to the same environment's `bin/python` and **Refresh** → an error again (your interpreter, your variables): `No valid message found` with old definitions; with the empty `boot.def`, eccodes aborts the Python process (exit code 134). Remove the setting.
 
+### 32. High contrast themes
+
+**Expect:** code blocks readable and the xarray repr dark in High Contrast Dark, readable in High Contrast Light.
+
+**Test:**
+
+1. **Preferences: Color Theme** → **Light High Contrast**, open `artefacts/sample-data/sample_data.nc` → the **File Path** and the **Xarray Text Representation** are black text on light gray.
+2. Switch to **Dark High Contrast** (viewer left open) → the **Xarray HTML Representation** turns dark (light text, dark gray rows) without **Refresh**; the file path and text representation are white on black.
+3. **Create Plot** on a variable → dark plot (`dark_background`), unless `scientificDataViewer.matplotlibStyle` is set.
+4. Switch back to **Light High Contrast** → the xarray repr turns light again.
+5. In **Dark High Contrast**, set `scientificDataViewer.webviewExportTheme` to `Default Light+` and export the webview → in the browser, the xarray repr is light.
+
 ---
 
 ## Known limitations (unchanged or noted)
@@ -1000,17 +1031,17 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Summary of changes
 
-| Area          | Change                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                                                                                                              |
-| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic; notes for a slice on a missing dimension, vmin above vmax and an unknown style                                                                  |
-| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                                                |
-| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                                                  |
-| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                          |
-| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                           |
-| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed |
-| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                        |
-| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                             |
+| Area          | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python**    | xarray 2026 / zarr 3 pins; Zarr ZIP + detection; Kerchunk engine; COG sniff; NetCDF order; inherited coords; plot options                                                                                                                                                                                                                                                                                                                                                                    |
+| **Backend**   | `get_data_info.py` split into the `sdv_backend` package; `create_plot` / `get_file_info` decomposed; plot-type and empty-selection errors fixed; golden snapshot harness; plot layout resolved per role (`plotting/layout.py`): user choices kept, the rest automatic; notes for a slice on a missing dimension, vmin above vmax and an unknown style                                                                                                                                        |
+| **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                                                                                                                      |
+| **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                                                                                                                        |
+| **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                                                                                                |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                                                                                                 |
+| **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed; high contrast themes fixed (code blocks, dark xarray repr and plots) |
+| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                                                                                              |
+| **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                                                                   |
 
 ---
 

@@ -98,18 +98,19 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 9 — Viewer styling refresh
 
-| Area        | Work                                                                                                                                                                                                                                         |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stylesheet  | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                                        |
-| Layout      | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                                   |
-| Components  | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                                     |
-| Controls    | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                              |
-| Markup      | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                                   |
-| Fix         | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                              |
-| Fix         | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                                 |
-| Screenshots | `npm run screenshots`: full-page PNGs per theme and scenario in `artefacts/screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
-| Fallbacks   | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                                   |
-| Docs        | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                                  |
+| Area          | Work                                                                                                                                                                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stylesheet    | `styles.css` rewritten around design tokens (spacing, radii, derived surfaces) on top of `--vscode-*` theme variables                                                                                                                        |
+| Layout        | Centred 960 px column, 24 px gutters; content aligned under section titles; sticky header + section titles                                                                                                                                   |
+| Components    | Rounded variable cards (summary, attributes, plot controls, plot); control panels; callouts for errors; twisties; uppercase pane headers                                                                                                     |
+| Controls      | One style for all inputs / selects / checkboxes (fixes white inputs in dark themes); secondary plot-action buttons; focus rings                                                                                                              |
+| Markup        | Every emoji of the viewer → inline SVG line icons (`src/shared/icons.ts`, shared by host and webview; `aria-label`s on icon buttons); copy buttons read **Copy** / **Copied** / **Failed**                                                   |
+| Fix           | Error-page rules scoped to `#error` (they matched plot errors too: 16 px gap under the callout)                                                                                                                                              |
+| Fix           | `scrollbar-gutter: stable`: the centred column no longer jumps left when the scrollbar appears after loading                                                                                                                                 |
+| Screenshots   | `npm run screenshots`: full-page PNGs per theme and scenario in `artefacts/screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
+| Fallbacks     | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                                   |
+| High contrast | HC light: code blocks use the editor text color (`textPreformat` is inverted there); HC dark: `data-theme="dark"` on the body (`webview/theme.ts`) for the dark xarray repr, dropped by the export retag; `dark_background` plots            |
+| Docs          | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                                  |
 
 ### Phase 10 — Plot type selector removed
 
@@ -353,6 +354,8 @@ Results after the dependency upgrades: `npm audit` 0 vulnerabilities; eslint 10 
 
 Results after the plot notes (review of the paranoia run of 2026-11-03): `pytest python/tests` 224 passing (6 new); `qa-scen` scenarios `slice_unknown_dim`, `vmin_inverted`, `style_bad` return their note with the extension's environment.
 
+Results after the high contrast fixes: `npm test` 314 passing (1 new); `npm run typecheck`, `generate.py --check` and pre-commit clean; QA webview harness in the four captured themes (code block and xarray repr colors, live theme switch).
+
 ```bash
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
 .venv/bin/python scripts/qa/backend/diff_info.py && .venv/bin/python scripts/qa/backend/diff_plot.py
@@ -540,3 +543,4 @@ Paranoia: every check before a release:
 88. fix(tooling): deterministic interrupted upgrade, time limits in paranoia.sh
 89. chore(deps): upgrade development dependencies, npm audit clean
 90. feat(tooling): plot reports, flaky detection, golden vs last release, no sleep during paranoia
+91. fix(plot): explain plot options that cannot be used
