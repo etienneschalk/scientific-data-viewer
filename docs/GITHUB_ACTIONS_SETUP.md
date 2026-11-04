@@ -36,12 +36,11 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 
 ### Pre-commit Integration
 
-All workflows use the `pre-commit/action@v3.0.1` action which:
+`pr-validation.yml` installs pre-commit with pip, caches `~/.cache/pre-commit` (`actions/cache`, keyed on `.pre-commit-config.yaml`) and runs `pre-commit run --show-diff-on-failure --all-files --verbose`. It does not use `pre-commit/action`: its latest release (v3.0.1) still calls `actions/cache@v4`, which targets Node.js 20, and the maintainer declined the bump ([#241](https://github.com/pre-commit/action/issues/241), [#243](https://github.com/pre-commit/action/issues/243), PRs [#242](https://github.com/pre-commit/action/pull/242), [#244](https://github.com/pre-commit/action/pull/244)). The `pre-commit/action` step is kept commented out in the workflow, to restore once a release moves to a Node 24 `actions/cache`. `paranoia.yml` runs pre-commit from `paranoia.sh`.
 
-- Automatically installs pre-commit
-- Runs all configured hooks
-- Provides detailed output
-- Supports both `--all-files` and changed-files-only modes
+### Action versions
+
+GitHub runners run JavaScript actions on Node.js 24 and are dropping Node.js 20. Keep every `uses:` on a major whose `action.yml` says `using: node24` (or a composite action that only calls such actions); otherwise the run summary shows _"Node.js 20 is deprecated…"_. Check with `curl -sL https://raw.githubusercontent.com/<owner>/<repo>/<tag>/action.yml | grep using:`.
 
 ### Multi-Environment Testing
 

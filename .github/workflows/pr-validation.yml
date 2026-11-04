@@ -24,18 +24,18 @@ jobs:
 
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
       - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
@@ -58,10 +58,25 @@ jobs:
       # - Merge conflict detection
       # - Large file detection
       # - Secret detection
-      - name: Run pre-commit on all files
-        uses: pre-commit/action@v3.0.1
+      # pre-commit/action is not used for now: its latest release (v3.0.1, also
+      # its main branch) still calls actions/cache@v4, which targets Node.js 20
+      # ("Node.js 20 is deprecated..." on the run summary). The maintainer
+      # declined the bump (pre-commit/action#241, #243, PRs #242, #244: the
+      # runner runs it on Node 24 anyway). The two steps below do what it does.
+      # Once a release uses a Node 24 actions/cache, it can replace them:
+      # - name: Run pre-commit on all files
+      #   uses: pre-commit/action@v3.0.1
+      #   with:
+      #     extra_args: --all-files --verbose
+      - name: pre-commit hook environments (cache)
+        uses: actions/cache@v6
         with:
-          extra_args: --all-files --verbose
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Run pre-commit on all files
+        shell: bash
+        run: pre-commit run --show-diff-on-failure --color=always --all-files --verbose
 
       # Additional checks not covered by pre-commit
       - name: Compile TypeScript

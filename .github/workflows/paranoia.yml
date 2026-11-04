@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: "Checkout (full history and tags: last release, old releases)"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # The branch head, as a local run tests it (not the PR merge commit)
@@ -57,17 +57,17 @@ jobs:
         run: git show-ref --verify --quiet refs/heads/main || git branch main origin/main
 
       - name: Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
 
       - name: Python 3.13 and uv
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10
 
       - name: Development environment (.venv, pinned in requirements-dev.txt)
         run: |
@@ -75,7 +75,7 @@ jobs:
           uv pip install --python .venv/bin/python -r requirements-dev.txt
 
       - name: pre-commit hook environments (cache)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -102,7 +102,7 @@ jobs:
       # uv sandboxes, checkouts and unpacked packages (about 1 GB)
       - name: Upload the run folder
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: paranoia-${{ env.PROFILE }}-${{ github.run_number }}
           retention-days: 14
