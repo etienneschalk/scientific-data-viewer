@@ -1052,16 +1052,16 @@ footer {
 <h2><span class="n">4</span>Webview bundle</h2>
 <p>Built separately by esbuild into <code>out/webview/webview.js</code>, with its own <code>tsconfig.json</code> and DOM types. Outside its own folder it imports only <code>src/shared/icons.ts</code>, <code>src/shared/ids.ts</code>, <code>src/shared/plotLayout.ts</code> and <code>src/shared/time.ts</code>, so the message protocol is the only runtime contract between the two sides. <code>plotParams.ts</code> is the single table of plot controls.</p>
 <figure><div class="scroll"><svg class="gv" role="img" aria-label="Webview bundle modules: main imports the feature modules, which share bus, state, util and src/shared." style="max-width:902px"
- viewBox="0.00 0.00 721.60 492.19" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 481.39)">
+ viewBox="0.00 0.00 721.60 489.64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 478.84)">
 
 <g id="node1" class="node f&#45;web key">
 <title>panel/webview/bus</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M502.17,-427C502.17,-427 462.83,-427 462.83,-427 459.17,-427 455.5,-423.33 455.5,-419.67 455.5,-419.67 455.5,-412.33 455.5,-412.33 455.5,-408.67 459.17,-405 462.83,-405 462.83,-405 502.17,-405 502.17,-405 505.83,-405 509.5,-408.67 509.5,-412.33 509.5,-412.33 509.5,-419.67 509.5,-419.67 509.5,-423.33 505.83,-427 502.17,-427"/>
-<text text-anchor="middle" x="482.5" y="-413.6" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M502.17,-422C502.17,-422 462.83,-422 462.83,-422 459.17,-422 455.5,-418.33 455.5,-414.67 455.5,-414.67 455.5,-407.33 455.5,-407.33 455.5,-403.67 459.17,-400 462.83,-400 462.83,-400 502.17,-400 502.17,-400 505.83,-400 509.5,-403.67 509.5,-407.33 509.5,-407.33 509.5,-414.67 509.5,-414.67 509.5,-418.33 505.83,-422 502.17,-422"/>
+<text text-anchor="middle" x="482.5" y="-408.6" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
 </g>
 
-<g id="node14" class="node f&#45;web">
+<g id="node15" class="node f&#45;web">
 <title>panel/webview/util</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M659.17,-235C659.17,-235 619.83,-235 619.83,-235 616.17,-235 612.5,-231.33 612.5,-227.67 612.5,-227.67 612.5,-220.33 612.5,-220.33 612.5,-216.67 616.17,-213 619.83,-213 619.83,-213 659.17,-213 659.17,-213 662.83,-213 666.5,-216.67 666.5,-220.33 666.5,-220.33 666.5,-227.67 666.5,-227.67 666.5,-231.33 662.83,-235 659.17,-235"/>
 <text text-anchor="middle" x="639.5" y="-221.6" font-family="DejaVu Sans Mono" font-size="10.50">util</text>
@@ -1069,368 +1069,380 @@ footer {
 
 <g id="edge1" class="edge e&#45;host">
 <title>panel/webview/bus&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M509.77,-410.76C521.18,-407.35 533.97,-401.82 543,-393 572.94,-363.76 558.57,-342.52 579,-306 592.58,-281.73 612.08,-256.15 625.01,-240.15"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="626.96,-241.08 629.13,-235.1 623.71,-238.43 626.96,-241.08"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M509.79,-405.78C521.2,-402.37 533.99,-396.84 543,-388 573.17,-358.41 557.77,-336.54 579,-300 592.01,-277.61 610.99,-254.56 624,-239.8"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="625.74,-241 628.16,-235.13 622.6,-238.21 625.74,-241"/>
 </g>
 
-<g id="node17" class="node f&#45;shared">
+<g id="node18" class="node f&#45;shared">
 <title>shared/plotLayout</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M692.67,-333C692.67,-333 586.33,-333 586.33,-333 582.67,-333 579,-329.33 579,-325.67 579,-325.67 579,-318.33 579,-318.33 579,-314.67 582.67,-311 586.33,-311 586.33,-311 692.67,-311 692.67,-311 696.33,-311 700,-314.67 700,-318.33 700,-318.33 700,-325.67 700,-325.67 700,-329.33 696.33,-333 692.67,-333"/>
-<text text-anchor="middle" x="639.5" y="-319.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/plotLayout</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M692.67,-327C692.67,-327 586.33,-327 586.33,-327 582.67,-327 579,-323.33 579,-319.67 579,-319.67 579,-312.33 579,-312.33 579,-308.67 582.67,-305 586.33,-305 586.33,-305 692.67,-305 692.67,-305 696.33,-305 700,-308.67 700,-312.33 700,-312.33 700,-319.67 700,-319.67 700,-323.33 696.33,-327 692.67,-327"/>
+<text text-anchor="middle" x="639.5" y="-313.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/plotLayout</text>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>panel/webview/bus&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M509.66,-407.62C520.3,-403.77 532.53,-398.78 543,-393 572.27,-376.86 602.69,-352.76 621.11,-337.21"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="622.77,-338.55 625.98,-333.07 620.05,-335.36 622.77,-338.55"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M509.68,-402.65C520.32,-398.81 532.55,-393.81 543,-388 572.36,-371.68 602.75,-347.23 621.15,-331.44"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="622.85,-332.75 626.01,-327.24 620.1,-329.58 622.85,-332.75"/>
 </g>
 
 <g id="node2" class="node f&#45;web">
 <title>panel/webview/changedFields</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M351.67,-228C351.67,-228 269.33,-228 269.33,-228 265.67,-228 262,-224.33 262,-220.67 262,-220.67 262,-213.33 262,-213.33 262,-209.67 265.67,-206 269.33,-206 269.33,-206 351.67,-206 351.67,-206 355.33,-206 359,-209.67 359,-213.33 359,-213.33 359,-220.67 359,-220.67 359,-224.33 355.33,-228 351.67,-228"/>
-<text text-anchor="middle" x="310.5" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">changedFields</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M351.67,-222C351.67,-222 269.33,-222 269.33,-222 265.67,-222 262,-218.33 262,-214.67 262,-214.67 262,-207.33 262,-207.33 262,-203.67 265.67,-200 269.33,-200 269.33,-200 351.67,-200 351.67,-200 355.33,-200 359,-203.67 359,-207.33 359,-207.33 359,-214.67 359,-214.67 359,-218.33 355.33,-222 351.67,-222"/>
+<text text-anchor="middle" x="310.5" y="-208.6" font-family="DejaVu Sans Mono" font-size="10.50">changedFields</text>
 </g>
 
 <g id="node3" class="node f&#45;web">
 <title>panel/webview/dimensionSlices</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M529.67,-142C529.67,-142 435.33,-142 435.33,-142 431.67,-142 428,-138.33 428,-134.67 428,-134.67 428,-127.33 428,-127.33 428,-123.67 431.67,-120 435.33,-120 435.33,-120 529.67,-120 529.67,-120 533.33,-120 537,-123.67 537,-127.33 537,-127.33 537,-134.67 537,-134.67 537,-138.33 533.33,-142 529.67,-142"/>
-<text text-anchor="middle" x="482.5" y="-128.6" font-family="DejaVu Sans Mono" font-size="10.50">dimensionSlices</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M529.67,-120C529.67,-120 435.33,-120 435.33,-120 431.67,-120 428,-116.33 428,-112.67 428,-112.67 428,-105.33 428,-105.33 428,-101.67 431.67,-98 435.33,-98 435.33,-98 529.67,-98 529.67,-98 533.33,-98 537,-101.67 537,-105.33 537,-105.33 537,-112.67 537,-112.67 537,-116.33 533.33,-120 529.67,-120"/>
+<text text-anchor="middle" x="482.5" y="-106.6" font-family="DejaVu Sans Mono" font-size="10.50">dimensionSlices</text>
 </g>
 
 <g id="edge3" class="edge e&#45;host">
 <title>panel/webview/dimensionSlices&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M524.6,-142.03C530.91,-144.32 537.24,-146.97 543,-150 573.54,-166.06 604.27,-192.05 622.33,-208.56"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="621.25,-210.42 627.08,-212.95 624.1,-207.34 621.25,-210.42"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M500.09,-120.07C512.12,-128.18 528.72,-139.56 543,-150 570.08,-169.8 600.61,-193.75 619.7,-208.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="618.77,-210.87 624.77,-212.97 621.38,-207.59 618.77,-210.87"/>
 </g>
 
-<g id="node16" class="node f&#45;shared">
+<g id="node17" class="node f&#45;shared">
 <title>shared/ids</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M671.67,-93C671.67,-93 607.33,-93 607.33,-93 603.67,-93 600,-89.33 600,-85.67 600,-85.67 600,-78.33 600,-78.33 600,-74.67 603.67,-71 607.33,-71 607.33,-71 671.67,-71 671.67,-71 675.33,-71 679,-74.67 679,-78.33 679,-78.33 679,-85.67 679,-85.67 679,-89.33 675.33,-93 671.67,-93"/>
-<text text-anchor="middle" x="639.5" y="-79.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/ids</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M671.67,-120C671.67,-120 607.33,-120 607.33,-120 603.67,-120 600,-116.33 600,-112.67 600,-112.67 600,-105.33 600,-105.33 600,-101.67 603.67,-98 607.33,-98 607.33,-98 671.67,-98 671.67,-98 675.33,-98 679,-101.67 679,-105.33 679,-105.33 679,-112.67 679,-112.67 679,-116.33 675.33,-120 671.67,-120"/>
+<text text-anchor="middle" x="639.5" y="-106.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/ids</text>
 </g>
 
 <g id="edge4" class="edge e&#45;host">
 <title>panel/webview/dimensionSlices&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M518.67,-119.88C542.16,-112.46 573.12,-102.67 597.69,-94.9"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="598.38,-96.89 603.47,-93.07 597.11,-92.88 598.38,-96.89"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M537.28,-109C555.65,-109 576,-109 593.61,-109"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="593.96,-111.1 599.96,-109 593.96,-106.9 593.96,-111.1"/>
 </g>
 
 <g id="node4" class="node f&#45;web">
 <title>panel/webview/errors</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-402C330.67,-402 290.33,-402 290.33,-402 286.67,-402 283,-398.33 283,-394.67 283,-394.67 283,-387.33 283,-387.33 283,-383.67 286.67,-380 290.33,-380 290.33,-380 330.67,-380 330.67,-380 334.33,-380 338,-383.67 338,-387.33 338,-387.33 338,-394.67 338,-394.67 338,-398.33 334.33,-402 330.67,-402"/>
-<text text-anchor="middle" x="310.5" y="-388.6" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-396C330.67,-396 290.33,-396 290.33,-396 286.67,-396 283,-392.33 283,-388.67 283,-388.67 283,-381.33 283,-381.33 283,-377.67 286.67,-374 290.33,-374 290.33,-374 330.67,-374 330.67,-374 334.33,-374 338,-377.67 338,-381.33 338,-381.33 338,-388.67 338,-388.67 338,-392.33 334.33,-396 330.67,-396"/>
+<text text-anchor="middle" x="310.5" y="-382.6" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-394.91C368.09,-399.32 416.98,-406.51 449.19,-411.25"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.16,-413.37 455.4,-412.16 449.77,-409.21 449.16,-413.37"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-389.06C368.09,-393.66 416.98,-401.13 449.19,-406.06"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.15,-408.18 455.4,-407.01 449.79,-404.03 449.15,-408.18"/>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.29,-395.5C384.19,-401.74 479.07,-408.02 543,-367 569.5,-350 561.74,-332.32 579,-306 594.34,-282.61 613.58,-256.64 625.96,-240.32"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="627.91,-241.22 629.88,-235.17 624.57,-238.67 627.91,-241.22"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.29,-389.5C384.19,-395.74 479.07,-402.02 543,-361 569.5,-344 561.26,-326.01 579,-300 593.68,-278.48 612.47,-255.08 624.96,-240.01"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="626.72,-241.19 628.94,-235.23 623.49,-238.5 626.72,-241.19"/>
 </g>
 
-<g id="node15" class="node f&#45;shared">
+<g id="node16" class="node f&#45;shared">
 <title>shared/icons</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M520.67,-362C520.67,-362 444.33,-362 444.33,-362 440.67,-362 437,-358.33 437,-354.67 437,-354.67 437,-347.33 437,-347.33 437,-343.67 440.67,-340 444.33,-340 444.33,-340 520.67,-340 520.67,-340 524.33,-340 528,-343.67 528,-347.33 528,-347.33 528,-354.67 528,-354.67 528,-358.33 524.33,-362 520.67,-362"/>
-<text text-anchor="middle" x="482.5" y="-348.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M520.67,-356C520.67,-356 444.33,-356 444.33,-356 440.67,-356 437,-352.33 437,-348.67 437,-348.67 437,-341.33 437,-341.33 437,-337.67 440.67,-334 444.33,-334 444.33,-334 520.67,-334 520.67,-334 524.33,-334 528,-337.67 528,-341.33 528,-341.33 528,-348.67 528,-348.67 528,-352.33 524.33,-356 520.67,-356"/>
+<text text-anchor="middle" x="482.5" y="-342.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-384.75C362.84,-378.92 400.45,-370.07 430.95,-362.89"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="431.59,-364.9 436.95,-361.48 430.62,-360.81 431.59,-364.9"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-378.75C362.84,-372.92 400.45,-364.07 430.95,-356.89"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="431.59,-358.9 436.95,-355.48 430.62,-354.81 431.59,-358.9"/>
 </g>
 
 <g id="node5" class="node f&#45;web">
 <title>panel/webview/export</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-424C164.67,-424 124.33,-424 124.33,-424 120.67,-424 117,-420.33 117,-416.67 117,-416.67 117,-409.33 117,-409.33 117,-405.67 120.67,-402 124.33,-402 124.33,-402 164.67,-402 164.67,-402 168.33,-402 172,-405.67 172,-409.33 172,-409.33 172,-416.67 172,-416.67 172,-420.33 168.33,-424 164.67,-424"/>
-<text text-anchor="middle" x="144.5" y="-410.6" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-418C164.67,-418 124.33,-418 124.33,-418 120.67,-418 117,-414.33 117,-410.67 117,-410.67 117,-403.33 117,-403.33 117,-399.67 120.67,-396 124.33,-396 124.33,-396 164.67,-396 164.67,-396 168.33,-396 172,-399.67 172,-403.33 172,-403.33 172,-410.67 172,-410.67 172,-414.33 168.33,-418 164.67,-418"/>
+<text text-anchor="middle" x="144.5" y="-404.6" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M172.02,-417.88C189.77,-420.89 213.7,-424.46 235,-426 301.94,-430.84 318.98,-429.5 386,-426 407.09,-424.9 430.69,-422.44 449.16,-420.23"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.51,-422.31 455.21,-419.5 449,-418.14 449.51,-422.31"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M172.02,-411.88C189.77,-414.89 213.7,-418.46 235,-420 301.94,-424.84 318.96,-423.15 386,-420 407.07,-419.01 430.68,-416.8 449.14,-414.81"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.46,-416.89 455.2,-414.15 449.01,-412.71 449.46,-416.89"/>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-409.42C200.69,-405.6 245.8,-399.54 276.48,-395.43"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="277.13,-397.46 282.8,-394.58 276.57,-393.3 277.13,-397.46"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-403.42C200.69,-399.6 245.8,-393.54 276.48,-389.43"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.13,-391.46 282.8,-388.58 276.57,-387.3 277.13,-391.46"/>
 </g>
 
 <g id="node6" class="node f&#45;web key">
 <title>panel/webview/main</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-288C46.67,-288 7.33,-288 7.33,-288 3.67,-288 0,-284.33 0,-280.67 0,-280.67 0,-273.33 0,-273.33 0,-269.67 3.67,-266 7.33,-266 7.33,-266 46.67,-266 46.67,-266 50.33,-266 54,-269.67 54,-273.33 54,-273.33 54,-280.67 54,-280.67 54,-284.33 50.33,-288 46.67,-288"/>
-<text text-anchor="middle" x="27" y="-274.6" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-222C46.67,-222 7.33,-222 7.33,-222 3.67,-222 0,-218.33 0,-214.67 0,-214.67 0,-207.33 0,-207.33 0,-203.67 3.67,-200 7.33,-200 7.33,-200 46.67,-200 46.67,-200 50.33,-200 54,-203.67 54,-207.33 54,-207.33 54,-214.67 54,-214.67 54,-218.33 50.33,-222 46.67,-222"/>
+<text text-anchor="middle" x="27" y="-208.6" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
 </g>
 
 <g id="edge10" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M28.67,-288.27C31.09,-317.39 41.96,-395.25 90,-429 201.23,-507.14 377.43,-455.33 449.34,-428.87"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="450.27,-430.76 455.16,-426.7 448.8,-426.83 450.27,-430.76"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.56,-222.2C35.37,-262.24 57.15,-397.31 90,-423 197.32,-506.95 376.47,-452.14 449.27,-424.35"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="450.32,-426.19 455.16,-422.07 448.8,-422.28 450.32,-426.19"/>
 </g>
 
 <g id="edge11" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/changedFields</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.23,-271.41C100.02,-261.65 195.4,-241.32 255.72,-228.46"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="256.38,-230.47 261.81,-227.16 255.5,-226.36 256.38,-230.47"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.23,-211C100.02,-211 195.4,-211 255.72,-211"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="255.81,-213.1 261.81,-211 255.81,-208.9 255.81,-213.1"/>
 </g>
 
 <g id="edge12" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/dimensionSlices</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M29.14,-265.72C32.59,-237.98 45.59,-166.33 90,-133 196.41,-53.13 368.99,-94.23 444.33,-118.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="444.1,-120.14 450.45,-119.97 445.38,-116.14 444.1,-120.14"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M33.9,-199.73C43.34,-182.92 63.5,-151.6 90,-136 193.57,-75.03 340.3,-85.27 421.53,-97.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="421.49,-99.64 427.74,-98.49 422.14,-95.49 421.49,-99.64"/>
 </g>
 
 <g id="edge13" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M31.6,-288.2C38.9,-308.85 57.56,-352.58 90,-372 120.59,-390.31 223.03,-392.03 276.45,-391.61"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.73,-393.71 282.71,-391.55 276.69,-389.51 276.73,-393.71"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M28.68,-222.36C31.12,-251.74 42.05,-330.43 90,-366 118.71,-387.3 222.5,-387.63 276.43,-386.25"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="276.82,-388.34 282.76,-386.07 276.7,-384.14 276.82,-388.34"/>
 </g>
 
 <g id="edge14" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/export</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M30.9,-288.06C37.49,-311.07 55.73,-364.4 90,-394 96.06,-399.24 103.67,-403.06 111.23,-405.85"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="110.62,-407.86 116.97,-407.78 111.95,-403.88 110.62,-407.86"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M28.68,-222.27C31.15,-253.16 42.22,-340.01 90,-388 95.76,-393.79 103.4,-397.82 111.1,-400.63"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="110.61,-402.68 116.96,-402.54 111.91,-398.68 110.61,-402.68"/>
 </g>
 
 <g id="node7" class="node f&#45;web">
 <title>panel/webview/plotActions</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-299C179.67,-299 109.33,-299 109.33,-299 105.67,-299 102,-295.33 102,-291.67 102,-291.67 102,-284.33 102,-284.33 102,-280.67 105.67,-277 109.33,-277 109.33,-277 179.67,-277 179.67,-277 183.33,-277 187,-280.67 187,-284.33 187,-284.33 187,-291.67 187,-291.67 187,-295.33 183.33,-299 179.67,-299"/>
-<text text-anchor="middle" x="144.5" y="-285.6" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-292C179.67,-292 109.33,-292 109.33,-292 105.67,-292 102,-288.33 102,-284.67 102,-284.67 102,-277.33 102,-277.33 102,-273.67 105.67,-270 109.33,-270 109.33,-270 179.67,-270 179.67,-270 183.33,-270 187,-273.67 187,-277.33 187,-277.33 187,-284.67 187,-284.67 187,-288.33 183.33,-292 179.67,-292"/>
+<text text-anchor="middle" x="144.5" y="-278.6" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
 </g>
 
 <g id="edge15" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotActions</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-279.5C66.56,-280.67 81.68,-282.11 95.94,-283.47"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="95.82,-285.57 101.99,-284.05 96.22,-281.39 95.82,-285.57"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M46.3,-222.09C66.24,-234.18 98.19,-253.54 119.98,-266.74"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="119.06,-268.65 125.28,-269.96 121.24,-265.05 119.06,-268.65"/>
 </g>
 
 <g id="node8" class="node f&#45;web key">
 <title>panel/webview/plotParams</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-142C342.67,-142 278.33,-142 278.33,-142 274.67,-142 271,-138.33 271,-134.67 271,-134.67 271,-127.33 271,-127.33 271,-123.67 274.67,-120 278.33,-120 278.33,-120 342.67,-120 342.67,-120 346.33,-120 350,-123.67 350,-127.33 350,-127.33 350,-134.67 350,-134.67 350,-138.33 346.33,-142 342.67,-142"/>
-<text text-anchor="middle" x="310.5" y="-128.6" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-136C342.67,-136 278.33,-136 278.33,-136 274.67,-136 271,-132.33 271,-128.67 271,-128.67 271,-121.33 271,-121.33 271,-117.67 274.67,-114 278.33,-114 278.33,-114 342.67,-114 342.67,-114 346.33,-114 350,-117.67 350,-121.33 350,-121.33 350,-128.67 350,-128.67 350,-132.33 346.33,-136 342.67,-136"/>
+<text text-anchor="middle" x="310.5" y="-122.6" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
 </g>
 
 <g id="edge16" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M31.31,-265.89C38.33,-244.41 56.84,-197.24 90,-174 142.04,-137.53 217.25,-130.12 264.74,-129.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="264.97,-131.61 270.96,-129.47 264.94,-127.41 264.97,-131.61"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M40.84,-199.7C52.76,-189.82 71.42,-175.85 90,-168 147.39,-143.74 219.07,-133 264.58,-128.36"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.06,-130.42 270.82,-127.75 264.65,-126.24 265.06,-130.42"/>
 </g>
 
 <g id="node9" class="node f&#45;web">
 <title>panel/webview/render/dataInfo</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-201C191.67,-201 97.33,-201 97.33,-201 93.67,-201 90,-197.33 90,-193.67 90,-193.67 90,-186.33 90,-186.33 90,-182.67 93.67,-179 97.33,-179 97.33,-179 191.67,-179 191.67,-179 195.33,-179 199,-182.67 199,-186.33 199,-186.33 199,-193.67 199,-193.67 199,-197.33 195.33,-201 191.67,-201"/>
-<text text-anchor="middle" x="144.5" y="-187.6" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-195C191.67,-195 97.33,-195 97.33,-195 93.67,-195 90,-191.33 90,-187.67 90,-187.67 90,-180.33 90,-180.33 90,-176.67 93.67,-173 97.33,-173 97.33,-173 191.67,-173 191.67,-173 195.33,-173 199,-176.67 199,-180.33 199,-180.33 199,-187.67 199,-187.67 199,-191.33 195.33,-195 191.67,-195"/>
+<text text-anchor="middle" x="144.5" y="-181.6" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
 </g>
 
 <g id="edge17" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/dataInfo</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M42.19,-265.82C54.7,-256.02 73.46,-241.43 90,-229 100.8,-220.89 112.96,-212 122.95,-204.77"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="124.33,-206.36 127.96,-201.15 121.87,-202.96 124.33,-206.36"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-204.87C64.85,-202.39 77.55,-199.42 89.98,-196.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="90.69,-198.5 96.06,-195.09 89.74,-194.41 90.69,-198.5"/>
 </g>
 
 <g id="node11" class="node f&#45;web">
 <title>panel/webview/render/representations</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M378.67,-46C378.67,-46 242.33,-46 242.33,-46 238.67,-46 235,-42.33 235,-38.67 235,-38.67 235,-31.33 235,-31.33 235,-27.67 238.67,-24 242.33,-24 242.33,-24 378.67,-24 378.67,-24 382.33,-24 386,-27.67 386,-31.33 386,-31.33 386,-38.67 386,-38.67 386,-42.33 382.33,-46 378.67,-46"/>
-<text text-anchor="middle" x="310.5" y="-32.6" font-family="DejaVu Sans Mono" font-size="10.50">render/representations</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M378.67,-49C378.67,-49 242.33,-49 242.33,-49 238.67,-49 235,-45.33 235,-41.67 235,-41.67 235,-34.33 235,-34.33 235,-30.67 238.67,-27 242.33,-27 242.33,-27 378.67,-27 378.67,-27 382.33,-27 386,-30.67 386,-34.33 386,-34.33 386,-41.67 386,-41.67 386,-45.33 382.33,-49 378.67,-49"/>
+<text text-anchor="middle" x="310.5" y="-35.6" font-family="DejaVu Sans Mono" font-size="10.50">render/representations</text>
 </g>
 
 <g id="edge18" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M28.42,-265.78C30.22,-234.23 39.75,-143.89 90,-96 127.06,-60.68 182.76,-45.48 228.77,-39.09"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="229.24,-41.15 234.91,-38.28 228.69,-36.98 229.24,-41.15"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M28.09,-199.76C29.02,-168.26 36.46,-79.01 90,-41 141.85,-4.19 219.37,-14.09 267.06,-25.45"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="266.68,-27.52 273.01,-26.91 267.68,-23.44 266.68,-27.52"/>
+</g>
+
+<g id="node14" class="node f&#45;web">
+<title>panel/webview/theme</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.17,-68C164.17,-68 124.83,-68 124.83,-68 121.17,-68 117.5,-64.33 117.5,-60.67 117.5,-60.67 117.5,-53.33 117.5,-53.33 117.5,-49.67 121.17,-46 124.83,-46 124.83,-46 164.17,-46 164.17,-46 167.83,-46 171.5,-49.67 171.5,-53.33 171.5,-53.33 171.5,-60.67 171.5,-60.67 171.5,-64.33 167.83,-68 164.17,-68"/>
+<text text-anchor="middle" x="144.5" y="-54.6" font-family="DejaVu Sans Mono" font-size="10.50">theme</text>
 </g>
 
 <g id="edge19" class="edge e&#45;host">
-<title>panel/webview/main&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M51.56,-288.11C63.02,-293.3 77.08,-299.34 90,-304 153.11,-326.77 168.67,-335.9 235,-346 301.96,-356.2 380.32,-355.7 430.4,-353.83"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="430.76,-355.92 436.67,-353.58 430.59,-351.72 430.76,-355.92"/>
+<title>panel/webview/main&#45;&gt;panel/webview/theme</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M30.06,-199.83C35.34,-174.26 51.74,-110.98 90,-76 96.03,-70.49 103.76,-66.55 111.46,-63.75"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="112.27,-65.7 117.32,-61.82 110.96,-61.71 112.27,-65.7"/>
 </g>
 
 <g id="edge20" class="edge e&#45;host">
-<title>panel/webview/plotActions&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M149.9,-299.16C160.32,-323.9 189.17,-383.07 235,-407 271.35,-425.98 391.28,-421.6 449.38,-418.19"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.62,-420.28 455.48,-417.82 449.37,-416.08 449.62,-420.28"/>
+<title>panel/webview/main&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M32.97,-222.03C41.79,-240.37 61.93,-277.08 90,-297 192.86,-370 350.39,-362.8 430.66,-353.02"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="431.08,-355.08 436.78,-352.25 430.56,-350.91 431.08,-355.08"/>
 </g>
 
 <g id="edge21" class="edge e&#45;host">
+<title>panel/webview/plotActions&#45;&gt;panel/webview/bus</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M149.87,-292.23C160.26,-317.15 189.02,-376.75 235,-401 271.28,-420.13 391.24,-416.23 449.37,-413.06"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.6,-415.15 455.47,-412.71 449.36,-410.95 449.6,-415.15"/>
+</g>
+
+<g id="edge22" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M152.88,-276.93C163.29,-261.24 182.85,-231.59 199,-206 215.39,-180.02 209.95,-164.78 235,-147 243.66,-140.86 254.21,-136.99 264.61,-134.58"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.26,-136.59 270.71,-133.32 264.41,-132.48 265.26,-136.59"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M153.07,-269.81C163.56,-254.26 183.01,-225.18 199,-200 215.47,-174.07 209.95,-158.78 235,-141 243.66,-134.86 254.21,-130.99 264.61,-128.58"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.26,-130.59 270.71,-127.32 264.41,-126.48 265.26,-130.59"/>
 </g>
 
 <g id="node10" class="node f&#45;web">
 <title>panel/webview/render/plotLayout</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M535.67,-306C535.67,-306 429.33,-306 429.33,-306 425.67,-306 422,-302.33 422,-298.67 422,-298.67 422,-291.33 422,-291.33 422,-287.67 425.67,-284 429.33,-284 429.33,-284 535.67,-284 535.67,-284 539.33,-284 543,-287.67 543,-291.33 543,-291.33 543,-298.67 543,-298.67 543,-302.33 539.33,-306 535.67,-306"/>
-<text text-anchor="middle" x="482.5" y="-292.6" font-family="DejaVu Sans Mono" font-size="10.50">render/plotLayout</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M535.67,-300C535.67,-300 429.33,-300 429.33,-300 425.67,-300 422,-296.33 422,-292.67 422,-292.67 422,-285.33 422,-285.33 422,-281.67 425.67,-278 429.33,-278 429.33,-278 535.67,-278 535.67,-278 539.33,-278 543,-281.67 543,-285.33 543,-285.33 543,-292.67 543,-292.67 543,-296.33 539.33,-300 535.67,-300"/>
+<text text-anchor="middle" x="482.5" y="-286.6" font-family="DejaVu Sans Mono" font-size="10.50">render/plotLayout</text>
 </g>
 
-<g id="edge22" class="edge e&#45;host">
+<g id="edge23" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/render/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.04,-288.87C244.3,-290.06 348.1,-292.22 415.91,-293.63"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="415.91,-295.73 421.95,-293.76 416,-291.53 415.91,-295.73"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.04,-281.99C244.3,-283.35 348.1,-285.82 415.91,-287.44"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="415.9,-289.54 421.95,-287.58 416,-285.34 415.9,-289.54"/>
 </g>
 
 <g id="node13" class="node f&#45;web">
 <title>panel/webview/state</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.17,-260C330.17,-260 290.83,-260 290.83,-260 287.17,-260 283.5,-256.33 283.5,-252.67 283.5,-252.67 283.5,-245.33 283.5,-245.33 283.5,-241.67 287.17,-238 290.83,-238 290.83,-238 330.17,-238 330.17,-238 333.83,-238 337.5,-241.67 337.5,-245.33 337.5,-245.33 337.5,-252.67 337.5,-252.67 337.5,-256.33 333.83,-260 330.17,-260"/>
-<text text-anchor="middle" x="310.5" y="-246.6" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
-</g>
-
-<g id="edge23" class="edge e&#45;host">
-<title>panel/webview/plotActions&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-278.06C215.25,-271.41 251.46,-262.8 277.19,-256.68"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="277.81,-258.69 283.16,-255.26 276.84,-254.61 277.81,-258.69"/>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.17,-254C330.17,-254 290.83,-254 290.83,-254 287.17,-254 283.5,-250.33 283.5,-246.67 283.5,-246.67 283.5,-239.33 283.5,-239.33 283.5,-235.67 287.17,-232 290.83,-232 290.83,-232 330.17,-232 330.17,-232 333.83,-232 337.5,-235.67 337.5,-239.33 337.5,-239.33 337.5,-246.67 337.5,-246.67 337.5,-250.33 333.83,-254 330.17,-254"/>
+<text text-anchor="middle" x="310.5" y="-240.6" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
 </g>
 
 <g id="edge24" class="edge e&#45;host">
-<title>panel/webview/plotActions&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.3,-284.84C235.35,-281.01 316.53,-273.95 386,-265 465.46,-254.76 558.32,-238.59 606.23,-229.94"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.88,-231.95 612.41,-228.82 606.13,-227.82 606.88,-231.95"/>
+<title>panel/webview/plotActions&#45;&gt;panel/webview/state</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-271.31C215.25,-264.84 251.46,-256.45 277.19,-250.49"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.79,-252.5 283.16,-249.1 276.84,-248.41 277.79,-252.5"/>
 </g>
 
 <g id="edge25" class="edge e&#45;host">
-<title>panel/webview/plotActions&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.07,-299C182.76,-308.39 209.81,-321.39 235,-328 301.12,-345.35 380.22,-350.02 430.65,-351.07"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="430.62,-353.17 436.66,-351.18 430.7,-348.97 430.62,-353.17"/>
+<title>panel/webview/plotActions&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.27,-277.77C235.29,-273.92 316.44,-267 386,-259 465.32,-249.88 558.23,-236.23 606.2,-228.97"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="606.76,-231.01 612.38,-228.03 606.13,-226.85 606.76,-231.01"/>
 </g>
 
 <g id="edge26" class="edge e&#45;host">
-<title>panel/webview/plotActions&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.34,-293.65C202.35,-295.55 219.41,-297.54 235,-299 353.81,-310.1 492.84,-316.61 572.79,-319.72"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="572.84,-321.82 578.92,-319.96 573,-317.63 572.84,-321.82"/>
+<title>panel/webview/plotActions&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M164.69,-292.1C182.35,-301.74 209.57,-315.2 235,-322 301.03,-339.66 380.15,-344.25 430.62,-345.2"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="430.59,-347.3 436.63,-345.3 430.66,-343.1 430.59,-347.3"/>
 </g>
 
 <g id="edge27" class="edge e&#45;host">
-<title>panel/webview/plotParams&#45;&gt;panel/webview/dimensionSlices</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-131C371.21,-131 397.86,-131 421.64,-131"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="421.94,-133.1 427.94,-131 421.94,-128.9 421.94,-133.1"/>
+<title>panel/webview/plotActions&#45;&gt;shared/plotLayout</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.34,-286.61C202.35,-288.5 219.42,-290.5 235,-292 353.8,-303.42 492.83,-310.26 572.79,-313.56"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="572.83,-315.67 578.91,-313.81 573.01,-311.47 572.83,-315.67"/>
 </g>
 
 <g id="edge28" class="edge e&#45;host">
-<title>panel/webview/plotParams&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.22,-139.07C361.75,-141.54 374.4,-144.31 386,-147 456.05,-163.22 474.55,-163.99 543,-186 565.01,-193.08 589.21,-202.73 607.74,-210.53"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.96,-212.48 613.3,-212.89 608.6,-208.61 606.96,-212.48"/>
+<title>panel/webview/plotParams&#45;&gt;panel/webview/dimensionSlices</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-121.37C371.3,-119.37 398.09,-116.85 421.94,-114.61"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="422.16,-116.69 427.94,-114.04 421.76,-112.51 422.16,-116.69"/>
 </g>
 
 <g id="edge29" class="edge e&#45;host">
-<title>panel/webview/plotParams&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.3,-125.19C411.26,-116.05 529.19,-98.38 593.68,-88.72"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="594.13,-90.77 599.76,-87.81 593.51,-86.62 594.13,-90.77"/>
+<title>panel/webview/plotParams&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.2,-133.16C361.73,-135.63 374.38,-138.38 386,-141 455.94,-156.75 475.42,-154.08 543,-178 567.53,-186.68 594.09,-199.8 612.96,-209.81"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="612.28,-211.83 618.56,-212.81 614.26,-208.13 612.28,-211.83"/>
 </g>
 
 <g id="edge30" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/changedFields</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-198.84C217.33,-201.83 237.56,-205.16 255.7,-208.14"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="255.5,-210.24 261.76,-209.14 256.18,-206.09 255.5,-210.24"/>
+<title>panel/webview/plotParams&#45;&gt;shared/ids</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-126.95C396.1,-128.83 475.31,-130.63 543,-125 559.56,-123.62 577.58,-120.92 593.45,-118.13"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="594.12,-120.14 599.65,-117.01 593.38,-116.01 594.12,-120.14"/>
 </g>
 
 <g id="edge31" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M154.55,-201.09C181.93,-234.65 263.95,-335.18 296.24,-374.74"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="294.85,-376.37 300.27,-379.69 298.11,-373.72 294.85,-376.37"/>
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/changedFields</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-192.84C217.33,-195.83 237.56,-199.16 255.7,-202.14"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="255.5,-204.24 261.76,-203.14 256.18,-200.09 255.5,-204.24"/>
 </g>
 
 <g id="edge32" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-178.87C182.95,-169.23 210.05,-155.54 235,-147 244.43,-143.77 254.77,-141.06 264.66,-138.84"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.33,-140.84 270.74,-137.51 264.43,-136.73 265.33,-140.84"/>
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/errors</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M154.55,-195.09C181.93,-228.65 263.95,-329.18 296.24,-368.74"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="294.85,-370.37 300.27,-373.69 298.11,-367.72 294.85,-370.37"/>
 </g>
 
 <g id="edge33" class="edge e&#45;host">
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/plotParams</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-172.87C182.95,-163.23 210.05,-149.54 235,-141 244.43,-137.77 254.77,-135.06 264.66,-132.84"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.33,-134.84 270.74,-131.51 264.43,-130.73 265.33,-134.84"/>
+</g>
+
+<g id="edge34" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M149.56,-178.82C159.66,-152.66 188.51,-87.14 235,-54 237.72,-52.06 240.61,-50.32 243.63,-48.76"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="244.65,-50.6 249.17,-46.13 242.85,-46.81 244.65,-50.6"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M154.78,-172.88C170.37,-154.56 203.21,-117.31 235,-90 251.2,-76.09 271.1,-62.35 286.25,-52.49"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="287.7,-54.05 291.61,-49.04 285.43,-50.52 287.7,-54.05"/>
 </g>
 
 <g id="node12" class="node f&#45;web">
 <title>panel/webview/render/variables</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-174C360.67,-174 260.33,-174 260.33,-174 256.67,-174 253,-170.33 253,-166.67 253,-166.67 253,-159.33 253,-159.33 253,-155.67 256.67,-152 260.33,-152 260.33,-152 360.67,-152 360.67,-152 364.33,-152 368,-155.67 368,-159.33 368,-159.33 368,-166.67 368,-166.67 368,-170.33 364.33,-174 360.67,-174"/>
-<text text-anchor="middle" x="310.5" y="-160.6" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
-</g>
-
-<g id="edge34" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/variables</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-181.16C214.37,-178.66 231.02,-175.92 246.68,-173.34"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="247.28,-175.37 252.86,-172.32 246.6,-171.23 247.28,-175.37"/>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-168C360.67,-168 260.33,-168 260.33,-168 256.67,-168 253,-164.33 253,-160.67 253,-160.67 253,-153.33 253,-153.33 253,-149.67 256.67,-146 260.33,-146 260.33,-146 360.67,-146 360.67,-146 364.33,-146 368,-149.67 368,-153.33 368,-153.33 368,-160.67 368,-160.67 368,-164.33 364.33,-168 360.67,-168"/>
+<text text-anchor="middle" x="310.5" y="-154.6" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
 </g>
 
 <g id="edge35" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-201.13C182.95,-210.77 210.05,-224.46 235,-233 248.57,-237.64 264,-241.22 277.29,-243.81"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.95,-245.88 283.23,-244.92 277.72,-241.75 276.95,-245.88"/>
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/variables</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-175.16C214.37,-172.66 231.02,-169.92 246.68,-167.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="247.28,-169.37 252.86,-166.32 246.6,-165.23 247.28,-169.37"/>
 </g>
 
 <g id="edge36" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.09,-191.04C247.89,-192.31 321.9,-195.1 386,-201 402.09,-202.48 405.94,-204.22 422,-206 487.25,-213.24 563.86,-218.96 606.22,-221.87"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.33,-223.99 612.46,-222.3 606.62,-219.8 606.33,-223.99"/>
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/state</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-195.13C182.95,-204.77 210.05,-218.46 235,-227 248.57,-231.64 264,-235.22 277.29,-237.81"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="276.95,-239.88 283.23,-238.92 277.72,-235.75 276.95,-239.88"/>
 </g>
 
 <g id="edge37" class="edge e&#45;host">
-<title>panel/webview/render/dataInfo&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M154.86,-178.75C169.82,-161.66 200.9,-129.61 235,-115 356.29,-63.05 516.67,-69.55 593.59,-76.7"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="593.7,-78.83 599.87,-77.31 594.1,-74.64 593.7,-78.83"/>
+<title>panel/webview/render/dataInfo&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.09,-185.04C247.89,-186.31 321.9,-189.1 386,-195 402.09,-196.48 405.97,-198 422,-200 487.45,-208.17 564.22,-216.35 606.5,-220.73"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="606.29,-222.82 612.48,-221.35 606.73,-218.64 606.29,-222.82"/>
 </g>
 
 <g id="edge38" class="edge e&#45;host">
-<title>panel/webview/render/plotLayout&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M521.67,-284C528.84,-281.6 536.22,-278.9 543,-276 568.49,-265.11 596.15,-249.61 615.11,-238.37"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="616.63,-239.9 620.7,-235.02 614.48,-236.3 616.63,-239.9"/>
+<title>panel/webview/render/dataInfo&#45;&gt;shared/ids</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M154.57,-172.92C169.37,-155.75 200.52,-123.23 235,-109 356.56,-58.83 516.81,-82.24 593.64,-98.29"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="593.62,-100.44 599.92,-99.63 594.49,-96.33 593.62,-100.44"/>
 </g>
 
 <g id="edge39" class="edge e&#45;host">
-<title>panel/webview/render/plotLayout&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M543.43,-305.44C553.09,-307.12 563.14,-308.87 572.93,-310.58"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="572.72,-312.67 578.99,-311.63 573.44,-308.53 572.72,-312.67"/>
+<title>panel/webview/render/plotLayout&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M520.92,-277.93C528.3,-275.5 535.95,-272.81 543,-270 566.86,-260.5 593.09,-247.68 612.01,-237.99"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="613.27,-239.71 617.64,-235.09 611.34,-235.98 613.27,-239.71"/>
 </g>
 
 <g id="edge40" class="edge e&#45;host">
-<title>panel/webview/render/representations&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M368.52,-46.02C417.81,-57.49 489.36,-78.93 543,-115 580.5,-140.22 612.39,-183.7 628.08,-207.41"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="626.5,-208.83 631.54,-212.71 630.02,-206.54 626.5,-208.83"/>
+<title>panel/webview/render/plotLayout&#45;&gt;shared/plotLayout</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M543.43,-299.44C553.09,-301.12 563.14,-302.87 572.93,-304.58"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="572.72,-306.67 578.99,-305.63 573.44,-302.53 572.72,-306.67"/>
 </g>
 
 <g id="edge41" class="edge e&#45;host">
-<title>panel/webview/render/representations&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M386.09,-36.11C431.74,-37.87 491.15,-42.09 543,-52 563.4,-55.9 585.56,-62.69 603.4,-68.83"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="602.91,-70.89 609.27,-70.88 604.3,-66.92 602.91,-70.89"/>
+<title>panel/webview/render/representations&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M380.99,-49.04C439.14,-59.27 516.69,-75.5 543,-93 586.97,-122.25 617.79,-179.01 631.12,-207.23"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="629.27,-208.23 633.69,-212.8 633.08,-206.47 629.27,-208.23"/>
 </g>
 
-<g id="node18" class="node f&#45;shared">
+<g id="edge42" class="edge e&#45;host">
+<title>panel/webview/render/representations&#45;&gt;shared/ids</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M386.08,-33.64C432.25,-33.1 492.21,-36.33 543,-52 572.01,-60.95 601.4,-80.4 619.77,-94.09"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="618.6,-95.83 624.65,-97.78 621.13,-92.48 618.6,-95.83"/>
+</g>
+
+<g id="node19" class="node f&#45;shared">
 <title>shared/time</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M517.67,-22C517.67,-22 447.33,-22 447.33,-22 443.67,-22 440,-18.33 440,-14.67 440,-14.67 440,-7.33 440,-7.33 440,-3.67 443.67,0 447.33,0 447.33,0 517.67,0 517.67,0 521.33,0 525,-3.67 525,-7.33 525,-7.33 525,-14.67 525,-14.67 525,-18.33 521.33,-22 517.67,-22"/>
 <text text-anchor="middle" x="482.5" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/time</text>
 </g>
 
-<g id="edge42" class="edge e&#45;host">
-<title>panel/webview/render/representations&#45;&gt;shared/time</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M386.06,-24.47C402.15,-22.2 418.73,-19.86 433.47,-17.78"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="434.03,-19.82 439.67,-16.9 433.44,-15.66 434.03,-19.82"/>
-</g>
-
 <g id="edge43" class="edge e&#45;host">
-<title>panel/webview/render/variables&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M357.61,-174.06C377.38,-178.64 400.77,-183.84 422,-188 487.22,-200.79 564.07,-212.86 606.42,-219.26"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.17,-221.34 612.42,-220.16 606.8,-217.19 606.17,-221.34"/>
+<title>panel/webview/render/representations&#45;&gt;shared/time</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M381.14,-26.94C398.94,-24.11 417.67,-21.14 434.07,-18.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="434.4,-20.61 440,-17.59 433.74,-16.46 434.4,-20.61"/>
 </g>
 
 <g id="edge44" class="edge e&#45;host">
-<title>panel/webview/render/variables&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M346.42,-174.14C360.4,-180.14 375.62,-188.86 386,-201 419.44,-240.09 390.97,-269.97 422,-311 430,-321.58 441.65,-330.28 452.53,-336.84"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="451.54,-338.69 457.78,-339.88 453.64,-335.06 451.54,-338.69"/>
+<title>panel/webview/render/variables&#45;&gt;panel/webview/util</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M365.5,-168.06C434.11,-182.12 550.33,-205.93 606.38,-217.42"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="605.96,-219.48 612.26,-218.62 606.8,-215.36 605.96,-219.48"/>
 </g>
 
 <g id="edge45" class="edge e&#45;host">
+<title>panel/webview/render/variables&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M346.42,-168.14C360.4,-174.14 375.62,-182.86 386,-195 419.44,-234.09 390.97,-263.97 422,-305 430,-315.58 441.65,-324.28 452.53,-330.84"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="451.54,-332.69 457.78,-333.88 453.64,-329.06 451.54,-332.69"/>
+</g>
+
+<g id="edge46" class="edge e&#45;host">
 <title>panel/webview/render/variables&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M368.33,-167.21C416.23,-168.87 485.9,-166.77 543,-147 573.84,-136.32 604.05,-112.96 621.98,-97.35"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="623.6,-98.72 626.7,-93.17 620.82,-95.58 623.6,-98.72"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M368.45,-153.84C415.52,-150.63 483.97,-144.59 543,-134 560.43,-130.87 579.34,-126.2 595.71,-121.73"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="596.39,-123.72 601.61,-120.1 595.27,-119.68 596.39,-123.72"/>
 </g>
 </g>
 </svg></div><figcaption><code>main.ts</code> installs one delegated click listener (the CSP forbids inline handlers) and dispatches on element ids and <code>data-action</code> attributes. Without a VS Code API (exported HTML opened in a browser) the bus runs in degraded mode and rejects every request.</figcaption></figure>
