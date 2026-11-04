@@ -173,9 +173,11 @@ function renderVariableDetails(
     const dimsStr = variable.dimensions
         ? `(${variable.dimensions.join(', ')})`
         : '';
+    // 0 bytes (a dimension of length 0) or no size: the column stays, so the
+    // row keeps its layout
     const sizeStr = variable.size_bytes
         ? formatFileSize(variable.size_bytes)
-        : '';
+        : 'Empty';
     const baseId = joinId(['data-group', groupName, kind, variable.name]);
     const attributes = variable.attributes ?? {};
     const encoding = variable.encoding ?? {};
@@ -219,7 +221,7 @@ function renderVariableDetails(
                 <span class="dims" title="${escapeHtml(dimsStr)}">${escapeHtml(dimsStr)}</span>
                 <span class="dtype-shape" title="${escapeHtml(variable.dtype)}"><code>${escapeHtml(variable.dtype)}</code></span>
                 <span class="dtype-shape" title="${escapeHtml(shapeStr)}">${escapeHtml(shapeStr)}</span>
-                ${sizeStr ? `<span class="size">${escapeHtml(sizeStr)}</span>` : ''}
+                <span class="size">${escapeHtml(sizeStr)}</span>
             </summary>
             <div class="variable-details-content">${sections}</div>
         </details>`;

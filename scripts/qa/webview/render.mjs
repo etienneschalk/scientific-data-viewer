@@ -125,6 +125,21 @@ for (const f of [`${SD}/broken_file.nc`, `${ADV}/text_as.nc`, `${ADV}/corrupt.zi
     await p.close();
 }
 
+// ---------- variables of 0 bytes (dimension of length 0) ----------
+{
+    const p = await openViewer(`${SD}/sample_data_empty_dimension.nc`);
+    const rows = await p.eval(`[...document.querySelectorAll('details.variable-details')].map(d => { const s = d.querySelector(':scope > .variable-summary'); return { name: s.querySelector('.variable-name').textContent, size: s.querySelector(':scope > .size')?.textContent ?? null, spans: s.querySelectorAll(':scope > span').length, right: Math.round(s.querySelector(':scope > .size')?.getBoundingClientRect().right ?? -1) }; })`);
+    const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
+    const empty = ['obs', 'measurement', 'flag'];
+    check('sample_data_empty_dimension.nc: variables of 0 bytes show "Empty" as their size', empty.every((n) => byName[n]?.size === 'Empty') && byName.temperature?.size === '32 B', rows);
+    check('sample_data_empty_dimension.nc: every variable row keeps its 5 columns, sizes aligned', rows.length === 5 && rows.every((r) => r.spans === 5 && r.right === rows[0].right), rows);
+    const q = await p.qa();
+    check('sample_data_empty_dimension.nc: no JS error, no CSP violation', q.errors.length === 0 && q.csp.length === 0, q);
+    await p.eval(`document.querySelector('details.variable-details').scrollIntoView(); true`);
+    await p.screenshot(`${IMG_DIR}/ui_empty_dimension.png`, { full: false });
+    await p.close();
+}
+
 // ---------- big file render time ----------
 for (const f of ['sample_data_many_groups_light_x5.nc', 'sample_data_many_vars.nc', 'sample_zarr_arborescence.zarr']) {
     const p = await openViewer(`${SD}/${f}`);

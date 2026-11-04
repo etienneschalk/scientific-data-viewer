@@ -620,6 +620,56 @@ def create_sample_netcdf_no_attributes():
     return output_file
 
 
+def create_sample_netcdf_empty_dimension():
+    """Create a NetCDF file with variables over a dimension of length 0.
+
+    Their size in bytes is 0: the viewer shows "Empty" in the size column of
+    the variable row instead of leaving it out (which broke the row layout).
+    """
+    output_file = "sample_data_empty_dimension.nc"
+
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    print("🕳️ Creating sample NetCDF file with a dimension of length 0...")
+
+    time = np.arange(0, 4, 1)
+    ds = xr.Dataset(
+        {
+            # 1-D over the empty dimension: the reported case
+            "measurement": (
+                ["obs"],
+                np.array([], dtype=np.float32),
+                {"long_name": "Measurement (no observation)", "units": "K"},
+            ),
+            # 2-D, one dimension empty: also 0 bytes
+            "flag": (["time", "obs"], np.zeros((4, 0), dtype=np.int8)),
+            # Non-empty variable, for comparison in the same group
+            "temperature": (
+                ["time"],
+                np.array([280.0, 281.5, 279.25, 282.0]),
+                {"units": "K"},
+            ),
+        },
+        coords={
+            "time": (["time"], time),
+            "obs": (["obs"], np.array([], dtype=np.int32)),
+        },
+        attrs={
+            "title": "Sample Data with an Empty Dimension",
+            "description": "Variables over the dimension obs of length 0 (0 bytes)",
+        },
+    )
+
+    ds.to_netcdf(output_file, unlimited_dims=["obs"])
+    print(f"✅ Created {output_file}")
+    print(f"   Dimensions: {dict(ds.sizes)}")
+    print(f"   Variables: {list(ds.data_vars.keys())}")
+    return output_file
+
+
 def create_sample_netcdf_large_4d():
     """
     Create a large NetCDF file with a 4D variable of shape (3, 366, 366, 12).

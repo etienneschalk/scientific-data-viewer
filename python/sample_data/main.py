@@ -41,6 +41,7 @@ from sample_data.netcdf import (
     create_sample_netcdf_broken_datetime_variable,
     create_sample_netcdf_cdf,
     create_sample_netcdf_compound_dtype_variable,
+    create_sample_netcdf_empty_dimension,
     create_sample_netcdf_gzip,
     create_sample_netcdf_large_4d,
     create_sample_netcdf_netcdf,
@@ -122,6 +123,7 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             G(create_sample_netcdf_large_4d, "NetCDF (Large 4D - Timeout Test)"),
             G(create_sample_netcdf_many_encoding, "NetCDF (Many Encoding)"),
             G(create_sample_netcdf_no_attributes, "NetCDF (No Attributes)"),
+            G(create_sample_netcdf_empty_dimension, "NetCDF (Empty Dimension)"),
             G(
                 create_sample_netcdf_broken_datetime_variable,
                 "NetCDF (Broken Datetime Units)",

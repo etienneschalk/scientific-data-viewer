@@ -91,11 +91,11 @@ node scripts/qa/webview/run-all.mjs            # render, controls, cancel (~5 mi
 node scripts/qa/webview/cancel.mjs             # one file
 ```
 
-| File           | Covers                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `render.mjs`   | injection through every hostile fixture (live page and exported HTML), error pages, cards, narrow widths, refresh, big files |
-| `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, load time in time zones |
-| `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                  |
+| File           | Covers                                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render.mjs`   | injection through every hostile fixture (live page and exported HTML), error pages, cards, narrow widths, refresh, **Empty** size of 0-byte variables, big files |
+| `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, load time in time zones                                     |
+| `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                                                      |
 
 Each check prints `PASS` / `FAIL` with its evidence; the exit code is 1 when one fails. Screenshots and exported pages go to `artefacts/qa/webview/`.
 

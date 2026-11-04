@@ -92,6 +92,7 @@ INFO_FILES = [
     "sample_data.tif",
     "sample_data.tiff",
     "sample_data_complex_long_names.nc",
+    "sample_data_empty_dimension.nc",
     "sample_data_long_variable_names.nc",
     "sample_data_many_groups_light.nc",
     "sample_data_many_vars.nc",

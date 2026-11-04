@@ -373,6 +373,52 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('variable row: size of 0 bytes (empty dimension) shows "Empty"', () => {
+        const data = sampleDataInfo();
+        data.dimensions_flattened['/'].obs = 0;
+        data.coordinates_flattened['/'].push({
+            name: 'obs',
+            dtype: 'int32',
+            shape: [0],
+            dimensions: ['obs'],
+            size_bytes: 0,
+            attributes: {},
+        });
+        data.variables_flattened['/'].push({
+            name: 'measurement',
+            dtype: 'float32',
+            shape: [0],
+            dimensions: ['obs'],
+            size_bytes: 0,
+            attributes: {},
+        });
+        harness.loadData(data, { nestedAttributesView: false });
+
+        const doc = harness.document;
+        const size = (id: string) =>
+            doc.querySelector(`[id="${id}"] > .variable-summary > .size`)
+                ?.textContent;
+        assert.strictEqual(
+            size('data-group___-___variable___measurement'),
+            'Empty',
+        );
+        assert.strictEqual(size('data-group___-___coordinate___obs'), 'Empty');
+        assert.strictEqual(
+            size('data-group___-___variable___temperature'),
+            '24 B',
+        );
+        // Every row keeps its five columns
+        for (const summary of Array.from(
+            doc.querySelectorAll('.variable-summary'),
+        ) as any[]) {
+            assert.strictEqual(
+                summary.querySelectorAll(':scope > span').length,
+                5,
+                summary.textContent,
+            );
+        }
+    });
+
     test('group xarray encoding is a collapsed section of its own', () => {
         harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
 

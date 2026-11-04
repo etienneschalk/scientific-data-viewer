@@ -110,6 +110,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Screenshots   | `npm run screenshots`: full-page PNGs per theme and scenario in `artefacts/screenshots/v<major.minor>/`, real page and backend, themes recorded from VS Code (`capture-themes.mjs`), no new dependency; technical note `docs/SCREENSHOTS.md` |
 | Fallbacks     | `color-mix()` behind `@supports` (VS Code < 1.77: flat surfaces); `:has()` only for a corner radius; high-contrast borders                                                                                                                   |
 | High contrast | HC light: code blocks use the editor text color (`textPreformat` is inverted there); HC dark: `data-theme="dark"` on the body (`webview/theme.ts`) for the dark xarray repr, dropped by the export retag; `dark_background` plots            |
+| Empty size    | Size column always present: **Empty** for variables of 0 bytes (dimension of length 0) instead of no column, which shifted the row; sample `sample_data_empty_dimension.nc`; QA check in `scripts/qa/webview/render.mjs`                     |
 | Docs          | Export-button wording in `docs/documentation.json` / README; release notes § Viewer styling refresh and manual step §21; `DEVELOPMENT.md` § Viewer screenshots; `CLAUDE.md`                                                                  |
 
 ### Phase 10 — Plot type selector removed
@@ -236,7 +237,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Sample data & docs
 
-- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref)
+- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref, `sample_data_empty_dimension.nc`)
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
@@ -355,6 +356,8 @@ Results after the dependency upgrades: `npm audit` 0 vulnerabilities; eslint 10 
 Results after the plot notes (review of the paranoia run of 2026-11-03): `pytest python/tests` 224 passing (6 new); `qa-scen` scenarios `slice_unknown_dim`, `vmin_inverted`, `style_bad` return their note with the extension's environment.
 
 Results after the high contrast fixes: `npm test` 314 passing (1 new); `npm run typecheck`, `generate.py --check` and pre-commit clean; QA webview harness in the four captured themes (code block and xarray repr colors, live theme switch).
+
+Results after the Empty size fix: `npm test` 315 passing (1 new); `pytest python/tests/test_empty_dimension_sample.py` passing (new); `node scripts/qa/webview/run-all.mjs render` 47/47 (3 new checks on `sample_data_empty_dimension.nc`, 2 of them failing with the fix reverted).
 
 ```bash
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py && scripts/qa/backend/make_baseline.sh v0.12.1
@@ -544,3 +547,5 @@ Paranoia: every check before a release:
 89. chore(deps): upgrade development dependencies, npm audit clean
 90. feat(tooling): plot reports, flaky detection, golden vs last release, no sleep during paranoia
 91. fix(plot): explain plot options that cannot be used
+92. fix(webview): readable code blocks and dark xarray repr in high contrast
+93. docs(architecture): regenerate diagrams for the webview theme module
