@@ -79,6 +79,14 @@ Where to look:
 1. With a file open, export the viewer (**Export Webview Content**).
 2. Open the HTML file in a browser: the **How this file was opened** text is present; clicking **Reopen raw** does nothing.
 
+## M9 — Interpreter override ignored in a workspace
+
+1. Open a folder and create `.vscode/settings.json` with `"scientificDataViewer.python.overridePythonInterpreter": "/does/not/exist/python"`.
+2. VS Code marks the setting as not applicable in the workspace.
+3. Run **Scientific Data Viewer: Refresh Python Environment**: the status bar shows the same interpreter as before, and a data file still opens.
+4. **Show Extension Logs**: a warning `Ignoring scientificDataViewer.python.overridePythonInterpreter = /does/not/exist/python from the workspace settings`.
+5. Put the same key in **user** settings with a real interpreter path (e.g. the output of `which python3`), refresh: the status bar shows it. Remove both values afterwards.
+
 ## Results sheet
 
 | Step | Result (OK / KO + note) | Tester / date |
@@ -91,3 +99,4 @@ Where to look:
 | M6   |                         |               |
 | M7   |                         |               |
 | M8   |                         |               |
+| M9   |                         |               |
