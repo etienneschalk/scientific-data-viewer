@@ -1071,7 +1071,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. `./paranoia.sh --list` → 28 steps with their profile.
+1. `./paranoia.sh --list` → 27 steps with their profile.
 2. `./paranoia.sh --quick` → one line per step, then `VERDICT: NOT FULLY VERIFIED` at best (not a full run); `artefacts/paranoia/latest/REPORT.md` has the table of checks, each linked to its log.
 3. `git status` → unchanged by the run. If pre-commit would reformat files, `pre-commit.patch` is in the run folder and the `pre-commit` row is `FAIL`.
 4. Change one word of `README.md`, `./paranoia.sh --only readme` → `FAIL`, exit code 1, the report shows the diff; `git checkout README.md`.
@@ -1114,6 +1114,21 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 4. **Variables**: `measurement` (`(0)`) and `flag` (`(4, 0)`) read **Empty**, `temperature` reads `32 B`; the dims, dtype, shape and size columns are aligned on all five rows.
 
 **Failure mode:** the size column missing on the 0-byte rows, the dtype and shape shifted to the right compared with `temperature`.
+
+### T36. Release review fixes
+
+**Expect:** the fixes of the [release review](./REVIEWS_0.13.0.md#3-release-review) hold.
+
+**Test:**
+
+1. Open `sample_data.nc`, click **Export** (header), wait more than 60 s in the save dialog, then save: the file is written and no "Request timeout" error appears. Do the same with **Save As** on a plot.
+2. Click **Export** and close the dialog with **Cancel**: no error in the viewer.
+3. Copy `artefacts/sample-data/sample_zarr_v3.zarr.zip` to `/tmp/gone.zip`, open the copy, delete it, click **Refresh**: the error says `No such file or directory`, not "not a Zarr store".
+4. In `settings.json`, add `"scientificDataViewer.defaultView": "default"`: VS Code greys it out as an unknown setting; nothing else changes.
+5. With `useExtensionOwnEnvironment` on, run **Manage Extension Virtual Environment → Recreate**, and while it runs click an **Install** button of a missing optional package (e.g. open `sample_data.kerchunk.json` without `kerchunk`): the install starts after the recreate ends (**Show Extension Logs**), and both succeed.
+6. In `settings.json`, change `overridePythonInterpreter` and `python.useExtensionOwnEnvironment` in one save: the logs show both `SDV configuration updated` lines.
+
+**Failure mode:** "Request timeout" while the dialog was still open; an error for a cancelled dialog; the install running during the recreate (uv errors on a missing folder).
 
 ---
 

@@ -207,6 +207,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Format list of the backend checked against `package.json`** (planning item TO_REMOVE R5, left open): `SupportedExtensionType` (`python/sdv_backend/types.py`) now says it must match the file name patterns of the custom editors (and why `.kerchunk`, suffix-less Zarr and ZIP are special), and a test fails when they drift apart, as the stale `.safe` format once did.
   - **Files**: `python/sdv_backend/types.py` (comment)
   - **Tests**: `python/tests/test_supported_extensions.py` (new)
+- **Release review documented**: release notes § Release review (why, what changed, how it was checked) and upgrade note on the removed `defaultView` setting; manual test plan T36 (the user-visible fixes by hand); PR summary § Release review; the review tracker folded into `REVIEWS_0.13.0.md` § Release review (one document for every review pass); the paranoia step count (27) updated.
+  - **Files**: `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`, `docs/v0.13/PR_SUMMARY_0.13.0.md`, `docs/v0.13/REVIEWS_0.13.0.md`, `docs/v0.13/GETTING_STARTED.md`, `docs/v0.13/RELEASE_REVIEW_0.13.0.md` (merged, deleted)
 
 ### Removed
 
