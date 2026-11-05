@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.14.0 Release Notes
 
-**TL;DR** — You can now see and control **how a file is decoded**. When CF time units are broken, the viewer turns off **only time decoding** (`decode_times=False`). `scale_factor` / `add_offset` and `_FillValue` masking keep working on the rest of the file. Before, it switched off all CF decoding (`decode_cf=False`). **Reopen raw** in File Information reloads the file with no decoding at all, to compare with the stored values. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with where it comes from. Four **Decoding** settings (`maskAndScale`, `decodeTimes`, `decodeCoords`, `useCftime`) and a **`engineBackendKwargs`** setting (allowed keys only, user settings only) make the rest configurable. GeoTIFF / JPEG-2000 times are decoded as `datetime64`, like NetCDF ones.
+**TL;DR** — You can now see and control **how a file is decoded**. When CF time units are broken, the viewer turns off **only time decoding** (`decode_times=False`). `scale_factor` / `add_offset` and `_FillValue` masking keep working on the rest of the file. Before, it switched off all CF decoding (`decode_cf=False`). **Reopen raw** in File Information reloads the file with no decoding at all, to compare with the stored values. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with where it comes from. Four **Decoding** settings (`maskAndScale`, `decodeTimes`, `decodeCoords`, `useCftime`) and a **`engineBackendKwargs`** setting (allowed keys only, user settings only) make the rest configurable. GeoTIFF / JPEG-2000 times are decoded as `datetime64`, like NetCDF ones. **Security**: `python.overridePythonInterpreter` is now read from user settings only, so a cloned repository can no longer choose the program the extension runs.
 
 **Start here** to review, test or release v0.14: [`docs/v0.14/GETTING_STARTED.md`](./v0.14/GETTING_STARTED.md).
 
@@ -43,6 +43,7 @@ The fallback was too blunt. A single variable with a bad `units` attribute turne
 - **Settings that need Refresh (🔄)**: `scientificDataViewer.decoding.*` and `scientificDataViewer.engineBackendKwargs` are read at each load. Refresh the viewer, or reopen the file, after changing them.
 - **`engineBackendKwargs` in a workspace is ignored on purpose.** The setting is machine-scoped, so put it in your **user** settings. VS Code flags a value in `.vscode/settings.json` as not applicable, and the extension does not read it.
 - **Backend JSON contract**: the info result's `decode_cf_degraded` (boolean) is replaced by `open_report` (object, see `OpenReport` in `python/sdv_backend/results.py`). Scripts that parse `get_data_info.py info` output must read `open_report.degraded_decoders` instead. Golden snapshots recorded with v0.13 (`python/tools/golden_snapshots.py`) differ on this key: record them again.
+- **`python.overridePythonInterpreter` in a workspace is now ignored.** If you set it in a project's `.vscode/settings.json` (e.g. `.venv/bin/python`), the extension falls back to the next interpreter source (own environment, then the Python extension's interpreter) and logs a warning. Either select that interpreter with **Python: Select Interpreter**, or move the override to your **user** settings with an absolute path. See [§ Interpreter override](#interpreter-override-user-settings-only).
 - **No change to Python environments**: no new package. The extension's own uv environment is not rebuilt (`ENVIRONMENT_REVISION` unchanged).
 
 ---
@@ -128,6 +129,12 @@ With `default`, nothing is passed and the engine decides. A value that an engine
 
 **Why user settings only.** A repository's `.vscode/settings.json` is applied as soon as the folder is opened, so it could steer the extension's subprocess. The setting is `"scope": "machine"` (VS Code ignores workspace values), and the extension reads only the global value as well.
 
+## Interpreter override: user settings only
+
+`scientificDataViewer.python.overridePythonInterpreter` names the program the extension runs, and it wins over every other interpreter source. Until v0.13 it could be set at any scope. A repository could ship `.vscode/settings.json` with `"scientificDataViewer.python.overridePythonInterpreter": "./tools/run.sh"`, and opening any data file from that folder ran the script. The extension's backend has no workspace trust of its own to stop this.
+
+In v0.14 the setting is `"scope": "machine"`: VS Code ignores and flags values in workspace and folder settings. The extension also reads only the global (user, or remote machine) value. When a workspace value is present, the log says it was ignored. Per-project interpreters keep working through **Python: Select Interpreter**, which the Python extension manages under VS Code's workspace trust.
+
 ## Raster times
 
 rioxarray decodes CF time tags (`NETCDF_DIM_time_VALUES`, `time#units`: GeoTIFFs written by GDAL from NetCDF) as cftime objects, always. The viewer converts standard-calendar time coordinates to `datetime64` so dates behave as they do in NetCDF files. Set `decoding.useCftime: on` to keep cftime.
@@ -150,6 +157,7 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 8. In **user** settings, set `engineBackendKwargs` to `{"netcdf4": {"auto_complex": true, "mode": "w"}}` and refresh `sample_data.nc`. `auto_complex` is in `backend_kwargs` with `# setting`, and a note says `netcdf4.mode` was ignored. The file is unchanged on disk.
 9. Remove it from user settings and put the same value in a **workspace** `.vscode/settings.json` only. VS Code flags it as a setting that cannot be applied in the workspace, and after a refresh the call has no `backend_kwargs`.
 10. Set `decoding.decodeTimes` to `off` and open `broken_datetime_packed_variable.nc`. The Decoding line has no "degraded", and the call shows `decode_times=False,  # setting`.
+11. In a **workspace** `.vscode/settings.json`, set `scientificDataViewer.python.overridePythonInterpreter` to a path that does not exist, then run **Refresh Python Environment**. The status bar keeps the previous interpreter, files still open, and the logs (**Show Extension Logs**) contain `Ignoring scientificDataViewer.python.overridePythonInterpreter … from the workspace settings`.
 
 ## Known limitations
 
@@ -162,14 +170,15 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 
 ## Summary
 
-| Change                                     | Kind    | Where                                                                  |
-| ------------------------------------------ | ------- | ---------------------------------------------------------------------- |
-| Time fallback turns off time decoding only | Changed | `opening.py`, `decoding.py`                                            |
-| Reopen raw / Reopen decoded                | Added   | File Information; `UIController`, `setRawMode` request, `--raw`        |
-| How this file was opened                   | Added   | Troubleshooting section; `OpenReport` in the info result               |
-| Decoding settings (4)                      | Added   | `scientificDataViewer.decoding.*`; `--mask-and-scale` … `--use-cftime` |
-| `engineBackendKwargs`                      | Added   | User settings only, allowlist; `--engine-backend-kwargs`               |
-| Raster times as `datetime64`               | Changed | `opening.py`                                                           |
-| Kerchunk time fallback                     | Fixed   | `opening.py`                                                           |
-| `decode_cf_degraded` → `open_report`       | Changed | Backend JSON contract                                                  |
-| Two sample files                           | Added   | `python/sample_data/`                                                  |
+| Change                                     | Kind     | Where                                                                  |
+| ------------------------------------------ | -------- | ---------------------------------------------------------------------- |
+| Time fallback turns off time decoding only | Changed  | `opening.py`, `decoding.py`                                            |
+| Reopen raw / Reopen decoded                | Added    | File Information; `UIController`, `setRawMode` request, `--raw`        |
+| How this file was opened                   | Added    | Troubleshooting section; `OpenReport` in the info result               |
+| Decoding settings (4)                      | Added    | `scientificDataViewer.decoding.*`; `--mask-and-scale` … `--use-cftime` |
+| `engineBackendKwargs`                      | Added    | User settings only, allowlist; `--engine-backend-kwargs`               |
+| Raster times as `datetime64`               | Changed  | `opening.py`                                                           |
+| Kerchunk time fallback                     | Fixed    | `opening.py`                                                           |
+| `decode_cf_degraded` → `open_report`       | Changed  | Backend JSON contract                                                  |
+| Two sample files                           | Added    | `python/sample_data/`                                                  |
+| `overridePythonInterpreter` user-only      | Security | `package.json` scope, `config.ts`, `PythonManager.ts`                  |

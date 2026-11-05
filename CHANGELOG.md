@@ -44,6 +44,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **`engineBackendKwargs` is read from user settings only**: it is machine-scoped (`"scope": "machine"`), so VS Code ignores it in a workspace `.vscode/settings.json`, and the extension reads only its global value as well. A cloned repository cannot pass keywords to xarray (writing modes, `storage_options`, drivers, credentials); the backend allowlist is a second barrier.
   - **Files**: `package.json`, `src/common/config.ts`, `python/sdv_backend/decoding.py`
   - **Tests**: `test/suite/config.test.ts`, `python/tests/test_decoding.py`
+- **`python.overridePythonInterpreter` is read from user settings only**: it names the program the extension runs, and any scope could set it, so a repository's `.vscode/settings.json` could make the extension execute a file of the repository as soon as a data file was opened. The setting is now machine-scoped and the extension reads only its global (user, or remote machine) value; a workspace value is ignored and logged as a warning. Its description no longer suggests a relative `.venv/bin/python`; a per-project interpreter is chosen with **Python: Select Interpreter** (Python extension), which VS Code guards with workspace trust.
+  - **Files**: `package.json`, `src/common/config.ts` (`getOverridePythonInterpreter`, `getIgnoredWorkspaceOverridePythonInterpreter`), `src/python/PythonManager.ts`, `README.md` (regenerated)
+  - **Tests**: `test/suite/config.test.ts` (machine scope; workspace and workspace-folder values ignored, user value read and trimmed)
 
 ### Documentation
 

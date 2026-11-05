@@ -19,6 +19,8 @@ import {
     getMaxSize,
     getDecodingSettings,
     getEngineBackendKwargs,
+    getOverridePythonInterpreter,
+    getIgnoredWorkspaceOverridePythonInterpreter,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
@@ -219,6 +221,56 @@ suite('Config Test Suite', () => {
             true,
         );
     });
+    test('overridePythonInterpreter is machine-scoped and read from user settings only', () => {
+        const property = getPackageJsonDefaults()[
+            'scientificDataViewer.python.overridePythonInterpreter'
+        ] as { scope?: string };
+        assert.strictEqual(property.scope, 'machine');
+
+        const original = vscode.workspace.getConfiguration;
+        let inspected: Record<string, unknown> = {};
+        (vscode.workspace as any).getConfiguration = () => ({
+            inspect: (key: string) =>
+                key === 'python.overridePythonInterpreter'
+                    ? inspected
+                    : undefined,
+        });
+        try {
+            // A repository's .vscode/settings.json must not pick the program run
+            inspected = { workspaceValue: '/repo/evil' };
+            assert.strictEqual(getOverridePythonInterpreter(), '');
+            assert.strictEqual(
+                getIgnoredWorkspaceOverridePythonInterpreter(),
+                '/repo/evil',
+            );
+            inspected = { workspaceFolderValue: ' /repo/evil ' };
+            assert.strictEqual(getOverridePythonInterpreter(), '');
+            assert.strictEqual(
+                getIgnoredWorkspaceOverridePythonInterpreter(),
+                '/repo/evil',
+            );
+
+            inspected = {
+                globalValue: ' /usr/bin/python3 ',
+                workspaceValue: '/repo/evil',
+            };
+            assert.strictEqual(
+                getOverridePythonInterpreter(),
+                '/usr/bin/python3',
+            );
+
+            inspected = { globalValue: 42 };
+            assert.strictEqual(getOverridePythonInterpreter(), '');
+            inspected = {};
+            assert.strictEqual(
+                getIgnoredWorkspaceOverridePythonInterpreter(),
+                null,
+            );
+        } finally {
+            (vscode.workspace as any).getConfiguration = original;
+        }
+    });
+
     test('useExtensionOwnEnvironment is written to user settings (works without a folder)', async () => {
         const original = vscode.workspace.getConfiguration;
         const updates: Array<[string, unknown, unknown]> = [];

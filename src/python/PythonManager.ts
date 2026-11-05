@@ -12,6 +12,8 @@ import {
 import { getPythonInterpreterFromPythonExtension } from './officialPythonExtensionApiUtils';
 import {
     getOverridePythonInterpreter,
+    getIgnoredWorkspaceOverridePythonInterpreter,
+    getOverridePythonInterpreterConfigFullKey,
     getUseExtensionOwnEnvironment,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
@@ -396,6 +398,12 @@ export class PythonManager {
     private async selectInterpreter(issue: {
         value: OwnEnvironmentIssue | null;
     }): Promise<SelectedInterpreter> {
+        const ignoredOverride = getIgnoredWorkspaceOverridePythonInterpreter();
+        if (ignoredOverride) {
+            Logger.warn(
+                `🐍 🔒 Ignoring ${getOverridePythonInterpreterConfigFullKey()} = ${ignoredOverride} from the workspace settings: it is read from user settings only, so that a repository cannot choose the program the extension runs.`,
+            );
+        }
         const overrideInterpreter = getOverridePythonInterpreter();
         if (overrideInterpreter) {
             Logger.info(

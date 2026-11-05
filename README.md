@@ -367,8 +367,9 @@ The extension includes specific settings for virtual environment management:
 - **`scientificDataViewer.python.overridePythonInterpreter`**
   - (type: `string`, default: `""` (empty string))
   - Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
-  - **Examples:** - `.venv/bin/python` - Local virtual environment - `C:\venv\Scripts\python.exe` - Windows virtual environment - `/usr/bin/python3` - System Python
+  - **Examples:** - `/home/me/project/.venv/bin/python` - Virtual environment - `C:\venv\Scripts\python.exe` - Windows virtual environment - `/usr/bin/python3` - System Python
   - **Note:** This setting has the highest priority and overrides all other interpreter selection methods.
+  - **User settings only:** a value in a workspace `.vscode/settings.json` is ignored, so that a cloned repository cannot choose the program the extension runs. For a per-project interpreter, select it with **Python: Select Interpreter** (Python extension).
 - **`scientificDataViewer.python.useExtensionOwnEnvironment`**
   - (type: `boolean`, default: `false`)
   - When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage.

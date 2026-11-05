@@ -551,10 +551,11 @@
                 },
                 "scientificDataViewer.python.overridePythonInterpreter": {
                     "type": "string",
+                    "scope": "machine",
                     "default": "",
                     "order": 1000,
                     "description": "Override Python interpreter path (takes precedence over all other options)",
-                    "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `.venv/bin/python` - Local virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods."
+                    "markdownDescription": "Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.\n\n**Examples:**\n- `/home/me/project/.venv/bin/python` - Virtual environment\n- `C:\\venv\\Scripts\\python.exe` - Windows virtual environment\n- `/usr/bin/python3` - System Python\n\n**Note:** This setting has the highest priority and overrides all other interpreter selection methods.\n\n**User settings only:** a value in a workspace `.vscode/settings.json` is ignored, so that a cloned repository cannot choose the program the extension runs. For a per-project interpreter, select it with **Python: Select Interpreter** (Python extension)."
                 },
                 "scientificDataViewer.python.useExtensionOwnEnvironment": {
                     "type": "boolean",

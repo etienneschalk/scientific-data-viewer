@@ -148,11 +148,38 @@ export function getWebviewExportTheme(): string {
     );
 }
 
+/**
+ * python.overridePythonInterpreter from the **user** settings only. The
+ * setting is machine-scoped, so VS Code already ignores workspace values;
+ * reading the global value also guards against a cloned repository choosing
+ * the program the extension runs.
+ */
 export function getOverridePythonInterpreter(): string {
-    return getWorkspaceConfig().get<string>(
+    const value = getWorkspaceConfig().inspect<unknown>(
         OVERRIDE_PYTHON_INTERPRETER,
-        DEFAULT_OVERRIDE_PYTHON_INTERPRETER,
+    )?.globalValue;
+    return typeof value === 'string'
+        ? value.trim()
+        : DEFAULT_OVERRIDE_PYTHON_INTERPRETER;
+}
+
+/**
+ * A non-empty override set in the workspace or a workspace folder, which
+ * getOverridePythonInterpreter ignores; null when there is none.
+ */
+export function getIgnoredWorkspaceOverridePythonInterpreter(): string | null {
+    const inspected = getWorkspaceConfig().inspect<unknown>(
+        OVERRIDE_PYTHON_INTERPRETER,
     );
+    for (const value of [
+        inspected?.workspaceFolderValue,
+        inspected?.workspaceValue,
+    ]) {
+        if (typeof value === 'string' && value.trim() !== '') {
+            return value.trim();
+        }
+    }
+    return null;
 }
 
 export function getUseExtensionOwnEnvironment(): boolean {

@@ -14,6 +14,7 @@ Branch `eschalk/v0.14-cf-decoding`, based on `eschalk/backend-package` (v0.13.0)
 | Raster times                             | `datetime64` instead of cftime (standard calendars); `convertBandsToVariables` honoured, with a note      |
 | Kerchunk                                 | Time fallback and raw mode now take effect (decoders passed one by one)                                   |
 | Backend JSON                             | `decode_cf_degraded` → `open_report` (`OpenReport`)                                                       |
+| `python.overridePythonInterpreter`       | Machine scope, user settings only: a repository can no longer choose the program the extension runs       |
 
 ## Design
 
@@ -43,7 +44,7 @@ Each decoder is passed only if the engine's `open_dataset_parameters` has it (ke
 | Check                                               | Result                                                                          |
 | --------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `pytest python/tests`                               | 246 passed                                                                      |
-| `npm test` (VS Code, `env -u ELECTRON_RUN_AS_NODE`) | 331 passing                                                                     |
+| `npm test` (VS Code, `env -u ELECTRON_RUN_AS_NODE`) | 332 passing                                                                     |
 | `npm run typecheck`, `npm run lint`                 | clean                                                                           |
 | `scripts/architecture/generate.py --check`          | clean (diagrams regenerated)                                                    |
 | `npx vsce ls`                                       | 73 files                                                                        |
@@ -62,4 +63,5 @@ python python/get_data_info.py info artefacts/sample-data/broken_datetime_packed
 
 ## Commits
 
-Not committed yet: the work is in the working tree of `eschalk/v0.14-cf-decoding`.
+- feat(decoding): show and control how files are decoded (v0.14.0)
+- fix(config): read the interpreter override from user settings only
