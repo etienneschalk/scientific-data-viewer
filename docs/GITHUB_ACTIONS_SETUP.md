@@ -13,7 +13,7 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 
 - Runs pre-commit on all files with verbose output
 - Includes TypeScript compilation check
-- Includes Python-specific checks
+- Python backend tests (`pytest python/tests`, Linux only, with the pinned `requirements-dev.txt`)
 - Security scanning with npm audit
 - Test execution with virtual display
 - Extension packaging

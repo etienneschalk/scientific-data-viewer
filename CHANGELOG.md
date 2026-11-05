@@ -388,6 +388,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Tests**: `python/tests/test_zarr_store_detection.py` (`test_missing_zip_is_reported_as_missing`)
 - **CI runs on pushes cancelled each other**: the concurrency group of `pr-validation.yml` was `pr-<PR number>`, empty on push events, so a push to `main` cancelled a run in progress on `develop` and vice versa. It now falls back to the ref (as `paranoia.yml` does). The workflow also declares read-only `contents` permissions.
   - **Files**: `.github/workflows/pr-validation.yml`
+- **Pull requests did not run the Python tests**: `pr-validation.yml` ran pre-commit, the VS Code tests, packaging and the audit, but `pytest python/tests` only ran in paranoia (label or weekly). It now runs on the Linux job, with the pinned `requirements-dev.txt`.
+  - **Files**: `.github/workflows/pr-validation.yml`, `docs/GITHUB_ACTIONS_SETUP.md`
 
 ### Security
 
