@@ -26,7 +26,8 @@ suite('UIController Test Suite', () => {
     let receive: (message: unknown) => void;
     let mockWebview: vscode.Webview;
     let dataInfoResponse: any;
-    let plotCalls: Array<{ uri: vscode.Uri; plot: any }>;
+    let plotCalls: Array<{ uri: vscode.Uri; plot: any; open?: any }>;
+    let infoOpenOptions: any[];
     let errors: Error[];
     let successes: string[];
     let controller: UIController;
@@ -37,9 +38,12 @@ suite('UIController Test Suite', () => {
                 pythonPath: '/usr/bin/python3',
                 waitForInitialization: async () => {},
             },
-            getDataInfo: async () => dataInfoResponse,
-            createPlot: async (uri: vscode.Uri, plot: any) => {
-                plotCalls.push({ uri, plot });
+            getDataInfo: async (_uri: vscode.Uri, open: any) => {
+                infoOpenOptions.push(open);
+                return dataInfoResponse;
+            },
+            createPlot: async (uri: vscode.Uri, plot: any, open: any) => {
+                plotCalls.push({ uri, plot, open });
                 return {
                     result: {
                         plot_data: PNG_BASE64,
@@ -77,6 +81,7 @@ suite('UIController Test Suite', () => {
 
         posted = [];
         plotCalls = [];
+        infoOpenOptions = [];
         errors = [];
         successes = [];
         dataInfoResponse = {
@@ -262,6 +267,25 @@ suite('UIController Test Suite', () => {
             plotX: 'lon',
             bins: 10,
         });
+    });
+
+    test('Reopen raw reloads without decoding, for info and plots, until Reopen decoded', async () => {
+        await controller.loadFile(dataFile);
+        assert.strictEqual(infoOpenOptions[0].raw, false);
+
+        const raw = await request('setRawMode', { raw: true });
+        assert.strictEqual(raw.success, true);
+        assert.strictEqual(infoOpenOptions[1].raw, true);
+        assert.strictEqual(events('dataLoaded').length, 2);
+        await request('createPlot', { variable: '/temperature' });
+        assert.strictEqual(plotCalls[0].open.raw, true);
+
+        // A refresh keeps the mode
+        await request('refresh');
+        assert.strictEqual(infoOpenOptions[2].raw, true);
+
+        await request('setRawMode', { raw: false });
+        assert.strictEqual(infoOpenOptions[3].raw, false);
     });
 
     test('createPlot fails when no file is loaded', async () => {

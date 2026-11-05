@@ -552,6 +552,66 @@ suite('Webview script (jsdom)', () => {
         ]);
     });
 
+    test('File Information shows the decoding mode; Reopen raw posts setRawMode', () => {
+        const report = {
+            engine: 'netcdf4',
+            function: 'xarray.open_datatree',
+            raw: false,
+            call: "xarray.open_datatree(\n    'a.nc',\n    engine='netcdf4',\n    decode_times=False,  # time fallback\n)",
+            kwargs: [],
+            degraded_decoders: ['decode_times', 'decode_timedelta'],
+            fallback_reason: `ValueError: unable to decode time units ${EVIL}`,
+            notes: [`note ${EVIL}`],
+            failed_engines: [{ engine: 'h5netcdf', error: 'OSError: x' }],
+        };
+        harness.loadData({ ...sampleDataInfo(), open_report: report });
+
+        const doc = harness.document;
+        const fileInfo = doc.getElementById('fileInfo').textContent;
+        assert.ok(
+            fileInfo.includes(
+                'Decoding: degraded (decode_times=False, decode_timedelta=False)',
+            ),
+            fileInfo,
+        );
+        const openReport = doc.getElementById('openReport').textContent;
+        assert.ok(
+            openReport.includes('Engine: netcdf4 (xarray.open_datatree)'),
+        );
+        assert.ok(openReport.includes('decode_times=False,  # time fallback'));
+        assert.ok(openReport.includes(`- note ${EVIL}`));
+        assert.ok(openReport.includes('- h5netcdf: OSError: x'));
+        assert.ok(
+            openReport.includes(
+                `Time decoding turned off after: ValueError: unable to decode time units ${EVIL}`,
+            ),
+        );
+        assert.strictEqual(doc.querySelectorAll('#content img').length, 0);
+
+        harness.click(doc.querySelector('[data-action="set-raw-mode"]'));
+        assert.deepStrictEqual(
+            harness.requests('setRawMode').map((r) => r.payload),
+            [{ raw: true }],
+        );
+
+        harness.loadData({
+            ...sampleDataInfo(),
+            open_report: { ...report, raw: true, degraded_decoders: [] },
+        });
+        assert.ok(
+            doc
+                .getElementById('fileInfo')
+                .textContent.includes('Decoding: raw (no CF decoding)'),
+        );
+        const reopenDecoded = doc.querySelector('[data-action="set-raw-mode"]');
+        assert.strictEqual(reopenDecoded.textContent, 'Reopen decoded');
+        harness.click(reopenDecoded);
+        assert.deepStrictEqual(
+            harness.requests('setRawMode').map((r) => r.payload),
+            [{ raw: true }, { raw: false }],
+        );
+    });
+
     test('does not throw on data without groups', () => {
         harness.loadData({ format: 'NetCDF' });
 

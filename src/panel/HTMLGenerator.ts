@@ -315,6 +315,15 @@ export class HTMLGenerator {
                 <summary><h3>Troubleshooting</h3></summary>
                 <div class="info-section">
                     <details open>
+                        <summary>How this file was opened</summary>
+                            <button data-target-id="openReport" class="text-copy-button">
+                                Copy
+                            </button>
+                            <pre id="openReport">Loading...</pre>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
                         <summary>Python Interpreter Path</summary>
                             <button data-target-id="pythonPath" class="text-copy-button">
                                 Copy

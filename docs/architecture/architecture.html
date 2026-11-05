@@ -621,7 +621,7 @@ footer {
 <section id="protocol">
 <h2><span class="n">2</span>The webview protocol</h2>
 <p>The webview sends requests and gets one response per request id; the host only emits events. Both maps are typed in <code>MessageTypes.ts</code> (the tables below are read from it) and mirrored by the webview's <code>bus.ts</code>. File names coming from the webview are resolved with <code>resolveWebviewFileName</code>, which rejects absolute paths and <code>..</code> segments.</p>
-<div class="split"><div class="tablewrap"><table><thead><tr><th>Request</th><th>Payload → result</th><th>Host side</th></tr></thead><tbody><tr><td>createPlot</td><td><code>PlotOptions</code> → <code>CreatePlotResponse</code></td><td><code>DataProcessor.createPlot</code></td></tr><tr><td>abortPlot</td><td><code>{ operationId: string }</code> → <code>{ success: boolean; message: string }</code></td><td><code>PythonManager.abortProcess</code></td></tr><tr><td>savePlot</td><td><code>PlotFilePayload</code> → <code>SaveResult</code></td><td>writes next to the data file</td></tr><tr><td>savePlotAs</td><td><code>{ plotData: string; variable: string }</code> → <code>SaveResult</code></td><td>save dialog</td></tr><tr><td>openPlot</td><td><code>PlotFilePayload</code> → <code>void</code></td><td>writes to the temp folder, opens it</td></tr><tr><td>refresh</td><td><code>unknown</code> → <code>void</code></td><td><code>loadFile</code> again</td></tr><tr><td>showNotification</td><td><code>{ message: string; type: &#x27;info&#x27; | &#x27;warning&#x27; | &#x27;error&#x27; }</code> → <code>void</code></td><td>info / warning / error toast</td></tr><tr><td>executeCommand</td><td><code>{ command: string; args?: unknown[] }</code> → <code>unknown</code></td><td>only the commands in <code>WEBVIEW_ALLOWED_COMMANDS</code></td></tr><tr><td>exportWebview</td><td><code>{ htmlContent: string }</code> → <code>SaveResult</code></td><td>saves the captured page</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Event</th><th>Payload</th><th>Emitted when</th></tr></thead><tbody><tr><td class="ev">dataLoaded</td><td><code>DataLoadedPayload</code></td><td>each successful load or refresh</td></tr><tr><td class="ev">error</td><td><code>{ message: string; details?: string; errorType?: string }</code></td><td><code>ErrorBoundary</code> handler of the panel</td></tr><tr><td class="ev">scrollToHeaderCommandEvent</td><td><code>{ headerId: string; headerLabel: string }</code></td><td>an outline entry is clicked</td></tr><tr><td class="ev">exportWebviewCommandEvent</td><td><code>Record&lt;string, never&gt;</code></td><td>Export command from the palette</td></tr></tbody></table></div></div>
+<div class="split"><div class="tablewrap"><table><thead><tr><th>Request</th><th>Payload → result</th><th>Host side</th></tr></thead><tbody><tr><td>createPlot</td><td><code>PlotOptions</code> → <code>CreatePlotResponse</code></td><td><code>DataProcessor.createPlot</code></td></tr><tr><td>abortPlot</td><td><code>{ operationId: string }</code> → <code>{ success: boolean; message: string }</code></td><td><code>PythonManager.abortProcess</code></td></tr><tr><td>savePlot</td><td><code>PlotFilePayload</code> → <code>SaveResult</code></td><td>writes next to the data file</td></tr><tr><td>savePlotAs</td><td><code>{ plotData: string; variable: string }</code> → <code>SaveResult</code></td><td>save dialog</td></tr><tr><td>openPlot</td><td><code>PlotFilePayload</code> → <code>void</code></td><td>writes to the temp folder, opens it</td></tr><tr><td>refresh</td><td><code>unknown</code> → <code>void</code></td><td><code>loadFile</code> again</td></tr><tr><td>setRawMode</td><td><code>{ raw: boolean }</code> → <code>void</code></td><td>Reopen raw / decoded: <code>loadFile</code> again, per panel</td></tr><tr><td>showNotification</td><td><code>{ message: string; type: &#x27;info&#x27; | &#x27;warning&#x27; | &#x27;error&#x27; }</code> → <code>void</code></td><td>info / warning / error toast</td></tr><tr><td>executeCommand</td><td><code>{ command: string; args?: unknown[] }</code> → <code>unknown</code></td><td>only the commands in <code>WEBVIEW_ALLOWED_COMMANDS</code></td></tr><tr><td>exportWebview</td><td><code>{ htmlContent: string }</code> → <code>SaveResult</code></td><td>saves the captured page</td></tr></tbody></table></div><div class="tablewrap"><table><thead><tr><th>Event</th><th>Payload</th><th>Emitted when</th></tr></thead><tbody><tr><td class="ev">dataLoaded</td><td><code>DataLoadedPayload</code></td><td>each successful load or refresh</td></tr><tr><td class="ev">error</td><td><code>{ message: string; details?: string; errorType?: string }</code></td><td><code>ErrorBoundary</code> handler of the panel</td></tr><tr><td class="ev">scrollToHeaderCommandEvent</td><td><code>{ headerId: string; headerLabel: string }</code></td><td>an outline entry is clicked</td></tr><tr><td class="ev">exportWebviewCommandEvent</td><td><code>Record&lt;string, never&gt;</code></td><td>Export command from the palette</td></tr></tbody></table></div></div>
 <p class="files"><b>Read</b>src/panel/communication/MessageTypes.ts · src/panel/communication/MessageBus.ts · src/panel/webview/bus.ts</p>
 </section>
 
@@ -2310,156 +2310,191 @@ footer {
 <section id="backend-packages">
 <h2><span class="n">11</span>Python backend packages</h2>
 <p>At package level, with each edge labelled by the modules it imports. Dependencies only flow downward, from <code>cli</code> through <code>info</code> / <code>plotting</code> and <code>opening</code> to <code>formats</code> and <code>environment</code>. The one sideways edge is <code>plotting → info</code>, which reuses the DataTree inheritance mode and the monotonicity check.</p>
-<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:1066px"
- viewBox="0.00 0.00 1066.10 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:994px"
+ viewBox="0.00 0.00 993.95 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 429.8)">
 
 <g id="node1" class="node py">
 <title>cli</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M841.66,-418.75C841.66,-418.75 580.34,-418.75 580.34,-418.75 575.17,-418.75 570,-413.59 570,-408.42 570,-408.42 570,-398.08 570,-398.08 570,-392.91 575.17,-387.75 580.34,-387.75 580.34,-387.75 841.66,-387.75 841.66,-387.75 846.83,-387.75 852,-392.91 852,-398.08 852,-398.08 852,-408.42 852,-408.42 852,-413.59 846.83,-418.75 841.66,-418.75"/>
-<text text-anchor="start" x="692.5" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
-<text text-anchor="start" x="582" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M677.02,-418.75C677.02,-418.75 415.69,-418.75 415.69,-418.75 410.52,-418.75 405.35,-413.59 405.35,-408.42 405.35,-408.42 405.35,-398.08 405.35,-398.08 405.35,-392.91 410.52,-387.75 415.69,-387.75 415.69,-387.75 677.02,-387.75 677.02,-387.75 682.19,-387.75 687.35,-392.91 687.35,-398.08 687.35,-398.08 687.35,-408.42 687.35,-408.42 687.35,-413.59 682.19,-418.75 677.02,-418.75"/>
+<text text-anchor="start" x="527.85" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
+<text text-anchor="start" x="417.35" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
 </g>
 
 <g id="node2" class="node py">
 <title>serialization</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1034.16,-418.75C1034.16,-418.75 933.84,-418.75 933.84,-418.75 928.67,-418.75 923.5,-413.59 923.5,-408.42 923.5,-408.42 923.5,-398.08 923.5,-398.08 923.5,-392.91 928.67,-387.75 933.84,-387.75 933.84,-387.75 1034.16,-387.75 1034.16,-387.75 1039.33,-387.75 1044.5,-392.91 1044.5,-398.08 1044.5,-398.08 1044.5,-408.42 1044.5,-408.42 1044.5,-413.59 1039.33,-418.75 1034.16,-418.75"/>
-<text text-anchor="start" x="935.5" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
-<text text-anchor="start" x="939" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M869.52,-418.75C869.52,-418.75 769.19,-418.75 769.19,-418.75 764.02,-418.75 758.85,-413.59 758.85,-408.42 758.85,-408.42 758.85,-398.08 758.85,-398.08 758.85,-392.91 764.02,-387.75 769.19,-387.75 769.19,-387.75 869.52,-387.75 869.52,-387.75 874.69,-387.75 879.85,-392.91 879.85,-398.08 879.85,-398.08 879.85,-408.42 879.85,-408.42 879.85,-413.59 874.69,-418.75 869.52,-418.75"/>
+<text text-anchor="start" x="770.85" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
+<text text-anchor="start" x="774.35" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
 </g>
 
-<g id="edge4" class="edge e&#45;host">
+<g id="edge5" class="edge e&#45;host">
 <title>cli&#45;&gt;serialization</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M852.3,-403.25C874.94,-403.25 897.4,-403.25 917.19,-403.25"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="917.24,-405.35 923.24,-403.25 917.24,-401.15 917.24,-405.35"/>
-<text text-anchor="middle" x="887.75" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M687.65,-403.25C710.29,-403.25 732.75,-403.25 752.54,-403.25"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="752.6,-405.35 758.6,-403.25 752.6,-401.15 752.6,-405.35"/>
+<text text-anchor="middle" x="723.1" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="node3" class="node py key">
 <title>info</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M873.16,-341.25C873.16,-341.25 548.84,-341.25 548.84,-341.25 543.67,-341.25 538.5,-336.09 538.5,-330.92 538.5,-330.92 538.5,-320.58 538.5,-320.58 538.5,-315.41 543.67,-310.25 548.84,-310.25 548.84,-310.25 873.16,-310.25 873.16,-310.25 878.33,-310.25 883.5,-315.41 883.5,-320.58 883.5,-320.58 883.5,-330.92 883.5,-330.92 883.5,-336.09 878.33,-341.25 873.16,-341.25"/>
-<text text-anchor="start" x="695.5" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
-<text text-anchor="start" x="550.5" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M905.52,-341.25C905.52,-341.25 581.19,-341.25 581.19,-341.25 576.02,-341.25 570.85,-336.09 570.85,-330.92 570.85,-330.92 570.85,-320.58 570.85,-320.58 570.85,-315.41 576.02,-310.25 581.19,-310.25 581.19,-310.25 905.52,-310.25 905.52,-310.25 910.69,-310.25 915.85,-315.41 915.85,-320.58 915.85,-320.58 915.85,-330.92 915.85,-330.92 915.85,-336.09 910.69,-341.25 905.52,-341.25"/>
+<text text-anchor="start" x="727.85" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
+<text text-anchor="start" x="582.85" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
 </g>
 
-<g id="edge2" class="edge e&#45;host">
+<g id="edge3" class="edge e&#45;host">
 <title>cli&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M711,-387.69C711,-376.31 711,-360.33 711,-347.59"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="713.1,-347.26 711,-341.26 708.9,-347.26 713.1,-347.26"/>
-<text text-anchor="middle" x="792.5" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M584.34,-387.69C617.31,-375.05 665.06,-356.75 699.63,-343.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="700.64,-345.37 705.49,-341.26 699.13,-341.45 700.64,-345.37"/>
+<text text-anchor="middle" x="737.85" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
 </g>
 
 <g id="node4" class="node py key">
 <title>plotting</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M365.66,-341.25C365.66,-341.25 10.34,-341.25 10.34,-341.25 5.17,-341.25 0,-336.09 0,-330.92 0,-330.92 0,-320.58 0,-320.58 0,-315.41 5.17,-310.25 10.34,-310.25 10.34,-310.25 365.66,-310.25 365.66,-310.25 370.83,-310.25 376,-315.41 376,-320.58 376,-320.58 376,-330.92 376,-330.92 376,-336.09 370.83,-341.25 365.66,-341.25"/>
-<text text-anchor="start" x="160.5" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
-<text text-anchor="start" x="12" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · kwargs · layout · options · render · selection · style</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M398.02,-341.25C398.02,-341.25 42.69,-341.25 42.69,-341.25 37.52,-341.25 32.35,-336.09 32.35,-330.92 32.35,-330.92 32.35,-320.58 32.35,-320.58 32.35,-315.41 37.52,-310.25 42.69,-310.25 42.69,-310.25 398.02,-310.25 398.02,-310.25 403.19,-310.25 408.35,-315.41 408.35,-320.58 408.35,-320.58 408.35,-330.92 408.35,-330.92 408.35,-336.09 403.19,-341.25 398.02,-341.25"/>
+<text text-anchor="start" x="192.85" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
+<text text-anchor="start" x="44.35" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · kwargs · layout · options · render · selection · style</text>
 </g>
 
-<g id="edge3" class="edge e&#45;host">
+<g id="edge4" class="edge e&#45;host">
 <title>cli&#45;&gt;plotting</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M610.47,-387.74C519.88,-374.66 387.12,-355.49 294.68,-342.15"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="294.89,-340.06 288.65,-341.28 294.29,-344.22 294.89,-340.06"/>
-<text text-anchor="middle" x="523.5" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M483.5,-387.69C427.8,-374.79 346.63,-356 289.2,-342.69"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="289.34,-340.57 283.02,-341.26 288.39,-344.66 289.34,-340.57"/>
+<text text-anchor="middle" x="445.85" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, options </text>
 </g>
 
 <g id="node6" class="node py">
-<title>formats</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M632.16,-186.25C632.16,-186.25 449.84,-186.25 449.84,-186.25 444.67,-186.25 439.5,-181.09 439.5,-175.92 439.5,-175.92 439.5,-165.58 439.5,-165.58 439.5,-160.41 444.67,-155.25 449.84,-155.25 449.84,-155.25 632.16,-155.25 632.16,-155.25 637.33,-155.25 642.5,-160.41 642.5,-165.58 642.5,-165.58 642.5,-175.92 642.5,-175.92 642.5,-181.09 637.33,-186.25 632.16,-186.25"/>
-<text text-anchor="start" x="516.5" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
-<text text-anchor="start" x="451.5" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
+<title>decoding</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M353.52,-186.25C353.52,-186.25 113.19,-186.25 113.19,-186.25 108.02,-186.25 102.85,-181.09 102.85,-175.92 102.85,-175.92 102.85,-165.58 102.85,-165.58 102.85,-160.41 108.02,-155.25 113.19,-155.25 113.19,-155.25 353.52,-155.25 353.52,-155.25 358.69,-155.25 363.85,-160.41 363.85,-165.58 363.85,-165.58 363.85,-175.92 363.85,-175.92 363.85,-181.09 358.69,-186.25 353.52,-186.25"/>
+<text text-anchor="start" x="199.85" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">decoding.py</text>
+<text text-anchor="start" x="114.85" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">decoders + backend_kwargs: sources, allowlist</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
+<title>cli&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M405.19,-395.7C256.43,-387.31 40.06,-370.31 14.35,-341.5 -44.99,-274.99 96.32,-215.83 178.89,-188.22"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="179.7,-190.17 184.73,-186.29 178.38,-186.18 179.7,-190.17"/>
+<text text-anchor="middle" x="15.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="node7" class="node py">
+<title>formats</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M722.52,-186.25C722.52,-186.25 540.19,-186.25 540.19,-186.25 535.02,-186.25 529.85,-181.09 529.85,-175.92 529.85,-175.92 529.85,-165.58 529.85,-165.58 529.85,-160.41 535.02,-155.25 540.19,-155.25 540.19,-155.25 722.52,-155.25 722.52,-155.25 727.69,-155.25 732.85,-160.41 732.85,-165.58 732.85,-165.58 732.85,-175.92 732.85,-175.92 732.85,-181.09 727.69,-186.25 722.52,-186.25"/>
+<text text-anchor="start" x="606.85" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
+<text text-anchor="start" x="541.85" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
+</g>
+
+<g id="edge2" class="edge e&#45;host">
 <title>cli&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M823.93,-387.69C849.47,-382.84 872.23,-376.77 883,-369.5 905.9,-354.04 908.05,-336.71 901,-310 890.89,-271.7 889.19,-255.58 857,-232.5 824.04,-208.86 726.79,-192.49 648.8,-182.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="648.95,-180.66 642.74,-182 648.44,-184.82 648.95,-180.66"/>
-<text text-anchor="middle" x="914.5" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M687.57,-389.55C792.11,-378.61 918.99,-361.45 934.35,-341.5 966.22,-300.12 897.77,-243.84 881.35,-232.5 839.68,-203.71 785.88,-188.5 738.86,-180.5"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="739.13,-178.41 732.87,-179.51 738.44,-182.56 739.13,-178.41"/>
+<text text-anchor="middle" x="953.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
 </g>
 
 <g id="node5" class="node py key">
 <title>opening</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M624.16,-263.75C624.16,-263.75 409.84,-263.75 409.84,-263.75 404.67,-263.75 399.5,-258.59 399.5,-253.42 399.5,-253.42 399.5,-243.08 399.5,-243.08 399.5,-237.91 404.67,-232.75 409.84,-232.75 409.84,-232.75 624.16,-232.75 624.16,-232.75 629.33,-232.75 634.5,-237.91 634.5,-243.08 634.5,-243.08 634.5,-253.42 634.5,-253.42 634.5,-258.59 629.33,-263.75 624.16,-263.75"/>
-<text text-anchor="start" x="486.5" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
-<text text-anchor="start" x="411.5" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_cf fallback</text>
-</g>
-
-<g id="edge7" class="edge e&#45;host">
-<title>info&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M673.59,-310.19C641.12,-297.55 594.1,-279.25 560.06,-266.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="560.64,-263.98 554.29,-263.76 559.12,-267.9 560.64,-263.98"/>
-<text text-anchor="middle" x="632.5" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
-</g>
-
-<g id="edge6" class="edge e&#45;host">
-<title>info&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M705.73,-309.89C696.04,-284.63 673.01,-233.26 637,-204.5 628.95,-198.07 619.56,-192.87 609.87,-188.67"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="610.49,-186.65 604.14,-186.31 608.89,-190.53 610.49,-186.65"/>
-<text text-anchor="middle" x="766.5" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
-</g>
-
-<g id="edge12" class="edge e&#45;host">
-<title>plotting&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M376.08,-325.75C426.87,-325.75 481.69,-325.75 531.97,-325.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="532.08,-327.85 538.08,-325.75 532.08,-323.65 532.08,-327.85"/>
-<text text-anchor="middle" x="457.25" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
-</g>
-
-<g id="edge13" class="edge e&#45;host">
-<title>plotting&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M252.62,-310.24C277.72,-304.59 306.71,-298.02 333,-292 371.38,-283.21 414.23,-273.26 448.91,-265.17"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.48,-267.2 454.85,-263.79 448.53,-263.11 449.48,-267.2"/>
-<text text-anchor="middle" x="380.5" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
-</g>
-
-<g id="edge11" class="edge e&#45;host">
-<title>plotting&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M211.83,-310.21C220.98,-304.57 231.51,-298.04 241,-292 281.78,-266.07 288.1,-252.69 332,-232.5 374.87,-212.79 425.63,-197.86 466.4,-187.73"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="467.02,-189.74 472.34,-186.27 466.01,-185.66 467.02,-189.74"/>
-<text text-anchor="middle" x="356.5" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
-</g>
-
-<g id="node7" class="node py">
-<title>environment</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M397.16,-108.75C397.16,-108.75 298.84,-108.75 298.84,-108.75 293.67,-108.75 288.5,-103.59 288.5,-98.42 288.5,-98.42 288.5,-88.08 288.5,-88.08 288.5,-82.91 293.67,-77.75 298.84,-77.75 298.84,-77.75 397.16,-77.75 397.16,-77.75 402.33,-77.75 407.5,-82.91 407.5,-88.08 407.5,-88.08 407.5,-98.42 407.5,-98.42 407.5,-103.59 402.33,-108.75 397.16,-108.75"/>
-<text text-anchor="start" x="311.5" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
-<text text-anchor="start" x="300.5" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
-</g>
-
-<g id="edge10" class="edge e&#45;host">
-<title>plotting&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M198.25,-309.98C226.02,-269.97 302.72,-159.48 334.22,-114.1"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="336.14,-115.02 337.83,-108.9 332.69,-112.63 336.14,-115.02"/>
-<text text-anchor="middle" x="300.5" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M549.02,-263.75C549.02,-263.75 319.69,-263.75 319.69,-263.75 314.52,-263.75 309.35,-258.59 309.35,-253.42 309.35,-253.42 309.35,-243.08 309.35,-243.08 309.35,-237.91 314.52,-232.75 319.69,-232.75 319.69,-232.75 549.02,-232.75 549.02,-232.75 554.19,-232.75 559.35,-237.91 559.35,-243.08 559.35,-243.08 559.35,-253.42 559.35,-253.42 559.35,-258.59 554.19,-263.75 549.02,-263.75"/>
+<text text-anchor="start" x="403.85" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
+<text text-anchor="start" x="321.35" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_times fallback</text>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
-<title>opening&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M521.63,-232.69C525.28,-221.2 530.42,-205.03 534.49,-192.24"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="536.57,-192.62 536.39,-186.26 532.57,-191.34 536.57,-192.62"/>
-<text text-anchor="middle" x="579.5" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
+<title>info&#45;&gt;opening</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M683.78,-310.19C630.98,-297.29 554.05,-278.5 499.61,-265.19"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="500.08,-263.15 493.75,-263.76 499.08,-267.23 500.08,-263.15"/>
+<text text-anchor="middle" x="613.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge7" class="edge e&#45;host">
+<title>info&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M570.7,-317.53C459.21,-311.87 330.58,-303.11 306.35,-292 266.36,-273.65 246.5,-221.56 238.25,-192.32"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="240.25,-191.69 236.66,-186.44 236.2,-192.78 240.25,-191.69"/>
+<text text-anchor="middle" x="278.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
+<title>info&#45;&gt;formats</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M736.1,-310.03C726.55,-291.25 708.68,-258.14 689.35,-232.5 678.04,-217.49 663.42,-202.2 651.68,-190.71"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="652.95,-189.01 647.18,-186.34 650.03,-192.03 652.95,-189.01"/>
+<text text-anchor="middle" x="790.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
+</g>
+
+<g id="edge16" class="edge e&#45;host">
+<title>plotting&#45;&gt;info</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M408.43,-325.75C459.22,-325.75 514.04,-325.75 564.32,-325.75"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="564.43,-327.85 570.43,-325.75 564.43,-323.65 564.43,-327.85"/>
+<text text-anchor="middle" x="489.6" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
+</g>
+
+<g id="edge17" class="edge e&#45;host">
+<title>plotting&#45;&gt;opening</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M261.61,-310.19C297.59,-297.5 349.74,-279.1 387.32,-265.84"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="388.26,-267.74 393.22,-263.76 386.86,-263.78 388.26,-267.74"/>
+<text text-anchor="middle" x="346.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge13" class="edge e&#45;host">
+<title>plotting&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M213.56,-309.97C206.05,-291.68 195.83,-259.63 202.35,-232.5 205.83,-218.06 213.34,-203.18 220.1,-191.76"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="222.01,-192.67 223.34,-186.45 218.42,-190.48 222.01,-192.67"/>
+<text text-anchor="middle" x="208.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge15" class="edge e&#45;host">
+<title>plotting&#45;&gt;formats</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M408.57,-318.92C499.59,-314.29 592.64,-306.15 608.35,-292 622.73,-279.05 628.29,-223.71 630.3,-192.81"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="632.41,-192.73 630.68,-186.62 628.22,-192.48 632.41,-192.73"/>
+<text text-anchor="middle" x="649.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
+</g>
+
+<g id="node8" class="node py">
+<title>environment</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M485.52,-108.75C485.52,-108.75 387.19,-108.75 387.19,-108.75 382.02,-108.75 376.85,-103.59 376.85,-98.42 376.85,-98.42 376.85,-88.08 376.85,-88.08 376.85,-82.91 382.02,-77.75 387.19,-77.75 387.19,-77.75 485.52,-77.75 485.52,-77.75 490.69,-77.75 495.85,-82.91 495.85,-88.08 495.85,-88.08 495.85,-98.42 495.85,-98.42 495.85,-103.59 490.69,-108.75 485.52,-108.75"/>
+<text text-anchor="start" x="399.85" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
+<text text-anchor="start" x="388.85" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
+</g>
+
+<g id="edge14" class="edge e&#45;host">
+<title>plotting&#45;&gt;environment</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M192.79,-310.02C140.66,-280.33 36.92,-211.32 84.35,-155 120.23,-112.4 279.06,-99.67 370.63,-95.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="370.93,-97.96 376.84,-95.62 370.76,-93.76 370.93,-97.96"/>
+<text text-anchor="middle" x="110.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
+</g>
+
+<g id="edge10" class="edge e&#45;host">
+<title>opening&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M395.6,-232.69C361.95,-220.05 313.23,-201.75 277.97,-188.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="278.34,-186.41 271.99,-186.26 276.87,-190.34 278.34,-186.41"/>
+<text text-anchor="middle" x="352.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge12" class="edge e&#45;host">
+<title>opening&#45;&gt;formats</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M455.27,-232.7C469.21,-223.54 488.25,-212.07 506.35,-204.5 521.93,-197.99 539.15,-192.47 555.7,-187.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="556.52,-189.89 561.77,-186.31 555.43,-185.83 556.52,-189.89"/>
+<text text-anchor="middle" x="554.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
+</g>
+
+<g id="edge11" class="edge e&#45;host">
 <title>opening&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M441.09,-232.65C413.7,-223.7 384.9,-209.37 366,-186.5 349.4,-166.41 346.51,-135.48 346.68,-115.06"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="348.78,-114.87 346.83,-108.82 344.59,-114.77 348.78,-114.87"/>
-<text text-anchor="middle" x="393.5" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M434.55,-232.58C434.9,-205.35 435.67,-146.89 436.08,-115.39"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="438.18,-115.13 436.16,-109.1 433.98,-115.07 438.18,-115.13"/>
+<text text-anchor="middle" x="463.85" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
-<g id="edge5" class="edge e&#45;host">
+<g id="edge6" class="edge e&#45;host">
 <title>formats&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M503.79,-155.19C471.48,-142.55 424.7,-124.25 390.84,-111.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="391.45,-108.99 385.1,-108.76 389.92,-112.9 391.45,-108.99"/>
-<text text-anchor="middle" x="484.5" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M593.76,-155.19C561.11,-142.55 513.85,-124.25 479.64,-111.01"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="480.19,-108.97 473.84,-108.76 478.67,-112.89 480.19,-108.97"/>
+<text text-anchor="middle" x="572.85" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
-<g id="node8" class="node f&#45;shared">
+<g id="node9" class="node f&#45;shared">
 <title>foundation</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M552,-40.25C552,-40.25 144,-40.25 144,-40.25 138,-40.25 132,-34.25 132,-28.25 132,-28.25 132,-12.25 132,-12.25 132,-6.25 138,-0.25 144,-0.25 144,-0.25 552,-0.25 552,-0.25 558,-0.25 564,-6.25 564,-12.25 564,-12.25 564,-28.25 564,-28.25 564,-34.25 558,-40.25 552,-40.25"/>
-<text text-anchor="start" x="263.5" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
-<text text-anchor="start" x="158.5" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
-<text text-anchor="start" x="266.5" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M640.35,-40.25C640.35,-40.25 232.35,-40.25 232.35,-40.25 226.35,-40.25 220.35,-34.25 220.35,-28.25 220.35,-28.25 220.35,-12.25 220.35,-12.25 220.35,-6.25 226.35,-0.25 232.35,-0.25 232.35,-0.25 640.35,-0.25 640.35,-0.25 646.35,-0.25 652.35,-6.25 652.35,-12.25 652.35,-12.25 652.35,-28.25 652.35,-28.25 652.35,-34.25 646.35,-40.25 640.35,-40.25"/>
+<text text-anchor="start" x="351.85" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
+<text text-anchor="start" x="246.85" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
+<text text-anchor="start" x="354.85" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
 </g>
 
 </g>
@@ -2469,7 +2504,7 @@ footer {
 <section id="backend-pipelines">
 <h2><span class="n">12</span>Backend pipelines</h2>
 <p>Both subcommands share format detection and opening, then diverge. Info walks every group to describe it; plot selects one variable, subsets it and draws it with xarray's plotting on the Agg backend.</p>
-<figure><div class="scroll"><svg viewBox="0 0 1180 400" class="hand" role="img" aria-label="Both backend commands share format detection and opening, then diverge: info walks every group to describe it, plot selects one variable, subsets it and draws it." style="max-width:1180px"><defs><marker id="pl-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="pl-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="pl-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="pl-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><text x="20" y="54" text-anchor="start" class="lane">info</text><text x="62" y="54" text-anchor="start" class="lbl mono">get_data_info.py info &lt;file&gt; [flags]</text><text x="20" y="218" text-anchor="start" class="lane">plot</text><rect x="182" y="72" width="156" height="248" rx="7" class="bx py key"/><text x="260" y="148" text-anchor="middle" class="t" font-size="12">detect_file_format()</text><text x="260" y="163" text-anchor="middle" class="s"></text><text x="260" y="176" text-anchor="middle" class="s">ZIP: Zarr store inside?</text><text x="260" y="189" text-anchor="middle" class="s">Kerchunk JSON / Parquet?</text><text x="260" y="202" text-anchor="middle" class="s">Zarr directory, v2 or v3</text><text x="260" y="215" text-anchor="middle" class="s"></text><text x="260" y="228" text-anchor="middle" class="s">→ engines, in netcdf</text><text x="260" y="241" text-anchor="middle" class="s">engine order setting</text><text x="260" y="254" text-anchor="middle" class="s">→ missing packages</text><rect x="358" y="72" width="156" height="248" rx="7" class="bx py key"/><text x="436" y="141.5" text-anchor="middle" class="t" font-size="12">OpenedData.open()</text><text x="436" y="156.5" text-anchor="middle" class="s"></text><text x="436" y="169.5" text-anchor="middle" class="s">try each engine in order</text><text x="436" y="182.5" text-anchor="middle" class="s">cdflib: its own reader</text><text x="436" y="195.5" text-anchor="middle" class="s">groups → open_datatree</text><text x="436" y="208.5" text-anchor="middle" class="s">else {&quot;/&quot;: Dataset}</text><text x="436" y="221.5" text-anchor="middle" class="s"></text><text x="436" y="234.5" text-anchor="middle" class="s">time decode error →</text><text x="436" y="247.5" text-anchor="middle" class="s">retry with decode_cf=False</text><text x="436" y="260.5" text-anchor="middle" class="s">(decode_cf_degraded)</text><rect x="20" y="72" width="142" height="84" rx="7" class="bx py"/><text x="91" y="104.8" text-anchor="middle" class="t" font-size="11.5">InfoOptions</text><text x="91" y="119.2" text-anchor="middle" class="s">display settings</text><text x="91" y="132.2" text-anchor="middle" class="s">as CLI flags</text><rect x="534" y="72" width="140" height="84" rx="7" class="bx py"/><text x="604" y="104.8" text-anchor="middle" class="t" font-size="11.5">reprs</text><text x="604" y="119.2" text-anchor="middle" class="s">text + HTML repr</text><text x="604" y="132.2" text-anchor="middle" class="s">xr.show_versions()</text><rect x="694" y="72" width="140" height="84" rx="7" class="bx py"/><text x="764" y="104.8" text-anchor="middle" class="t" font-size="11.5">flatten groups</text><text x="764" y="119.2" text-anchor="middle" class="s">tree → Dataset per</text><text x="764" y="132.2" text-anchor="middle" class="s">group, inherited coords</text><rect x="854" y="72" width="140" height="84" rx="7" class="bx py"/><text x="924" y="104.8" text-anchor="middle" class="t" font-size="11.5">per group</text><text x="924" y="119.2" text-anchor="middle" class="s">dims, coords, variables,</text><text x="924" y="132.2" text-anchor="middle" class="s">attrs, datetime ranges</text><rect x="1014" y="72" width="146" height="84" rx="7" class="bx py"/><text x="1087" y="104.8" text-anchor="middle" class="t" font-size="11.5">FileInfoResult</text><text x="1087" y="119.2" text-anchor="middle" class="s">{&quot;result&quot;: …}</text><text x="1087" y="132.2" text-anchor="middle" class="s">on stdout</text><polyline points="162,114 180,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="338,114 356,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="514,114 532,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="674,114 692,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="834,114 852,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="994,114 1012,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><rect x="20" y="236" width="142" height="84" rx="7" class="bx py"/><text x="91" y="268.8" text-anchor="middle" class="t" font-size="11.5">PlotOptions</text><text x="91" y="283.2" text-anchor="middle" class="s">layout flags +</text><text x="91" y="296.2" text-anchor="middle" class="s">dimension slices JSON</text><rect x="534" y="236" width="140" height="84" rx="7" class="bx py"/><text x="604" y="268.8" text-anchor="middle" class="t" font-size="11.5">select</text><text x="604" y="283.2" text-anchor="middle" class="s">group path →</text><text x="604" y="296.2" text-anchor="middle" class="s">DataArray</text><rect x="694" y="236" width="140" height="84" rx="7" class="bx py"/><text x="764" y="268.8" text-anchor="middle" class="t" font-size="11.5">subset</text><text x="764" y="283.2" text-anchor="middle" class="s">isel slices, datetime</text><text x="764" y="296.2" text-anchor="middle" class="s">filter, not empty</text><rect x="854" y="236" width="140" height="84" rx="7" class="bx py"/><text x="924" y="268.8" text-anchor="middle" class="t" font-size="11.5">draw_plot()</text><text x="924" y="283.2" text-anchor="middle" class="s">resolve_layout(): yours,</text><text x="924" y="296.2" text-anchor="middle" class="s">the rest automatic</text><rect x="1014" y="236" width="146" height="84" rx="7" class="bx py"/><text x="1087" y="268.8" text-anchor="middle" class="t" font-size="11.5">CreatePlotResult</text><text x="1087" y="283.2" text-anchor="middle" class="s">base64 PNG +</text><text x="1087" y="296.2" text-anchor="middle" class="s">layout, kwargs</text><polyline points="162,278 180,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="338,278 356,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="514,278 532,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="674,278 692,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="834,278 852,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="994,278 1012,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><text x="20" y="340" text-anchor="start" class="lbl mono">get_data_info.py plot &lt;file&gt; &lt;variable&gt; [flags]</text><text x="364" y="340" text-anchor="start" class="lbl">↖ plot only, before opening: matplotlib check + setup_pyplot(style)</text><line x1="20" y1="356" x2="1160" y2="356" class="ln ln-warn dash"/><text x="20" y="378" text-anchor="start" class="lbl">Expected failures (unsupported format, missing engine, unreadable file, bad selection) become FileInfoError / CreatePlotError: still JSON, exit 0. Only unexpected crashes exit 1 with {&quot;error&quot;: …}.</text></svg></div><figcaption>The extension builds both command lines in <code>DataProcessor</code> (<code>buildGetDataInfoCliArgs</code>, <code>buildCreatePlotCliArgs</code>) from the user's settings; nothing is passed through a shell.</figcaption></figure>
+<figure><div class="scroll"><svg viewBox="0 0 1180 400" class="hand" role="img" aria-label="Both backend commands share format detection and opening, then diverge: info walks every group to describe it, plot selects one variable, subsets it and draws it." style="max-width:1180px"><defs><marker id="pl-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="pl-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="pl-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="pl-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><text x="20" y="54" text-anchor="start" class="lane">info</text><text x="62" y="54" text-anchor="start" class="lbl mono">get_data_info.py info &lt;file&gt; [flags]</text><text x="20" y="218" text-anchor="start" class="lane">plot</text><rect x="182" y="72" width="156" height="248" rx="7" class="bx py key"/><text x="260" y="148" text-anchor="middle" class="t" font-size="12">detect_file_format()</text><text x="260" y="163" text-anchor="middle" class="s"></text><text x="260" y="176" text-anchor="middle" class="s">ZIP: Zarr store inside?</text><text x="260" y="189" text-anchor="middle" class="s">Kerchunk JSON / Parquet?</text><text x="260" y="202" text-anchor="middle" class="s">Zarr directory, v2 or v3</text><text x="260" y="215" text-anchor="middle" class="s"></text><text x="260" y="228" text-anchor="middle" class="s">→ engines, in netcdf</text><text x="260" y="241" text-anchor="middle" class="s">engine order setting</text><text x="260" y="254" text-anchor="middle" class="s">→ missing packages</text><rect x="358" y="72" width="156" height="248" rx="7" class="bx py key"/><text x="436" y="141.5" text-anchor="middle" class="t" font-size="12">OpenedData.open()</text><text x="436" y="156.5" text-anchor="middle" class="s"></text><text x="436" y="169.5" text-anchor="middle" class="s">try each engine in order</text><text x="436" y="182.5" text-anchor="middle" class="s">cdflib: its own reader</text><text x="436" y="195.5" text-anchor="middle" class="s">groups → open_datatree</text><text x="436" y="208.5" text-anchor="middle" class="s">else {&quot;/&quot;: Dataset}</text><text x="436" y="221.5" text-anchor="middle" class="s"></text><text x="436" y="234.5" text-anchor="middle" class="s">time decode error →</text><text x="436" y="247.5" text-anchor="middle" class="s">retry, decode_times off</text><text x="436" y="260.5" text-anchor="middle" class="s">(OpenReport)</text><rect x="20" y="72" width="142" height="84" rx="7" class="bx py"/><text x="91" y="104.8" text-anchor="middle" class="t" font-size="11.5">InfoOptions</text><text x="91" y="119.2" text-anchor="middle" class="s">display settings</text><text x="91" y="132.2" text-anchor="middle" class="s">as CLI flags</text><rect x="534" y="72" width="140" height="84" rx="7" class="bx py"/><text x="604" y="104.8" text-anchor="middle" class="t" font-size="11.5">reprs</text><text x="604" y="119.2" text-anchor="middle" class="s">text + HTML repr</text><text x="604" y="132.2" text-anchor="middle" class="s">xr.show_versions()</text><rect x="694" y="72" width="140" height="84" rx="7" class="bx py"/><text x="764" y="104.8" text-anchor="middle" class="t" font-size="11.5">flatten groups</text><text x="764" y="119.2" text-anchor="middle" class="s">tree → Dataset per</text><text x="764" y="132.2" text-anchor="middle" class="s">group, inherited coords</text><rect x="854" y="72" width="140" height="84" rx="7" class="bx py"/><text x="924" y="104.8" text-anchor="middle" class="t" font-size="11.5">per group</text><text x="924" y="119.2" text-anchor="middle" class="s">dims, coords, variables,</text><text x="924" y="132.2" text-anchor="middle" class="s">attrs, datetime ranges</text><rect x="1014" y="72" width="146" height="84" rx="7" class="bx py"/><text x="1087" y="104.8" text-anchor="middle" class="t" font-size="11.5">FileInfoResult</text><text x="1087" y="119.2" text-anchor="middle" class="s">{&quot;result&quot;: …}</text><text x="1087" y="132.2" text-anchor="middle" class="s">on stdout</text><polyline points="162,114 180,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="338,114 356,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="514,114 532,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="674,114 692,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="834,114 852,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="994,114 1012,114" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><rect x="20" y="236" width="142" height="84" rx="7" class="bx py"/><text x="91" y="268.8" text-anchor="middle" class="t" font-size="11.5">PlotOptions</text><text x="91" y="283.2" text-anchor="middle" class="s">layout flags +</text><text x="91" y="296.2" text-anchor="middle" class="s">dimension slices JSON</text><rect x="534" y="236" width="140" height="84" rx="7" class="bx py"/><text x="604" y="268.8" text-anchor="middle" class="t" font-size="11.5">select</text><text x="604" y="283.2" text-anchor="middle" class="s">group path →</text><text x="604" y="296.2" text-anchor="middle" class="s">DataArray</text><rect x="694" y="236" width="140" height="84" rx="7" class="bx py"/><text x="764" y="268.8" text-anchor="middle" class="t" font-size="11.5">subset</text><text x="764" y="283.2" text-anchor="middle" class="s">isel slices, datetime</text><text x="764" y="296.2" text-anchor="middle" class="s">filter, not empty</text><rect x="854" y="236" width="140" height="84" rx="7" class="bx py"/><text x="924" y="268.8" text-anchor="middle" class="t" font-size="11.5">draw_plot()</text><text x="924" y="283.2" text-anchor="middle" class="s">resolve_layout(): yours,</text><text x="924" y="296.2" text-anchor="middle" class="s">the rest automatic</text><rect x="1014" y="236" width="146" height="84" rx="7" class="bx py"/><text x="1087" y="268.8" text-anchor="middle" class="t" font-size="11.5">CreatePlotResult</text><text x="1087" y="283.2" text-anchor="middle" class="s">base64 PNG +</text><text x="1087" y="296.2" text-anchor="middle" class="s">layout, kwargs</text><polyline points="162,278 180,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="338,278 356,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="514,278 532,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="674,278 692,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="834,278 852,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><polyline points="994,278 1012,278" class="ln ln-edge" fill="none" marker-end="url(#pl-edge)"/><text x="20" y="340" text-anchor="start" class="lbl mono">get_data_info.py plot &lt;file&gt; &lt;variable&gt; [flags]</text><text x="364" y="340" text-anchor="start" class="lbl">↖ plot only, before opening: matplotlib check + setup_pyplot(style)</text><line x1="20" y1="356" x2="1160" y2="356" class="ln ln-warn dash"/><text x="20" y="378" text-anchor="start" class="lbl">Expected failures (unsupported format, missing engine, unreadable file, bad selection) become FileInfoError / CreatePlotError: still JSON, exit 0. Only unexpected crashes exit 1 with {&quot;error&quot;: …}.</text></svg></div><figcaption>The extension builds both command lines in <code>DataProcessor</code> (<code>buildGetDataInfoCliArgs</code>, <code>buildCreatePlotCliArgs</code>) from the user's settings; nothing is passed through a shell.</figcaption></figure>
 <p class="files"><b>Read</b>python/sdv_backend/info/extract.py · python/sdv_backend/plotting/api.py · python/sdv_backend/opening.py · python/sdv_backend/formats/detect.py</p>
 </section>
 

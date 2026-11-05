@@ -775,7 +775,7 @@ suite('PythonManager initialization and execution', () => {
             );
             const running = processor.getDataInfo(
                 vscode.Uri.file(path.join(dir, 'big.nc')),
-                false,
+                {},
                 'info-1-1',
             );
             for (let i = 0; i < 100 && !fs.existsSync(pidFile); i++) {

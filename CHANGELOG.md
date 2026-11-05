@@ -6,6 +6,49 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.14.0] - Unreleased
+
+### Added
+
+- **Troubleshooting > How this file was opened**: a new first entry of the Troubleshooting section (end of the viewer, with a **Copy** button) shows the engine, the function (`xarray.open_datatree`, `xarray.open_dataset`, `cdflib.xarray.cdf_to_xarray`) and a Python snippet reproducing the open call, each keyword commented with its source: `viewer default`, `setting`, `time fallback`, `raw mode`, `setting convertBandsToVariables`, `viewer (ZIP store)`. Below it: the error that triggered the time fallback, notes (settings that do not apply to this engine, ignored `engineBackendKwargs` keys, raster time handling) and the engines that failed before the one that opened the file. The backend returns it as `open_report` (`OpenReport`, with `OpenKwarg` / `EngineFailure`) in the info result.
+  - **Files**: `python/sdv_backend/results.py`, `python/sdv_backend/decoding.py` (`format_open_call`), `python/sdv_backend/opening.py`, `python/sdv_backend/info/extract.py`, `src/types.ts`, `src/panel/HTMLGenerator.ts`, `src/panel/webview/render/representations.ts` (`formatOpenReport`, `displayOpenReport`), `src/panel/webview/render/dataInfo.ts`
+  - **Tests**: `python/tests/test_decoding.py` (snippet), `python/tests/test_decode_times_fallback.py`, `test/suite/ui/webviewScript.test.ts` (report text, file-derived text escaped)
+- **Reopen raw / Reopen decoded**: File Information shows **Decoding:** `CF decoded`, `degraded (decode_times=False, decode_timedelta=False)` or `raw (no CF decoding)`, with a link to reload the file without any CF decoding (no `_FillValue` masking, no `scale_factor` / `add_offset`, no time or coordinate decoding, no character concatenation) and back. The mode belongs to the panel: plots and **Refresh** use it, it is never saved, and a new tab opens decoded. New webview request `setRawMode`.
+  - **Files**: `src/panel/communication/MessageTypes.ts`, `src/panel/UIController.ts` (`rawMode`, `setRawMode`, `openFileOptions`), `src/python/DataProcessor.ts` (`OpenFileOptions` replaces the `convertBandsToVariables` boolean argument of `getDataInfo` / `createPlot`), `src/panel/webview/bus.ts`, `src/panel/webview/main.ts` (`set-raw-mode` action), `src/panel/webview/render/dataInfo.ts` (`renderRawModeButton`), `python/sdv_backend/cli.py` (`--raw`), `scripts/architecture/content.py`, `docs/architecture/` (regenerated)
+  - **Tests**: `test/suite/ui/UIController.test.ts` (raw reaches info and plots, kept by Refresh, undone by Reopen decoded), `test/suite/ui/webviewScript.test.ts` (link posts `setRawMode`), `python/tests/test_decode_times_fallback.py` (raw keeps packed `int16` values)
+- **Decoding settings**: `scientificDataViewer.decoding.maskAndScale`, `.decodeTimes`, `.decodeCoords` (`coordinates` / `all` / `off`) and `.useCftime`, each `default` (nothing passed, the engine decides) unless set. They apply to info and plots alike, are passed only to engines that take them (xarray raises a `TypeError` otherwise; the report says when one does not apply), and map to cdflib's `to_datetime` / `fillval_to_nan` for NASA CDF. `decodeTimes: off` also turns `decode_timedelta` off. New backend flags `--mask-and-scale`, `--decode-times`, `--decode-coords`, `--use-cftime`.
+  - **Files**: `package.json`, `src/common/config.ts` (`getDecodingSettings`, in `getExtensionConfigForWebview`), `src/python/DataProcessor.ts` (`pushDecodingCliArgs`), `python/sdv_backend/decoding.py` (`DecodingOptions`, `resolve_open_kwargs`), `python/sdv_backend/cli.py`, `python/sdv_backend/info/options.py`, `python/sdv_backend/plotting/options.py`, `python/sdv_backend/plotting/api.py`, `docs/documentation.json`, `README.md` (regenerated)
+  - **Tests**: `python/tests/test_decoding.py` (precedence, engine filtering, CLI parsing), `test/suite/dataProcessor.test.ts` (flags for info and plot), `test/suite/config.test.ts` (defaults, unknown value)
+- **`scientificDataViewer.engineBackendKwargs`**: extra `backend_kwargs` per engine, e.g. `{"h5netcdf": {"phony_dims": "sort"}}` or `{"cfgrib": {"filter_by_keys": {...}}}`, replacing the hard-coded table (`ENGINE_BACKEND_KWARGS`). Only an allowlist of keys that change how a file is read is honoured (`USER_BACKEND_KWARGS_ALLOWED`: `netcdf4` `auto_complex`; `h5netcdf` `phony_dims`, `invalid_netcdf`, `decode_vlen_strings`; `scipy` `mmap`; `zarr` `consolidated`, `zarr_format`, `use_zarr_fill_value_as_mask`; ten `cfgrib` keys; `rasterio` `parse_coordinates`, `masked`, `default_name`), checked again against the installed engine; other keys, keys the viewer sets for the file (`indexpath`, a ZIP store's `consolidated` / `group`) and decoders are ignored and listed in the report. The `package.json` schema gives completion and validation per engine.
+  - **Files**: `package.json`, `src/common/config.ts` (`getEngineBackendKwargs`), `src/python/DataProcessor.ts`, `python/sdv_backend/decoding.py`, `python/sdv_backend/cli.py` (`--engine-backend-kwargs`)
+  - **Tests**: `python/tests/test_decoding.py` (allowlist, reserved keys, keys unknown to the installed engine, bad JSON shapes), `test/suite/config.test.ts` (shape filtering, machine scope)
+- **Sample data**: `broken_datetime_packed_variable.nc` (broken time units next to a packed `int16` variable with `_FillValue`) and `sample_geotiff_time_bands.tif` (bands tagged as a time axis the way GDAL writes NetCDF to GeoTIFF).
+  - **Files**: `python/sample_data/netcdf.py`, `python/sample_data/geotiff.py`, `python/sample_data/main.py`
+
+### Changed
+
+- **Time fallback turns off time decoding only**: when CF time units cannot be decoded (`unable to decode time units`, issue #136), the file is reopened with `decode_times=False` and `decode_timedelta=False` instead of `decode_cf=False`. Masking, `scale_factor` / `add_offset` and coordinate decoding keep working on every other variable; before, one bad `units` attribute left the whole file packed and unmasked. The info result's `decode_cf_degraded` boolean is replaced by `open_report.degraded_decoders`.
+  - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/decoding.py` (`TIME_FALLBACK_DECODERS`), `python/sdv_backend/results.py`, `src/types.ts`, `src/panel/webview/render/dataInfo.ts`
+  - **Tests**: `python/tests/test_decode_times_fallback.py` (renamed from `test_decode_cf_fallback.py`; the packed variable is unpacked after the fallback)
+- **Raster times decoded as `datetime64`**: rioxarray always decodes times as cftime objects. Standard-calendar time coordinates of GeoTIFF / JPEG-2000 files are now converted to `datetime64`, like NetCDF ones (date axes, dimension labels), unless `decoding.useCftime` is `on`. With `convertBandsToVariables` on (default, and honoured), each band stays a separate variable, so a band axis described by `NETCDF_DIM_*` tags is not built: the report says so and how to get it. The rasterio default `mask_and_scale=False` moved from the backend-kwargs table to the viewer's default decoders, so `decoding.maskAndScale: on` can override it.
+  - **Files**: `python/sdv_backend/opening.py` (`_cftime_to_datetime64`, `_rasterio_notes`), `python/sdv_backend/decoding.py` (`VIEWER_DEFAULT_DECODERS`, `ENGINE_FIXED_DECODERS`: rioxarray only takes `decode_coords="all"`)
+  - **Tests**: `python/tests/test_decoding.py` (datetime64, cftime kept with `useCftime`, bands honoured and explained, raw)
+
+### Fixed
+
+- **Time fallback had no effect on Kerchunk references**: xarray does not forward `decode_cf` to the kerchunk engine, so the retry reopened them decoded and failed again. Decoders are now passed one by one, which kerchunk forwards to `open_zarr`; raw mode works on Kerchunk too.
+  - **Files**: `python/sdv_backend/opening.py`, `python/sdv_backend/decoding.py`
+
+### Security
+
+- **`engineBackendKwargs` is read from user settings only**: it is machine-scoped (`"scope": "machine"`), so VS Code ignores it in a workspace `.vscode/settings.json`, and the extension reads only its global value as well. A cloned repository cannot pass keywords to xarray (writing modes, `storage_options`, drivers, credentials); the backend allowlist is a second barrier.
+  - **Files**: `package.json`, `src/common/config.ts`, `python/sdv_backend/decoding.py`
+  - **Tests**: `test/suite/config.test.ts`, `python/tests/test_decoding.py`
+
+### Documentation
+
+- **v0.14 documents**: release notes `docs/RELEASE_NOTES_0.14.0.md`; `docs/v0.14/` hub (`GETTING_STARTED.md`), pull request summary (`PR_SUMMARY_0.14.0.md`) and manual test plan (`MANUAL_TEST_PLAN_0.14.0.md`). `docs/DEVELOPMENT.md` (backend module table), `CLAUDE.md`, `docs/documentation.json` (feature, settings group, troubleshooting entry), `README.md` (regenerated), `docs/architecture/` (regenerated: `decoding` package, `setRawMode` request).
+
 ## [0.13.0] - 2026-11-05
 
 ### Added

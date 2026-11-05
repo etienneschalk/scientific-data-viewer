@@ -55,6 +55,11 @@ const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
 const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
 const FACETGRID_FIGSIZE = 'facetgridFigsize';
 const SHOW_LOAD_TIME_IN_LOCAL_TIME = 'showLoadTimeInLocalTime';
+const DECODING_MASK_AND_SCALE = 'decoding.maskAndScale';
+const DECODING_DECODE_TIMES = 'decoding.decodeTimes';
+const DECODING_DECODE_COORDS = 'decoding.decodeCoords';
+const DECODING_USE_CFTIME = 'decoding.useCftime';
+const ENGINE_BACKEND_KWARGS = 'engineBackendKwargs';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -272,6 +277,70 @@ export function getShowLoadTimeInLocalTime(): boolean {
     );
 }
 
+export type OnOffDefault = 'default' | 'on' | 'off';
+export type DecodeCoordsChoice = 'default' | 'coordinates' | 'all' | 'off';
+
+/** xarray decoders chosen in the settings; 'default' leaves them to the engine. */
+export interface DecodingSettings {
+    maskAndScale: OnOffDefault;
+    decodeTimes: OnOffDefault;
+    decodeCoords: DecodeCoordsChoice;
+    useCftime: OnOffDefault;
+}
+
+function getChoice<T extends string>(key: string, allowed: readonly T[]): T {
+    const value = getWorkspaceConfig().get<string>(key, allowed[0]);
+    return (allowed as readonly string[]).includes(value)
+        ? (value as T)
+        : allowed[0];
+}
+
+const ON_OFF_DEFAULT: readonly OnOffDefault[] = ['default', 'on', 'off'];
+
+export function getDecodingSettings(): DecodingSettings {
+    return {
+        maskAndScale: getChoice(DECODING_MASK_AND_SCALE, ON_OFF_DEFAULT),
+        decodeTimes: getChoice(DECODING_DECODE_TIMES, ON_OFF_DEFAULT),
+        decodeCoords: getChoice(DECODING_DECODE_COORDS, [
+            'default',
+            'coordinates',
+            'all',
+            'off',
+        ] as const),
+        useCftime: getChoice(DECODING_USE_CFTIME, ON_OFF_DEFAULT),
+    };
+}
+
+/** `{engine: {key: value}}` of extra xarray backend_kwargs. */
+export type EngineBackendKwargs = Record<string, Record<string, unknown>>;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * engineBackendKwargs from the **user** settings only. The setting is
+ * machine-scoped, so VS Code already ignores workspace values; reading the
+ * global value also guards against a cloned repository passing keywords to
+ * xarray. Which keys are honoured is decided by the backend (allowlist in
+ * `sdv_backend/decoding.py`); here only the shape is checked.
+ */
+export function getEngineBackendKwargs(): EngineBackendKwargs {
+    const value = getWorkspaceConfig().inspect<unknown>(
+        ENGINE_BACKEND_KWARGS,
+    )?.globalValue;
+    const result: EngineBackendKwargs = {};
+    if (!isPlainObject(value)) {
+        return result;
+    }
+    for (const [engine, kwargs] of Object.entries(value)) {
+        if (isPlainObject(kwargs) && Object.keys(kwargs).length > 0) {
+            result[engine] = kwargs;
+        }
+    }
+    return result;
+}
+
 /** FacetGrid panel size (width, height) in inches, or null when unset. */
 export function getFacetgridFigsize(): [number, number] | null {
     const raw = getWorkspaceConfig().get<number[]>(FACETGRID_FIGSIZE, [
@@ -328,6 +397,8 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         netcdfEngineOrder: getNetcdfEngineOrder(),
         showInheritedCoordinates: getShowInheritedCoordinates(),
         showLoadTimeInLocalTime: getShowLoadTimeInLocalTime(),
+        decoding: getDecodingSettings(),
+        engineBackendKwargs: getEngineBackendKwargs(),
     };
 }
 

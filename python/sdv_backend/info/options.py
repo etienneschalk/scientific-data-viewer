@@ -1,8 +1,9 @@
 """User options for the 'info' mode."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from sdv_backend.decoding import DecodingOptions
 from sdv_backend.info.display import DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN
 
 
@@ -29,6 +30,8 @@ class InfoOptions:
         ``to_dataset(inherit='all_coords')``.
     open_as_kerchunk : bool
         Open JSON/Parquet as Kerchunk virtual Zarr (experimental).
+    decoding : DecodingOptions
+        CF decoders, raw mode and engine backend_kwargs.
     """
 
     convert_bands_to_variables: bool = False
@@ -39,3 +42,4 @@ class InfoOptions:
     netcdf_engine_order: Sequence[str] | str | None = None
     show_inherited_coordinates: bool = True
     open_as_kerchunk: bool = False
+    decoding: DecodingOptions = field(default_factory=DecodingOptions)

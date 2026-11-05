@@ -13,6 +13,10 @@ import {
     getFacetgridFigsize,
     getPlotTimeoutMs,
     uriRequestsKerchunkOpen,
+    getDecodingSettings,
+    getEngineBackendKwargs,
+    DecodingSettings,
+    EngineBackendKwargs,
 } from '../common/config';
 import {
     DataInfoPythonResponse,
@@ -21,7 +25,49 @@ import {
 } from '../types';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 
-export interface GetDataInfoCliOptions {
+/** How to open the file: options shared by `info` and `plot`. */
+export interface OpenFileOptions {
+    convertBandsToVariables?: boolean;
+    /** Open without any CF decoding ("Reopen raw" in the viewer) */
+    raw?: boolean;
+}
+
+/** Decoding flags shared by `info` and `plot` (see `sdv_backend/decoding.py`). */
+export interface DecodingCliOptions {
+    decoding?: DecodingSettings;
+    raw?: boolean;
+    engineBackendKwargs?: EngineBackendKwargs;
+}
+
+/** Append the decoding flags; settings left at 'default' add nothing. */
+export function pushDecodingCliArgs(
+    args: string[],
+    options: DecodingCliOptions,
+): void {
+    const decoding = options.decoding;
+    if (decoding) {
+        const flags: Array<[string, string]> = [
+            ['--mask-and-scale', decoding.maskAndScale],
+            ['--decode-times', decoding.decodeTimes],
+            ['--decode-coords', decoding.decodeCoords],
+            ['--use-cftime', decoding.useCftime],
+        ];
+        for (const [flag, value] of flags) {
+            if (value !== 'default') {
+                args.push(flag, value);
+            }
+        }
+    }
+    if (options.raw) {
+        args.push('--raw');
+    }
+    const kwargs = options.engineBackendKwargs;
+    if (kwargs && Object.keys(kwargs).length > 0) {
+        args.push('--engine-backend-kwargs', JSON.stringify(kwargs));
+    }
+}
+
+export interface GetDataInfoCliOptions extends DecodingCliOptions {
     convertBandsToVariables?: boolean;
     smallVariableBytes: number;
     smallValueDisplayMaxLen: number;
@@ -59,10 +105,11 @@ export function buildGetDataInfoCliArgs(
     if (options.openAsKerchunk) {
         args.push('--open-as-kerchunk');
     }
+    pushDecodingCliArgs(args, options);
     return args;
 }
 
-export interface CreatePlotCliOptions {
+export interface CreatePlotCliOptions extends DecodingCliOptions {
     style: string;
     convertBandsToVariables?: boolean;
     netcdfEngineOrder: string[];
@@ -162,6 +209,7 @@ export function buildCreatePlotCliArgs(
             `${options.facetgridFigsize[0]},${options.facetgridFigsize[1]}`,
         );
     }
+    pushDecodingCliArgs(args, options);
     return args;
 }
 
@@ -193,7 +241,7 @@ export class DataProcessor {
      */
     async getDataInfo(
         uri: vscode.Uri,
-        convertBandsToVariables: boolean = false,
+        open: OpenFileOptions = {},
         operationId?: string,
     ): Promise<DataInfoPythonResponse> {
         const timer = new PerformanceTimer('getDataInfo');
@@ -207,7 +255,7 @@ export class DataProcessor {
         }
 
         const args = buildGetDataInfoCliArgs(uri.fsPath, {
-            convertBandsToVariables,
+            convertBandsToVariables: open.convertBandsToVariables,
             smallVariableBytes: getSmallVariableBytes(),
             smallValueDisplayMaxLen: getSmallValueDisplayMaxLen(),
             orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
@@ -215,6 +263,9 @@ export class DataProcessor {
             netcdfEngineOrder: getNetcdfEngineOrder(),
             showInheritedCoordinates: getShowInheritedCoordinates(),
             openAsKerchunk: uriRequestsKerchunkOpen(uri),
+            decoding: getDecodingSettings(),
+            raw: open.raw,
+            engineBackendKwargs: getEngineBackendKwargs(),
         });
         timer.mark('python-args-ready');
 
@@ -243,7 +294,7 @@ export class DataProcessor {
     async createPlot(
         uri: vscode.Uri,
         plot: PlotOptions,
-        convertBandsToVariables: boolean = false,
+        open: OpenFileOptions = {},
         timeoutMs: number = getPlotTimeoutMs(),
     ): Promise<CreatePlotPythonResponse> {
         if (!this.pythonManager.ready) {
@@ -255,11 +306,14 @@ export class DataProcessor {
         const style = getMatplotlibStyle();
         const args = buildCreatePlotCliArgs(uri.fsPath, plot, {
             style,
-            convertBandsToVariables,
+            convertBandsToVariables: open.convertBandsToVariables,
             netcdfEngineOrder: getNetcdfEngineOrder(),
             showInheritedCoordinates: getShowInheritedCoordinates(),
             openAsKerchunk: uriRequestsKerchunkOpen(uri),
             facetgridFigsize: getFacetgridFigsize(),
+            decoding: getDecodingSettings(),
+            raw: open.raw,
+            engineBackendKwargs: getEngineBackendKwargs(),
         });
 
         Logger.info(

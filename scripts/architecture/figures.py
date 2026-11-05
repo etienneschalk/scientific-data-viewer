@@ -691,7 +691,8 @@ def _seconds(ms: int) -> str:
 PIPELINES_REFS = {
     "python/sdv_backend/cli.py": ["InfoOptions", "PlotOptions"],
     "python/sdv_backend/formats/detect.py": ["detect_file_format"],
-    "python/sdv_backend/opening.py": ["OpenedData", "cdflib", "decode_cf_degraded"],
+    "python/sdv_backend/opening.py": ["OpenedData", "cdflib", "OpenReport"],
+    "python/sdv_backend/decoding.py": ["resolve_open_kwargs"],
     "python/sdv_backend/info/extract.py": [
         "_whole_file_reprs",
         "_flatten_groups",
@@ -769,8 +770,8 @@ def pipelines() -> str:
     ]
     opening += [
         "time decode error →",
-        "retry with decode_cf=False",
-        "(decode_cf_degraded)",
+        "retry, decode_times off",
+        "(OpenReport)",
     ]
     o.append(
         box(

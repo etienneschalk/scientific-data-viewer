@@ -175,6 +175,7 @@ const PLOT_ACTIONS: Record<string, (controls: HTMLElement) => unknown> = {
 const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
     'show-logs': () => executeShowLogsCommand(),
     'show-settings': () => executeShowSettingsCommand(),
+    'set-raw-mode': (element) => setRawMode(element.dataset.raw === 'true'),
     'install-packages': (element) =>
         executeInstallPackagesCommand(
             (element.dataset.packages ?? '').split(',').filter(Boolean),
@@ -188,6 +189,22 @@ const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
         }
     },
 };
+
+/** Reload the file without / with CF decoding ("Reopen raw" / "Reopen decoded"). */
+async function setRawMode(raw: boolean): Promise<void> {
+    if (messageBus.isDegradedMode) {
+        return;
+    }
+    displayTimestamp(null, true);
+    try {
+        await messageBus.setRawMode(raw);
+    } catch (error) {
+        console.error('Failed to reopen the file:', error);
+        displayGlobalError(
+            'Failed to reopen the file: ' + (error as Error).message,
+        );
+    }
+}
 
 async function handleDocumentClick(event: MouseEvent): Promise<void> {
     if (!(event.target instanceof Element)) {

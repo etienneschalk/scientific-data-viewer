@@ -96,7 +96,8 @@ PY_PACKAGES = {
     "serialization": ("serialization.py", "JSON, best effort"),
     "info": ("info/", None),
     "plotting": ("plotting/", None),
-    "opening": ("opening.py", "OpenedData · engine + decode_cf fallback"),
+    "opening": ("opening.py", "OpenedData · engine + decode_times fallback"),
+    "decoding": ("decoding.py", "decoders + backend_kwargs: sources, allowlist"),
     "formats": ("formats/", None),
     "environment": ("environment/", None),
 }

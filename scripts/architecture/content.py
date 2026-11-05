@@ -48,6 +48,7 @@ REQUEST_NOTES = {
     "savePlotAs": "save dialog",
     "openPlot": "writes to the temp folder, opens it",
     "refresh": "`loadFile` again",
+    "setRawMode": "Reopen raw / decoded: `loadFile` again, per panel",
     "showNotification": "info / warning / error toast",
     "executeCommand": "only the commands in `WEBVIEW_ALLOWED_COMMANDS`",
     "exportWebview": "saves the captured page",

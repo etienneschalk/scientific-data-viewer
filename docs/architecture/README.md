@@ -22,17 +22,18 @@ Read: `src/extension.ts` · `src/DataViewerPanel.ts` · `src/panel/UIController.
 
 The webview sends requests and gets one response per request id; the host only emits events. Both maps are typed in `MessageTypes.ts` (the tables below are read from it) and mirrored by the webview's `bus.ts`. File names coming from the webview are resolved with `resolveWebviewFileName`, which rejects absolute paths and `..` segments.
 
-| Request          | Payload                                                     | Result                                  | Host side                                       |
-| ---------------- | ----------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
-| createPlot       | `PlotOptions`                                               | `CreatePlotResponse`                    | `DataProcessor.createPlot`                      |
-| abortPlot        | `{ operationId: string }`                                   | `{ success: boolean; message: string }` | `PythonManager.abortProcess`                    |
-| savePlot         | `PlotFilePayload`                                           | `SaveResult`                            | writes next to the data file                    |
-| savePlotAs       | `{ plotData: string; variable: string }`                    | `SaveResult`                            | save dialog                                     |
-| openPlot         | `PlotFilePayload`                                           | `void`                                  | writes to the temp folder, opens it             |
-| refresh          | `unknown`                                                   | `void`                                  | `loadFile` again                                |
-| showNotification | `{ message: string; type: 'info' \| 'warning' \| 'error' }` | `void`                                  | info / warning / error toast                    |
-| executeCommand   | `{ command: string; args?: unknown[] }`                     | `unknown`                               | only the commands in `WEBVIEW_ALLOWED_COMMANDS` |
-| exportWebview    | `{ htmlContent: string }`                                   | `SaveResult`                            | saves the captured page                         |
+| Request          | Payload                                                     | Result                                  | Host side                                         |
+| ---------------- | ----------------------------------------------------------- | --------------------------------------- | ------------------------------------------------- |
+| createPlot       | `PlotOptions`                                               | `CreatePlotResponse`                    | `DataProcessor.createPlot`                        |
+| abortPlot        | `{ operationId: string }`                                   | `{ success: boolean; message: string }` | `PythonManager.abortProcess`                      |
+| savePlot         | `PlotFilePayload`                                           | `SaveResult`                            | writes next to the data file                      |
+| savePlotAs       | `{ plotData: string; variable: string }`                    | `SaveResult`                            | save dialog                                       |
+| openPlot         | `PlotFilePayload`                                           | `void`                                  | writes to the temp folder, opens it               |
+| refresh          | `unknown`                                                   | `void`                                  | `loadFile` again                                  |
+| setRawMode       | `{ raw: boolean }`                                          | `void`                                  | Reopen raw / decoded: `loadFile` again, per panel |
+| showNotification | `{ message: string; type: 'info' \| 'warning' \| 'error' }` | `void`                                  | info / warning / error toast                      |
+| executeCommand   | `{ command: string; args?: unknown[] }`                     | `unknown`                               | only the commands in `WEBVIEW_ALLOWED_COMMANDS`   |
+| exportWebview    | `{ htmlContent: string }`                                   | `SaveResult`                            | saves the captured page                           |
 
 | Event                      | Payload                                                     | Emitted when                         |
 | -------------------------- | ----------------------------------------------------------- | ------------------------------------ |

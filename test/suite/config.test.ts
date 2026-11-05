@@ -17,6 +17,8 @@ import {
     getShowLoadTimeInLocalTime,
     getFacetgridFigsize,
     getMaxSize,
+    getDecodingSettings,
+    getEngineBackendKwargs,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
@@ -129,6 +131,49 @@ suite('Config Test Suite', () => {
         }
         await withSetting('maxFileSize', 0.5, () =>
             assert.strictEqual(getMaxSize(), 0.5),
+        );
+    });
+
+    test('decoding settings default to the engine defaults', () => {
+        assert.deepStrictEqual(getDecodingSettings(), {
+            maskAndScale: 'default',
+            decodeTimes: 'default',
+            decodeCoords: 'default',
+            useCftime: 'default',
+        });
+        const config = getExtensionConfigForWebview();
+        assert.deepStrictEqual(config.decoding, getDecodingSettings());
+        assert.deepStrictEqual(config.engineBackendKwargs, {});
+    });
+
+    test('an unknown decoding choice falls back to default', async () => {
+        await withSetting('decoding.decodeTimes', 'sometimes', () =>
+            assert.strictEqual(getDecodingSettings().decodeTimes, 'default'),
+        );
+        await withSetting('decoding.decodeCoords', 'all', () =>
+            assert.strictEqual(getDecodingSettings().decodeCoords, 'all'),
+        );
+    });
+
+    test('engineBackendKwargs is machine-scoped (never read from a workspace)', () => {
+        const property = getPackageJsonDefaults()[
+            'scientificDataViewer.engineBackendKwargs'
+        ] as { scope?: string };
+        assert.strictEqual(property.scope, 'machine');
+    });
+
+    test('engineBackendKwargs keeps only objects of keywords per engine', async () => {
+        await withSetting(
+            'engineBackendKwargs',
+            {
+                h5netcdf: { phony_dims: 'sort' },
+                netcdf4: 'not an object',
+                zarr: {},
+            },
+            () =>
+                assert.deepStrictEqual(getEngineBackendKwargs(), {
+                    h5netcdf: { phony_dims: 'sort' },
+                }),
         );
     });
 

@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer",
     "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
-    "version": "0.13.0",
+    "version": "0.14.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "engines": {
@@ -681,6 +681,214 @@
                     "order": 1014,
                     "description": "Show the load time (top right of the viewer) in local time instead of UTC.",
                     "markdownDescription": "When enabled (**default**), the **Loaded:** timestamp at the top right of the viewer is shown in your local time zone, with its UTC offset (e.g. `2026-10-29T14:03:12.345+01:00`). Disable to show it in UTC (e.g. `2026-10-29T13:03:12.345Z`). Applies at the next load or **Refresh** (🔄)."
+                },
+                "scientificDataViewer.decoding.maskAndScale": {
+                    "type": "string",
+                    "enum": [
+                        "default",
+                        "on",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Engine default (on), except GeoTIFF / JPEG-2000: off (raw integer values, nodata kept as an attribute)",
+                        "Mask _FillValue / nodata with NaN and apply scale_factor / add_offset",
+                        "Keep the stored values: no masking, no scaling"
+                    ],
+                    "default": "default",
+                    "order": 1015,
+                    "description": "xarray mask_and_scale: _FillValue masking and scale_factor / add_offset unpacking.",
+                    "markdownDescription": "xarray [`mask_and_scale`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): mask `_FillValue` / `missing_value` (or a raster's nodata) with NaN and apply `scale_factor` / `add_offset`. **default** lets the engine decide (on), except for GeoTIFF / JPEG-2000 where the viewer keeps raw integer values. CDF (cdflib): **on** passes `fillval_to_nan=True`. To look at one file without any decoding, use **Reopen raw** in the viewer instead. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.decoding.decodeTimes": {
+                    "type": "string",
+                    "enum": [
+                        "default",
+                        "on",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Engine default (on)",
+                        "Decode CF times (units 'days since ...') into dates",
+                        "Keep times as stored numbers (also turns decode_timedelta off)"
+                    ],
+                    "default": "default",
+                    "order": 1016,
+                    "description": "xarray decode_times: decode CF time variables into dates.",
+                    "markdownDescription": "xarray [`decode_times`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode variables with CF time units (`days since 2000-01-01`) into dates. **off** also turns `decode_timedelta` off. When time units cannot be decoded, the viewer already retries with times off and shows **degraded** in File Information. CDF (cdflib): **off** passes `to_datetime=False`. Date axes and the time filter need decoded times. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.decoding.decodeCoords": {
+                    "type": "string",
+                    "enum": [
+                        "default",
+                        "coordinates",
+                        "all",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Engine default ('coordinates')",
+                        "Variables named in a 'coordinates' attribute become coordinates",
+                        "Also variables named in bounds, grid_mapping, ancillary_variables...",
+                        "Keep every variable as a data variable"
+                    ],
+                    "default": "default",
+                    "order": 1017,
+                    "description": "xarray decode_coords: which variables become coordinates.",
+                    "markdownDescription": "xarray [`decode_coords`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): **coordinates** turns the variables named in a `coordinates` attribute into coordinates; **all** also those named in `bounds`, `grid_mapping`, `ancillary_variables`...; **off** keeps every variable as a data variable. Does not apply to GeoTIFF / JPEG-2000 (rioxarray only supports `all`) nor CDF. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.decoding.useCftime": {
+                    "type": "string",
+                    "enum": [
+                        "default",
+                        "on",
+                        "off"
+                    ],
+                    "enumDescriptions": [
+                        "Engine default: numpy datetime64 when possible, cftime otherwise",
+                        "Always cftime objects",
+                        "Always numpy datetime64 (non-standard calendars fail to decode)"
+                    ],
+                    "default": "default",
+                    "order": 1018,
+                    "description": "xarray use_cftime: decode dates as cftime objects or numpy datetime64.",
+                    "markdownDescription": "xarray [`use_cftime`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode dates as `cftime` objects (**on**) or numpy `datetime64` (**off**). **default** uses `datetime64` when the calendar allows it. GeoTIFF / JPEG-2000: rioxarray always decodes to cftime; the viewer converts standard-calendar times to `datetime64` unless this is **on**. Use **Refresh** (🔄) after changing."
+                },
+                "scientificDataViewer.engineBackendKwargs": {
+                    "type": "object",
+                    "scope": "machine",
+                    "default": {},
+                    "order": 1019,
+                    "additionalProperties": false,
+                    "properties": {
+                        "netcdf4": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "auto_complex": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "h5netcdf": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "phony_dims": {
+                                    "type": "string",
+                                    "enum": [
+                                        "sort",
+                                        "access"
+                                    ]
+                                },
+                                "invalid_netcdf": {
+                                    "type": "boolean"
+                                },
+                                "decode_vlen_strings": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "scipy": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "mmap": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "zarr": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "consolidated": {
+                                    "type": "boolean"
+                                },
+                                "zarr_format": {
+                                    "type": "integer",
+                                    "enum": [
+                                        2,
+                                        3
+                                    ]
+                                },
+                                "use_zarr_fill_value_as_mask": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "cfgrib": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "filter_by_keys": {
+                                    "type": "object"
+                                },
+                                "read_keys": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "ignore_keys": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "encode_cf": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "squeeze": {
+                                    "type": "boolean"
+                                },
+                                "time_dims": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "errors": {
+                                    "type": "string",
+                                    "enum": [
+                                        "warn",
+                                        "ignore",
+                                        "raise"
+                                    ]
+                                },
+                                "extra_coords": {
+                                    "type": "object"
+                                },
+                                "coords_as_attributes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "cache_geo_coords": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "rasterio": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "parse_coordinates": {
+                                    "type": "boolean"
+                                },
+                                "masked": {
+                                    "type": "boolean"
+                                },
+                                "default_name": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "description": "Extra backend_kwargs passed to xarray, per engine (user settings only).",
+                    "markdownDescription": "Extra `backend_kwargs` passed to `xarray.open_dataset` / `open_datatree`, per engine, e.g. `{\"h5netcdf\": {\"phony_dims\": \"sort\"}}` or `{\"cfgrib\": {\"filter_by_keys\": {\"typeOfLevel\": \"surface\"}}}`.\n\n**Allowed keys only**: `netcdf4`: `auto_complex`; `h5netcdf`: `phony_dims`, `invalid_netcdf`, `decode_vlen_strings`; `scipy`: `mmap`; `zarr`: `consolidated`, `zarr_format`, `use_zarr_fill_value_as_mask`; `cfgrib`: `filter_by_keys`, `read_keys`, `ignore_keys`, `encode_cf`, `squeeze`, `time_dims`, `errors`, `extra_coords`, `coords_as_attributes`, `cache_geo_coords`; `rasterio`: `parse_coordinates`, `masked`, `default_name`. Other keys (writing modes, `storage_options`, drivers, credentials...) are ignored and listed in **Troubleshooting > How this file was opened**.\n\nFor safety this setting is **read from your user settings only**: a value in a workspace `.vscode/settings.json` (e.g. in a cloned repository) is ignored. Use **Refresh** (🔄) after changing."
                 }
             }
         }

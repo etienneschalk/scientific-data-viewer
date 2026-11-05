@@ -14,7 +14,7 @@ An extension to explore the metadata of scientific data files within your IDE, i
 
 <div align="center">
 
-**Current Version: v0.13.0** • [Changelog](./CHANGELOG.md#0130---2026-11-05) • [v0.13.0 release notes](./docs/RELEASE_NOTES_0.13.0.md)
+**Current Version: v0.14.0** • [Changelog](./CHANGELOG.md#0140---unreleased) • [v0.14.0 release notes](./docs/RELEASE_NOTES_0.14.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -56,6 +56,7 @@ Available on:
 - **Experimental Features**: Configurable experimental features with clear warnings
 - **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and `.zip` / `.zarr.zip` archives; requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
+- **CF decoding you can inspect**: File Information shows the decoding mode (**CF decoded**, **degraded** when broken time units forced `decode_times=False`, or **raw**); **Reopen raw** reloads the file without any decoding (masking, scaling, times, coordinates) for investigation. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with its source
 
 ## 📸 Screenshot Gallery
 
@@ -423,6 +424,43 @@ The extension includes specific settings for virtual environment management:
   - (type: `boolean`, default: `true`)
   - When enabled (**default**), the **Loaded:** timestamp at the top right of the viewer is shown in your local time zone, with its UTC offset (e.g. `2026-10-29T14:03:12.345+01:00`). Disable to show it in UTC (e.g. `2026-10-29T13:03:12.345Z`). Applies at the next load or **Refresh** (🔄).
 
+**Decoding (xarray)**
+
+- **`scientificDataViewer.decoding.maskAndScale`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`mask_and_scale`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): mask `_FillValue` / `missing_value` (or a raster's nodata) with NaN and apply `scale_factor` / `add_offset`. **default** lets the engine decide (on), except for GeoTIFF / JPEG-2000 where the viewer keeps raw integer values. CDF (cdflib): **on** passes `fillval_to_nan=True`. To look at one file without any decoding, use **Reopen raw** in the viewer instead. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default (on), except GeoTIFF / JPEG-2000: off (raw integer values, nodata kept as an attribute)
+    - `"on"`: Mask \_FillValue / nodata with NaN and apply scale_factor / add_offset
+    - `"off"`: Keep the stored values: no masking, no scaling
+- **`scientificDataViewer.decoding.decodeTimes`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`decode_times`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode variables with CF time units (`days since 2000-01-01`) into dates. **off** also turns `decode_timedelta` off. When time units cannot be decoded, the viewer already retries with times off and shows **degraded** in File Information. CDF (cdflib): **off** passes `to_datetime=False`. Date axes and the time filter need decoded times. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default (on)
+    - `"on"`: Decode CF times (units 'days since ...') into dates
+    - `"off"`: Keep times as stored numbers (also turns decode_timedelta off)
+- **`scientificDataViewer.decoding.decodeCoords`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`decode_coords`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): **coordinates** turns the variables named in a `coordinates` attribute into coordinates; **all** also those named in `bounds`, `grid_mapping`, `ancillary_variables`...; **off** keeps every variable as a data variable. Does not apply to GeoTIFF / JPEG-2000 (rioxarray only supports `all`) nor CDF. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default ('coordinates')
+    - `"coordinates"`: Variables named in a 'coordinates' attribute become coordinates
+    - `"all"`: Also variables named in bounds, grid_mapping, ancillary_variables...
+    - `"off"`: Keep every variable as a data variable
+- **`scientificDataViewer.decoding.useCftime`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`use_cftime`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode dates as `cftime` objects (**on**) or numpy `datetime64` (**off**). **default** uses `datetime64` when the calendar allows it. GeoTIFF / JPEG-2000: rioxarray always decodes to cftime; the viewer converts standard-calendar times to `datetime64` unless this is **on**. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default: numpy datetime64 when possible, cftime otherwise
+    - `"on"`: Always cftime objects
+    - `"off"`: Always numpy datetime64 (non-standard calendars fail to decode)
+- **`scientificDataViewer.engineBackendKwargs`**
+  - (type: `object`, default: `{}`)
+  - Extra `backend_kwargs` passed to `xarray.open_dataset` / `open_datatree`, per engine, e.g. `{"h5netcdf": {"phony_dims": "sort"}}` or `{"cfgrib": {"filter_by_keys": {"typeOfLevel": "surface"}}}`.
+  - **Allowed keys only**: `netcdf4`: `auto_complex`; `h5netcdf`: `phony_dims`, `invalid_netcdf`, `decode_vlen_strings`; `scipy`: `mmap`; `zarr`: `consolidated`, `zarr_format`, `use_zarr_fill_value_as_mask`; `cfgrib`: `filter_by_keys`, `read_keys`, `ignore_keys`, `encode_cf`, `squeeze`, `time_dims`, `errors`, `extra_coords`, `coords_as_attributes`, `cache_geo_coords`; `rasterio`: `parse_coordinates`, `masked`, `default_name`. Other keys (writing modes, `storage_options`, drivers, credentials...) are ignored and listed in **Troubleshooting > How this file was opened**.
+  - For safety this setting is **read from your user settings only**: a value in a workspace `.vscode/settings.json` (e.g. in a cloned repository) is ignored. Use **Refresh** (🔄) after changing.
+
 ## 🔧 Troubleshooting
 
 ### ⚠️ Common Issues
@@ -450,10 +488,13 @@ The extension includes specific settings for virtual environment management:
 6. **zarr 2.x reported as missing or too old**:
    - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, the environment is rebuilt automatically after the extension update; otherwise run **Manage Extension Virtual Environment → Recreate**.
 
-7. **Large files not loading**:
+7. **Values look wrong (scaled, masked, times)**:
+   - Open **Troubleshooting > How this file was opened** at the end of the viewer: it shows the xarray call that opened the file, each keyword with its source (viewer default, setting, time fallback, raw mode), and the settings that did not apply. **Reopen raw** (File Information) shows the values as stored, without `scale_factor` / `add_offset`, `_FillValue` masking or time decoding. The **Decoding** settings (`scientificDataViewer.decoding.*`) change the decoding of every file; `scientificDataViewer.engineBackendKwargs` passes extra engine options (allowed keys only, user settings only).
+
+8. **Large files not loading**:
    - Increase the `maxFileSize` setting. Consider using data slicing for very large datasets.
 
-8. **Permission errors**:
+9. **Permission errors**:
    - Ensure the extension has permission to read your data files. Check file permissions and VSCode workspace settings.
 
 ### 💬 Getting Help

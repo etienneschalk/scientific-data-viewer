@@ -29,7 +29,8 @@
         "**Error Handling**: Robust error handling with user-friendly messages",
         "**Experimental Features**: Configurable experimental features with clear warnings",
         "**Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and `.zip` / `.zarr.zip` archives; requires **zarr-python ≥ 3** with xarray 2026.4+",
-        "**Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)"
+        "**Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)",
+        "**CF decoding you can inspect**: File Information shows the decoding mode (**CF decoded**, **degraded** when broken time units forced `decode_times=False`, or **raw**); **Reopen raw** reloads the file without any decoding (masking, scaling, times, coordinates) for investigation. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with its source"
     ],
     "formatTableOverrides": {
         "Zarr (ZIP)": {
@@ -159,6 +160,16 @@
                 "scientificDataViewer.nestedAttributesView",
                 "scientificDataViewer.showLoadTimeInLocalTime"
             ]
+        },
+        {
+            "title": "Decoding (xarray)",
+            "keys": [
+                "scientificDataViewer.decoding.maskAndScale",
+                "scientificDataViewer.decoding.decodeTimes",
+                "scientificDataViewer.decoding.decodeCoords",
+                "scientificDataViewer.decoding.useCftime",
+                "scientificDataViewer.engineBackendKwargs"
+            ]
         }
     ],
     "troubleshooting": {
@@ -186,6 +197,10 @@
             {
                 "title": "zarr 2.x reported as missing or too old",
                 "body": "xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install \"zarr>=3\"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, the environment is rebuilt automatically after the extension update; otherwise run **Manage Extension Virtual Environment → Recreate**."
+            },
+            {
+                "title": "Values look wrong (scaled, masked, times)",
+                "body": "Open **Troubleshooting > How this file was opened** at the end of the viewer: it shows the xarray call that opened the file, each keyword with its source (viewer default, setting, time fallback, raw mode), and the settings that did not apply. **Reopen raw** (File Information) shows the values as stored, without `scale_factor` / `add_offset`, `_FillValue` masking or time decoding. The **Decoding** settings (`scientificDataViewer.decoding.*`) change the decoding of every file; `scientificDataViewer.engineBackendKwargs` passes extra engine options (allowed keys only, user settings only)."
             },
             {
                 "title": "Large files not loading",

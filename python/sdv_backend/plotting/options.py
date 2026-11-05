@@ -2,11 +2,12 @@
 
 import argparse
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 import xarray as xr
 
+from sdv_backend.decoding import DecodingOptions
 from sdv_backend.types import ColWrap
 
 
@@ -132,6 +133,7 @@ class PlotOptions:
     netcdf_engine_order: Sequence[str] | str | None = None
     show_inherited_coordinates: bool = True
     open_as_kerchunk: bool = False
+    decoding: DecodingOptions = field(default_factory=DecodingOptions)
 
     # Data selection
     datetime_variable_name: str | None = None

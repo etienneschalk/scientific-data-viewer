@@ -53,6 +53,8 @@ export interface Requests {
     savePlotAs: [{ plotData: string; variable: string }, SaveResult];
     openPlot: [PlotFilePayload, void];
     refresh: [unknown, void];
+    /** Reload this panel without (true) or with (false) CF decoding */
+    setRawMode: [{ raw: boolean }, void];
     showNotification: [
         { message: string; type: 'info' | 'warning' | 'error' },
         void,

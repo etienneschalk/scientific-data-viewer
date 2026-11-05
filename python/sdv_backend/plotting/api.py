@@ -101,7 +101,10 @@ def create_plot(
         mpl, plt, style_note = setup_pyplot(options.style)
 
         opened = OpenedData.open(
-            file_path, file_format_info, options.convert_bands_to_variables
+            file_path,
+            file_format_info,
+            options.convert_bands_to_variables,
+            options.decoding,
         )
         with closing(opened):
             try:

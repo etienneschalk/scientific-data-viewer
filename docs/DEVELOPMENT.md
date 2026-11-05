@@ -92,11 +92,12 @@ python python/get_data_info.py plot artefacts/sample-data/sample_data.nc /temper
 | `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                                                                                |
 | `environment/`                   | Installed packages, xarray engine selection per extension                                                                                                  |
 | `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                                                                                |
-| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)                                                                           |
+| `opening.py`                     | Opening as DataTree or per-group Datasets, engine and `decode_times` fallbacks, `OpenReport` (`OpenedData`)                                                |
+| `decoding.py`                    | Which decoders and `backend_kwargs` are passed, and their source (viewer default, setting, time fallback, raw); allowlist of user `backend_kwargs`         |
 | `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                                                                        |
 | `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, layout (`layout.py`), drawing (`draw.py`), PNG rendering; see [PLOTTING.md](./PLOTTING.md) |
 
-Dependencies point one way: `cli → info / plotting → opening → formats → environment`.
+Dependencies point one way: `cli → info / plotting → opening → formats → environment`; `decoding` (options and keyword resolution) is used by `cli`, the option classes and `opening`.
 
 Other scripts in `python/`:
 
