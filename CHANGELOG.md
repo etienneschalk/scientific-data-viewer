@@ -390,6 +390,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `.github/workflows/pr-validation.yml`
 - **Pull requests did not run the Python tests**: `pr-validation.yml` ran pre-commit, the VS Code tests, packaging and the audit, but `pytest python/tests` only ran in paranoia (label or weekly). It now runs on the Linux job, with the pinned `requirements-dev.txt`.
   - **Files**: `.github/workflows/pr-validation.yml`, `docs/GITHUB_ACTIONS_SETUP.md`
+- **`setup.sh` used the global Python**: it installed packages with the global `pip3`, ran two single test files with the global `python3`, and created no `.venv`, while `paranoia.sh`, `publish.sh` and the docs say the `.venv` comes from it. It now creates `.venv` (if missing), installs the pinned `requirements-dev.txt` and runs sample data, plots and the whole `python/tests` with it. `DEVELOPMENT.md` and `QUICKSTART.md` give the same commands.
+  - **Files**: `setup.sh`, `docs/DEVELOPMENT.md`, `docs/QUICKSTART.md`
+  - **Tests**: `bash -n setup.sh`; not run end to end in the review (it would reinstall the existing `.venv`)
 
 ### Security
 

@@ -20,7 +20,7 @@ cd scientific-data-viewer
 ```bash
 # Install dependencies
 npm install
-pip install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf
+python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 
 # Compile the extension
 npm run compile

@@ -181,8 +181,11 @@ This guide provides detailed instructions for developing, testing, and maintaini
 
 ### Required Python Packages
 
+The repository `.venv` holds the pinned development packages (`setup.sh` creates it; `paranoia.sh`, `publish.sh` and CI use the same file):
+
 ```bash
-pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8"
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
 ```
 
 ## Development Setup

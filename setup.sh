@@ -45,21 +45,27 @@ echo "✅ Python $PYTHON_VERSION detected"
 echo "📦 Installing Node.js dependencies..."
 npm install
 
-# Install Python dependencies
-echo "🐍 Installing Python dependencies..."
-pip3 install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8" scipy cfgrib rioxarray cdflib pandas pytest
+# Python development environment: the repository .venv, with the pinned
+# packages of requirements-dev.txt (also used by paranoia.sh, publish.sh and CI)
+echo "🐍 Creating .venv and installing requirements-dev.txt..."
+if [ ! -x .venv/bin/python ]; then
+    python3 -m venv .venv
+fi
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements-dev.txt
+PY=.venv/bin/python
 
 # Create sample data
 echo "📊 Creating sample data files..."
 echo "   Existing files are kept (use --overwrite to regenerate them, --disposable for the deletion-test files)..."
-python3 python/create_sample_data.py
+"$PY" python/create_sample_data.py
 
 # Issue #117 non-regression plot PNGs (versioned folder from package.json)
 _PKG_VERSION=$(node -p "require('./package.json').version")
 echo "📈 Generating non-regression plot snapshots (Issue #117)..."
 echo "   Output: artefacts/non-regression-plots/v${_PKG_VERSION}/"
 set +e
-python3 python/non_regression_test_plot.py
+"$PY" python/non_regression_test_plot.py
 NON_REG_PLOT_EXIT=$?
 set -e
 if [ $NON_REG_PLOT_EXIT -eq 0 ]; then
@@ -77,27 +83,15 @@ echo "🧪 Running tests..."
 echo "   Running TypeScript tests..."
 npm test
 
-# XXX No venv is used ; requires pytest to be installed globally.
-echo "   Running Python datetime edge case tests..."
+echo "   Running Python tests..."
 set +e  # Temporarily disable exit on error for test execution
-python3 -m pytest python/tests/test_datetime_edge_cases.py -v
+"$PY" -m pytest python/tests -q
 PYTEST_EXIT_CODE=$?
 set -e  # Re-enable exit on error
 if [ $PYTEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python datetime edge case tests passed"
+    echo "✅ Python tests passed"
 else
-    echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
-fi
-
-echo "   Running Python display feature flag tests..."
-set +e
-python3 -m pytest python/tests/test_display_feature_flags.py -v
-DISPLAY_FLAGS_PYTEST_EXIT_CODE=$?
-set -e
-if [ $DISPLAY_FLAGS_PYTEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python display feature flag tests passed"
-else
-    echo "⚠️  Python display feature flag tests failed (non-fatal, exit code: $DISPLAY_FLAGS_PYTEST_EXIT_CODE)"
+    echo "⚠️  Python tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
 fi
 
 echo ""
@@ -113,5 +107,6 @@ echo "- npm run watch    # Watch for changes and recompile"
 echo "- npm test         # Run tests"
 echo "- npm run lint     # Check code style"
 echo "- npm run package  # Create .vsix package in artefacts/vsix-releases/"
+echo "- .venv/bin/python -m pytest python/tests   # Python tests"
 echo ""
 echo "Happy coding! 🚀"
