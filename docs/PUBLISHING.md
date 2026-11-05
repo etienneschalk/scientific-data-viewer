@@ -14,7 +14,7 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 4. **Test the upgrade from the previous release**: `npm run package`, then `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-<previous>.vsix` (`scripts/release-vsix.sh <previous>` rebuilds it from its tag); `./paranoia.sh --full` runs every check, this one included (and `--scenario offline`, `--scenario interrupted` when the environment changed). See `docs/v0.13/UPGRADE_TEST_PLAN.md`.
 5. **Write the release docs**: `docs/RELEASE_NOTES_<ver>.md` (read by `publish.sh` and linked from the README) and the PR summary in `docs/v<major.minor>/`.
 6. **Test thoroughly** with various file types and sizes
-7. **Update documentation** if needed (then `python scripts/generate_readme.py`)
+7. **Update documentation** if needed (then `python scripts/generate_readme.py --no-timestamp`, with Node 22 for its prettier pass)
 
 ### Publishing to VSCode Marketplace
 

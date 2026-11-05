@@ -21,7 +21,7 @@ npm run screenshots         # full-page viewer screenshots -> artefacts/screensh
 python python/create_sample_data.py [--overwrite]   # create artefacts/sample-data/ (generators in python/sample_data/)
 python python/non_regression_test_plot.py   # plot gallery -> artefacts/non-regression-plots/v<version>/
 scripts/release-vsix.sh 0.12.1      # rebuild an old release's .vsix from its tag -> artefacts/vsix-releases/
-python scripts/generate_readme.py     # regenerate README.md
+python scripts/generate_readme.py --no-timestamp   # regenerate README.md (Node 22 for its prettier pass; paranoia `readme` fails on a timestamp)
 .venv/bin/python scripts/architecture/generate.py [--check]   # regenerate docs/architecture/ diagrams (Graphviz) / check they match the code
 .venv/bin/python scripts/qa/fixtures/make_fixtures.py   # QA: hostile files -> artefacts/qa/fixtures (scripts/qa/README.md)
 .venv/bin/python scripts/qa/backend/diff_info.py        # QA: backend vs baseline checkout (make_baseline.sh <ref>); also diff_plot.py, diff_scen.py
@@ -48,7 +48,7 @@ env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in
 
 ## Conventions / gotchas
 
-- **README.md is auto-generated** from `package.json` + `docs/documentation.json` — edit those and run `scripts/generate_readme.py`, never README.md directly.
+- **README.md is auto-generated** from `package.json` + `docs/documentation.json` — edit those and run `scripts/generate_readme.py --no-timestamp`, never README.md directly.
 - **`docs/architecture/` is generated** by `scripts/architecture/generate.py` — never edit it by hand. After adding / moving / renaming a module, a webview protocol message or a function named in a flow, run `generate.py --check`, fix what it reports in `scripts/architecture/` (layers, refs, notes, flows), then regenerate and commit (see `docs/DEVELOPMENT.md` § Architecture diagrams).
 - New settings/commands go in `package.json` `contributes` and are read through `src/common/config.ts`.
 - **The `.vsix` holds the strict minimum**: `.vscodeignore` excludes everything (`**`) and names each runtime file (`package.json`, README, LICENSE, two icons, `out/src/**/*.js` without source maps, `out/webview/webview.js`, `src/panel/webview/styles.css`, `python/get_data_info.py`, `check_package_availability.py`, `sdv_backend/**/*.py`). A new file read at runtime must be added there, else the `.vsix` breaks while F5 still works; anything else is never packaged. `vscode:prepublish` deletes `out/` before compiling, so compiled files of deleted sources cannot ship. vsce applies `!` patterns whatever their order. Check with `npx vsce ls` (72 files).

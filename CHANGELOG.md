@@ -413,6 +413,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Closing a tab left its file load running**: closing a viewer aborted its plots but not the info run of a file still loading (it had no operation ID), so `get_data_info.py` went on for up to 5 minutes (`DATA_INFO_TIMEOUT_MS`) and its result was discarded. Each load now gets an operation ID (`info-<panel>-<n>`), tracked with the panel's plots and aborted on dispose; `DataProcessor.abortPlot` is renamed `abortOperation` (the webview's `abortPlot` message is unchanged).
   - **Files**: `src/panel/UIController.ts` (`runningOperations`), `src/python/DataProcessor.ts` (`getDataInfo` operation ID, `abortOperation`)
   - **Tests**: `test/suite/ui/UIController.test.ts` (closing during a load aborts the info run), `test/suite/pythonManager.test.ts` (a real slow process started through `getDataInfo` is killed by `abortOperation`)
+- **README regenerated without a timestamp**: the README was regenerated during the release review without `--no-timestamp`, so the `readme` step of `paranoia.sh` (CI) failed on the "Generated on" line. Regenerated with `--no-timestamp`; `CLAUDE.md`, `PUBLISHING.md` and `GETTING_STARTED.md` now give the command with the flag (the cause: `CLAUDE.md` gave it without).
+  - **Files**: `README.md`, `CLAUDE.md`, `docs/PUBLISHING.md`, `docs/v0.13/GETTING_STARTED.md`
+  - **Tests**: `./paranoia.sh --only readme` passes
 
 ### Security
 

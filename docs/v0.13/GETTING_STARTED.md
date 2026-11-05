@@ -127,7 +127,7 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
 2. **Set the release date**:
    - in the CHANGELOG heading `## [0.13.0] - …`, set to 2026-11-05 during the final review; change it if the release happens on another day;
    - in the CHANGELOG link at the bottom of the release notes;
-   - in the README (`python scripts/generate_readme.py`; its changelog anchor follows the heading).
+   - in the README (`python scripts/generate_readme.py --no-timestamp`; its changelog anchor follows the heading).
 3. **Update the commit list** of the [PR summary](./PR_SUMMARY_0.13.0.md#commits-oldest--newest).
 4. **Consider a pre-release first**: `vsce publish --pre-release` (and `--pre-release` for Open VSX). Only users who opted into pre-releases get it, so a broken rebuild reaches a few people first. A version number can be published only once, so the following stable release must be **0.13.1**, not 0.13.0. Check the `vsce` / `ovsx` docs before relying on this.
 5. **Publish** with `publish.sh` ([PUBLISHING.md](../PUBLISHING.md)).
