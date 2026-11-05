@@ -567,3 +567,31 @@ Paranoia: every check before a release:
 94. fix(webview): show "Empty" as the size of variables of 0 bytes
 95. fix(ci): run GitHub Actions on Node.js 24
 96. fix(ci): pin astral-sh/setup-uv to v10.3.3
+
+Release review (2026-11-05, items in `docs/v0.13/REVIEWS_0.13.0.md` § Release review):
+
+97. docs: pre-release cleanup of the 0.13.0 docs
+98. docs: add the v0.13.0 release review tracker
+99. fix(webview): no request timeout on refresh, installs and save dialogs
+100.  fix(python): queue package installs behind environment rebuilds
+101.  fix(python): stop info runs too when the extension deactivates
+102.  fix(panel): mark the panel disposed before tearing it down
+103.  fix(config): handle both interpreter settings changed in one save
+104.  fix(panel): report a cancelled save dialog as cancelled
+105.  fix(process): decode process output as UTF-8 streams
+106.  fix(plot): report format detection errors instead of UnboundLocalError
+107.  fix(info): report a missing .zip as file not found
+108.  docs: state the Python floors of the backend and of development
+109.  refactor: remove the unused defaultView setting and dead code
+110.  chore(manifest): drop activation events that can never fire
+111.  chore(deps): remove unused husky, lint-staged and @types/glob
+112.  fix(ci): do not let pushes to main and develop cancel each other
+113.  ci: run the Python backend tests on pull requests
+114.  fix(setup): create the .venv from requirements-dev.txt and run all Python tests
+115.  docs: merge the code review, QA report and QA fixes into one reviews doc
+116.  docs: link the upgrade test steps instead of repeating them
+117.  docs: move the technical verification guide into the manual test plan
+118.  chore(tooling): one checkout of the last release, issue #117 cases in diff_scen
+119.  chore(tooling): share the headless Chrome code of screenshots and webview QA
+120.  test(backend): check the format list against the custom editors
+121.  docs: document the release review of 0.13.0
