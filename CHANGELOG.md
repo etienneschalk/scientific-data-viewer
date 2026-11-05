@@ -357,6 +357,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Package install during an environment rebuild**: installing a missing package from the viewer (own uv environment) ran at once, while create / update / recreate / delete wait for each other, so an install clicked during **Manage → Recreate** could write into the folder being replaced. It now waits for the operation in progress.
   - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts` (`installIntoOwnEnvironment`), `src/python/PythonManager.ts`
   - **Tests**: `test/suite/python/extensionEnvironmentUpdate.test.ts` (install waits for a recreate), `test/suite/pythonManager.test.ts`
+- **Info runs left running after VS Code closes the extension**: deactivation aborted only the processes started with an operation ID (plots); an info run (up to 5 minutes on a slow file) kept running. Every backend run is now tracked and stopped.
+  - **Files**: `src/python/PythonManager.ts`, `src/extension.ts`
+  - **Tests**: `test/suite/pythonManager.test.ts` (`abortAllProcesses` stops a run without operation ID)
 
 ### Security
 

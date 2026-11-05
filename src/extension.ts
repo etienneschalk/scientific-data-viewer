@@ -315,7 +315,7 @@ export function deactivate() {
     Logger.info("🧩 🔧 Starting extension's deactivation procedure...");
 
     // Abort all active Python processes to prevent orphan processes
-    // This is important for long-running operations like plot generation
+    // (plots and info runs alike)
     if (activePythonManager) {
         const abortedCount = activePythonManager.abortAllProcesses();
         if (abortedCount > 0) {

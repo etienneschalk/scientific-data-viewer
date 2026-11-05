@@ -83,6 +83,7 @@ export class PythonManager {
 
     // Track active processes for timeout/abort handling
     private _activeProcesses: Map<string, ActiveProcess> = new Map();
+    private _internalProcessCounter = 0;
 
     constructor(
         private readonly extensionEnvManager: ExtensionVirtualEnvironmentManager,
@@ -268,12 +269,14 @@ export class PythonManager {
         );
 
         const controller = new AbortController();
-        if (operationId) {
-            this._activeProcesses.set(operationId, {
-                controller,
-                startTime: Date.now(),
-            });
-        }
+        // Every run is tracked so that abortAllProcesses (deactivation) also
+        // stops runs without an operation ID, such as a long info run.
+        const processKey =
+            operationId ?? `internal-${++this._internalProcessCounter}`;
+        this._activeProcesses.set(processKey, {
+            controller,
+            startTime: Date.now(),
+        });
 
         let result: RunProcessResult;
         try {
@@ -296,11 +299,9 @@ export class PythonManager {
             );
         } finally {
             if (
-                operationId &&
-                this._activeProcesses.get(operationId)?.controller ===
-                    controller
+                this._activeProcesses.get(processKey)?.controller === controller
             ) {
-                this._activeProcesses.delete(operationId);
+                this._activeProcesses.delete(processKey);
             }
         }
 

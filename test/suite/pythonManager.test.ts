@@ -753,6 +753,16 @@ suite('PythonManager initialization and execution', () => {
             assert.strictEqual(manager.abortProcess('op-1'), false);
         });
 
+        test('abortAllProcesses also stops runs without an operation id', async () => {
+            const manager = readyManager();
+            const file = script('slow.js', 'setTimeout(() => {}, 60000)');
+            const running = manager.executePythonFile(file);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            assert.strictEqual(manager.abortAllProcesses(), 1);
+            await assert.rejects(running, /Process was aborted/);
+            assert.strictEqual(manager.abortAllProcesses(), 0);
+        });
+
         test('missing module error suggests the extension requirements', async () => {
             const file = script(
                 'missing.js',
