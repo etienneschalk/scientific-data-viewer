@@ -5,6 +5,7 @@ groups -> per group: attributes, dimensions, coordinates, variables, datetime
 ranges and reprs.
 """
 
+import errno
 import io
 import os
 from contextlib import closing
@@ -131,6 +132,12 @@ def _open_import_error(
     """Explain an ImportError raised while opening (not-a-Zarr ZIP, not-Kerchunk
     JSON, or genuinely missing packages)."""
     if file_format_info.extension == ".zip":
+        if not file_path.exists():
+            # Same error as any other missing file, not "not a Zarr store"
+            missing = FileNotFoundError(
+                errno.ENOENT, os.strerror(errno.ENOENT), str(file_path)
+            )
+            return _file_info_error(missing, file_format_info, versions_text)
         return FileInfoError(
             error=(
                 "This ZIP archive is not a Zarr store (no zarr.json or .zgroup found)."

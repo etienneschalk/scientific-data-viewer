@@ -375,6 +375,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Plot error hidden by `UnboundLocalError`**: if file format detection raised, the error handler of `create_plot` used the format info before it was assigned, so the user saw `UnboundLocalError` instead of the real error. A placeholder format info (extension of the file, no engines) is now set before detection.
   - **Files**: `python/sdv_backend/plotting/api.py`
   - **Tests**: `python/tests/test_empty_selection.py` (`test_format_detection_error_is_reported`)
+- **Missing `.zip` reported as "not a Zarr store"**: a `.zip` that no longer exists (deleted or moved while its tab stayed open) said "This ZIP archive is not a Zarr store". It now gives the same `FileNotFoundError` as any other missing file.
+  - **Files**: `python/sdv_backend/info/extract.py`
+  - **Tests**: `python/tests/test_zarr_store_detection.py` (`test_missing_zip_is_reported_as_missing`)
 
 ### Security
 

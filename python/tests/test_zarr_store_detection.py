@@ -204,3 +204,11 @@ def test_ordinary_zip_is_not_treated_as_zarr(tmp_path: Path) -> None:
     assert isinstance(result, FileInfoError)
     assert result.error_type == "ValueError"
     assert "not a Zarr store" in result.error
+
+
+def test_missing_zip_is_reported_as_missing(tmp_path: Path) -> None:
+    """A missing .zip is "file not found", like any other file, not "not a Zarr store"."""
+    result = get_file_info(tmp_path / "gone.zarr.zip")
+    assert isinstance(result, FileInfoError)
+    assert result.error_type == "FileNotFoundError"
+    assert "No such file or directory" in result.error
