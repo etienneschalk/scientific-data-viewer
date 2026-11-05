@@ -386,6 +386,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Missing `.zip` reported as "not a Zarr store"**: a `.zip` that no longer exists (deleted or moved while its tab stayed open) said "This ZIP archive is not a Zarr store". It now gives the same `FileNotFoundError` as any other missing file.
   - **Files**: `python/sdv_backend/info/extract.py`
   - **Tests**: `python/tests/test_zarr_store_detection.py` (`test_missing_zip_is_reported_as_missing`)
+- **CI runs on pushes cancelled each other**: the concurrency group of `pr-validation.yml` was `pr-<PR number>`, empty on push events, so a push to `main` cancelled a run in progress on `develop` and vice versa. It now falls back to the ref (as `paranoia.yml` does). The workflow also declares read-only `contents` permissions.
+  - **Files**: `.github/workflows/pr-validation.yml`
 
 ### Security
 

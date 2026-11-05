@@ -7,8 +7,13 @@ on:
   push:
     branches: [main, develop]
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  # On push events there is no PR number: fall back to the ref, so pushes to
+  # main and develop do not cancel each other's runs.
+  group: pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   validate-changes:
