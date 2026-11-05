@@ -225,26 +225,16 @@ suite('Extension Test Suite', () => {
                 'Should have activation events',
             );
 
-            // Check for expected activation events
-            const expectedEvents = [
-                'onLanguage:netcdf',
-                'onLanguage:cdf',
-                'onLanguage:hdf5',
-                'onCommand:scientificDataViewer.openViewer',
-                'onFileSystem:netcdf',
-                'onFileSystem:zarr',
-                'onCustomEditor:netcdfEditor',
-                'onCustomEditor:cdfEditor',
-                'onCustomEditor:hdf5Editor',
-            ];
-
-            for (const event of expectedEvents) {
-                if (activationEvents.includes(event)) {
-                    console.log(`✅ Activation event found: ${event}`);
-                } else {
-                    console.log(`❌ Activation event not found: ${event}`);
-                }
-            }
+            // Custom editors and commands activate the extension implicitly
+            // (VS Code >= 1.74); onFileSystem would need a file system
+            // provider, which the extension does not register.
+            assert.deepStrictEqual(
+                activationEvents.filter((event: string) =>
+                    event.startsWith('onFileSystem:'),
+                ),
+                [],
+            );
+            assert.ok(activationEvents.includes('onLanguage:netcdf'));
         }
     });
 

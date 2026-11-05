@@ -36,12 +36,7 @@
         "onLanguage:grib",
         "onLanguage:geotiff",
         "onLanguage:jp2",
-        "onLanguage:kerchunk",
-        "onFileSystem:netcdf",
-        "onFileSystem:zarr",
-        "onFileSystem:grib",
-        "onFileSystem:geotiff",
-        "onFileSystem:jp2"
+        "onLanguage:kerchunk"
     ],
     "main": "./out/src/extension.js",
     "contributes": {

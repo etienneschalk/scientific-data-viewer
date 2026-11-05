@@ -211,6 +211,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Unused setting `scientificDataViewer.defaultView` and dead code**: the setting was declared "currently unused" and never read (a value left in `settings.json` is now shown as unknown, with no effect either way). Also removed: `DataViewerPanel.getExtensionUri` and `getPanelsWithErrorsCount` (no callers), `isPlotParameterSet` (inlined; its first parameter was unused), and two stale TODO comments (tab counter in dev mode, `getVersion` everywhere).
   - **Files**: `package.json`, `docs/documentation.json` / README, `src/DataViewerPanel.ts`, `src/common/vscodeutils.ts`, `src/panel/webview/plotParams.ts`, `docs/v0.13/GETTING_STARTED.md` (loose ends)
   - **Tests**: `test/suite/extension.test.ts` (no `defaultView` checks)
+- **`onFileSystem:*` activation events**: the five `onFileSystem:netcdf` / `zarr` / `grib` / `geotiff` / `jp2` entries could never fire (they need a file system provider for that URI scheme, which the extension does not register). The `onLanguage:*` entries stay; custom editors and commands activate the extension implicitly.
+  - **Files**: `package.json` (`activationEvents`)
+  - **Tests**: `test/suite/extension.test.ts` (asserts no `onFileSystem:` event instead of only logging)
 
 ### Fixed
 
