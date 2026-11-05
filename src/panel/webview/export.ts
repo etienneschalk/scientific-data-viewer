@@ -73,7 +73,7 @@ export async function handleExportWebview(): Promise<void> {
     }
     try {
         const result: any = await messageBus.exportWebview(htmlContent);
-        if (result && result.success === false) {
+        if (result && result.success === false && !result.cancelled) {
             displayGlobalError(
                 'Failed to export webview content: ' + result.error,
             );

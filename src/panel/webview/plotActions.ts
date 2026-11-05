@@ -586,11 +586,7 @@ export async function saveVariablePlotAs(controls: HTMLElement): Promise<void> {
     }
     try {
         const result: any = await messageBus.savePlotAs(plotData, variable);
-        if (
-            result &&
-            result.success === false &&
-            result.error !== 'Save cancelled by user'
-        ) {
+        if (result && result.success === false && !result.cancelled) {
             displayVariablePlotError(
                 controls,
                 `Failed to save plot: ${result.error}`,

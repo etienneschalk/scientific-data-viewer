@@ -363,7 +363,7 @@ export class UIController {
                 title: 'Save Plot As',
             });
             if (!saveUri) {
-                return { success: false, error: 'Save cancelled by user' };
+                return { success: false, cancelled: true };
             }
 
             await vscode.workspace.fs.writeFile(
@@ -465,7 +465,7 @@ export class UIController {
                 title: 'Export Webview Content',
             });
             if (!saveUri) {
-                return { success: true, error: 'Export cancelled by user' };
+                return { success: false, cancelled: true };
             }
 
             // The live webview loads its CSS/JS over vscode-resource URIs,

@@ -33,6 +33,8 @@ export interface SaveResult {
     success: boolean;
     filePath?: string;
     error?: string;
+    /** The user closed the save dialog: nothing written, no error to show */
+    cancelled?: boolean;
 }
 
 export interface PlotFilePayload {

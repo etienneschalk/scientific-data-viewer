@@ -366,6 +366,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Both interpreter settings changed at once**: when one settings change touched both `overridePythonInterpreter` and `useExtensionOwnEnvironment` (e.g. `settings.json` edited by hand), only the first was logged, and the "own environment not used" report of the second was skipped. Both are now logged, the interpreter is refreshed once, then the report runs.
   - **Files**: `src/extension.ts` (`handlerOnDidChangeConfiguration`)
   - **Tests**: none automated (module-private handler); manual: change both settings in `settings.json` in one save and check the two log lines
+- **Cancelled Export answered "success"**: closing the **Export** save dialog answered `success: true` with an error text, while **Save As** answered `success: false` and the webview recognised it by comparing the message. Both now answer `{ success: false, cancelled: true }`, and the webview shows no error for a cancelled dialog.
+  - **Files**: `src/panel/communication/MessageTypes.ts` (`SaveResult.cancelled`), `src/panel/UIController.ts`, `src/panel/webview/export.ts`, `src/panel/webview/plotActions.ts`
+  - **Tests**: `test/suite/ui/UIController.test.ts` (cancelled Export and Save As)
 
 ### Security
 

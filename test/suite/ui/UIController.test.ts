@@ -193,6 +193,27 @@ suite('UIController Test Suite', () => {
         }
     });
 
+    test('a cancelled save dialog answers cancelled, not success', async () => {
+        await controller.loadFile(dataFile);
+        const original = vscode.window.showSaveDialog;
+        (vscode.window as any).showSaveDialog = async () => undefined;
+        try {
+            for (const [command, payload] of [
+                ['exportWebview', { htmlContent: '<html></html>' }],
+                ['savePlotAs', { plotData: 'iVBORw0KGgo=', variable: '/t' }],
+            ] as const) {
+                const response = await request(command, payload);
+                assert.deepStrictEqual(
+                    response.payload,
+                    { success: false, cancelled: true },
+                    command,
+                );
+            }
+        } finally {
+            (vscode.window as any).showSaveDialog = original;
+        }
+    });
+
     test('the size limit does not apply to directory stores (Zarr)', async () => {
         const store = vscode.Uri.file(path.join(tmpDir, 'store.zarr'));
         fs.mkdirSync(store.fsPath);
