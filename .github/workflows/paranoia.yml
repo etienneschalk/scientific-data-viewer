@@ -116,7 +116,6 @@ jobs:
             !artefacts/paranoia/*/upgrade/**
             !artefacts/paranoia/*/vsix/**
             !artefacts/paranoia/*/baseline/**
-            !artefacts/paranoia/*/golden-ref/**
             !artefacts/paranoia/*/qa/fixtures/**
             # Named after the hostile QA fixtures (has?question.nc, C:x.png...),
             # which artifacts refuse; their differences are in logs/qa-info.log

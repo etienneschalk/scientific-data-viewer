@@ -35,7 +35,7 @@ Run the backend of a baseline checkout and of the working tree with the **same i
 scripts/qa/backend/make_baseline.sh v0.12.1       # git worktree in artefacts/qa/baseline
 .venv/bin/python scripts/qa/backend/diff_info.py  # every sample + fixture: structural diff of `info`
 .venv/bin/python scripts/qa/backend/diff_plot.py  # every variable: plot status + pixel comparison, report in artefacts/qa/backend/plots/plots.md
-.venv/bin/python scripts/qa/backend/diff_scen.py  # ~80 plot-option scenarios, report in artefacts/qa/backend/scenarios/scenarios.md
+.venv/bin/python scripts/qa/backend/diff_scen.py  # ~100 plot-option scenarios (incl. the issue #117 gallery cases `i117_*`), report in artefacts/qa/backend/scenarios/scenarios.md
 scripts/qa/backend/make_baseline.sh --remove
 ```
 

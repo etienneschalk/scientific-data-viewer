@@ -3,7 +3,9 @@
 Usage: python scripts/qa/backend/diff_scen.py [--python PY] [--baseline DIR]
            [--out DIR] [scenario names...]
 
-Each scenario is (name, sample file, variable, plot flags). Images go to
+Each scenario is (name, sample file, variable, plot flags); the issue #117
+cases of the plot gallery (python/non_regression_test_plot.py, their single
+source) are added as ``i117_<slug>``. Images go to
 <out>/scenarios/<name>.{old,new}.png, with scenarios.md, a report of both side
 by side grouped by tag (plot_report.py), and scenarios.json. Exit code 1 when a
 scenario that worked in the baseline fails now.
@@ -11,6 +13,7 @@ scenario that worked in the baseline fails now.
 
 import argparse
 import json
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
@@ -307,6 +310,53 @@ SCEN = [
 ]
 
 
+def issue_117_scenarios() -> list[tuple[str, str, str, list[str]]]:
+    """The cases of the issue #117 plot gallery, as CLI flags (``--flag=value``
+    so negative numbers are not read as options)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "python"))
+    import non_regression_test_plot as gallery
+
+    def flags(case) -> list[str]:
+        out: list[str] = []
+        if case.dimension_slices:
+            out.append(f"--dimension-slices={json.dumps(case.dimension_slices)}")
+        for field, flag in (
+            ("bins", "--bins"),
+            ("facet_row", "--facet-row"),
+            ("facet_col", "--facet-col"),
+            ("col_wrap", "--col-wrap"),
+            ("plot_x", "--plot-x"),
+            ("plot_y", "--plot-y"),
+            ("plot_hue", "--plot-hue"),
+            ("aspect", "--aspect"),
+            ("size", "--size"),
+            ("cmap", "--cmap"),
+            ("vmin", "--vmin"),
+            ("vmax", "--vmax"),
+        ):
+            value = getattr(case, field)
+            if value is not None:
+                out.append(f"{flag}={value}")
+        for field, flag in (("xincrease", "--xincrease"), ("yincrease", "--yincrease")):
+            value = getattr(case, field)
+            if value is not None:
+                out.append(f"{flag}={'true' if value else 'false'}")
+        if case.robust:
+            out.append("--robust")
+        if case.add_colorbar is False:
+            out.append("--no-add-colorbar")
+        if case.add_legend:
+            out.append("--add-legend")
+        return out
+
+    data = gallery.DEFAULT_DATA_REL.name
+    var = gallery.DEFAULT_VARIABLE_PATH
+    return [
+        (f"i117_{case.slug}", data, var, flags(case))
+        for case in gallery.all_cases(full_grid=False)
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("only", nargs="*", help="scenario names (default: all)")
@@ -318,7 +368,9 @@ def main() -> int:
     old_script = baseline_script(args.baseline)
     out = args.out / "scenarios"
     out.mkdir(parents=True, exist_ok=True)
-    scenarios = [s for s in SCEN if not args.only or s[0] in args.only]
+    scenarios = [
+        s for s in SCEN + issue_117_scenarios() if not args.only or s[0] in args.only
+    ]
 
     def one(sc):
         name, f, var, flags = sc

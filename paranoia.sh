@@ -13,8 +13,9 @@
 #   package       .vsix contents (nothing missing, nothing leaked) and the
 #                 packaged Python backend run on sample files
 #   tests         sample data regenerated, pytest, npm test (VS Code), golden
-#                 snapshots, non-regression plot gallery
-#   regression    backend info / plots / ~80 plot scenarios vs the last release,
+#                 snapshots
+#   regression    backend info / plots / ~100 plot scenarios (with the issue
+#                 #117 gallery cases) vs the last release,
 #                 real webview in headless Chromium, e2e suites in a real VS Code
 #                 on the packaged extension
 #   users         uv environment change; migration from every older release
@@ -88,10 +89,9 @@ STEPS=(
     "vsix-backend|quick|Package|Packaged backend on sample files|600"
     "pytest|quick|Tests|Python tests (pytest)|600"
     "npm-test|quick|Tests|Extension tests in VS Code (npm test)|900"
-    "golden|standard|Regression|Golden snapshots of the backend|600"
-    "non-regression|standard|Regression|Non-regression plot gallery (issue #117 cases)|300"
-    "qa-fixtures|standard|Regression|Hostile QA fixtures|300"
     "qa-baseline|standard|Regression|Checkout of the last release|300"
+    "golden|standard|Regression|Golden snapshots of the backend|600"
+    "qa-fixtures|standard|Regression|Hostile QA fixtures|300"
     "qa-info|standard|Regression|Backend info vs last release|600"
     "qa-plot|standard|Regression|Every variable plotted vs last release|1500"
     "qa-scen|standard|Regression|Plot-option scenarios vs last release|300"
@@ -457,13 +457,13 @@ step_npm_test() {
     if [ $rc -eq 0 ]; then note "${passing:-passed}"; else fail "${failing:-npm test exit $rc}${passing:+, $passing}"; fi
 }
 
-GOLDEN_REF_DIR=""
 # Local snapshots (artefacts/golden, recorded on a known-good commit) when there
-# are some; else (CI, fresh clone) against a reference, recorded and checked in
-# this run with the same interpreter: PARANOIA_GOLDEN_REF, default the last
-# release ($BASELINE). Cases whose options that release does not know are N/A
+# are some; else (CI, fresh clone) recorded with the backend of the last
+# release, in the baseline checkout of the qa-baseline step (the one the QA
+# diffs use; --baseline chooses the release), and checked with the same
+# interpreter. Cases whose options that release does not know are N/A
 step_golden() {
-    if [ -n "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ] && [ -z "${PARANOIA_GOLDEN_REF:-}" ]; then
+    if [ -n "$(ls -A "$ARTEFACTS/golden" 2>/dev/null)" ]; then
         run "$PY" python/tools/golden_snapshots.py check
         local rc=$? last
         last="$(tail -1 "$LOGS/golden.log")"
@@ -474,36 +474,19 @@ step_golden() {
         fi
         return
     fi
-    local ref="${PARANOIA_GOLDEN_REF:-$BASELINE}"
-    [ -n "$ref" ] || { skip "no release tag to record the snapshots with (--baseline or PARANOIA_GOLDEN_REF)"; return; }
+    need_baseline || return
     local label
-    label="$(git rev-parse --short "$ref^{commit}" 2>/dev/null)" || { skip "no reference commit for the snapshots ($ref)"; return; }
-    GOLDEN_REF_DIR="$OUT/golden-ref"
-    run git worktree add --detach "$GOLDEN_REF_DIR" "$ref" || { fail "cannot check out $ref"; return; }
+    label="$(git -C "$SDV_QA_BASELINE" rev-parse --short HEAD 2>/dev/null)"
     run "$PY" python/tools/golden_snapshots.py record --golden-dir "$OUT/golden" \
-        --entry "$GOLDEN_REF_DIR/python/get_data_info.py" >/dev/null || true
+        --entry "$SDV_QA_BASELINE/python/get_data_info.py" >/dev/null || true
     run "$PY" python/tools/golden_snapshots.py check --golden-dir "$OUT/golden"
     local rc=$? last
     last="$(tail -1 "$LOGS/golden.log")"
-    git worktree remove --force "$GOLDEN_REF_DIR" && GOLDEN_REF_DIR=""
     if [ $rc -eq 0 ]; then
-        note "$last: same backend output as $ref ($label)"
+        note "$last: same backend output as $BASELINE ($label)"
     else
-        warn "$last: backend output differs from $ref ($label); check that it is intended (diffs in the log)"
+        warn "$last: backend output differs from $BASELINE ($label); check that it is intended (diffs in the log)"
     fi
-}
-
-step_non_regression() {
-    run "$SDV_PYTHON" python/non_regression_test_plot.py --out-dir "$OUT/non-regression-plots"
-    local rc=$? cases failed
-    cases="$(grep -c ': ok -> ' "$LOGS/non-regression.log" || true)"
-    failed="$(grep -c ': FAILED: ' "$LOGS/non-regression.log" || true)"
-    if [ $rc -eq 0 ]; then
-        note "$cases plots drawn (look at summary.md)"
-    else
-        fail "$failed of $((cases + failed)) plot cases fail: see log"
-    fi
-    ARTIFACTS+=("Non-regression plot gallery: \`$OUT/non-regression-plots/summary.md\`")
 }
 
 step_qa_fixtures() {
@@ -792,9 +775,6 @@ trap 'INTERRUPTED=true' INT
 cleanup() {
     if $BASELINE_CREATED; then
         scripts/qa/backend/make_baseline.sh --remove >/dev/null 2>&1 || true
-    fi
-    if [ -n "$GOLDEN_REF_DIR" ]; then
-        git worktree remove --force "$GOLDEN_REF_DIR" >/dev/null 2>&1 || true
     fi
 }
 trap cleanup EXIT

@@ -15,7 +15,8 @@ seeded synthetic stand-in of the same shape is written there by
 By default, PNG outputs go under
 ``artefacts/non-regression-plots/v<version>/`` where ``<version>`` is read from
 the repository ``package.json`` (e.g. ``v0.13.0``). Pass ``--out-dir`` to
-override. ``setup.sh`` and ``paranoia.sh`` run it for visual checks.
+override. ``setup.sh`` runs it for visual checks; ``scripts/qa/backend/diff_scen.py``
+imports ``all_cases`` to compare the same cases with the last release.
 Also writes ``summary.md`` next to ``summary.txt`` (markdown with embedded PNGs).
 
 Use ``--full-grid`` when the NetCDF is the full domain; the script then applies
@@ -119,7 +120,7 @@ class CaseRunOutcome:
     applied_isel: dict[str, Any] = field(default_factory=dict)
 
 
-def _plot_cases(full_grid: bool) -> list[PlotCase]:
+def all_cases(full_grid: bool) -> list[PlotCase]:
     """Issue #117 (00-06), extended combos (10-18), vmin/vmax/colorbar/legend (20+)."""
     if full_grid:
         core = [
@@ -925,7 +926,7 @@ def main() -> int:
         )
         return 1
 
-    cases = _plot_cases(args.full_grid)
+    cases = all_cases(args.full_grid)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     summary_path = out_dir / "summary.txt"
