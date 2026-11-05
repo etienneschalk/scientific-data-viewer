@@ -51,10 +51,6 @@ export class DataViewerPanel {
         DataViewerPanel._extensionUri = extensionUri;
     }
 
-    public static getExtensionUri(): vscode.Uri | undefined {
-        return DataViewerPanel._extensionUri;
-    }
-
     public static getPanel(panelId: number): DataViewerPanel | undefined {
         Logger.debug(`🚚 🗂️ Getting panel for panel with ID: ${panelId}`);
         // Find and return the first panel that matches the given file path
@@ -112,7 +108,7 @@ export class DataViewerPanel {
         // File is not opened or multiple tabs are allowed, create a new panel
         const webviewPanel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
-            path.basename(fileUri.fsPath), // TODO eschalk add [counter] if dev mode !
+            path.basename(fileUri.fsPath),
             vscode.window.activeTextEditor?.viewColumn || vscode.ViewColumn.One,
             {
                 ...webviewOptions,
@@ -208,15 +204,6 @@ export class DataViewerPanel {
     public static getActivePanelCount(): number {
         return Array.from(DataViewerPanel._panels.values()).filter(
             (panel) => panel._webviewPanel.visible,
-        ).length;
-    }
-
-    /**
-     * Get the number of panels with errors
-     */
-    public static getPanelsWithErrorsCount(): number {
-        return Array.from(DataViewerPanel._panels.values()).filter(
-            (panel) => panel._hasError,
         ).length;
     }
 

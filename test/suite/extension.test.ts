@@ -38,10 +38,6 @@ suite('Extension Test Suite', () => {
                                     type: 'number',
                                     default: 500,
                                 },
-                                'scientificDataViewer.defaultView': {
-                                    type: 'string',
-                                    default: 'default',
-                                },
                                 'scientificDataViewer.allowMultipleTabsForSameFile':
                                     { type: 'boolean', default: false },
                                 'scientificDataViewer.devMode': {
@@ -127,9 +123,8 @@ suite('Extension Test Suite', () => {
         // Check if configuration properties are available
         // In test environment, some properties might not be available
         const hasMaxFileSize = config.has('maxFileSize');
-        const hasDefaultView = config.has('defaultView');
 
-        if (hasMaxFileSize && hasDefaultView) {
+        if (hasMaxFileSize) {
             assert.ok(true, 'All configuration properties available');
         } else {
             console.log(
@@ -153,13 +148,6 @@ suite('Extension Test Suite', () => {
         assert.ok(
             typeof maxFileSize === 'number' || maxFileSize === undefined,
             'maxFileSize should be number or undefined',
-        );
-
-        // Test defaultView property
-        const defaultView = config.get('defaultView');
-        assert.ok(
-            typeof defaultView === 'string' || defaultView === undefined,
-            'defaultView should be string or undefined',
         );
     });
 

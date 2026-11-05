@@ -558,13 +558,6 @@ export function readPlotControls(root: ParentNode): PlotControlsValues {
     return values;
 }
 
-function isPlotParameterSet(
-    param: PlotParameter,
-    value: PlotControlsValues[string],
-): boolean {
-    return value !== undefined;
-}
-
 /**
  * Group values win when set; a group control left empty (or a checkbox left
  * at "use the global value") falls back to the global control. Dimension
@@ -583,9 +576,8 @@ export function mergePlotControls(
     };
     for (const param of PLOT_PARAMETERS) {
         const groupValue = groupValues?.[param.key];
-        merged[param.key] = isPlotParameterSet(param, groupValue)
-            ? groupValue
-            : globalValues[param.key];
+        merged[param.key] =
+            groupValue !== undefined ? groupValue : globalValues[param.key];
     }
     return merged;
 }

@@ -129,8 +129,6 @@ export function getPackageJsonFromExtensionContext(
     return context.extension.packageJSON as PackageJson;
 }
 
-// TODO Should use this function everywhere the version is printed
-// It should also be added to the Troubleshooting section
 export function getVersion(): string {
     return getPackageJson().version;
 }

@@ -140,7 +140,6 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
 
 - **Release date**: see step 2 above.
 - **Commit message** `6687748 chmoding ensure.sh` does not follow the `type(scope): …` style of the others. Reword it before merging if the history matters; it is not pushed anywhere shared yet, as far as this page knows.
-- **`scientificDataViewer.defaultView`** is declared and documented, but never read. It predates v0.13.
 - **`python/pyproject.toml`** says `requires-python >= 3.13` (the development package), while the backend still runs on Python 3.10+ interpreters of users.
-- **Old TODOs**: `src/DataViewerPanel.ts` (tab counter) and `src/panel/webview/styles.css` (`XXX`). Both predate v0.13.
+- **Old TODO**: `src/panel/webview/styles.css` (`XXX`), predates v0.13.
 - The upgrade script runs on Linux / macOS only. Windows is covered by hand (B20).

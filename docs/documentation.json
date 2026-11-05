@@ -118,7 +118,6 @@
             "title": "General Settings",
             "keys": [
                 "scientificDataViewer.maxFileSize",
-                "scientificDataViewer.defaultView",
                 "scientificDataViewer.matplotlibStyle",
                 "scientificDataViewer.webviewExportTheme",
                 "scientificDataViewer.smallVariableBytes",

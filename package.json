@@ -508,15 +508,6 @@
                     "description": "Maximum file size in MB to load automatically",
                     "markdownDescription": "Maximum file size in **MB** to load automatically. Files above this limit are not loaded. Applies to files only: directory stores (Zarr) are not checked. 0 or a negative value means no limit."
                 },
-                "scientificDataViewer.defaultView": {
-                    "type": "string",
-                    "enum": [
-                        "default"
-                    ],
-                    "default": "default",
-                    "order": 1000,
-                    "description": "Default view mode for data display (currently unused)"
-                },
                 "scientificDataViewer.allowMultipleTabsForSameFile": {
                     "type": "boolean",
                     "default": false,
