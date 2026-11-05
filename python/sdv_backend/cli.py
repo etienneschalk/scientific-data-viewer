@@ -7,6 +7,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from sdv_backend._bootstrap import logger
+from sdv_backend.decoding import (
+    DecodingOptions,
+    parse_decode_coords,
+    parse_engine_backend_kwargs,
+    parse_on_off,
+)
 from sdv_backend.formats.zarr import resolve_store_path
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
@@ -337,7 +343,71 @@ Examples:
             "(xarray 2026.04+ set_options)"
         ),
     )
+    _add_decoding_arguments(parser)
     return parser
+
+
+def _engine_backend_kwargs_arg(text: str) -> dict:
+    try:
+        return parse_engine_backend_kwargs(text)
+    except ValueError as exc:  # json.JSONDecodeError included
+        raise argparse.ArgumentTypeError(
+            f"invalid --engine-backend-kwargs: {exc}"
+        ) from exc
+
+
+def _add_decoding_arguments(parser: argparse.ArgumentParser) -> None:
+    """Decoding flags; each omitted one leaves the choice to the engine."""
+    on_off = ("on", "off")
+    parser.add_argument(
+        "--mask-and-scale",
+        choices=on_off,
+        default=None,
+        help="xarray mask_and_scale (_FillValue masking, scale_factor / add_offset)",
+    )
+    parser.add_argument(
+        "--decode-times",
+        choices=on_off,
+        default=None,
+        help="xarray decode_times (off also turns decode_timedelta off)",
+    )
+    parser.add_argument(
+        "--decode-coords",
+        choices=("coordinates", "all", "off"),
+        default=None,
+        help="xarray decode_coords",
+    )
+    parser.add_argument(
+        "--use-cftime",
+        choices=on_off,
+        default=None,
+        help="xarray use_cftime (rasters: keep cftime objects)",
+    )
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Open without any CF decoding (every decoder off)",
+    )
+    parser.add_argument(
+        "--engine-backend-kwargs",
+        type=_engine_backend_kwargs_arg,
+        default=None,
+        help=(
+            "JSON {engine: {key: value}} of extra backend_kwargs; keys outside the "
+            "allowed list of each engine are ignored and reported"
+        ),
+    )
+
+
+def _decoding_options(args: argparse.Namespace) -> DecodingOptions:
+    return DecodingOptions(
+        mask_and_scale=parse_on_off(args.mask_and_scale),
+        decode_times=parse_on_off(args.decode_times),
+        decode_coords=parse_decode_coords(args.decode_coords),
+        use_cftime=parse_on_off(args.use_cftime),
+        raw=args.raw,
+        engine_backend_kwargs=args.engine_backend_kwargs or {},
+    )
 
 
 def _info_options(args: argparse.Namespace) -> InfoOptions:
@@ -350,6 +420,7 @@ def _info_options(args: argparse.Namespace) -> InfoOptions:
         netcdf_engine_order=args.netcdf_engine_order,
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,
+        decoding=_decoding_options(args),
     )
 
 
@@ -389,4 +460,5 @@ def _plot_options(
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,
         facetgrid_figsize=args.facetgrid_figsize,
+        decoding=_decoding_options(args),
     )

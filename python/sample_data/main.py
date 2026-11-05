@@ -23,6 +23,7 @@ from sample_data.geotiff import (
     create_sample_geotiff_cog,
     create_sample_geotiff_geotiff,
     create_sample_geotiff_tiff,
+    create_sample_geotiff_time_bands,
     create_sample_multiband_geotiff,
 )
 from sample_data.grib import (
@@ -41,6 +42,7 @@ from sample_data.netcdf import (
     create_sample_file_with_spaces,
     create_sample_netcdf,
     create_sample_netcdf4,
+    create_sample_netcdf_broken_datetime_packed_variable,
     create_sample_netcdf_broken_datetime_variable,
     create_sample_netcdf_cdf,
     create_sample_netcdf_compound_dtype_variable,
@@ -134,6 +136,10 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
                 create_sample_netcdf_broken_datetime_variable,
                 "NetCDF (Broken Datetime Units)",
             ),
+            G(
+                create_sample_netcdf_broken_datetime_packed_variable,
+                "NetCDF (Broken Datetime Units + Packed Variable)",
+            ),
             G(create_sample_netcdf_compound_dtype_variable, "NetCDF (Compound Dtype)"),
             G(create_sample_netcdf_gzip, "NetCDF (gzip / filters)"),
             G(
@@ -184,6 +190,11 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
                 create_sample_multiband_geotiff,
                 "Multi-band GeoTIFF",
                 "Multi-band GeoTIFF (rioxarray not available)",
+            ),
+            G(
+                create_sample_geotiff_time_bands,
+                "GeoTIFF (time-tagged bands)",
+                "GeoTIFF time bands (rasterio not available)",
             ),
             G(
                 create_sample_geotiff_cog,

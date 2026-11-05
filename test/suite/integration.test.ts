@@ -480,6 +480,7 @@ suite('Integration Test Suite', () => {
                             return undefined;
                     }
                 },
+                inspect: () => undefined,
             }) as any;
 
         try {

@@ -12,8 +12,11 @@ import {
 import { globalState } from '../state';
 import { clampPlotTimeout, escapeHtml, formatFileSize } from '../util';
 import {
+    decodingModeText,
     displayExtensionConfig,
     displayHtmlRepresentation,
+    displayOpenReport,
+    OpenReportView,
     displayPythonPath,
     displayShowVersions,
     displayTextRepresentation,
@@ -36,7 +39,7 @@ export interface DataInfo {
     format_info?: { display_name?: string; available_engines?: string[] };
     used_engine?: string;
     fileSize?: number;
-    decode_cf_degraded?: boolean;
+    open_report?: OpenReportView;
     dimensions_flattened?: Record<string, Record<string, number>>;
     coordinates_flattened?: Record<string, VariableInfo[]>;
     variables_flattened?: Record<string, VariableInfo[]>;
@@ -80,6 +83,7 @@ export function displayAll(state: DataLoadedPayload): void {
         displayHtmlRepresentation(dataInfo.xarray_html_repr_flattened, true);
         displayTextRepresentation(dataInfo.xarray_text_repr_flattened, true);
         displayShowVersions(dataInfo.xarray_show_versions);
+        displayOpenReport(dataInfo.open_report);
     }
     displayPythonPath(state?.python?.pythonPath);
     displayExtensionConfig(extensionConfig);
@@ -193,10 +197,19 @@ function renderFileInformation(data: DataInfo): string {
             );
         }
     }
-    if (data.decode_cf_degraded) {
-        parts.push('<strong>Mode:</strong> degraded (decode_cf=False)');
+    if (data.open_report) {
+        parts.push(
+            `<strong>Decoding:</strong> ${escapeHtml(decodingModeText(data.open_report))} ${renderRawModeButton(data.open_report.raw === true)}`,
+        );
     }
     return `<p>${parts.join(' · ')}</p>`;
+}
+
+/** "Reopen raw" / "Reopen decoded" (handled by the `set-raw-mode` action). */
+export function renderRawModeButton(isRaw: boolean): string {
+    return isRaw
+        ? /*html*/ `<a href="#" class="small-button-link" data-action="set-raw-mode" data-raw="false" title="Reload this file with CF decoding">Reopen decoded</a>`
+        : /*html*/ `<a href="#" class="small-button-link" data-action="set-raw-mode" data-raw="true" title="Reload this file without CF decoding (no masking, scaling, time or coordinate decoding), for this tab only">Reopen raw</a>`;
 }
 
 function renderGroup(

@@ -38,6 +38,73 @@ class FileFormatInfo:
 
 
 @dataclass(frozen=True)
+class OpenKwarg:
+    """One keyword passed to the open call, for the Troubleshooting section.
+
+    Attributes
+    ----------
+    name, value
+        Keyword and value as passed.
+    source : str
+        Where it comes from: "viewer default", "setting", "time fallback",
+        "raw mode", or a setting name.
+    kind : str
+        "decoder" (xarray decoder), "backend_kwargs" or "kwarg" (other keyword).
+    """
+
+    name: str
+    value: Any
+    source: str
+    kind: str
+
+
+@dataclass(frozen=True)
+class EngineFailure:
+    """An engine tried before the one that opened the file, and its error."""
+
+    engine: str
+    error: str
+
+
+@dataclass(frozen=True)
+class OpenReport:
+    """How the file was opened (Troubleshooting > How this file was opened).
+
+    Attributes
+    ----------
+    engine : str
+        Engine that opened the file.
+    function : str
+        Function called (``xarray.open_datatree``, ``xarray.open_dataset``,
+        ``cdflib.xarray.cdf_to_xarray``).
+    raw : bool
+        Opened without CF decoding ("Reopen raw").
+    call : str
+        Python snippet reproducing the call, each keyword commented with its source.
+    kwargs : list of OpenKwarg
+        Keywords passed; decoders not listed keep the engine default.
+    degraded_decoders : list of str
+        Decoders turned off by the time fallback (empty when not degraded).
+    fallback_reason : str, optional
+        Error that triggered the time fallback.
+    notes : list of str
+        Settings ignored for this engine, post-processing, limits.
+    failed_engines : list of EngineFailure
+        Engines that failed before ``engine`` opened the file.
+    """
+
+    engine: str
+    function: str
+    raw: bool
+    call: str
+    kwargs: list[OpenKwarg]
+    degraded_decoders: list[str] = field(default_factory=list)
+    fallback_reason: str | None = None
+    notes: list[str] = field(default_factory=list)
+    failed_engines: list[EngineFailure] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class VariableInfo:
     """Information about a data variable.
 
@@ -117,8 +184,8 @@ class FileInfoResult:
         Detailed format information
     used_engine : str
         xarray engine used to read the file
-    decode_cf_degraded : bool
-        True when the file was opened with decode_cf=False after a CF time decode failure
+    open_report : OpenReport, optional
+        How the file was opened: engine, keywords and their sources, time fallback
     fileSize : int
         File size in bytes
     xarray_html_repr : str
@@ -158,7 +225,7 @@ class FileInfoResult:
     xarray_text_repr_flattened: dict[str, str] = field(repr=False)
     encoding_flattened: dict[str, dict[str, Any]] = field(default_factory=dict)
     datetime_variables: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
-    decode_cf_degraded: bool = False
+    open_report: OpenReport | None = None
 
     # Format: {group_name: [{"name": var_name, "min": min_value, "max": max_value}, ...]}
 

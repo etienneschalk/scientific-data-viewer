@@ -81,10 +81,35 @@ export interface CreatePlotError {
     format_info: DataInfoFormatInfo;
 }
 
+/** One keyword of the open call and where it comes from. */
+export interface OpenKwarg {
+    name: string;
+    value: unknown;
+    /** "viewer default", "setting", "time fallback", "raw mode"... */
+    source: string;
+    /** "decoder", "backend_kwargs" or "kwarg" */
+    kind: string;
+}
+
+/** Backend `OpenReport` (python/sdv_backend/results.py). */
+export interface OpenReport {
+    engine: string;
+    function: string;
+    raw: boolean;
+    /** Python snippet reproducing the call */
+    call: string;
+    kwargs: OpenKwarg[];
+    degraded_decoders: string[];
+    fallback_reason?: string | null;
+    notes: string[];
+    failed_engines: Array<{ engine: string; error: string }>;
+}
+
 export interface DataInfoResult {
     format_info: DataInfoFormatInfo;
     used_engine: string;
-    decode_cf_degraded?: boolean;
+    /** How the file was opened (Troubleshooting > How this file was opened) */
+    open_report?: OpenReport;
     fileSize: number;
     xarray_html_repr: string;
     xarray_text_repr: string;

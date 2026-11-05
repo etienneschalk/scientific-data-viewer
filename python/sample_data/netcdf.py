@@ -135,6 +135,47 @@ def create_sample_netcdf_broken_datetime_variable():
     return output_file
 
 
+def create_sample_netcdf_broken_datetime_packed_variable():
+    """Broken time units next to a packed variable (v0.14 decode_times fallback).
+
+    The time fallback turns off time decoding only: ``temperature`` must still
+    be unpacked (scale_factor / add_offset) and masked (_FillValue), and shows
+    its stored int16 values with "Reopen raw".
+    """
+    output_file = "broken_datetime_packed_variable.nc"
+
+    if os.path.exists(output_file):
+        print(f"📄 NetCDF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    if not optional_pkg_available("netCDF4"):
+        print("⚠️  netCDF4 not available; skipping broken_datetime_packed_variable.nc")
+        return None
+
+    import netCDF4
+
+    print("🌡️ Creating NetCDF file with broken datetime units and a packed variable...")
+
+    with netCDF4.Dataset(output_file, "w") as ds:
+        ds.createDimension("x", 4)
+        delta = ds.createVariable("delta", "f4", ("x",))
+        delta[:] = np.arange(4, dtype=np.float32)
+        delta.units = "(days since 2000-01-01 00:00:00)-1"
+        delta.long_name = "Variable with invalid CF time units"
+        temperature = ds.createVariable("temperature", "i2", ("x",), fill_value=-999)
+        temperature.scale_factor = 0.01
+        temperature.add_offset = 273.15
+        temperature.units = "K"
+        temperature.long_name = "Packed temperature (int16, scale_factor 0.01)"
+        temperature.set_auto_maskandscale(False)
+        temperature[:] = np.array([0, 1000, -999, 2500], dtype="i2")
+        ds.title = "Broken time units next to a packed variable (v0.14)"
+
+    print(f"✅ Created {output_file}")
+    return output_file
+
+
 def create_sample_netcdf_compound_dtype_variable():
     """Create a NetCDF file with a compound dtype (issue #137 attribute-display repro).
 

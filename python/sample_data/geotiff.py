@@ -440,3 +440,56 @@ def create_sample_geotiff_cog():
 
     print(f"✅ Created {output_file} (Cloud Optimized GeoTIFF)")
     return output_file
+
+
+def create_sample_geotiff_time_bands():
+    """GeoTIFF whose bands are a time axis, tagged as GDAL writes it from NetCDF
+    (``NETCDF_DIM_EXTRA``, ``NETCDF_DIM_time_VALUES``, ``time#units``).
+
+    v0.14: with convertBandsToVariables off, the viewer shows a decoded
+    datetime64 ``time`` coordinate; with it on, one variable per band and a
+    note in Troubleshooting > How this file was opened.
+    """
+    output_file = "sample_geotiff_time_bands.tif"
+
+    if os.path.exists(output_file):
+        print(f"🛰️ GeoTIFF file {output_file} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_file
+
+    if not optional_pkg_available("rasterio"):
+        print("  ❌ rasterio not available, skipping time-band GeoTIFF creation.")
+        return None
+
+    import rasterio
+    from rasterio.transform import from_origin
+
+    print("🛰️ Creating GeoTIFF with time-tagged bands...")
+    count, height, width = 3, 20, 30
+    y, x = np.mgrid[0:height, 0:width]
+    data = np.stack([(100 * (k + 1) + x + 2 * y).astype("int16") for k in range(count)])
+    data[:, :2, :2] = -9999  # nodata corner
+    with rasterio.open(
+        output_file,
+        "w",
+        driver="GTiff",
+        width=width,
+        height=height,
+        count=count,
+        dtype="int16",
+        transform=from_origin(2.0, 48.0, 0.1, 0.1),
+        crs="EPSG:4326",
+        nodata=-9999,
+    ) as ds:
+        ds.write(data)
+        ds.update_tags(
+            NETCDF_DIM_EXTRA="{time}",
+            NETCDF_DIM_time_DEF="{3,6}",
+            NETCDF_DIM_time_VALUES="{0,31,60}",
+            **{"time#units": "days since 2000-01-01", "time#calendar": "standard"},
+        )
+        for band, value in enumerate((0, 31, 60), start=1):
+            ds.update_tags(band, NETCDF_DIM_time=str(value))
+
+    print(f"✅ Created {output_file}")
+    return output_file
