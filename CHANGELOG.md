@@ -351,6 +351,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Variable row without its size for a dimension of length 0**: a variable over an empty dimension (`measurement(obs)` with `obs: 0`, or `flag(time, obs)`) has a size of 0 bytes. The webview tested the size as a boolean, so 0 dropped the size column altogether and the row's columns no longer lined up with the other rows. The column is now always present and reads **Empty** when the size is 0 (or missing). The backend already reported `size_bytes: 0`. New sample `sample_data_empty_dimension.nc` (1-D and 2-D variables and a coordinate over `obs` of length 0, one non-empty variable for comparison), also in the golden snapshots.
   - **Files**: `src/panel/webview/render/variables.ts` (`renderVariableDetails`), `python/sample_data/netcdf.py` (`create_sample_netcdf_empty_dimension`), `python/sample_data/main.py`, `python/tools/golden_snapshots.py`
   - **Tests**: `test/suite/ui/webviewScript.test.ts` (0-byte variable and coordinate read `Empty`, every row keeps its five columns); `python/tests/test_empty_dimension_sample.py` (new: the sample reports `size_bytes: 0`); `scripts/qa/webview/render.mjs` (real backend and webview on the sample: `Empty` shown, five columns and sizes aligned on every row; screenshot `ui_empty_dimension.png`), run by the `qa-webview` step of `paranoia.sh`
+- **"Request timeout" on long webview requests**: every webview request gave up after 60 s, so a **Refresh** that waits for Python setup and a long info run, a package install from an error message, or a **Save As** / **Export** dialog left open more than a minute showed "Request timeout" while the work then completed. These requests now wait for the extension's answer (it always answers); plots keep their configurable timeout.
+  - **Files**: `src/panel/webview/bus.ts`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts` (refresh arms no request timeout)
 
 ### Security
 

@@ -19,8 +19,12 @@ interface PendingRequest {
 }
 
 export interface RequestOptions {
-    /** ms before the request is rejected (default 60 s) */
-    timeout?: number;
+    /**
+     * ms before the request is rejected (default 60 s). `null`: no timeout,
+     * for requests whose duration depends on the user or on a long backend
+     * run (refresh, package install, save dialogs); the host always answers.
+     */
+    timeout?: number | null;
     /** Called once when the timeout fires (e.g. to abort the backend work) */
     onTimeout?: () => unknown;
     /** Error message used on timeout */
@@ -73,7 +77,7 @@ export class WebviewMessageBus {
         };
 
         return new Promise<T>((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
+            const onExpire = () => {
                 this.pendingRequests.delete(request.id);
                 if (onTimeout) {
                     try {
@@ -93,7 +97,9 @@ export class WebviewMessageBus {
                 reject(
                     new Error(timeoutMessage || `Request timeout: ${command}`),
                 );
-            }, timeout);
+            };
+            const timeoutId =
+                timeout === null ? undefined : setTimeout(onExpire, timeout);
 
             this.pendingRequests.set(request.id, {
                 resolve: (value) => {
@@ -180,30 +186,43 @@ export class WebviewMessageBus {
         return this.sendRequest('savePlot', { plotData, variable, fileName });
     }
 
+    /** No timeout: waits on a save dialog. */
     savePlotAs(plotData: string, variable: string) {
-        return this.sendRequest('savePlotAs', { plotData, variable });
+        return this.sendRequest(
+            'savePlotAs',
+            { plotData, variable },
+            { timeout: null },
+        );
     }
 
     openPlot(plotData: string, variable: string, fileName: string) {
         return this.sendRequest('openPlot', { plotData, variable, fileName });
     }
 
+    /** No timeout: Python setup plus an info run can exceed 60 s. */
     refresh() {
-        return this.sendRequest('refresh', {});
+        return this.sendRequest('refresh', {}, { timeout: null });
     }
 
+    /** No timeout: waits on a save dialog. */
     exportWebview(htmlContent: string | null) {
-        return this.sendRequest('exportWebview', { htmlContent });
+        return this.sendRequest(
+            'exportWebview',
+            { htmlContent },
+            { timeout: null },
+        );
     }
 
     showNotification(message: string, type: 'info' | 'warning' | 'error') {
         return this.sendRequest('showNotification', { message, type });
     }
 
+    /** No timeout: a command such as a package install can run for minutes. */
     executeCommand(command: string, args?: unknown[]) {
         return this.sendRequest(
             'executeCommand',
             args === undefined ? { command } : { command, args },
+            { timeout: null },
         );
     }
 }

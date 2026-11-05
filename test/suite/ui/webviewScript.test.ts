@@ -912,6 +912,32 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('refresh has no request timeout', () => {
+        // They wait on a long backend run or on a dialog: a 60 s timeout
+        // showed "Request timeout" while the work then completed.
+        harness.loadData(sampleDataInfo());
+        const delays: number[] = [];
+        const original = harness.window.setTimeout;
+        harness.window.setTimeout = (
+            fn: any,
+            delay?: number,
+            ...rest: any[]
+        ) => {
+            delays.push(delay ?? 0);
+            return original(fn, delay, ...rest);
+        };
+        try {
+            harness.click(harness.document.getElementById('refreshButton'));
+            assert.strictEqual(harness.requests('refresh').length, 1);
+            assert.ok(
+                !delays.some((delay) => delay >= 60000),
+                `no request timeout armed, got delays ${delays.join(', ')}`,
+            );
+        } finally {
+            harness.window.setTimeout = original;
+        }
+    });
+
     test('plot timeout aborts the backend and shows the error', async function () {
         this.timeout(5000);
         harness.loadData(sampleDataInfo(), { plotTimeoutMs: 1000 });
