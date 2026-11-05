@@ -204,6 +204,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **One headless Chrome module for the scripts** (tooling): the viewer screenshots and the webview QA harness each had their own Chrome finder and DevTools Protocol client. Both now use `scripts/lib/chrome.mjs` (`findChrome`, `Browser`); the QA harness gains the screenshot script's wider search (Chrome / Chromium / Edge on the PATH and in their install folders, macOS and Windows Playwright caches) and its start timeout, and keeps scrollbars (its layout checks measure them).
   - **Files**: `scripts/lib/chrome.mjs` (new), `scripts/screenshots/take-screenshots.mjs`, `scripts/qa/webview/harness.mjs`, `docs/SCREENSHOTS.md`, `scripts/qa/README.md`
   - **Tests**: `node scripts/qa/webview/run-all.mjs` (47 + 30 + 17 checks pass); `take-screenshots.mjs --theme dark-modern --scenario overview`
+- **Format list of the backend checked against `package.json`** (planning item TO_REMOVE R5, left open): `SupportedExtensionType` (`python/sdv_backend/types.py`) now says it must match the file name patterns of the custom editors (and why `.kerchunk`, suffix-less Zarr and ZIP are special), and a test fails when they drift apart, as the stale `.safe` format once did.
+  - **Files**: `python/sdv_backend/types.py` (comment)
+  - **Tests**: `python/tests/test_supported_extensions.py` (new)
 
 ### Removed
 

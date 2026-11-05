@@ -7,6 +7,12 @@ import xarray as xr
 DictOfDatasets = dict[str, xr.Dataset]
 
 
+# Must match the file name patterns of the custom editors in package.json
+# (python/tests/test_supported_extensions.py checks it), so that every file
+# the extension opens has a format here and no format is a ghost (the stale
+# ".safe" was one). Python-side names, not suffixes: ".kerchunk" stands for
+# *.kerchunk.json / *.ref.json; Zarr stores without a suffix and ZIP archives
+# are detected by content (formats/zarr.py), not listed here.
 SupportedExtensionType = Literal[
     ".nc",
     ".nc4",
