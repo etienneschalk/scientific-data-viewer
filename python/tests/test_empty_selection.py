@@ -42,3 +42,17 @@ def test_empty_dimension_slice(tmp_path: Path) -> None:
     assert isinstance(result, CreatePlotError)
     assert "dimension(s) x are empty" in result.error
     assert "dimension slices" in result.error
+
+
+def test_format_detection_error_is_reported(tmp_path: Path, monkeypatch) -> None:
+    """An exception in format detection is reported, not hidden by UnboundLocalError."""
+    import sdv_backend.plotting.api as api
+
+    def broken_detection(*_args, **_kwargs):
+        raise RuntimeError("detection exploded")
+
+    monkeypatch.setattr(api, "detect_file_format", broken_detection)
+    result = create_plot(_write(tmp_path), "/v", PlotOptions())
+    assert isinstance(result, CreatePlotError)
+    assert "detection exploded" in result.error
+    assert result.format_info.extension == ".nc"

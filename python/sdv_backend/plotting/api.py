@@ -35,7 +35,7 @@ from sdv_backend.plotting.selection import (
     split_variable_path,
 )
 from sdv_backend.plotting.style import MATPLOTLIB_RC_CONTEXT
-from sdv_backend.results import CreatePlotError, CreatePlotResult
+from sdv_backend.results import CreatePlotError, CreatePlotResult, FileFormatInfo
 
 
 def create_plot(
@@ -65,6 +65,14 @@ def create_plot(
     CreatePlotResult or CreatePlotError
         CreatePlotResult with Base64-encoded PNG image data if successful, CreatePlotError if failed
     """
+    # Replaced by detection; kept if detection itself raises, so the error
+    # below reports the real exception rather than an UnboundLocalError.
+    file_format_info = FileFormatInfo(
+        extension=file_path.suffix.lower(),
+        display_name="Unknown",
+        available_engines=[],
+        missing_packages=[],
+    )
     try:
         # Detect file format and available engines
         file_format_info = detect_file_format(

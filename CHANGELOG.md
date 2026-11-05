@@ -372,6 +372,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Broken non-ASCII characters in process output**: the output of Python, uv and pip was decoded chunk by chunk, so a UTF-8 character split between two chunks (e.g. in a non-ASCII file path of an error message) became "��" in logs and error messages. The streams are now decoded as UTF-8 streams.
   - **Files**: `src/common/runProcess.ts`
   - **Tests**: `test/suite/common/runProcess.test.ts` (character split between two chunks)
+- **Plot error hidden by `UnboundLocalError`**: if file format detection raised, the error handler of `create_plot` used the format info before it was assigned, so the user saw `UnboundLocalError` instead of the real error. A placeholder format info (extension of the file, no engines) is now set before detection.
+  - **Files**: `python/sdv_backend/plotting/api.py`
+  - **Tests**: `python/tests/test_empty_selection.py` (`test_format_detection_error_is_reported`)
 
 ### Security
 
