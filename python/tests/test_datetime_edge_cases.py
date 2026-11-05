@@ -2,7 +2,8 @@
 """
 Unit tests for datetime variable detection and time filtering edge cases.
 
-This test suite covers all edge cases mentioned in IMPLEMENTATION_PROPOSAL_ISSUE_106.md
+This test suite covers all edge cases listed in docs/archive/IMPLEMENTATION_PROPOSAL_ISSUE_106.md
+(historical: the Time Controls UI it describes was removed in 0.13).
 """
 
 import os

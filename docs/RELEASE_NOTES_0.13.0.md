@@ -916,7 +916,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 2. Set `"scientificDataViewer.showLoadTimeInLocalTime": false` → **Refresh** (🔄) → `Loaded: …Z`, in UTC (same instant).
 3. Set it back to `true` (or remove it) → **Refresh** → local time again.
 
-### 25. Plot controls layout
+### 27. Plot controls layout
 
 **Expect:** plot controls read as aligned fields in titled blocks.
 
@@ -929,7 +929,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 5. Narrow the editor to ~400 px → two columns of fields, no horizontal scroll.
 6. Type `0` in the **start** box of `time` and set **vmin** / **vmax** to a narrow range (e.g. `10` / `12` for `temperature`) → **Create Plot**: the colors saturate and the colorbar runs from 10 to 12 (before the fix, the plot ignored them unless a cmap was set). Uncheck **add_colorbar** → no colorbar. On a 1D variable, check **robust** → the line plot is drawn (no `robust` error).
 
-### 26. Dimension slices: boxes and slider
+### 28. Dimension slices: boxes and slider
 
 **Expect:** a slice can be typed in three boxes or set with a slider, and both stay in sync.
 
@@ -945,7 +945,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 8. **Reset** next to **Dimension slices** → boxes empty, handles back at both ends. Same in a group's **Group Plot Controls** (group values still override the global ones).
 9. Set `time` to start `1` stop `3` step `2`, type start `2` stop `1` in another dimension, then export the webview and open the HTML in a browser → the boxes show the same values, the handles and highlight are where they were, the empty selection is still outlined in red; the boxes cannot be edited, the handles do not move and there is no **Reset** button.
 
-### 27. QA pass fixes
+### 29. QA pass fixes
 
 **Expect:** the fixes of [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md) hold.
 
@@ -962,7 +962,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 9. Narrow the editor to 320 px → the four toolbar buttons are separate from the title (the version badge is hidden).
 10. Select a Python 3.8 interpreter (`overridePythonInterpreter`) and open a file → the error says Python 3.10 or newer is required; select a venv without xarray → the error names the missing package and the `pip install` command.
 
-### 28. Progressive plot layout and changed outlines
+### 30. Progressive plot layout and changed outlines
 
 **Expect:** changing one plot control keeps the automatic choice of the others; changed controls are outlined; the line under the plot tells what was set and what was chosen.
 
@@ -980,7 +980,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 10. `sample_data_multiple_groups.nc`: set **vmin** `5`, **vmax** `1`, slice `time` `0` → **Create Plot** on `root_data` → colour scale from 1 to 5, note `vmin=5 is above vmax=1: the two are swapped`.
 11. Set the setting `scientificDataViewer.matplotlibStyle` to `doesnotexist` → **Create Plot** → default (light) style, note `Style 'doesnotexist' not found: default style used …`. Clear the setting.
 
-### 29. Time Controls removed
+### 31. Time Controls removed
 
 **Expect:** no time range control anywhere; old settings are harmless.
 
@@ -991,7 +991,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. Add `"scientificDataViewer.globalTimeControls": true` to `settings.json` → the key is greyed out (_Unknown Configuration Setting_), no error notification; **Reload Window** → the viewer opens and plots as before. Remove the line.
 4. Type `0` : `24` : `2` in the `time` slice → **Create Plot** → every other time step, as the time range used to allow by date.
 
-### 30. Paranoia (contributors)
+### 32. Paranoia (contributors)
 
 **Expect:** one command reports whether the branch can be published, and leaves the working tree as it was.
 
@@ -1006,7 +1006,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 7. On GitHub: create the label once (`gh label create paranoia`), push the branch, add the label **`paranoia`** to its pull request → a **Paranoia (publication readiness)** run starts (about 75 min); at the end its summary page shows the verdict and the report, and the artifact `paranoia-full-<n>` holds the logs, plot differences, screenshots and the `.vsix`. Remove the label to stop the runs on later pushes.
 8. `./paranoia.sh --list` → a `LIMIT` column. Interrupted rebuild alone: `scripts/upgrade-sandbox.sh --scenario interrupted` (after `npm run package`) → _previous environment moved aside during the rebuild_ **PASS**, then _All checks passed_ in about 2 min.
 
-### 31. GRIB with `ECCODES_DEFINITION_PATH` set
+### 33. GRIB with `ECCODES_DEFINITION_PATH` set
 
 **Expect:** GRIB files open with the extension's own environment whatever `ECCODES_DEFINITION_PATH` says; your own interpreters still get it.
 
@@ -1016,7 +1016,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 2. With `useExtensionOwnEnvironment` on, open `artefacts/sample-data/sample_data.grib` → it loads (variable `t`, 4 times); the output channel shows `ECCODES_DEFINITION_PATH (/tmp/bad-definitions) is not passed to the extension's own environment`.
 3. Set `scientificDataViewer.python.overridePythonInterpreter` to the same environment's `bin/python` and **Refresh** → an error again (your interpreter, your variables): `No valid message found` with old definitions; with the empty `boot.def`, eccodes aborts the Python process (exit code 134). Remove the setting.
 
-### 32. High contrast themes
+### 34. High contrast themes
 
 **Expect:** code blocks readable and the xarray repr dark in High Contrast Dark, readable in High Contrast Light.
 
@@ -1028,7 +1028,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 4. Switch back to **Light High Contrast** → the xarray repr turns light again.
 5. In **Dark High Contrast**, set `scientificDataViewer.webviewExportTheme` to `Default Light+` and export the webview → in the browser, the xarray repr is light.
 
-### 33. Variables of 0 bytes (empty dimension)
+### 35. Variables of 0 bytes (empty dimension)
 
 **Expect:** a variable over a dimension of length 0 shows **Empty** in its size column, and its row lines up with the others.
 
@@ -1080,7 +1080,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ## Links
 
-- [Changelog](../CHANGELOG.md#0130---2026-09-15)
+- [Changelog](../CHANGELOG.md#0130---2026-11-05)
 - [Pull request summary / MR description](./v0.13/PR_SUMMARY_0.13.0.md)
 - [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
 - [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)

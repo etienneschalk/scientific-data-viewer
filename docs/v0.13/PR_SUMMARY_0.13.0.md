@@ -173,7 +173,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                                      |
 | Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                               |
 | Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged             |
-| Docs      | Release notes § Plot controls layout and manual step §25; manual test plan B12, B15, B17 wording and B26                                                                      |
+| Docs      | Release notes § Plot controls layout and manual step §27; manual test plan B12, B15, B17 wording and B26                                                                      |
 
 ### Phase 14 — Dimension slice boxes and slider
 
@@ -182,7 +182,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input                                                                                                                                                                        |
 | Rules    | Start with empty stop = index (step ignored, struck through); one handle rewrites one box (a box keeps its text while its index is unchanged); crossing changes both; handles at both ends = no selection; `5::2` → stop = size; negative = from the end, kept until its handle moves; negative step disables the slider; empty selection outlined |
 | Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                                                                                                                                                                                                     |
-| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §26; manual test plan B27; architecture diagrams regenerated                                                                                                                                                                                 |
+| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); release notes §28; manual test plan B27; architecture diagrams regenerated                                                                                                                                                                                 |
 
 ### Phase 15 — QA pass
 
@@ -194,7 +194,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture |
 | Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                             |
 | Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `artefacts/qa/`                                                                              |
-| Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §27, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
+| Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §29, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
 
 ### Phase 16 — Progressive plot layout
 
@@ -206,7 +206,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Contract | Result JSON gains `plot_layout` (kind, choices with `user` / `auto`, squeezed, notes); `applied_isel_kwargs` slices as `5:15`; `createPlot` answers `{plotData, layout, appliedSlices}` (`src/shared/plotLayout.ts`)                                                                            |
 | Webview  | `changedFields.ts`: fields that differ from their default are outlined (dot after the name); `render/plotLayout.ts`: line under each plot, user items outlined, notes                                                                                                                           |
 | Notes    | Review of the paranoia run of 2026-11-03: a slice on a missing dimension, vmin above vmax (swapped) and an unknown matplotlib style leave a note under the plot; the line against a datetime variable keeps its label and title; `PlotOptions.style` defaults to `""`; new `test_plot_notes.py` |
-| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §28; manual test plan B30                                                         |
+| Docs     | `docs/PLOTTING.md` (how a plot is made); diagrams _Plot parameters_ and _Plot layout decision_ (`scripts/architecture/graphs.py`); `documentation.json` / README; release notes § Progressive plot layout and §30; manual test plan B30                                                         |
 
 ### Phase 17 — Time Controls removed
 
@@ -216,7 +216,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Settings | `globalTimeControls` / `groupTimeControls` removed, not deprecated: VS Code ignores unknown keys (greyed out in `settings.json`), and a `deprecationMessage` only helps a setting that still does something |
 | Webview  | Time range block (global, group), `timeControls.ts`, `data-baseline` of `changedFields.ts`, time CSS removed; `PlotOptions` / `buildCreatePlotCliArgs` drop the datetime fields                             |
 | Backend  | Unchanged: `--datetime-variable` / `--start-datetime` / `--end-datetime` and `datetime_variables` still available from the CLI                                                                              |
-| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed and §29; manual test plan B17 / B26          |
+| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed and §31; manual test plan B17 / B26          |
 
 ### Phase 18 — Paranoia: every check before a release
 
@@ -234,7 +234,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Fixes     | Found by its first runs: `publish.sh` uses the `.venv` Python (system `python3` 3.8 crashed in `generate_readme.py`); `npm audit fix` (lockfile only, 9 findings); prettier on `OUT_OF_SCOPE.md` / `TO_REMOVE.md`; commit list below rebuilt from `git log`; `upgrade-sandbox.sh` interrupted scenario (`grep -q` + `pipefail` missed the awaited log line); flaky `UIController` test (two `fs.stat` resolving out of order)                                                                            |
 | Fixes     | Found by the `--full` run of 2026-10-31: GRIB unreadable with the own environment when the shell sets `ECCODES_DEFINITION_PATH` (the extension now drops it there, `pythonScriptEnvironment`); `interrupted` scenario made deterministic (local package index that never answers); `npm audit` clean: eslint 10 (flat config), `typescript-eslint` 8, mocha 12, `glob` 14, `@vscode/vsce` 4, `overrides` for `minimatch` 11 / `glob` 14                                                                  |
 | Limits    | Each step has a time limit (5th field of `STEPS`, ~4x its duration, 5 min at least; `--list`), enforced by a watchdog that stops its processes; sandbox runs 900 s, sandbox waits 600 s, VS Code CLI calls 60 s (one blocked a run for 90 min); eccodes variables of the shell in `env.log`; idle suspend blocked during a run (`systemd-inhibit`; a suspend failed an e2e test on 2026-11-02); `qa-plot` / `qa-scen` write a Markdown report, old and new images side by side by tag (`plot_report.py`) |
-| Files     | `paranoia.sh`, `scripts/paranoia/checks.py` (standard library only); `DEVELOPMENT.md` § Paranoia, `CLAUDE.md`, `GETTING_STARTED.md`, release notes § Paranoia and §30                                                                                                                                                                                                                                                                                                                                    |
+| Files     | `paranoia.sh`, `scripts/paranoia/checks.py` (standard library only); `DEVELOPMENT.md` § Paranoia, `CLAUDE.md`, `GETTING_STARTED.md`, release notes § Paranoia and §32                                                                                                                                                                                                                                                                                                                                    |
 
 ### Sample data & docs
 
@@ -242,7 +242,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 - `docs/RELEASE_NOTES_0.13.0.md` with manual verification checklist
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting
-- `.vsix` ships only runtime files: `.vscodeignore` is an allow-list (`**` excluded, each runtime file named; no source maps) and `vscode:prepublish` deletes `out/` before compiling. `npx vsce ls`: 252 → 70 files, 2.5 → 1.05 MB; the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10` (119 tests, backend run from the package)
+- `.vsix` ships only runtime files: `.vscodeignore` is an allow-list (`**` excluded, each runtime file named; no source maps) and `vscode:prepublish` deletes `out/` before compiling. `npx vsce ls`: 252 → 72 files, 2.5 → 1.05 MB; the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10` (119 tests, backend run from the package)
 
 ---
 
@@ -373,7 +373,7 @@ env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all
 python python/create_sample_data.py --overwrite   # from the repository root
 ```
 
-**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§23 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot, §27: QA pass fixes).
+**Manual:** Follow [`docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`](./MANUAL_TEST_PLAN_0.13.0.md) (step by step, results sheet to paste here); technical details in [`docs/RELEASE_NOTES_0.13.0.md`](../RELEASE_NOTES_0.13.0.md) §0–§35 (§16–§19: code review fixes, §20: eccodeslib pin, §21: viewer styling, §22: plot type selector removed, §23: architecture diagrams, contributors only, §24: Xarray Encoding section and variable card sections, §25: cancel a single plot, §26: load time in local time, §27: plot controls layout, §28: dimension slices, §29: QA pass fixes, §30: progressive plot layout, §31: Time Controls removed, §32: paranoia, §33: GRIB with ECCODES_DEFINITION_PATH, §34: high contrast themes, §35: variables of 0 bytes).
 
 ---
 
@@ -550,3 +550,6 @@ Paranoia: every check before a release:
 91. fix(plot): explain plot options that cannot be used
 92. fix(webview): readable code blocks and dark xarray repr in high contrast
 93. docs(architecture): regenerate diagrams for the webview theme module
+94. fix(webview): show "Empty" as the size of variables of 0 bytes
+95. fix(ci): run GitHub Actions on Node.js 24
+96. fix(ci): pin astral-sh/setup-uv to v10.3.3

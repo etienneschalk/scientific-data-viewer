@@ -42,5 +42,5 @@ Tracks the fix of every finding of the [QA report](./QA_REPORT_0.13.0.md). A box
 
 - [x] **D1. Golden snapshots** re-recorded; manual test plan §13 says when to re-record
 - [x] **0. Stale `.vsix`** rebuilt from the final tree; file count corrected in the release docs
-- [x] **P1. The `.vsix` holds the strict minimum**: `.vscodeignore` is an allow-list (everything excluded, each runtime file named), so nothing new is packaged by accident (`.qa/` was, as a deny-list let any new folder through); no source maps; `vscode:prepublish` deletes `out/` first. 70 files; the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10`
+- [x] **P1. The `.vsix` holds the strict minimum**: `.vscodeignore` is an allow-list (everything excluded, each runtime file named), so nothing new is packaged by accident (`.qa/` was, as a deny-list let any new folder through); no source maps; `vscode:prepublish` deletes `out/` first. 70 files at the time (72 at release); the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10`
 - [x] **Release docs** updated (CHANGELOG, release notes, PR summary)

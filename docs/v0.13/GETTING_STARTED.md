@@ -1,6 +1,6 @@
 # v0.13 — Getting started
 
-v0.13.0 is the largest release of the extension: about 50 commits and roughly 24,000 lines added / 20,000 removed over 170 files. This page is the entry point. It says what to read, what to review closely, what to test, and how to release without leaving users stuck.
+v0.13.0 is the largest release of the extension: about 95 commits and roughly 50,000 lines added / 25,000 removed over 270 files. This page is the entry point. It says what to read, what to review closely, what to test, and how to release without leaving users stuck.
 
 Most of the line count is **moved or generated** code, checked by tests rather than by reading:
 
@@ -28,7 +28,7 @@ The parts where a mistake reaches users directly are much smaller; [§ Review](#
 | Document                                                                                       | What it is for                                                                                                      | Read it when                                      |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | **GETTING_STARTED.md** (this page)                                                             | Hub: reading order, risks, review and release plan                                                                  | First                                             |
-| [RELEASE_NOTES_0.13.0.md](../RELEASE_NOTES_0.13.0.md)                                          | For users and reviewers: what changed, why, upgrade notes, a technical verification guide per feature (§0–§27)      | Before testing; published with the release        |
+| [RELEASE_NOTES_0.13.0.md](../RELEASE_NOTES_0.13.0.md)                                          | For users and reviewers: what changed, why, upgrade notes, a technical verification guide per feature (§0–§35)      | Before testing; published with the release        |
 | [CHANGELOG.md](../../CHANGELOG.md) (0.13.0 section)                                            | Every change with its files and tests                                                                               | To find where something was changed               |
 | [PR_SUMMARY_0.13.0.md](./PR_SUMMARY_0.13.0.md)                                                 | Merge request description: tables, test commands, commit list                                                       | When opening / reviewing the PR                   |
 | [MANUAL_TEST_PLAN_0.13.0.md](./MANUAL_TEST_PLAN_0.13.0.md)                                     | Click-by-click test plan for testers who don't know the formats, with a results sheet (about 2 h)                   | Before merging                                    |
@@ -126,7 +126,7 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
 
 1. **All green**: `./paranoia.sh --full` says `READY` or `READY AFTER REVIEW` (automated checks and the three upgrade scenarios), plus the manual results sheet. Run B20 on Windows if you can.
 2. **Set the release date**:
-   - in the CHANGELOG heading `## [0.13.0] - …`, which still says 2026-09-15, the date of the feature work;
+   - in the CHANGELOG heading `## [0.13.0] - …`, set to 2026-11-05 during the final review; change it if the release happens on another day;
    - in the CHANGELOG link at the bottom of the release notes;
    - in the README (`python scripts/generate_readme.py`; its changelog anchor follows the heading).
 3. **Update the commit list** of the [PR summary](./PR_SUMMARY_0.13.0.md#commits-oldest--newest).
