@@ -390,39 +390,44 @@ function handlerOnDidChangeConfiguration(
         if (event.affectsConfiguration(SDV_EXTENSION_ID)) {
             Logger.info(`🎛️ ${getDisplayName()} configuration changed`);
 
-            if (
-                event.affectsConfiguration(
-                    getOverridePythonInterpreterConfigFullKey(),
-                )
-            ) {
-                const message = `🎛️ SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
-                    getOverridePythonInterpreter(),
-                )}`;
-                Logger.info(message);
-                if (getDevMode()) {
-                    showInformationMessage(message, true, true);
-                }
-
-                refreshPython(pythonManager, statusBarItem);
-            } else if (
-                event.affectsConfiguration(
-                    getUseExtensionOwnEnvironmentConfigFullKey(),
-                )
-            ) {
-                const message = `🎛️ SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
-                    getUseExtensionOwnEnvironment(),
-                )}`;
-                Logger.info(message);
-                if (getDevMode()) {
-                    showInformationMessage(message, true, true);
-                }
-
-                refreshPython(pythonManager, statusBarItem).then(() =>
-                    reportOwnEnvironmentNotUsed(
-                        pythonManager,
-                        extensionEnvManager,
-                    ),
+            // Both can change at once (e.g. settings.json edited by hand):
+            // log each, refresh once.
+            const overrideChanged = event.affectsConfiguration(
+                getOverridePythonInterpreterConfigFullKey(),
+            );
+            const ownEnvironmentChanged = event.affectsConfiguration(
+                getUseExtensionOwnEnvironmentConfigFullKey(),
+            );
+            const messages: string[] = [];
+            if (overrideChanged) {
+                messages.push(
+                    `🎛️ SDV configuration updated: overridePythonInterpreter is now: ${formatConfigValue(
+                        getOverridePythonInterpreter(),
+                    )}`,
                 );
+            }
+            if (ownEnvironmentChanged) {
+                messages.push(
+                    `🎛️ SDV configuration updated: useExtensionOwnEnvironment is now: ${formatConfigValue(
+                        getUseExtensionOwnEnvironment(),
+                    )}`,
+                );
+            }
+            for (const message of messages) {
+                Logger.info(message);
+                if (getDevMode()) {
+                    showInformationMessage(message, true, true);
+                }
+            }
+            if (overrideChanged || ownEnvironmentChanged) {
+                refreshPython(pythonManager, statusBarItem).then(() => {
+                    if (ownEnvironmentChanged) {
+                        reportOwnEnvironmentNotUsed(
+                            pythonManager,
+                            extensionEnvManager,
+                        );
+                    }
+                });
             }
         } else if (
             event.affectsConfiguration('python.condaPath') ||

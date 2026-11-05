@@ -363,6 +363,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Panel disposal robustness**: the "disposed" flag was set at the end of the disposal, so a step that threw left the panel marked alive and a later dispose event ran everything again; the `onDidDispose` subscription itself was never disposed. The flag is now set first and the subscription is tracked with the panel's other disposables.
   - **Files**: `src/DataViewerPanel.ts`
   - **Tests**: `test/suite/dataViewerPanel.test.ts` (disposal runs once even when a step throws)
+- **Both interpreter settings changed at once**: when one settings change touched both `overridePythonInterpreter` and `useExtensionOwnEnvironment` (e.g. `settings.json` edited by hand), only the first was logged, and the "own environment not used" report of the second was skipped. Both are now logged, the interpreter is refreshed once, then the report runs.
+  - **Files**: `src/extension.ts` (`handlerOnDidChangeConfiguration`)
+  - **Tests**: none automated (module-private handler); manual: change both settings in `settings.json` in one save and check the two log lines
 
 ### Security
 
