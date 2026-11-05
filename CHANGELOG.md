@@ -360,6 +360,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Info runs left running after VS Code closes the extension**: deactivation aborted only the processes started with an operation ID (plots); an info run (up to 5 minutes on a slow file) kept running. Every backend run is now tracked and stopped.
   - **Files**: `src/python/PythonManager.ts`, `src/extension.ts`
   - **Tests**: `test/suite/pythonManager.test.ts` (`abortAllProcesses` stops a run without operation ID)
+- **Panel disposal robustness**: the "disposed" flag was set at the end of the disposal, so a step that threw left the panel marked alive and a later dispose event ran everything again; the `onDidDispose` subscription itself was never disposed. The flag is now set first and the subscription is tracked with the panel's other disposables.
+  - **Files**: `src/DataViewerPanel.ts`
+  - **Tests**: `test/suite/dataViewerPanel.test.ts` (disposal runs once even when a step throws)
 
 ### Security
 

@@ -297,7 +297,11 @@ export class DataViewerPanel {
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
-        this._webviewPanel.onDidDispose(() => this.disposePanel());
+        this._webviewPanel.onDidDispose(
+            () => this.disposePanel(),
+            null,
+            this._disposables,
+        );
     }
 
     /**
@@ -361,6 +365,10 @@ export class DataViewerPanel {
             );
             return;
         }
+        // Set first: _webviewPanel.dispose() below fires onDidDispose, which
+        // calls this method again, and a throwing step must not leave the
+        // panel half disposed but still "alive".
+        this._isDisposed = true;
 
         Logger.info(
             `[dispose] <${this.getId()}> 🚚 🗑️ Disposing panel for file: ${
@@ -394,8 +402,6 @@ export class DataViewerPanel {
                 this.getFileUri().fsPath
             }`,
         );
-
-        this._isDisposed = true;
     }
 
     private async handleDevMode(): Promise<void> {

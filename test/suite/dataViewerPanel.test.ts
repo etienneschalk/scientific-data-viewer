@@ -330,6 +330,33 @@ suite('DataViewerPanel Test Suite', () => {
         assert.ok(!DataViewerPanel.getPanel(panel.getId()));
     });
 
+    test('panel disposal runs once even when a step throws', () => {
+        let onDispose: (() => void) | undefined;
+        let disposeCalls = 0;
+        const panel = DataViewerPanel.createFromWebviewPanel(
+            vscode.Uri.file('/path/to/throwing.nc'),
+            {
+                ...mockWebviewPanel,
+                onDidDispose: (listener: () => void) => {
+                    onDispose = listener;
+                    return { dispose: () => {} };
+                },
+                dispose: () => {
+                    disposeCalls += 1;
+                    throw new Error('dispose failed');
+                },
+            } as any,
+            mockWebviewOptions,
+        );
+        assert.ok(onDispose, 'onDidDispose listener registered');
+
+        assert.throws(() => onDispose!(), /dispose failed/);
+        onDispose!();
+
+        assert.strictEqual(disposeCalls, 1);
+        assert.ok(!DataViewerPanel.getPanel(panel.getId()));
+    });
+
     test('getActivePanel prefers the focused panel over another visible one', () => {
         DataViewerPanel.dispose();
         const left = DataViewerPanel.createFromWebviewPanel(
