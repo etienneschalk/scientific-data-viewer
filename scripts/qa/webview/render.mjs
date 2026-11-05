@@ -55,7 +55,7 @@ for (const f of ['xss_names.nc', 'xss_groups.nc', 'xss_names.zarr', 'zarr_with_n
     if (f === 'xss_names.nc') await p.screenshot(`${IMG_DIR}/ui_xss_names.png`);
     if (f === 'attr_zoo.nc') {
         const shown = await p.eval(`document.body.innerText.split('\\n').filter(l => /np\\.float|"nan"|"inf"/.test(l)).slice(0, 10)`);
-        check('attr_zoo: inf / nan / -inf attributes display as inf / nan (release notes §19.2)', shown.length === 0, shown);
+        check('attr_zoo: inf / nan / -inf attributes display as inf / nan (manual test plan T19)', shown.length === 0, shown);
         const wide = await p.eval(`({ scrollW: document.documentElement.scrollWidth, innerW: window.innerWidth })`);
         check('attr_zoo: 200 000-char attribute and 20 000-element array do not cause horizontal page scroll', wide.scrollW <= wide.innerW, wide);
         await p.screenshot(`${IMG_DIR}/ui_attr_zoo.png`, { full: false });

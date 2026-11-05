@@ -194,8 +194,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Tests**: next CI run (no Node 20 annotation on the summary page)
 - **One document for the reviews of the release**: `docs/v0.13/CODE_REVIEW_TODO.md` (fully checked), `QA_REPORT_0.13.0.md` and `QA_FIXES_0.13.0.md` (the same 14 findings, all fixed) are merged into `docs/v0.13/REVIEWS_0.13.0.md`: § Code review, § QA pass (the findings table gains a "Fixed" column, the fix list follows the findings), § Release review. Links in the CHANGELOG, release notes, PR summary, `GETTING_STARTED.md` and `scripts/qa/README.md` point to it.
   - **Files**: `docs/v0.13/REVIEWS_0.13.0.md` (new), the three merged files (deleted), and the files above
-- **Upgrade test described once**: the release notes §15 repeated the by-hand steps of manual test plan B19 (simulated old environment, offline rebuild, Recreate); they now link to B19 and B20. `UPGRADE_TEST_PLAN.md` (automated script, results, support playbook) and the manual test plan (by-hand steps) are the two sources; `GETTING_STARTED.md` § 2 and B20 only link to them.
+- **Upgrade test described once**: the release notes §15 (now manual test plan T15) repeated the by-hand steps of manual test plan B19 (simulated old environment, offline rebuild, Recreate); they now link to B19 and B20. `UPGRADE_TEST_PLAN.md` (automated script, results, support playbook) and the manual test plan (by-hand steps) are the two sources; `GETTING_STARTED.md` § 2 and B20 only link to them.
   - **Files**: `docs/RELEASE_NOTES_0.13.0.md`
+- **Release notes for users, test steps in the test plan**: the release notes carried a 530-line technical verification guide (§0–§35) for reviewers next to the user-facing notes. It is now **Part E** of `docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md` (steps T0–T35, same content), so every test step of the release is in one document; the release notes (about 1,090 → 560 lines) link to it. References to "§N" in the PR summary, `GETTING_STARTED.md`, `REVIEWS_0.13.0.md` and the webview QA scenario `render.mjs` now say "T*N*".
+  - **Files**: `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/MANUAL_TEST_PLAN_0.13.0.md`, `docs/v0.13/PR_SUMMARY_0.13.0.md`, `docs/v0.13/GETTING_STARTED.md`, `docs/v0.13/REVIEWS_0.13.0.md`, `scripts/qa/webview/render.mjs` (message text)
 
 ### Removed
 

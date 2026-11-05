@@ -2,11 +2,11 @@
 
 Every review pass of the release, oldest first. All items are fixed unless marked otherwise; each fix is described in the [CHANGELOG](../../CHANGELOG.md) and the [release notes](../RELEASE_NOTES_0.13.0.md).
 
-| Pass                                   | Date         | Scope                                               | Items                                                          |
-| -------------------------------------- | ------------ | --------------------------------------------------- | -------------------------------------------------------------- |
-| [1. Code review](#1-code-review)       | October 2026 | Whole codebase, read line by line                   | 63, all fixed (release notes §16–§19)                          |
-| [2. QA pass](#2-qa-pass)               | 2026-10-29   | Exploratory and adversarial testing against v0.12.1 | 1 blocker, 14 bugs, 4 hardening, all fixed (release notes §29) |
-| [3. Release review](#3-release-review) | 2026-11-05   | Code and docs before publishing                     | [`RELEASE_REVIEW_0.13.0.md`](./RELEASE_REVIEW_0.13.0.md)       |
+| Pass                                   | Date         | Scope                                               | Items                                                             |
+| -------------------------------------- | ------------ | --------------------------------------------------- | ----------------------------------------------------------------- |
+| [1. Code review](#1-code-review)       | October 2026 | Whole codebase, read line by line                   | 63, all fixed (manual test plan T16–T19)                          |
+| [2. QA pass](#2-qa-pass)               | 2026-10-29   | Exploratory and adversarial testing against v0.12.1 | 1 blocker, 14 bugs, 4 hardening, all fixed (manual test plan T29) |
+| [3. Release review](#3-release-review) | 2026-11-05   | Code and docs before publishing                     | [`RELEASE_REVIEW_0.13.0.md`](./RELEASE_REVIEW_0.13.0.md)          |
 
 ---
 
@@ -177,14 +177,14 @@ Hostile fixtures: HTML / script payloads in variable, group, dimension and attri
 
 **Cause:** `UIController.loadFile` has no disposed guard; after `disposePanel()` cleared the outline, the in-flight load calls `onOutlineUpdateCallback` → `DataViewerPanel.updateOutline()` → `OutlineProvider.updateHeaders(closedId)` (`src/DataViewerPanel.ts:264-268, 327-341`).
 
-**Expected:** release notes §18.8 "Close the viewer → the outline is cleared" (true when closed after load). **Proof:** E2E `s8/results.json` ("dispose during load", "rapid open/close"); code path read and confirmed.
+**Expected:** release notes §18.8 (now manual test plan T18) "Close the viewer → the outline is cleared" (true when closed after load). **Proof:** E2E `s8/results.json` ("dispose during load", "rapid open/close"); code path read and confirmed.
 
 ### 3. Low–medium — `NaN` / `inf` displayed as `np.float64(nan)` / `np.float64(inf)` (v0.13)
 
 **Repro:** open any xarray-written float file, e.g. `sample-data/sample_data.nc`, expand a coordinate → Xarray Encoding → `_FillValue : np.float64(nan)`. An attribute `valid_max = inf` shows `np.float64(inf)`.
 
 - **Regression:** v0.12.1 showed `_FillValue` as `nan`. Affects **18 of the 55** sample files.
-- Contradicts release notes §19.2 / manual test plan ("the attribute shows `inf`"). Inconsistent: float32 `inf` shows `inf`, float64 shows `np.float64(inf)`; arrays show `[0.1,"nan","inf"]` with quotes.
+- Contradicts release notes §19.2 (now manual test plan T19) / manual test plan ("the attribute shows `inf`"). Inconsistent: float32 `inf` shows `inf`, float64 shows `np.float64(inf)`; arrays show `[0.1,"nan","inf"]` with quotes.
 - **Cause:** `sanitize_non_finite` (`python/sdv_backend/serialization.py:22-23`) uses `repr()`, and `np.float64` is a `float` subclass; `python/tests/test_serialization.py:33` asserts this output.
 - **Proof:** DOM `<span class="attribute-value" title="np.float64(inf)">np.float64(inf)</span>` (`qa/ui/t_inf.mjs`); `grep` over the info JSON of v0.12.1 vs v0.13 (`qa/info_uv/`).
 
@@ -296,7 +296,7 @@ Every finding above is fixed, with its test; numbers match the findings. The sce
 
 #### Docs and release
 
-- **D1. Golden snapshots** re-recorded; manual test plan §13 says when to re-record
+- **D1. Golden snapshots** re-recorded; manual test plan T13 says when to re-record
 - **0. Stale `.vsix`** rebuilt from the final tree; file count corrected in the release docs
 - **P1. The `.vsix` holds the strict minimum**: `.vscodeignore` is an allow-list (everything excluded, each runtime file named), so nothing new is packaged by accident (`.qa/` was, as a deny-list let any new folder through); no source maps; `vscode:prepublish` deletes `out/` first. 70 files at the time (72 at release); the unpacked `.vsix` passes the VS Code suites `s1`, `s3`, `s10`
 - **Release docs** updated (CHANGELOG, release notes, PR summary)
