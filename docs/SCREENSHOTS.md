@@ -120,7 +120,7 @@ The script exits with code 1 if any screenshot failed. The other screenshots are
 
 - **Node 22** (`nvm use`). The script needs the built-in `WebSocket`, which older Node versions lack; it says so if it is missing.
 - **Python with xarray, netCDF4 and matplotlib**: the repository's `.venv` or the extension's uv environment. The script looks for, in order: `--python`, `$SDV_PYTHON`, `.venv/bin/python` (`.venv\Scripts\python.exe` on Windows), then `python3` (`python` on Windows).
-- **A Chromium-based browser**, run headless. The script looks for, in order:
+- **A Chromium-based browser**, run headless. The script (with the webview QA harness: `scripts/lib/chrome.mjs`) looks for, in order:
   1. `--chrome`, then `$CHROME_PATH`;
   2. Playwright's Chromium in its cache (`~/.cache/ms-playwright`, `~/Library/Caches/ms-playwright`, `%LOCALAPPDATA%\ms-playwright`), newest build first;
   3. `google-chrome`, `google-chrome-stable`, `chromium`, `chromium-browser`, `microsoft-edge` on `PATH`;

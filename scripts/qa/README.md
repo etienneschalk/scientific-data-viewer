@@ -20,7 +20,7 @@ npm run compile                      # the harnesses load out/
 | `SDV_PYTHON`          | the extension's uv environment if it exists, else `.venv/bin/python` (`paranoia.sh` builds `artefacts/backend-env` instead, like the extension's; the e2e suite S2 needs an interpreter without `kerchunk`) | all (backend interpreter) |
 | `SDV_KERCHUNK_PYTHON` | `.venv/bin/python`                                                                                                                                                                                          | e2e (Kerchunk suites)     |
 | `SDV_QA_BASELINE`     | `$SDV_QA_OUT/baseline`                                                                                                                                                                                      | backend                   |
-| `CHROME_PATH`         | newest Playwright Chromium (`npx playwright install chromium`)                                                                                                                                              | webview                   |
+| `CHROME_PATH`         | newest Playwright Chromium, else Chrome / Chromium / Edge on the PATH (`scripts/lib/chrome.mjs`, as for the screenshots)                                                                                    | webview                   |
 | `SDV_VSCODE_VERSION`  | `1.144.0`                                                                                                                                                                                                   | e2e                       |
 
 ## Fixtures — `fixtures/make_fixtures.py`

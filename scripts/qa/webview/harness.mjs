@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { Browser, findChrome } from '../../lib/chrome.mjs';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 export const QA_OUT = path.resolve(process.env.SDV_QA_OUT ?? path.join(REPO, 'artefacts', 'qa'));
@@ -26,21 +26,6 @@ export const PY =
 const SCRIPT = path.join(REPO, 'python', 'get_data_info.py');
 const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'));
 
-/** CHROME_PATH, else the newest Playwright Chromium (`npx playwright install chromium`). */
-function findChrome() {
-    if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
-    const root = path.join(os.homedir(), '.cache', 'ms-playwright');
-    const builds = fs.existsSync(root)
-        ? fs.readdirSync(root).filter((n) => /^chromium-\d+$/.test(n)).sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]))
-        : [];
-    for (const build of builds) {
-        for (const exe of ['chrome-linux64/chrome', 'chrome-linux/chrome', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium']) {
-            const candidate = path.join(root, build, exe);
-            if (fs.existsSync(candidate)) return candidate;
-        }
-    }
-    throw new Error('no Chromium found: set CHROME_PATH or run `npx playwright install chromium`');
-}
 const CHROME = findChrome();
 
 /** PASS / FAIL lines with evidence; `finish` prints the count and sets the exit code. */
@@ -190,54 +175,10 @@ const SHIM = `(() => {
     }
 })();`;
 
-// ---------- CDP browser ----------
-class Browser {
-    static async launch() {
-        const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdv-qa-'));
-        const child = spawn(CHROME, ['--headless', '--remote-debugging-port=0', `--user-data-dir=${userDataDir}`, '--no-first-run', '--disable-gpu', '--no-sandbox', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
-        const url = await new Promise((resolve, reject) => {
-            let err = '';
-            child.stderr.on('data', (c) => {
-                err += c;
-                const m = /DevTools listening on (ws:\/\/\S+)/.exec(err);
-                if (m) resolve(m[1]);
-            });
-            child.on('exit', (c) => reject(new Error('chrome exited ' + c + err)));
-        });
-        const socket = new WebSocket(url);
-        await new Promise((r, j) => {
-            socket.addEventListener('open', r, { once: true });
-            socket.addEventListener('error', j, { once: true });
-        });
-        return new Browser(child, socket, userDataDir);
-    }
-    constructor(child, socket, dir) {
-        Object.assign(this, { child, socket, dir, nextId: 1, pending: new Map(), listeners: new Set() });
-        socket.addEventListener('message', (ev) => {
-            const msg = JSON.parse(ev.data);
-            if (msg.id && this.pending.has(msg.id)) {
-                const { resolve, reject } = this.pending.get(msg.id);
-                this.pending.delete(msg.id);
-                msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result);
-            } else this.listeners.forEach((l) => l(msg));
-        });
-    }
-    send(method, params = {}, sessionId) {
-        const id = this.nextId++;
-        this.socket.send(JSON.stringify({ id, method, params, sessionId }));
-        return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
-    }
-    async close() {
-        this.socket.close();
-        this.child.kill();
-        await new Promise((r) => setTimeout(r, 300));
-        fs.rmSync(this.dir, { recursive: true, force: true });
-    }
-}
-
+// ---------- CDP browser (scripts/lib/chrome.mjs) ----------
 let browser;
 export async function getBrowser() {
-    if (!browser) browser = await Browser.launch();
+    if (!browser) browser = await Browser.launch(CHROME, { profilePrefix: 'sdv-qa-' });
     return browser;
 }
 export async function shutdown() {

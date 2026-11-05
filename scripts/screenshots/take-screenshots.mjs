@@ -24,15 +24,15 @@
 //   --width <px>        viewport width (default: 1024)
 //   --scale <n>         device pixel ratio (default: 1; 2 for sharp docs images)
 //   --skip-compile      do not run `npm run compile` first
-import { execFile, spawn, spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import { createRequire } from 'node:module';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
 
+import { Browser, findChrome } from '../lib/chrome.mjs';
 import { THEMES, THEMES_DIR } from './themes.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -149,76 +149,12 @@ function findPython() {
     return found ?? (process.platform === 'win32' ? 'python' : 'python3');
 }
 
-function onPath(name) {
-    const exts = process.platform === 'win32' ? ['.exe', ''] : [''];
-    for (const dir of (process.env.PATH ?? '').split(path.delimiter)) {
-        for (const ext of exts) {
-            const candidate = path.join(dir, name + ext);
-            if (dir && fs.existsSync(candidate)) {
-                return candidate;
-            }
-        }
+function findChromeOrFail() {
+    try {
+        return findChrome(options.chrome);
+    } catch (error) {
+        fail(error.message);
     }
-    return null;
-}
-
-function playwrightChromium() {
-    const cacheRoots = {
-        linux: path.join(os.homedir(), '.cache', 'ms-playwright'),
-        darwin: path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright'),
-        win32: path.join(process.env.LOCALAPPDATA ?? '', 'ms-playwright'),
-    };
-    const root = cacheRoots[process.platform];
-    if (!root || !fs.existsSync(root)) {
-        return null;
-    }
-    const executables = [
-        'chrome-linux64/chrome',
-        'chrome-linux/chrome',
-        'chrome-mac-arm64/Chromium.app/Contents/MacOS/Chromium',
-        'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
-        'chrome-win64/chrome.exe',
-        'chrome-win/chrome.exe',
-    ];
-    const builds = fs
-        .readdirSync(root)
-        .filter((name) => /^chromium-\d+$/.test(name))
-        .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
-    for (const build of builds) {
-        for (const executable of executables) {
-            const candidate = path.join(root, build, executable);
-            if (fs.existsSync(candidate)) {
-                return candidate;
-            }
-        }
-    }
-    return null;
-}
-
-function findChrome() {
-    const explicit = options.chrome ?? process.env.CHROME_PATH;
-    if (explicit) {
-        return explicit;
-    }
-    const programFiles = [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)']];
-    const installed = [
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        '/Applications/Chromium.app/Contents/MacOS/Chromium',
-        ...programFiles.filter(Boolean).flatMap((dir) => [
-            path.join(dir, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-            path.join(dir, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
-        ]),
-    ];
-    const found =
-        playwrightChromium() ??
-        ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'microsoft-edge']
-            .map(onPath)
-            .find(Boolean) ??
-        installed.find((candidate) => fs.existsSync(candidate));
-    if (!found) {
-        fail('no Chrome / Chromium found: pass --chrome <path> or set CHROME_PATH (or `npx playwright install chromium`)');
-    }
-    return found;
 }
 
 /** Host modules of the compiled extension, with `vscode` stubbed out. */
@@ -317,89 +253,6 @@ function buildPage(HTMLGenerator, theme, data) {
         .replace('<head>', `<head>\n${host}`);
 }
 
-/** Minimal Chrome DevTools Protocol client over the built-in WebSocket. */
-class Browser {
-    static async launch(executable) {
-        const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdv-screenshots-'));
-        const args = [
-            '--headless',
-            '--remote-debugging-port=0',
-            `--user-data-dir=${userDataDir}`,
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-gpu',
-            '--hide-scrollbars',
-            '--mute-audio',
-            ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
-            'about:blank',
-        ];
-        const child = spawn(executable, args, { stdio: ['ignore', 'ignore', 'pipe'] });
-        const url = await new Promise((resolve, reject) => {
-            let stderr = '';
-            const timer = setTimeout(() => reject(new Error(`Chrome did not start:\n${stderr}`)), 30000);
-            child.stderr.on('data', (chunk) => {
-                stderr += chunk;
-                const match = /DevTools listening on (ws:\/\/\S+)/.exec(stderr);
-                if (match) {
-                    clearTimeout(timer);
-                    resolve(match[1]);
-                }
-            });
-            child.on('exit', (code) => reject(new Error(`Chrome exited (${code}):\n${stderr}`)));
-        });
-        const socket = new WebSocket(url);
-        await new Promise((resolve, reject) => {
-            socket.addEventListener('open', resolve, { once: true });
-            socket.addEventListener('error', reject, { once: true });
-        });
-        return new Browser(child, socket, userDataDir);
-    }
-
-    constructor(child, socket, userDataDir) {
-        this.child = child;
-        this.socket = socket;
-        this.userDataDir = userDataDir;
-        this.nextId = 1;
-        this.pending = new Map();
-        this.listeners = new Set();
-        socket.addEventListener('message', (event) => {
-            const message = JSON.parse(event.data);
-            if (message.id && this.pending.has(message.id)) {
-                const { resolve, reject } = this.pending.get(message.id);
-                this.pending.delete(message.id);
-                message.error ? reject(new Error(message.error.message)) : resolve(message.result);
-            } else {
-                this.listeners.forEach((listener) => listener(message));
-            }
-        });
-    }
-
-    send(method, params = {}, sessionId = undefined) {
-        const id = this.nextId++;
-        this.socket.send(JSON.stringify({ id, method, params, sessionId }));
-        return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
-    }
-
-    waitForEvent(method, sessionId) {
-        return new Promise((resolve) => {
-            const listener = (message) => {
-                if (message.method === method && message.sessionId === sessionId) {
-                    this.listeners.delete(listener);
-                    resolve(message.params);
-                }
-            };
-            this.listeners.add(listener);
-        });
-    }
-
-    async close() {
-        this.socket.close();
-        this.child.kill();
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        fs.rmSync(this.userDataDir, { recursive: true, force: true });
-    }
-}
-
 const MAX_VIEWPORT_HEIGHT = 16000;
 
 async function screenshot(browser, url, scenario, width, scale, file) {
@@ -491,7 +344,7 @@ async function main() {
     }
     const { HTMLGenerator, DataProcessor } = loadExtensionModules();
     const python = findPython();
-    const chrome = findChrome();
+    const chrome = findChromeOrFail();
     const config = extensionConfig();
     const width = Number(options.width);
     const scale = Number(options.scale);
@@ -595,7 +448,7 @@ async function main() {
     const origin = `http://127.0.0.1:${server.address().port}`;
 
     console.log(`Chrome: ${chrome}`);
-    const browser = await Browser.launch(chrome);
+    const browser = await Browser.launch(chrome, { profilePrefix: 'sdv-screenshots-', hideScrollbars: true });
     let failures = 0;
     try {
         for (const theme of themes) {
