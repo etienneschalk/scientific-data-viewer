@@ -175,7 +175,7 @@ This guide provides detailed instructions for developing, testing, and maintaini
 ### Required Software
 
 - **Node.js 22+** and npm
-- **Python 3.13+** with pip
+- **Python 3.13+** with pip (development; the backend itself must keep running on Python 3.10+ with xarray ≥ 2024.10, the floor of users' own interpreters: ruff targets py310)
 - **VSCode** (latest stable version)
 - **Git** for version control
 
