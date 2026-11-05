@@ -155,7 +155,7 @@ Before any code moved, a **golden snapshot harness** (`python/tools/golden_snaps
 
 ### Why
 
-A review of the whole codebase (October 2026, tracked item by item in [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)) found a security issue, several real bugs hidden by over-engineered plumbing, and a lot of dead code: a message bus whose request/response half was never used, a Redux-like state store with undo history nobody called that broadcast the whole state ~9 times per load, a 4,000-line untyped webview script with every plot parameter duplicated, a 1,184-line healthcheck, and Python plot strategies spread over 8 classes and 2 registries.
+A review of the whole codebase (October 2026, tracked item by item in [`REVIEWS_0.13.0.md` § Code review](./v0.13/REVIEWS_0.13.0.md#1-code-review)) found a security issue, several real bugs hidden by over-engineered plumbing, and a lot of dead code: a message bus whose request/response half was never used, a Redux-like state store with undo history nobody called that broadcast the whole state ~9 times per load, a 4,000-line untyped webview script with every plot parameter duplicated, a 1,184-line healthcheck, and Python plot strategies spread over 8 classes and 2 registries.
 
 ### What changed
 
@@ -341,7 +341,7 @@ Many things changed in v0.13; a tester's pass was needed before the release, try
 - **Backend, differential**: v0.12.1 and v0.13 run with the same interpreter on every sample file and 53 hostile files; `info` compared structurally, every variable plotted by both and the images compared pixel by pixel, ~80 plot-option scenarios. Every difference traced to an intended change; 133 of 145 default plots are pixel-identical (the rest: newly opened formats, the intended `(time, station)` aspect fix, identical failures).
 - **Webview**: the real page (real CSP, compiled bundle, VS Code theme variables) in headless Chromium, with real typing and mouse drags, the backend through the extension's own argument builder and process runner. No injection through any hostile name or value (live page and exported HTML).
 - **Extension host**: suites inside a real VS Code against the live panels and message bus (opening every format, Kerchunk, plots, abort, save paths, settings, outline, multiple panels, packaging).
-- Report: [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md); fixes tracked in [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md). The tools are versioned in `scripts/qa/` (see its README).
+- Report and fixes: [`REVIEWS_0.13.0.md` § QA pass](./v0.13/REVIEWS_0.13.0.md#2-qa-pass). The tools are versioned in `scripts/qa/` (see its README).
 
 ### What was fixed
 
@@ -947,7 +947,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ### 29. QA pass fixes
 
-**Expect:** the fixes of [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md) hold.
+**Expect:** the [fixes of the QA pass](./v0.13/REVIEWS_0.13.0.md#fixes) hold.
 
 **Test:**
 
@@ -1071,9 +1071,9 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 | **Extension** | New settings; Kerchunk command/editor; folder/ZIP menus; uv environment rebuilt automatically when a version requires it (not at every start), **Recreate** action; backend says when xarray is too old                                                                                                                                                                                                                                                                                                                               |
 | **Docs**      | Issue templates: all fields optional; `docs/v0.13/` planning; `docs/v0.13/PR_SUMMARY_0.13.0.md`; README regenerated; this release note; architecture diagrams generated from the code (`docs/architecture/`, `scripts/architecture/`)                                                                                                                                                                                                                                                                                                 |
 | **Samples**   | `python/sample_data/` package (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref, empty dimension); reproducible; `python python/create_sample_data.py [--overwrite]`                                                                                                                                                                                                                                                                                                                                        |
-| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`CODE_REVIEW_TODO.md`](./v0.13/CODE_REVIEW_TODO.md)                                                                                                                                                                                                          |
+| **Review**    | Security fix (escaping, CSP, command allowlist, path validation); uv pins; Kerchunk URI; Windows paths; init races; message bus / state store simplified; webview in TypeScript (esbuild); healthcheck and plot strategies simplified; backend always returns JSON; see [`REVIEWS_0.13.0.md`](./v0.13/REVIEWS_0.13.0.md#1-code-review)                                                                                                                                                                                                |
 | **UI**        | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed; high contrast themes fixed (code blocks, dark xarray repr and plots); **Empty** size for variables of 0 bytes |
-| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`QA_REPORT_0.13.0.md`](./v0.13/QA_REPORT_0.13.0.md), [`QA_FIXES_0.13.0.md`](./v0.13/QA_FIXES_0.13.0.md); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                                                                                                                                       |
+| **QA**        | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`REVIEWS_0.13.0.md`](./v0.13/REVIEWS_0.13.0.md#2-qa-pass); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                                                                                                                                                                                     |
 | **Tests**     | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`, `test_empty_dimension_sample.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                                                                          |
 
 ---
@@ -1085,6 +1085,6 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 - [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
 - [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)
 - [Upgrade test plan (users updating from v0.12)](./v0.13/UPGRADE_TEST_PLAN.md)
-- [QA report](./v0.13/QA_REPORT_0.13.0.md) and [QA fixes](./v0.13/QA_FIXES_0.13.0.md)
+- [Reviews: code review, QA pass, release review](./v0.13/REVIEWS_0.13.0.md)
 - [v0.13 planning folder](./v0.13/README.md)
 - [Previous release: v0.12.1](./RELEASE_NOTES_0.12.1.md)

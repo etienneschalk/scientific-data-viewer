@@ -1,6 +1,6 @@
 # QA harnesses
 
-Tools used for the v0.13.0 QA campaign ([`docs/v0.13/QA_REPORT_0.13.0.md`](../../docs/v0.13/QA_REPORT_0.13.0.md)), kept to run again before a release. They complement `npm test` and `pytest`: they compare two versions of the backend, drive the real webview page with real input, and drive the extension inside a real VS Code. Nothing here ships in the `.vsix` (`scripts/**` is excluded).
+Tools used for the v0.13.0 QA campaign ([`docs/v0.13/REVIEWS_0.13.0.md` § QA pass](../../docs/v0.13/REVIEWS_0.13.0.md#2-qa-pass)), kept to run again before a release. They complement `npm test` and `pytest`: they compare two versions of the backend, drive the real webview page with real input, and drive the extension inside a real VS Code. Nothing here ships in the `.vsix` (`scripts/**` is excluded).
 
 Outputs go to `artefacts/qa/` (gitignored), or `$SDV_QA_OUT`.
 

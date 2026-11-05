@@ -2,7 +2,7 @@
 
 ## Summary
 
-Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/CODE_REVIEW_TODO.md`](./CODE_REVIEW_TODO.md)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`QA_REPORT_0.13.0.md`](./QA_REPORT_0.13.0.md)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`QA_FIXES_0.13.0.md`](./QA_FIXES_0.13.0.md); its harnesses are kept in `scripts/qa/`. The little-used **Time Controls** (off by default) are removed with their two settings: Dimension Slices cover time.
+Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Improves Zarr discovery (unsuffixed directories, ZIP archives, v3 encoding metadata), NetCDF/DataTree quality (engine order, HDF5 filters, inherited coordinates), experimental **Kerchunk** virtual Zarr references, **COG** labelling, and plot extras (`col_wrap='auto'`, `facetgridFigsize`). Removes stale **Sentinel-1 SAFE** claims from the UI. Restructures the Python backend into the **`sdv_backend`** package and the sample generators into **`sample_data`** (behaviour preserved, verified with golden snapshots). A codebase review pass (tracked in [`docs/v0.13/REVIEWS_0.13.0.md`](./REVIEWS_0.13.0.md#1-code-review)) fixes a webview **HTML injection → arbitrary command** issue, uv installs that dropped version pins, broken **Open as Kerchunk**, Windows save paths and backend crashes, and removes dead / duplicated code (message bus, state store, 4,000-line webview script → bundled TypeScript modules). A final QA pass ([`REVIEWS_0.13.0.md` § QA pass](./REVIEWS_0.13.0.md#2-qa-pass)) found no regression against v0.12.1 and fixed 20 issues, tracked in [`REVIEWS_0.13.0.md` § QA pass](./REVIEWS_0.13.0.md#fixes); its harnesses are kept in `scripts/qa/`. The little-used **Time Controls** (off by default) are removed with their two settings: Dimension Slices cover time.
 
 **Version:** `0.13.0` in `package.json` / `package-lock.json`
 
@@ -186,15 +186,15 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 
 ### Phase 15 — QA pass
 
-| Area     | Work                                                                                                                                                                                                  |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Method   | Backend differential vs v0.12.1 (same interpreter: info, every variable plotted, ~80 option scenarios); real webview in headless Chromium with real input; suites inside VS Code; packaging           |
-| Backend  | CLI joins value options with their value (`--vmin=-1e-7`, `--plot-x=-x`); `nan` / `inf` instead of `np.float64(…)`; precise Kerchunk errors; `describe_exception`; Python < 3.10 reported in JSON     |
-| Host     | Stale / post-close loads ignored (outline, notification, latest load wins); close aborts the panel's plots; focused panel exported; requirement specifiers only for installs; "not ready" says why    |
-| Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture |
-| Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                             |
-| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `artefacts/qa/`                                                                              |
-| Docs     | `QA_REPORT_0.13.0.md`, `QA_FIXES_0.13.0.md`, release notes § QA pass and §29, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated        |
+| Area     | Work                                                                                                                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Method   | Backend differential vs v0.12.1 (same interpreter: info, every variable plotted, ~80 option scenarios); real webview in headless Chromium with real input; suites inside VS Code; packaging                      |
+| Backend  | CLI joins value options with their value (`--vmin=-1e-7`, `--plot-x=-x`); `nan` / `inf` instead of `np.float64(…)`; precise Kerchunk errors; `describe_exception`; Python < 3.10 reported in JSON                |
+| Host     | Stale / post-close loads ignored (outline, notification, latest load wins); close aborts the panel's plots; focused panel exported; requirement specifiers only for installs; "not ready" says why               |
+| Webview  | Plot All skips running plots; numbers typed wrong outlined and blocking; group checkboxes "use the global value" (dash); numeric arrays like numpy; header at 320 px; export refuses a failed capture            |
+| Settings | `maxFileSize` ≤ 0 = no limit, files only (Zarr directories not checked); `facetgridFigsize` < 0.1 ignored                                                                                                        |
+| Tooling  | `scripts/qa/` (fixtures, backend differential, webview scenarios, VS Code end-to-end suites), outputs in `artefacts/qa/`                                                                                         |
+| Docs     | QA report and fix tracker (now `REVIEWS_0.13.0.md` § QA pass), release notes § QA pass and §29, manual test plan (golden snapshots), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams and README regenerated |
 
 ### Phase 16 — Progressive plot layout
 
@@ -392,10 +392,10 @@ python python/create_sample_data.py --overwrite   # from the repository root
 - [x] `CLAUDE.md` — commands and architecture for AI-assisted development
 - [x] `docs/TECHNICAL_ARCHITECTURE.md` — rewritten for the actual architecture (code review)
 - [x] `docs/architecture/` — architecture diagrams, generated by `scripts/architecture/generate.py`
-- [x] `docs/v0.13/CODE_REVIEW_TODO.md` — code review items, all checked
+- [x] `docs/v0.13/REVIEWS_0.13.0.md` — every review pass: code review items, QA report and fixes, release review
 - [x] `docs/v0.13/GETTING_STARTED.md` — hub: reading order, risks, review and release plan
 - [x] `docs/v0.13/UPGRADE_TEST_PLAN.md` — upgrade from v0.12: profiles, script, compatibility, support playbook
-- [x] `docs/v0.13/QA_REPORT_0.13.0.md` / `QA_FIXES_0.13.0.md` — QA report and fix tracker; `scripts/qa/README.md`
+- [x] `scripts/qa/README.md` — the QA harnesses
 - [x] `docs/PLOTTING.md` — how a plot is made (plot parameters, layout decision, diagrams)
 - [x] `docs/DEVELOPMENT.md` § Paranoia — `paranoia.sh` profiles, verdicts, what it checks
 - [ ] Release date set in `CHANGELOG.md` / release notes, README regenerated (at release time)
@@ -446,7 +446,7 @@ Backend restructuring:
 35. docs: update the v0.13.0 manual test plan
 36. chore: say all fields are optional in the question issue form intro
 
-Code review pass (items in `docs/v0.13/CODE_REVIEW_TODO.md`):
+Code review pass (items in `docs/v0.13/REVIEWS_0.13.0.md` § Code review):
 
 37. fix(backend): always return JSON errors, fix serialization and time handling
 38. fix(host): spawn without a shell, serialise Python init, clean up host code

@@ -32,13 +32,13 @@ A last review of the code and docs before publishing 0.13.0 (2026-11-05), done w
 
 ## 3. Overlaps
 
-| #   | Overlap                                                                                                                                                   | Status |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| O1  | `QA_REPORT_0.13.0.md` and `QA_FIXES_0.13.0.md` list the same 14 findings                                                                                  | ☐      |
-| O2  | `CODE_REVIEW_TODO.md` is fully checked; its content is in the release notes §16–§19 and the CHANGELOG                                                     | ☐      |
-| O3  | The upgrade test is described in four places (`UPGRADE_TEST_PLAN`, manual test plan B20, release notes §15, `GETTING_STARTED` § 2)                        | ☐      |
-| O4  | `RELEASE_NOTES_0.13.0.md` (~1,090 lines) mixes user notes with the contributor verification guide (§0–§35), paranoia and architecture diagrams            | ☐      |
-| O5  | Tooling: `golden_snapshots.py` (vs last release) and `make_baseline.sh` + `diff_info.py` / `diff_plot.py` compare the backend with the same release twice | ☐      |
-| O6  | Tooling: `non_regression_test_plot.py` (images, no comparison) overlaps `diff_scen.py` (scenarios compared to the baseline)                               | ☐      |
-| O7  | Tooling: the screenshots script and the webview QA harness each have their own Chrome finder and DevTools client                                          | ☐      |
-| O8  | `TO_REMOVE.md` R5: alignment comment next to `SupportedExtensionType` never added                                                                         | ☐      |
+| #   | Overlap                                                                                                                                                   | Status                                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| O1  | `QA_REPORT_0.13.0.md` and `QA_FIXES_0.13.0.md` list the same 14 findings                                                                                  | ☑ `docs: merge the code review, QA report and QA fixes into one reviews doc` |
+| O2  | `CODE_REVIEW_TODO.md` is fully checked; its content is in the release notes §16–§19 and the CHANGELOG                                                     | ☑ same commit (§ Code review of `REVIEWS_0.13.0.md`)                         |
+| O3  | The upgrade test is described in four places (`UPGRADE_TEST_PLAN`, manual test plan B20, release notes §15, `GETTING_STARTED` § 2)                        | ☐                                                                            |
+| O4  | `RELEASE_NOTES_0.13.0.md` (~1,090 lines) mixes user notes with the contributor verification guide (§0–§35), paranoia and architecture diagrams            | ☐                                                                            |
+| O5  | Tooling: `golden_snapshots.py` (vs last release) and `make_baseline.sh` + `diff_info.py` / `diff_plot.py` compare the backend with the same release twice | ☐                                                                            |
+| O6  | Tooling: `non_regression_test_plot.py` (images, no comparison) overlaps `diff_scen.py` (scenarios compared to the baseline)                               | ☐                                                                            |
+| O7  | Tooling: the screenshots script and the webview QA harness each have their own Chrome finder and DevTools client                                          | ☐                                                                            |
+| O8  | `TO_REMOVE.md` R5: alignment comment next to `SupportedExtensionType` never added                                                                         | ☐                                                                            |
