@@ -770,14 +770,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Automated:** `scripts/upgrade-sandbox.sh` runs a real update in a throw-away VS Code profile (v0.12.1 → v0.13.0 by default, any pair with `--old` / `--new`), with the scenarios `normal`, `offline` and `interrupted`; `./paranoia.sh --full` runs it from every older release, and checks that the same release keeps the environment and that a raised revision rebuilds it; see [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
 
-**Test by hand:**
-
-1. Remove any `overridePythonInterpreter` setting (it takes precedence), enable `scientificDataViewer.python.useExtensionOwnEnvironment`, reload. Wait for the environment to be created (first time only).
-2. Simulate an environment from v0.12: in the environment folder (Linux: `~/.config/Code/User/globalStorage/eschalk0.scientific-data-viewer/python-environment/`; **Manage Extension Virtual Environment → Open in Explorer** shows it), delete `sdv-environment.json` and create an empty file `old.txt`.
-3. Reload window → notification _"rebuilding its Python environment for this new version…"_, then _"Python environment rebuilt"_. `sdv-environment.json` is back with `"revision": 2` and `eccodeslib<2.48` in its requirements; `old.txt` is gone; no `python-environment.previous` folder is left.
-4. Reload again → **no** notification; the logs show `Extension virtual environment is up to date` (no `uv venv --clear`, no package install).
-5. **Manage Extension Virtual Environment → Recreate** → progress notification, then _"recreated successfully"_; files still open.
-6. _(Optional, offline)_ delete `sdv-environment.json` again, disconnect the network, reload → warning that the rebuild failed; files still open with the previous environment. Reconnect, reload → the rebuild runs.
+**Test by hand:** [manual test plan B19](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#b19-the-extensions-own-python-environment-rebuilds-itself) (simulated old environment, failed rebuild with `uv` hidden, Recreate) and [B20](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#b20-optional-recommended-real-upgrade-from-v012-like-a-user) (real upgrade from v0.12.1).
 
 ### 16. Code review: security (escaping, CSP, commands)
 
