@@ -67,7 +67,8 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v10
+      # Exact version: setup-uv publishes no major tag (v10) since v8.0.0
+      - uses: astral-sh/setup-uv@v10.3.3
 
       - name: Development environment (.venv, pinned in requirements-dev.txt)
         run: |

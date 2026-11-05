@@ -40,7 +40,7 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 
 ### Action versions
 
-GitHub runners run JavaScript actions on Node.js 24 and are dropping Node.js 20. Keep every `uses:` on a major whose `action.yml` says `using: node24` (or a composite action that only calls such actions); otherwise the run summary shows _"Node.js 20 is deprecated…"_. Check with `curl -sL https://raw.githubusercontent.com/<owner>/<repo>/<tag>/action.yml | grep using:`.
+GitHub runners run JavaScript actions on Node.js 24 and are dropping Node.js 20. Keep every `uses:` on a major whose `action.yml` says `using: node24` (or a composite action that only calls such actions); otherwise the run summary shows _"Node.js 20 is deprecated…"_. Check with `curl -sL https://raw.githubusercontent.com/<owner>/<repo>/<tag>/action.yml | grep using:`. Check that the tag exists too: `astral-sh/setup-uv` publishes no major tag (`v10`) since v8.0.0, only full versions (`v10.3.3`).
 
 ### Multi-Environment Testing
 
