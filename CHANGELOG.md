@@ -369,6 +369,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Cancelled Export answered "success"**: closing the **Export** save dialog answered `success: true` with an error text, while **Save As** answered `success: false` and the webview recognised it by comparing the message. Both now answer `{ success: false, cancelled: true }`, and the webview shows no error for a cancelled dialog.
   - **Files**: `src/panel/communication/MessageTypes.ts` (`SaveResult.cancelled`), `src/panel/UIController.ts`, `src/panel/webview/export.ts`, `src/panel/webview/plotActions.ts`
   - **Tests**: `test/suite/ui/UIController.test.ts` (cancelled Export and Save As)
+- **Broken non-ASCII characters in process output**: the output of Python, uv and pip was decoded chunk by chunk, so a UTF-8 character split between two chunks (e.g. in a non-ASCII file path of an error message) became "��" in logs and error messages. The streams are now decoded as UTF-8 streams.
+  - **Files**: `src/common/runProcess.ts`
+  - **Tests**: `test/suite/common/runProcess.test.ts` (character split between two chunks)
 
 ### Security
 

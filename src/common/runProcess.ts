@@ -106,13 +106,15 @@ export function runProcess(
         }
         options.signal?.addEventListener('abort', onAbort);
 
-        child.stdout?.on('data', (data: Buffer) => {
-            const chunk = data.toString();
+        // Decode as streams: a UTF-8 character split between two chunks
+        // (e.g. a non-ASCII path in an error message) stays intact.
+        child.stdout?.setEncoding('utf8');
+        child.stderr?.setEncoding('utf8');
+        child.stdout?.on('data', (chunk: string) => {
             stdout += chunk;
             options.onStdout?.(chunk);
         });
-        child.stderr?.on('data', (data: Buffer) => {
-            const chunk = data.toString();
+        child.stderr?.on('data', (chunk: string) => {
             stderr += chunk;
             options.onStderr?.(chunk);
         });

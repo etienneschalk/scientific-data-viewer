@@ -65,6 +65,19 @@ suite('runProcess Test Suite', () => {
         assert.strictEqual(result.aborted, false);
     });
 
+    test('a UTF-8 character split between two chunks stays intact', async () => {
+        // "é" is 0xC3 0xA9: write the two bytes 50 ms apart
+        const result = await runProcess(
+            NODE,
+            [
+                '-e',
+                'process.stderr.write(Buffer.from([0xc3])); setTimeout(() => process.stderr.write(Buffer.from([0xa9])), 50)',
+            ],
+            { env: NODE_ENV },
+        );
+        assert.strictEqual(result.stderr, 'é');
+    });
+
     test('timeout stops the process', async () => {
         const start = Date.now();
         const result = await runProcess(
