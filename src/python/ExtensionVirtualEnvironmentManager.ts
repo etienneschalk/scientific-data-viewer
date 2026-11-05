@@ -789,6 +789,18 @@ export class ExtensionVirtualEnvironmentManager {
     }
 
     /**
+     * Install packages into the extension's own environment (e.g. a missing
+     * optional package, from the webview), queued after any create / update /
+     * recreate / delete in progress so it never writes into a folder being
+     * replaced.
+     */
+    installIntoOwnEnvironment(packages: readonly string[]): Promise<void> {
+        return this.serialize(() =>
+            this.uvInstallPackages(this.extensionEnv.pythonPath, packages),
+        );
+    }
+
+    /**
      * Install packages into an interpreter with `uv pip install --python`.
      * Used for the extension's own environment, which has no pip module.
      * Throws with uv's output when the install fails.

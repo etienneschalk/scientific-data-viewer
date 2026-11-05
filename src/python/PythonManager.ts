@@ -642,10 +642,7 @@ export class PythonManager {
         );
 
         if (this._environmentSource === 'own-uv-env') {
-            await this.extensionEnvManager.uvInstallPackages(
-                pythonPath,
-                packages,
-            );
+            await this.extensionEnvManager.installIntoOwnEnvironment(packages);
             Logger.info(`🐍 📦 Installed with uv: ${packages.join(', ')}`);
             return;
         }

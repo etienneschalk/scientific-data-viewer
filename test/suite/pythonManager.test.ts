@@ -660,6 +660,7 @@ suite('PythonManager initialization and execution', () => {
         ) => {
             calls.push([pythonPath, packages]);
         };
+        (envManager as any).extensionEnv.pythonPath = '/env/bin/python';
         (manager as any).hasPip = async () => {
             throw new Error('pip must not be used');
         };

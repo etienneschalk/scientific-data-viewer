@@ -354,6 +354,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **"Request timeout" on long webview requests**: every webview request gave up after 60 s, so a **Refresh** that waits for Python setup and a long info run, a package install from an error message, or a **Save As** / **Export** dialog left open more than a minute showed "Request timeout" while the work then completed. These requests now wait for the extension's answer (it always answers); plots keep their configurable timeout.
   - **Files**: `src/panel/webview/bus.ts`
   - **Tests**: `test/suite/ui/webviewScript.test.ts` (refresh arms no request timeout)
+- **Package install during an environment rebuild**: installing a missing package from the viewer (own uv environment) ran at once, while create / update / recreate / delete wait for each other, so an install clicked during **Manage → Recreate** could write into the folder being replaced. It now waits for the operation in progress.
+  - **Files**: `src/python/ExtensionVirtualEnvironmentManager.ts` (`installIntoOwnEnvironment`), `src/python/PythonManager.ts`
+  - **Tests**: `test/suite/python/extensionEnvironmentUpdate.test.ts` (install waits for a recreate), `test/suite/pythonManager.test.ts`
 
 ### Security
 

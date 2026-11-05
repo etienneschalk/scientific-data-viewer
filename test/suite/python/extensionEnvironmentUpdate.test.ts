@@ -352,6 +352,37 @@ suite('Extension environment update on new version', () => {
         assert.strictEqual(maxRunning, 1);
     });
 
+    test('installs into the own environment wait for a recreate in progress', async () => {
+        const manager = makeExistingEnvironment();
+        const order: string[] = [];
+        (manager as any).recreateEnvironment = async () => {
+            order.push('recreate start');
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            order.push('recreate end');
+        };
+        (manager as any).uvInstallPackages = async (
+            pythonPath: string,
+            packages: readonly string[],
+        ) => {
+            order.push(`install ${packages.join(',')}`);
+            assert.strictEqual(
+                pythonPath,
+                (manager as any).extensionEnv.pythonPath,
+            );
+        };
+
+        await Promise.all([
+            manager.recreate(),
+            manager.installIntoOwnEnvironment(['cfgrib']),
+        ]);
+
+        assert.deepStrictEqual(order, [
+            'recreate start',
+            'recreate end',
+            'install cfgrib',
+        ]);
+    });
+
     test('create() does nothing when the environment is already ready', async () => {
         const manager = makeExistingEnvironment();
         await manager.recordEnvironmentState();
