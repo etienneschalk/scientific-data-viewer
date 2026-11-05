@@ -1,6 +1,11 @@
 import { getDisplayName, getVersion } from '../common/vscodeutils';
-import { CSSGenerator } from './CSSGenerator';
-import { JavaScriptGenerator } from './JavaScriptGenerator';
+import { ICONS } from '../shared/icons';
+import { formatLoadTime } from '../shared/time';
+import {
+    readWebviewAsset,
+    WEBVIEW_SCRIPT,
+    WEBVIEW_STYLESHEET,
+} from './WebviewAssets';
 import * as vscode from 'vscode';
 
 export interface WebviewAssetOptions {
@@ -21,24 +26,14 @@ function escapeHtml(unsafe: string): string {
  * HTML generation utilities to break down the monolithic DataViewerPanel
  */
 export class HTMLGenerator {
-    private static formatTimestamp(isoString: string): string {
-        return new Date(isoString).toISOString();
-    }
-
-    private static getCSS(devMode: boolean): string {
-        return CSSGenerator.get(devMode);
-    }
-
-    private static getJavaScriptCode(devMode: boolean): string {
-        return JavaScriptGenerator.get(devMode);
-    }
-
     static generateMainHTML(
         devMode: boolean,
         lastLoadTime: string | null,
         panelId: number,
         assetOptions?: WebviewAssetOptions,
+        useLocalTime = false,
     ): string {
+        const cspBlock = this.getContentSecurityPolicyBlock(assetOptions);
         const cssBlock = this.getStylesheetBlock(devMode, assetOptions);
         const scriptBlock = this.getScriptBlock(devMode, assetOptions);
 
@@ -46,12 +41,13 @@ export class HTMLGenerator {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    ${cspBlock}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${getDisplayName()}</title>
     ${cssBlock}
 </head>
 <body>
-    ${this.generateHeader(devMode, lastLoadTime, panelId)}
+    ${this.generateHeader(devMode, lastLoadTime, panelId, useLocalTime)}
     ${this.generateLoadingAndError()}
     ${this.generateContent()}
     ${scriptBlock}
@@ -59,9 +55,39 @@ export class HTMLGenerator {
 </html>`;
     }
 
+    /**
+     * Content-Security-Policy of the live webview: only the extension's own
+     * script and stylesheet may load; plots are `data:` PNGs. Inline styles
+     * stay allowed for the xarray HTML repr (its `<style>` blocks and
+     * CSS-only toggles); inline scripts and event handlers are not.
+     */
+    static getContentSecurityPolicy(cspSource: string): string {
+        return [
+            "default-src 'none'",
+            `img-src ${cspSource} data:`,
+            `style-src ${cspSource} 'unsafe-inline'`,
+            `font-src ${cspSource}`,
+            `script-src ${cspSource}`,
+        ].join('; ');
+    }
+
+    private static getContentSecurityPolicyBlock(
+        assetOptions?: WebviewAssetOptions,
+    ): string {
+        const cspSource = assetOptions?.webview.cspSource;
+        if (
+            !this.canUseExternalAssets(assetOptions) ||
+            typeof cspSource !== 'string' ||
+            cspSource === ''
+        ) {
+            return '';
+        }
+        return `<meta http-equiv="Content-Security-Policy" content="${this.getContentSecurityPolicy(cspSource)}">`;
+    }
+
     private static getWebviewAssetUri(
         assetOptions: WebviewAssetOptions,
-        ...pathSegments: string[]
+        pathSegments: string[],
     ): vscode.Uri {
         return assetOptions.webview.asWebviewUri(
             vscode.Uri.joinPath(assetOptions.extensionUri, ...pathSegments),
@@ -84,10 +110,7 @@ export class HTMLGenerator {
         if (this.canUseExternalAssets(assetOptions)) {
             const cssUri = this.getWebviewAssetUri(
                 assetOptions,
-                'src',
-                'panel',
-                'webview',
-                'styles.css',
+                WEBVIEW_STYLESHEET,
             );
             const cacheBuster = devMode ? `?v=${Date.now()}` : '';
             return `<link rel="stylesheet" href="${cssUri}${cacheBuster}">`;
@@ -103,10 +126,7 @@ export class HTMLGenerator {
         if (this.canUseExternalAssets(assetOptions)) {
             const scriptUri = this.getWebviewAssetUri(
                 assetOptions,
-                'src',
-                'panel',
-                'webview',
-                'webview-script.js',
+                WEBVIEW_SCRIPT,
             );
             const cacheBuster = devMode ? `?v=${Date.now()}` : '';
             return `<script src="${scriptUri}${cacheBuster}"></script>`;
@@ -117,33 +137,44 @@ export class HTMLGenerator {
 
     static getInlineStylesheetBlock(devMode: boolean): string {
         return `<style id="scientific-data-viewer-style">
-        ${this.getCSS(devMode)}
+        ${readWebviewAsset(WEBVIEW_STYLESHEET, devMode)}
     </style>`;
     }
 
     static getInlineScriptBlock(devMode: boolean): string {
+        // A literal "</script" inside the code would end the element early.
+        const code = readWebviewAsset(WEBVIEW_SCRIPT, devMode).replace(
+            /<\/script/gi,
+            '<\\/script',
+        );
         return `<script>
-        ${this.getJavaScriptCode(devMode)}
+        ${code}
     </script>`;
     }
+
+    private static readonly CONTENT_SECURITY_POLICY_PATTERN =
+        /<meta\b[^>]*\bhttp-equiv="Content-Security-Policy"[^>]*>\s*/gi;
 
     private static readonly EXTERNAL_STYLESHEET_PATTERN =
         /<link\b[^>]*\bhref="[^"]*\/styles\.css(?:\?[^"]*)?"[^>]*>/i;
 
     private static readonly EXTERNAL_SCRIPT_PATTERN =
-        /<script\b[^>]*\bsrc="[^"]*\/webview-script\.js(?:\?[^"]*)?"[^>]*>\s*<\/script>/i;
+        /<script\b[^>]*\bsrc="[^"]*\/webview\.js(?:\?[^"]*)?"[^>]*>\s*<\/script>/i;
 
     /**
      * Replace `asWebviewUri` asset references with their inline equivalents.
      *
-     * The live webview loads styles.css and webview-script.js over
+     * The live webview loads styles.css and the webview script over
      * `vscode-resource` URIs, which resolve to nothing outside VS Code. Any
      * document meant to be read standalone (exported HTML) must carry them
-     * inline instead.
+     * inline instead. The webview's Content-Security-Policy is dropped too:
+     * it only allows `vscode-resource` sources, so it would block the inlined
+     * script in a browser.
      */
     static inlineWebviewAssets(htmlContent: string, devMode: boolean): string {
         // Function replacers keep `$`-sequences in the CSS/JS literal.
         return htmlContent
+            .replace(this.CONTENT_SECURITY_POLICY_PATTERN, () => '')
             .replace(this.EXTERNAL_STYLESHEET_PATTERN, () =>
                 this.getInlineStylesheetBlock(devMode),
             )
@@ -156,6 +187,7 @@ export class HTMLGenerator {
         devMode: boolean,
         lastLoadTime: string | null,
         panelId: number,
+        useLocalTime = false,
     ): string {
         return /*html*/ `
     <div class="header">
@@ -163,24 +195,27 @@ export class HTMLGenerator {
             devMode ? escapeHtml(`<${panelId}>`) : ''
         }</small></div>
         <div class="controls" id="header-controls">
-            ${this.generateTimestamp(lastLoadTime)}
+            ${this.generateTimestamp(lastLoadTime, useLocalTime)}
             <div class="tree-controls">
-                <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content">🖼️</button>
-                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections">📁</button>
-                <button id="expandAllButton" class="header-control-button" title="Expand All Sections">📂</button>
-                <button id="refreshButton" class="header-control-button" title="Refresh">🔄</button>
+                <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content" aria-label="Export Webview Content">${ICONS.export}</button>
+                <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections" aria-label="Collapse All Sections">${ICONS.collapseAll}</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections" aria-label="Expand All Sections">${ICONS.expandAll}</button>
+                <button id="refreshButton" class="header-control-button" title="Refresh" aria-label="Refresh">${ICONS.refresh}</button>
             </div>
         </div>
     </div>`;
     }
 
-    static generateTimestamp(lastLoadTime: string | null): string {
+    static generateTimestamp(
+        lastLoadTime: string | null,
+        useLocalTime = false,
+    ): string {
         return /*html*/ `
         <div id="timestamp" class="timestamp hidden">
         <span id="timestampText">Loaded: ${
-            lastLoadTime ? this.formatTimestamp(lastLoadTime) : '--'
+            lastLoadTime ? formatLoadTime(lastLoadTime, useLocalTime) : '--'
         }</span>
-        <span class="timestamp-icon">🕒</span>
+        <span class="timestamp-icon">${ICONS.clock}</span>
         </div>
         `;
     }
@@ -214,7 +249,7 @@ export class HTMLGenerator {
                 <div id="filePathContainer" class="file-path-container">
                     <p><strong>File Path:</strong></p>
                     <button data-target-id="filePathCode" class="text-copy-button">
-                    📋 Copy
+                    Copy
                     </button>
                     <code id="filePathCode" class="file-path-code"></code>
                 </div>
@@ -255,7 +290,7 @@ export class HTMLGenerator {
                 <summary><h3>Xarray Text Representation</h3></summary>
                 <div class="text-representation-container">
                     <button data-target-id="textRepresentation" class="text-copy-button">
-                        📋 Copy
+                        Copy
                     </button>
                     <pre id="textRepresentation" class="text-representation"></pre>
                 </div>
@@ -282,7 +317,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Python Interpreter Path</summary>
                             <button data-target-id="pythonPath" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="pythonPath">Loading Python path...</pre>
                     </details>
@@ -291,7 +326,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Extension Configuration</summary>
                             <button data-target-id="extensionConfig" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="extensionConfig">Loading configuration...</pre>
                     </details>
@@ -300,7 +335,7 @@ export class HTMLGenerator {
                     <details open>
                         <summary>Show xarray version information</summary>
                             <button data-target-id="showVersions" class="text-copy-button">
-                                📋 Copy
+                                Copy
                             </button>
                             <pre id="showVersions">Loading version information...</pre>
                     </details>
@@ -315,108 +350,35 @@ export class HTMLGenerator {
             <details class="sticky-group-details" id="section-global-plot-controls">
                 <summary><h3>Global Plot Controls</h3></summary>
                 <div class="global-plot-controls">
-                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">⚠️ Plot All</button>
-                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">🛑 Cancel All</button>
+                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">${ICONS.warning} Plot All</button>
+                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">${ICONS.stop} Cancel All</button>
                     <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
                     <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
                 </div>
 
-                <!-- Time Controls Subsection -->
-                <div class="time-controls-section" style="display: none;">
-                    <h4>Time Controls</h4>
-                    <div class="time-controls-row">
-                        <label for="datetimeVariableSelect">Select Datetime Variable:</label>
-                        <select id="datetimeVariableSelect" class="datetime-variable-select">
-                            <option value="">Select datetime variable...</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                    </div>
-                    <div class="time-controls-row">
-                        <label for="startDatetimeInput">Start Time:</label>
-                        <input type="datetime-local" id="startDatetimeInput" class="datetime-input" />
-                        <input type="text" id="startDatetimeTextInput" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" />
-                    </div>
-                    <div class="time-controls-row">
-                        <label for="endDatetimeInput">End Time:</label>
-                        <input type="datetime-local" id="endDatetimeInput" class="datetime-input" />
-                        <input type="text" id="endDatetimeTextInput" class="datetime-text-input" placeholder="YYYY-MM-DD HH:MM:SS" />
-                    </div>
-                    <div class="time-controls-row">
-                        <button id="clearTimeControlsButton" class="plot-control-button">Clear Time Controls</button>
-                    </div>
-                </div>
-
-                <!-- Dimension Slices (Issue #117) -->
-                <div class="dimension-slices-section" style="display: none;">
-                    <div class="plot-controls-subsection dimension-slices-isel">
-                        <h5 class="plot-controls-subsection-title">Dimension Slices (passed to isel)</h5>
-                        <p class="dimension-slices-hint">Index or slice per dimension (e.g. <code>0:24:2</code>, <code>100:120</code>, or <code>130</code>). Applied as isel() before plotting. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
-                        <div id="dimensionSlicesContainer"></div>
-                    </div>
-                    <div class="plot-controls-subsection plot-parameters">
-                        <h5 class="plot-controls-subsection-title">Plot Parameters (passed to plot)</h5>
-                        <p class="dimension-slices-hint">Plot options follow <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
-                    <div class="dimension-slices-facets">
-                        <div class="dimension-slices-row">
-                            <label for="facetRowSelect">row:</label>
-                            <select id="facetRowSelect" class="facet-select">
-                                <option value="">None</option>
-                            </select>
-                            <label for="facetColSelect">col:</label>
-                            <select id="facetColSelect" class="facet-select">
-                                <option value="">None</option>
-                            </select>
-                            <label for="plotColWrapInput">col_wrap:</label>
-                            <input type="number" id="plotColWrapInput" class="plot-col-wrap-input" min="1" placeholder="e.g. 4" title="xarray col_wrap: max columns in faceted grid (positive integer)" />
+                <!-- One card: dimension slices, plot parameters -->
+                <div class="plot-controls-card"><div class="plot-controls-content">
+                    <!-- Dimension Slices (Issue #117) and plot parameters -->
+                    <div class="dimension-slices-section" style="display: none;">
+                        <div class="plot-controls-subsection dimension-slices-isel">
+                            <div class="plot-controls-heading">
+                                <h5 class="plot-controls-subsection-title">Dimension slices <code>isel</code></h5>
+                                <button type="button" id="clearDimensionSlicesButton" class="plot-reset-button" data-action="clear-plot-controls" title="Clear the dimension slices">Reset</button>
+                            </div>
+                            <p class="dimension-slices-hint">Start with an empty stop selects one index (<code>130</code>); start, stop and step select a slice (<code>100:120</code>, <code>0:24:2</code>; stop excluded; negative counts from the end). The slider moves start and stop. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
+                            <div id="dimensionSlicesContainer" class="plot-fields plot-fields--slices"></div>
                         </div>
-                        <div class="dimension-slices-row">
-                            <label for="plotXSelect">x:</label>
-                            <select id="plotXSelect" class="facet-select">
-                                <option value="">None</option>
-                            </select>
-                            <label for="plotYSelect">y:</label>
-                            <select id="plotYSelect" class="facet-select">
-                                <option value="">None</option>
-                            </select>
-                            <label for="plotHueSelect">hue:</label>
-                            <select id="plotHueSelect" class="facet-select">
-                                <option value="">None</option>
-                            </select>
-                        </div>
-                        <div class="dimension-slices-row">
-                            <label for="xIncreaseCheckbox" class="plot-checkbox-label">xincrease:</label>
-                            <input type="checkbox" id="xIncreaseCheckbox" class="plot-checkbox" checked title="xarray xincrease (uncheck to reverse x-axis)" />
-                            <label for="yIncreaseCheckbox" class="plot-checkbox-label">yincrease:</label>
-                            <input type="checkbox" id="yIncreaseCheckbox" class="plot-checkbox" checked title="xarray yincrease (uncheck to reverse y-axis)" />
-                            <label for="robustCheckbox" class="plot-checkbox-label">robust:</label>
-                            <input type="checkbox" id="robustCheckbox" class="plot-checkbox" title="xarray robust: use 2nd/98th percentiles for color limits (helps with outliers)" />
-                            <label for="addColorbarCheckbox" class="plot-checkbox-label">add_colorbar:</label>
-                            <input type="checkbox" id="addColorbarCheckbox" class="plot-checkbox" checked title="xarray add_colorbar (uncheck to hide colorbar when applicable)" />
-                            <label for="addLegendCheckbox" class="plot-checkbox-label">add_legend:</label>
-                            <input type="checkbox" id="addLegendCheckbox" class="plot-checkbox" checked title="xarray add_legend (default on: typical xarray plot defaults; backend omits when unsafe for imshow)" />
-                        </div>
-                        <div class="dimension-slices-row">
-                            <label for="plotBinsInput">bins:</label>
-                            <input type="number" id="plotBinsInput" class="bins-input" min="1" placeholder="e.g. 100" title="Number of bins for histogram-style plots" />
-                            <label for="plotAspectInput">aspect:</label>
-                            <input type="text" id="plotAspectInput" class="plot-aspect-size-input" placeholder="e.g. 1 or 1.5" title="xarray aspect (fig width = aspect * size, float)" />
-                            <label for="plotSizeInput">size:</label>
-                            <input type="text" id="plotSizeInput" class="plot-aspect-size-input" placeholder="e.g. 4 or 5.5" title="xarray size in inches (fig height, float)" />
-                        </div>
-                        <div class="dimension-slices-row">
-                            <label for="plotVminInput">vmin:</label>
-                            <input type="text" id="plotVminInput" class="plot-vmin-vmax-input" placeholder="optional" title="Color scale minimum (float)" />
-                            <label for="plotVmaxInput">vmax:</label>
-                            <input type="text" id="plotVmaxInput" class="plot-vmin-vmax-input" placeholder="optional" title="Color scale maximum (float)" />
-                            <label for="plotCmapInput">cmap:</label>
-                            <input type="text" id="plotCmapInput" class="plot-cmap-input" placeholder="e.g. viridis, plasma" title="Matplotlib colormap name (user must provide a valid existing cmap)" />
+                        <div class="plot-controls-subsection plot-parameters">
+                            <div class="plot-controls-heading">
+                                <h5 class="plot-controls-subsection-title">Plot parameters <code>plot</code></h5>
+                                <button type="button" id="clearPlotParametersButton" class="plot-reset-button" data-action="clear-plot-controls" title="Reset the plot parameters">Reset</button>
+                            </div>
+                            <p class="dimension-slices-hint">Passed to the xarray plot call. Each field you set is outlined and kept; the empty ones are chosen automatically for each variable (shown under its plot). See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
+                            <!-- Rendered by the webview script from its plot-parameter table -->
+                            <div id="globalPlotParameters" class="dimension-slices-facets"></div>
                         </div>
                     </div>
-                    </div>
-                    <div class="time-controls-row">
-                        <button id="clearDimensionSlicesButton" class="plot-control-button">Clear Dimension Slices and Plot Parameters</button>
-                    </div>
-                </div>
+                </div></div>
             </details>
         </div>`;
     }

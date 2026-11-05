@@ -9,6 +9,7 @@ export const CMD_OPEN_VIEWER = 'scientificDataViewer.openViewer';
 export const CMD_OPEN_VIEWER_MULTIPLE =
     'scientificDataViewer.openViewerMultiple';
 export const CMD_OPEN_VIEWER_FOLDER = 'scientificDataViewer.openViewerFolder';
+export const CMD_OPEN_AS_KERCHUNK = 'scientificDataViewer.openAsKerchunk';
 export const CMD_REFRESH_PYTHON_ENVIRONMENT =
     'scientificDataViewer.refreshPythonEnvironment';
 export const CMD_SHOW_LOGS = 'scientificDataViewer.showLogs';
@@ -41,9 +42,7 @@ const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
-const GLOBAL_TIME_CONTROLS = 'globalTimeControls';
 const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
-const GROUP_TIME_CONTROLS = 'groupTimeControls';
 const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
@@ -52,6 +51,10 @@ const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 const OUTLINE_ENABLED = 'outlineEnabled';
 const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
 const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
+const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
+const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
+const FACETGRID_FIGSIZE = 'facetgridFigsize';
+const SHOW_LOAD_TIME_IN_LOCAL_TIME = 'showLoadTimeInLocalTime';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -62,11 +65,7 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
-// Time controls off by default: Dimension Slices (isel) is data-agnostic and easier to maintain;
-// a future sel (label-based) feature could cover datetime and other coords uniformly.
-const DEFAULT_GLOBAL_TIME_CONTROLS = false;
 const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
-const DEFAULT_GROUP_TIME_CONTROLS = false;
 const DEFAULT_GROUP_DIMENSION_SLICES = true;
 const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
 const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
@@ -76,6 +75,17 @@ const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 const DEFAULT_OUTLINE_ENABLED = true;
 const DEFAULT_ORDER_GROUPS_ALPHABETICALLY = true;
 const DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES = true;
+const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
+    'netcdf4',
+    'h5netcdf',
+    'scipy',
+];
+const ALLOWED_NETCDF_ENGINES = new Set(DEFAULT_NETCDF_ENGINE_ORDER);
+const DEFAULT_SHOW_INHERITED_COORDINATES = true;
+const DEFAULT_FACETGRID_FIGSIZE: readonly number[] = [];
+/** Smallest panel side in inches, as in the package.json schema */
+const MIN_FACETGRID_FIGSIZE = 0.1;
+const DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME = true;
 
 // Configuration functions
 export function getUseExtensionOwnEnvironmentConfigFullKey(): string {
@@ -90,11 +100,15 @@ export function getWorkspaceConfig() {
     return vscode.workspace.getConfiguration(SDV_EXTENSION_ID);
 }
 
+/** Maximum file size in MB; 0, negative or invalid values mean no limit (the default). */
 export function getMaxSize(): number {
-    return getWorkspaceConfig().get<number>(
+    const value = getWorkspaceConfig().get<number>(
         MAX_FILE_SIZE,
         DEFAULT_MAX_FILE_SIZE,
     );
+    return typeof value === 'number' && Number.isFinite(value) && value > 0
+        ? value
+        : DEFAULT_MAX_FILE_SIZE;
 }
 
 export function getAllowMultipleTabsForSameFile(): boolean {
@@ -150,24 +164,10 @@ export function getConvertBandsToVariables(): boolean {
     );
 }
 
-export function getGlobalTimeControls(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GLOBAL_TIME_CONTROLS,
-        DEFAULT_GLOBAL_TIME_CONTROLS,
-    );
-}
-
 export function getGlobalDimensionSlices(): boolean {
     return getWorkspaceConfig().get<boolean>(
         GLOBAL_DIMENSION_SLICES,
         DEFAULT_GLOBAL_DIMENSION_SLICES,
-    );
-}
-
-export function getGroupTimeControls(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GROUP_TIME_CONTROLS,
-        DEFAULT_GROUP_TIME_CONTROLS,
     );
 }
 
@@ -231,31 +231,117 @@ export function getShowXarrayEncodingAttributes(): boolean {
     );
 }
 
+export function getNetcdfEngineOrder(): string[] {
+    const raw = getWorkspaceConfig().get<string[]>(NETCDF_ENGINE_ORDER, [
+        ...DEFAULT_NETCDF_ENGINE_ORDER,
+    ]);
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+    if (Array.isArray(raw)) {
+        for (const engine of raw) {
+            if (
+                typeof engine === 'string' &&
+                ALLOWED_NETCDF_ENGINES.has(engine) &&
+                !seen.has(engine)
+            ) {
+                ordered.push(engine);
+                seen.add(engine);
+            }
+        }
+    }
+    for (const engine of DEFAULT_NETCDF_ENGINE_ORDER) {
+        if (!seen.has(engine)) {
+            ordered.push(engine);
+        }
+    }
+    return ordered;
+}
+
+export function getShowInheritedCoordinates(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        SHOW_INHERITED_COORDINATES,
+        DEFAULT_SHOW_INHERITED_COORDINATES,
+    );
+}
+
+/** Show the "Loaded:" timestamp in the local time zone instead of UTC. */
+export function getShowLoadTimeInLocalTime(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        SHOW_LOAD_TIME_IN_LOCAL_TIME,
+        DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME,
+    );
+}
+
+/** FacetGrid panel size (width, height) in inches, or null when unset. */
+export function getFacetgridFigsize(): [number, number] | null {
+    const raw = getWorkspaceConfig().get<number[]>(FACETGRID_FIGSIZE, [
+        ...DEFAULT_FACETGRID_FIGSIZE,
+    ]);
+    if (!Array.isArray(raw) || raw.length !== 2) {
+        return null;
+    }
+    const width = raw[0];
+    const height = raw[1];
+    if (
+        typeof width !== 'number' ||
+        typeof height !== 'number' ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width < MIN_FACETGRID_FIGSIZE ||
+        height < MIN_FACETGRID_FIGSIZE
+    ) {
+        return null;
+    }
+    return [width, height];
+}
+
+/** Query flag used when a generic JSON/Parquet file is opened as Kerchunk. */
+export const KERCHUNK_OPEN_QUERY = 'openAs=kerchunk';
+
+export function uriRequestsKerchunkOpen(uri: vscode.Uri): boolean {
+    return new URLSearchParams(uri.query).get('openAs') === 'kerchunk';
+}
+
+export function withKerchunkOpenQuery(uri: vscode.Uri): vscode.Uri {
+    if (uriRequestsKerchunkOpen(uri)) {
+        return uri;
+    }
+    const query = uri.query
+        ? `${uri.query}&${KERCHUNK_OPEN_QUERY}`
+        : KERCHUNK_OPEN_QUERY;
+    return uri.with({ query });
+}
+
 /**
  * Plain object of extension config flags for the webview (feature flags and display options).
  * Use this instead of passing WorkspaceConfiguration so the webview receives a predictable object.
  */
 export function getExtensionConfigForWebview(): Record<string, unknown> {
     return {
-        globalTimeControls: getGlobalTimeControls(),
         globalDimensionSlices: getGlobalDimensionSlices(),
-        groupTimeControls: getGroupTimeControls(),
         groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
         plotTimeoutMs: getPlotTimeoutMs(),
         outlineEnabled: getOutlineEnabled(),
         orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
         showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+        netcdfEngineOrder: getNetcdfEngineOrder(),
+        showInheritedCoordinates: getShowInheritedCoordinates(),
+        showLoadTimeInLocalTime: getShowLoadTimeInLocalTime(),
     };
 }
 
+/**
+ * Write useExtensionOwnEnvironment in the user (global) settings, which works
+ * with or without an open folder. A workspace value, if any, still wins.
+ */
 export async function updateUseExtensionOwnEnvironment(
     value: boolean,
 ): Promise<void> {
     return await getWorkspaceConfig().update(
         USE_EXTENSION_OWN_ENVIRONMENT,
         value,
-        vscode.ConfigurationTarget.Workspace,
+        vscode.ConfigurationTarget.Global,
     );
 }
 

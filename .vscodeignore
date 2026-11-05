@@ -1,58 +1,29 @@
-# Exclude sample data and test files
-sample-data/**
-test/**
-*.test.js
-*.test.ts
+# Allow-list: the .vsix holds only what the extension reads at runtime.
+# Everything is excluded, then each runtime file is named below, so a file or
+# folder added to the repository is never packaged unless it is listed here.
+# vsce applies "!" patterns whatever their order. Check with `npx vsce ls`.
+**
 
-# Exclude development files
-.vscode-test/**
-.vscode/**
-*.log
-*.tmp
-
-# Exclude documentation that's not needed in the package
-chats/**
-*.md
+# Manifest and Marketplace page (vsce adds its own manifest files)
+!package.json
 !README.md
+!LICENSE
 
-# Include media directory (for icons)
-!media/**
+# Icons: the extension icon (package.json "icon") and the file / editor icon
+!media/icon.png
+!media/icon_viridis_bold_monochromatic.svg
 
-# Exclude Python cache and temporary files
-python/__pycache__/**
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.env
-.venv
-venv
+# Extension host compiled by tsc (main: out/src/extension.js). No source maps:
+# they point to TypeScript sources that are not packaged.
+!out/src/**/*.js
 
-# Exclude Node.js files
-node_modules/**
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Webview: the esbuild bundle, and the stylesheet read from src/ at runtime
+# (WEBVIEW_STYLESHEET in src/panel/WebviewAssets.ts)
+!out/webview/webview.js
+!src/panel/webview/styles.css
 
-# Exclude OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Exclude IDE files
-*.swp
-*.swo
-*~
-
-# Exclude build artifacts
-out/test/**
-*.vsix
-
-# Exclude notebooks 
-notebooks/**
+# Python backend run by the extension (no tests, tools, sample generators,
+# notebooks or __pycache__)
+!python/get_data_info.py
+!python/check_package_availability.py
+!python/sdv_backend/**/*.py

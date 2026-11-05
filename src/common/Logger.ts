@@ -5,31 +5,8 @@ import { threadId } from 'worker_threads';
 export class Logger {
     private static outputChannel?: vscode.OutputChannel;
 
-    /**
-     * Gets a unique identifier for the current thread or process.
-     *
-     * @returns A string identifier prefixed with:
-     *   - "T" + thread ID if running in a worker thread
-     *   - "P" + process ID if running in the main thread
-     *
-     * @example
-     * // In main thread: "P12345"
-     * // In worker thread: "T2"
-     */
-    private static getThreadId(): string {
-        try {
-            // Try to get worker thread ID if available
-            const workerThreadId = threadId;
-            if (workerThreadId !== undefined) {
-                return `T${workerThreadId}`;
-            }
-        } catch (error) {
-            // threadId is not available in main thread
-        }
-
-        // Fall back to process ID
-        return `P${process.pid}`;
-    }
+    /** Thread label in log lines ("T0" in the extension host's main thread). */
+    private static readonly threadLabel = `T${threadId}`;
 
     public static initialize(): void {
         if (!this.outputChannel) {
@@ -45,9 +22,8 @@ export class Logger {
         this.initialize();
 
         const timestamp = new Date().toISOString();
-        const threadId = this.getThreadId();
         const levelPrefix = `[${level.toUpperCase().padStart(8, ' ')}]`;
-        const logMessage = `${timestamp} ${levelPrefix} [${threadId}] ${message}`;
+        const logMessage = `${timestamp} ${levelPrefix} [${this.threadLabel}] ${message}`;
 
         // Log to VS Code output channel (if available and not disposed)
         try {

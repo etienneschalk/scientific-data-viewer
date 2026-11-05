@@ -65,10 +65,22 @@ suite('HTMLGenerator Test Suite', () => {
         assert.ok(timestamp);
         assert.ok(typeof timestamp === 'string');
         assert.ok(timestamp.includes('timestamp'));
-        // The timestamp gets formatted to local time, so we check for the formatted version
+        // UTC unless local time is asked for
         const date = new Date('2023-01-01T00:00:00Z');
         const expectedFormattedTime = date.toISOString();
         assert.ok(timestamp.includes(expectedFormattedTime));
+    });
+
+    test('should generate timestamp in local time', () => {
+        const timestamp = HTMLGenerator.generateTimestamp(
+            '2023-01-01T00:00:00Z',
+            true,
+        );
+
+        assert.match(
+            timestamp,
+            /Loaded: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}</,
+        );
     });
 
     test('should generate timestamp for null value', () => {

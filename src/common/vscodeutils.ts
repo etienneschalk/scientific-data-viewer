@@ -98,8 +98,11 @@ export function detectVSCodeTheme(): string {
     // Get the current VSCode theme
     const currentTheme = vscode.window.activeColorTheme;
 
-    // Check if it's a dark theme
-    if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
+    // Check if it's a dark theme (HighContrast is the dark high contrast kind)
+    if (
+        currentTheme.kind === vscode.ColorThemeKind.Dark ||
+        currentTheme.kind === vscode.ColorThemeKind.HighContrast
+    ) {
         return 'dark_background';
     } else {
         return 'default';
@@ -126,8 +129,6 @@ export function getPackageJsonFromExtensionContext(
     return context.extension.packageJSON as PackageJson;
 }
 
-// TODO Should use this function everywhere the version is printed
-// It should also be added to the Troubleshooting section
 export function getVersion(): string {
     return getPackageJson().version;
 }

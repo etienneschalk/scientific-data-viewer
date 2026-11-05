@@ -3,8 +3,13 @@
     "tasks": [
         {
             "label": "compile",
-            "type": "npm",
-            "script": "compile",
+            "type": "shell",
+            "command": "npm run compile",
+            "linux": {
+                "options": {
+                    "shell": { "executable": "/bin/bash", "args": ["-ic"] }
+                }
+            },
             "group": "build",
             "presentation": {
                 "panel": "shared",
@@ -67,11 +72,7 @@
         {
             "label": "install-extension",
             "type": "shell",
-            "command": "code",
-            "args": [
-                "--install-extension",
-                "${workspaceFolder}/scientific-data-viewer-0.2.0.vsix"
-            ],
+            "command": "code --install-extension \"$(ls -t \"${workspaceFolder}\"/artefacts/vsix-releases/*.vsix | head -1)\"",
             "group": "build",
             "presentation": {
                 "panel": "shared",

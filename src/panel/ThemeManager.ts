@@ -151,6 +151,9 @@ export class ThemeManager {
                           () => `<body class="${kindClass}"`,
                       );
 
+                // Set by the webview in High Contrast (dark) to darken the
+                // xarray repr (webview/theme.ts); the kind class covers it here.
+                updated = updated.replace(/\sdata-theme="[^"]*"/i, '');
                 updated = ThemeManager.setAttribute(
                     updated,
                     'data-vscode-theme-kind',

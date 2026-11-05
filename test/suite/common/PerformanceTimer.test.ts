@@ -16,17 +16,12 @@ suite('PerformanceTimer Test Suite', () => {
         assert.ok(marks[2].sinceStartMs >= marks[1].sinceStartMs);
     });
 
-    test('getMarks returns a copy of recorded marks', () => {
+    test('finish returns a copy of recorded marks', () => {
         const timer = new PerformanceTimer('copy-test');
         timer.mark('only');
-        const marks = timer.getMarks();
+        const marks = timer.finish('done');
+        marks.push({ label: 'mutated', elapsedMs: 0, sinceStartMs: 0 });
 
-        assert.strictEqual(marks.length, 1);
-        marks.push({
-            label: 'mutated',
-            elapsedMs: 0,
-            sinceStartMs: 0,
-        });
-        assert.strictEqual(timer.getMarks().length, 1);
+        assert.strictEqual(timer.finish('again').length, 3);
     });
 });

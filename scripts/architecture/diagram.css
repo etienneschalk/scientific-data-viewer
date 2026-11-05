@@ -1,0 +1,333 @@
+/*
+ * Colors and fonts of the architecture diagrams. Inlined in the HTML page and
+ * embedded in each standalone SVG (where :root is the <svg> element). Layer
+ * hues follow the viridis ramp of the extension icon.
+ */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface2: #e9edf2;
+  --zone: #fafbfc;
+  --fg: #1a1d27;
+  --muted: #586173;
+  --line: #cfd5df;
+  --line-strong: #98a1b1;
+  --edge: #687083;
+  --faint: #c3c9d3;
+  --host: #3b528b;
+  --host-tint: #e6ebf6;
+  --web: #1d8580;
+  --web-tint: #dcf1ef;
+  --py: #3c8728;
+  --py-tint: #e4f2dc;
+  --ext: #977c00;
+  --ext-tint: #f8f0c8;
+  --warn: #b0432e;
+  --warn-tint: #fbe7e2;
+  --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10131a;
+    --surface: #181c25;
+    --surface2: #222733;
+    --zone: #141820;
+    --fg: #e3e7ee;
+    --muted: #9ba3b4;
+    --line: #313848;
+    --line-strong: #566074;
+    --edge: #8b94a7;
+    --faint: #394151;
+    --host: #91a8e4;
+    --host-tint: #1d2640;
+    --web: #4dc8c0;
+    --web-tint: #102f2d;
+    --py: #8bd46a;
+    --py-tint: #192e14;
+    --ext: #e6d04c;
+    --ext-tint: #2d2a10;
+    --warn: #f08b75;
+    --warn-tint: #391c16;
+    color-scheme: dark;
+  }
+}
+
+.bg {
+  fill: var(--surface);
+}
+
+/* hand-drawn figures */
+.hand text {
+  font-family: var(--mono);
+}
+.hand .t {
+  fill: var(--fg);
+  font-weight: 600;
+}
+.hand .s {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
+.bx {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+  stroke-width: 1.2;
+}
+.bx.host {
+  fill: var(--host-tint);
+  stroke: var(--host);
+}
+.bx.web {
+  fill: var(--web-tint);
+  stroke: var(--web);
+}
+.bx.py {
+  fill: var(--py-tint);
+  stroke: var(--py);
+}
+.bx.ext {
+  fill: var(--ext-tint);
+  stroke: var(--ext);
+}
+.bx.key {
+  stroke-width: 2.4;
+}
+.zone {
+  fill: var(--zone);
+  stroke-width: 1.3;
+  stroke-dasharray: 6 4;
+}
+.zone.host {
+  stroke: var(--host);
+}
+.zone.web {
+  stroke: var(--web);
+}
+.zone.py {
+  stroke: var(--py);
+}
+.hand .zt {
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+.zt.host {
+  fill: var(--host);
+}
+.zt.web {
+  fill: var(--web);
+}
+.zt.py {
+  fill: var(--py);
+}
+.ln {
+  stroke-width: 1.4;
+}
+.ln-edge {
+  stroke: var(--edge);
+}
+.ln-web {
+  stroke: var(--web);
+  stroke-width: 1.8;
+}
+.ln-py {
+  stroke: var(--py);
+  stroke-width: 1.8;
+}
+.ln-warn {
+  stroke: var(--warn);
+  stroke-width: 1.6;
+}
+.dash {
+  stroke-dasharray: 5 4;
+}
+.ah-edge {
+  fill: var(--edge);
+}
+.ah-web {
+  fill: var(--web);
+}
+.ah-py {
+  fill: var(--py);
+}
+.ah-warn {
+  fill: var(--warn);
+}
+.hand .lbl {
+  font-family: var(--sans);
+  font-size: 11px;
+  fill: var(--muted);
+}
+.hand .lbl.mono {
+  font-family: var(--mono);
+}
+.hand .lbl.web {
+  fill: var(--web);
+  font-weight: 500;
+}
+.hand .lbl.py {
+  fill: var(--py);
+  font-weight: 500;
+}
+.hand .lbl.tiny {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+.halo {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.hand .lane {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 800;
+  fill: var(--py);
+}
+.life {
+  stroke: var(--line-strong);
+  stroke-dasharray: 2 4;
+  stroke-width: 1.1;
+}
+.hand .mlbl {
+  font-size: 11px;
+  fill: var(--fg);
+}
+.hand .m-return,
+.hand .m-self {
+  fill: var(--muted);
+}
+.hand .m-event {
+  fill: var(--web);
+  font-weight: 600;
+}
+.hand .m-kill {
+  fill: var(--warn);
+  font-weight: 600;
+}
+.num {
+  fill: var(--fg);
+}
+.hand .numt {
+  fill: var(--surface);
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.note {
+  fill: var(--surface2);
+  stroke: var(--line-strong);
+}
+.note.warn {
+  fill: var(--warn-tint);
+  stroke: var(--warn);
+}
+.hand .notet {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  fill: var(--fg);
+}
+.frame {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.2;
+}
+.frametab {
+  fill: var(--surface2);
+  stroke: var(--line-strong);
+  stroke-width: 1.2;
+}
+.hand .framet {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--fg);
+}
+.framediv {
+  stroke: var(--line-strong);
+  stroke-dasharray: 6 4;
+}
+
+/* Graphviz figures */
+.gv .graph > polygon {
+  fill: none;
+  stroke: none;
+}
+.gv text {
+  fill: var(--fg);
+  font-family: var(--mono);
+}
+.gv .node path,
+.gv .node polygon {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+  stroke-width: 1.2;
+}
+.gv .node.key path,
+.gv .node.key polygon {
+  stroke-width: 2.4;
+}
+.gv .node.host path,
+.gv .node.f-entry path {
+  fill: var(--host-tint);
+  stroke: var(--host);
+}
+.gv .node.f-panel path,
+.gv .node.f-web path {
+  fill: var(--web-tint);
+  stroke: var(--web);
+}
+.gv .node.f-outline path,
+.gv .node.ext path {
+  fill: var(--ext-tint);
+  stroke: var(--ext);
+}
+.gv .node.f-python path,
+.gv .node.py path {
+  fill: var(--py-tint);
+  stroke: var(--py);
+}
+.gv .node.f-common path,
+.gv .node.state path {
+  fill: var(--surface);
+  stroke: var(--line-strong);
+}
+.gv .node.f-shared path {
+  fill: var(--surface2);
+  stroke: var(--line-strong);
+  stroke-dasharray: 4 3;
+}
+.gv .node.warn path {
+  fill: var(--warn-tint);
+  stroke: var(--warn);
+}
+.gv .node.decision polygon {
+  fill: var(--surface2);
+  stroke: var(--line-strong);
+}
+.gv .node.pick path {
+  stroke-width: 2;
+}
+.gv .edge path {
+  stroke: var(--edge);
+  stroke-width: 1.1;
+}
+.gv .edge polygon {
+  fill: var(--edge);
+  stroke: var(--edge);
+}
+.gv .edge.e-faint path {
+  stroke: var(--faint);
+}
+.gv .edge.e-faint polygon {
+  fill: var(--faint);
+  stroke: var(--faint);
+}
+.gv .edge text {
+  fill: var(--muted);
+}

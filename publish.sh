@@ -18,6 +18,11 @@
 
 set -e  # Exit on error
 
+# Python of the repository .venv (setup.sh): the system python3 can be too old
+# for the scripts (e.g. 3.8 on Ubuntu 20.04). PYTHON=<path> to use another one.
+PYTHON="${PYTHON:-$(pwd)/.venv/bin/python}"
+[ -x "$PYTHON" ] || PYTHON=python3
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -107,7 +112,7 @@ check_generated_documentation() {
 
     temp_doc=$(mktemp)
 
-    if ! python3 scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
+    if ! "$PYTHON" scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
         rm -f "$temp_doc"
         print_error "Documentation generation failed"
         exit 1
@@ -116,7 +121,7 @@ check_generated_documentation() {
     if [ ! -f "$doc_file" ]; then
         rm -f "$temp_doc"
         print_error "${doc_file} is missing"
-        print_info "Generate it with: python3 scripts/generate_readme.py --no-timestamp"
+        print_info "Generate it with: ${PYTHON} scripts/generate_readme.py --no-timestamp"
         exit 1
     fi
 
@@ -145,7 +150,7 @@ check_generated_documentation() {
     fi
 
     print_step "Regenerating ${doc_file}..."
-    if ! python3 scripts/generate_readme.py --no-timestamp; then
+    if ! "$PYTHON" scripts/generate_readme.py --no-timestamp; then
         rm -f "$temp_doc"
         print_error "Documentation generation failed"
         exit 1
@@ -215,21 +220,21 @@ fi
 print_success "npm: $(npm --version)"
 
 # Check Python
-if ! command -v python3 &> /dev/null; then
+if ! command -v "$PYTHON" &> /dev/null; then
     print_error "Python 3 is not installed"
     exit 1
 fi
 
-PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)")
-PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
+PYTHON_VERSION=$("$PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_MAJOR=$("$PYTHON" -c "import sys; print(sys.version_info.major)")
+PYTHON_MINOR=$("$PYTHON" -c "import sys; print(sys.version_info.minor)")
 
 if [ "$PYTHON_MAJOR" -lt "$REQUIRED_PYTHON_MAJOR" ] || \
    ([ "$PYTHON_MAJOR" -eq "$REQUIRED_PYTHON_MAJOR" ] && [ "$PYTHON_MINOR" -lt "$REQUIRED_PYTHON_MINOR" ]); then
     print_error "Python ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR}+ is required. Current version: ${PYTHON_VERSION}"
     exit 1
 fi
-print_success "Python: ${PYTHON_VERSION} (>= ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR} ✓)"
+print_success "Python: ${PYTHON_VERSION} (>= ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR} ✓): ${PYTHON}"
 
 if command -v vsce &> /dev/null; then
     VSCE_CMD="vsce"
@@ -408,7 +413,8 @@ fi
 # Check 7: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
-VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+VSIX_DIR="artefacts/vsix-releases"
+VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
 
 if [ "$CHECKS_PASSED" = false ]; then
     print_error "Some checks failed. Please fix the issues above."
@@ -494,7 +500,8 @@ fi
 print_header "Packaging"
 
 print_step "Creating .vsix package..."
-$VSCE_CMD package || {
+mkdir -p "$VSIX_DIR"
+$VSCE_CMD package --out "$VSIX_FILE" || {
     print_error "Packaging failed"
     exit 1
 }
@@ -505,7 +512,7 @@ if [ -f "$VSIX_FILE" ]; then
 else
     print_error "Expected package file not found: ${VSIX_FILE}"
     # Try to find the actual file
-    ACTUAL_VSIX=$(ls -1 *.vsix 2>/dev/null | head -1)
+    ACTUAL_VSIX=$(ls -1t "$VSIX_DIR"/*.vsix 2>/dev/null | head -1)
     if [ -n "$ACTUAL_VSIX" ]; then
         print_info "Found: ${ACTUAL_VSIX}"
         VSIX_FILE="$ACTUAL_VSIX"
