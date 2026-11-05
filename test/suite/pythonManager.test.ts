@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { DataProcessor } from '../../src/python/DataProcessor';
 import {
     isRequirementSpecifier,
     PythonManager,
@@ -761,6 +762,35 @@ suite('PythonManager initialization and execution', () => {
             assert.strictEqual(manager.abortAllProcesses(), 1);
             await assert.rejects(running, /Process was aborted/);
             assert.strictEqual(manager.abortAllProcesses(), 0);
+        });
+
+        test('an info run started with an operation id is killed by abortOperation', async () => {
+            const manager = readyManager();
+            const processor = new DataProcessor(manager);
+            // A backend run that would take a minute, and writes its pid
+            const pidFile = path.join(dir, 'pid');
+            (processor as any).scriptPath = script(
+                'slow-info.js',
+                `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); setTimeout(() => {}, 60000)`,
+            );
+            const running = processor.getDataInfo(
+                vscode.Uri.file(path.join(dir, 'big.nc')),
+                false,
+                'info-1-1',
+            );
+            for (let i = 0; i < 100 && !fs.existsSync(pidFile); i++) {
+                await new Promise((resolve) => setTimeout(resolve, 20));
+            }
+            const pid = Number(fs.readFileSync(pidFile, 'utf8'));
+
+            assert.strictEqual(processor.abortOperation('info-1-1'), true);
+            await assert.rejects(running, /aborted/);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            assert.throws(
+                () => process.kill(pid, 0),
+                /ESRCH/,
+                'the backend process is gone',
+            );
         });
 
         test('missing module error suggests the extension requirements', async () => {

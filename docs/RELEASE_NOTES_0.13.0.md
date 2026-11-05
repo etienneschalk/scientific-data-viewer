@@ -510,6 +510,7 @@ v0.13 is the largest release of the extension, and its documents had grown with 
 - **No more false "Request timeout"**: **Refresh**, a package install started from an error message, and the **Save As** / **Export** dialogs wait for the extension instead of giving up after 60 s while the work went on.
 - **Closing a save dialog** is reported as cancelled, for **Export** as for **Save As** (Export answered "success" with an error text).
 - **A missing `.zip`** says "No such file or directory", like any other missing file, instead of "not a Zarr store".
+- **Closing a tab stops everything it started**: the file load (info run) is stopped like its plots, instead of running on in the background for up to 5 minutes.
 - **Robustness**: a package install waits for an environment rebuild in progress; deactivation stops info runs too, not only plots; panel disposal survives a failing step; both interpreter settings changed in one save are handled; non-ASCII characters split between two output chunks are no longer garbled; a format detection error is reported instead of `UnboundLocalError`.
 - **Removed**: the unused setting `scientificDataViewer.defaultView`, dead code, unused development dependencies, activation events that could never fire.
 - **Contributors**: pull requests run the Python tests; pushes to `main` and `develop` no longer cancel each other's CI runs; `setup.sh` creates the `.venv` from `requirements-dev.txt`; `paranoia.sh` checks out the last release once (golden snapshots and QA diffs share it) and compares the issue #117 gallery cases with it; the screenshots and the webview QA share one headless Chrome module; a test keeps the backend's format list aligned with `package.json`.
@@ -517,7 +518,7 @@ v0.13 is the largest release of the extension, and its documents had grown with 
 
 ### How it was checked
 
-- `npm test` (321 passing) and `pytest python/tests` after each fix, each with a test that fails without the fix where it can be tested automatically; `node scripts/qa/webview/run-all.mjs`; `./paranoia.sh --only qa-baseline,golden`; the issue #117 scenarios of `diff_scen.py` against v0.12.1.
+- `npm test` (323 passing) and `pytest python/tests` after each fix, each with a test that fails without the fix where it can be tested automatically; `node scripts/qa/webview/run-all.mjs`; `./paranoia.sh --only qa-baseline,golden`; the issue #117 scenarios of `diff_scen.py` against v0.12.1.
 - Manual: [manual test plan T36](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#t36-release-review-fixes).
 
 ---

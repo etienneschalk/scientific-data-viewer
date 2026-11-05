@@ -189,10 +189,12 @@ export class DataProcessor {
     /**
      * Run `get_data_info.py info`. Resolves with the backend response, which
      * may carry a structured `error`; rejects when the subprocess fails.
+     * With `operationId`, `abortOperation(operationId)` stops the run.
      */
     async getDataInfo(
         uri: vscode.Uri,
         convertBandsToVariables: boolean = false,
+        operationId?: string,
     ): Promise<DataInfoPythonResponse> {
         const timer = new PerformanceTimer('getDataInfo');
         Logger.debug(
@@ -221,7 +223,7 @@ export class DataProcessor {
                 this.scriptPath,
                 args,
                 true,
-                undefined,
+                operationId,
                 DATA_INFO_TIMEOUT_MS,
             )) as DataInfoPythonResponse;
             timer.finish('getDataInfo');
@@ -280,12 +282,13 @@ export class DataProcessor {
     }
 
     /**
-     * Abort an active plot operation
+     * Abort a running backend operation (a plot, or an info run started with
+     * an operation id)
      * @returns true if the operation was aborted, false otherwise
      */
-    abortPlot(operationId: string): boolean {
+    abortOperation(operationId: string): boolean {
         Logger.info(
-            `[DataProcessor] [abortPlot] Aborting plot operation: ${operationId}`,
+            `[DataProcessor] [abortOperation] Aborting operation: ${operationId}`,
         );
         return this.pythonManager.abortProcess(operationId);
     }

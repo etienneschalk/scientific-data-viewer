@@ -90,8 +90,12 @@ export class UIController {
     private disposed = false;
     /** Incremented by each load: only the latest one may update the panel. */
     private loadSequence = 0;
-    /** Operation ids of the plots this panel is running (aborted on dispose). */
-    private readonly runningPlotOperations = new Set<string>();
+    /**
+     * Operation ids of the backend runs of this panel, plots and info runs
+     * (loads): all aborted on dispose, so closing the tab leaves no process.
+     */
+    private readonly runningOperations = new Set<string>();
+    private infoRunCounter = 0;
 
     constructor(
         id: number,
@@ -231,10 +235,18 @@ export class UIController {
             );
         }
 
-        const response = await this.dataProcessor.getDataInfo(
-            fileUri,
-            this.shouldConvertBandsToVariables(fileUri.fsPath),
-        );
+        const operationId = `info-${this.id}-${++this.infoRunCounter}`;
+        this.runningOperations.add(operationId);
+        let response;
+        try {
+            response = await this.dataProcessor.getDataInfo(
+                fileUri,
+                this.shouldConvertBandsToVariables(fileUri.fsPath),
+                operationId,
+            );
+        } finally {
+            this.runningOperations.delete(operationId);
+        }
         if (response.error) {
             throw new BackendLoadError(
                 response.error.error,
@@ -258,7 +270,7 @@ export class UIController {
         }
         const operationId = plot.operationId;
         if (operationId) {
-            this.runningPlotOperations.add(operationId);
+            this.runningOperations.add(operationId);
         }
         let response;
         try {
@@ -269,7 +281,7 @@ export class UIController {
             );
         } finally {
             if (operationId) {
-                this.runningPlotOperations.delete(operationId);
+                this.runningOperations.delete(operationId);
             }
         }
         if (response.error) {
@@ -294,7 +306,7 @@ export class UIController {
         Logger.info(
             `[UIController] [handleAbortPlot] Aborting plot operation: ${operationId}`,
         );
-        return this.dataProcessor.abortPlot(operationId)
+        return this.dataProcessor.abortOperation(operationId)
             ? {
                   success: true,
                   message: `Plot operation ${operationId} was aborted successfully`,
@@ -606,11 +618,11 @@ export class UIController {
 
     public dispose(): void {
         this.disposed = true;
-        // Nobody can see their result any more
-        for (const operationId of this.runningPlotOperations) {
-            this.dataProcessor.abortPlot(operationId);
+        // Nobody can see their result any more: stop the plots and the load
+        for (const operationId of this.runningOperations) {
+            this.dataProcessor.abortOperation(operationId);
         }
-        this.runningPlotOperations.clear();
+        this.runningOperations.clear();
         this.errorBoundary.unregisterHandler(this.getComponentName());
         this.messageBus.dispose();
     }

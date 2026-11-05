@@ -1127,8 +1127,9 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 4. In `settings.json`, add `"scientificDataViewer.defaultView": "default"`: VS Code greys it out as an unknown setting; nothing else changes.
 5. With `useExtensionOwnEnvironment` on, run **Manage Extension Virtual Environment → Recreate**, and while it runs click an **Install** button of a missing optional package (e.g. open `sample_data.kerchunk.json` without `kerchunk`): the install starts after the recreate ends (**Show Extension Logs**), and both succeed.
 6. In `settings.json`, change `overridePythonInterpreter` and `python.useExtensionOwnEnvironment` in one save: the logs show both `SDV configuration updated` lines.
+7. Open a file that takes several seconds to load (e.g. a large GRIB or a remote-mounted NetCDF) and close its tab while it loads: `ps aux | grep get_data_info` shows no process left, and the logs say `Aborting operation: info-…`.
 
-**Failure mode:** "Request timeout" while the dialog was still open; an error for a cancelled dialog; the install running during the recreate (uv errors on a missing folder).
+**Failure mode:** "Request timeout" while the dialog was still open; an error for a cancelled dialog; the install running during the recreate (uv errors on a missing folder); a `get_data_info.py info` process still running after its tab was closed.
 
 ---
 

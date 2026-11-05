@@ -48,7 +48,7 @@ suite('UIController Test Suite', () => {
                     },
                 };
             },
-            abortPlot: () => false,
+            abortOperation: () => false,
         };
     }
 
@@ -346,7 +346,7 @@ suite('UIController Test Suite', () => {
                     pending.push(resolve);
                 }),
             createPlot: () => new Promise(() => {}),
-            abortPlot: (operationId: string) => {
+            abortOperation: (operationId: string) => {
                 aborted.push(operationId);
                 return true;
             },
@@ -437,6 +437,37 @@ suite('UIController Test Suite', () => {
         } finally {
             racing.dispose();
         }
+    });
+
+    test('closing the panel during a load aborts the info run', async () => {
+        const { processor, pending, aborted } = deferredDataProcessor();
+        const infoRuns: Array<string | undefined> = [];
+        const getDataInfo = processor.getDataInfo;
+        (processor as any).getDataInfo = (
+            _uri: unknown,
+            _bands: unknown,
+            operationId?: string,
+        ) => {
+            infoRuns.push(operationId);
+            return getDataInfo();
+        };
+        const loading = new UIController(
+            10,
+            mockWebview,
+            (error) => errors.push(error),
+            (success) => successes.push(success),
+            processor,
+        );
+        const load = loading.loadFile(dataFile);
+        await until(() => pending.length === 1);
+
+        loading.dispose();
+
+        assert.strictEqual(infoRuns.length, 1);
+        assert.ok(infoRuns[0], 'the info run has an operation id');
+        assert.deepStrictEqual(aborted, infoRuns);
+        pending[0]({ result: dataInfoResponse.result });
+        await load;
     });
 
     test('dispose aborts the plots the panel is running', async () => {

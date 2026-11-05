@@ -410,6 +410,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **`setup.sh` used the global Python**: it installed packages with the global `pip3`, ran two single test files with the global `python3`, and created no `.venv`, while `paranoia.sh`, `publish.sh` and the docs say the `.venv` comes from it. It now creates `.venv` (if missing), installs the pinned `requirements-dev.txt` and runs sample data, plots and the whole `python/tests` with it. `DEVELOPMENT.md` and `QUICKSTART.md` give the same commands.
   - **Files**: `setup.sh`, `docs/DEVELOPMENT.md`, `docs/QUICKSTART.md`
   - **Tests**: `bash -n setup.sh`; not run end to end in the review (it would reinstall the existing `.venv`)
+- **Closing a tab left its file load running**: closing a viewer aborted its plots but not the info run of a file still loading (it had no operation ID), so `get_data_info.py` went on for up to 5 minutes (`DATA_INFO_TIMEOUT_MS`) and its result was discarded. Each load now gets an operation ID (`info-<panel>-<n>`), tracked with the panel's plots and aborted on dispose; `DataProcessor.abortPlot` is renamed `abortOperation` (the webview's `abortPlot` message is unchanged).
+  - **Files**: `src/panel/UIController.ts` (`runningOperations`), `src/python/DataProcessor.ts` (`getDataInfo` operation ID, `abortOperation`)
+  - **Tests**: `test/suite/ui/UIController.test.ts` (closing during a load aborts the info run), `test/suite/pythonManager.test.ts` (a real slow process started through `getDataInfo` is killed by `abortOperation`)
 
 ### Security
 
