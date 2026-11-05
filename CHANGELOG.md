@@ -214,6 +214,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **`onFileSystem:*` activation events**: the five `onFileSystem:netcdf` / `zarr` / `grib` / `geotiff` / `jp2` entries could never fire (they need a file system provider for that URI scheme, which the extension does not register). The `onLanguage:*` entries stay; custom editors and commands activate the extension implicitly.
   - **Files**: `package.json` (`activationEvents`)
   - **Tests**: `test/suite/extension.test.ts` (asserts no `onFileSystem:` event instead of only logging)
+- **Unused development dependencies**: `husky` and `lint-staged` (no `.husky/`, no lint-staged config, no `prepare` script: pre-commit does this job) and `@types/glob` (glob 14 ships its own types).
+  - **Files**: `package.json`, `package-lock.json`
 
 ### Fixed
 
