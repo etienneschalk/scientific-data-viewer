@@ -614,7 +614,7 @@ footer {
 <section id="processes">
 <h2><span class="n">1</span>Three processes, two boundaries</h2>
 <p>Each viewer tab is a sandboxed webview that can only post messages. The extension host owns the VS Code APIs and every panel's state. Python never stays resident: each info or plot request spawns <code>get_data_info.py</code>, which prints exactly one JSON line and exits.</p>
-<figure><div class="scroll"><svg viewBox="0 0 1180 560" class="hand" role="img" aria-label="The extension runs in three processes: a sandboxed webview, the Node extension host, and one short-lived Python subprocess per request. The webview talks to the host only through postMessage; the host talks to Python only through argv and one JSON line on stdout." style="max-width:1180px"><defs><marker id="ov-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="ov-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="ov-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="ov-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><rect x="16" y="20" width="280" height="440" rx="12" class="zone web"/><text x="32" y="44" class="zt web">WEBVIEW</text><text x="32" y="58" class="s" text-anchor="start">sandboxed iframe · CSP · no Node</text><rect x="376" y="20" width="428" height="440" rx="12" class="zone host"/><text x="392" y="44" class="zt host">EXTENSION HOST</text><text x="392" y="58" class="s" text-anchor="start">Node.js · one process, all panels</text><rect x="884" y="20" width="280" height="440" rx="12" class="zone py"/><text x="900" y="44" class="zt py">PYTHON SUBPROCESS</text><text x="900" y="58" class="s" text-anchor="start">one per request, then exits</text><rect x="32" y="70" width="248" height="46" rx="7" class="bx web"/><text x="156" y="90.5" text-anchor="middle" class="t" font-size="12">main.ts</text><text x="156" y="105.5" text-anchor="middle" class="s">entry · one delegated click listener</text><rect x="32" y="138" width="248" height="52" rx="7" class="bx web"/><text x="156" y="161.5" text-anchor="middle" class="t" font-size="12">plotActions · plotParams</text><text x="156" y="176.5" text-anchor="middle" class="s">plot controls, Create / Cancel / Save</text><rect x="32" y="216" width="248" height="52" rx="7" class="bx web key"/><text x="156" y="239.5" text-anchor="middle" class="t" font-size="12">bus.ts</text><text x="156" y="254.5" text-anchor="middle" class="s">WebviewMessageBus · pending requests</text><rect x="32" y="294" width="248" height="52" rx="7" class="bx web"/><text x="156" y="317.5" text-anchor="middle" class="t" font-size="12">render/</text><text x="156" y="332.5" text-anchor="middle" class="s">dataInfo · variables · representations</text><rect x="32" y="372" width="248" height="52" rx="7" class="bx web"/><text x="156" y="395.5" text-anchor="middle" class="t" font-size="12">state · errors · export</text><text x="156" y="410.5" text-anchor="middle" class="s">globals, error banner, HTML export</text><polyline points="156,116 156,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="156,190 156,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="164" y="207" text-anchor="start" class="lbl halo">sendRequest()</text><polyline points="156,268 156,292" class="ln ln-web" fill="none" marker-end="url(#ov-web)"/><text x="164" y="285" text-anchor="start" class="lbl halo">dataLoaded → displayAll()</text><rect x="392" y="70" width="396" height="46" rx="7" class="bx host"/><text x="590" y="90.5" text-anchor="middle" class="t" font-size="12">extension.ts  activate()</text><text x="590" y="105.5" text-anchor="middle" class="s">builds managers · registers 8 editors, 14 commands, outline</text><rect x="392" y="138" width="188" height="52" rx="7" class="bx host"/><text x="486" y="154.5" text-anchor="middle" class="t" font-size="11">ScientificData</text><text x="486" y="167.5" text-anchor="middle" class="t" font-size="11">EditorProvider</text><text x="486" y="181.5" text-anchor="middle" class="s">resolveCustomEditor</text><rect x="392" y="216" width="188" height="52" rx="7" class="bx host key"/><text x="486" y="239.5" text-anchor="middle" class="t" font-size="12">MessageBus</text><text x="486" y="254.5" text-anchor="middle" class="s">handle(request) · emit(event)</text><rect x="392" y="294" width="188" height="52" rx="7" class="bx host"/><text x="486" y="317.5" text-anchor="middle" class="t" font-size="12">OutlineProvider</text><text x="486" y="332.5" text-anchor="middle" class="s">+ HeaderExtractor · tree view</text><rect x="392" y="372" width="188" height="52" rx="7" class="bx host"/><text x="486" y="388.5" text-anchor="middle" class="t" font-size="11">ExtensionVirtual</text><text x="486" y="401.5" text-anchor="middle" class="t" font-size="11">EnvironmentManager</text><text x="486" y="415.5" text-anchor="middle" class="s">uv env · ENVIRONMENT_REVISION</text><rect x="600" y="138" width="188" height="52" rx="7" class="bx host"/><text x="694" y="161.5" text-anchor="middle" class="t" font-size="12">DataViewerPanel</text><text x="694" y="176.5" text-anchor="middle" class="s">one per tab · static registry</text><rect x="600" y="216" width="188" height="52" rx="7" class="bx host key"/><text x="694" y="239.5" text-anchor="middle" class="t" font-size="12">UIController</text><text x="694" y="254.5" text-anchor="middle" class="s">per panel · answers requests</text><rect x="600" y="294" width="188" height="52" rx="7" class="bx host"/><text x="694" y="317.5" text-anchor="middle" class="t" font-size="12">DataProcessor</text><text x="694" y="332.5" text-anchor="middle" class="s">settings → CLI argv</text><rect x="600" y="372" width="188" height="52" rx="7" class="bx host key"/><text x="694" y="395.5" text-anchor="middle" class="t" font-size="12">PythonManager</text><text x="694" y="410.5" text-anchor="middle" class="s">interpreter · spawn · abort</text><polyline points="486,116 486,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="580,164 598,164" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="694,190 694,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="207" text-anchor="end" class="lbl halo">owns</text><polyline points="600,242 582,242" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)" marker-start="url(#ov-edge)"/><polyline points="694,268 694,292" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="285" text-anchor="end" class="lbl halo">getDataInfo() · createPlot()</text><polyline points="694,346 694,370" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="363" text-anchor="end" class="lbl halo">executePythonFile()</text><polyline points="600,398 582,398" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="280,234 390,234" class="ln ln-web" fill="none" marker-end="url(#ov-web)"/><polyline points="392,252 282,252" class="ln ln-web dash" fill="none" marker-end="url(#ov-web)"/><text x="336" y="228" text-anchor="middle" class="lbl web halo">request</text><text x="336" y="268" text-anchor="middle" class="lbl web halo">response · event</text><text x="336" y="243" text-anchor="middle" class="lbl tiny">postMessage</text><rect x="900" y="70" width="248" height="46" rx="7" class="bx py"/><text x="1024" y="90.5" text-anchor="middle" class="t" font-size="12">get_data_info.py → cli</text><text x="1024" y="105.5" text-anchor="middle" class="s">argparse: info | plot</text><rect x="900" y="138" width="118" height="52" rx="7" class="bx py"/><text x="959" y="161.5" text-anchor="middle" class="t" font-size="12">info/</text><text x="959" y="176.5" text-anchor="middle" class="s">get_file_info</text><rect x="1030" y="138" width="118" height="52" rx="7" class="bx py"/><text x="1089" y="161.5" text-anchor="middle" class="t" font-size="12">plotting/</text><text x="1089" y="176.5" text-anchor="middle" class="s">create_plot</text><rect x="900" y="216" width="248" height="52" rx="7" class="bx py"/><text x="1024" y="239.5" text-anchor="middle" class="t" font-size="12">formats/</text><text x="1024" y="254.5" text-anchor="middle" class="s">detect_file_format → engines</text><rect x="900" y="294" width="248" height="52" rx="7" class="bx py key"/><text x="1024" y="317.5" text-anchor="middle" class="t" font-size="12">opening.py  OpenedData</text><text x="1024" y="332.5" text-anchor="middle" class="s">engine fallback · decode_cf fallback</text><rect x="900" y="372" width="248" height="52" rx="7" class="bx ext"/><text x="1024" y="389" text-anchor="middle" class="t" font-size="12">xarray backends</text><text x="1024" y="404" text-anchor="middle" class="s">netCDF4 · h5netcdf · zarr · cfgrib</text><text x="1024" y="417" text-anchor="middle" class="s">rasterio · cdflib · kerchunk</text><polyline points="959,116 959,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="959,190 959,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1089,116 1089,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1089,190 1089,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1024,268 1024,292" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1024,346 1024,370" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="1032" y="363" text-anchor="start" class="lbl halo">open_datatree / open_dataset</text><polyline points="788,388 830,388 830,86 898,86" class="ln ln-py" fill="none" marker-end="url(#ov-py)"/><polyline points="900,102 852,102 852,406 790,406" class="ln ln-py dash" fill="none" marker-end="url(#ov-py)"/><text x="822" y="250" text-anchor="middle" class="lbl py halo" transform="rotate(-90 822 250)">spawn · argv, no shell</text><text x="866" y="250" text-anchor="middle" class="lbl py halo" transform="rotate(-90 866 250)">stdout: one JSON line · stderr: logs</text><rect x="392" y="490" width="188" height="52" rx="7" class="bx ext"/><text x="486" y="513.5" text-anchor="middle" class="t" font-size="12">uv</text><text x="486" y="528.5" text-anchor="middle" class="s">python 3.13 · venv · pip install</text><rect x="600" y="490" width="188" height="52" rx="7" class="bx ext"/><text x="694" y="513.5" text-anchor="middle" class="t" font-size="12">Python extension</text><text x="694" y="528.5" text-anchor="middle" class="s">active interpreter API</text><rect x="900" y="490" width="248" height="52" rx="7" class="bx ext"/><text x="1024" y="513.5" text-anchor="middle" class="t" font-size="12">data file on disk</text><text x="1024" y="528.5" text-anchor="middle" class="s">.nc .h5 .zarr(.zip) .grib .tif .jp2 .cdf</text><polyline points="486,424 486,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="494" y="470" text-anchor="start" class="lbl halo">runs</text><polyline points="694,424 694,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="702" y="470" text-anchor="start" class="lbl halo">asks</text><polyline points="1024,424 1024,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="1032" y="470" text-anchor="start" class="lbl halo">reads</text></svg></div><figcaption>Teal arrows cross the webview boundary (postMessage); green arrows cross the process boundary (argv in, one JSON line out, logs on stderr forwarded to the Logger). The <code>common/</code> utilities used by every module (Logger, config, ErrorBoundary, runProcess), the status bar item and the healthcheck are left out.</figcaption></figure>
+<figure><div class="scroll"><svg viewBox="0 0 1180 560" class="hand" role="img" aria-label="The extension runs in three processes: a sandboxed webview, the Node extension host, and one short-lived Python subprocess per request. The webview talks to the host only through postMessage; the host talks to Python only through argv and one JSON line on stdout." style="max-width:1180px"><defs><marker id="ov-edge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-edge"/></marker><marker id="ov-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-web"/></marker><marker id="ov-py" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-py"/></marker><marker id="ov-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah ah-warn"/></marker></defs><rect x="16" y="20" width="280" height="440" rx="12" class="zone web"/><text x="32" y="44" class="zt web">WEBVIEW</text><text x="32" y="58" class="s" text-anchor="start">sandboxed iframe · CSP · no Node</text><rect x="376" y="20" width="428" height="440" rx="12" class="zone host"/><text x="392" y="44" class="zt host">EXTENSION HOST</text><text x="392" y="58" class="s" text-anchor="start">Node.js · one process, all panels</text><rect x="884" y="20" width="280" height="440" rx="12" class="zone py"/><text x="900" y="44" class="zt py">PYTHON SUBPROCESS</text><text x="900" y="58" class="s" text-anchor="start">one per request, then exits</text><rect x="32" y="70" width="248" height="46" rx="7" class="bx web"/><text x="156" y="90.5" text-anchor="middle" class="t" font-size="12">main.ts</text><text x="156" y="105.5" text-anchor="middle" class="s">entry · one delegated click listener</text><rect x="32" y="138" width="248" height="52" rx="7" class="bx web"/><text x="156" y="161.5" text-anchor="middle" class="t" font-size="12">plotActions · plotParams</text><text x="156" y="176.5" text-anchor="middle" class="s">plot controls, Create / Cancel / Save</text><rect x="32" y="216" width="248" height="52" rx="7" class="bx web key"/><text x="156" y="239.5" text-anchor="middle" class="t" font-size="12">bus.ts</text><text x="156" y="254.5" text-anchor="middle" class="s">WebviewMessageBus · pending requests</text><rect x="32" y="294" width="248" height="52" rx="7" class="bx web"/><text x="156" y="317.5" text-anchor="middle" class="t" font-size="12">render/</text><text x="156" y="332.5" text-anchor="middle" class="s">dataInfo · variables · representations</text><rect x="32" y="372" width="248" height="52" rx="7" class="bx web"/><text x="156" y="395.5" text-anchor="middle" class="t" font-size="12">state · errors · export</text><text x="156" y="410.5" text-anchor="middle" class="s">globals, error banner, HTML export</text><polyline points="156,116 156,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="156,190 156,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="164" y="207" text-anchor="start" class="lbl halo">sendRequest()</text><polyline points="156,268 156,292" class="ln ln-web" fill="none" marker-end="url(#ov-web)"/><text x="164" y="285" text-anchor="start" class="lbl halo">dataLoaded → displayAll()</text><rect x="392" y="70" width="396" height="46" rx="7" class="bx host"/><text x="590" y="90.5" text-anchor="middle" class="t" font-size="12">extension.ts  activate()</text><text x="590" y="105.5" text-anchor="middle" class="s">builds managers · registers 8 editors, 18 commands, outline</text><rect x="392" y="138" width="188" height="52" rx="7" class="bx host"/><text x="486" y="154.5" text-anchor="middle" class="t" font-size="11">ScientificData</text><text x="486" y="167.5" text-anchor="middle" class="t" font-size="11">EditorProvider</text><text x="486" y="181.5" text-anchor="middle" class="s">resolveCustomEditor</text><rect x="392" y="216" width="188" height="52" rx="7" class="bx host key"/><text x="486" y="239.5" text-anchor="middle" class="t" font-size="12">MessageBus</text><text x="486" y="254.5" text-anchor="middle" class="s">handle(request) · emit(event)</text><rect x="392" y="294" width="188" height="52" rx="7" class="bx host"/><text x="486" y="317.5" text-anchor="middle" class="t" font-size="12">OutlineProvider</text><text x="486" y="332.5" text-anchor="middle" class="s">+ HeaderExtractor · tree view</text><rect x="392" y="372" width="188" height="52" rx="7" class="bx host"/><text x="486" y="388.5" text-anchor="middle" class="t" font-size="11">ExtensionVirtual</text><text x="486" y="401.5" text-anchor="middle" class="t" font-size="11">EnvironmentManager</text><text x="486" y="415.5" text-anchor="middle" class="s">uv env · ENVIRONMENT_REVISION</text><rect x="600" y="138" width="188" height="52" rx="7" class="bx host"/><text x="694" y="161.5" text-anchor="middle" class="t" font-size="12">DataViewerPanel</text><text x="694" y="176.5" text-anchor="middle" class="s">one per tab · static registry</text><rect x="600" y="216" width="188" height="52" rx="7" class="bx host key"/><text x="694" y="239.5" text-anchor="middle" class="t" font-size="12">UIController</text><text x="694" y="254.5" text-anchor="middle" class="s">per panel · answers requests</text><rect x="600" y="294" width="188" height="52" rx="7" class="bx host"/><text x="694" y="317.5" text-anchor="middle" class="t" font-size="12">DataProcessor</text><text x="694" y="332.5" text-anchor="middle" class="s">settings → CLI argv</text><rect x="600" y="372" width="188" height="52" rx="7" class="bx host key"/><text x="694" y="395.5" text-anchor="middle" class="t" font-size="12">PythonManager</text><text x="694" y="410.5" text-anchor="middle" class="s">interpreter · spawn · abort</text><polyline points="486,116 486,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="580,164 598,164" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="694,190 694,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="207" text-anchor="end" class="lbl halo">owns</text><polyline points="600,242 582,242" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)" marker-start="url(#ov-edge)"/><polyline points="694,268 694,292" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="285" text-anchor="end" class="lbl halo">getDataInfo() · createPlot()</text><polyline points="694,346 694,370" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="686" y="363" text-anchor="end" class="lbl halo">executePythonFile()</text><polyline points="600,398 582,398" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="280,234 390,234" class="ln ln-web" fill="none" marker-end="url(#ov-web)"/><polyline points="392,252 282,252" class="ln ln-web dash" fill="none" marker-end="url(#ov-web)"/><text x="336" y="228" text-anchor="middle" class="lbl web halo">request</text><text x="336" y="268" text-anchor="middle" class="lbl web halo">response · event</text><text x="336" y="243" text-anchor="middle" class="lbl tiny">postMessage</text><rect x="900" y="70" width="248" height="46" rx="7" class="bx py"/><text x="1024" y="90.5" text-anchor="middle" class="t" font-size="12">get_data_info.py → cli</text><text x="1024" y="105.5" text-anchor="middle" class="s">argparse: info | plot</text><rect x="900" y="138" width="118" height="52" rx="7" class="bx py"/><text x="959" y="161.5" text-anchor="middle" class="t" font-size="12">info/</text><text x="959" y="176.5" text-anchor="middle" class="s">get_file_info</text><rect x="1030" y="138" width="118" height="52" rx="7" class="bx py"/><text x="1089" y="161.5" text-anchor="middle" class="t" font-size="12">plotting/</text><text x="1089" y="176.5" text-anchor="middle" class="s">create_plot</text><rect x="900" y="216" width="248" height="52" rx="7" class="bx py"/><text x="1024" y="239.5" text-anchor="middle" class="t" font-size="12">formats/</text><text x="1024" y="254.5" text-anchor="middle" class="s">detect_file_format → engines</text><rect x="900" y="294" width="248" height="52" rx="7" class="bx py key"/><text x="1024" y="317.5" text-anchor="middle" class="t" font-size="12">opening.py  OpenedData</text><text x="1024" y="332.5" text-anchor="middle" class="s">engine fallback · decode_cf fallback</text><rect x="900" y="372" width="248" height="52" rx="7" class="bx ext"/><text x="1024" y="389" text-anchor="middle" class="t" font-size="12">xarray backends</text><text x="1024" y="404" text-anchor="middle" class="s">netCDF4 · h5netcdf · zarr · cfgrib</text><text x="1024" y="417" text-anchor="middle" class="s">rasterio · cdflib · kerchunk</text><polyline points="959,116 959,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="959,190 959,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1089,116 1089,136" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1089,190 1089,214" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1024,268 1024,292" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><polyline points="1024,346 1024,370" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="1032" y="363" text-anchor="start" class="lbl halo">open_datatree / open_dataset</text><polyline points="788,388 830,388 830,86 898,86" class="ln ln-py" fill="none" marker-end="url(#ov-py)"/><polyline points="900,102 852,102 852,406 790,406" class="ln ln-py dash" fill="none" marker-end="url(#ov-py)"/><text x="822" y="250" text-anchor="middle" class="lbl py halo" transform="rotate(-90 822 250)">spawn · argv, no shell</text><text x="866" y="250" text-anchor="middle" class="lbl py halo" transform="rotate(-90 866 250)">stdout: one JSON line · stderr: logs</text><rect x="392" y="490" width="188" height="52" rx="7" class="bx ext"/><text x="486" y="513.5" text-anchor="middle" class="t" font-size="12">uv</text><text x="486" y="528.5" text-anchor="middle" class="s">python 3.13 · venv · pip install</text><rect x="600" y="490" width="188" height="52" rx="7" class="bx ext"/><text x="694" y="513.5" text-anchor="middle" class="t" font-size="12">Python extension</text><text x="694" y="528.5" text-anchor="middle" class="s">active interpreter API</text><rect x="900" y="490" width="248" height="52" rx="7" class="bx ext"/><text x="1024" y="513.5" text-anchor="middle" class="t" font-size="12">data file on disk</text><text x="1024" y="528.5" text-anchor="middle" class="s">.nc .h5 .zarr(.zip) .grib .tif .jp2 .cdf</text><polyline points="486,424 486,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="494" y="470" text-anchor="start" class="lbl halo">runs</text><polyline points="694,424 694,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="702" y="470" text-anchor="start" class="lbl halo">asks</text><polyline points="1024,424 1024,488" class="ln ln-edge" fill="none" marker-end="url(#ov-edge)"/><text x="1032" y="470" text-anchor="start" class="lbl halo">reads</text></svg></div><figcaption>Teal arrows cross the webview boundary (postMessage); green arrows cross the process boundary (argv in, one JSON line out, logs on stderr forwarded to the Logger). The <code>common/</code> utilities used by every module (Logger, config, ErrorBoundary, runProcess), the status bar item and the healthcheck are left out.</figcaption></figure>
 <p class="files"><b>Read</b>src/extension.ts · src/DataViewerPanel.ts · src/panel/UIController.ts · src/python/PythonManager.ts · python/sdv_backend/cli.py</p>
 </section>
 
@@ -628,421 +628,445 @@ footer {
 <section id="host-modules">
 <h2><span class="n">3</span>Extension host modules</h2>
 <p>Dependencies run top to bottom, from activation to leaf utilities. Edges out of <code>extension.ts</code> are faint because it wires everything. <code>Logger</code>, <code>config</code>, <code>vscodeutils</code> and <code>types</code> are imported almost everywhere and are left out.</p>
-<div class="keyrow"><span class="chip"><span class="sw host"></span>src/ (entry)</span><span class="chip"><span class="sw web"></span>src/panel/</span><span class="chip"><span class="sw ext"></span>src/outline/</span><span class="chip"><span class="sw py"></span>src/python/</span><span class="chip"><span class="sw common"></span>src/common/</span><span class="chip"><span class="sw shared"></span>src/shared/</span></div>
-<figure><div class="scroll"><svg class="gv" role="img" aria-label="Extension host modules as dependency layers, from extension.ts at the top to runProcess and src/shared at the bottom." style="max-width:1459px"
- viewBox="0.00 0.00 1216.10 406.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div class="keyrow"><span class="chip"><span class="sw host"></span>src/ (entry), src/onboarding/</span><span class="chip"><span class="sw web"></span>src/panel/</span><span class="chip"><span class="sw ext"></span>src/outline/</span><span class="chip"><span class="sw py"></span>src/python/</span><span class="chip"><span class="sw common"></span>src/common/</span><span class="chip"><span class="sw shared"></span>src/shared/</span></div>
+<figure><div class="scroll"><svg class="gv" role="img" aria-label="Extension host modules as dependency layers, from extension.ts at the top to runProcess and src/shared at the bottom." style="max-width:1318px"
+ viewBox="0.00 0.00 1097.97 406.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 395.8)">
 
 <g id="node1" class="node f&#45;entry">
 <title>extension</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M772.17,-385C772.17,-385 713.83,-385 713.83,-385 710.17,-385 706.5,-381.33 706.5,-377.67 706.5,-377.67 706.5,-370.33 706.5,-370.33 706.5,-366.67 710.17,-363 713.83,-363 713.83,-363 772.17,-363 772.17,-363 775.83,-363 779.5,-366.67 779.5,-370.33 779.5,-370.33 779.5,-377.67 779.5,-377.67 779.5,-381.33 775.83,-385 772.17,-385"/>
-<text text-anchor="middle" x="743" y="-371.6" font-family="DejaVu Sans Mono" font-size="10.50">extension</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M648.17,-385C648.17,-385 589.83,-385 589.83,-385 586.17,-385 582.5,-381.33 582.5,-377.67 582.5,-377.67 582.5,-370.33 582.5,-370.33 582.5,-366.67 586.17,-363 589.83,-363 589.83,-363 648.17,-363 648.17,-363 651.83,-363 655.5,-366.67 655.5,-370.33 655.5,-370.33 655.5,-377.67 655.5,-377.67 655.5,-381.33 651.83,-385 648.17,-385"/>
+<text text-anchor="middle" x="619" y="-371.6" font-family="DejaVu Sans Mono" font-size="10.50">extension</text>
 </g>
 
 <g id="node2" class="node f&#45;entry">
 <title>ScientificDataEditorProvider</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M573.83,-336C573.83,-336 492.17,-336 492.17,-336 486.83,-336 481.5,-330.67 481.5,-325.33 481.5,-325.33 481.5,-314.67 481.5,-314.67 481.5,-309.33 486.83,-304 492.17,-304 492.17,-304 573.83,-304 573.83,-304 579.17,-304 584.5,-309.33 584.5,-314.67 584.5,-314.67 584.5,-325.33 584.5,-325.33 584.5,-330.67 579.17,-336 573.83,-336"/>
-<text text-anchor="middle" x="533" y="-323.6" font-family="DejaVu Sans Mono" font-size="10.50">ScientificData</text>
-<text text-anchor="middle" x="533" y="-311.6" font-family="DejaVu Sans Mono" font-size="10.50">EditorProvider</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M379.83,-336C379.83,-336 298.17,-336 298.17,-336 292.83,-336 287.5,-330.67 287.5,-325.33 287.5,-325.33 287.5,-314.67 287.5,-314.67 287.5,-309.33 292.83,-304 298.17,-304 298.17,-304 379.83,-304 379.83,-304 385.17,-304 390.5,-309.33 390.5,-314.67 390.5,-314.67 390.5,-325.33 390.5,-325.33 390.5,-330.67 385.17,-336 379.83,-336"/>
+<text text-anchor="middle" x="339" y="-323.6" font-family="DejaVu Sans Mono" font-size="10.50">ScientificData</text>
+<text text-anchor="middle" x="339" y="-311.6" font-family="DejaVu Sans Mono" font-size="10.50">EditorProvider</text>
 </g>
 
 <g id="edge12" class="edge e&#45;faint">
 <title>extension&#45;&gt;ScientificDataEditorProvider</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M706.42,-363.94C674.52,-356.04 627.69,-344.45 590.74,-335.3"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="591.22,-333.25 584.89,-333.85 590.21,-337.33 591.22,-333.25"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M582.42,-367.66C538.81,-361.11 463.81,-349.22 400,-336 398.84,-335.76 397.67,-335.51 396.48,-335.26"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="396.83,-333.19 390.52,-333.95 395.94,-337.29 396.83,-333.19"/>
 </g>
 
 <g id="node3" class="node f&#45;entry">
 <title>StatusBarItem</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1187.17,-331C1187.17,-331 1104.83,-331 1104.83,-331 1101.17,-331 1097.5,-327.33 1097.5,-323.67 1097.5,-323.67 1097.5,-316.33 1097.5,-316.33 1097.5,-312.67 1101.17,-309 1104.83,-309 1104.83,-309 1187.17,-309 1187.17,-309 1190.83,-309 1194.5,-312.67 1194.5,-316.33 1194.5,-316.33 1194.5,-323.67 1194.5,-323.67 1194.5,-327.33 1190.83,-331 1187.17,-331"/>
-<text text-anchor="middle" x="1146" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">StatusBarItem</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M223.17,-331C223.17,-331 140.83,-331 140.83,-331 137.17,-331 133.5,-327.33 133.5,-323.67 133.5,-323.67 133.5,-316.33 133.5,-316.33 133.5,-312.67 137.17,-309 140.83,-309 140.83,-309 223.17,-309 223.17,-309 226.83,-309 230.5,-312.67 230.5,-316.33 230.5,-316.33 230.5,-323.67 230.5,-323.67 230.5,-327.33 226.83,-331 223.17,-331"/>
+<text text-anchor="middle" x="182" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">StatusBarItem</text>
 </g>
 
 <g id="edge13" class="edge e&#45;faint">
 <title>extension&#45;&gt;StatusBarItem</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M779.69,-370.52C842.25,-365.96 973.44,-354.93 1083,-336 1088.9,-334.98 1095.07,-333.74 1101.15,-332.41"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="1101.78,-334.41 1107.17,-331.05 1100.86,-330.32 1101.78,-334.41"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M582.42,-371.03C515.22,-367.04 367.75,-356.59 245,-336 239.01,-335 232.75,-333.75 226.59,-332.4"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="226.79,-330.3 220.48,-331.03 225.87,-334.4 226.79,-330.3"/>
 </g>
 
 <g id="node4" class="node f&#45;python">
 <title>python/ExtensionVirtualEnvironmentManagerUI</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1029.83,-336C1029.83,-336 912.17,-336 912.17,-336 906.83,-336 901.5,-330.67 901.5,-325.33 901.5,-325.33 901.5,-314.67 901.5,-314.67 901.5,-309.33 906.83,-304 912.17,-304 912.17,-304 1029.83,-304 1029.83,-304 1035.17,-304 1040.5,-309.33 1040.5,-314.67 1040.5,-314.67 1040.5,-325.33 1040.5,-325.33 1040.5,-330.67 1035.17,-336 1029.83,-336"/>
-<text text-anchor="middle" x="971" y="-323.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionVirtual</text>
-<text text-anchor="middle" x="971" y="-311.6" font-family="DejaVu Sans Mono" font-size="10.50">EnvironmentManagerUI</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1035.83,-336C1035.83,-336 918.17,-336 918.17,-336 912.83,-336 907.5,-330.67 907.5,-325.33 907.5,-325.33 907.5,-314.67 907.5,-314.67 907.5,-309.33 912.83,-304 918.17,-304 918.17,-304 1035.83,-304 1035.83,-304 1041.17,-304 1046.5,-309.33 1046.5,-314.67 1046.5,-314.67 1046.5,-325.33 1046.5,-325.33 1046.5,-330.67 1041.17,-336 1035.83,-336"/>
+<text text-anchor="middle" x="977" y="-323.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionVirtual</text>
+<text text-anchor="middle" x="977" y="-311.6" font-family="DejaVu Sans Mono" font-size="10.50">EnvironmentManagerUI</text>
 </g>
 
-<g id="edge19" class="edge e&#45;faint">
+<g id="edge21" class="edge e&#45;faint">
 <title>extension&#45;&gt;python/ExtensionVirtualEnvironmentManagerUI</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M779.63,-364.65C811.65,-357.34 859.1,-346.52 898.73,-337.48"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="899.64,-339.43 905.02,-336.05 898.71,-335.33 899.64,-339.43"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M655.86,-368.53C708.53,-362.02 808.35,-349.27 893,-336 895.63,-335.59 898.31,-335.16 901.02,-334.72"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="901.79,-336.72 907.37,-333.67 901.1,-332.57 901.79,-336.72"/>
 </g>
 
 <g id="node5" class="node f&#45;common">
 <title>common/HealthcheckManager</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M799.17,-331C799.17,-331 686.83,-331 686.83,-331 683.17,-331 679.5,-327.33 679.5,-323.67 679.5,-323.67 679.5,-316.33 679.5,-316.33 679.5,-312.67 683.17,-309 686.83,-309 686.83,-309 799.17,-309 799.17,-309 802.83,-309 806.5,-312.67 806.5,-316.33 806.5,-316.33 806.5,-323.67 806.5,-323.67 806.5,-327.33 802.83,-331 799.17,-331"/>
-<text text-anchor="middle" x="743" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">HealthcheckManager</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M805.17,-331C805.17,-331 692.83,-331 692.83,-331 689.17,-331 685.5,-327.33 685.5,-323.67 685.5,-323.67 685.5,-316.33 685.5,-316.33 685.5,-312.67 689.17,-309 692.83,-309 692.83,-309 805.17,-309 805.17,-309 808.83,-309 812.5,-312.67 812.5,-316.33 812.5,-316.33 812.5,-323.67 812.5,-323.67 812.5,-327.33 808.83,-331 805.17,-331"/>
+<text text-anchor="middle" x="749" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">HealthcheckManager</text>
 </g>
 
 <g id="edge15" class="edge e&#45;faint">
 <title>extension&#45;&gt;common/HealthcheckManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M743,-362.97C743,-355.73 743,-345.79 743,-337.39"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="745.1,-337.35 743,-331.35 740.9,-337.35 745.1,-337.35"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M644.07,-362.97C665.15,-354.54 695.39,-342.44 718,-333.4"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="718.78,-335.35 723.57,-331.17 717.22,-331.45 718.78,-335.35"/>
 </g>
 
-<g id="node6" class="node f&#45;entry key">
+<g id="node6" class="node f&#45;entry">
+<title>onboarding/sampleFile</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M480.17,-331C480.17,-331 415.83,-331 415.83,-331 412.17,-331 408.5,-327.33 408.5,-323.67 408.5,-323.67 408.5,-316.33 408.5,-316.33 408.5,-312.67 412.17,-309 415.83,-309 415.83,-309 480.17,-309 480.17,-309 483.83,-309 487.5,-312.67 487.5,-316.33 487.5,-316.33 487.5,-323.67 487.5,-323.67 487.5,-327.33 483.83,-331 480.17,-331"/>
+<text text-anchor="middle" x="448" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">sampleFile</text>
+</g>
+
+<g id="edge16" class="edge e&#45;faint">
+<title>extension&#45;&gt;onboarding/sampleFile</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M585.85,-362.97C561.31,-355.54 527.06,-345.16 497,-336 493.62,-334.97 490.11,-333.9 486.59,-332.82"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="487.03,-330.76 480.68,-331.02 485.8,-334.78 487.03,-330.76"/>
+</g>
+
+<g id="node7" class="node f&#45;entry">
+<title>onboarding/walkthrough</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M583.17,-331C583.17,-331 512.83,-331 512.83,-331 509.17,-331 505.5,-327.33 505.5,-323.67 505.5,-323.67 505.5,-316.33 505.5,-316.33 505.5,-312.67 509.17,-309 512.83,-309 512.83,-309 583.17,-309 583.17,-309 586.83,-309 590.5,-312.67 590.5,-316.33 590.5,-316.33 590.5,-323.67 590.5,-323.67 590.5,-327.33 586.83,-331 583.17,-331"/>
+<text text-anchor="middle" x="548" y="-317.6" font-family="DejaVu Sans Mono" font-size="10.50">walkthrough</text>
+</g>
+
+<g id="edge17" class="edge e&#45;faint">
+<title>extension&#45;&gt;onboarding/walkthrough</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M605.31,-362.97C594.45,-355.02 579.14,-343.81 567.08,-334.98"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="568.21,-333.2 562.13,-331.35 565.73,-336.59 568.21,-333.2"/>
+</g>
+
+<g id="node8" class="node f&#45;entry key">
 <title>DataViewerPanel</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M502.17,-277C502.17,-277 407.83,-277 407.83,-277 404.17,-277 400.5,-273.33 400.5,-269.67 400.5,-269.67 400.5,-262.33 400.5,-262.33 400.5,-258.67 404.17,-255 407.83,-255 407.83,-255 502.17,-255 502.17,-255 505.83,-255 509.5,-258.67 509.5,-262.33 509.5,-262.33 509.5,-269.67 509.5,-269.67 509.5,-273.33 505.83,-277 502.17,-277"/>
-<text text-anchor="middle" x="455" y="-263.6" font-family="DejaVu Sans Mono" font-size="10.50">DataViewerPanel</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M386.17,-277C386.17,-277 291.83,-277 291.83,-277 288.17,-277 284.5,-273.33 284.5,-269.67 284.5,-269.67 284.5,-262.33 284.5,-262.33 284.5,-258.67 288.17,-255 291.83,-255 291.83,-255 386.17,-255 386.17,-255 389.83,-255 393.5,-258.67 393.5,-262.33 393.5,-262.33 393.5,-269.67 393.5,-269.67 393.5,-273.33 389.83,-277 386.17,-277"/>
+<text text-anchor="middle" x="339" y="-263.6" font-family="DejaVu Sans Mono" font-size="10.50">DataViewerPanel</text>
 </g>
 
 <g id="edge11" class="edge e&#45;faint">
 <title>extension&#45;&gt;DataViewerPanel</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M706.41,-372.86C640.81,-371.84 506.84,-366.03 473,-336 458.25,-322.91 454.89,-299.41 454.45,-283.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="456.55,-283.2 454.42,-277.21 452.35,-283.22 456.55,-283.2"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M582.36,-371.72C498.64,-368.43 299,-358.29 279,-336 269.5,-325.41 272.07,-316.42 279,-304 284.84,-293.54 294.99,-285.66 305.3,-279.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="306.34,-281.76 310.69,-277.12 304.4,-278.03 306.34,-281.76"/>
 </g>
 
-<g id="node8" class="node f&#45;outline">
+<g id="node10" class="node f&#45;outline">
 <title>outline/OutlineProvider</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M257.17,-228C257.17,-228 162.83,-228 162.83,-228 159.17,-228 155.5,-224.33 155.5,-220.67 155.5,-220.67 155.5,-213.33 155.5,-213.33 155.5,-209.67 159.17,-206 162.83,-206 162.83,-206 257.17,-206 257.17,-206 260.83,-206 264.5,-209.67 264.5,-213.33 264.5,-213.33 264.5,-220.67 264.5,-220.67 264.5,-224.33 260.83,-228 257.17,-228"/>
-<text text-anchor="middle" x="210" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">OutlineProvider</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M152.17,-228C152.17,-228 57.83,-228 57.83,-228 54.17,-228 50.5,-224.33 50.5,-220.67 50.5,-220.67 50.5,-213.33 50.5,-213.33 50.5,-209.67 54.17,-206 57.83,-206 57.83,-206 152.17,-206 152.17,-206 155.83,-206 159.5,-209.67 159.5,-213.33 159.5,-213.33 159.5,-220.67 159.5,-220.67 159.5,-224.33 155.83,-228 152.17,-228"/>
+<text text-anchor="middle" x="105" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">OutlineProvider</text>
 </g>
 
-<g id="edge16" class="edge e&#45;faint">
+<g id="edge18" class="edge e&#45;faint">
 <title>extension&#45;&gt;outline/OutlineProvider</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M706.38,-372.16C650.43,-370.03 540.82,-362.51 452,-336 365.63,-310.22 272.06,-256.32 231.15,-231.3"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="232.17,-229.46 225.96,-228.1 229.97,-233.04 232.17,-229.46"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M582.46,-372.81C473.87,-371.9 158.62,-366.62 125,-336 96.54,-310.07 98.8,-259.86 102.22,-234.1"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="104.31,-234.35 103.1,-228.1 100.15,-233.74 104.31,-234.35"/>
 </g>
 
-<g id="node13" class="node f&#45;python key">
+<g id="node15" class="node f&#45;python key">
 <title>python/DataProcessor</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M621.17,-179C621.17,-179 538.83,-179 538.83,-179 535.17,-179 531.5,-175.33 531.5,-171.67 531.5,-171.67 531.5,-164.33 531.5,-164.33 531.5,-160.67 535.17,-157 538.83,-157 538.83,-157 621.17,-157 621.17,-157 624.83,-157 628.5,-160.67 628.5,-164.33 628.5,-164.33 628.5,-171.67 628.5,-171.67 628.5,-175.33 624.83,-179 621.17,-179"/>
 <text text-anchor="middle" x="580" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">DataProcessor</text>
 </g>
 
-<g id="edge17" class="edge e&#45;faint">
+<g id="edge19" class="edge e&#45;faint">
 <title>extension&#45;&gt;python/DataProcessor</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M714.2,-362.89C699.92,-356.79 683.17,-347.88 671,-336 624.92,-291.03 596.24,-217.67 585.19,-185.27"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="587.11,-184.38 583.21,-179.35 583.12,-185.71 587.11,-184.38"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M617.07,-362.88C610.76,-329.92 590.78,-225.39 583.07,-185.08"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="585.14,-184.68 581.95,-179.18 581.01,-185.47 585.14,-184.68"/>
 </g>
 
-<g id="node16" class="node f&#45;python key">
+<g id="node18" class="node f&#45;python key">
 <title>python/PythonManager</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M799.17,-130C799.17,-130 716.83,-130 716.83,-130 713.17,-130 709.5,-126.33 709.5,-122.67 709.5,-122.67 709.5,-115.33 709.5,-115.33 709.5,-111.67 713.17,-108 716.83,-108 716.83,-108 799.17,-108 799.17,-108 802.83,-108 806.5,-111.67 806.5,-115.33 806.5,-115.33 806.5,-122.67 806.5,-122.67 806.5,-126.33 802.83,-130 799.17,-130"/>
-<text text-anchor="middle" x="758" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">PythonManager</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M697.17,-130C697.17,-130 614.83,-130 614.83,-130 611.17,-130 607.5,-126.33 607.5,-122.67 607.5,-122.67 607.5,-115.33 607.5,-115.33 607.5,-111.67 611.17,-108 614.83,-108 614.83,-108 697.17,-108 697.17,-108 700.83,-108 704.5,-111.67 704.5,-115.33 704.5,-115.33 704.5,-122.67 704.5,-122.67 704.5,-126.33 700.83,-130 697.17,-130"/>
+<text text-anchor="middle" x="656" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">PythonManager</text>
 </g>
 
-<g id="edge20" class="edge e&#45;faint">
+<g id="edge22" class="edge e&#45;faint">
 <title>extension&#45;&gt;python/PythonManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M779.55,-363.46C793.46,-357.86 807.89,-349.2 816,-336 857.26,-268.83 796.6,-172.35 769.73,-135.3"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="771.27,-133.85 766.02,-130.27 767.89,-136.35 771.27,-133.85"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M625.27,-362.9C636.07,-344.54 657,-304.14 657,-267 657,-267 657,-267 657,-216 657,-187.97 656.57,-155.34 656.27,-136.25"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="658.37,-136.05 656.17,-130.09 654.17,-136.12 658.37,-136.05"/>
 </g>
 
-<g id="node17" class="node f&#45;common">
+<g id="node19" class="node f&#45;common">
 <title>common/ErrorBoundary</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M684.17,-130C684.17,-130 601.83,-130 601.83,-130 598.17,-130 594.5,-126.33 594.5,-122.67 594.5,-122.67 594.5,-115.33 594.5,-115.33 594.5,-111.67 598.17,-108 601.83,-108 601.83,-108 684.17,-108 684.17,-108 687.83,-108 691.5,-111.67 691.5,-115.33 691.5,-115.33 691.5,-122.67 691.5,-122.67 691.5,-126.33 687.83,-130 684.17,-130"/>
-<text text-anchor="middle" x="643" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">ErrorBoundary</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M851.17,-130C851.17,-130 768.83,-130 768.83,-130 765.17,-130 761.5,-126.33 761.5,-122.67 761.5,-122.67 761.5,-115.33 761.5,-115.33 761.5,-111.67 765.17,-108 768.83,-108 768.83,-108 851.17,-108 851.17,-108 854.83,-108 858.5,-111.67 858.5,-115.33 858.5,-115.33 858.5,-122.67 858.5,-122.67 858.5,-126.33 854.83,-130 851.17,-130"/>
+<text text-anchor="middle" x="810" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">ErrorBoundary</text>
 </g>
 
 <g id="edge14" class="edge e&#45;faint">
 <title>extension&#45;&gt;common/ErrorBoundary</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M708.13,-362.97C694.43,-357.26 679.89,-348.65 671,-336 648.36,-303.78 644.02,-180.98 643.2,-136.34"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="645.29,-136.07 643.09,-130.11 641.09,-136.14 645.29,-136.07"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M655.76,-370.91C707.52,-367.22 798.22,-357.77 822,-336 845.46,-314.52 841,-298.81 841,-267 841,-267 841,-267 841,-216 841,-186.57 827.65,-154.42 818.47,-135.8"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="820.13,-134.43 815.54,-130.03 816.38,-136.33 820.13,-134.43"/>
 </g>
 
-<g id="node18" class="node f&#45;python">
+<g id="node20" class="node f&#45;python">
 <title>python/ExtensionVirtualEnvironmentManager</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M902.83,-81C902.83,-81 797.17,-81 797.17,-81 791.83,-81 786.5,-75.67 786.5,-70.33 786.5,-70.33 786.5,-59.67 786.5,-59.67 786.5,-54.33 791.83,-49 797.17,-49 797.17,-49 902.83,-49 902.83,-49 908.17,-49 913.5,-54.33 913.5,-59.67 913.5,-59.67 913.5,-70.33 913.5,-70.33 913.5,-75.67 908.17,-81 902.83,-81"/>
-<text text-anchor="middle" x="850" y="-68.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionVirtual</text>
-<text text-anchor="middle" x="850" y="-56.6" font-family="DejaVu Sans Mono" font-size="10.50">EnvironmentManager</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M802.83,-81C802.83,-81 697.17,-81 697.17,-81 691.83,-81 686.5,-75.67 686.5,-70.33 686.5,-70.33 686.5,-59.67 686.5,-59.67 686.5,-54.33 691.83,-49 697.17,-49 697.17,-49 802.83,-49 802.83,-49 808.17,-49 813.5,-54.33 813.5,-59.67 813.5,-59.67 813.5,-70.33 813.5,-70.33 813.5,-75.67 808.17,-81 802.83,-81"/>
+<text text-anchor="middle" x="750" y="-68.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionVirtual</text>
+<text text-anchor="middle" x="750" y="-56.6" font-family="DejaVu Sans Mono" font-size="10.50">EnvironmentManager</text>
 </g>
 
-<g id="edge18" class="edge e&#45;faint">
+<g id="edge20" class="edge e&#45;faint">
 <title>extension&#45;&gt;python/ExtensionVirtualEnvironmentManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M779.77,-364.8C798.32,-359.18 820.18,-350.12 836,-336 861.96,-312.83 873,-301.8 873,-267 873,-267 873,-267 873,-167 873,-138.81 864.37,-107.26 857.69,-87.05"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="859.6,-86.16 855.69,-81.16 855.63,-87.51 859.6,-86.16"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M655.95,-372.01C713.09,-369.66 818.99,-361.86 845,-336 917.22,-264.19 926.71,-191.22 868,-108 856.58,-91.82 838.35,-81.83 819.6,-75.69"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="820.13,-73.65 813.78,-73.9 818.9,-77.66 820.13,-73.65"/>
 </g>
 
-<g id="node19" class="node f&#45;python">
+<g id="node21" class="node f&#45;python">
 <title>python/officialPythonExtensionApiUtils</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1079.83,-81C1079.83,-81 980.17,-81 980.17,-81 974.83,-81 969.5,-75.67 969.5,-70.33 969.5,-70.33 969.5,-59.67 969.5,-59.67 969.5,-54.33 974.83,-49 980.17,-49 980.17,-49 1079.83,-49 1079.83,-49 1085.17,-49 1090.5,-54.33 1090.5,-59.67 1090.5,-59.67 1090.5,-70.33 1090.5,-70.33 1090.5,-75.67 1085.17,-81 1079.83,-81"/>
-<text text-anchor="middle" x="1030" y="-68.6" font-family="DejaVu Sans Mono" font-size="10.50">officialPython</text>
-<text text-anchor="middle" x="1030" y="-56.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionApiUtils</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1033.83,-81C1033.83,-81 934.17,-81 934.17,-81 928.83,-81 923.5,-75.67 923.5,-70.33 923.5,-70.33 923.5,-59.67 923.5,-59.67 923.5,-54.33 928.83,-49 934.17,-49 934.17,-49 1033.83,-49 1033.83,-49 1039.17,-49 1044.5,-54.33 1044.5,-59.67 1044.5,-59.67 1044.5,-70.33 1044.5,-70.33 1044.5,-75.67 1039.17,-81 1033.83,-81"/>
+<text text-anchor="middle" x="984" y="-68.6" font-family="DejaVu Sans Mono" font-size="10.50">officialPython</text>
+<text text-anchor="middle" x="984" y="-56.6" font-family="DejaVu Sans Mono" font-size="10.50">ExtensionApiUtils</text>
 </g>
 
-<g id="edge21" class="edge e&#45;faint">
+<g id="edge23" class="edge e&#45;faint">
 <title>extension&#45;&gt;python/officialPythonExtensionApiUtils</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M779.67,-373.52C852.17,-373.76 1010.24,-370.25 1050,-336 1074.1,-315.24 1069,-298.81 1069,-267 1069,-267 1069,-267 1069,-167 1069,-137.45 1054.29,-106.1 1042.94,-86.31"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="1044.69,-85.15 1039.84,-81.04 1041.07,-87.28 1044.69,-85.15"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M655.76,-372.26C755.44,-369.93 1025.51,-361.33 1056,-336 1080.47,-315.67 1075,-298.81 1075,-267 1075,-267 1075,-267 1075,-167 1075,-130.93 1042.58,-101.94 1016.44,-84.42"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="1017.48,-82.59 1011.3,-81.07 1015.18,-86.11 1017.48,-82.59"/>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>ScientificDataEditorProvider&#45;&gt;DataViewerPanel</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M510.44,-303.96C499.3,-296.54 485.98,-287.65 475.18,-280.46"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="476.27,-278.65 470.11,-277.07 473.94,-282.15 476.27,-278.65"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M339,-303.96C339,-297.48 339,-289.89 339,-283.28"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="341.1,-283.07 339,-277.07 336.9,-283.07 341.1,-283.07"/>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>ScientificDataEditorProvider&#45;&gt;python/DataProcessor</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M537.77,-303.79C546.66,-275.4 565.72,-214.58 574.88,-185.34"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="576.99,-185.63 576.78,-179.28 572.98,-184.38 576.99,-185.63"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M363.43,-303.79C410.7,-274.38 513.91,-210.14 558.63,-182.3"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="559.8,-184.05 563.78,-179.09 557.58,-180.48 559.8,-184.05"/>
 </g>
 
-<g id="edge39" class="edge e&#45;host">
+<g id="edge41" class="edge e&#45;host">
 <title>python/ExtensionVirtualEnvironmentManagerUI&#45;&gt;python/ExtensionVirtualEnvironmentManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M963.43,-303.68C954.54,-284.24 941,-249.46 941,-218 941,-218 941,-218 941,-167 941,-130.93 908.58,-101.94 882.44,-84.42"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="883.48,-82.59 877.3,-81.07 881.18,-86.11 883.48,-82.59"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M970.57,-303.91C962.87,-284.44 951,-249.32 951,-218 951,-218 951,-218 951,-167 951,-106.59 877.61,-82.31 819.52,-72.55"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="819.86,-70.48 813.6,-71.6 819.19,-74.62 819.86,-70.48"/>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>common/HealthcheckManager&#45;&gt;DataViewerPanel</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M687.47,-308.97C638.31,-300.1 566.68,-287.16 515.95,-278"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="516.15,-275.91 509.87,-276.91 515.4,-280.04 516.15,-275.91"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M685.39,-310.93C607.5,-301.05 476.53,-284.44 399.91,-274.72"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="399.79,-272.59 393.57,-273.92 399.26,-276.76 399.79,-272.59"/>
 </g>
 
 <g id="edge10" class="edge e&#45;host">
 <title>common/HealthcheckManager&#45;&gt;python/PythonManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M743.76,-308.86C746.19,-276.66 753.74,-176.55 756.74,-136.65"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="758.86,-136.5 757.22,-130.36 754.67,-136.19 758.86,-136.5"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M740.62,-308.76C734.15,-300.53 725.28,-288.48 719,-277 691.44,-226.6 692.46,-210.28 671,-157 668.19,-150.01 665.06,-142.28 662.39,-135.71"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="664.29,-134.81 660.09,-130.05 660.4,-136.39 664.29,-134.81"/>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
 <title>common/HealthcheckManager&#45;&gt;common/ErrorBoundary</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M739.38,-308.74C729.94,-282.53 703.06,-211.34 671,-157 666.5,-149.37 660.7,-141.47 655.54,-134.94"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="657.16,-133.59 651.76,-130.23 653.89,-136.23 657.16,-133.59"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M752.11,-308.86C762.02,-276.53 792.92,-175.72 805.05,-136.16"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="807.07,-136.71 806.82,-130.36 803.06,-135.48 807.07,-136.71"/>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
 <title>common/HealthcheckManager&#45;&gt;python/ExtensionVirtualEnvironmentManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M747.31,-308.99C750.96,-300.49 756.34,-287.95 761,-277 790.61,-207.37 825.38,-124.65 841.28,-86.79"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="843.28,-87.45 843.66,-81.11 839.4,-85.83 843.28,-87.45"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M746.29,-308.76C741.72,-290.61 733,-251.55 733,-218 733,-218 733,-218 733,-167 733,-139.12 739.38,-107.51 744.32,-87.19"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="746.38,-87.6 745.8,-81.27 742.31,-86.58 746.38,-87.6"/>
 </g>
 
-<g id="node7" class="node f&#45;panel key">
+<g id="node9" class="node f&#45;panel key">
 <title>panel/UIController</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M493.17,-228C493.17,-228 416.83,-228 416.83,-228 413.17,-228 409.5,-224.33 409.5,-220.67 409.5,-220.67 409.5,-213.33 409.5,-213.33 409.5,-209.67 413.17,-206 416.83,-206 416.83,-206 493.17,-206 493.17,-206 496.83,-206 500.5,-209.67 500.5,-213.33 500.5,-213.33 500.5,-220.67 500.5,-220.67 500.5,-224.33 496.83,-228 493.17,-228"/>
-<text text-anchor="middle" x="455" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">UIController</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M388.17,-228C388.17,-228 311.83,-228 311.83,-228 308.17,-228 304.5,-224.33 304.5,-220.67 304.5,-220.67 304.5,-213.33 304.5,-213.33 304.5,-209.67 308.17,-206 311.83,-206 311.83,-206 388.17,-206 388.17,-206 391.83,-206 395.5,-209.67 395.5,-213.33 395.5,-213.33 395.5,-220.67 395.5,-220.67 395.5,-224.33 391.83,-228 388.17,-228"/>
+<text text-anchor="middle" x="350" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">UIController</text>
 </g>
 
 <g id="edge3" class="edge e&#45;host">
 <title>DataViewerPanel&#45;&gt;panel/UIController</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M455,-254.57C455,-248.65 455,-241.1 455,-234.4"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="457.1,-234.08 455,-228.08 452.9,-234.08 457.1,-234.08"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M341.44,-254.57C342.86,-248.52 344.67,-240.78 346.26,-233.98"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="348.32,-234.4 347.64,-228.08 344.23,-233.44 348.32,-234.4"/>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>DataViewerPanel&#45;&gt;outline/OutlineProvider</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M402.74,-254.97C363.23,-247.39 308.99,-236.99 268.11,-229.15"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="268.47,-227.08 262.18,-228.01 267.67,-231.2 268.47,-227.08"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M289.09,-254.97C251.5,-247.43 199.97,-237.07 160.98,-229.24"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="161.13,-227.13 154.84,-228.01 160.3,-231.25 161.13,-227.13"/>
 </g>
 
-<g id="node9" class="node f&#45;outline">
+<g id="node11" class="node f&#45;outline">
 <title>outline/HeaderExtractor</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M384.17,-228C384.17,-228 289.83,-228 289.83,-228 286.17,-228 282.5,-224.33 282.5,-220.67 282.5,-220.67 282.5,-213.33 282.5,-213.33 282.5,-209.67 286.17,-206 289.83,-206 289.83,-206 384.17,-206 384.17,-206 387.83,-206 391.5,-209.67 391.5,-213.33 391.5,-213.33 391.5,-220.67 391.5,-220.67 391.5,-224.33 387.83,-228 384.17,-228"/>
-<text text-anchor="middle" x="337" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">HeaderExtractor</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M279.17,-228C279.17,-228 184.83,-228 184.83,-228 181.17,-228 177.5,-224.33 177.5,-220.67 177.5,-220.67 177.5,-213.33 177.5,-213.33 177.5,-209.67 181.17,-206 184.83,-206 184.83,-206 279.17,-206 279.17,-206 282.83,-206 286.5,-209.67 286.5,-213.33 286.5,-213.33 286.5,-220.67 286.5,-220.67 286.5,-224.33 282.83,-228 279.17,-228"/>
+<text text-anchor="middle" x="232" y="-214.6" font-family="DejaVu Sans Mono" font-size="10.50">HeaderExtractor</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
 <title>DataViewerPanel&#45;&gt;outline/HeaderExtractor</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M429.69,-254.92C411.64,-247.73 387.28,-238.03 368.06,-230.37"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="368.62,-228.34 362.27,-228.07 367.07,-232.24 368.62,-228.34"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M316.05,-254.92C299.83,-247.79 277.97,-238.19 260.62,-230.57"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="261.25,-228.56 254.92,-228.07 259.57,-232.4 261.25,-228.56"/>
 </g>
 
 <g id="edge4" class="edge e&#45;host">
 <title>DataViewerPanel&#45;&gt;python/DataProcessor</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M471.2,-254.76C482.33,-247.57 497.32,-237.56 510,-228 528.99,-213.68 549.69,-195.94 563.62,-183.68"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="565.33,-184.97 568.43,-179.42 562.54,-181.83 565.33,-184.97"/>
-</g>
-
-<g id="node10" class="node f&#45;panel">
-<title>panel/communication/MessageBus</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M275.17,-179C275.17,-179 210.83,-179 210.83,-179 207.17,-179 203.5,-175.33 203.5,-171.67 203.5,-171.67 203.5,-164.33 203.5,-164.33 203.5,-160.67 207.17,-157 210.83,-157 210.83,-157 275.17,-157 275.17,-157 278.83,-157 282.5,-160.67 282.5,-164.33 282.5,-164.33 282.5,-171.67 282.5,-171.67 282.5,-175.33 278.83,-179 275.17,-179"/>
-<text text-anchor="middle" x="243" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">MessageBus</text>
-</g>
-
-<g id="edge30" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;panel/communication/MessageBus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M409.78,-205.97C374.14,-198.07 324.67,-187.11 288.86,-179.17"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="289.11,-177.07 282.79,-177.82 288.2,-181.17 289.11,-177.07"/>
-</g>
-
-<g id="node11" class="node f&#45;panel">
-<title>panel/HTMLGenerator</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M429.17,-179C429.17,-179 346.83,-179 346.83,-179 343.17,-179 339.5,-175.33 339.5,-171.67 339.5,-171.67 339.5,-164.33 339.5,-164.33 339.5,-160.67 343.17,-157 346.83,-157 346.83,-157 429.17,-157 429.17,-157 432.83,-157 436.5,-160.67 436.5,-164.33 436.5,-164.33 436.5,-171.67 436.5,-171.67 436.5,-175.33 432.83,-179 429.17,-179"/>
-<text text-anchor="middle" x="388" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">HTMLGenerator</text>
-</g>
-
-<g id="edge28" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;panel/HTMLGenerator</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M440.46,-205.8C430.8,-199.03 418.01,-190.05 407.48,-182.66"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="408.63,-180.9 402.51,-179.18 406.22,-184.34 408.63,-180.9"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M364.34,-254.91C408.81,-237.19 500.78,-200.55 548.99,-181.35"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="549.85,-183.27 554.64,-179.1 548.29,-179.37 549.85,-183.27"/>
 </g>
 
 <g id="node12" class="node f&#45;panel">
-<title>panel/ThemeManager</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M139.17,-179C139.17,-179 62.83,-179 62.83,-179 59.17,-179 55.5,-175.33 55.5,-171.67 55.5,-171.67 55.5,-164.33 55.5,-164.33 55.5,-160.67 59.17,-157 62.83,-157 62.83,-157 139.17,-157 139.17,-157 142.83,-157 146.5,-160.67 146.5,-164.33 146.5,-164.33 146.5,-171.67 146.5,-171.67 146.5,-175.33 142.83,-179 139.17,-179"/>
-<text text-anchor="middle" x="101" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">ThemeManager</text>
-</g>
-
-<g id="edge29" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;panel/ThemeManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M409.42,-207.47C406.24,-206.95 403.07,-206.45 400,-206 294.24,-190.43 266.87,-193.79 161,-179 158.41,-178.64 155.76,-178.25 153.09,-177.85"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="153.07,-175.73 146.82,-176.89 152.44,-179.88 153.07,-175.73"/>
+<title>panel/communication/MessageBus</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M127.17,-179C127.17,-179 62.83,-179 62.83,-179 59.17,-179 55.5,-175.33 55.5,-171.67 55.5,-171.67 55.5,-164.33 55.5,-164.33 55.5,-160.67 59.17,-157 62.83,-157 62.83,-157 127.17,-157 127.17,-157 130.83,-157 134.5,-160.67 134.5,-164.33 134.5,-164.33 134.5,-171.67 134.5,-171.67 134.5,-175.33 130.83,-179 127.17,-179"/>
+<text text-anchor="middle" x="95" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">MessageBus</text>
 </g>
 
 <g id="edge32" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;python/DataProcessor</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M481.82,-205.92C501.01,-198.7 526.96,-188.94 547.36,-181.27"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="548.35,-183.14 553.23,-179.07 546.87,-179.21 548.35,-183.14"/>
+<title>panel/UIController&#45;&gt;panel/communication/MessageBus</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M304.34,-207.54C301.52,-207.02 298.72,-206.5 296,-206 230.68,-193.95 214.32,-191.05 149,-179 146.22,-178.49 143.35,-177.96 140.46,-177.42"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="140.8,-175.35 134.52,-176.33 140.04,-179.48 140.8,-175.35"/>
+</g>
+
+<g id="node13" class="node f&#45;panel">
+<title>panel/HTMLGenerator</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M319.17,-179C319.17,-179 236.83,-179 236.83,-179 233.17,-179 229.5,-175.33 229.5,-171.67 229.5,-171.67 229.5,-164.33 229.5,-164.33 229.5,-160.67 233.17,-157 236.83,-157 236.83,-157 319.17,-157 319.17,-157 322.83,-157 326.5,-160.67 326.5,-164.33 326.5,-164.33 326.5,-171.67 326.5,-171.67 326.5,-175.33 322.83,-179 319.17,-179"/>
+<text text-anchor="middle" x="278" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">HTMLGenerator</text>
+</g>
+
+<g id="edge30" class="edge e&#45;host">
+<title>panel/UIController&#45;&gt;panel/HTMLGenerator</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M334.38,-205.8C323.9,-198.97 310,-189.89 298.62,-182.46"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="299.76,-180.7 293.59,-179.18 297.47,-184.22 299.76,-180.7"/>
 </g>
 
 <g id="node14" class="node f&#45;panel">
-<title>panel/communication/MessageTypes</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M262.17,-130C262.17,-130 185.83,-130 185.83,-130 182.17,-130 178.5,-126.33 178.5,-122.67 178.5,-122.67 178.5,-115.33 178.5,-115.33 178.5,-111.67 182.17,-108 185.83,-108 185.83,-108 262.17,-108 262.17,-108 265.83,-108 269.5,-111.67 269.5,-115.33 269.5,-115.33 269.5,-122.67 269.5,-122.67 269.5,-126.33 265.83,-130 262.17,-130"/>
-<text text-anchor="middle" x="224" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">MessageTypes</text>
+<title>panel/ThemeManager</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M467.17,-179C467.17,-179 390.83,-179 390.83,-179 387.17,-179 383.5,-175.33 383.5,-171.67 383.5,-171.67 383.5,-164.33 383.5,-164.33 383.5,-160.67 387.17,-157 390.83,-157 390.83,-157 467.17,-157 467.17,-157 470.83,-157 474.5,-160.67 474.5,-164.33 474.5,-164.33 474.5,-171.67 474.5,-171.67 474.5,-175.33 470.83,-179 467.17,-179"/>
+<text text-anchor="middle" x="429" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">ThemeManager</text>
 </g>
 
 <g id="edge31" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;panel/communication/MessageTypes</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M409.41,-207.53C406.23,-207 403.07,-206.48 400,-206 354.38,-198.87 224.45,-213.7 194,-179 182.39,-165.77 195.42,-147.25 207.75,-134.5"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="209.43,-135.8 212.22,-130.09 206.47,-132.81 209.43,-135.8"/>
+<title>panel/UIController&#45;&gt;panel/ThemeManager</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M367.14,-205.8C378.82,-198.86 394.37,-189.6 406.97,-182.11"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="408.08,-183.89 412.16,-179.02 405.93,-180.28 408.08,-183.89"/>
 </g>
 
-<g id="edge26" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;common/ErrorBoundary</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M464.14,-205.78C476.35,-192.71 499.22,-170.2 523,-157 543.3,-145.73 567.47,-137.43 588.79,-131.59"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="589.46,-133.58 594.72,-130 588.38,-129.52 589.46,-133.58"/>
+<g id="edge34" class="edge e&#45;host">
+<title>panel/UIController&#45;&gt;python/DataProcessor</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M395.72,-206.66C432.9,-199.06 485.48,-188.31 524.97,-180.24"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="525.73,-182.23 531.19,-178.97 524.89,-178.12 525.73,-182.23"/>
 </g>
 
-<g id="node20" class="node f&#45;common">
-<title>common/PerformanceTimer</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M616.17,-76C616.17,-76 515.83,-76 515.83,-76 512.17,-76 508.5,-72.33 508.5,-68.67 508.5,-68.67 508.5,-61.33 508.5,-61.33 508.5,-57.67 512.17,-54 515.83,-54 515.83,-54 616.17,-54 616.17,-54 619.83,-54 623.5,-57.67 623.5,-61.33 623.5,-61.33 623.5,-68.67 623.5,-68.67 623.5,-72.33 619.83,-76 616.17,-76"/>
-<text text-anchor="middle" x="566" y="-62.6" font-family="DejaVu Sans Mono" font-size="10.50">PerformanceTimer</text>
-</g>
-
-<g id="edge27" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;common/PerformanceTimer</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M460.02,-205.61C466.03,-193.53 476.72,-173.17 488,-157 498.79,-141.53 533.42,-102.34 552.71,-80.78"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="554.36,-82.07 556.8,-76.2 551.23,-79.27 554.36,-82.07"/>
-</g>
-
-<g id="node25" class="node f&#45;shared">
-<title>shared/plotLayout</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M267.17,-22C267.17,-22 202.83,-22 202.83,-22 199.17,-22 195.5,-18.33 195.5,-14.67 195.5,-14.67 195.5,-7.33 195.5,-7.33 195.5,-3.67 199.17,0 202.83,0 202.83,0 267.17,0 267.17,0 270.83,0 274.5,-3.67 274.5,-7.33 274.5,-7.33 274.5,-14.67 274.5,-14.67 274.5,-18.33 270.83,-22 267.17,-22"/>
-<text text-anchor="middle" x="235" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">plotLayout</text>
+<g id="node16" class="node f&#45;panel">
+<title>panel/communication/MessageTypes</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M165.17,-130C165.17,-130 88.83,-130 88.83,-130 85.17,-130 81.5,-126.33 81.5,-122.67 81.5,-122.67 81.5,-115.33 81.5,-115.33 81.5,-111.67 85.17,-108 88.83,-108 88.83,-108 165.17,-108 165.17,-108 168.83,-108 172.5,-111.67 172.5,-115.33 172.5,-115.33 172.5,-122.67 172.5,-122.67 172.5,-126.33 168.83,-130 165.17,-130"/>
+<text text-anchor="middle" x="127" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">MessageTypes</text>
 </g>
 
 <g id="edge33" class="edge e&#45;host">
-<title>panel/UIController&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M409.23,-206.24C378.89,-199.06 342.46,-188.88 330,-179 303.46,-157.94 259.22,-65.16 242.09,-27.73"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="243.97,-26.81 239.57,-22.22 240.15,-28.55 243.97,-26.81"/>
+<title>panel/UIController&#45;&gt;panel/communication/MessageTypes</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M304.38,-206.98C259.85,-197.96 197.31,-184.64 187,-179 167.08,-168.12 149.24,-148.71 138.29,-135.14"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="139.67,-133.49 134.31,-130.07 136.37,-136.09 139.67,-133.49"/>
 </g>
 
-<g id="node22" class="node f&#45;shared">
+<g id="edge28" class="edge e&#45;host">
+<title>panel/UIController&#45;&gt;common/ErrorBoundary</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M395.58,-206.34C421.95,-200.04 455.45,-190.79 484,-179 502.4,-171.41 504.11,-163.28 523,-157 544.48,-149.86 677.9,-134.44 755.04,-125.94"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="755.68,-127.98 761.41,-125.23 755.22,-123.8 755.68,-127.98"/>
+</g>
+
+<g id="node22" class="node f&#45;common">
+<title>common/PerformanceTimer</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M622.17,-76C622.17,-76 521.83,-76 521.83,-76 518.17,-76 514.5,-72.33 514.5,-68.67 514.5,-68.67 514.5,-61.33 514.5,-61.33 514.5,-57.67 518.17,-54 521.83,-54 521.83,-54 622.17,-54 622.17,-54 625.83,-54 629.5,-57.67 629.5,-61.33 629.5,-61.33 629.5,-68.67 629.5,-68.67 629.5,-72.33 625.83,-76 622.17,-76"/>
+<text text-anchor="middle" x="572" y="-62.6" font-family="DejaVu Sans Mono" font-size="10.50">PerformanceTimer</text>
+</g>
+
+<g id="edge29" class="edge e&#45;host">
+<title>panel/UIController&#45;&gt;common/PerformanceTimer</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M351.91,-206C354.82,-193.16 361.53,-170.9 375,-157 398.86,-132.36 488.46,-96.73 538.19,-78.21"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="539.16,-80.09 544.05,-76.04 537.7,-76.16 539.16,-80.09"/>
+</g>
+
+<g id="node27" class="node f&#45;shared">
+<title>shared/plotLayout</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M166.17,-22C166.17,-22 101.83,-22 101.83,-22 98.17,-22 94.5,-18.33 94.5,-14.67 94.5,-14.67 94.5,-7.33 94.5,-7.33 94.5,-3.67 98.17,0 101.83,0 101.83,0 166.17,0 166.17,0 169.83,0 173.5,-3.67 173.5,-7.33 173.5,-7.33 173.5,-14.67 173.5,-14.67 173.5,-18.33 169.83,-22 166.17,-22"/>
+<text text-anchor="middle" x="134" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">plotLayout</text>
+</g>
+
+<g id="edge35" class="edge e&#45;host">
+<title>panel/UIController&#45;&gt;shared/plotLayout</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M304.33,-206.9C272.64,-199.85 233.9,-189.54 221,-179 214.45,-173.65 161.7,-67.94 141.67,-27.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="143.51,-26.5 138.96,-22.06 139.74,-28.36 143.51,-26.5"/>
+</g>
+
+<g id="node24" class="node f&#45;shared">
 <title>shared/ids</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-22C46.67,-22 7.33,-22 7.33,-22 3.67,-22 0,-18.33 0,-14.67 0,-14.67 0,-7.33 0,-7.33 0,-3.67 3.67,0 7.33,0 7.33,0 46.67,0 46.67,0 50.33,0 54,-3.67 54,-7.33 54,-7.33 54,-14.67 54,-14.67 54,-18.33 50.33,-22 46.67,-22"/>
 <text text-anchor="middle" x="27" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">ids</text>
 </g>
 
-<g id="edge22" class="edge e&#45;host">
-<title>outline/HeaderExtractor&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M282.21,-207.3C279.09,-206.85 276.01,-206.41 273,-206 222.67,-199.08 81.83,-215.01 46,-179 5.48,-138.27 16.05,-61.42 23.09,-28.09"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="25.18,-28.34 24.43,-22.03 21.08,-27.43 25.18,-28.34"/>
-</g>
-
-<g id="edge34" class="edge e&#45;host">
-<title>panel/communication/MessageBus&#45;&gt;panel/communication/MessageTypes</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M238.78,-156.57C236.34,-150.52 233.21,-142.78 230.46,-135.98"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="232.27,-134.85 228.07,-130.08 228.38,-136.43 232.27,-134.85"/>
-</g>
-
-<g id="node15" class="node f&#45;panel">
-<title>panel/WebviewAssets</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M492.17,-130C492.17,-130 409.83,-130 409.83,-130 406.17,-130 402.5,-126.33 402.5,-122.67 402.5,-122.67 402.5,-115.33 402.5,-115.33 402.5,-111.67 406.17,-108 409.83,-108 409.83,-108 492.17,-108 492.17,-108 495.83,-108 499.5,-111.67 499.5,-115.33 499.5,-115.33 499.5,-122.67 499.5,-122.67 499.5,-126.33 495.83,-130 492.17,-130"/>
-<text text-anchor="middle" x="451" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">WebviewAssets</text>
-</g>
-
-<g id="edge23" class="edge e&#45;host">
-<title>panel/HTMLGenerator&#45;&gt;panel/WebviewAssets</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M401.67,-156.8C410.67,-150.09 422.56,-141.22 432.42,-133.86"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="433.8,-135.45 437.36,-130.18 431.29,-132.08 433.8,-135.45"/>
-</g>
-
-<g id="node23" class="node f&#45;shared">
-<title>shared/icons</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M352.67,-22C352.67,-22 313.33,-22 313.33,-22 309.67,-22 306,-18.33 306,-14.67 306,-14.67 306,-7.33 306,-7.33 306,-3.67 309.67,0 313.33,0 313.33,0 352.67,0 352.67,0 356.33,0 360,-3.67 360,-7.33 360,-7.33 360,-14.67 360,-14.67 360,-18.33 356.33,-22 352.67,-22"/>
-<text text-anchor="middle" x="333" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">icons</text>
-</g>
-
 <g id="edge24" class="edge e&#45;host">
-<title>panel/HTMLGenerator&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M384.39,-156.83C375.03,-130.44 349.89,-59.6 338.61,-27.82"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="340.54,-26.96 336.55,-22.01 336.58,-28.36 340.54,-26.96"/>
-</g>
-
-<g id="node24" class="node f&#45;shared">
-<title>shared/time</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M424.67,-22C424.67,-22 385.33,-22 385.33,-22 381.67,-22 378,-18.33 378,-14.67 378,-14.67 378,-7.33 378,-7.33 378,-3.67 381.67,0 385.33,0 385.33,0 424.67,0 424.67,0 428.33,0 432,-3.67 432,-7.33 432,-7.33 432,-14.67 432,-14.67 432,-18.33 428.33,-22 424.67,-22"/>
-<text text-anchor="middle" x="405" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">time</text>
-</g>
-
-<g id="edge25" class="edge e&#45;host">
-<title>panel/HTMLGenerator&#45;&gt;shared/time</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M388.98,-156.97C390.14,-145.23 392.14,-125.2 394,-108 397.03,-79.95 400.83,-47.33 403.08,-28.24"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="405.18,-28.29 403.8,-22.08 401.01,-27.8 405.18,-28.29"/>
-</g>
-
-<g id="edge37" class="edge e&#45;host">
-<title>python/DataProcessor&#45;&gt;python/PythonManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M618.19,-156.92C646.22,-149.51 684.38,-139.44 713.75,-131.68"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="714.61,-133.63 719.88,-130.07 713.54,-129.57 714.61,-133.63"/>
+<title>outline/HeaderExtractor&#45;&gt;shared/ids</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M177.01,-206.68C123.8,-197.42 50.51,-183.91 46,-179 7.29,-136.93 16.7,-61.43 23.25,-28.32"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="25.34,-28.58 24.51,-22.28 21.23,-27.73 25.34,-28.58"/>
 </g>
 
 <g id="edge36" class="edge e&#45;host">
-<title>python/DataProcessor&#45;&gt;common/PerformanceTimer</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M578.61,-156.95C576.17,-139.4 571.14,-103.06 568.22,-82.02"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="570.29,-81.67 567.39,-76.01 566.13,-82.24 570.29,-81.67"/>
+<title>panel/communication/MessageBus&#45;&gt;panel/communication/MessageTypes</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M102.1,-156.57C106.39,-150.28 111.92,-142.15 116.68,-135.16"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="118.5,-136.22 120.14,-130.08 115.02,-133.86 118.5,-136.22"/>
 </g>
 
-<g id="edge35" class="edge e&#45;host">
-<title>panel/communication/MessageTypes&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M225.05,-107.84C226.96,-89.44 231.01,-50.49 233.31,-28.33"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="235.4,-28.47 233.93,-22.29 231.22,-28.04 235.4,-28.47"/>
+<g id="node17" class="node f&#45;panel">
+<title>panel/WebviewAssets</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M395.17,-130C395.17,-130 312.83,-130 312.83,-130 309.17,-130 305.5,-126.33 305.5,-122.67 305.5,-122.67 305.5,-115.33 305.5,-115.33 305.5,-111.67 309.17,-108 312.83,-108 312.83,-108 395.17,-108 395.17,-108 398.83,-108 402.5,-111.67 402.5,-115.33 402.5,-115.33 402.5,-122.67 402.5,-122.67 402.5,-126.33 398.83,-130 395.17,-130"/>
+<text text-anchor="middle" x="354" y="-116.6" font-family="DejaVu Sans Mono" font-size="10.50">WebviewAssets</text>
 </g>
 
-<g id="edge42" class="edge e&#45;host">
-<title>python/PythonManager&#45;&gt;python/ExtensionVirtualEnvironmentManager</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M775.74,-107.97C787.63,-101.25 803.64,-92.2 817.75,-84.23"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="819.06,-85.9 823.25,-81.12 816.99,-82.24 819.06,-85.9"/>
+<g id="edge25" class="edge e&#45;host">
+<title>panel/HTMLGenerator&#45;&gt;panel/WebviewAssets</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M294.49,-156.8C305.62,-149.92 320.42,-140.76 332.48,-133.31"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="333.8,-134.96 337.8,-130.02 331.59,-131.39 333.8,-134.96"/>
 </g>
 
-<g id="edge43" class="edge e&#45;host">
-<title>python/PythonManager&#45;&gt;python/officialPythonExtensionApiUtils</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M806.63,-108.7C850.3,-100.36 914.81,-88.02 963.29,-78.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="963.92,-80.77 969.42,-77.58 963.13,-76.65 963.92,-80.77"/>
+<g id="node25" class="node f&#45;shared">
+<title>shared/icons</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M251.67,-22C251.67,-22 212.33,-22 212.33,-22 208.67,-22 205,-18.33 205,-14.67 205,-14.67 205,-7.33 205,-7.33 205,-3.67 208.67,0 212.33,0 212.33,0 251.67,0 251.67,0 255.33,0 259,-3.67 259,-7.33 259,-7.33 259,-14.67 259,-14.67 259,-18.33 255.33,-22 251.67,-22"/>
+<text text-anchor="middle" x="232" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">icons</text>
 </g>
 
-<g id="edge40" class="edge e&#45;host">
-<title>python/PythonManager&#45;&gt;common/PerformanceTimer</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M720.98,-107.97C689.08,-99.33 642.98,-86.85 609.36,-77.74"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="609.57,-75.63 603.23,-76.08 608.48,-79.68 609.57,-75.63"/>
+<g id="edge26" class="edge e&#45;host">
+<title>panel/HTMLGenerator&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M274.98,-156.83C267.15,-130.44 246.13,-59.6 236.69,-27.82"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="238.69,-27.16 234.97,-22.01 234.66,-28.36 238.69,-27.16"/>
 </g>
 
-<g id="node21" class="node f&#45;common">
-<title>common/runProcess</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M836.17,-22C836.17,-22 771.83,-22 771.83,-22 768.17,-22 764.5,-18.33 764.5,-14.67 764.5,-14.67 764.5,-7.33 764.5,-7.33 764.5,-3.67 768.17,0 771.83,0 771.83,0 836.17,0 836.17,0 839.83,0 843.5,-3.67 843.5,-7.33 843.5,-7.33 843.5,-14.67 843.5,-14.67 843.5,-18.33 839.83,-22 836.17,-22"/>
-<text text-anchor="middle" x="804" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">runProcess</text>
+<g id="node26" class="node f&#45;shared">
+<title>shared/time</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M323.67,-22C323.67,-22 284.33,-22 284.33,-22 280.67,-22 277,-18.33 277,-14.67 277,-14.67 277,-7.33 277,-7.33 277,-3.67 280.67,0 284.33,0 284.33,0 323.67,0 323.67,0 327.33,0 331,-3.67 331,-7.33 331,-7.33 331,-14.67 331,-14.67 331,-18.33 327.33,-22 323.67,-22"/>
+<text text-anchor="middle" x="304" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">time</text>
 </g>
 
-<g id="edge41" class="edge e&#45;host">
-<title>python/PythonManager&#45;&gt;common/runProcess</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M759.86,-107.79C762.61,-93.98 768.5,-68.79 778,-49 781.66,-41.37 786.85,-33.6 791.63,-27.17"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="793.52,-28.15 795.51,-22.11 790.19,-25.6 793.52,-28.15"/>
+<g id="edge27" class="edge e&#45;host">
+<title>panel/HTMLGenerator&#45;&gt;shared/time</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M279.71,-156.83C284.11,-130.55 295.92,-60.19 301.28,-28.22"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="303.4,-28.27 302.32,-22.01 299.26,-27.58 303.4,-28.27"/>
+</g>
+
+<g id="edge39" class="edge e&#45;host">
+<title>python/DataProcessor&#45;&gt;python/PythonManager</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M596.49,-156.8C607.62,-149.92 622.42,-140.76 634.48,-133.31"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="635.8,-134.96 639.8,-130.02 633.59,-131.39 635.8,-134.96"/>
 </g>
 
 <g id="edge38" class="edge e&#45;host">
+<title>python/DataProcessor&#45;&gt;common/PerformanceTimer</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M579.2,-156.95C577.81,-139.4 574.94,-103.06 573.27,-82.02"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="575.36,-81.83 572.79,-76.01 571.17,-82.16 575.36,-81.83"/>
+</g>
+
+<g id="edge37" class="edge e&#45;host">
+<title>panel/communication/MessageTypes&#45;&gt;shared/plotLayout</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M127.67,-107.84C128.89,-89.44 131.46,-50.49 132.92,-28.33"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="135.02,-28.41 133.32,-22.29 130.83,-28.14 135.02,-28.41"/>
+</g>
+
+<g id="edge44" class="edge e&#45;host">
+<title>python/PythonManager&#45;&gt;python/ExtensionVirtualEnvironmentManager</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M674.12,-107.97C686.28,-101.25 702.63,-92.2 717.05,-84.23"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="718.44,-85.86 722.67,-81.12 716.4,-82.19 718.44,-85.86"/>
+</g>
+
+<g id="edge45" class="edge e&#45;host">
+<title>python/PythonManager&#45;&gt;python/officialPythonExtensionApiUtils</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M704.75,-110.27C761.11,-101.34 854.19,-86.58 917.24,-76.58"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="917.65,-78.64 923.25,-75.63 916.99,-74.5 917.65,-78.64"/>
+</g>
+
+<g id="edge42" class="edge e&#45;host">
+<title>python/PythonManager&#45;&gt;common/PerformanceTimer</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M639.8,-107.97C626.64,-99.83 607.96,-88.26 593.54,-79.33"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="594.64,-77.55 588.43,-76.17 592.43,-81.12 594.64,-77.55"/>
+</g>
+
+<g id="node23" class="node f&#45;common">
+<title>common/runProcess</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M736.17,-22C736.17,-22 671.83,-22 671.83,-22 668.17,-22 664.5,-18.33 664.5,-14.67 664.5,-14.67 664.5,-7.33 664.5,-7.33 664.5,-3.67 668.17,0 671.83,0 671.83,0 736.17,0 736.17,0 739.83,0 743.5,-3.67 743.5,-7.33 743.5,-7.33 743.5,-14.67 743.5,-14.67 743.5,-18.33 739.83,-22 736.17,-22"/>
+<text text-anchor="middle" x="704" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">runProcess</text>
+</g>
+
+<g id="edge43" class="edge e&#45;host">
+<title>python/PythonManager&#45;&gt;common/runProcess</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M658.22,-107.8C661.45,-94 668.16,-68.82 678,-49 681.76,-41.42 686.97,-33.66 691.73,-27.22"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="693.63,-28.2 695.59,-22.15 690.28,-25.65 693.63,-28.2"/>
+</g>
+
+<g id="edge40" class="edge e&#45;host">
 <title>python/ExtensionVirtualEnvironmentManager&#45;&gt;common/runProcess</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M836.69,-48.96C830.49,-41.94 823.12,-33.62 816.96,-26.65"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="818.46,-25.17 812.91,-22.07 815.31,-27.96 818.46,-25.17"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M736.69,-48.96C730.49,-41.94 723.12,-33.62 716.96,-26.65"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="718.46,-25.17 712.91,-22.07 715.31,-27.96 718.46,-25.17"/>
 </g>
 </g>
 </svg></div><figcaption>Thick borders mark the four classes on the main request path: DataViewerPanel, UIController, DataProcessor, PythonManager. Hover a box in the HTML page for its full path.</figcaption></figure>

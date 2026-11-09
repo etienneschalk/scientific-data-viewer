@@ -124,11 +124,35 @@ export class ExtensionVirtualEnvironmentManagerUI {
     }
 
     /**
+     * One-click set up (Getting Started walkthrough): create the environment
+     * if there is none, then use it. An existing environment is reused (it
+     * is prepared, and upgraded if needed, when the setting is turned on).
+     */
+    async setUp(): Promise<void> {
+        if (!this.extensionEnvManager.exists) {
+            await this.create();
+            return;
+        }
+        await this.setUseExtensionOwnEnvironment(true);
+        vscode.window.showInformationMessage(
+            getUseExtensionOwnEnvironment()
+                ? 'The extension now uses its own Python environment.'
+                : 'The extension own Python environment already exists.',
+        );
+    }
+
+    /**
      * Create the extension virtual environment
      */
     private async create(): Promise<void> {
         try {
-            await this.extensionEnvManager.create();
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Scientific Data Viewer: creating its Python environment with uv (this can take a few minutes)…',
+                },
+                () => this.extensionEnvManager.create(),
+            );
         } catch (error) {
             Logger.error(
                 `🔧 ❌ Failed to create extension environment: ${error}`,

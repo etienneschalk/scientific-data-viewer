@@ -291,8 +291,11 @@ def cmd_vsix(args: argparse.Namespace) -> int:
         "src/panel/webview/styles.css",
         "python/get_data_info.py",
         "python/check_package_availability.py",
+        # Opened by scientificDataViewer.openSampleFile (src/onboarding/sampleFile.ts)
+        "media/samples/sample_climate.nc",
     }
-    # Icons named anywhere in contributes (editors, commands, languages...)
+    # Icons and walkthrough media named anywhere in contributes (editors,
+    # commands, languages, walkthroughs...)
     required |= set(
         re.findall(r"\"(media/[^\"]+)\"", json.dumps(manifest.get("contributes", {})))
     )

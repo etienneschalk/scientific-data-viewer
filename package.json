@@ -147,6 +147,30 @@
                 "title": "Run Healthcheck",
                 "category": "Scientific Data Viewer",
                 "description": "Run a health check on the Python environment and required packages"
+            },
+            {
+                "command": "scientificDataViewer.openSampleFile",
+                "title": "Open Sample File",
+                "category": "Scientific Data Viewer",
+                "description": "Opens a small sample NetCDF file shipped with the extension (copied to the extension storage first)"
+            },
+            {
+                "command": "scientificDataViewer.setUpExtensionOwnEnvironment",
+                "title": "Set Up Extension-Managed Python Environment (uv)",
+                "category": "Scientific Data Viewer",
+                "description": "Creates the extension's own Python environment with uv if needed, then turns on useExtensionOwnEnvironment"
+            },
+            {
+                "command": "scientificDataViewer.selectPythonInterpreter",
+                "title": "Use My Own Python Interpreter",
+                "category": "Scientific Data Viewer",
+                "description": "Opens Python: Select Interpreter (Python extension), or the overridePythonInterpreter setting when the Python extension is not installed"
+            },
+            {
+                "command": "scientificDataViewer.openWalkthrough",
+                "title": "Open Getting Started Walkthrough",
+                "category": "Scientific Data Viewer",
+                "description": "Opens the Getting Started walkthrough: set up Python, open the sample file, explore and plot"
             }
         ],
         "menus": {
@@ -231,6 +255,22 @@
                 },
                 {
                     "command": "scientificDataViewer.healthcheck",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openSampleFile",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.setUpExtensionOwnEnvironment",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.selectPythonInterpreter",
+                    "when": "true"
+                },
+                {
+                    "command": "scientificDataViewer.openWalkthrough",
                     "when": "true"
                 }
             ],
@@ -393,6 +433,57 @@
                 }
             ]
         },
+        "walkthroughs": [
+            {
+                "id": "gettingStarted",
+                "title": "Get Started with Scientific Data Viewer",
+                "description": "Set up Python, open a sample NetCDF file and make your first plot in about a minute.",
+                "steps": [
+                    {
+                        "id": "setUpPython",
+                        "title": "Set up Python",
+                        "description": "The viewer reads files with xarray, in Python. Let the extension create and manage its own environment (needs [uv](https://docs.astral.sh/uv/getting-started/installation/)), or use an interpreter of yours that has xarray.\n[Let the Extension Manage Python (uv)](command:scientificDataViewer.setUpExtensionOwnEnvironment)\n[Use My Own Interpreter](command:scientificDataViewer.selectPythonInterpreter)\nNot sure what is installed? [Run the healthcheck](command:scientificDataViewer.healthcheck).",
+                        "media": {
+                            "markdown": "media/walkthrough/setup-python.md"
+                        },
+                        "completionEvents": [
+                            "onCommand:scientificDataViewer.setUpExtensionOwnEnvironment",
+                            "onCommand:scientificDataViewer.selectPythonInterpreter",
+                            "onCommand:scientificDataViewer.healthcheck",
+                            "onSettingChanged:scientificDataViewer.python.useExtensionOwnEnvironment",
+                            "onSettingChanged:scientificDataViewer.python.overridePythonInterpreter"
+                        ]
+                    },
+                    {
+                        "id": "openSampleFile",
+                        "title": "Open the sample file",
+                        "description": "A small synthetic climate dataset (NetCDF-4, CF conventions) ships with the extension: monthly temperature maps, a global mean series and a group of station series.\n[Open Sample File](command:scientificDataViewer.openSampleFile)",
+                        "media": {
+                            "markdown": "media/walkthrough/open-sample.md"
+                        },
+                        "completionEvents": [
+                            "onCommand:scientificDataViewer.openSampleFile"
+                        ]
+                    },
+                    {
+                        "id": "exploreAndPlot",
+                        "title": "Explore and plot",
+                        "description": "Browse groups, dimensions, variables and attributes, then click **Create Plot** on a variable. **Plot parameters** and **Dimension slices** refine the plot.\n[Open Sample File](command:scientificDataViewer.openSampleFile)",
+                        "media": {
+                            "markdown": "media/walkthrough/explore-and-plot.md"
+                        }
+                    },
+                    {
+                        "id": "learnMore",
+                        "title": "Learn more",
+                        "description": "NetCDF, CDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000 and Kerchunk are supported. Tune plots and display in the settings; the README has the full documentation.\n[Show Settings](command:scientificDataViewer.showSettings)\n[Open the Documentation](https://github.com/etienneschalk/scientific-data-viewer#readme)",
+                        "media": {
+                            "markdown": "media/walkthrough/learn-more.md"
+                        }
+                    }
+                ]
+            }
+        ],
         "customEditors": [
             {
                 "viewType": "netcdfEditor",

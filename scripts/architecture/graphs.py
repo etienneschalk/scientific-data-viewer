@@ -43,6 +43,8 @@ HOST_LAYERS = [
         "StatusBarItem",
         "python/ExtensionVirtualEnvironmentManagerUI",
         "common/HealthcheckManager",
+        "onboarding/sampleFile",
+        "onboarding/walkthrough",
     ],
     ["DataViewerPanel"],
     ["panel/UIController", "outline/OutlineProvider", "outline/HeaderExtractor"],
@@ -84,6 +86,8 @@ FOLDER_CLASS = {
     "python": "f-python",
     "common": "f-common",
     "shared": "f-shared",
+    # Getting Started walkthrough commands: drawn like the entry point
+    "onboarding": "f-entry",
 }
 WEBVIEW_KEY = {"main", "bus", "plotParams"}
 

@@ -31,7 +31,7 @@ LEGEND = [
     ("ls warn", "kill signal"),
 ]
 HOST_LEGEND = [
-    ("sw host", "src/ (entry)"),
+    ("sw host", "src/ (entry), src/onboarding/"),
     ("sw web", "src/panel/"),
     ("sw ext", "src/outline/"),
     ("sw py", "src/python/"),

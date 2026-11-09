@@ -25,6 +25,12 @@ export const CMD_MANAGE_EXTENSION_OWN_ENVIRONMENT =
 export const CMD_EXPORT_WEBVIEW = 'scientificDataViewer.exportWebview';
 export const CMD_TOGGLE_DEV_MODE = 'scientificDataViewer.toggleDevMode';
 export const CMD_HEALTHCHECK = 'scientificDataViewer.healthcheck';
+export const CMD_OPEN_SAMPLE_FILE = 'scientificDataViewer.openSampleFile';
+export const CMD_SET_UP_EXTENSION_OWN_ENVIRONMENT =
+    'scientificDataViewer.setUpExtensionOwnEnvironment';
+export const CMD_SELECT_PYTHON_INTERPRETER =
+    'scientificDataViewer.selectPythonInterpreter';
+export const CMD_OPEN_WALKTHROUGH = 'scientificDataViewer.openWalkthrough';
 
 // Tree view ID
 export const OUTLINE_TREE_VIEW_ID = 'scientificDataViewer.outline';

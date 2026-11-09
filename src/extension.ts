@@ -39,6 +39,10 @@ import {
     CMD_EXPORT_WEBVIEW,
     CMD_TOGGLE_DEV_MODE,
     CMD_HEALTHCHECK,
+    CMD_OPEN_SAMPLE_FILE,
+    CMD_SET_UP_EXTENSION_OWN_ENVIRONMENT,
+    CMD_SELECT_PYTHON_INTERPRETER,
+    CMD_OPEN_WALKTHROUGH,
     OUTLINE_TREE_VIEW_ID,
     getDevMode,
     getOverridePythonInterpreter,
@@ -54,6 +58,11 @@ import {
     openHealthcheckReport,
     runHealthcheck,
 } from './common/HealthcheckManager';
+import { openSampleFile } from './onboarding/sampleFile';
+import {
+    openWalkthrough,
+    selectPythonInterpreter,
+} from './onboarding/walkthrough';
 
 /** Kept for `deactivate`, which must stop running Python subprocesses. */
 let activePythonManager: PythonManager | undefined;
@@ -252,6 +261,30 @@ export function activate(context: vscode.ExtensionContext) {
             CMD_HEALTHCHECK,
             commandHandlerHealthcheck(pythonManager, extensionEnvManager),
         ),
+        vscode.commands.registerCommand(
+            CMD_OPEN_SAMPLE_FILE,
+            commandHandlerOpenSampleFile(context),
+        ),
+        vscode.commands.registerCommand(
+            CMD_SET_UP_EXTENSION_OWN_ENVIRONMENT,
+            async () => {
+                Logger.info(
+                    '🎮 🐍 🔧 Command: Set up the extension own environment',
+                );
+                await extensionVirtualEnvironmentManagerUI.setUp();
+            },
+        ),
+        vscode.commands.registerCommand(
+            CMD_SELECT_PYTHON_INTERPRETER,
+            async () => {
+                Logger.info('🎮 🐍 Command: Select Python interpreter');
+                await selectPythonInterpreter();
+            },
+        ),
+        vscode.commands.registerCommand(CMD_OPEN_WALKTHROUGH, async () => {
+            Logger.info('🎮 🎓 Command: Open Getting Started walkthrough');
+            await openWalkthrough(context.extension.id);
+        }),
     );
     Logger.info(`🧩 🚀 Commands registered successfully`);
 
@@ -528,6 +561,27 @@ function commandHandlerExportWebview(): () => void {
             Logger.error(`🎮 🖼️ ❌ Failed to export webview: ${error}`);
             vscode.window.showErrorMessage(
                 `Failed to export webview content: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+        }
+    };
+}
+
+function commandHandlerOpenSampleFile(
+    context: vscode.ExtensionContext,
+): () => Promise<void> {
+    return async () => {
+        Logger.info('🎮 🎓 Command: Open sample file');
+        try {
+            await openSampleFile(
+                context.extensionUri,
+                context.globalStorageUri,
+            );
+        } catch (error) {
+            Logger.error(`🎓 ❌ Failed to open the sample file: ${error}`);
+            vscode.window.showErrorMessage(
+                `Failed to open the sample file: ${
                     error instanceof Error ? error.message : String(error)
                 }`,
             );
