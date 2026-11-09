@@ -9,7 +9,7 @@ import {
     PLOT_PACKAGES,
 } from '../python/ExtensionVirtualEnvironmentManager';
 import { ErrorBoundary } from './ErrorBoundary';
-import { getDisplayName, getVersion } from './vscodeutils';
+import { getProductName, getVersion } from './vscodeutils';
 import {
     getDevMode,
     getOverridePythonInterpreter,
@@ -121,7 +121,7 @@ export async function runHealthcheck(
     Logger.info(`🏥 Healthcheck completed with status: ${overallStatus}`);
     return {
         extensionInfo: {
-            name: getDisplayName(),
+            name: getProductName(),
             version: getVersion(),
             timestamp: new Date(),
         },

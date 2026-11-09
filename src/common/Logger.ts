@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getDisplayName } from './vscodeutils';
+import { getProductName } from './vscodeutils';
 import { threadId } from 'worker_threads';
 
 export class Logger {
@@ -11,7 +11,7 @@ export class Logger {
     public static initialize(): void {
         if (!this.outputChannel) {
             this.outputChannel =
-                vscode.window.createOutputChannel(getDisplayName());
+                vscode.window.createOutputChannel(getProductName());
         }
     }
 

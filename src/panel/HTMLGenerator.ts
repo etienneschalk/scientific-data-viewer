@@ -1,4 +1,4 @@
-import { getDisplayName, getVersion } from '../common/vscodeutils';
+import { getProductName, getVersion } from '../common/vscodeutils';
 import { ICONS } from '../shared/icons';
 import { formatLoadTime } from '../shared/time';
 import {
@@ -43,7 +43,7 @@ export class HTMLGenerator {
     <meta charset="UTF-8">
     ${cspBlock}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${getDisplayName()}</title>
+    <title>${getProductName()}</title>
     ${cssBlock}
 </head>
 <body>
@@ -191,7 +191,7 @@ export class HTMLGenerator {
     ): string {
         return /*html*/ `
     <div class="header">
-        <div class="title" id="top-level-title">${getDisplayName()} <small>v${getVersion()} ${
+        <div class="title" id="top-level-title">${getProductName()} <small>v${getVersion()} ${
             devMode ? escapeHtml(`<${panelId}>`) : ''
         }</small></div>
         <div class="controls" id="header-controls">

@@ -14,7 +14,7 @@ import {
     getVersion,
     setPackageJson,
     getPackageJsonFromExtensionContext,
-    getDisplayName,
+    getProductName,
     getAllSupportedExtensions,
     getShowDialogFilters,
     getCustomEditorViewTypes,
@@ -64,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     Logger.initialize();
 
-    Logger.info(`🧩 ⚛️ ${getDisplayName()} extension is now active!`);
+    Logger.info(`🧩 ⚛️ ${getProductName()} extension is now active!`);
     Logger.info(`🧩 🏷️ Version: ${getVersion()}`);
 
     // Initialize error boundary
@@ -72,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
     errorBoundary.registerGlobalHandler((error) => {
         Logger.error(`❌ Global error: ${error.message}`);
         vscode.window.showErrorMessage(
-            `${getDisplayName()} Error: ${error.message}`,
+            `${getProductName()} Error: ${error.message}`,
         );
     });
 
@@ -264,7 +264,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.workspace.onDidOpenTextDocument(
             handlerOnDidOpenTextDocument(supportedExtensions),
         ),
-        // Set up configuration change listener for all ${getDisplayName()} settings
+        // Set up configuration change listener for all ${getProductName()} settings
         vscode.workspace.onDidChangeConfiguration(
             handlerOnDidChangeConfiguration(
                 pythonManager,
@@ -332,7 +332,7 @@ export function deactivate() {
     // Panes-related data is disposed by panes themselves.
     // OutlineProvider
 
-    Logger.info(`🧩 🔧 ${getDisplayName()} extension is now deactivated!`);
+    Logger.info(`🧩 🔧 ${getProductName()} extension is now deactivated!`);
     Logger.info('🧩 👋 Last word before disposing the Logger.');
     Logger.dispose();
 }
@@ -388,7 +388,7 @@ function handlerOnDidChangeConfiguration(
 ): (e: vscode.ConfigurationChangeEvent) => void {
     return async (event: vscode.ConfigurationChangeEvent) => {
         if (event.affectsConfiguration(SDV_EXTENSION_ID)) {
-            Logger.info(`🎛️ ${getDisplayName()} configuration changed`);
+            Logger.info(`🎛️ ${getProductName()} configuration changed`);
 
             // Both can change at once (e.g. settings.json edited by hand):
             // log each, refresh once.
@@ -610,7 +610,7 @@ function commandHandlerOpenDeveloperTools(): () => void {
 
 function commandHandlerShowSettings(): () => void {
     return () => {
-        Logger.info(`🎮 🎛️ Command: Opening ${getDisplayName()} settings...`);
+        Logger.info(`🎮 🎛️ Command: Opening ${getProductName()} settings...`);
         vscode.commands.executeCommand(
             'workbench.action.openSettings',
             SDV_EXTENSION_ID,

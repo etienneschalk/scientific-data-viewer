@@ -1,10 +1,14 @@
 {
     "name": "scientific-data-viewer",
-    "displayName": "Scientific Data Viewer",
-    "description": "A VSCode extension for viewing scientific data files including NetCDF, Zarr, HDF5, GRIB, GeoTIFF, and more",
+    "displayName": "Scientific Data Viewer – NetCDF, Zarr, HDF5, GRIB, GeoTIFF",
+    "description": "View NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF and Kerchunk files in VS Code: browse dimensions, variables and attributes, and plot any variable with xarray.",
     "version": "0.13.0",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
+    "galleryBanner": {
+        "color": "#1f2a3c",
+        "theme": "dark"
+    },
     "engines": {
         "vscode": "^1.74.0",
         "node": ">=22.0.0"
@@ -12,22 +16,39 @@
     "extensionDependencies": [],
     "categories": [
         "Data Science",
-        "Visualization",
-        "Other"
+        "Visualization"
     ],
     "keywords": [
         "netcdf",
+        "nc",
+        "netcdf4",
         "zarr",
         "hdf5",
+        "h5",
         "grib",
+        "grib2",
         "geotiff",
-        "rasterio",
-        "scientific-data",
+        "cog",
+        "jpeg2000",
+        "cdf",
+        "kerchunk",
         "xarray",
+        "datatree",
+        "scientific-data",
+        "data-viewer",
         "data-visualization",
-        "climate-data",
+        "plot",
+        "climate",
+        "weather",
+        "earth-observation",
+        "remote-sensing",
+        "oceanography",
+        "meteorology",
+        "copernicus",
+        "era5",
+        "cmip",
         "geospatial",
-        "cfgrib"
+        "rasterio"
     ],
     "activationEvents": [
         "onLanguage:netcdf",

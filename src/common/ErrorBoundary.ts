@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { ErrorContext, ErrorHandler } from '../types';
-import { getDisplayName } from './vscodeutils';
+import { getProductName } from './vscodeutils';
 
 export class ErrorBoundary {
     private static instance: ErrorBoundary;
@@ -107,7 +107,7 @@ export class ErrorBoundary {
 
         vscode.window
             .showErrorMessage(
-                `${getDisplayName()} Error: ${userMessage}`,
+                `${getProductName()} Error: ${userMessage}`,
                 'Show Details',
                 'Report Issue',
             )

@@ -133,8 +133,17 @@ export function getVersion(): string {
     return getPackageJson().version;
 }
 
-export function getDisplayName(): string {
-    return getPackageJson().displayName;
+/**
+ * Short name shown in the UI: output channel, viewer title and outline,
+ * error messages, status bar, healthcheck. Not package.json "displayName":
+ * that one also lists the main formats so the Marketplace search finds the
+ * extension, and is too long for the UI. It must start with this name
+ * (checked by a test).
+ */
+export const PRODUCT_NAME = 'Scientific Data Viewer';
+
+export function getProductName(): string {
+    return PRODUCT_NAME;
 }
 
 function getCustomEditors(): CustomEditor[] {

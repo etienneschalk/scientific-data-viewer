@@ -1,6 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
+import { PRODUCT_NAME } from '../../src/common/vscodeutils';
 
 suite('Extension Test Suite', () => {
     let mockContext: vscode.ExtensionContext;
@@ -179,6 +181,25 @@ suite('Extension Test Suite', () => {
         assert.ok(
             workspaceConfig,
             'Workspace configuration should be available',
+        );
+    });
+
+    test('Marketplace display name starts with the UI product name', () => {
+        // package.json displayName lists the formats for the Marketplace
+        // search; the UI shows PRODUCT_NAME only (src/common/vscodeutils.ts).
+        const packageJson = JSON.parse(
+            fs.readFileSync(
+                path.join(__dirname, '..', '..', '..', 'package.json'),
+                'utf8',
+            ),
+        );
+        assert.ok(
+            packageJson.displayName.startsWith(PRODUCT_NAME),
+            `displayName "${packageJson.displayName}" should start with "${PRODUCT_NAME}"`,
+        );
+        assert.ok(
+            packageJson.keywords.length <= 30,
+            'The Marketplace accepts at most 30 keywords',
         );
     });
 

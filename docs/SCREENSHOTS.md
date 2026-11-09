@@ -151,7 +151,7 @@ take-screenshots.mjs
 
 ### 1. Building the page
 
-The script loads the compiled extension modules from `out/` with Node's `require`. It replaces the `vscode` module with a small stub and passes `package.json` to `setPackageJson`, so that `getDisplayName()` and `getVersion()` work. It then calls `HTMLGenerator.generateMainHTML(...)`, the same function the panel uses. Without webview options, this function inlines `styles.css` and the webview bundle `out/webview/webview.js` (as the HTML export does), so the page needs no other file.
+The script loads the compiled extension modules from `out/` with Node's `require`. It replaces the `vscode` module with a small stub and passes `package.json` to `setPackageJson`, so that `getVersion()` works (`getProductName()` returns a constant). It then calls `HTMLGenerator.generateMainHTML(...)`, the same function the panel uses. Without webview options, this function inlines `styles.css` and the webview bundle `out/webview/webview.js` (as the HTML export does), so the page needs no other file.
 
 Three things are added to that HTML for each theme:
 

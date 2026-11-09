@@ -1133,6 +1133,23 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
+### T37. Marketplace listing
+
+**Expect:** the new display name appears only where the Marketplace shows it; the UI keeps `Scientific Data Viewer`.
+
+**Test:**
+
+1. Install the `.vsix` (`npm run package`). In the **Extensions** view, the extension reads `Scientific Data Viewer – NetCDF, Zarr, HDF5, GRIB, GeoTIFF`, with the new description; its details page shows the new README with the large plot image at the top (images load from GitHub once the branch is merged on `main`).
+2. Open `sample_data.nc`: the viewer title and the **Outline** top entry read `Scientific Data Viewer`, not the long name.
+3. **Show Extension Logs**: the output channel is still named `Scientific Data Viewer` in the dropdown.
+4. Hover the status bar item: the tooltip starts with `Scientific Data Viewer - State`.
+5. **Run Healthcheck**: the report names `Scientific Data Viewer`.
+6. After publishing: search "netcdf" on the Marketplace website and in the Extensions view; note the rank (was about 10th) in the growth plan (`docs/GROWTH_PLAN.md`).
+
+**Failure mode:** the long name in the viewer title, outline, output channel or error messages; broken images on the README.
+
+---
+
 ## Cleaning up after testing
 
 - **VS Code:** remove the lines you added to your user settings JSON (at least `overridePythonInterpreter` if you don't want it). Keep or uninstall the VSIX as you like.

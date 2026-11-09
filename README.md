@@ -4,13 +4,17 @@
   Sources: package.json, docs/documentation.json
 -->
 
-# Scientific Data Viewer - VSCode Extension
+# Scientific Data Viewer for VS Code
 
 <div align="center">
-  <img src="media/icon.png" alt="Scientific Data Viewer Icon" width="128" height="128">
+  <img src="media/icon.png" alt="Scientific Data Viewer for VS Code Icon" width="128" height="128">
 </div>
 
-An extension to explore the metadata of scientific data files within your IDE, including NetCDF, Zarr, HDF5, GRIB, GeoTIFF and JPEG-2000.
+Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files directly in VS Code and VS Code-based editors (Cursor, VSCodium… via Open VSX): browse groups, dimensions, variables and attributes, and plot any variable in one click. Built on xarray.
+
+<div align="center">
+  <img src="media/screenshots/v0.13-plot-facets-dark.png" alt="A (time, lat, lon) temperature variable plotted as one map per month, with the plot controls chosen automatically" width="800">
+</div>
 
 <div align="center">
 
@@ -59,43 +63,29 @@ Available on:
 
 ## 📸 Screenshot Gallery
 
-**Data Visualization and Plotting**
+**Explore the file structure**
 
 <div align="center">
-  <a href="media/screenshots/light-tif-plot-0.3.0.png" target="_blank">
-    <img width="200" src="media/screenshots/light-tif-plot-0.3.0.png" alt="Light theme TIF file plot">
+  <a href="media/screenshots/v0.13-overview-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.13-overview-light.png" alt="File information and xarray DataTree representation of a NetCDF file">
   </a>
-  <p><em>Light theme: GeoTIFF data visualization with plotting capabilities</em></p>
+  <p><em>File information and the xarray DataTree of a NetCDF file with a nested group</em></p>
+</div>
+
+**Plot any variable**
+
+<div align="center">
+  <a href="media/screenshots/v0.13-plot-map-dark.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.13-plot-map-dark.png" alt="A 2D elevation variable plotted as a map, dark theme">
+  </a>
+  <p><em>One click on Create Plot: the layout (x, y, facets) is chosen from the dimensions and shown above the plot</em></p>
 </div>
 
 <div align="center">
-  <a href="media/screenshots/dark-tif-plot-0.3.0.png" target="_blank">
-    <img width="200" src="media/screenshots/dark-tif-plot-0.3.0.png" alt="Dark theme TIF file plot">
+  <a href="media/screenshots/v0.13-controls-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.13-controls-light.png" alt="Dimension slices and plot parameters, light theme">
   </a>
-  <p><em>Dark theme: GeoTIFF data visualization with plotting capabilities</em></p>
-</div>
-
-<div align="center">
-  <a href="media/screenshots/light-tif-plot-opened-0.3.0.png" target="_blank">
-    <img width="200" src="media/screenshots/light-tif-plot-opened-0.3.0.png" alt="Light theme TIF file plot opened">
-  </a>
-  <p><em>Light theme: GeoTIFF plot in opened/expanded state</em></p>
-</div>
-
-**Data Structure Exploration**
-
-<div align="center">
-  <a href="media/screenshots/light-nc-xarray-html-and-text-repr-0.3.0.png" target="_blank">
-    <img width="200" src="media/screenshots/light-nc-xarray-html-and-text-repr-0.3.0.png" alt="Light theme NetCDF xarray representation">
-  </a>
-  <p><em>Light theme: NetCDF file with xarray HTML and text representation</em></p>
-</div>
-
-<div align="center">
-  <a href="media/screenshots/light-zarr-tree-view-focus-on-variable-0.3.0.png" target="_blank">
-    <img width="200" src="media/screenshots/light-zarr-tree-view-focus-on-variable-0.3.0.png" alt="Light theme Zarr tree view">
-  </a>
-  <p><em>Light theme: Zarr dataset tree view with variable focus</em></p>
+  <p><em>Slice dimensions and set xarray plot parameters; the controls you change are outlined, the others stay automatic</em></p>
 </div>
 
 ## 📦 Installation

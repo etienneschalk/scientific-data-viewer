@@ -1,6 +1,6 @@
 import { Logger } from '../common/Logger';
 import { getNestedAttributesView } from '../common/config';
-import { getDisplayName } from '../common/vscodeutils';
+import { getProductName } from '../common/vscodeutils';
 import { DataInfoResult, HeaderItem } from '../types';
 import { joinId } from '../shared/ids';
 
@@ -39,7 +39,7 @@ export class HeaderExtractor {
             children: [],
         });
         return [
-            section(getDisplayName(), 'top-level-title'),
+            section(getProductName(), 'top-level-title'),
             section('File Information', 'section-file-information'),
             section(
                 'Xarray HTML Representation',

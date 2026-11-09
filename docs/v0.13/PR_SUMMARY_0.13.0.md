@@ -251,6 +251,17 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | Publish  | `publish.sh --pre-release`: `.vsix` packaged with the pre-release marker (`<name>-<version>-pre-release.vsix`) and published to the pre-release channel of both marketplaces; semver suffixes refused; warns that the next stable release needs a higher version; `PUBLISHING.md` § Pre-release                                                                           |
 | Tests    | `npm test` 323 passing (was 316); `pytest python/tests` 228 passing (was 225); webview QA 94 / 94; manual test plan T36                                                                                                                                                                                                                                                   |
 
+### Marketplace listing (2026-11-09)
+
+| Area     | Work                                                                                                                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why      | About 10th in a Marketplace search for "netcdf" (first for zarr, grib, geotiff, xarray); the page showed v0.3.0 screenshots                                                                                                      |
+| Manifest | `displayName` `Scientific Data Viewer – NetCDF, Zarr, HDF5, GRIB, GeoTIFF`; description rewritten; 30 keywords (was 12); category "Other" removed; `galleryBanner`                                                               |
+| UI name  | `PRODUCT_NAME` constant in `vscodeutils.ts` (`getDisplayName()` → `getProductName()`): output channel, viewer title / outline, status bar, errors, healthcheck keep `Scientific Data Viewer`; test: `displayName` starts with it |
+| README   | `header.title`, `header.hero` and per-screenshot `width` in `generate_readme.py`; hero = faceted plot; v0.13 crops of `npm run screenshots` replace the five v0.3.0 images                                                       |
+| Fix      | `take-screenshots.mjs` replies `{ plotData, layout, appliedSlices }` to the webview (bare PNG string → "Python script failed" on every plot since the plot layout report)                                                        |
+| Tests    | `npm test` 324 passing (was 323); `npx vsce ls` 72 files; manual test plan T37                                                                                                                                                   |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref, `sample_data_empty_dimension.nc`)
@@ -596,3 +607,11 @@ Release review (2026-11-05, items in `docs/v0.13/REVIEWS_0.13.0.md` § Release r
 119.  chore(tooling): share the headless Chrome code of screenshots and webview QA
 120.  test(backend): check the format list against the custom editors
 121.  docs: document the release review of 0.13.0
+122.  fix(panel): stop the file load when its tab is closed
+123.  fix(docs): regenerate README.md without a timestamp
+124.  feat(publish): add a --pre-release mode to publish.sh
+
+Marketplace listing (2026-11-09):
+
+125.  feat(listing): refresh the Marketplace listing and README screenshots
+126.  docs: add a growth plan with tasks to follow by hand

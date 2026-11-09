@@ -418,7 +418,15 @@ async function main() {
                     (response) =>
                         response.error
                             ? { success: false, error: `Data processing error: ${response.error.error}` }
-                            : { success: true, payload: response.result.plot_data },
+                            : {
+                                  success: true,
+                                  // Same shape as UIController.handleCreatePlot
+                                  payload: {
+                                      plotData: response.result.plot_data,
+                                      layout: response.result.plot_layout,
+                                      appliedSlices: response.result.applied_isel_kwargs,
+                                  },
+                              },
                     (error) => ({ success: false, error: String(error.message ?? error) }),
                 ),
             );
