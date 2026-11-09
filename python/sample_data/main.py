@@ -62,6 +62,7 @@ from sample_data.netcdf_names import (
     create_sample_netcdf_long_variable_names,
     create_sample_netcdf_many_vars,
 )
+from sample_data.onboarding import create_sample_onboarding, write_bundled_sample
 from sample_data.temporal import create_temporal_datasets
 from sample_data.waves import create_sample_netcdf_issue_0117_waves
 from sample_data.zarr import (
@@ -138,6 +139,10 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             G(
                 create_sample_netcdf_issue_0117_waves,
                 "NetCDF (wave height, issue #117 non-regression plots)",
+            ),
+            G(
+                create_sample_onboarding,
+                "NetCDF (Getting Started sample, shipped in media/samples/)",
             ),
         ],
     ),
@@ -425,5 +430,22 @@ def cli(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Also create disposable files used to test file deletion",
     )
+    parser.add_argument(
+        "--bundled-sample",
+        action="store_true",
+        help=(
+            "Only (re)write the sample shipped with the extension,"
+            " media/samples/sample_climate.nc (Getting Started walkthrough)"
+        ),
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="With --bundled-sample: only check that the committed copy is up to date",
+    )
     args = parser.parse_args(argv)
+    if args.check and not args.bundled_sample:
+        parser.error("--check requires --bundled-sample")
+    if args.bundled_sample:
+        return write_bundled_sample(check=args.check)
     return main(do_create_disposable_files=args.disposable, overwrite=args.overwrite)
