@@ -16,6 +16,17 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 6. **Test thoroughly** with various file types and sizes
 7. **Update documentation** if needed (then `python scripts/generate_readme.py --no-timestamp`, with Node 22 for its prettier pass)
 
+### Pre-release
+
+`./publish.sh --pre-release` runs the same checks, builds and tests, then publishes to the **pre-release channel** of the VS Code Marketplace and Open VSX. Only users who clicked **Switch to Pre-Release Version** on the extension page get it; everyone else stays on the last stable release. Use it when a release changes something that can only be fully tested on users' machines (e.g. a rebuild of the uv environment, `ENVIRONMENT_REVISION`).
+
+- The package is built with `vsce package --pre-release` (the pre-release marker is written into the `.vsix` manifest) as `artefacts/vsix-releases/<name>-<version>-pre-release.vsix`, and that same file is published to both marketplaces (`vsce publish --pre-release --packagePath …`, `ovsx publish … --pre-release`).
+- The version stays plain `major.minor.patch`: the marketplaces reject `0.13.0-rc.1`, and `publish.sh` refuses it.
+- **A version number is used up once published**, pre-release or not: the stable release that follows needs a higher one. After `0.13.0` as a pre-release, bump `package.json` to `0.13.1`, add its CHANGELOG section and release notes, and run `./publish.sh` without the flag.
+- Pre-release users are offered the stable release when it has a higher version, so they come back to the stable channel automatically.
+- On GitHub, mark the release as a pre-release (`gh release create v<version> --generate-notes --prerelease`, or `gh release edit v<version> --prerelease`).
+- `./publish.sh --pre-release --dry-run` builds the pre-release package without publishing it.
+
 ### Publishing to VSCode Marketplace
 
 1. **Install vsce** (if not already installed):

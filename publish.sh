@@ -14,6 +14,7 @@
 #   ./publish.sh              # Full publish to both marketplaces
 #   ./publish.sh --dry-run    # Package only, don't publish
 #   ./publish.sh --skip-tests # Skip tests (use with caution)
+#   ./publish.sh --pre-release # Publish as a pre-release (both marketplaces)
 # =============================================================================
 
 set -e  # Exit on error
@@ -35,6 +36,7 @@ DRY_RUN=false
 SKIP_TESTS=false
 SKIP_VSCODE=false
 SKIP_OPENVSX=false
+PRE_RELEASE=false
 
 for arg in "$@"; do
     case $arg in
@@ -50,6 +52,9 @@ for arg in "$@"; do
         --skip-openvsx)
             SKIP_OPENVSX=true
             ;;
+        --pre-release)
+            PRE_RELEASE=true
+            ;;
         --help|-h)
             echo "Usage: ./publish.sh [options]"
             echo ""
@@ -58,6 +63,10 @@ for arg in "$@"; do
             echo "  --skip-tests   Skip running tests"
             echo "  --skip-vscode  Skip VS Code Marketplace publish"
             echo "  --skip-openvsx Skip Open VSX publish"
+            echo "  --pre-release  Publish as a pre-release: only users who chose"
+            echo "                 'Switch to Pre-Release Version' get it. The version"
+            echo "                 number is then used up: the next stable release"
+            echo "                 needs a higher one (e.g. 0.13.0 pre-release -> 0.13.1)"
             echo "  --help, -h     Show this help message"
             echo ""
             echo "Before publishing, README.md is checked against generate_readme.py;"
@@ -187,6 +196,18 @@ EXTENSION_NAME=$(node -p "require('./package.json').name")
 print_info "Extension: ${EXTENSION_NAME}"
 print_info "Publisher: ${PUBLISHER}"
 print_info "Version: ${PACKAGE_VERSION}"
+if [ "$PRE_RELEASE" = true ]; then
+    print_info "Channel: pre-release"
+    # Both marketplaces only accept major.minor.patch: a pre-release is marked
+    # in the .vsix manifest, not with a semver suffix such as 0.13.0-rc.1.
+    if ! [[ "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        print_error "Pre-release versions must be plain major.minor.patch (got ${PACKAGE_VERSION})"
+        print_info "The marketplaces reject suffixes like -rc.1: the --pre-release flag marks the package instead"
+        exit 1
+    fi
+else
+    print_info "Channel: stable"
+fi
 
 # Check for required tools and versions
 print_step "Checking required tools..."
@@ -414,7 +435,14 @@ fi
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
 VSIX_DIR="artefacts/vsix-releases"
-VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+if [ "$PRE_RELEASE" = true ]; then
+    # Own name, so it is never mistaken for (or overwritten by) a stable package
+    VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}-pre-release.vsix"
+    PRE_RELEASE_FLAG="--pre-release"
+else
+    VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+    PRE_RELEASE_FLAG=""
+fi
 
 if [ "$CHECKS_PASSED" = false ]; then
     print_error "Some checks failed. Please fix the issues above."
@@ -501,7 +529,7 @@ print_header "Packaging"
 
 print_step "Creating .vsix package..."
 mkdir -p "$VSIX_DIR"
-$VSCE_CMD package --out "$VSIX_FILE" || {
+$VSCE_CMD package $PRE_RELEASE_FLAG --out "$VSIX_FILE" || {
     print_error "Packaging failed"
     exit 1
 }
@@ -536,10 +564,20 @@ print_header "Publishing"
 
 # Confirmation
 echo ""
-echo "Ready to publish version ${PACKAGE_VERSION} to:"
+if [ "$PRE_RELEASE" = true ]; then
+    echo "Ready to publish version ${PACKAGE_VERSION} as a PRE-RELEASE to:"
+else
+    echo "Ready to publish version ${PACKAGE_VERSION} to:"
+fi
 [ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
 [ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
 echo ""
+if [ "$PRE_RELEASE" = true ]; then
+    print_warning "Only users who chose 'Switch to Pre-Release Version' will get it."
+    print_warning "Version ${PACKAGE_VERSION} cannot be published again: the stable release"
+    print_warning "that follows needs a higher version (bump package.json, e.g. to the next patch)."
+    echo ""
+fi
 read -p "Proceed with publishing? (y/N) " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -552,7 +590,13 @@ PUBLISH_SUCCESS=true
 # Publish to VS Code Marketplace
 if [ "$SKIP_VSCODE" = false ]; then
     print_step "Publishing to VS Code Marketplace..."
-    if $VSCE_CMD publish; then
+    if [ "$PRE_RELEASE" = true ]; then
+        # Publish the package built above: it carries the pre-release marker
+        VSCE_PUBLISH_ARGS=(publish --pre-release --packagePath "$VSIX_FILE")
+    else
+        VSCE_PUBLISH_ARGS=(publish)
+    fi
+    if $VSCE_CMD "${VSCE_PUBLISH_ARGS[@]}"; then
         print_success "Published to VS Code Marketplace"
         print_info "View at: https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"
     else
@@ -564,7 +608,7 @@ fi
 # Publish to Open VSX
 if [ "$SKIP_OPENVSX" = false ]; then
     print_step "Publishing to Open VSX Registry..."
-    if $OVSX_CMD publish "$VSIX_FILE" -p "$OPENVSX_TOKEN"; then
+    if $OVSX_CMD publish "$VSIX_FILE" -p "$OPENVSX_TOKEN" $PRE_RELEASE_FLAG; then
         print_success "Published to Open VSX Registry"
         print_info "View at: https://open-vsx.org/extension/${PUBLISHER}/${EXTENSION_NAME}"
     else
@@ -596,11 +640,19 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
     if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
         echo "  2. Tag ${TAG_NAME} is already pushed. View the release:"
         echo "     ${REPO_URL}/releases/tag/${TAG_NAME}"
+        if [ "$PRE_RELEASE" = true ]; then
+            echo "     (mark the GitHub release as a pre-release: gh release edit ${TAG_NAME} --prerelease)"
+        fi
     else
         echo "  2. Create a GitHub release:"
         echo "     git tag ${TAG_NAME}"
         echo "     git push origin ${TAG_NAME}"
-        echo "     gh release create ${TAG_NAME} --generate-notes"
+        echo "     gh release create ${TAG_NAME} --generate-notes $PRE_RELEASE_FLAG"
+    fi
+    if [ "$PRE_RELEASE" = true ]; then
+        echo "  3. Install it in VS Code: Extensions view > Scientific Data Viewer >"
+        echo "     'Switch to Pre-Release Version'; watch issues before the stable release"
+        echo "  4. Before the stable release, bump package.json above ${PACKAGE_VERSION}"
     fi
 
     echo ""

@@ -129,7 +129,7 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
    - in the CHANGELOG link at the bottom of the release notes;
    - in the README (`python scripts/generate_readme.py --no-timestamp`; its changelog anchor follows the heading).
 3. **Update the commit list** of the [PR summary](./PR_SUMMARY_0.13.0.md#commits-oldest--newest).
-4. **Consider a pre-release first**: `vsce publish --pre-release` (and `--pre-release` for Open VSX). Only users who opted into pre-releases get it, so a broken rebuild reaches a few people first. A version number can be published only once, so the following stable release must be **0.13.1**, not 0.13.0. Check the `vsce` / `ovsx` docs before relying on this.
+4. **Consider a pre-release first**: `./publish.sh --pre-release` publishes to the pre-release channel of both marketplaces ([PUBLISHING.md § Pre-release](../PUBLISHING.md#pre-release)). Only users who opted into pre-releases get it, so a broken rebuild reaches a few people first. A version number can be published only once, so the following stable release must be **0.13.1**, not 0.13.0 (bump `package.json`, add a CHANGELOG section and `docs/RELEASE_NOTES_0.13.1.md`).
 5. **Publish** with `publish.sh` ([PUBLISHING.md](../PUBLISHING.md)).
 6. **First week**: watch GitHub issues and Marketplace reviews; reply with the [support playbook](./UPGRADE_TEST_PLAN.md#if-users-get-stuck-after-the-release).
 
