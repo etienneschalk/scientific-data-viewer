@@ -13,6 +13,14 @@ import {
 // out/test/suite/onboarding -> repository root
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
+/**
+ * A path as Uri.fsPath returns it: on Windows, VS Code lowercases the drive
+ * letter (`c:\...`) while os.tmpdir() gives `C:\...`.
+ */
+function asFsPath(p: string): string {
+    return vscode.Uri.file(p).fsPath;
+}
+
 suite('Onboarding sample file Test Suite', () => {
     let storageDir: string;
 
@@ -28,7 +36,7 @@ suite('Onboarding sample file Test Suite', () => {
         const uri = getBundledSampleUri(vscode.Uri.file(REPO_ROOT));
         assert.strictEqual(
             uri.fsPath,
-            path.join(REPO_ROOT, ...SAMPLE_FILE_PATH_SEGMENTS),
+            asFsPath(path.join(REPO_ROOT, ...SAMPLE_FILE_PATH_SEGMENTS)),
         );
     });
 
@@ -39,7 +47,13 @@ suite('Onboarding sample file Test Suite', () => {
         );
         assert.strictEqual(
             copy.fsPath,
-            path.join(storageDir, SAMPLE_STORAGE_FOLDER, 'sample_climate.nc'),
+            asFsPath(
+                path.join(
+                    storageDir,
+                    SAMPLE_STORAGE_FOLDER,
+                    'sample_climate.nc',
+                ),
+            ),
         );
         assert.ok(
             fs
