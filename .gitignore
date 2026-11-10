@@ -17,3 +17,5 @@ blog-article.md
 # non-regression plots, screenshots, QA and paranoia runs, .vsix packages
 # (artefacts/vsix-releases/). See docs/DEVELOPMENT.md.
 /artefacts/
+
+.claude/
