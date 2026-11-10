@@ -7,6 +7,12 @@ import {
     getUseExtensionOwnEnvironmentConfigFullKey,
     updateUseExtensionOwnEnvironment,
 } from '../common/config';
+import { getPythonExtension } from '../python/officialPythonExtensionApiUtils';
+
+/** The part of vscode.Extension used here (a fake in tests). */
+export interface ActivatableExtension {
+    activate(): Thenable<unknown>;
+}
 
 /** Walkthrough id in package.json contributes.walkthroughs. */
 export const WALKTHROUGH_ID = 'gettingStarted';
@@ -45,6 +51,8 @@ const CONFIG_INTERPRETER_SETTINGS: InterpreterSettings = {
  */
 export async function selectPythonInterpreter(
     settings: InterpreterSettings = CONFIG_INTERPRETER_SETTINGS,
+    findPythonExtension: () =>
+        ActivatableExtension | undefined = getPythonExtension,
 ): Promise<void> {
     const override = settings.getOverridePythonInterpreter();
     if (override) {
@@ -73,21 +81,33 @@ export async function selectPythonInterpreter(
             );
         }
     }
-    const commands = await vscode.commands.getCommands(true);
-    if (commands.includes(PYTHON_SET_INTERPRETER)) {
-        Logger.info('🎓 Opening Python: Select Interpreter');
-        await vscode.commands.executeCommand(PYTHON_SET_INTERPRETER);
-        return;
+    // Looked up at each click: the Python extension may have been installed
+    // since VS Code started. Its commands are only registered once it is
+    // activated, so they cannot tell whether it is installed.
+    const pythonExtension = findPythonExtension();
+    if (pythonExtension) {
+        try {
+            await pythonExtension.activate();
+            Logger.info('🎓 Opening Python: Select Interpreter');
+            await vscode.commands.executeCommand(PYTHON_SET_INTERPRETER);
+            return;
+        } catch (error) {
+            Logger.error(
+                `🎓 ❌ Could not open Python: Select Interpreter: ${error}`,
+            );
+        }
     }
     Logger.info(
-        '🎓 Python extension not found, opening the overridePythonInterpreter setting',
+        '🎓 Python extension not found or not working, opening the overridePythonInterpreter setting',
     );
     await vscode.commands.executeCommand(
         'workbench.action.openSettings',
         getOverridePythonInterpreterConfigFullKey(),
     );
     vscode.window.showInformationMessage(
-        'The Python extension is not installed: set the path of a Python interpreter that has xarray in this setting, or install the Python extension and use "Python: Select Interpreter".',
+        pythonExtension
+            ? 'The Python extension could not open "Python: Select Interpreter" (see the logs): set the path of a Python interpreter that has xarray in this setting.'
+            : 'The Python extension is not installed: set the path of a Python interpreter that has xarray in this setting, or install the Python extension and click "Use My Own Interpreter" again.',
     );
 }
 

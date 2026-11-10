@@ -16,22 +16,28 @@ suite('Onboarding: Use My Own Interpreter', () => {
     const messages: string[] = [];
     const originals = {
         executeCommand: vscode.commands.executeCommand,
-        getCommands: vscode.commands.getCommands,
         showInformationMessage: vscode.window.showInformationMessage,
         showWarningMessage: vscode.window.showWarningMessage,
     };
-    let availableCommands: string[] = [];
+    let pythonExtension: { activate(): Thenable<unknown> } | undefined;
+    let activations = 0;
+    const installedPythonExtension = () => ({
+        activate: async () => {
+            activations += 1;
+        },
+    });
+    const findPythonExtension = () => pythonExtension;
 
     setup(() => {
         executed.length = 0;
         messages.length = 0;
-        availableCommands = [PYTHON_SET_INTERPRETER];
+        activations = 0;
+        pythonExtension = installedPythonExtension();
         (vscode.commands as any).executeCommand = async (
             ...args: unknown[]
         ) => {
             executed.push(args);
         };
-        (vscode.commands as any).getCommands = async () => availableCommands;
         (vscode.window as any).showInformationMessage = async (m: string) => {
             messages.push(`info: ${m}`);
         };
@@ -43,7 +49,6 @@ suite('Onboarding: Use My Own Interpreter', () => {
     teardown(() => {
         Object.assign(vscode.commands, {
             executeCommand: originals.executeCommand,
-            getCommands: originals.getCommands,
         });
         Object.assign(vscode.window, {
             showInformationMessage: originals.showInformationMessage,
@@ -71,14 +76,14 @@ suite('Onboarding: Use My Own Interpreter', () => {
 
     test('opens Python: Select Interpreter when nothing takes precedence', async () => {
         const settings = fakeSettings('', false);
-        await selectPythonInterpreter(settings);
+        await selectPythonInterpreter(settings, findPythonExtension);
         assert.deepStrictEqual(executed, [[PYTHON_SET_INTERPRETER]]);
         assert.deepStrictEqual(settings.writes, []);
     });
 
     test('turns off the own environment before selecting an interpreter', async () => {
         const settings = fakeSettings('', true);
-        await selectPythonInterpreter(settings);
+        await selectPythonInterpreter(settings, findPythonExtension);
         assert.deepStrictEqual(settings.writes, [false]);
         assert.deepStrictEqual(executed, [[PYTHON_SET_INTERPRETER]]);
         assert.ok(
@@ -89,7 +94,7 @@ suite('Onboarding: Use My Own Interpreter', () => {
 
     test('warns when a workspace setting keeps the own environment on', async () => {
         const settings = fakeSettings('', true, { workspaceForcesOwn: true });
-        await selectPythonInterpreter(settings);
+        await selectPythonInterpreter(settings, findPythonExtension);
         assert.ok(
             messages.some((m) => m.startsWith('warning:')),
             messages.join('\n'),
@@ -98,7 +103,7 @@ suite('Onboarding: Use My Own Interpreter', () => {
 
     test('shows the override setting instead, since the override always wins', async () => {
         const settings = fakeSettings('/opt/python/bin/python3', true);
-        await selectPythonInterpreter(settings);
+        await selectPythonInterpreter(settings, findPythonExtension);
         assert.deepStrictEqual(settings.writes, []);
         assert.strictEqual(executed.length, 1);
         assert.strictEqual(executed[0][0], 'workbench.action.openSettings');
@@ -109,8 +114,48 @@ suite('Onboarding: Use My Own Interpreter', () => {
     });
 
     test('opens the override setting without the Python extension', async () => {
-        availableCommands = [];
-        await selectPythonInterpreter(fakeSettings('', false));
+        pythonExtension = undefined;
+        await selectPythonInterpreter(
+            fakeSettings('', false),
+            findPythonExtension,
+        );
         assert.strictEqual(executed[0][0], 'workbench.action.openSettings');
+    });
+
+    test('finds a Python extension installed after the first click', async () => {
+        // Install SDV, click, install the Python extension, click again: its
+        // commands are not registered until it is activated, so the second
+        // click must look at the installed extensions, not the commands
+        pythonExtension = undefined;
+        await selectPythonInterpreter(
+            fakeSettings('', false),
+            findPythonExtension,
+        );
+        assert.strictEqual(executed[0][0], 'workbench.action.openSettings');
+        executed.length = 0;
+        pythonExtension = installedPythonExtension();
+        await selectPythonInterpreter(
+            fakeSettings('', false),
+            findPythonExtension,
+        );
+        assert.strictEqual(activations, 1);
+        assert.deepStrictEqual(executed, [[PYTHON_SET_INTERPRETER]]);
+    });
+
+    test('falls back to the setting when the Python extension fails to activate', async () => {
+        pythonExtension = {
+            activate: async () => {
+                throw new Error('activation failed');
+            },
+        };
+        await selectPythonInterpreter(
+            fakeSettings('', false),
+            findPythonExtension,
+        );
+        assert.strictEqual(executed[0][0], 'workbench.action.openSettings');
+        assert.ok(
+            messages.some((m) => m.includes('could not open')),
+            messages.join('\n'),
+        );
     });
 });

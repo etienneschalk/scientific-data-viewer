@@ -231,7 +231,8 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             "interpreter",
             "Choosing the Python interpreter",
             "Runs at activation and again when an interpreter-related setting changes, when workspace folders "
-            "change, or when the Python extension reports a new active environment. Runs are single-flight: a "
+            "change, when the Python extension reports a new active environment, or when the Python extension is "
+            "installed, enabled or removed while VS Code runs. Runs are single-flight: a "
             "request made during a run queues one more run, and only the latest run commits its result.",
             "When the extension's own environment is enabled but unusable, the reason is kept in "
             "`ownEnvironmentIssue` and shown to the user (for example “uv is not installed”) instead of switching "
@@ -244,7 +245,7 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
                 "src/extension.ts": [
                     "onDidChangeConfiguration",
                     "onDidChangeWorkspaceFolders",
-                    "setupOfficialPythonExtensionChangeListeners",
+                    "followPythonExtensionInterpreter",
                     "reportOwnEnvironmentNotUsed",
                 ],
                 "src/python/PythonManager.ts": ["_reinitializeRequested"],

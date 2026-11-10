@@ -99,7 +99,7 @@ Read: `python/sdv_backend/plotting/layout.py` · `python/sdv_backend/plotting/dr
 
 ## 9. Choosing the Python interpreter
 
-Runs at activation and again when an interpreter-related setting changes, when workspace folders change, or when the Python extension reports a new active environment. Runs are single-flight: a request made during a run queues one more run, and only the latest run commits its result.
+Runs at activation and again when an interpreter-related setting changes, when workspace folders change, when the Python extension reports a new active environment, or when the Python extension is installed, enabled or removed while VS Code runs. Runs are single-flight: a request made during a run queues one more run, and only the latest run commits its result.
 
 ![Choosing the Python interpreter](svg/interpreter.svg)
 

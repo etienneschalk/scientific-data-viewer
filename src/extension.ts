@@ -20,7 +20,7 @@ import {
     getCustomEditorViewTypes,
 } from './common/vscodeutils';
 import { ExtensionVirtualEnvironmentManagerUI } from './python/ExtensionVirtualEnvironmentManagerUI';
-import { setupOfficialPythonExtensionChangeListeners } from './python/officialPythonExtensionApiUtils';
+import { followPythonExtensionInterpreter } from './python/officialPythonExtensionApiUtils';
 import { formatConfigValue } from './common/utils';
 import {
     SDV_EXTENSION_ID,
@@ -322,27 +322,13 @@ export function activate(context: vscode.ExtensionContext) {
         );
         await refreshPython(pythonManager, statusBarItem);
     };
-    setupOfficialPythonExtensionChangeListeners(
-        handleOnDidChangeActiveEnvironmentPath,
-    )
-        .then((listener: vscode.Disposable | undefined) => {
-            if (listener) {
-                Logger.info(
-                    '🧩 🚀 Immediate official Python extension interpreter change detection enabled',
-                );
-                // Add to subscriptions after it's created
-                context.subscriptions.push(listener);
-            } else {
-                Logger.warn(
-                    '🧩 ⚠️ Immediate Python interpreter change detection not available',
-                );
-            }
-        })
-        .catch((error) => {
-            Logger.error(
-                `🧩 ❌ Failed to set up immediate Python interpreter change detection: ${error}`,
-            );
-        });
+    // Also when the Python extension is installed after this one started
+    // (e.g. from the Getting Started walkthrough)
+    context.subscriptions.push(
+        followPythonExtensionInterpreter(
+            handleOnDidChangeActiveEnvironmentPath,
+        ),
+    );
 }
 
 export function deactivate() {

@@ -1228,13 +1228,13 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 9. **_Use My Own Interpreter_ with an override set** (the one of step 8). Click the button. Expect the `overridePythonInterpreter` setting to open, with a message naming the interpreter; no other setting changes. Clear the setting.
 
-10. **_Use My Own Interpreter_ with the Python extension.** Install it in the profile (`code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension ms-python.python`) and restart VS Code. Click the button. Expect **Python: Select Interpreter** to open; the interpreter picked there is used after **Refresh**.
+10. **_Use My Own Interpreter_ after installing the Python extension, without restarting.** In the same VS Code window, install the Python extension from the Extensions view (search `ms-python.python`). The logs (**Show Extension Logs**) say `Python extension installed or enabled: following its interpreter`. Click the button again. Expect **Python: Select Interpreter** to open (not the setting); pick a Python with xarray: it is used without restarting VS Code (the logs show `Python interpreter changed`, **Run Healthcheck** names it); a viewer showing a Python error reloads by itself, and new plots use it.
 
 11. **Environment creation progress.** **Scientific Data Viewer: Manage Extension Virtual Environment** → _Delete_, then → _Create_. Expect a progress notification while it is created.
 
 12. **Reopen.** **Scientific Data Viewer: Open Getting Started Walkthrough**: the walkthrough opens with the checkmarks of the steps done.
 
-**Failure mode:** a step page empty or not rendered; a button that does nothing or reports "command not found"; a step checked before its goal (for example "Set up Python" checked while no Python with xarray is found, or "Explore and plot" checked before a plot); the sample opened from the extensions folder; _Use My Own Interpreter_ leaving the extension environment or the override in use without saying so.
+**Failure mode:** the setting opening instead of **Python: Select Interpreter** once the Python extension is installed, or the interpreter picked there ignored until VS Code restarts; a step page empty or not rendered; a button that does nothing or reports "command not found"; a step checked before its goal (for example "Set up Python" checked while no Python with xarray is found, or "Explore and plot" checked before a plot); the sample opened from the extensions folder; _Use My Own Interpreter_ leaving the extension environment or the override in use without saying so.
 
 ---
 

@@ -1,11 +1,24 @@
 import * as vscode from 'vscode';
 import { Logger } from '../common/Logger';
 
+/** Id of the official Python extension. */
+export const PYTHON_EXTENSION_ID = 'ms-python.python';
+
+/**
+ * The official Python extension when it is installed and enabled. Looked up at
+ * each call: the list of extensions changes while VS Code runs (install,
+ * enable), unlike the commands an extension registers, which only appear once
+ * it is activated.
+ */
+export function getPythonExtension(): vscode.Extension<unknown> | undefined {
+    return vscode.extensions.getExtension(PYTHON_EXTENSION_ID);
+}
+
 /**
  * Get Python extension API if available
  */
 export async function getPythonExtensionApi(): Promise<any | undefined> {
-    const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+    const pythonExtension = getPythonExtension();
 
     if (!pythonExtension) {
         Logger.error(
@@ -148,4 +161,88 @@ export async function setupOfficialPythonExtensionChangeListeners(
         );
         return undefined;
     }
+}
+
+/**
+ * Follow the interpreter selected in the official Python extension, also when
+ * the Python extension is installed or enabled after this extension started:
+ * the change listener is set up at once when the Python extension is there,
+ * otherwise as soon as it appears (`vscode.extensions.onDidChange`), and
+ * `onInterpreterChanged` then runs once, since its interpreter may now be the
+ * one to use. When the Python extension goes away, the listener is dropped.
+ */
+export function followPythonExtensionInterpreter(
+    onInterpreterChanged: () => Promise<void>,
+    getExtension: () => unknown = getPythonExtension,
+    setUpListener: (
+        onChange: () => Promise<void>,
+    ) => Promise<
+        vscode.Disposable | undefined
+    > = setupOfficialPythonExtensionChangeListeners,
+    onExtensionsChanged: vscode.Event<void> = vscode.extensions.onDidChange,
+): vscode.Disposable {
+    let listener: vscode.Disposable | undefined;
+    let present = Boolean(getExtension());
+    let settingUp: Promise<void> | undefined;
+
+    const setUp = (): Promise<void> => {
+        settingUp ??= setUpListener(onInterpreterChanged)
+            .then((disposable) => {
+                listener = disposable;
+                if (disposable) {
+                    Logger.info(
+                        '🧩 🚀 Immediate official Python extension interpreter change detection enabled',
+                    );
+                } else {
+                    Logger.warn(
+                        '🧩 ⚠️ Immediate Python interpreter change detection not available',
+                    );
+                }
+            })
+            .catch((error) => {
+                Logger.error(
+                    `🧩 ❌ Failed to set up immediate Python interpreter change detection: ${error}`,
+                );
+            })
+            .finally(() => {
+                settingUp = undefined;
+            });
+        return settingUp;
+    };
+
+    if (present) {
+        void setUp();
+    } else {
+        Logger.info(
+            '🐍 💤 Python extension not installed: its interpreter will be followed once it is installed',
+        );
+    }
+    const watcher = onExtensionsChanged(async () => {
+        const now = Boolean(getExtension());
+        if (now === present) {
+            return;
+        }
+        present = now;
+        if (!now) {
+            Logger.info('🐍 👋 Python extension removed or disabled');
+            listener?.dispose();
+            listener = undefined;
+            await onInterpreterChanged();
+            return;
+        }
+        Logger.info(
+            '🐍 🆕 Python extension installed or enabled: following its interpreter',
+        );
+        if (!listener) {
+            await setUp();
+        }
+        await onInterpreterChanged();
+    });
+    return {
+        dispose: () => {
+            watcher.dispose();
+            listener?.dispose();
+            listener = undefined;
+        },
+    };
 }
