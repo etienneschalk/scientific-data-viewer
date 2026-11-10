@@ -1,18 +1,23 @@
 """Sample file shipped with the extension, opened by the Getting Started walkthrough.
 
-Small (well under 200 KB) synthetic, CF-compliant climate-like data, so that a
-new user sees groups, variables, attributes and good-looking plots in a few
-seconds:
+Small synthetic, CF-compliant climate-like data, so that a new user sees
+groups, variables, attributes and good-looking plots in a few seconds:
 
-- ``/``: monthly near-surface air temperature ``tas(time, lat, lon)`` on a 5°
-  grid (packed as int16 with ``scale_factor`` / ``add_offset``, zlib), its
-  area-weighted global mean ``tas_global_mean(time)`` and a static land area
-  fraction ``sftlf(lat, lon)``;
+- ``/``: one year of monthly near-surface air temperature
+  ``tas(time, lat, lon)`` on a 10° grid (packed as int16 with ``scale_factor``
+  / ``add_offset``, 0.1 K precision, zlib), its area-weighted global mean
+  ``tas_global_mean(time)`` and a static land area fraction ``sftlf(lat, lon)``;
 - ``/stations``: ``tas(station, time)`` at three points of the grid (a CF
   ``timeSeries`` feature type), to show groups.
 
 The output is deterministic: fixed seed, fixed ``history`` date, explicit
-encodings and the ``netcdf4`` engine. Bytes can still differ between versions
+encodings and the ``netcdf4`` engine.
+
+Size: about 40 KB, about 13 KB once deflated in the ``.vsix`` (it weighs on
+every download of the extension). The data decides the deflated size (the
+HDF5 metadata, about 30 KB of the file, deflates to about 4 KB): keep the
+grid, the number of months and the precision small. Variables below
+``_COMPRESS_MIN_SIZE`` values are stored contiguous, without a chunk index. Bytes can still differ between versions
 of netCDF-C / HDF5 (``_NCProperties`` records them), so the committed file is
 compared by content (``check_bundled_sample``), not by bytes.
 
@@ -43,11 +48,15 @@ SEED = 2020
 STATIONS_GROUP = "stations"
 _STATIONS = [
     # name, latitude, longitude (grid cell centres)
-    ("Northern mid-latitudes", 47.5, 2.5),
-    ("Equatorial", 2.5, 37.5),
-    ("Southern high latitudes", -62.5, -57.5),
+    ("Northern mid-latitudes", 45.0, 5.0),
+    ("Equatorial", 5.0, 35.0),
+    ("Southern high latitudes", -65.0, -55.0),
 ]
 _TIME_UNITS = "days since 2020-01-01"
+GRID_STEP = 10.0  # degrees
+N_MONTHS = 12
+TAS_PRECISION = 0.1  # K, scale_factor of the int16 packing
+_COMPRESS_MIN_SIZE = 256
 
 
 def _land_fraction(lat2d: np.ndarray, lon2d: np.ndarray) -> np.ndarray:
@@ -86,9 +95,9 @@ def build_onboarding_sample() -> tuple[xr.Dataset, xr.Dataset]:
     """Datasets of the root group and of the ``stations`` group."""
     rng = np.random.default_rng(SEED)
 
-    time = pd.date_range("2020-01-01", periods=24, freq="MS")
-    lat = np.arange(-87.5, 90, 5.0)
-    lon = np.arange(-177.5, 180, 5.0)
+    time = pd.date_range("2020-01-01", periods=N_MONTHS, freq="MS")
+    lat = np.arange(-90 + GRID_STEP / 2, 90, GRID_STEP)
+    lon = np.arange(-180 + GRID_STEP / 2, 180, GRID_STEP)
     lat2d, lon2d = np.meshgrid(lat, lon, indexing="ij")
     lat_r = np.deg2rad(lat2d)
 
@@ -169,8 +178,8 @@ def build_onboarding_sample() -> tuple[xr.Dataset, xr.Dataset]:
         attrs={
             "title": "Scientific Data Viewer sample: synthetic monthly climate",
             "summary": (
-                "Two years of synthetic monthly near-surface air temperature on a"
-                " global 5-degree grid, its global mean, a land area fraction and,"
+                "One year of synthetic monthly near-surface air temperature on a"
+                " global 10-degree grid, its global mean, a land area fraction and,"
                 " in the 'stations' group, time series at three grid points. Made"
                 " up for demonstration: not real observations."
             ),
@@ -229,7 +238,7 @@ def build_onboarding_sample() -> tuple[xr.Dataset, xr.Dataset]:
 
 
 def _encoding(ds: xr.Dataset, packed: dict[str, tuple[float, float]]) -> dict:
-    """Explicit encodings: zlib everywhere, int16 packing for ``packed``."""
+    """Explicit encodings: zlib on large variables, int16 packing for ``packed``."""
     encoding: dict[str, dict] = {}
     for name in ds.variables:
         variable = ds[name]
@@ -240,7 +249,11 @@ def _encoding(ds: xr.Dataset, packed: dict[str, tuple[float, float]]) -> dict:
                 "dtype": "int32",
             }
         elif variable.dtype.kind in "fiu":
-            encoding[name] = {"zlib": True, "complevel": 6, "shuffle": True}
+            encoding[name] = (
+                {"zlib": True, "complevel": 9, "shuffle": True}
+                if variable.size >= _COMPRESS_MIN_SIZE
+                else {"contiguous": True}
+            )
             if variable.dtype.kind == "f":
                 encoding[name]["_FillValue"] = None
         if name in packed:
@@ -251,7 +264,7 @@ def _encoding(ds: xr.Dataset, packed: dict[str, tuple[float, float]]) -> dict:
                 "add_offset": add_offset,
                 "_FillValue": np.int16(-32767),
                 "zlib": True,
-                "complevel": 6,
+                "complevel": 9,
                 "shuffle": True,
             }
     return encoding
@@ -268,7 +281,7 @@ def write_onboarding_sample(path: Path | str) -> Path:
         mode="w",
         engine="netcdf4",
         format="NETCDF4",
-        encoding=_encoding(root, {"tas": (0.01, 273.15)}),
+        encoding=_encoding(root, {"tas": (TAS_PRECISION, 273.15)}),
     )
     stations.to_netcdf(
         path,

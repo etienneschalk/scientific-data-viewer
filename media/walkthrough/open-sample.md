@@ -1,6 +1,6 @@
 # Open the sample file
 
-**Open Sample File** opens `sample_climate.nc`, a small NetCDF-4 file (about 120 KB)
+**Open Sample File** opens `sample_climate.nc`, a small NetCDF-4 file (about 40 KB)
 shipped with the extension. It is a copy kept in the extension's storage, so plots
 you save next to it never land in the extension's install folder.
 
@@ -14,7 +14,7 @@ the [CF conventions](https://cfconventions.org), like most climate data:
 | `/`         | `sftlf`           | `lat, lon`       | Land area fraction (%)                      |
 | `/stations` | `tas`             | `station, time`  | Temperature series at three grid points (K) |
 
-- Two years (24 months, 2020-2021) on a global 5° grid.
+- One year (12 months, 2020) on a global 10° grid.
 - `tas` is stored as packed integers (`scale_factor` / `add_offset`) and
   compressed: open its **Xarray Encoding** section to see how.
 - Global attributes (`title`, `Conventions`, `history`...) and variable

@@ -292,15 +292,15 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 
 ### Getting Started walkthrough (2026-11-10)
 
-| Area     | Work                                                                                                                                                                                                                                                   |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Why      | `useExtensionOwnEnvironment` off by default: a user without xarray got an error before seeing anything; no file to try                                                                                                                                 |
-| UI       | `contributes.walkthroughs` (`gettingStarted`): Set up Python, Open the sample file, Explore and plot, Learn more; step pages in `media/walkthrough/`; completion events on commands / settings                                                         |
-| Commands | `openSampleFile`, `setUpExtensionOwnEnvironment`, `selectPythonInterpreter`, `openWalkthrough` (`src/onboarding/`, `extension.ts`); progress notification on environment creation (`ExtensionVirtualEnvironmentManagerUI.ts`)                          |
-| Sample   | `media/samples/sample_climate.nc` (120 KB, CF-1.8, `/stations` group) from `python/sample_data/onboarding.py`; `create_sample_data.py --bundled-sample [--check]`; copied to `globalStorageUri/samples/` before opening (Save writes next to the file) |
-| Package  | `.vscodeignore` + `scripts/paranoia/checks.py`: the sample and the 4 walkthrough pages ship; `npx vsce ls` 72 → 79 files                                                                                                                               |
-| Docs     | README section and feature (`documentation.json`), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams (`src/onboarding/`), release notes § Getting Started walkthrough, manual test plan T39                                                         |
-| Tests    | `test/suite/onboarding/` (walkthrough references, sample copy), `python/tests/test_onboarding_sample.py`; `npm test` 335 passing, `pytest python/tests` 234 passing                                                                                    |
+| Area     | Work                                                                                                                                                                                                                                                                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why      | `useExtensionOwnEnvironment` off by default: a user without xarray got an error before seeing anything; no file to try                                                                                                                                                |
+| UI       | `contributes.walkthroughs` (`gettingStarted`): Set up Python, Open the sample file, Explore and plot, Learn more; step pages in `media/walkthrough/`; completion events on commands / settings                                                                        |
+| Commands | `openSampleFile`, `setUpExtensionOwnEnvironment`, `selectPythonInterpreter`, `openWalkthrough` (`src/onboarding/`, `extension.ts`); progress notification on environment creation (`ExtensionVirtualEnvironmentManagerUI.ts`)                                         |
+| Sample   | `media/samples/sample_climate.nc` (40 KB, 13 KB deflated; CF-1.8, `/stations` group) from `python/sample_data/onboarding.py`; `create_sample_data.py --bundled-sample [--check]`; copied to `globalStorageUri/samples/` before opening (Save writes next to the file) |
+| Package  | `.vscodeignore` + `scripts/paranoia/checks.py`: the sample and the 4 walkthrough pages ship; `npx vsce ls` 72 → 79 files                                                                                                                                              |
+| Docs     | README section and feature (`documentation.json`), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams (`src/onboarding/`), release notes § Getting Started walkthrough, manual test plan T39                                                                        |
+| Tests    | `test/suite/onboarding/` (walkthrough references, sample copy), `python/tests/test_onboarding_sample.py`; `npm test` 335 passing, `pytest python/tests` 234 passing                                                                                                   |
 
 ### Sample data & docs
 
@@ -667,3 +667,5 @@ Getting Started walkthrough (2026-11-10):
 130.  feat(onboarding): add a small CF sample NetCDF file generated reproducibly
 131.  feat(onboarding): add a Getting Started walkthrough and an Open Sample File command
 132.  docs(onboarding): document the walkthrough and the bundled sample in 0.13.0
+133.  docs(test-plan): build and check the .vsix before testing the walkthrough (T39)
+134.  perf(onboarding): shrink the bundled sample from 120 KB to 40 KB

@@ -14,7 +14,7 @@
 ## Create a plot
 
 1. Find a variable, for example `tas_global_mean`, and click **Create Plot**: a
-   line plot of the global mean over two years.
+   line plot of the global mean over the year.
 2. Try `sftlf` (a map) and `tas`: with three dimensions, the plot gets one panel
    per month.
 3. Open **Plot parameters** to choose the axes, a colormap, the facets or the

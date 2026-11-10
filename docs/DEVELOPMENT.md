@@ -298,7 +298,9 @@ npm test
    ```
 
    The bytes record the netCDF-C / HDF5 versions (`_NCProperties`), so the check compares
-   the decoded content of each group, not the bytes. Keep the file well under 200 KB.
+   the decoded content of each group, not the bytes. Keep the file small: it ships in every
+   `.vsix` (about 40 KB, 13 KB deflated; the tests fail above 64 KB). The data decides the
+   deflated size, so keep the grid, the number of months and the precision small.
 
 2. **Test with sample files**:
    - Open sample NetCDF, Zarr, or HDF5 files

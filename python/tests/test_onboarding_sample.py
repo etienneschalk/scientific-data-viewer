@@ -36,7 +36,8 @@ def test_bundled_sample_is_up_to_date() -> None:
     """The committed copy matches the generator (content, not bytes: the bytes
     record the netCDF-C / HDF5 versions)."""
     assert BUNDLED_SAMPLE_PATH.exists()
-    assert BUNDLED_SAMPLE_PATH.stat().st_size < 200 * 1024
+    # Shipped in every .vsix: keep it small (about 40 KB, 13 KB deflated)
+    assert BUNDLED_SAMPLE_PATH.stat().st_size < 64 * 1024
     assert check_bundled_sample() == [], (
         "Regenerate it: python python/create_sample_data.py --bundled-sample"
     )
@@ -48,12 +49,12 @@ def test_bundled_sample_content() -> None:
 
     root = groups["/"]
     assert set(root.data_vars) == {"tas", "tas_global_mean", "sftlf"}
-    assert dict(root.sizes) == {"time": 24, "lat": 36, "lon": 72}
+    assert dict(root.sizes) == {"time": 12, "lat": 18, "lon": 36}
     assert root["tas"].dims == ("time", "lat", "lon")
     assert root["tas"].attrs["units"] == "K"
     assert root["tas"].attrs["standard_name"] == "air_temperature"
     assert root["tas"].encoding["dtype"] == np.dtype("int16")
-    assert root["tas"].encoding["scale_factor"] == pytest.approx(0.01)
+    assert root["tas"].encoding["scale_factor"] == pytest.approx(0.1)
     assert root["tas_global_mean"].dims == ("time",)
     assert np.issubdtype(root["time"].dtype, np.datetime64)
     assert root["lat"].attrs["units"] == "degrees_north"
@@ -72,6 +73,9 @@ def test_bundled_sample_content() -> None:
         "Equatorial",
         "Southern high latitudes",
     ]
+    # Each station sits on a grid cell centre of the root group
+    assert set(stations["station_lat"].values) <= set(root["lat"].values)
+    assert set(stations["station_lon"].values) <= set(root["lon"].values)
 
 
 def test_bundled_sample_opens_as_datatree() -> None:

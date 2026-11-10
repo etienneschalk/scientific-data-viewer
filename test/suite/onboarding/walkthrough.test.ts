@@ -201,7 +201,7 @@ suite('Onboarding walkthrough Test Suite', () => {
         const absolute = path.join(REPO_ROOT, ...SAMPLE_FILE_PATH_SEGMENTS);
         assert.ok(fs.existsSync(absolute), `${relative} does not exist`);
         const size = fs.statSync(absolute).size;
-        assert.ok(size < 200 * 1024, `${relative} is ${size} bytes`);
+        assert.ok(size < 64 * 1024, `${relative} is ${size} bytes`);
         // HDF5 signature: NetCDF-4 file
         const signature = fs.readFileSync(absolute).subarray(0, 8);
         assert.deepStrictEqual(

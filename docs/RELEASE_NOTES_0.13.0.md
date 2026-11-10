@@ -538,7 +538,7 @@ v0.13 is the largest release of the extension, and its documents had grown with 
 
 - A **Getting Started walkthrough** on the VS Code Welcome page (shown once after installing or updating; no popup), in four steps:
   1. **Set up Python**: _Let the Extension Manage Python (uv)_ creates the extension's own environment if there is none (progress notification) and turns on `useExtensionOwnEnvironment`; _Use My Own Interpreter_ opens _Python: Select Interpreter_, or the `overridePythonInterpreter` setting without the Python extension. The step lists the packages needed.
-  2. **Open the sample file**: `sample_climate.nc` (120 KB, shipped with the extension): synthetic, CF-compliant monthly air temperature `tas(time, lat, lon)` on a 5° grid over 2020–2021, its global mean, a land fraction map and a `/stations` group. It is copied to the extension's global storage first, so a saved plot never lands in the install folder.
+  2. **Open the sample file**: `sample_climate.nc` (40 KB, shipped with the extension): synthetic, CF-compliant monthly air temperature `tas(time, lat, lon)` on a 10° grid for 2020, its global mean, a land fraction map and a `/stations` group. It is copied to the extension's global storage first, so a saved plot never lands in the install folder.
   3. **Explore and plot**: groups, attributes, **Create Plot**, plot parameters, dimension slices.
   4. **Learn more**: formats, commands, settings, documentation.
 - Four new commands (see [§ Upgrade notes](#new-commands-nothing-to-do)); reopen the walkthrough with **Scientific Data Viewer: Open Getting Started Walkthrough**.
