@@ -101,7 +101,11 @@ Dependencies point one way: `cli → info / plotting → opening → formats →
 Other scripts in `python/`:
 
 - **`create_sample_data.py`**: generates the files in `artefacts/sample-data/`; the generators live in
-  the `python/sample_data/` package (one module per format family: `netcdf`, `zarr`, `geotiff`, …)
+  the `python/sample_data/` package (one module per format family: `netcdf`, `zarr`, `geotiff`, …).
+  `--bundled-sample` instead rewrites the one sample shipped in the `.vsix`,
+  `media/samples/sample_climate.nc` (generator: `sample_data/onboarding.py`), and
+  `--bundled-sample --check` checks that the committed copy is up to date (also checked by
+  `python/tests/test_onboarding_sample.py`)
 - **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks (issue #117 workflows) from `artefacts/sample-data/hs-issue-0117.nc` into `artefacts/non-regression-plots/v<version>/` (`summary.md`, each plot next to its xarray code); its cases are also compared with the last release by `scripts/qa/backend/diff_scen.py` (`i117_*` scenarios)
 - **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `artefacts/sample-data/`
   (`record` before a refactoring, `check` after it)
@@ -284,6 +288,18 @@ npm test
    Generation is reproducible: random data is seeded per generator and
    timestamps are fixed, so `--overwrite` yields the same data every time.
 
+   The Getting Started walkthrough opens a sample shipped with the extension,
+   `media/samples/sample_climate.nc` (committed, listed in `.vscodeignore`). After changing
+   its generator (`python/sample_data/onboarding.py`), rewrite it and commit the result:
+
+   ```bash
+   python python/create_sample_data.py --bundled-sample          # rewrite media/samples/sample_climate.nc
+   python python/create_sample_data.py --bundled-sample --check  # committed copy up to date?
+   ```
+
+   The bytes record the netCDF-C / HDF5 versions (`_NCProperties`), so the check compares
+   the decoded content of each group, not the bytes. Keep the file well under 200 KB.
+
 2. **Test with sample files**:
    - Open sample NetCDF, Zarr, or HDF5 files
    - Verify data loading and visualization
@@ -292,6 +308,7 @@ npm test
 #### Manual Testing Checklist
 
 - [ ] Extension activates correctly
+- [ ] Getting Started walkthrough (_Scientific Data Viewer: Open Getting Started Walkthrough_): every step renders its media, **Open Sample File** opens the sample and plots it
 - [ ] Python environment detection works
 - [ ] File context menu appears for supported files
 - [ ] Data viewer opens and displays file information

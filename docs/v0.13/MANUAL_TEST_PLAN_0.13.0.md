@@ -1170,7 +1170,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 3. **Show Extension Logs**: the output channel is still named `Scientific Data Viewer` in the dropdown.
 4. Hover the status bar item: the tooltip starts with `Scientific Data Viewer - State`.
 5. **Run Healthcheck**: the report names `Scientific Data Viewer`.
-6. After publishing: search "netcdf" on the Marketplace website and in the Extensions view; note the rank (was about 10th) in the growth plan (`docs/GROWTH_PLAN.md`).
+6. After publishing: search "netcdf" on the Marketplace website and in the Extensions view; note the rank (was 11th) in the growth plan (`docs/GROWTH_PLAN.md`, branch `eschalk/growth-plan`).
 
 **Failure mode:** the long name in the viewer title, outline, output channel or error messages; broken images on the README.
 
@@ -1189,6 +1189,24 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 5. Automated: `env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs zip-kerchunk scripts/qa/e2e/suite/s1_open.test.cjs scripts/qa/e2e/suite/s2_kerchunk.test.cjs` (the `default editor of …` cases check the association in a real VS Code).
 
 **Failure mode:** a double click on any `.zip` opening the viewer (ordinary archives hijacked); `*.zarr.zip` opening as binary; the combined Kerchunk reference showing 4 time steps instead of 12 (time units differing between the files).
+
+---
+
+### T39. Getting Started walkthrough
+
+**Expect:** a new user can go from install to a first plot with the walkthrough alone.
+
+**Test:**
+
+1. Start a clean VS Code with the `.vsix`: `code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix`, then `code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext`. The Welcome page offers **Get Started with Scientific Data Viewer** (or run **Scientific Data Viewer: Open Getting Started Walkthrough**).
+2. Each of the four steps shows its page (headings, tables, code block render) and its buttons.
+3. **Open Sample File**: `sample_climate.nc` opens in the viewer, from `…/globalStorage/eschalk0.scientific-data-viewer/samples/`. **Create Plot** on `tas_global_mean`, `sftlf` and `tas` (12 maps per year → 24 panels); `/stations/tas` draws a station × time image (x = `time`, hue = `station` gives lines). The step gets its checkmark.
+4. **Save** a plot: the PNG lands next to the copy in global storage, not in the extensions folder.
+5. **Let the Extension Manage Python (uv)** with no extension environment: a progress notification, then `useExtensionOwnEnvironment` is on and the sample opens with that environment. Run it again: the environment is reused. With `uv` not on the PATH: an error with the uv installation link.
+6. **Use My Own Interpreter**: with the Python extension, _Python: Select Interpreter_ opens; without it (`--disable-extension ms-python.python`), the `overridePythonInterpreter` setting opens.
+7. **Manage Extension Virtual Environment → Create** (after **Delete**): a progress notification while it runs.
+
+**Failure mode:** a step page empty or a broken image; a button that does nothing ("command not found"); the sample opened from the extensions folder; the checkmark never appears.
 
 ---
 
