@@ -25,4 +25,7 @@ module.exports = {
     UV_PY,
     // Interpreter with kerchunk installed (Kerchunk suites)
     VENV_PY: process.env.SDV_KERCHUNK_PYTHON || VENV_PY,
+    // Interpreter without kerchunk (S2: clean error, then interpreter switch);
+    // paranoia.sh passes artefacts/backend-env when SDV_PYTHON has kerchunk
+    NO_KERCHUNK_PY: process.env.SDV_NO_KERCHUNK_PYTHON || UV_PY,
 };

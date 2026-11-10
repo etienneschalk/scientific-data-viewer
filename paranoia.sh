@@ -51,6 +51,8 @@
 # Fixes of the pre-commit hooks are saved to <run>/pre-commit.patch, not applied.
 # Env: PARANOIA_PYTHON (tooling, pytest: .venv/bin/python), SDV_PYTHON
 # (backend interpreter of the QA harnesses, see scripts/qa/README.md),
+# SDV_NO_KERCHUNK_PYTHON (e2e S2; default: SDV_PYTHON, or artefacts/backend-env
+# when SDV_PYTHON has kerchunk),
 # PARANOIA_MIGRATION_FROM (releases to migrate from, e.g. "0.12.1"; default:
 # the last patch of each minor release from PARANOIA_MIGRATION_MIN=0.12.1 on).
 # =============================================================================
@@ -254,19 +256,26 @@ count() { grep -c "^$1" "$2" 2>/dev/null || true; }
 # =============================================================================
 
 # artefacts/backend-env: the environment the extension creates for its users
-# (uv, Python 3.13, ALL_REQUIREMENTS + ENVIRONMENT_CONSTRAINTS, unpinned),
-# rebuilt when those requirements change
-backend_env() {
-    local dir="$ARTEFACTS/backend-env" requirements
+# (uv, Python 3.13, ALL_REQUIREMENTS + ENVIRONMENT_CONSTRAINTS, unpinned, no
+# kerchunk), rebuilt when those requirements change or kerchunk got in
+BACKEND_ENV="$ARTEFACTS/backend-env"
+build_backend_env() {
+    local dir="$BACKEND_ENV" requirements
+    command -v uv >/dev/null || { echo "uv not found"; return 1; }
     requirements="$("$PY" scripts/paranoia/checks.py requirements)" || return 1
-    if [ ! -x "$dir/bin/python" ] || [ "$(cat "$dir/requirements.txt" 2>/dev/null)" != "$requirements" ]; then
+    if [ ! -x "$dir/bin/python" ] || [ "$(cat "$dir/requirements.txt" 2>/dev/null)" != "$requirements" ] \
+        || "$dir/bin/python" -c 'import kerchunk' 2>/dev/null; then
         rm -rf "$dir"
         run uv venv --python 3.13 "$dir" || return 1
         # shellcheck disable=SC2086
         run uv pip install --python "$dir/bin/python" $requirements || return 1
         echo "$requirements" >"$dir/requirements.txt"
     fi
-    SDV_PYTHON="$dir/bin/python"
+}
+
+backend_env() {
+    build_backend_env || return 1
+    SDV_PYTHON="$BACKEND_ENV/bin/python"
     BACKEND_SOURCE="artefacts/backend-env, built like the extension's environment"
     export SDV_PYTHON
     as_own_environment
@@ -602,9 +611,28 @@ step_ci() {
     fi
 }
 
+# Interpreter without the optional kerchunk, for the e2e suite S2 (clean error,
+# then an interpreter switch): the backend interpreter when it has none, else
+# artefacts/backend-env. The backend interpreter is never modified (kerchunk
+# can be installed in the extension's environment from the error page)
+no_kerchunk_python() {
+    if [ -n "${SDV_NO_KERCHUNK_PYTHON:-}" ]; then
+        :
+    elif ! "$SDV_PYTHON" -c 'import kerchunk' 2>/dev/null; then
+        SDV_NO_KERCHUNK_PYTHON="$SDV_PYTHON"
+    else
+        echo "$SDV_PYTHON has kerchunk: S2 uses artefacts/backend-env"
+        build_backend_env || return 1
+        SDV_NO_KERCHUNK_PYTHON="$BACKEND_ENV/bin/python"
+    fi
+    export SDV_NO_KERCHUNK_PYTHON
+    echo "interpreter without kerchunk: $SDV_NO_KERCHUNK_PYTHON"
+}
+
 step_qa_e2e() {
     local root="$EXT_DIR" what="packaged extension"
     [ -d "$root" ] || { root="$ROOT"; what="working tree (no package)"; }
+    no_kerchunk_python || { fail "cannot build artefacts/backend-env (interpreter without kerchunk for the e2e suite S2)"; return; }
     EXT_ROOT="$root" with_display node scripts/qa/e2e/runner.cjs paranoia
     local rc=$?
     [ $rc -eq 125 ] && { skip "no display and no xvfb-run"; return; }

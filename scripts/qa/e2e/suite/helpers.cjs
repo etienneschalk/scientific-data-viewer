@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 
-const { REPO, SAMPLE, QA, ADV, E, UV_PY, VENV_PY } = require('../paths.cjs');
+const { REPO, SAMPLE, QA, ADV, E, UV_PY, VENV_PY, NO_KERCHUNK_PY } = require('../paths.cjs');
 const RUN_DIR = process.env.SDV_E2E_RUN_DIR || path.join(E, 'runs', 'adhoc');
 
 const EXT = process.env.SDV_E2E_EXT_ROOT || REPO;
@@ -188,7 +188,7 @@ function logsSince(idx) {
 }
 
 module.exports = {
-    vscode, fs, path, cp, REPO, SAMPLE, QA, ADV, E, RUN_DIR, UV_PY, VENV_PY,
+    vscode, fs, path, cp, REPO, SAMPLE, QA, ADV, E, RUN_DIR, UV_PY, VENV_PY, NO_KERCHUNK_PY,
     DataViewerPanel, UIController, MessageBus, Logger,
     logs, results, record, flushLogs, sleep, setup, dp, pm, panels, maxId,
     waitFor, waitNewPanel, waitLoaded, openWith, closeAll, request, pythonProcs,

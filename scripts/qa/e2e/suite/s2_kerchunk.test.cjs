@@ -22,9 +22,14 @@ describe('S2 kerchunk', function () {
 
     it('uv env (no kerchunk): sample_data.kerchunk.json -> clean error, then switching interpreter auto-refreshes the errored panel', async function () {
         // Needs a backend interpreter without the optional kerchunk, as the
-        // extension's own environment (paranoia.sh builds one in CI)
-        const probe = h.cp.spawnSync(h.UV_PY, ['-c', 'import kerchunk']);
-        if (probe.status === 0) throw new Error(`precondition: ${h.UV_PY} has kerchunk; set SDV_PYTHON to an interpreter without it`);
+        // extension's own environment as created (paranoia.sh passes
+        // artefacts/backend-env when the backend interpreter has kerchunk)
+        const probe = h.cp.spawnSync(h.NO_KERCHUNK_PY, ['-c', 'import kerchunk']);
+        if (probe.status === 0) throw new Error(`precondition: ${h.NO_KERCHUNK_PY} has kerchunk; set SDV_NO_KERCHUNK_PYTHON to an interpreter without it`);
+        if (h.pm().pythonPath !== h.NO_KERCHUNK_PY) {
+            await h.setConfig('python.overridePythonInterpreter', h.NO_KERCHUNK_PY);
+            await h.waitFor(() => h.pm().pythonPath === h.NO_KERCHUNK_PY, 60000);
+        }
         const p = await h.openWith(S('sample_data.kerchunk.json'), 'kerchunkEditor');
         const r = await h.waitLoaded(p);
         h.record({ s: 'S2', step: 'uv-no-kerchunk', python: h.pm().pythonPath, ...r });

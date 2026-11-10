@@ -281,6 +281,15 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | CSS   | Rule removed from `src/panel/webview/styles.css`; no other selection-disabling rule in the viewer                                      |
 | Tests | `test/suite/ui/WebviewAssets.test.ts`: the stylesheet never contains `user-select: none`                                               |
 
+### Paranoia e2e without kerchunk (2026-11-10)
+
+| Area     | Work                                                                                                                                                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Why      | e2e S2 needs a backend without `kerchunk`; it used the extension's environment, which has it once **Install kerchunk** was clicked on the error page: `qa-e2e` failed on the precondition                                |
+| Paranoia | `no_kerchunk_python`: `SDV_NO_KERCHUNK_PYTHON` = backend interpreter without `kerchunk`, else `artefacts/backend-env` (`build_backend_env`, rebuilt if `kerchunk` gets in); the extension's environment is left as it is |
+| e2e      | `NO_KERCHUNK_PY` (`paths.cjs`, `helpers.cjs`); S2 switches to it before the "clean error" test                                                                                                                           |
+| Tests    | `./paranoia.sh --only env,compile,package,qa-e2e` with `kerchunk` in the extension's environment                                                                                                                         |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP as `.zarr.zip` and `.zip`, gzip NetCDF, COG, Kerchunk refs incl. a `kerchunk/` folder of multi-file and inline references, `sample_data_empty_dimension.nc`)

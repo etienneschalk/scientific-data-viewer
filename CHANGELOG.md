@@ -441,6 +441,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Group and variable names could not be selected**: the styling refresh gave every collapsible title (`details > summary`) `user-select: none`. Group cards, variable rows (name, dims, dtype, size), section titles and attribute tree keys are all `<summary>` rows, so their text could no longer be highlighted and copied. The rule is removed: the text of every title can be selected again (a plain click still folds / unfolds).
   - **Files**: `src/panel/webview/styles.css`
   - **Tests**: `test/suite/ui/WebviewAssets.test.ts` (the stylesheet never contains `user-select: none`)
+- **Paranoia e2e failed once kerchunk was installed in the extension's environment**: the first Kerchunk test of the e2e suite S2 (clean error without `kerchunk`, then interpreter switch) ran on the backend interpreter of the QA harnesses, the extension's own environment when it exists. After **Install kerchunk** on the error page (new in this release) put `kerchunk` there, `qa-e2e` failed on its precondition. The test now has its own interpreter, `SDV_NO_KERCHUNK_PYTHON`: `paranoia.sh` passes the backend interpreter when it has no `kerchunk`, else builds or reuses `artefacts/backend-env` (like the extension's environment, rebuilt if `kerchunk` ever gets in). The extension's environment is never modified.
+  - **Files**: `paranoia.sh` (`build_backend_env`, `no_kerchunk_python`), `scripts/qa/e2e/paths.cjs`, `scripts/qa/e2e/suite/helpers.cjs`, `scripts/qa/e2e/suite/s2_kerchunk.test.cjs`, `scripts/qa/e2e/runner.cjs`, `scripts/qa/README.md`, `docs/DEVELOPMENT.md`
+  - **Tests**: `./paranoia.sh --only env,compile,package,qa-e2e` with `kerchunk` in the extension's environment
 
 ### Security
 
