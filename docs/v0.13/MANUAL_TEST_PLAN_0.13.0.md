@@ -1198,9 +1198,25 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. Start a clean VS Code with the `.vsix`: `code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix`, then `code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext`. The Welcome page offers **Get Started with Scientific Data Viewer** (or run **Scientific Data Viewer: Open Getting Started Walkthrough**).
+1. Build the `.vsix` from the current commit and check that it has the walkthrough (a `.vsix` left in `artefacts/vsix-releases/` by an older `npm run package` does not; `paranoia.sh` builds its own in `artefacts/paranoia/<run>/` and leaves that folder alone):
+
+   ```bash
+   npm run package
+   unzip -p artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix extension/package.json | grep -c '"gettingStarted"'   # 1, not 0
+   ```
+
+   Then start a clean VS Code with it (delete the folders first if an earlier test used them, else the old extension stays installed):
+
+   ```bash
+   rm -rf /tmp/sdv-clean /tmp/sdv-clean-ext
+   code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix
+   code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext
+   ```
+
+   The Welcome page lists **Get Started with Scientific Data Viewer** under _Walkthroughs_ (click _More…_ if only the built-in ones show). It also opens with _Help: Welcome_ → _Walkthroughs_, or **Scientific Data Viewer: Open Getting Started Walkthrough**.
+
 2. Each of the four steps shows its page (headings, tables, code block render) and its buttons.
-3. **Open Sample File**: `sample_climate.nc` opens in the viewer, from `…/globalStorage/eschalk0.scientific-data-viewer/samples/`. **Create Plot** on `tas_global_mean`, `sftlf` and `tas` (12 maps per year → 24 panels); `/stations/tas` draws a station × time image (x = `time`, hue = `station` gives lines). The step gets its checkmark.
+3. **Open Sample File**: `sample_climate.nc` opens in the viewer, from `…/globalStorage/eschalk0.scientific-data-viewer/samples/`. **Create Plot** on `tas_global_mean`, `sftlf` and `tas` (one map per month → 12 panels); `/stations/tas` draws a station × time image (x = `time`, hue = `station` gives lines). The step gets its checkmark.
 4. **Save** a plot: the PNG lands next to the copy in global storage, not in the extensions folder.
 5. **Let the Extension Manage Python (uv)** with no extension environment: a progress notification, then `useExtensionOwnEnvironment` is on and the sample opens with that environment. Run it again: the environment is reused. With `uv` not on the PATH: an error with the uv installation link.
 6. **Use My Own Interpreter**: with the Python extension, _Python: Select Interpreter_ opens; without it (`--disable-extension ms-python.python`), the `overridePythonInterpreter` setting opens.
