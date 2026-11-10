@@ -438,6 +438,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **README regenerated without a timestamp**: the README was regenerated during the release review without `--no-timestamp`, so the `readme` step of `paranoia.sh` (CI) failed on the "Generated on" line. Regenerated with `--no-timestamp`; `CLAUDE.md`, `PUBLISHING.md` and `GETTING_STARTED.md` now give the command with the flag (the cause: `CLAUDE.md` gave it without).
   - **Files**: `README.md`, `CLAUDE.md`, `docs/PUBLISHING.md`, `docs/v0.13/GETTING_STARTED.md`
   - **Tests**: `./paranoia.sh --only readme` passes
+- **Group and variable names could not be selected**: the styling refresh gave every collapsible title (`details > summary`) `user-select: none`. Group cards, variable rows (name, dims, dtype, size), section titles and attribute tree keys are all `<summary>` rows, so their text could no longer be highlighted and copied. The rule is removed: the text of every title can be selected again (a plain click still folds / unfolds).
+  - **Files**: `src/panel/webview/styles.css`
+  - **Tests**: `test/suite/ui/WebviewAssets.test.ts` (the stylesheet never contains `user-select: none`)
 
 ### Security
 

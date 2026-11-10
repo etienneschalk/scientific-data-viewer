@@ -11,6 +11,13 @@ suite('WebviewAssets Test Suite', () => {
         assert.ok(css.includes('.variable-summary'));
     });
 
+    test('never disables text selection', () => {
+        // Group, variable and dimension names sit in <summary> rows: users
+        // must be able to select and copy them.
+        const css = readWebviewAsset(WEBVIEW_STYLESHEET, false);
+        assert.ok(!/user-select\s*:\s*none/.test(css));
+    });
+
     test('reads the webview script', () => {
         const js = readWebviewAsset(WEBVIEW_SCRIPT, false);
         assert.ok(js.includes('captureWebviewContent'));

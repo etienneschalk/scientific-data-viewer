@@ -555,7 +555,6 @@ details > summary {
     padding: 8px 0;
     list-style: none;
     cursor: pointer;
-    user-select: none;
     color: var(--vscode-foreground);
 }
 

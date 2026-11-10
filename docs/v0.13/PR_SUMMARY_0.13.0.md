@@ -273,6 +273,14 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | README      | `generate_readme.py` merges a `formatTableOverrides` entry into the language row of the same label: one **Zarr (ZIP)** row, `.zarr.zip, .zip`                                                                              |
 | Tests       | `npm test` 324 passing; `pytest` 228; e2e S1 + S2 102 passing (new: default editor of `*.zarr.zip` / `.zip` / `*.ref.json` / plain `.json` via `vscode.open`; new samples open and plot); manual test plan T38             |
 
+### Names can be selected again (2026-11-10)
+
+| Area  | Work                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Why   | `user-select: none` on `details > summary` (styling refresh) made group / variable names, dims, dtypes and attribute keys unselectable |
+| CSS   | Rule removed from `src/panel/webview/styles.css`; no other selection-disabling rule in the viewer                                      |
+| Tests | `test/suite/ui/WebviewAssets.test.ts`: the stylesheet never contains `user-select: none`                                               |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP as `.zarr.zip` and `.zip`, gzip NetCDF, COG, Kerchunk refs incl. a `kerchunk/` folder of multi-file and inline references, `sample_data_empty_dimension.nc`)
