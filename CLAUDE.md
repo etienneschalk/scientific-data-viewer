@@ -28,6 +28,7 @@ python scripts/generate_readme.py --no-timestamp   # regenerate README.md (Node 
 .venv/bin/python scripts/qa/backend/diff_info.py        # QA: backend vs baseline checkout (make_baseline.sh <ref>); also diff_plot.py, diff_scen.py
 node scripts/qa/webview/run-all.mjs                     # QA: real webview in headless Chromium, real backend
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in a real VS Code
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/walkthrough.cjs   # QA: Getting Started walkthrough, every path to a first plot in a fresh VS Code (uv, network)
 ./paranoia.sh [--quick|--full]   # all of the above + package audit -> artefacts/paranoia/latest/REPORT.md (readiness verdict)
 # On GitHub: label a PR `paranoia`, or Actions > Paranoia > Run workflow (.github/workflows/paranoia.yml)
 .venv/bin/pip install -r requirements-dev.txt   # development Python packages (pinned; used by the CI paranoia run)

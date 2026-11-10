@@ -383,6 +383,7 @@ scripts/qa/backend/make_baseline.sh v0.12.1             # baseline checkout for 
 .venv/bin/python scripts/qa/backend/diff_scen.py        # ~100 plot-option scenarios (incl. the issue #117 gallery cases) -> scenarios/scenarios.md
 node scripts/qa/webview/run-all.mjs                     # real page in headless Chromium, real input (Node 22)
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # suites inside a real VS Code
+env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/walkthrough.cjs   # walkthrough: every path to a first plot, fresh VS Code
 ```
 
 The two plot comparisons write a Markdown report next to their images (old and new side by side, grouped by tag, with options, statuses, sizes and error messages); the README of the folder explains their logs and tags (§ Reading the results: `DIFF False` means the image sizes differ). The webview and e2e harnesses load the compiled `out/` (`npm run compile` first). See the README of the folder for what each scenario covers and the environment variables (`SDV_PYTHON`, `SDV_QA_OUT`, `CHROME_PATH`…).

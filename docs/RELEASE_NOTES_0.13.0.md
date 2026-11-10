@@ -548,6 +548,7 @@ v0.13 is the largest release of the extension, and its documents had grown with 
 ### How it was checked
 
 - `npm test` (347 passing; walkthrough media exist and are packaged, every command, setting and context key the walkthrough names exists, the Python and plot steps are checked by their results only, the Python step lists every package of the uv environment, _Use My Own Interpreter_ with and without override / own environment / Python extension, including a Python extension installed after the first click, and the Python extension's interpreter followed once it is installed, the sample copy is made, kept or replaced as expected); `pytest python/tests` (235 passing; the sample regenerates identically and matches the committed copy; the Python step names every package of the backend's engines); `npx vsce ls`: 79 files (72 + the sample, 4 walkthrough pages, 2 compiled modules).
+- Automated, in a fresh VS Code each (`node scripts/qa/e2e/walkthrough.cjs`, paranoia step `walkthrough`, `--full`): W1 extension-managed Python with the sample opened first, then own interpreter; W2 an interpreter with no packages and the viewer's **Install** buttons; W3 no uv; W4 the Python extension installed before; W5 installed while VS Code runs. Each one must end with every plot of "Explore and plot" and the walkthrough steps checked; see [`scripts/qa/README.md`](../scripts/qa/README.md).
 - Manual: [manual test plan T39](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#t39-getting-started-walkthrough).
 
 ---

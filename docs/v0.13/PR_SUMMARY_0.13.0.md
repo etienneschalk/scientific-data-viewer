@@ -302,6 +302,7 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | Docs     | README section and feature (`documentation.json`), `DEVELOPMENT.md`, `CLAUDE.md`, architecture diagrams (`src/onboarding/`), release notes § Getting Started walkthrough, manual test plan T39                                                                                                                                                                                                                                                                                                 |
 | Review   | Steps checked by their results (context keys `pythonReady`, `plotCreated`), not by clicks (the healthcheck ticked "Set up Python" with no Python); _Use My Own Interpreter_ turns off the own environment / shows the override that would win; `kerchunk` on the Python page; sample of 40 KB (was 120 KB); T39 rewritten in the walkthrough's order; a Python extension installed while VS Code runs is found by the button and its interpreter followed (`followPythonExtensionInterpreter`) |
 | Tests    | `test/suite/onboarding/` (walkthrough references, completion events, sample copy, interpreter selection), `python/tests/test_onboarding_sample.py`, `test_walkthrough_packages.py`; `npm test` 347 passing, `pytest python/tests` 235 passing                                                                                                                                                                                                                                                  |
+| E2E      | `scripts/qa/e2e/walkthrough.cjs` (paranoia `walkthrough`, `--full`): W1–W5 in a fresh VS Code each (uv, Install buttons, no uv, Python extension before / during the session); `runner.cjs` `--fresh`, `--with-extensions`, `--install-extension`, `--hide-uv`; W5 fails on the code before the fix                                                                                                                                                                                            |
 
 ### Sample data & docs
 
@@ -672,3 +673,4 @@ Getting Started walkthrough (2026-11-10):
 134.  perf(onboarding): shrink the bundled sample from 120 KB to 40 KB
 135.  fix(onboarding): check walkthrough steps by their results, make Use My Own Interpreter effective
 136.  fix(onboarding): find and follow a Python extension installed while VS Code runs
+137.  test(qa): walkthrough scenarios in a fresh VS Code, paranoia step walkthrough

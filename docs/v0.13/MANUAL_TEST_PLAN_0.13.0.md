@@ -1097,7 +1097,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 **Test:**
 
-1. `./paranoia.sh --list` → 27 steps with their profile.
+1. `./paranoia.sh --list` → 28 steps with their profile.
 2. `./paranoia.sh --quick` → one line per step, then `VERDICT: NOT FULLY VERIFIED` at best (not a full run); `artefacts/paranoia/latest/REPORT.md` has the table of checks, each linked to its log.
 3. `git status` → unchanged by the run. If pre-commit would reformat files, `pre-commit.patch` is in the run folder and the `pre-commit` row is `FAIL`.
 4. Change one word of `README.md`, `./paranoia.sh --only readme` → `FAIL`, exit code 1, the report shows the diff; `git checkout README.md`.
@@ -1195,6 +1195,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 ### T39. Getting Started walkthrough
 
 **Expect:** a new user goes from install to a first plot with the walkthrough alone, and each step of the walkthrough is checked only once its goal is reached.
+
+**Automated:** `env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/walkthrough.cjs` (paranoia step `walkthrough`) runs the paths of steps 3 to 10 in a fresh VS Code each and checks the plots and the checkmarks' context keys (see [`scripts/qa/README.md`](../../scripts/qa/README.md)). What it cannot see is what this test is for: the Welcome page, the pages and buttons as drawn, the checkmarks on screen, the notifications.
 
 **Words used below:** a _step_ is one of the four entries of the walkthrough ("Set up Python", "Open the sample file", "Explore and plot", "Learn more"); a _button_ is a link drawn as a button in the text of a step, written here in italics; **bold** names are Command Palette commands or viewer controls.
 

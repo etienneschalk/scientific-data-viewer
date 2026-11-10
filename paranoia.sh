@@ -101,6 +101,7 @@ STEPS=(
     "npm-audit|standard|Dependencies|npm audit|300"
     "ci|standard|Release|CI status of this commit|300"
     "qa-e2e|full|Regression|End-to-end suites in VS Code (packaged extension)|1500"
+    "walkthrough|full|Users|Getting Started walkthrough: every path to a first plot, fresh VS Code|1800"
     "migration|full|Users|Migration from every release (uv environment, settings, viewer)|3600"
     "upgrade|full|Users|Failed and interrupted environment rebuilds|2400"
     "screenshots|full|Users|Viewer screenshots|1200"
@@ -638,6 +639,29 @@ step_qa_e2e() {
     [ $rc -eq 125 ] && { skip "no display and no xvfb-run"; return; }
     if [ $rc -eq 0 ]; then note "every suite passed on the $what"; else fail "e2e suites failed on the $what"; fi
     ARTIFACTS+=("End-to-end observations: \`$SDV_QA_OUT/e2e/runs/paranoia/results.json\` (most suites record rather than assert: read it when a behaviour changes)")
+}
+
+# Getting Started walkthrough: each way a new user can reach a first plot (uv,
+# own interpreter with or without packages, no uv, Python extension installed
+# before or during the session), each in a fresh VS Code profile
+# (scripts/qa/e2e/walkthrough.cjs). Needs uv, network (packages, Python
+# extension) and a display.
+step_walkthrough() {
+    local root="$EXT_DIR" what="packaged extension"
+    [ -d "$root" ] || { root="$ROOT"; what="working tree (no package)"; }
+    local out rc line
+    out="$(mktemp)"
+    EXT_ROOT="$root" with_display node scripts/qa/e2e/walkthrough.cjs | tee "$out"
+    rc=${PIPESTATUS[0]}
+    line="$(sed -n 's/^SUMMARY: //p' "$out" | tail -1)"
+    rm -f "$out"
+    case $rc in
+        0) note "$line ($what)" ;;
+        3) warn "$line ($what)" ;;
+        125) skip "no display and no xvfb-run" ;;
+        *) fail "${line:-walkthrough.cjs crashed (exit $rc)} ($what)" ;;
+    esac
+    ARTIFACTS+=("Getting Started walkthrough scenarios: \`$SDV_QA_OUT/e2e/walkthrough/REPORT.md\`")
 }
 
 # Releases to migrate from: the last patch of each minor release tagged from
