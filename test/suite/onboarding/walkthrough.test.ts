@@ -12,6 +12,11 @@ import {
     requirementPackageName,
 } from '../../../src/python/ExtensionVirtualEnvironmentManager';
 import {
+    CONTEXT_PLOT_CREATED,
+    CONTEXT_PYTHON_READY,
+    WALKTHROUGH_CONTEXT_KEYS,
+} from '../../../src/common/vscodeutils';
+import {
     CMD_OPEN_SAMPLE_FILE,
     CMD_OPEN_WALKTHROUGH,
     CMD_SELECT_PYTHON_INTERPRETER,
@@ -161,11 +166,31 @@ suite('Onboarding walkthrough Test Suite', () => {
                         value in settings,
                         `step ${step.id}: ${event} names no contributed setting`,
                     );
+                } else if (kind === 'onContext') {
+                    assert.ok(
+                        WALKTHROUGH_CONTEXT_KEYS.includes(value),
+                        `step ${step.id}: ${event} names no context key the extension sets`,
+                    );
+                } else if (kind === 'onStepSelected') {
+                    // ticked when the step is opened
                 } else {
                     assert.fail(`step ${step.id}: unexpected event ${event}`);
                 }
             }
         }
+    });
+
+    test('steps that need a result are ticked by the result, not by a click', () => {
+        // Clicking a button (or running the healthcheck) does not mean that
+        // Python works or that a plot was drawn
+        const events = (id: string) =>
+            walkthrough!.steps.find((step) => step.id === id)?.completionEvents;
+        assert.deepStrictEqual(events('setUpPython'), [
+            `onContext:${CONTEXT_PYTHON_READY}`,
+        ]);
+        assert.deepStrictEqual(events('exploreAndPlot'), [
+            `onContext:${CONTEXT_PLOT_CREATED}`,
+        ]);
     });
 
     test('the onboarding commands are contributed', () => {

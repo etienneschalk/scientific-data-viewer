@@ -1194,35 +1194,47 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ### T39. Getting Started walkthrough
 
-**Expect:** a new user can go from install to a first plot with the walkthrough alone.
+**Expect:** a new user goes from install to a first plot with the walkthrough alone, and each step of the walkthrough is checked only once its goal is reached.
+
+**Words used below:** a _step_ is one of the four entries of the walkthrough ("Set up Python", "Open the sample file", "Explore and plot", "Learn more"); a _button_ is a link drawn as a button in the text of a step, written here in italics; **bold** names are Command Palette commands or viewer controls.
 
 **Test:**
 
-1. Build the `.vsix` from the current commit and check that it has the walkthrough (a `.vsix` left in `artefacts/vsix-releases/` by an older `npm run package` does not; `paranoia.sh` builds its own in `artefacts/paranoia/<run>/` and leaves that folder alone):
+1. **Build and start a clean VS Code.** Package the current commit and check that the `.vsix` has the walkthrough (`artefacts/vsix-releases/` keeps the `.vsix` of the last `npm run package`, which can be older; `paranoia.sh` writes its own to `artefacts/paranoia/<run>/`):
 
    ```bash
    npm run package
    unzip -p artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix extension/package.json | grep -c '"gettingStarted"'   # 1, not 0
-   ```
-
-   Then start a clean VS Code with it (delete the folders first if an earlier test used them, else the old extension stays installed):
-
-   ```bash
-   rm -rf /tmp/sdv-clean /tmp/sdv-clean-ext
+   rm -rf /tmp/sdv-clean /tmp/sdv-clean-ext   # else an earlier install stays
    code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix
    code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext
    ```
 
-   The Welcome page lists **Get Started with Scientific Data Viewer** under _Walkthroughs_ (click _More…_ if only the built-in ones show). It also opens with _Help: Welcome_ → _Walkthroughs_, or **Scientific Data Viewer: Open Getting Started Walkthrough**.
+   This profile has no Python extension and no extension environment, like a new user.
 
-2. Each of the four steps shows its page (headings, tables, code block render) and its buttons.
-3. **Open Sample File**: `sample_climate.nc` opens in the viewer, from `…/globalStorage/eschalk0.scientific-data-viewer/samples/`. **Create Plot** on `tas_global_mean`, `sftlf` and `tas` (one map per month → 12 panels); `/stations/tas` draws a station × time image (x = `time`, hue = `station` gives lines). The step gets its checkmark.
-4. **Save** a plot: the PNG lands next to the copy in global storage, not in the extensions folder.
-5. **Let the Extension Manage Python (uv)** with no extension environment: a progress notification, then `useExtensionOwnEnvironment` is on and the sample opens with that environment. Run it again: the environment is reused. With `uv` not on the PATH: an error with the uv installation link.
-6. **Use My Own Interpreter**: with the Python extension, _Python: Select Interpreter_ opens; without it (`--disable-extension ms-python.python`), the `overridePythonInterpreter` setting opens.
-7. **Manage Extension Virtual Environment → Create** (after **Delete**): a progress notification while it runs.
+2. **Open the walkthrough.** The Welcome page lists **Get Started with Scientific Data Viewer** under _Walkthroughs_ (click _More…_ if only the built-in ones show); **Scientific Data Viewer: Open Getting Started Walkthrough** opens it too. Expect four steps, none checked. Select each step: its page, on the right, renders (headings, tables, code block), and "Learn more" gets its checkmark as soon as it is selected.
 
-**Failure mode:** a step page empty or a broken image; a button that does nothing ("command not found"); the sample opened from the extensions folder; the checkmark never appears.
+3. **"Set up Python" without uv** (skip if you cannot hide uv). Restart VS Code with a `PATH` where `uv` is not found (`env PATH=/usr/bin:/bin which uv` prints nothing, then `env PATH=/usr/bin:/bin code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext`). Click the button _Let the Extension Manage Python (uv)_. Expect an error with a link to the uv installation page; the step stays unchecked. Restart VS Code normally.
+
+4. **"Set up Python" with uv.** Click the button _Let the Extension Manage Python (uv)_. Expect a progress notification for a few minutes, then a success message; `scientificDataViewer.python.useExtensionOwnEnvironment` is on (user settings), and the step gets its checkmark when the environment is ready. Click the button again: "The extension now uses its own Python environment.", and no new creation.
+
+5. **"Open the sample file".** Click the button _Open Sample File_. Expect `sample_climate.nc` to open in the viewer; **File Information** shows a path under `…/globalStorage/eschalk0.scientific-data-viewer/samples/`; the step is checked.
+
+6. **"Explore and plot".** The step is not checked yet. In the viewer, click **Create Plot** on `tas_global_mean` (a line over 2020): the step gets its checkmark. Then `sftlf` (a map) and `tas` (one map per month, 12 panels). In **Group: /stations**, `tas` is a station × time image; with **x** = `time` and **hue** = `station` in **Plot parameters**, one line per station. **Save** one plot: the PNG is written next to the sample copy in global storage, not in the extensions folder.
+
+7. **"Learn more".** Click the button _Show Settings_: the extension settings open. The link _Open the Documentation_ opens the README on GitHub.
+
+8. **"Set up Python", _Use My Own Interpreter_, without the Python extension.** The extension environment of step 4 is still on. Click the button. Expect a message that the extension's own environment is no longer used (`useExtensionOwnEnvironment` off), then the `overridePythonInterpreter` setting opens with a message about the Python extension. Set it to a Python with xarray (e.g. the repository's `.venv/bin/python`), then **Refresh** the sample: it loads with that interpreter (**Run Healthcheck** names it).
+
+9. **_Use My Own Interpreter_ with an override set** (the one of step 8). Click the button. Expect the `overridePythonInterpreter` setting to open, with a message naming the interpreter; no other setting changes. Clear the setting.
+
+10. **_Use My Own Interpreter_ with the Python extension.** Install it in the profile (`code --user-data-dir /tmp/sdv-clean --extensions-dir /tmp/sdv-clean-ext --install-extension ms-python.python`) and restart VS Code. Click the button. Expect **Python: Select Interpreter** to open; the interpreter picked there is used after **Refresh**.
+
+11. **Environment creation progress.** **Scientific Data Viewer: Manage Extension Virtual Environment** → _Delete_, then → _Create_. Expect a progress notification while it is created.
+
+12. **Reopen.** **Scientific Data Viewer: Open Getting Started Walkthrough**: the walkthrough opens with the checkmarks of the steps done.
+
+**Failure mode:** a step page empty or not rendered; a button that does nothing or reports "command not found"; a step checked before its goal (for example "Set up Python" checked while no Python with xarray is found, or "Explore and plot" checked before a plot); the sample opened from the extensions folder; _Use My Own Interpreter_ leaving the extension environment or the override in use without saying so.
 
 ---
 

@@ -15,6 +15,7 @@ import {
     getUseExtensionOwnEnvironment,
 } from '../common/config';
 import { EnvironmentInfo, EnvironmentSource } from '../types';
+import { CONTEXT_PYTHON_READY, setContextKey } from '../common/vscodeutils';
 import { PerformanceTimer } from '../common/PerformanceTimer';
 import {
     formatCommandForDisplay,
@@ -182,6 +183,7 @@ export class PythonManager {
             this._notReadyReason = state.notReadyReason;
             this._ownEnvironmentIssue = state.ownEnvironmentIssue;
             this._initialized = true;
+            setContextKey(CONTEXT_PYTHON_READY, this.ready);
             if (
                 state.source === 'own-uv-env' &&
                 process.env.ECCODES_DEFINITION_PATH

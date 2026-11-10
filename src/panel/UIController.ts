@@ -10,7 +10,11 @@ import { ErrorBoundary } from '../common/ErrorBoundary';
 import { DataProcessor } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
-import { showErrorMessage } from '../common/vscodeutils';
+import {
+    CONTEXT_PLOT_CREATED,
+    setContextKey,
+    showErrorMessage,
+} from '../common/vscodeutils';
 import {
     CMD_PYTHON_INSTALL_PACKAGES,
     CMD_SHOW_LOGS,
@@ -292,6 +296,8 @@ export class UIController {
         if (!response.result) {
             throw new Error('Failed to create plot');
         }
+        // Ticks the "Explore and plot" step of the Getting Started walkthrough
+        setContextKey(CONTEXT_PLOT_CREATED, true);
         return {
             plotData: response.result.plot_data,
             layout: response.result.plot_layout,

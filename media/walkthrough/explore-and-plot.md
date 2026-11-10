@@ -16,13 +16,17 @@
 1. Find a variable, for example `tas_global_mean`, and click **Create Plot**: a
    line plot of the global mean over the year.
 2. Try `sftlf` (a map) and `tas`: with three dimensions, the plot gets one panel
-   per month.
+   per month. In **Group: /stations**, `tas` is drawn as a station × time image;
+   set **x** to `time` and **hue** to `station` in **Plot parameters** to get one
+   line per station.
 3. Open **Plot parameters** to choose the axes, a colormap, the facets or the
    color range. Parameters you change are outlined; **Reset** brings back the
    defaults.
-4. Use **Dimension slices** to plot a subset, e.g. `time` `0 : 12` for the first
-   year, or a single index such as `6` for July 2020.
-5. **Save**, **Save As...** or **Open** the image; **Global Plot Controls** plot
-   every variable at once (experimental).
+4. Use **Dimension slices** to plot a subset, e.g. `time` `0 : 6` for the first
+   half of the year, or a single index such as `6` for July 2020.
+5. **Save**, **Save As...** or **Open** the image. **Plot All**, in **Global Plot
+   Controls**, plots every variable at once (experimental).
+
+This step is checked after your first plot.
 
 Plots are drawn by xarray and matplotlib, in the same Python environment.

@@ -442,16 +442,12 @@
                     {
                         "id": "setUpPython",
                         "title": "Set up Python",
-                        "description": "The viewer reads files with xarray, in Python. Let the extension create and manage its own environment (needs [uv](https://docs.astral.sh/uv/getting-started/installation/)), or use an interpreter of yours that has xarray.\n[Let the Extension Manage Python (uv)](command:scientificDataViewer.setUpExtensionOwnEnvironment)\n[Use My Own Interpreter](command:scientificDataViewer.selectPythonInterpreter)\nNot sure what is installed? [Run the healthcheck](command:scientificDataViewer.healthcheck).",
+                        "description": "The viewer reads files with xarray, in Python. Let the extension create and manage its own environment (needs [uv](https://docs.astral.sh/uv/getting-started/installation/)), or use an interpreter of yours that has xarray. The step is checked once the viewer finds a Python with xarray.\n[Let the Extension Manage Python (uv)](command:scientificDataViewer.setUpExtensionOwnEnvironment)\n[Use My Own Interpreter](command:scientificDataViewer.selectPythonInterpreter)\nNot sure what is installed? [Run the healthcheck](command:scientificDataViewer.healthcheck).",
                         "media": {
                             "markdown": "media/walkthrough/setup-python.md"
                         },
                         "completionEvents": [
-                            "onCommand:scientificDataViewer.setUpExtensionOwnEnvironment",
-                            "onCommand:scientificDataViewer.selectPythonInterpreter",
-                            "onCommand:scientificDataViewer.healthcheck",
-                            "onSettingChanged:scientificDataViewer.python.useExtensionOwnEnvironment",
-                            "onSettingChanged:scientificDataViewer.python.overridePythonInterpreter"
+                            "onContext:scientificDataViewer.pythonReady"
                         ]
                     },
                     {
@@ -468,10 +464,13 @@
                     {
                         "id": "exploreAndPlot",
                         "title": "Explore and plot",
-                        "description": "Browse groups, dimensions, variables and attributes, then click **Create Plot** on a variable. **Plot parameters** and **Dimension slices** refine the plot.\n[Open Sample File](command:scientificDataViewer.openSampleFile)",
+                        "description": "Browse groups, dimensions, variables and attributes, then click **Create Plot** on a variable. **Plot parameters** and **Dimension slices** refine the plot. The step is checked after your first plot.\n[Open Sample File](command:scientificDataViewer.openSampleFile)",
                         "media": {
                             "markdown": "media/walkthrough/explore-and-plot.md"
-                        }
+                        },
+                        "completionEvents": [
+                            "onContext:scientificDataViewer.plotCreated"
+                        ]
                     },
                     {
                         "id": "learnMore",
@@ -479,7 +478,10 @@
                         "description": "NetCDF, CDF, HDF5, Zarr, GRIB, GeoTIFF, JPEG-2000 and Kerchunk are supported. Tune plots and display in the settings; the README has the full documentation.\n[Show Settings](command:scientificDataViewer.showSettings)\n[Open the Documentation](https://github.com/etienneschalk/scientific-data-viewer#readme)",
                         "media": {
                             "markdown": "media/walkthrough/learn-more.md"
-                        }
+                        },
+                        "completionEvents": [
+                            "onStepSelected"
+                        ]
                     }
                 ]
             }

@@ -181,3 +181,29 @@ export function getShowDialogFilters(ids?: string[]): {
     };
     return filters;
 }
+
+/**
+ * Context key set to true once the Python environment is ready (an
+ * interpreter with xarray was found): ticks the "Set up Python" step of the
+ * Getting Started walkthrough (completionEvents `onContext:`).
+ */
+export const CONTEXT_PYTHON_READY = 'scientificDataViewer.pythonReady';
+/**
+ * Context key set to true once a plot was created: ticks the "Explore and
+ * plot" step of the Getting Started walkthrough.
+ */
+export const CONTEXT_PLOT_CREATED = 'scientificDataViewer.plotCreated';
+/** Every context key named by a walkthrough completion event. */
+export const WALKTHROUGH_CONTEXT_KEYS: readonly string[] = [
+    CONTEXT_PYTHON_READY,
+    CONTEXT_PLOT_CREATED,
+];
+
+/** Set a context key (`setContext`); a failure is logged, never thrown. */
+export function setContextKey(key: string, value: boolean): void {
+    void Promise.resolve(
+        vscode.commands.executeCommand('setContext', key, value),
+    ).catch((error) => {
+        console.warn(`setContext ${key} failed: ${error}`);
+    });
+}
