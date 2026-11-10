@@ -14,9 +14,15 @@
 #   ./publish.sh              # Full publish to both marketplaces
 #   ./publish.sh --dry-run    # Package only, don't publish
 #   ./publish.sh --skip-tests # Skip tests (use with caution)
+#   ./publish.sh --pre-release # Publish as a pre-release (both marketplaces)
 # =============================================================================
 
 set -e  # Exit on error
+
+# Python of the repository .venv (setup.sh): the system python3 can be too old
+# for the scripts (e.g. 3.8 on Ubuntu 20.04). PYTHON=<path> to use another one.
+PYTHON="${PYTHON:-$(pwd)/.venv/bin/python}"
+[ -x "$PYTHON" ] || PYTHON=python3
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,6 +36,7 @@ DRY_RUN=false
 SKIP_TESTS=false
 SKIP_VSCODE=false
 SKIP_OPENVSX=false
+PRE_RELEASE=false
 
 for arg in "$@"; do
     case $arg in
@@ -45,6 +52,9 @@ for arg in "$@"; do
         --skip-openvsx)
             SKIP_OPENVSX=true
             ;;
+        --pre-release)
+            PRE_RELEASE=true
+            ;;
         --help|-h)
             echo "Usage: ./publish.sh [options]"
             echo ""
@@ -53,6 +63,10 @@ for arg in "$@"; do
             echo "  --skip-tests   Skip running tests"
             echo "  --skip-vscode  Skip VS Code Marketplace publish"
             echo "  --skip-openvsx Skip Open VSX publish"
+            echo "  --pre-release  Publish as a pre-release: only users who chose"
+            echo "                 'Switch to Pre-Release Version' get it. The version"
+            echo "                 number is then used up: the next stable release"
+            echo "                 needs a higher one (e.g. 0.13.0 pre-release -> 0.13.1)"
             echo "  --help, -h     Show this help message"
             echo ""
             echo "Before publishing, README.md is checked against generate_readme.py;"
@@ -107,7 +121,7 @@ check_generated_documentation() {
 
     temp_doc=$(mktemp)
 
-    if ! python3 scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
+    if ! "$PYTHON" scripts/generate_readme.py --no-timestamp --output "$temp_doc"; then
         rm -f "$temp_doc"
         print_error "Documentation generation failed"
         exit 1
@@ -116,7 +130,7 @@ check_generated_documentation() {
     if [ ! -f "$doc_file" ]; then
         rm -f "$temp_doc"
         print_error "${doc_file} is missing"
-        print_info "Generate it with: python3 scripts/generate_readme.py --no-timestamp"
+        print_info "Generate it with: ${PYTHON} scripts/generate_readme.py --no-timestamp"
         exit 1
     fi
 
@@ -145,7 +159,7 @@ check_generated_documentation() {
     fi
 
     print_step "Regenerating ${doc_file}..."
-    if ! python3 scripts/generate_readme.py --no-timestamp; then
+    if ! "$PYTHON" scripts/generate_readme.py --no-timestamp; then
         rm -f "$temp_doc"
         print_error "Documentation generation failed"
         exit 1
@@ -182,6 +196,18 @@ EXTENSION_NAME=$(node -p "require('./package.json').name")
 print_info "Extension: ${EXTENSION_NAME}"
 print_info "Publisher: ${PUBLISHER}"
 print_info "Version: ${PACKAGE_VERSION}"
+if [ "$PRE_RELEASE" = true ]; then
+    print_info "Channel: pre-release"
+    # Both marketplaces only accept major.minor.patch: a pre-release is marked
+    # in the .vsix manifest, not with a semver suffix such as 0.13.0-rc.1.
+    if ! [[ "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        print_error "Pre-release versions must be plain major.minor.patch (got ${PACKAGE_VERSION})"
+        print_info "The marketplaces reject suffixes like -rc.1: the --pre-release flag marks the package instead"
+        exit 1
+    fi
+else
+    print_info "Channel: stable"
+fi
 
 # Check for required tools and versions
 print_step "Checking required tools..."
@@ -215,21 +241,21 @@ fi
 print_success "npm: $(npm --version)"
 
 # Check Python
-if ! command -v python3 &> /dev/null; then
+if ! command -v "$PYTHON" &> /dev/null; then
     print_error "Python 3 is not installed"
     exit 1
 fi
 
-PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)")
-PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)")
+PYTHON_VERSION=$("$PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_MAJOR=$("$PYTHON" -c "import sys; print(sys.version_info.major)")
+PYTHON_MINOR=$("$PYTHON" -c "import sys; print(sys.version_info.minor)")
 
 if [ "$PYTHON_MAJOR" -lt "$REQUIRED_PYTHON_MAJOR" ] || \
    ([ "$PYTHON_MAJOR" -eq "$REQUIRED_PYTHON_MAJOR" ] && [ "$PYTHON_MINOR" -lt "$REQUIRED_PYTHON_MINOR" ]); then
     print_error "Python ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR}+ is required. Current version: ${PYTHON_VERSION}"
     exit 1
 fi
-print_success "Python: ${PYTHON_VERSION} (>= ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR} ✓)"
+print_success "Python: ${PYTHON_VERSION} (>= ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR} ✓): ${PYTHON}"
 
 if command -v vsce &> /dev/null; then
     VSCE_CMD="vsce"
@@ -408,7 +434,15 @@ fi
 # Check 7: Version hasn't been published already
 print_step "Checking if version already published..."
 # This is a best-effort check - may fail if not logged in
-VSIX_FILE="${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+VSIX_DIR="artefacts/vsix-releases"
+if [ "$PRE_RELEASE" = true ]; then
+    # Own name, so it is never mistaken for (or overwritten by) a stable package
+    VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}-pre-release.vsix"
+    PRE_RELEASE_FLAG="--pre-release"
+else
+    VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
+    PRE_RELEASE_FLAG=""
+fi
 
 if [ "$CHECKS_PASSED" = false ]; then
     print_error "Some checks failed. Please fix the issues above."
@@ -494,7 +528,8 @@ fi
 print_header "Packaging"
 
 print_step "Creating .vsix package..."
-$VSCE_CMD package || {
+mkdir -p "$VSIX_DIR"
+$VSCE_CMD package $PRE_RELEASE_FLAG --out "$VSIX_FILE" || {
     print_error "Packaging failed"
     exit 1
 }
@@ -505,7 +540,7 @@ if [ -f "$VSIX_FILE" ]; then
 else
     print_error "Expected package file not found: ${VSIX_FILE}"
     # Try to find the actual file
-    ACTUAL_VSIX=$(ls -1 *.vsix 2>/dev/null | head -1)
+    ACTUAL_VSIX=$(ls -1t "$VSIX_DIR"/*.vsix 2>/dev/null | head -1)
     if [ -n "$ACTUAL_VSIX" ]; then
         print_info "Found: ${ACTUAL_VSIX}"
         VSIX_FILE="$ACTUAL_VSIX"
@@ -529,10 +564,20 @@ print_header "Publishing"
 
 # Confirmation
 echo ""
-echo "Ready to publish version ${PACKAGE_VERSION} to:"
+if [ "$PRE_RELEASE" = true ]; then
+    echo "Ready to publish version ${PACKAGE_VERSION} as a PRE-RELEASE to:"
+else
+    echo "Ready to publish version ${PACKAGE_VERSION} to:"
+fi
 [ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
 [ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
 echo ""
+if [ "$PRE_RELEASE" = true ]; then
+    print_warning "Only users who chose 'Switch to Pre-Release Version' will get it."
+    print_warning "Version ${PACKAGE_VERSION} cannot be published again: the stable release"
+    print_warning "that follows needs a higher version (bump package.json, e.g. to the next patch)."
+    echo ""
+fi
 read -p "Proceed with publishing? (y/N) " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -545,7 +590,13 @@ PUBLISH_SUCCESS=true
 # Publish to VS Code Marketplace
 if [ "$SKIP_VSCODE" = false ]; then
     print_step "Publishing to VS Code Marketplace..."
-    if $VSCE_CMD publish; then
+    if [ "$PRE_RELEASE" = true ]; then
+        # Publish the package built above: it carries the pre-release marker
+        VSCE_PUBLISH_ARGS=(publish --pre-release --packagePath "$VSIX_FILE")
+    else
+        VSCE_PUBLISH_ARGS=(publish)
+    fi
+    if $VSCE_CMD "${VSCE_PUBLISH_ARGS[@]}"; then
         print_success "Published to VS Code Marketplace"
         print_info "View at: https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"
     else
@@ -557,7 +608,7 @@ fi
 # Publish to Open VSX
 if [ "$SKIP_OPENVSX" = false ]; then
     print_step "Publishing to Open VSX Registry..."
-    if $OVSX_CMD publish "$VSIX_FILE" -p "$OPENVSX_TOKEN"; then
+    if $OVSX_CMD publish "$VSIX_FILE" -p "$OPENVSX_TOKEN" $PRE_RELEASE_FLAG; then
         print_success "Published to Open VSX Registry"
         print_info "View at: https://open-vsx.org/extension/${PUBLISHER}/${EXTENSION_NAME}"
     else
@@ -589,11 +640,19 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
     if git ls-remote --tags origin | grep -q "refs/tags/${TAG_NAME}$"; then
         echo "  2. Tag ${TAG_NAME} is already pushed. View the release:"
         echo "     ${REPO_URL}/releases/tag/${TAG_NAME}"
+        if [ "$PRE_RELEASE" = true ]; then
+            echo "     (mark the GitHub release as a pre-release: gh release edit ${TAG_NAME} --prerelease)"
+        fi
     else
         echo "  2. Create a GitHub release:"
         echo "     git tag ${TAG_NAME}"
         echo "     git push origin ${TAG_NAME}"
-        echo "     gh release create ${TAG_NAME} --generate-notes"
+        echo "     gh release create ${TAG_NAME} --generate-notes $PRE_RELEASE_FLAG"
+    fi
+    if [ "$PRE_RELEASE" = true ]; then
+        echo "  3. Install it in VS Code: Extensions view > Scientific Data Viewer >"
+        echo "     'Switch to Pre-Release Version'; watch issues before the stable release"
+        echo "  4. Before the stable release, bump package.json above ${PACKAGE_VERSION}"
     fi
 
     echo ""

@@ -1,6 +1,9 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { DataProcessor } from '../../src/python/DataProcessor';
+import {
+    buildCreatePlotCliArgs,
+    DataProcessor,
+} from '../../src/python/DataProcessor';
 import { PythonManager } from '../../src/python/PythonManager';
 
 suite('DataProcessor Test Suite', () => {
@@ -15,7 +18,6 @@ suite('DataProcessor Test Suite', () => {
                 // Mock response for testing
                 return {
                     result: {
-                        format: 'NetCDF',
                         fileSize: 1024,
                     },
                 };
@@ -29,7 +31,6 @@ suite('DataProcessor Test Suite', () => {
                 if (args[0] === 'info') {
                     return {
                         result: {
-                            format: 'NetCDF',
                             fileSize: 1024,
                             xarray_html_repr: '',
                             xarray_text_repr: '',
@@ -81,7 +82,6 @@ suite('DataProcessor Test Suite', () => {
         const dataInfo = await dataProcessor.getDataInfo(mockUri);
 
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
         assert.strictEqual(dataInfo?.result?.fileSize, 1024);
     });
 
@@ -100,8 +100,10 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const dataInfo = await processor.getDataInfo(mockUri);
-        assert.strictEqual(dataInfo, null);
+        await assert.rejects(
+            processor.getDataInfo(mockUri),
+            /Python script failed/,
+        );
     });
 
     test('should create plot', async () => {
@@ -131,11 +133,9 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'line',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+        });
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
@@ -167,7 +167,9 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        const plotData = await processor.createPlot(mockUri, 'temperature');
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+        });
         assert.ok(plotData);
         assert.ok(plotData?.result?.plot_data.startsWith('iVBOR'));
     });
@@ -189,7 +191,9 @@ suite('DataProcessor Test Suite', () => {
 
         // createPlot throws errors instead of returning null
         try {
-            await processor.createPlot(mockUri, 'temperature', 'line');
+            await processor.createPlot(mockUri, {
+                variable: 'temperature',
+            });
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
@@ -224,11 +228,9 @@ suite('DataProcessor Test Suite', () => {
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
         // createPlot returns error in response instead of throwing
-        const plotData = await processor.createPlot(
-            mockUri,
-            'temperature',
-            'line',
-        );
+        const plotData = await processor.createPlot(mockUri, {
+            variable: 'temperature',
+        });
         assert.ok(plotData);
         assert.ok(plotData?.error);
         assert.strictEqual(plotData.error?.error, 'Plot creation failed');
@@ -237,6 +239,7 @@ suite('DataProcessor Test Suite', () => {
     test('should handle Python environment not ready', async () => {
         const mockPythonManager = {
             isReady: () => false,
+            notReadyReason: 'missing core packages in /usr/bin/python3: xarray',
         } as any;
 
         const processor = new DataProcessor(mockPythonManager);
@@ -247,24 +250,31 @@ suite('DataProcessor Test Suite', () => {
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
+            assert.strictEqual(
+                error.message,
+                'Python environment not ready: missing core packages in /usr/bin/python3: xarray',
+            );
         }
     });
 
     test('should handle Python environment not ready for plot', async () => {
         const mockPythonManager = {
             isReady: () => false,
+            notReadyReason: 'missing core packages in /usr/bin/python3: xarray',
         } as any;
 
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
         try {
-            await processor.createPlot(mockUri, 'temperature');
+            await processor.createPlot(mockUri, { variable: 'temperature' });
             assert.fail('Should have thrown an error');
         } catch (error) {
             assert.ok(error instanceof Error);
-            assert.strictEqual(error.message, 'Python environment not ready');
+            assert.strictEqual(
+                error.message,
+                'Python environment not ready: missing core packages in /usr/bin/python3: xarray',
+            );
         }
     });
 
@@ -279,7 +289,6 @@ suite('DataProcessor Test Suite', () => {
                 // Mock response for empty file
                 return {
                     result: {
-                        format: 'NetCDF',
                         fileSize: 0,
                     },
                 };
@@ -291,7 +300,6 @@ suite('DataProcessor Test Suite', () => {
 
         const dataInfo = await processor.getDataInfo(mockUri);
         assert.ok(dataInfo);
-        assert.strictEqual(dataInfo?.result?.format, 'NetCDF');
         assert.strictEqual(dataInfo?.result?.fileSize, 0);
     });
 
@@ -304,7 +312,6 @@ suite('DataProcessor Test Suite', () => {
                 enableLogs: boolean = false,
             ) => {
                 return {
-                    format: 'NetCDF',
                     fileSize: 1024,
                     error: 'File corrupted',
                 };
@@ -348,29 +355,16 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        await processor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            undefined,
-            undefined,
-            undefined,
-            { time: '0:24:2', rlat: '100:120' },
-            'time',
-            'rlat',
-            undefined, // colWrap
-            'lon',
-            'lat',
-            'time',
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            50, // bins
-        );
+        await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            dimensionSlices: { time: '0:24:2', rlat: '100:120' },
+            facetRow: 'time',
+            facetCol: 'rlat',
+            plotX: 'lon',
+            plotY: 'lat',
+            plotHue: 'time',
+            bins: 50,
+        });
 
         assert.ok(capturedArgs.includes('--dimension-slices'));
         const dimIdx = capturedArgs.indexOf('--dimension-slices');
@@ -438,29 +432,12 @@ suite('DataProcessor Test Suite', () => {
         const processor = new DataProcessor(mockPythonManager);
         const mockUri = vscode.Uri.file('/path/to/test.nc');
 
-        await processor.createPlot(
-            mockUri,
-            'temperature',
-            'auto',
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined, // colWrap
-            'time',
-            'lat',
-            'lon',
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-        );
+        await processor.createPlot(mockUri, {
+            variable: 'temperature',
+            plotX: 'time',
+            plotY: 'lat',
+            plotHue: 'lon',
+        });
 
         assert.ok(capturedArgs.includes('--plot-x'));
         assert.strictEqual(
@@ -477,5 +454,111 @@ suite('DataProcessor Test Suite', () => {
             capturedArgs[capturedArgs.indexOf('--plot-hue') + 1],
             'lon',
         );
+    });
+});
+
+suite('buildCreatePlotCliArgs', () => {
+    const baseOptions = {
+        style: 'default',
+        netcdfEngineOrder: ['netcdf4', 'h5netcdf'],
+        showInheritedCoordinates: true,
+    };
+
+    test('builds the minimal command', () => {
+        assert.deepStrictEqual(
+            buildCreatePlotCliArgs('/d/a.nc', { variable: '/t' }, baseOptions),
+            [
+                'plot',
+                '/d/a.nc',
+                '/t',
+                '--style',
+                'default',
+                '--netcdf-engine-order',
+                'netcdf4,h5netcdf',
+            ],
+        );
+    });
+
+    test('skips empty, null and invalid values (as sent by the webview)', () => {
+        const args = buildCreatePlotCliArgs(
+            '/d/a.nc',
+            {
+                variable: 't',
+                facetRow: '',
+                cmap: null as unknown as string,
+                colWrap: 0,
+                bins: 2.5,
+                aspect: -1,
+                size: null,
+                vmin: null,
+                dimensionSlices: {},
+            },
+            baseOptions,
+        );
+        assert.deepStrictEqual(args.slice(5), [
+            '--netcdf-engine-order',
+            'netcdf4,h5netcdf',
+        ]);
+    });
+
+    test('maps every option to its flag', () => {
+        const args = buildCreatePlotCliArgs(
+            '/d/a.nc',
+            {
+                variable: 't',
+                dimensionSlices: { time: '0:2' },
+                facetRow: 'time',
+                facetCol: 'lev',
+                colWrap: 'auto',
+                plotX: 'lon',
+                plotY: 'lat',
+                plotHue: 'lev',
+                xincrease: false,
+                yincrease: true,
+                aspect: 2,
+                size: 3,
+                robust: true,
+                cmap: ' viridis ',
+                bins: 20,
+                vmin: 0,
+                vmax: 1.5,
+                addColorbar: false,
+                addLegend: true,
+            },
+            {
+                ...baseOptions,
+                convertBandsToVariables: true,
+                showInheritedCoordinates: false,
+                openAsKerchunk: true,
+                facetgridFigsize: [4, 3],
+            },
+        );
+        const flagValue = (flag: string) => args[args.indexOf(flag) + 1];
+        assert.strictEqual(flagValue('--dimension-slices'), '{"time":"0:2"}');
+        assert.strictEqual(flagValue('--facet-row'), 'time');
+        assert.strictEqual(flagValue('--facet-col'), 'lev');
+        assert.strictEqual(flagValue('--col-wrap'), 'auto');
+        assert.strictEqual(flagValue('--plot-x'), 'lon');
+        assert.strictEqual(flagValue('--plot-y'), 'lat');
+        assert.strictEqual(flagValue('--plot-hue'), 'lev');
+        assert.strictEqual(flagValue('--xincrease'), 'false');
+        assert.strictEqual(flagValue('--yincrease'), 'true');
+        assert.strictEqual(flagValue('--aspect'), '2');
+        assert.strictEqual(flagValue('--size'), '3');
+        assert.strictEqual(flagValue('--cmap'), 'viridis');
+        assert.strictEqual(flagValue('--bins'), '20');
+        assert.strictEqual(flagValue('--vmin'), '0');
+        assert.strictEqual(flagValue('--vmax'), '1.5');
+        assert.strictEqual(flagValue('--facetgrid-figsize'), '4,3');
+        for (const flag of [
+            '--robust',
+            '--no-add-colorbar',
+            '--add-legend',
+            '--convert-bands-to-variables',
+            '--no-show-inherited-coordinates',
+            '--open-as-kerchunk',
+        ]) {
+            assert.ok(args.includes(flag), flag);
+        }
     });
 });

@@ -43,8 +43,4 @@ export class PerformanceTimer {
         );
         return [...this.marks];
     }
-
-    getMarks(): PerformanceMark[] {
-        return [...this.marks];
-    }
 }

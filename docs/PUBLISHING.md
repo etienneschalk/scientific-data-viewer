@@ -10,8 +10,22 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 
 1. **Update version** in `package.json`
 2. **Update CHANGELOG.md** with new features and fixes
-3. **Test thoroughly** with various file types and sizes
-4. **Update documentation** if needed
+3. **Python requirements changed?** If existing users' uv environments must change (new/changed entry in `ALL_REQUIREMENTS` or `ENVIRONMENT_CONSTRAINTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` then get their environment deleted and rebuilt once at their next start.
+4. **Test the upgrade from the previous release**: `npm run package`, then `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-<previous>.vsix` (`scripts/release-vsix.sh <previous>` rebuilds it from its tag); `./paranoia.sh --full` runs every check, this one included (and `--scenario offline`, `--scenario interrupted` when the environment changed). See `docs/v0.13/UPGRADE_TEST_PLAN.md`.
+5. **Write the release docs**: `docs/RELEASE_NOTES_<ver>.md` (read by `publish.sh` and linked from the README) and the PR summary in `docs/v<major.minor>/`.
+6. **Test thoroughly** with various file types and sizes
+7. **Update documentation** if needed (then `python scripts/generate_readme.py --no-timestamp`, with Node 22 for its prettier pass)
+
+### Pre-release
+
+`./publish.sh --pre-release` runs the same checks, builds and tests, then publishes to the **pre-release channel** of the VS Code Marketplace and Open VSX. Only users who clicked **Switch to Pre-Release Version** on the extension page get it; everyone else stays on the last stable release. Use it when a release changes something that can only be fully tested on users' machines (e.g. a rebuild of the uv environment, `ENVIRONMENT_REVISION`).
+
+- The package is built with `vsce package --pre-release` (the pre-release marker is written into the `.vsix` manifest) as `artefacts/vsix-releases/<name>-<version>-pre-release.vsix`, and that same file is published to both marketplaces (`vsce publish --pre-release --packagePath …`, `ovsx publish … --pre-release`).
+- The version stays plain `major.minor.patch`: the marketplaces reject `0.13.0-rc.1`, and `publish.sh` refuses it.
+- **A version number is used up once published**, pre-release or not: the stable release that follows needs a higher one. After `0.13.0` as a pre-release, bump `package.json` to `0.13.1`, add its CHANGELOG section and release notes, and run `./publish.sh` without the flag.
+- Pre-release users are offered the stable release when it has a higher version, so they come back to the stable channel automatically.
+- On GitHub, mark the release as a pre-release (`gh release create v<version> --generate-notes --prerelease`, or `gh release edit v<version> --prerelease`).
+- `./publish.sh --pre-release --dry-run` builds the pre-release package without publishing it.
 
 ### Publishing to VSCode Marketplace
 
@@ -47,7 +61,7 @@ To make the extension available in Cursor, VSCodium, and other VSCode-compatible
 3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
 4. **Publish**: `npm run openvsx-publish`
 
-See [PUBLISHING.md](docs/PUBLISHING.md) for detailed Open VSX publishing instructions.
+See the Open VSX section above for detailed publishing instructions.
 
 ### Manual Publishing
 
@@ -232,16 +246,16 @@ npm run compile
 
 ```bash
 # Create .vsix package
-vsce package
+npm run package
 
-# This creates: scientific-data-viewer-0.2.0.vsix
+# This creates: artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
 ```
 
 ### 3. Test the Package
 
 ```bash
 # Install the package locally for testing
-code --install-extension scientific-data-viewer-0.2.0.vsix
+code --install-extension artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
 
 # Test the installed extension
 # Verify all functionality works correctly
