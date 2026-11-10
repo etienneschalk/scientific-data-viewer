@@ -42,6 +42,11 @@ describe('S2 kerchunk', function () {
 
     const cases = [
         ['kerchunkEditor', S('sample_data.kerchunk.json'), 'ok'],
+        // python/sample_data/kerchunk.py: single file, three files combined, inline
+        ['kerchunkEditor', S('kerchunk/sst_2024-01-01.kerchunk.json'), 'ok'],
+        ['kerchunkEditor', S('kerchunk/sst_3days.kerchunk.json'), 'ok'],
+        ['kerchunkEditor', S('kerchunk/sst_3days.ref.json'), 'ok'],
+        ['kerchunkEditor', S('kerchunk/sst_2024-01-01_inline.kerchunk.json'), 'ok'],
         ['kerchunkEditor', A('inline.kerchunk.json'), 'ok'],
         ['kerchunkEditor', A('inline.ref.json'), 'ok'],
         ['kerchunkEditor', A('missing_target.kerchunk.json'), '?'],
@@ -70,6 +75,19 @@ describe('S2 kerchunk', function () {
         // plot through the real host
         const resp = await h.request(p, 'createPlot', { variable: '/v', operationId: 'k1' });
         h.record({ s: 'S2', step: 'plot inline_plain v', success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.plotData && resp.payload.plotData.length });
+        if (!resp.success) throw new Error(resp.error);
+    });
+
+    it('openAsKerchunk on kerchunk/sst_3days_refs.json -> 12 time steps from 3 files, plot the last one', async function () {
+        const f = S('kerchunk/sst_3days_refs.json');
+        const p = await openCmd('scientificDataViewer.openAsKerchunk', f);
+        if (!p) throw new Error('no panel');
+        const r = await h.waitLoaded(p);
+        h.record({ s: 'S2', how: 'openAsKerchunk', file: 'sst_3days_refs.json', ...r });
+        if (r.hasError) throw new Error(JSON.stringify(r.error));
+        // time step 11 is in the third file (sst_2024-01-03.nc)
+        const resp = await h.request(p, 'createPlot', { variable: '/sst', operationId: 'k3', dimensionSlices: { time: 11 } });
+        h.record({ s: 'S2', step: 'plot sst_3days_refs sst time=11', success: resp.success, error: resp.error, pngLen: resp.payload && resp.payload.plotData && resp.payload.plotData.length });
         if (!resp.success) throw new Error(resp.error);
     });
 

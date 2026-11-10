@@ -35,11 +35,12 @@ function renderTroubleshootingSteps(): string {
             <li>Install additional packages for format
                 <ul class="troubleshooting-sublist">
                     <li>NetCDF: ${installLink(['netCDF4', 'h5netcdf', 'scipy'], 'Install netCDF4, h5netcdf and scipy')}</li>
-                    <li>Zarr: ${installLink(['zarr'], 'Install zarr')}</li>
+                    <li>Zarr (directory, <code>.zarr.zip</code> or <code>.zip</code>): ${installLink(['zarr'], 'Install zarr')}</li>
                     <li>GRIB: ${installLink(['cfgrib'], 'Install cfgrib')}</li>
                     <li>GeoTIFF: ${installLink(['rioxarray'], 'Install rioxarray')}</li>
                     <li>JPEG-2000: ${installLink(['rioxarray'], 'Install rioxarray')}</li>
                     <li>CDF (NASA): ${installLink(['cdflib'], 'Install cdflib')}</li>
+                    <li>Kerchunk / virtual Zarr: ${installLink(['kerchunk'], 'Install kerchunk')}</li>
                 </ul>
             </li>
             <li>Refresh the Python environment: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → "Scientific Data Viewer: Refresh Python Environment"</li>

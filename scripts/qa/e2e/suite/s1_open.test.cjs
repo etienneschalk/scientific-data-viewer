@@ -17,6 +17,8 @@ const viaEditor = [
     [S('sample_zarr_arborescence.zarr'), 'zarrEditor', 'ok'],
     [S('sample_zarr_v3_sharded.zarr'), 'zarrEditor', 'ok'],
     [S('sample_zarr_inherited_coords.zarr'), 'zarrEditor', 'ok'],
+    [S('sample_zarr_v3.zarr.zip'), 'zarrEditor', 'ok'],
+    [S('sample_zarr_v2_root.zarr.zip'), 'zarrEditor', 'ok'],
     [S('sample_data.grib'), 'gribEditor', 'ok'],
     [S('sample_data.grib2'), 'gribEditor', 'ok'],
     [S('sample_data.grb'), 'gribEditor', 'ok'],
@@ -73,6 +75,9 @@ const viaCommand = [
     ['scientificDataViewer.openViewerFolder', S('sample_zarr_single_group_from_dataset.zarr'), 'ok'],
     ['scientificDataViewer.openViewerFolder', S('temporal-datasets'), 'error'],
     ['scientificDataViewer.openViewer', S('sample_zarr_v3.zarr.zip'), 'ok'],
+    ['scientificDataViewer.openViewer', S('sample_zarr_v3.zip'), 'ok'],
+    ['scientificDataViewer.openViewer', S('sample_zarr_v2_root.zip'), 'ok'],
+    ['scientificDataViewer.openViewer', S('sample_zarr_v2_root.zarr.zip'), 'ok'],
     ['scientificDataViewer.openViewer', A('root_v3.zip'), 'ok'],
     ['scientificDataViewer.openViewer', A('root_v2.zarr.zip'), 'ok'],
     ['scientificDataViewer.openViewer', A('prefixed.zip'), 'ok'],
@@ -84,6 +89,24 @@ const viaCommand = [
     ['scientificDataViewer.openViewer', S('sample_data.nc'), 'ok'],
     ['scientificDataViewer.openViewer', S('broken_file.safe'), 'error'],
 ];
+
+// Editor chosen by a plain open (double click in the Explorer): the custom
+// editor whose filenamePattern matches, or none. `openWith` above names the
+// view type, so it does not test the association itself.
+const defaultEditor = [
+    // [path, expected view type, or null when the viewer must not claim the file]
+    [S('sample_zarr_v3.zarr.zip'), 'zarrEditor'],
+    [S('sample_zarr_v2_root.zarr.zip'), 'zarrEditor'],
+    [S('sample_data.kerchunk.json'), 'kerchunkEditor'],
+    [S('kerchunk/sst_3days.ref.json'), 'kerchunkEditor'],
+    [S('sample_zarr_v3.zip'), null],
+    [S('kerchunk/sst_3days_refs.json'), null],
+];
+
+function activeTabViewType() {
+    const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+    return tab && tab.input instanceof vscode.TabInputCustom ? tab.input.viewType : null;
+}
 
 describe('S1 open formats', function () {
     before(async () => {
@@ -131,6 +154,20 @@ describe('S1 open formats', function () {
             if (r.hung) throw new Error('load hung');
             if (expected === 'ok' && r.hasError) throw new Error('unexpected error: ' + JSON.stringify(r.error));
             if (expected === 'error' && !r.hasError) throw new Error('expected error state, got ' + r.format);
+        });
+    }
+
+    for (const [file, expected] of defaultEditor) {
+        it(`default editor of ${path.basename(file)} is ${expected}`, async function () {
+            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(file));
+            const tabLabel = path.basename(file);
+            await h.waitFor(() => {
+                const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+                return tab && tab.label === tabLabel;
+            }, 30000);
+            const viewType = activeTabViewType();
+            h.record({ s: 'S1', how: 'vscode.open', file: tabLabel, expected, viewType });
+            if (viewType !== expected) throw new Error(`expected ${expected}, got ${viewType}`);
         });
     }
 

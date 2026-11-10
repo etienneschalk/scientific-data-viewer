@@ -233,27 +233,28 @@ def build_format_table(
         claimed = extensions_claimed_by_override.setdefault(language_id, set())
         claimed.update(override.get("extensions", []))
 
-    rows: list[list[str]] = []
-    seen_labels: set[str] = set()
+    # label -> extensions, in insertion order
+    rows: dict[str, list[str]] = {}
 
     for language in languages:
         alias = language.get("aliases", [language.get("id", "")])[0]
         language_id = language.get("id", "")
         claimed = extensions_claimed_by_override.get(language_id, set())
-        extensions = [
+        rows[alias] = [
             ext for ext in language.get("extensions", []) if ext not in claimed
         ]
-        rows.append([alias, ", ".join(extensions)])
-        seen_labels.add(alias)
 
+    # An override named like a language adds its extensions to that row (e.g.
+    # "Zarr (ZIP)": `.zarr.zip` is a language, a bare `.zip` is not)
     for label, override in overrides.items():
-        if label in seen_labels:
-            continue
-        extensions = ", ".join(override.get("extensions", []))
-        rows.append([label, extensions])
-        seen_labels.add(label)
+        extensions = rows.setdefault(label, [])
+        extensions.extend(
+            ext for ext in override.get("extensions", []) if ext not in extensions
+        )
 
-    return ["Format", "File Extension"], rows
+    return ["Format", "File Extension"], [
+        [label, ", ".join(extensions)] for label, extensions in rows.items()
+    ]
 
 
 def render_markdown_table(headers: list[str], rows: list[list[str]]) -> str:

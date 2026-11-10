@@ -9,6 +9,8 @@ from sdv_backend.types import SupportedExtensionType
 REPO = Path(__file__).resolve().parents[2]
 # Editors whose file name patterns map to one Python-side name
 KERCHUNK_PATTERNS = {"*.kerchunk.json", "*.ref.json"}
+# Zipped Zarr is detected from the archive content and reported as ".zarr"
+ZARR_ZIP_PATTERN = "*.zarr.zip"
 
 
 def _editor_extensions() -> set[str]:
@@ -19,6 +21,8 @@ def _editor_extensions() -> set[str]:
             pattern = selector["filenamePattern"]
             if pattern in KERCHUNK_PATTERNS:
                 extensions.add(".kerchunk")
+            elif pattern == ZARR_ZIP_PATTERN:
+                extensions.add(".zarr")
             else:
                 assert pattern.startswith("*."), pattern
                 extensions.add(pattern[1:])

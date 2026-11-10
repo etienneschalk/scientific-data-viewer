@@ -262,9 +262,20 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | Fix      | `take-screenshots.mjs` replies `{ plotData, layout, appliedSlices }` to the webview (bare PNG string → "Python script failed" on every plot since the plot layout report)                                                        |
 | Tests    | `npm test` 324 passing (was 323); `npx vsce ls` 72 files; manual test plan T37                                                                                                                                                   |
 
+### Zipped Zarr on click, Kerchunk samples (2026-11-10)
+
+| Area        | Work                                                                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why         | `*.kerchunk.json` opened on click, `*.zarr.zip` needed a right click; no install link for `kerchunk` (not in the uv env) on the error page; one Kerchunk sample, to a single file                                          |
+| Manifest    | `zarrEditor` selector `*.zarr.zip` (bare `*.zip` not claimed: ordinary archives); `zarr-zip` language (alias **Zarr (ZIP)**: file picker filter; icon hidden by Seti's `zip` mapping); `onLanguage:zarr-zip`               |
+| Error page  | **Install kerchunk** in the per-format list (`src/panel/webview/errors.ts`); the Zarr item mentions `.zarr.zip` / `.zip`                                                                                                   |
+| Sample data | `kerchunk/`: 3 daily NetCDF files + single, combined (`MultiZarrToZarr`, 12 time steps), `.ref.json`, plain `.json` and inline references; `sample_zarr_v3.zip`, `sample_zarr_v2_root.{zarr.zip,zip}` (v2 at archive root) |
+| README      | `generate_readme.py` merges a `formatTableOverrides` entry into the language row of the same label: one **Zarr (ZIP)** row, `.zarr.zip, .zip`                                                                              |
+| Tests       | `npm test` 324 passing; `pytest` 228; e2e S1 + S2 102 passing (new: default editor of `*.zarr.zip` / `.zip` / `*.ref.json` / plain `.json` via `vscode.open`; new samples open and plot); manual test plan T38             |
+
 ### Sample data & docs
 
-- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP, gzip NetCDF, COG, Kerchunk ref, `sample_data_empty_dimension.nc`)
+- `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP as `.zarr.zip` and `.zip`, gzip NetCDF, COG, Kerchunk refs incl. a `kerchunk/` folder of multi-file and inline references, `sample_data_empty_dimension.nc`)
 - `docs/RELEASE_NOTES_0.13.0.md` for users; the technical verification checklist is Part E of the manual test plan
 - README regenerated from `docs/documentation.json` + `package.json`
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`): all fields optional, to lower the barrier to reporting

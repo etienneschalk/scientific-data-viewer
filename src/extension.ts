@@ -167,6 +167,7 @@ export function activate(context: vscode.ExtensionContext) {
                     'grib',
                     'geotiff',
                     'jp2',
+                    'zarr-zip',
                 ]),
             }),
         ),

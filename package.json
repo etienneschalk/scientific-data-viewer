@@ -57,7 +57,8 @@
         "onLanguage:grib",
         "onLanguage:geotiff",
         "onLanguage:jp2",
-        "onLanguage:kerchunk"
+        "onLanguage:kerchunk",
+        "onLanguage:zarr-zip"
     ],
     "main": "./out/src/extension.js",
     "contributes": {
@@ -302,6 +303,21 @@
                 }
             },
             {
+                "id": "zarr-zip",
+                "extensions": [
+                    ".zarr.zip"
+                ],
+                "aliases": [
+                    "Zarr (ZIP)",
+                    "Zipped Zarr",
+                    "zarr-zip"
+                ],
+                "icon": {
+                    "light": "./media/icon_viridis_bold_monochromatic.svg",
+                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                }
+            },
+            {
                 "id": "grib",
                 "extensions": [
                     ".grib",
@@ -432,6 +448,9 @@
                 "selector": [
                     {
                         "filenamePattern": "*.zarr"
+                    },
+                    {
+                        "filenamePattern": "*.zarr.zip"
                     }
                 ],
                 "icon": {

@@ -33,7 +33,10 @@ from sample_data.grib import (
 )
 from sample_data.hdf5 import create_sample_hdf5, create_sample_hdf5_hdf5
 from sample_data.jp2 import create_sample_jp2, create_sample_jp2_jpeg2000
-from sample_data.kerchunk import create_sample_kerchunk_reference
+from sample_data.kerchunk import (
+    create_sample_kerchunk_collection,
+    create_sample_kerchunk_reference,
+)
 from sample_data.netcdf import (
     create_sample_file_with_spaces,
     create_sample_netcdf,
@@ -66,9 +69,11 @@ from sample_data.zarr import (
     create_sample_zarr_deeply_nested_attributes,
     create_sample_zarr_inherited_coords,
     create_sample_zarr_single_group_from_dataset,
+    create_sample_zarr_v2_zip_archives,
     create_sample_zarr_v3_plain_directory,
     create_sample_zarr_v3_sharded,
     create_sample_zarr_v3_zip_archive,
+    create_sample_zarr_v3_zip_archive_plain_zip,
     create_sample_zarr_with_nested_groups_from_datatree,
     create_sample_zarr_with_nested_groups_from_zarr,
 )
@@ -247,9 +252,24 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
                 "Zarr v3 ZIP (zarr not available)",
             ),
             G(
+                create_sample_zarr_v3_zip_archive_plain_zip,
+                "Zarr v3 (ZIP archive, .zip only)",
+                "Zarr v3 .zip (zarr not available)",
+            ),
+            G(
+                create_sample_zarr_v2_zip_archives,
+                "Zarr v2 (ZIP archive, store at the root)",
+                "Zarr v2 ZIP (zarr not available)",
+            ),
+            G(
                 create_sample_kerchunk_reference,
                 "Kerchunk (virtual Zarr)",
                 "Kerchunk reference (kerchunk not available)",
+            ),
+            G(
+                create_sample_kerchunk_collection,
+                "Kerchunk (single, multi-file, inline, .ref.json, plain .json)",
+                "Kerchunk samples in kerchunk/ (kerchunk not available)",
             ),
         ],
     ),

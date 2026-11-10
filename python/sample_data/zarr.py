@@ -1,7 +1,9 @@
 """Zarr samples (v2/v3, nested groups, sharded, zipped)."""
 
 import os
+import tempfile
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -1059,23 +1061,30 @@ def create_sample_zarr_v3_sharded():
     return output_file
 
 
-def create_sample_zarr_v3_zip_archive():
-    """Package a Zarr v3 store as a ZIP archive (v0.13 P0.3 ZipStore)."""
-    store_dir = "sample_zarr_v3_zip_inner.zarr"
-    output_zip = "sample_zarr_v3.zarr.zip"
+ZIP_INNER_STORE = "sample_zarr_v3_zip_inner.zarr"
 
-    if os.path.exists(output_zip):
-        print(f"📦 ZIP archive {output_zip} already exists. Skipping creation.")
-        print("  🔄 To regenerate, please delete the existing file first.")
-        return output_zip
 
-    print("🗜️ Creating Zarr v3 ZIP archive sample...")
+def _zip_store(store_dir: Path, output_zip: str, prefix: str = "") -> None:
+    """Write the files of ``store_dir`` into ``output_zip`` under ``prefix``.
 
-    if not optional_pkg_available("zarr"):
-        print("  ❌ zarr not available, skipping Zarr ZIP sample.")
-        return None
+    Entries are sorted and carry a fixed timestamp, so the archive is
+    byte-reproducible. ``prefix=""`` puts the store at the archive root.
+    """
+    with zipfile.ZipFile(output_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for file_path in sorted(store_dir.rglob("*")):
+            if file_path.is_file():
+                info = zipfile.ZipInfo(
+                    prefix + file_path.relative_to(store_dir).as_posix(),
+                    date_time=CREATION_DATETIME.timetuple()[:6],
+                )
+                info.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(info, file_path.read_bytes())
 
-    if not os.path.exists(store_dir):
+
+def _ensure_zip_inner_store() -> Path:
+    """The small Zarr v3 store packaged by the ``sample_zarr_v3.*`` archives."""
+    store_path = Path(ZIP_INNER_STORE)
+    if not store_path.exists():
         ds = xr.Dataset(
             {"chlorophyll": (("x",), np.linspace(0.1, 2.0, 12, dtype=np.float32))},
             coords={"x": np.arange(12)},
@@ -1085,20 +1094,88 @@ def create_sample_zarr_v3_zip_archive():
             "description": "Inner store for sample_zarr_v3.zarr.zip",
             "zarr_format": 3,
         }
-        ds.to_zarr(store_dir, mode="w", zarr_format=3)
+        ds.to_zarr(store_path, mode="w", zarr_format=3)
+    return store_path
 
-    from pathlib import Path
 
-    store_path = Path(store_dir)
-    with zipfile.ZipFile(output_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for file_path in sorted(store_path.rglob("*")):
-            if file_path.is_file():
-                # Fixed entry timestamp so the archive is byte-reproducible
-                info = zipfile.ZipInfo(
-                    file_path.as_posix(), date_time=CREATION_DATETIME.timetuple()[:6]
-                )
-                info.compress_type = zipfile.ZIP_DEFLATED
-                archive.writestr(info, file_path.read_bytes())
+def _create_v3_zip(output_zip: str):
+    """Zarr v3 store inside a ZIP, under the prefix ``sample_zarr_v3_zip_inner.zarr/``."""
+    if os.path.exists(output_zip):
+        print(f"📦 ZIP archive {output_zip} already exists. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing file first.")
+        return output_zip
 
-    print(f"✅ Created {output_zip} (Zarr v3 inside ZIP, prefix {store_dir}/)")
+    print(f"🗜️ Creating Zarr v3 ZIP archive sample {output_zip}...")
+
+    if not optional_pkg_available("zarr"):
+        print("  ❌ zarr not available, skipping Zarr ZIP sample.")
+        return None
+
+    _zip_store(_ensure_zip_inner_store(), output_zip, prefix=f"{ZIP_INNER_STORE}/")
+    print(f"✅ Created {output_zip} (Zarr v3 inside ZIP, prefix {ZIP_INNER_STORE}/)")
     return output_zip
+
+
+def create_sample_zarr_v3_zip_archive():
+    """Package a Zarr v3 store as a ``.zarr.zip`` archive (v0.13 P0.3 ZipStore).
+
+    ``*.zarr.zip`` opens in the viewer on a double click (Zarr editor).
+    """
+    return _create_v3_zip("sample_zarr_v3.zarr.zip")
+
+
+def create_sample_zarr_v3_zip_archive_plain_zip():
+    """The same archive as ``sample_zarr_v3.zarr.zip``, named ``*.zip`` only.
+
+    A bare ``.zip`` is not claimed by the viewer (it would take over every
+    archive): it opens with **Open Scientific Data Viewer** (right click).
+    """
+    return _create_v3_zip("sample_zarr_v3.zip")
+
+
+def create_sample_zarr_v2_zip_archives():
+    """A Zarr v2 store at the root of a ZIP, as ``.zarr.zip`` and as ``.zip``.
+
+    Complements the v3 archives: other Zarr format, no prefix inside the
+    archive, and a 2-D field that makes a map when plotted.
+    """
+    outputs = ["sample_zarr_v2_root.zarr.zip", "sample_zarr_v2_root.zip"]
+    if all(os.path.exists(output) for output in outputs):
+        print(f"📦 ZIP archives {', '.join(outputs)} already exist. Skipping creation.")
+        print("  🔄 To regenerate, please delete the existing files first.")
+        return outputs
+
+    print("🗜️ Creating Zarr v2 ZIP archive samples (store at the archive root)...")
+
+    if not optional_pkg_available("zarr"):
+        print("  ❌ zarr not available, skipping Zarr v2 ZIP samples.")
+        return None
+
+    lat = np.linspace(-60, 60, 25)
+    lon = np.linspace(-180, 180, 49)
+    wind = 8 + 6 * np.cos(np.deg2rad(2 * lat))[:, None] * np.sin(np.deg2rad(lon))
+    ds = xr.Dataset(
+        {
+            "wind_speed": (
+                ("lat", "lon"),
+                wind.astype("float32"),
+                {"long_name": "Wind speed at 10 m", "units": "m s-1"},
+            ),
+        },
+        coords={
+            "lat": ("lat", lat, {"units": "degrees_north"}),
+            "lon": ("lon", lon, {"units": "degrees_east"}),
+        },
+        attrs={
+            "title": "Zarr v2 store at the root of a ZIP archive",
+            "zarr_format": 2,
+            "history": f"Created on {CREATION_DATETIME.strftime('%Y-%m-%d %H:%M:%S')}",
+        },
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        store_path = Path(tmp) / "store.zarr"
+        ds.to_zarr(store_path, mode="w", zarr_format=2, consolidated=True)
+        for output in outputs:
+            _zip_store(store_path, output)
+            print(f"✅ Created {output} (Zarr v2 at the archive root)")
+    return outputs

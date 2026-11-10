@@ -169,6 +169,18 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 
 ✅ **Format:** `Zarr v3 (ZIP)`. Variable `chlorophyll` is listed.
 
+2. Close the tab, then **double-click** **`sample_zarr_v3.zarr.zip`** in the Explorer.
+
+✅ It opens directly in the viewer (tab of the **Zarr Data Viewer**), same content. (The Explorer still shows a zip icon with the default icon theme: expected, see the release notes.)
+
+3. Double-click **`sample_zarr_v3.zip`** (same archive, bare `.zip` name).
+
+✅ It does **not** open in the viewer (VS Code's usual handling of a `.zip`: a "binary file" notice). Right-click it → **Open Scientific Data Viewer**: ✅ same content as step 1.
+
+4. Double-click **`sample_zarr_v2_root.zarr.zip`**, then right-click **`sample_zarr_v2_root.zip`** → **Open Scientific Data Viewer**.
+
+✅ Both show **Format:** `Zarr v2 (ZIP)` with variable `wind_speed`; **Create Plot** draws a map.
+
 ### B6. A normal ZIP gives a clear message
 
 1. Right-click **`not_zarr.zip`** → **Open Scientific Data Viewer**.
@@ -241,6 +253,18 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 
 4. Clear the **time** box again.
 
+5. Open the folder **`kerchunk/`** and double-click **`sst_3days.kerchunk.json`**.
+
+✅ **Format:** `Kerchunk (virtual Zarr)`; variable `sst` has **12** time steps (2024-01-01 00:00 to 2024-01-03 18:00), although each `sst_2024-01-0N.nc` file holds only 4: the reference combines the three files.
+
+6. Under **Dimension slices**, type `11` in the **start** box of **time**, then **Create Plot** on **`sst`**.
+
+✅ A world map appears (this time step is read from `sst_2024-01-03.nc`). Do the same with **`sst_3days.ref.json`**: ✅ same result.
+
+7. Copy **`sst_2024-01-01_inline.kerchunk.json`** to another folder (e.g. your home folder) and open the copy.
+
+✅ It opens and plots without the NetCDF files: every chunk is inside the JSON.
+
 ### B13. An ordinary-named JSON opens only on request
 
 1. Click **`my_refs.json`** (created in A4).
@@ -254,6 +278,8 @@ At the top of the viewer, the **File Information** section shows **Format:** and
 3. In the Explorer, go to the project root, right-click **`package.json`** → **Open as Kerchunk / virtual Zarr**.
 
 ✅ An error says it is **not a Kerchunk / virtual Zarr reference**. Nothing else breaks.
+
+4. Click **`kerchunk/sst_3days_refs.json`**: ✅ it opens as text. Right-click it → **Open as Kerchunk / virtual Zarr**: ✅ the viewer opens with the 12 time steps of B12 step 5.
 
 ### B14. Cloud Optimized GeoTIFF is labelled
 
@@ -622,7 +648,7 @@ npm run compile && npm test
 python python/create_sample_data.py --overwrite
 ```
 
-New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_v3_sharded.zarr`, `sample_zarr_v3.zarr.zip`, `sample_netcdf_gzip.nc`, `sample_data_cog.tif`, and `sample_data.kerchunk.json` (requires `pip install kerchunk`).
+New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_v3_sharded.zarr`, `sample_zarr_v3.zarr.zip`, `sample_netcdf_gzip.nc`, `sample_data_cog.tif`, `sample_data.kerchunk.json` and the `kerchunk/` folder (require `pip install kerchunk`); zipped Zarr also as `sample_zarr_v3.zip`, `sample_zarr_v2_root.zarr.zip` and `sample_zarr_v2_root.zip`.
 
 ---
 
@@ -1150,6 +1176,22 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
+### T38. Zipped Zarr on click, Kerchunk install link, new samples
+
+**Expect:** `*.zarr.zip` opens in the viewer on a double click (Zarr editor) while a bare `.zip` is not claimed; the error page offers **Install kerchunk**; `python/create_sample_data.py` writes the `kerchunk/` folder and the `.zip` variants.
+
+**Test:**
+
+1. `python python/create_sample_data.py` (with `kerchunk` installed): `artefacts/sample-data/kerchunk/` holds 3 `.nc` files and 5 references; `sample_zarr_v3.zip`, `sample_zarr_v2_root.zarr.zip`, `sample_zarr_v2_root.zip` exist.
+2. Manual test plan B5 steps 2–4, B12 steps 5–7, B13 step 4.
+3. **Open Scientific Data Viewer** from the command palette: the file picker lists `*.zarr.zip` files under **Scientific Data Files** and **Zarr (ZIP)**.
+4. Select an interpreter without `kerchunk` (e.g. the extension's own environment) and open `sample_data.kerchunk.json`: the error page lists **Kerchunk / virtual Zarr: Install kerchunk** under "Install additional packages for format"; clicking it installs `kerchunk` (**Show Extension Logs**), then **Refresh** opens the file.
+5. Automated: `env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs zip-kerchunk scripts/qa/e2e/suite/s1_open.test.cjs scripts/qa/e2e/suite/s2_kerchunk.test.cjs` (the `default editor of …` cases check the association in a real VS Code).
+
+**Failure mode:** a double click on any `.zip` opening the viewer (ordinary archives hijacked); `*.zarr.zip` opening as binary; the combined Kerchunk reference showing 4 time steps instead of 12 (time units differing between the files).
+
+---
+
 ## Cleaning up after testing
 
 - **VS Code:** remove the lines you added to your user settings JSON (at least `overridePythonInterpreter` if you don't want it). Keep or uninstall the VSIX as you like.
@@ -1186,6 +1228,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B3 Zarr v2 label                           |        |       |
 | B4 Zarr folder without `.zarr`             |        |       |
 | B5 Zarr in ZIP                             |        |       |
+| B5 `.zarr.zip` on click, `.zip` from menu  |        |       |
 | B6 Normal ZIP error                        |        |       |
 | B7 Sharded Zarr encoding                   |        |       |
 | B8 Encoding setting off/on                 |        |       |
@@ -1193,6 +1236,7 @@ Copy this table into your notes or the merge request and fill it in.
 | B10 NetCDF engine order                    |        |       |
 | B11 Inherited coordinates                  |        |       |
 | B12 Kerchunk open + plot                   |        |       |
+| B12 `kerchunk/` combined + inline samples  |        |       |
 | B13 Open as Kerchunk                       |        |       |
 | B14 COG label                              |        |       |
 | B15 col_wrap auto / number                 |        |       |

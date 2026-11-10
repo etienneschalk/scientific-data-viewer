@@ -415,6 +415,22 @@ suite('Extension Test Suite', () => {
             );
             assert.ok(hdf5Editor.selector, 'HDF5 editor should have selector');
 
+            const zarrEditor = customEditors.find(
+                (editor: any) => editor.viewType === 'zarrEditor',
+            );
+            assert.ok(zarrEditor, 'Should have Zarr editor');
+            const zarrPatterns = zarrEditor.selector.map(
+                (s: { filenamePattern: string }) => s.filenamePattern,
+            );
+            assert.ok(
+                zarrPatterns.includes('*.zarr.zip'),
+                'Zarr editor should handle zipped Zarr (*.zarr.zip)',
+            );
+            assert.ok(
+                !zarrPatterns.includes('*.zip'),
+                'Zarr editor must not steal all ZIP archives',
+            );
+
             const kerchunkEditor = customEditors.find(
                 (editor: any) => editor.viewType === 'kerchunkEditor',
             );

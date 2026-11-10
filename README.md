@@ -37,11 +37,11 @@ Available on:
 | CDF (NASA) | .cdf                       |
 | HDF5       | .h5, .hdf5                 |
 | Zarr       | .zarr                      |
+| Zarr (ZIP) | .zarr.zip, .zip            |
 | GRIB       | .grib, .grib2, .grb, .grb2 |
 | GeoTIFF    | .tif, .tiff, .geotiff      |
 | JPEG-2000  | .jp2, .jpeg2000            |
 | Kerchunk   | .kerchunk.json, .ref.json  |
-| Zarr (ZIP) | .zip, .zarr.zip            |
 
 - **Python Integration**: Automatic Python environment detection and management
 - **File Tree Integration**: Right-click on supported files in the explorer to open them
@@ -58,7 +58,7 @@ Available on:
 - **Easy Settings Access**: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> ➜ _Scientific Data Viewer: Show Settings_
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Experimental Features**: Configurable experimental features with clear warnings
-- **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and `.zip` / `.zarr.zip` archives; requires **zarr-python ≥ 3** with xarray 2026.4+
+- **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and zipped Zarr: `*.zarr.zip` opens on click, other `.zip` archives with **Open Scientific Data Viewer** (right click); requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
 
 ## 📸 Screenshot Gallery
@@ -193,7 +193,7 @@ The extension supports multiple ways to configure your Python environment:
    - Select "Open Scientific Data Viewer" for single file or folder
    - Select "Open Scientific Data Viewer for Selection" to open multiple selected files or folders
    - Command "View: Split Editor" is NOT supported
-   - **Zarr stores**: `.zarr` folders, directories with `zarr.json` / `.zgroup` (even without a `.zarr` suffix), and `.zip` / `.zarr.zip` archives that contain a Zarr store. Use **Open Scientific Data Viewer (Folder)** for directory stores (shown on all folders because metadata cannot be sniffed in menu `when` clauses).
+   - **Zarr stores**: `.zarr` folders, directories with `zarr.json` / `.zgroup` (even without a `.zarr` suffix), and `.zip` / `.zarr.zip` archives that contain a Zarr store (`*.zarr.zip` also opens on click, like a supported file; a bare `.zip` only from this menu, so ordinary archives keep their usual editor). Use **Open Scientific Data Viewer (Folder)** for directory stores (shown on all folders because metadata cannot be sniffed in menu `when` clauses).
    - **Kerchunk / virtual Zarr** (:warning: experimental): files named `*.kerchunk.json` or `*.ref.json` open in a dedicated editor. For other `.json` / `.parquet` / `.parq` files, use **Open as Kerchunk / virtual Zarr**. Ordinary JSON is not hijacked. Requires the optional `kerchunk` package (`pip install kerchunk`). Not installed in the extension uv environment by default.
 
 4. **From command palette**:

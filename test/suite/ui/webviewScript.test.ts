@@ -522,6 +522,10 @@ suite('Webview script (jsdom)', () => {
             errorDiv.textContent.includes('.kerchunk.json'),
             'supported formats list is current',
         );
+        assert.ok(
+            errorDiv.textContent.includes('.zarr.zip'),
+            'zipped Zarr is in the supported formats list',
+        );
     });
 
     test('troubleshooting links post allowed commands', () => {
@@ -536,6 +540,11 @@ suite('Webview script (jsdom)', () => {
             ),
         );
         harness.click(
+            harness.document.querySelector(
+                '[data-action="install-packages"][data-packages="kerchunk"]',
+            ),
+        );
+        harness.click(
             harness.document.querySelector('[data-action="show-logs"]'),
         );
 
@@ -547,6 +556,10 @@ suite('Webview script (jsdom)', () => {
             {
                 command: 'scientificDataViewer.python.installPackages',
                 args: [['netCDF4', 'h5netcdf', 'scipy']],
+            },
+            {
+                command: 'scientificDataViewer.python.installPackages',
+                args: [['kerchunk']],
             },
             { command: 'scientificDataViewer.showLogs' },
         ]);
