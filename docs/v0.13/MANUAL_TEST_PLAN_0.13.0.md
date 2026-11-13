@@ -1240,6 +1240,21 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 
 ---
 
+### T40. New icon
+
+**Expect:** the same teal comet icon everywhere the extension shows one, readable in light and dark themes.
+
+**Test:**
+
+1. Install the `.vsix` (`npm run package`). In the **Extensions** view (dark theme, then **Preferences: Color Theme** → Light Modern), the extension shows three teal comets around a dot on a transparent background, not the old glowing ring; same on its details page.
+2. With the default file icon theme (**Seti**), open a folder holding `.nc`, `.h5`, `.zarr.zip`, `.grib2`, `.tif`, `.jp2`, `.cdf` and `.kerchunk.json` files (`artefacts/sample-data/`): each file in the **Explorer** has the teal comet icon, in both themes. Inside an expanded folder, the icon has a little space (about 4 px) between the indent guide line and its left side, and does not touch the guide.
+3. Open `sample_data.nc`: the editor tab of the viewer shows the same icon.
+4. Optional: with **Material Icon Theme**, its own icons replace the extension's file icons (expected: a file icon theme takes precedence over language icons).
+
+**Failure mode:** the old icon (dark square with a ring) in the Extensions view; a missing or broken icon on a data file or on the viewer tab; an icon that disappears on one of the two themes.
+
+---
+
 ## Cleaning up after testing
 
 - **VS Code:** remove the lines you added to your user settings JSON (at least `overridePythonInterpreter` if you don't want it). Keep or uninstall the VSIX as you like.

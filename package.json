@@ -295,8 +295,8 @@
                     "netcdf"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -309,8 +309,8 @@
                     "cdf"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -324,8 +324,8 @@
                     "hdf5"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -338,8 +338,8 @@
                     "zarr"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -353,8 +353,8 @@
                     "zarr-zip"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -370,8 +370,8 @@
                     "grib"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -386,8 +386,8 @@
                     "geotiff"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -401,8 +401,8 @@
                     "jpeg2000"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             },
             {
@@ -416,8 +416,8 @@
                     "virtual Zarr"
                 ],
                 "icon": {
-                    "light": "./media/icon_viridis_bold_monochromatic.svg",
-                    "dark": "./media/icon_viridis_bold_monochromatic.svg"
+                    "light": "./media/icon_file_explorer.svg",
+                    "dark": "./media/icon_file_explorer.svg"
                 }
             }
         ],

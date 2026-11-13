@@ -9,9 +9,11 @@
 !README.md
 !LICENSE
 
-# Icons: the extension icon (package.json "icon") and the file / editor icon
+# Icons: the extension icon (package.json "icon"), the editor tab icon
+# (customEditors, viewer panel) and the file explorer icon (languages)
 !media/icon.png
 !media/icon_viridis_bold_monochromatic.svg
+!media/icon_file_explorer.svg
 
 # Getting Started walkthrough (package.json "walkthroughs"): the media of its
 # steps, and the sample file opened by scientificDataViewer.openSampleFile

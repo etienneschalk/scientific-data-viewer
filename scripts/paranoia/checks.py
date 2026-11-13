@@ -297,7 +297,9 @@ def cmd_vsix(args: argparse.Namespace) -> int:
     # Icons and walkthrough media named anywhere in contributes (editors,
     # commands, languages, walkthroughs...)
     required |= set(
-        re.findall(r"\"(media/[^\"]+)\"", json.dumps(manifest.get("contributes", {})))
+        re.findall(
+            r"\"(?:\./)?(media/[^\"]+)\"", json.dumps(manifest.get("contributes", {}))
+        )
     )
     backend = {
         p

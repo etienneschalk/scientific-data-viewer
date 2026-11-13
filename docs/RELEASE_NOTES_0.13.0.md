@@ -28,6 +28,7 @@ v0.13 is a **technology alignment** release. xarray **2026.04.0** raised its min
 | **Contributors**      | Architecture diagrams generated from the code in `docs/architecture/` (see [§ Architecture diagrams](#architecture-diagrams))                                                                |
 | **Time Controls**     | Removed (off by default, little tested); **Dimension Slices** subset time; two settings gone (see [§ Time Controls removed](#time-controls-removed))                                         |
 | **QA pass**           | 20 fixes from adversarial / differential / end-to-end testing; harnesses in `scripts/qa/` (see [§ QA pass](#qa-pass))                                                                        |
+| **Icon**              | New icon, one colour (viridis teal), the same on the Marketplace, in the file explorer and on editor tabs (see [§ New icon](#new-icon))                                                      |
 
 **Not in v0.13:** OME-Zarr, NWB, FITS, pyfive fallback, HDF4 `.hdf`, Sentinel SAFE re-implementation, STAC/OPeNDAP/Icechunk UX. See [`docs/v0.13/OUT_OF_SCOPE.md`](./v0.13/OUT_OF_SCOPE.md).
 
@@ -574,6 +575,28 @@ The extension had about 5,000 Marketplace installs and 9,000 Open VSX downloads,
 
 ---
 
+## New icon
+
+### Why
+
+The icon (a glowing cyan-to-violet ring with corner boxes, small bar charts and dots) was drawn for a large canvas: at the sizes VS Code shows it (48 px in the Extensions view, 16 px in the file explorer) it blurred into a dark square. The file and tab icons were a teal glyph of another design, so the extension had two logos.
+
+### What changed
+
+- One motif everywhere: **three tapered comets turning around a core**, in a single colour, `#21918C` (the middle of the viridis colormap, the default colormap of matplotlib and xarray plots).
+- **Marketplace and Extensions view**: `media/icon.png`, 512 px on a transparent background (was 750 px on a dark square).
+- **File explorer and editor tabs** (every supported format, and the viewer panel): the same motif with heavier strokes, so it stays readable at 16 px. In the file explorer it sits 2 px further right (4 px of space on its left, none on its right), so it does not touch the indent guide line VS Code draws next to file icons.
+- One colour, no background: the icon reads on light and dark themes (contrast about 3.9:1 on white, 3.8:1 on the dark Marketplace banner).
+- One new file, `media/icon_file_explorer.svg`; the package has 80 files (was 79).
+
+### How it was checked
+
+- `npm test` (348 passing; new test: the Marketplace icon is a square PNG of at least 128 px, every file and editor icon exists, is an SVG and uses `#21918C` only); `npx vsce ls`: 80 files; `scripts/paranoia/checks.py vsix`: nothing missing (it now also checks icons written `./media/…`).
+- Rendered at 16 px (1× and 2×) on the Dark Modern and Light Modern backgrounds before choosing it, among about 35 candidates.
+- Manual: [manual test plan T40](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#t40-new-icon).
+
+---
+
 ## Zipped Zarr on click, Kerchunk samples
 
 ### Why
@@ -627,7 +650,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 ## Manual verification
 
 - **Testers:** [`MANUAL_TEST_PLAN_0.13.0.md`](./v0.13/MANUAL_TEST_PLAN_0.13.0.md), click by click with a results sheet (Parts A–D).
-- **Reviewers and contributors:** its [Part E — Technical verification guide](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#part-e--technical-verification-guide) gives, for each change (T0–T39), what to expect, how to test it and the common failure modes.
+- **Reviewers and contributors:** its [Part E — Technical verification guide](./v0.13/MANUAL_TEST_PLAN_0.13.0.md#part-e--technical-verification-guide) gives, for each change (T0–T40), what to expect, how to test it and the common failure modes.
 
 ---
 
@@ -664,6 +687,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 | **UI**             | Viewer restyled to match current VS Code (rounded cards, wider gutters, SVG icon toolbar, twisties, consistent form controls, callouts); colors from the theme only; one-option plot type selector removed; xarray encoding in its own section; variable and group cards; Cancel button for a single plot; load time in local time; changed plot controls outlined; layout line under each plot; Time Controls removed; high contrast themes fixed (code blocks, dark xarray repr and plots); **Empty** size for variables of 0 bytes; group and variable names selectable again |
 | **Onboarding**     | Getting Started walkthrough (Python setup in one click or own interpreter, bundled sample, first plot); four commands; progress notification when creating the uv environment (see [§ Getting Started walkthrough](#getting-started-walkthrough))                                                                                                                                                                                                                                                                                                                                |
 | **Listing**        | Marketplace display name with the main formats (UI keeps `Scientific Data Viewer`); description, 30 keywords, banner; README title, hero image and v0.13 screenshots (see [§ Marketplace listing](#marketplace-listing))                                                                                                                                                                                                                                                                                                                                                         |
+| **Icon**           | Three tapered comets around a core in `#21918C`, one design for the Marketplace icon (512 px PNG, transparent) and the 16 px file / tab icon; readable on light and dark themes (see [§ New icon](#new-icon))                                                                                                                                                                                                                                                                                                                                                                    |
 | **Release review** | No false request timeouts; cancelled dialogs, missing `.zip` reported right; installs queued behind rebuilds; `defaultView` and dead code removed; Python tests in PR CI; docs merged and archived (see [§ Release review](#release-review))                                                                                                                                                                                                                                                                                                                                     |
 | **QA**             | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`REVIEWS_0.13.0.md`](./v0.13/REVIEWS_0.13.0.md#2-qa-pass); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                                                                                                                                                                                                                                |
 | **Tests**          | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`, `test_empty_dimension_sample.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                                                                                                                     |

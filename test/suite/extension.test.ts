@@ -203,6 +203,54 @@ suite('Extension Test Suite', () => {
         );
     });
 
+    test('Extension, file and editor icons exist and are usable', () => {
+        const root = path.join(__dirname, '..', '..', '..');
+        const packageJson = JSON.parse(
+            fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+        );
+        // Marketplace icon: a PNG (SVG is rejected), square, at least 128 px.
+        const png = fs.readFileSync(path.join(root, packageJson.icon));
+        assert.strictEqual(
+            png.subarray(1, 4).toString('ascii'),
+            'PNG',
+            `${packageJson.icon} should be a PNG`,
+        );
+        const width = png.readUInt32BE(16);
+        const height = png.readUInt32BE(20);
+        assert.strictEqual(width, height, 'The icon should be square');
+        assert.ok(width >= 128, `The icon is ${width} px, needs >= 128`);
+        // File and editor tab icons (languages, custom editors): SVG files that
+        // exist, so a renamed icon cannot ship a missing image.
+        const contributes = packageJson.contributes;
+        const svgPaths = new Set<string>();
+        for (const item of [
+            ...contributes.languages,
+            ...contributes.customEditors,
+        ]) {
+            if (item.icon) {
+                svgPaths.add(item.icon.light);
+                svgPaths.add(item.icon.dark);
+            }
+        }
+        assert.ok(svgPaths.size > 0, 'Expected file icons in package.json');
+        for (const svgPath of [...svgPaths, './media/icon.svg']) {
+            const svg = fs.readFileSync(path.join(root, svgPath), 'utf8');
+            assert.ok(svg.includes('<svg'), `${svgPath} should be an SVG`);
+            // One colour only (viridis 0.5): the same icon reads on light and
+            // dark themes; see media/icon.svg for the geometry.
+            const colours = new Set(
+                (svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map((c) =>
+                    c.toUpperCase(),
+                ),
+            );
+            assert.deepStrictEqual(
+                [...colours],
+                ['#21918C'],
+                `${svgPath} should use only #21918C`,
+            );
+        }
+    });
+
     test('Extension should have correct metadata', () => {
         const extension = vscode.extensions.getExtension(
             'eschalk0.scientific-data-viewer',
