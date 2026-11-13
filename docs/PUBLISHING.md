@@ -1,20 +1,43 @@
 # 📦 Publishing Guide - Scientific Data Viewer
 
-This guide covers the complete process of publishing the Scientific Data Viewer VSCode extension to the marketplace.
+This guide covers the complete process of publishing the Scientific Data Viewer VSCode extension to the VS Code Marketplace and Open VSX. **`./publish.sh` is the way to publish**: it runs the checks, builds, tests, tags and publishes one `.vsix` to both marketplaces. The manual commands at the end are a fallback.
+
+> **⚠ The Marketplace login is changing.** Azure DevOps is retiring global personal access tokens (PATs), the kind `vsce login` has used so far. Check [§ Marketplace authentication](#marketplace-authentication-check-before-each-release) before each release: this procedure may need to be updated.
 
 ## Overview
 
-(this section was taken from the README.md)
-
 ### Preparing for Publication
 
-1. **Update version** in `package.json`
-2. **Update CHANGELOG.md** with new features and fixes
+1. **Update version** in `package.json`.
+2. **Update CHANGELOG.md** with new features and fixes, under the heading `## [<version>] - UNRELEASED`. Never write the date by hand: `publish.sh` writes the day of publishing.
 3. **Python requirements changed?** If existing users' uv environments must change (new/changed entry in `ALL_REQUIREMENTS` or `ENVIRONMENT_CONSTRAINTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` then get their environment deleted and rebuilt once at their next start.
 4. **Test the upgrade from the previous release**: `npm run package`, then `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-<previous>.vsix` (`scripts/release-vsix.sh <previous>` rebuilds it from its tag); `./paranoia.sh --full` runs every check, this one included (and `--scenario offline`, `--scenario interrupted` when the environment changed). See `docs/v0.13/UPGRADE_TEST_PLAN.md`.
-5. **Write the release docs**: `docs/RELEASE_NOTES_<ver>.md` (read by `publish.sh` and linked from the README) and the PR summary in `docs/v<major.minor>/`.
-6. **Test thoroughly** with various file types and sizes
-7. **Update documentation** if needed (then `python scripts/generate_readme.py --no-timestamp`, with Node 22 for its prettier pass)
+5. **Write the release docs**: `docs/RELEASE_NOTES_<ver>.md` (read by `publish.sh` and linked from the README) and the PR summary in `docs/v<major.minor>/`, whose commit list each commit extends with its own subject (`CLAUDE.md`).
+6. **Test thoroughly**: `./paranoia.sh --full` must say `READY` or `READY AFTER REVIEW` on the commit you publish, plus the manual test plan of the release.
+7. **Update documentation** if needed (then `python scripts/generate_readme.py --no-timestamp`, with Node 22 for its prettier pass).
+8. **Merge the release branch into `main`**, then `git switch main && git pull`. Publish from `main` only: the tag marks a commit of `main`.
+
+### Publishing with `publish.sh`
+
+```bash
+nvm use                       # Node 22
+vsce verify-pat eschalk0      # Marketplace login still valid (see § Marketplace authentication)
+./publish.sh --dry-run        # everything but commit, tag, push and publish
+./publish.sh                  # or ./publish.sh --pre-release
+```
+
+What it does, in this order (nothing is committed, tagged or pushed before the build and tests pass):
+
+1. **Checks**: Node ≥ 22, Python ≥ 3.13 (`.venv`), vsce ≥ 4, ovsx; CHANGELOG section of the version (`UNRELEASED`, or dated today) and release notes; clean working tree (required); on `main` and not behind `origin/main`; tag `v<version>` absent (or at HEAD, from an interrupted run); `OPENVSX_TOKEN` set; `vsce verify-pat <publisher>`.
+2. **Build and test**: `npm ci`, `npm run lint` (fails if `eslint --fix` changed files), `npm run compile`, `npm test` (`ELECTRON_RUN_AS_NODE` is unset first, as in `paranoia.sh`, so it also works from a VS Code terminal).
+3. **Release date**: `UNRELEASED` in the CHANGELOG heading becomes today's date; the links to that section (`#0130---unreleased` in the release notes and other docs) and the README follow; the commit subject is added to the PR summary commit list; one commit, after confirmation.
+4. **README check**: `README.md` must match `scripts/generate_readme.py` (it is packaged).
+5. **Package**: `artefacts/vsix-releases/<name>-<version>.vsix` (`-pre-release.vsix` with `--pre-release`).
+6. **Tag and push**, after a last confirmation: tag `v<version>` on HEAD, push `main` if it has the date commit, push the tag.
+7. **Publish that same `.vsix`** to the VS Code Marketplace (`vsce publish --packagePath`) and Open VSX (`ovsx publish <vsix>`). If one fails, run again with `--skip-vscode` or `--skip-openvsx`: the tag at HEAD is reused.
+8. **GitHub release**: printed command, `gh release create v<version> --notes-file docs/RELEASE_NOTES_<version>.md`.
+
+Options: `--dry-run`, `--pre-release`, `--skip-tests`, `--skip-vscode`, `--skip-openvsx` (`./publish.sh --help`).
 
 ### Pre-release
 
@@ -22,64 +45,37 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 
 - The package is built with `vsce package --pre-release` (the pre-release marker is written into the `.vsix` manifest) as `artefacts/vsix-releases/<name>-<version>-pre-release.vsix`, and that same file is published to both marketplaces (`vsce publish --pre-release --packagePath …`, `ovsx publish … --pre-release`).
 - The version stays plain `major.minor.patch`: the marketplaces reject `0.13.0-rc.1`, and `publish.sh` refuses it.
-- **A version number is used up once published**, pre-release or not: the stable release that follows needs a higher one. After `0.13.0` as a pre-release, bump `package.json` to `0.13.1`, add its CHANGELOG section and release notes, and run `./publish.sh` without the flag.
+- **A version number is used up once published**, pre-release or not: the stable release that follows needs a higher one. After `0.13.0` as a pre-release, bump `package.json` to `0.13.1`, add its CHANGELOG section (`UNRELEASED`) and release notes, and run `./publish.sh` without the flag.
 - Pre-release users are offered the stable release when it has a higher version, so they come back to the stable channel automatically.
-- On GitHub, mark the release as a pre-release (`gh release create v<version> --generate-notes --prerelease`, or `gh release edit v<version> --prerelease`).
+- On GitHub, mark the release as a pre-release (`gh release create v<version> --notes-file docs/RELEASE_NOTES_<version>.md --prerelease`, or `gh release edit v<version> --prerelease`).
 - `./publish.sh --pre-release --dry-run` builds the pre-release package without publishing it.
+- The pre-release and the stable release that follows both need a valid Marketplace login: mind the PAT retirement dates below when planning the gap between them.
 
-### Publishing to VSCode Marketplace
+## Marketplace authentication (check before each release)
 
-1. **Install vsce** (if not already installed):
+**Status as of 2026-11-13: this procedure may need to be updated.** `publish.sh` and the steps below log in to the VS Code Marketplace with an Azure DevOps **personal access token** (`vsce login <publisher>`, scope _Marketplace (Manage)_, organization _All accessible organizations_). That is a **global PAT**, and Azure DevOps is retiring them:
 
-   ```bash
-   npm install -g vsce
-   ```
+- The VS Code publishing documentation says: "On December 1, 2026, global Personal Access Tokens (PATs) in Azure DevOps are retired", and now labels PAT publishing "Not Recommended" ([Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)).
+- The Azure DevOps blog post on the retirement says, in its update of 23 October, that the date was postponed "to avoid disruption during the December holiday season": existing global PATs stop working after **27 January 2027**. Its update of 5 March cancelled the block on creating new global PATs. The post does not mention the Marketplace or `vsce` ([Retirement of Global Personal Access Tokens in Azure DevOps](https://devblogs.microsoft.com/devops/retirement-of-global-personal-access-tokens-in-azure-devops)).
 
-2. **Login to Azure DevOps**:
+What this means here:
 
-   ```bash
-   vsce login <publisher-name>
-   ```
+- Until one of those dates, `vsce login` with the existing PAT works: `vsce verify-pat eschalk0` said so on 2026-11-13, and `publish.sh` runs that check before building.
+- After it, publishing from this machine with a PAT may fail. The replacements the VS Code documentation describes are **Trusted Publishing** from GitHub Actions (OpenID Connect, `npx @vscode/vsce publish --oidc`, no stored secret) and **Microsoft Entra ID** from Azure Pipelines (`vsce publish --azure-credential`, vsce ≥ 2.26.1). Neither is set up for this repository yet: moving to one means a release workflow in `.github/workflows/` and changes to `publish.sh` (it would build, check and tag here, and the workflow would publish). Before relying on it, check the current state of the VS Code documentation: a third-party report describes `--azure-credential` with a federated service principal passing `verify-pat` and then failing at publish ([classmethod.jp, 2026](https://dev.classmethod.jp/en/articles/publish-vscode-extension-ci-marketplace-openvsx-npm/)).
+- **Open VSX** uses its own access token (`OPENVSX_TOKEN`) and is not concerned by this change.
+- **vsce 4 keeps tokens in a new credential store.** A token saved with vsce 3 is not lost: the first vsce 4 command that needs it, in an interactive terminal, asks _"A saved PAT for publisher 'eschalk0' was found in the previous credential store. Copy it to the new store? [y/N]"_: answer `y` (run `vsce verify-pat eschalk0` once after upgrading vsce).
 
-3. **Package the extension**:
-
-   ```bash
-   vsce package
-   ```
-
-4. **Publish**:
-   ```bash
-   vsce publish
-   ```
+Update this section when the login method changes, with the date and the sources.
 
 ### Publishing to Open VSX (for Cursor and other editors)
 
-To make the extension available in Cursor, VSCodium, and other VSCode-compatible editors:
+`publish.sh` publishes to Open VSX too, so Cursor, VSCodium and other VS Code-compatible editors get the extension. It needs:
 
 1. **Create Eclipse account** and sign Publisher Agreement at [open-vsx.org](https://open-vsx.org)
 2. **Generate access token** from your Open VSX profile
 3. **Set environment variable**: `export OPENVSX_TOKEN=your_token_here`
-4. **Publish**: `npm run openvsx-publish`
 
-See the Open VSX section above for detailed publishing instructions.
-
-### Manual Publishing
-
-1. **Create a Personal Access Token**:
-   - Go to Azure DevOps
-   - Create a new Personal Access Token with Marketplace permissions
-
-2. **Login**:
-
-   ```bash
-   vsce login <publisher-name>
-   # Enter your Personal Access Token when prompted
-   ```
-
-3. **Publish**:
-   ```bash
-   vsce publish
-   ```
+See [§ Publishing to Open VSX](#publishing-to-open-vsx-for-cursor-and-other-editors-1) below for details.
 
 ## Prerequisites
 
@@ -93,43 +89,42 @@ You need an Azure DevOps account to publish extensions to the VSCode marketplace
 
 ### 2. Personal Access Token
 
-_Reference: [https://code.visualstudio.com/ - Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)_
+_Reference: [https://code.visualstudio.com/ - Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension). Read [§ Marketplace authentication](#marketplace-authentication-check-before-each-release) first: global PATs are being retired._
 
 Create a Personal Access Token (PAT) for authentication:
 
 1. **Go to User Settings** → **Personal Access Tokens**
 2. **Create new token** with these scopes:
+   - **Organization**: All accessible organizations
    - **Marketplace**: Manage
-   - **Duration**: 1 year (or as needed)
+   - **Duration**: as long as allowed, and not past the retirement of global PATs
 3. **Save the token** securely (you won't see it again)
+4. **Log in**: `vsce login eschalk0`, paste the token; check with `vsce verify-pat eschalk0`
 
-### 3. Install vsce
-
-Install the Visual Studio Code Extension manager:
+### 3. Install vsce and ovsx
 
 ```bash
-npm install -g vsce
+npm install -g @vscode/vsce@4   # same major version as the devDependency; `vsce` (unscoped) is the old, deprecated package
+npm install -g ovsx
 ```
+
+`publish.sh` uses the global `vsce` (or `npx @vscode/vsce`) and refuses a version below 4.
 
 ## Pre-Publication Checklist
 
 ### 1. Code Quality
 
-- [ ] **All tests pass**: `npm test`
-- [ ] **No linting errors**: `npm run lint`
-- [ ] **Code is properly formatted**
+- [ ] **`./paranoia.sh --full`** says `READY` or `READY AFTER REVIEW` on the commit to publish (tests, lint, typecheck, package audit, QA harnesses, upgrade scenarios: `docs/DEVELOPMENT.md` § Paranoia)
 - [ ] **No console.log statements** in production code
 - [ ] **Error handling** is comprehensive
 - [ ] **Performance** is acceptable for large files
 
 ### 2. Documentation
 
-- [ ] **README.md** is complete and accurate
-- [ ] **CHANGELOG.md** is up to date
-- [ ] **API documentation** is comprehensive
-- [ ] **Screenshots** or GIFs showing functionality
-- [ ] **Installation instructions** are clear
-- [ ] **Usage examples** are provided
+- [ ] **README.md** is regenerated (`scripts/generate_readme.py --no-timestamp`) and accurate
+- [ ] **CHANGELOG.md** is up to date, heading `## [<version>] - UNRELEASED`
+- [ ] **Release notes** `docs/RELEASE_NOTES_<version>.md` and PR summary (commit list complete)
+- [ ] **Screenshots** (`npm run screenshots`, `docs/SCREENSHOTS.md`)
 
 ### 3. Package Configuration
 
@@ -141,6 +136,7 @@ npm install -g vsce
 - [ ] **Categories** are correctly assigned
 - [ ] **Repository URL** is valid
 - [ ] **License** is specified
+- [ ] **Package contents**: `npx vsce ls` lists the runtime files only (`.vscodeignore`, `CLAUDE.md`)
 
 ### 4. Testing
 
@@ -150,6 +146,7 @@ npm install -g vsce
 - [ ] **Error scenarios** are handled gracefully
 - [ ] **Performance** is acceptable
 - [ ] **User experience** is smooth
+- [ ] **The `.vsix` installed in a real VS Code** (`code --install-extension artefacts/vsix-releases/<name>-<version>.vsix`), not only F5
 
 ## Publishing to Open VSX (for Cursor and other editors)
 
@@ -187,16 +184,13 @@ npx ovsx create-namespace <publisher-name> -p $OPENVSX_TOKEN
 
 #### 2. Publish Extension
 
+`./publish.sh` publishes the `.vsix` it built to Open VSX. To publish only there (e.g. after an Open VSX failure): `./publish.sh --skip-vscode`. By hand, publish the packaged file, never a fresh build:
+
 ```bash
-# Set your access token
-export OPENVSX_TOKEN=your_token_here
-
-# Publish using npm script
-npm run openvsx-publish
-
-# Or publish directly
-npx ovsx publish -p $OPENVSX_TOKEN
+ovsx publish artefacts/vsix-releases/scientific-data-viewer-<version>.vsix -p $OPENVSX_TOKEN
 ```
+
+Avoid `npm run openvsx-publish`: it packages the working tree again, without the checks of `publish.sh`.
 
 #### 3. Verify Publication
 
@@ -223,63 +217,27 @@ npx ovsx publish -p $OPENVSX_TOKEN
 - **Free Publishing**: No fees or restrictions
 - **Easy Migration**: Same package format as VSCode Marketplace
 
-## Publishing Process
+## Manual Publishing (fallback)
 
-### 1. Prepare for Publication
-
-```bash
-# Update version in package.json
-npm version patch  # or minor, major
-
-# Update CHANGELOG.md with new features/fixes
-# Update README.md if needed
-
-# Run final tests
-npm test
-npm run lint
-
-# Compile the extension
-npm run compile
-```
-
-### 2. Package the Extension
+Only if `publish.sh` cannot run. Follow the same order: nothing is tagged before the package is built and tested, and both marketplaces get the same file.
 
 ```bash
-# Create .vsix package
-npm run package
-
-# This creates: artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
+git switch main && git pull                 # release branch merged, clean tree
+nvm use && npm ci && npm run lint && npm run compile
+env -u ELECTRON_RUN_AS_NODE npm test
+# CHANGELOG heading: UNRELEASED -> today's date; update the links to
+# #<ver>---unreleased (release notes); python scripts/generate_readme.py --no-timestamp; commit
+npm run package                             # -> artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
+code --install-extension artefacts/vsix-releases/scientific-data-viewer-<version>.vsix   # try it
+git tag v<version> && git push origin main v<version>
+vsce publish --packagePath artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
+ovsx publish artefacts/vsix-releases/scientific-data-viewer-<version>.vsix -p $OPENVSX_TOKEN
+gh release create v<version> --notes-file docs/RELEASE_NOTES_<version>.md
 ```
 
-### 3. Test the Package
+Avoid `npm run publish` / a bare `vsce publish` and `npm version`: the first packages the working tree again (a different file from the one tested), the second makes its own commit and tag.
 
-```bash
-# Install the package locally for testing
-code --install-extension artefacts/vsix-releases/scientific-data-viewer-<version>.vsix
-
-# Test the installed extension
-# Verify all functionality works correctly
-```
-
-### 4. Login to Azure DevOps
-
-```bash
-# Login with your publisher name
-vsce login <your-publisher-name>
-
-# Enter your Personal Access Token when prompted
-```
-
-### 5. Publish to Marketplace
-
-```bash
-# Publish the extension
-vsce publish
-
-# This will upload to the VSCode marketplace
-```
-
-### 6. Verify Publication
+### Verify Publication
 
 1. **Check marketplace**: Visit [VSCode Marketplace](https://marketplace.visualstudio.com/)
 2. **Search for your extension**: Look for "Scientific Data Viewer"
@@ -297,20 +255,7 @@ vsce publish
 
 ### 2. Update Process
 
-For future updates:
-
-```bash
-# Update version
-npm version patch  # or minor, major
-
-# Update CHANGELOG.md
-# Make your changes
-# Test thoroughly
-
-# Package and publish
-vsce package
-vsce publish
-```
+For future updates: bump `package.json`, add a `## [<version>] - UNRELEASED` section to the CHANGELOG and the release notes, run `./paranoia.sh --full`, merge into `main`, then `./publish.sh` ([§ Publishing with `publish.sh`](#publishing-with-publishsh)).
 
 ### 3. Marketing and Promotion
 
@@ -327,20 +272,28 @@ vsce publish
 #### Authentication Errors
 
 ```bash
-# Re-login if token expires
-vsce logout
-vsce login <your-publisher-name>
+vsce verify-pat eschalk0      # is the stored token valid?
+vsce logout eschalk0
+vsce login eschalk0           # paste a new PAT
 ```
+
+A token that stops working around the retirement dates of global PATs is not a typo: see [§ Marketplace authentication](#marketplace-authentication-check-before-each-release). After upgrading vsce from 3 to 4, answer `y` when it offers to copy the saved PAT.
 
 #### Package Errors
 
 ```bash
-# Check package.json for errors
-vsce ls
+# List the files the .vsix will contain (80 files: CLAUDE.md, .vscodeignore)
+npx vsce ls
 
-# Validate package before publishing
-vsce package --no-dependencies
+# Build the package without publishing
+./publish.sh --dry-run
 ```
+
+#### publish.sh stopped half-way
+
+- **Before "Tag and push"**: nothing was committed except, maybe, the release date commit (local). Fix the cause and run it again.
+- **After the tag, a marketplace failed**: run it again with `--skip-vscode` or `--skip-openvsx` for the one that succeeded; the tag at HEAD is reused.
+- **Tag pushed, nothing published, and a new commit is needed**: delete the tag (`git tag -d v<version> && git push origin :refs/tags/v<version>`), commit, run again.
 
 #### Publishing Errors
 

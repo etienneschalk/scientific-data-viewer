@@ -314,6 +314,17 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | Paranoia | `checks.py vsix` also checks contributes icons written `./media/…` (were skipped)                                                                                                                                                                                                                                                                                                                             |
 | Tests    | `test/suite/extension.test.ts`: Marketplace icon a square PNG ≥ 128 px; language / custom editor icons exist, are SVG, use `#21918C` only; `npm test` 348 passing; manual test plan T40                                                                                                                                                                                                                       |
 
+### Release procedure (2026-11-13)
+
+| Area       | Work                                                                                                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Why        | Check of the procedure before publishing: tag pushed before build and tests, a second build sent to the Marketplace, tests failing from a VS Code terminal, any branch accepted, date written by hand                                      |
+| publish.sh | From `main`, clean tree; `vsce verify-pat`, vsce ≥ 4; `ELECTRON_RUN_AS_NODE` unset; lint must not change files; date `UNRELEASED` → today (links, README, commit list) after tests; tag after packaging; one `.vsix` for both marketplaces |
+| Paranoia   | `checks.py release`: WARN for commits missing from the commit list (markdown escapes ignored) and for a CHANGELOG date other than today                                                                                                    |
+| Docs       | `PUBLISHING.md` rewritten around `publish.sh`, § Marketplace authentication (global PAT retirement, sources); `GETTING_STARTED.md` release steps (merge into `main` first); `CLAUDE.md` commit-list rule                                   |
+| Tooling    | Global `vsce` upgraded 3.9.2 → 4.1.0 (as `package-lock.json`); its first use offers to copy the saved PAT to the new credential store                                                                                                      |
+| Tests      | `./publish.sh --dry-run --skip-tests`; `checks.py release 0.13.0 --base main`; `./paranoia.sh --full`                                                                                                                                      |
+
 ### Sample data & docs
 
 - `python/sample_data/` generators for v0.13 fixtures (unsuffixed Zarr v3, sharded Zarr, Zarr ZIP as `.zarr.zip` and `.zip`, gzip NetCDF, COG, Kerchunk refs incl. a `kerchunk/` folder of multi-file and inline references, `sample_data_empty_dimension.nc`)
@@ -482,7 +493,7 @@ python python/create_sample_data.py --overwrite   # from the repository root
 
 ## Commits (oldest → newest)
 
-Informational: generated from `git log --reverse --format=%s main..HEAD`, so it can lag one commit behind the commit that updates it.
+Subjects of `git log --reverse --format=%s main..HEAD`, no hashes (they change on rebase). Each commit adds its own subject here, in the same commit; `paranoia.sh` warns about missing ones.
 
 1. docs: plan v0.13 technology updates
 2. feat: drop stale Sentinel-1 SAFE support claims
@@ -659,28 +670,35 @@ Release review (2026-11-05, items in `docs/v0.13/REVIEWS_0.13.0.md` § Release r
 119.  chore(tooling): share the headless Chrome code of screenshots and webview QA
 120.  test(backend): check the format list against the custom editors
 121.  docs: document the release review of 0.13.0
-122.  fix(panel): stop the file load when its tab is closed
-123.  fix(docs): regenerate README.md without a timestamp
-124.  feat(publish): add a --pre-release mode to publish.sh
+122.  docs: update the commit list of the 0.13.0 PR summary
+123.  fix(panel): stop the file load when its tab is closed
+124.  fix(docs): regenerate README.md without a timestamp
+125.  feat(publish): add a --pre-release mode to publish.sh
 
 Marketplace listing (2026-11-09):
 
-125.  feat(listing): refresh the Marketplace listing and README screenshots
+126.  feat(listing): refresh the Marketplace listing and README screenshots
 
 Zipped Zarr, names selectable, paranoia (2026-11-10):
 
-126.  .gitignore
-127.  feat(formats): open \*.zarr.zip on click; Kerchunk install link and samples
-128.  fix(webview): let users select group and variable names again
-129.  fix(paranoia): run e2e S2 on an interpreter without kerchunk
+127.  .gitignore
+128.  feat(formats): open \*.zarr.zip on click; Kerchunk install link and samples
+129.  fix(webview): let users select group and variable names again
+130.  fix(paranoia): run e2e S2 on an interpreter without kerchunk
 
 Getting Started walkthrough (2026-11-10):
 
-130.  feat(onboarding): add a small CF sample NetCDF file generated reproducibly
-131.  feat(onboarding): add a Getting Started walkthrough and an Open Sample File command
-132.  docs(onboarding): document the walkthrough and the bundled sample in 0.13.0
-133.  docs(test-plan): build and check the .vsix before testing the walkthrough (T39)
-134.  perf(onboarding): shrink the bundled sample from 120 KB to 40 KB
-135.  fix(onboarding): check walkthrough steps by their results, make Use My Own Interpreter effective
-136.  fix(onboarding): find and follow a Python extension installed while VS Code runs
-137.  test(qa): walkthrough scenarios in a fresh VS Code, paranoia step walkthrough
+131.  feat(onboarding): add a small CF sample NetCDF file generated reproducibly
+132.  feat(onboarding): add a Getting Started walkthrough and an Open Sample File command
+133.  docs(onboarding): document the walkthrough and the bundled sample in 0.13.0
+134.  docs(test-plan): build and check the .vsix before testing the walkthrough (T39)
+135.  perf(onboarding): shrink the bundled sample from 120 KB to 40 KB
+136.  fix(onboarding): check walkthrough steps by their results, make Use My Own Interpreter effective
+137.  fix(onboarding): find and follow a Python extension installed while VS Code runs
+138.  test(qa): walkthrough scenarios in a fresh VS Code, paranoia step walkthrough
+139.  test(onboarding): compare sample paths as Uri.fsPath writes them
+140.  feat(icon): new single-colour comet icon, explorer variant clear of the indent guide
+
+Release procedure (2026-11-13):
+
+141.  fix(publish): tag after build and tests, one .vsix for both stores, date from UNRELEASED

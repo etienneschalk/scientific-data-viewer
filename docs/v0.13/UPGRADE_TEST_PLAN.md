@@ -166,6 +166,6 @@ The same steps are in the README under **Troubleshooting → The extension stopp
 1. Fix on a branch from the release tag, bump to **0.13.1** (CHANGELOG, `docs/RELEASE_NOTES_0.13.1.md`).
 2. If the fix changes the uv environment: change `ALL_REQUIREMENTS` / `ENVIRONMENT_CONSTRAINTS` and bump `ENVIRONMENT_REVISION` to 3, with a line in its history comment. Users then get a rebuild at their next start.
 3. Run `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.12.1.vsix` **and** `--old artefacts/vsix-releases/scientific-data-viewer-0.13.0.vsix` (`scripts/release-vsix.sh` rebuilds them), in all three scenarios.
-4. Publish (see [PUBLISHING.md](../PUBLISHING.md)).
+4. Merge the fix into `main` (CHANGELOG heading `## [0.13.1] - UNRELEASED`), then publish from `main` with `./publish.sh` (see [PUBLISHING.md](../PUBLISHING.md)).
 
 A published version cannot be taken back from users who already updated. The fastest way out is a fixed version, plus **Install Specific Version…** in the meantime.

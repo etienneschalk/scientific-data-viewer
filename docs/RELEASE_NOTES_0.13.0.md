@@ -634,6 +634,27 @@ The viewer styling refresh set `user-select: none` on every collapsible title, t
 
 ---
 
+## Release procedure
+
+### Why
+
+A check of the release procedure before publishing found that `publish.sh` pushed the tag `v<version>` before building and testing (a failure then left a tag on an unreleased commit), published a fresh build to the VS Code Marketplace and the tested `.vsix` to Open VSX, failed its tests from a VS Code terminal (`ELECTRON_RUN_AS_NODE`), ran from any branch, and kept a release date written by hand days before the release. Separately, Azure DevOps is retiring the global personal access tokens `vsce login` relies on.
+
+### What changed
+
+- **`publish.sh`** (contributors): publishes from `main` with a clean tree (asks before going on from another branch, stops if `origin` has commits that are not local); checks the Marketplace token with `vsce verify-pat`; requires vsce 4; unsets `ELECTRON_RUN_AS_NODE` before `npm test`; stops if `eslint --fix` changed files; creates and pushes the tag **after** packaging, then publishes the **same `.vsix`** to both marketplaces (`vsce publish --packagePath`); prints `gh release create … --notes-file docs/RELEASE_NOTES_<version>.md`.
+- **Release date**: the CHANGELOG heading stays `## [0.13.0] - UNRELEASED` until publishing. `publish.sh` then writes the day, updates the links to that section (here, [Links](#links)) and the README, adds its commit to the PR summary list, and commits, after the build and the tests.
+- **Commit list of the PR summary**: each commit adds its own subject (`CLAUDE.md`); `paranoia.sh` warns about missing ones (it used to only list them) and about a CHANGELOG heading dated another day than today.
+- **`docs/PUBLISHING.md`**: rewritten around `publish.sh`; new § Marketplace authentication with the PAT retirement dates and their sources; obsolete commands removed (`npm install -g vsce`, `npm version`, a bare `vsce publish`).
+
+### How it was checked
+
+- `./publish.sh --dry-run --skip-tests` on the feature branch (warns about the branch, the token check passes, packages 80 files); `bash -n publish.sh`.
+- `scripts/paranoia/checks.py release 0.13.0 --base main`: the commit list check finds the commits that were missing, and no longer reports subjects that prettier escaped (`\*.zarr.zip`).
+- `./paranoia.sh --full` on the commit of this change.
+
+---
+
 ## New settings (summary)
 
 | Setting                    | Default                          | Effect                                                                                             |
@@ -689,6 +710,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 | **Listing**        | Marketplace display name with the main formats (UI keeps `Scientific Data Viewer`); description, 30 keywords, banner; README title, hero image and v0.13 screenshots (see [§ Marketplace listing](#marketplace-listing))                                                                                                                                                                                                                                                                                                                                                         |
 | **Icon**           | Three tapered comets around a core in `#21918C`, one design for the Marketplace icon (512 px PNG, transparent) and the 16 px file / tab icon; readable on light and dark themes (see [§ New icon](#new-icon))                                                                                                                                                                                                                                                                                                                                                                    |
 | **Release review** | No false request timeouts; cancelled dialogs, missing `.zip` reported right; installs queued behind rebuilds; `defaultView` and dead code removed; Python tests in PR CI; docs merged and archived (see [§ Release review](#release-review))                                                                                                                                                                                                                                                                                                                                     |
+| **Release**        | `publish.sh` tags after build, tests and packaging, publishes one `.vsix` to both marketplaces, from `main`; release date set from `UNRELEASED` when publishing; Marketplace token retirement documented (see [§ Release procedure](#release-procedure))                                                                                                                                                                                                                                                                                                                         |
 | **QA**             | 20 fixes from the QA pass (see [§ QA pass](#qa-pass)); QA harnesses in `scripts/qa/`; `paranoia.sh` runs every check and writes a readiness report; [`REVIEWS_0.13.0.md`](./v0.13/REVIEWS_0.13.0.md#2-qa-pass); GRIB readable with `ECCODES_DEFINITION_PATH` set; paranoia steps have time limits                                                                                                                                                                                                                                                                                |
 | **Tests**          | moved to `python/tests/`; new `test_empty_selection.py`, `test_plot_layout.py`, `test_plot_notes.py`, `test_empty_dimension_sample.py`; `test_zarr_store_detection.py`, `test_kerchunk_references.py`, `test_netcdf_datatree_quality.py`, `test_cog_detection.py`, `test_facetgrid_figsize.py`, extension contribution tests                                                                                                                                                                                                                                                     |
 
@@ -696,7 +718,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 
 ## Links
 
-- [Changelog](../CHANGELOG.md#0130---2026-11-05)
+- [Changelog](../CHANGELOG.md#0130---unreleased)
 - [Pull request summary / MR description](./v0.13/PR_SUMMARY_0.13.0.md)
 - [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
 - [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)

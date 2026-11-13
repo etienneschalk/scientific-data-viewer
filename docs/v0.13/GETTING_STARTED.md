@@ -123,21 +123,19 @@ The script runs a real v0.12.1 → v0.13.0 update in a throw-away VS Code profil
 
 ## Releasing safely
 
-1. **All green**: `./paranoia.sh --full` says `READY` or `READY AFTER REVIEW` (automated checks and the three upgrade scenarios), plus the manual results sheet. Run B20 on Windows if you can.
-2. **Set the release date**:
-   - in the CHANGELOG heading `## [0.13.0] - …`, set to 2026-11-05 during the final review; change it if the release happens on another day;
-   - in the CHANGELOG link at the bottom of the release notes;
-   - in the README (`python scripts/generate_readme.py --no-timestamp`; its changelog anchor follows the heading).
-3. **Update the commit list** of the [PR summary](./PR_SUMMARY_0.13.0.md#commits-oldest--newest).
-4. **Consider a pre-release first**: `./publish.sh --pre-release` publishes to the pre-release channel of both marketplaces ([PUBLISHING.md § Pre-release](../PUBLISHING.md#pre-release)). Only users who opted into pre-releases get it, so a broken rebuild reaches a few people first. A version number can be published only once, so the following stable release must be **0.13.1**, not 0.13.0 (bump `package.json`, add a CHANGELOG section and `docs/RELEASE_NOTES_0.13.1.md`).
-5. **Publish** with `publish.sh` ([PUBLISHING.md](../PUBLISHING.md)).
-6. **First week**: watch GitHub issues and Marketplace reviews; reply with the [support playbook](./UPGRADE_TEST_PLAN.md#if-users-get-stuck-after-the-release).
+1. **All green**: `./paranoia.sh --full` says `READY` or `READY AFTER REVIEW` on the commit you merge (automated checks and the three upgrade scenarios), plus the manual results sheet. Run B20 on Windows if you can.
+2. **Commit list** of the [PR summary](./PR_SUMMARY_0.13.0.md#commits-oldest--newest): each commit adds its own subject (`CLAUDE.md`); `paranoia.sh` warns about missing ones.
+3. **Marketplace login still valid**: `vsce verify-pat eschalk0` (`publish.sh` checks it too). Global Azure DevOps tokens are being retired (1 December 2026 in the VS Code docs, 27 January 2027 in the Azure DevOps blog): publish before, or set up another login first ([PUBLISHING.md § Marketplace authentication](../PUBLISHING.md#marketplace-authentication-check-before-each-release)). A pre-release followed by 0.13.1 needs the login for both.
+4. **Merge into `main`** (a merge commit keeps the commit list true), then `git switch main && git pull`. `publish.sh` publishes from `main` only, with a clean tree.
+5. **Release date**: leave the CHANGELOG heading `## [0.13.0] - UNRELEASED`. `publish.sh` writes the day of publishing there, in the links to that section (release notes) and in the README, and commits it, after the build and the tests.
+6. **Consider a pre-release first**: `./publish.sh --pre-release` publishes to the pre-release channel of both marketplaces ([PUBLISHING.md § Pre-release](../PUBLISHING.md#pre-release)). Only users who opted into pre-releases get it, so a broken rebuild reaches a few people first. A version number can be published only once, so the following stable release must be **0.13.1**, not 0.13.0 (bump `package.json`, add a CHANGELOG section and `docs/RELEASE_NOTES_0.13.1.md`).
+7. **Publish**: `./publish.sh --dry-run`, then `./publish.sh` ([PUBLISHING.md](../PUBLISHING.md)). The tag `v0.13.0` is created and pushed after packaging, and the same `.vsix` goes to both marketplaces.
+8. **First week**: watch GitHub issues and Marketplace reviews; reply with the [support playbook](./UPGRADE_TEST_PLAN.md#if-users-get-stuck-after-the-release).
 
 ---
 
 ## Known loose ends (not blocking)
 
-- **Release date**: see step 2 above.
 - **Commit message** `6687748 chmoding ensure.sh` does not follow the `type(scope): …` style of the others. Reword it before merging if the history matters; it is not pushed anywhere shared yet, as far as this page knows.
 - **`python/pyproject.toml`** says `requires-python >= 3.13` (the development package), while the backend still runs on Python 3.10+ interpreters of users.
 - **Old TODO**: `src/panel/webview/styles.css` (`XXX`), predates v0.13.

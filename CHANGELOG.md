@@ -6,7 +6,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
-## [0.13.0] - 2026-11-05
+## [0.13.0] - UNRELEASED
 
 ### Added
 
@@ -130,6 +130,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 ### Changed
 
+- **Release procedure (`publish.sh`)**: publishes from `main` with a clean tree; nothing is committed, tagged or pushed before `npm ci`, lint, compile and tests pass; the tag `v<version>` is created and pushed after packaging, then the same `.vsix` goes to both marketplaces (`vsce publish --packagePath`, was a second build); `ELECTRON_RUN_AS_NODE` unset before `npm test`; vsce 4 required and the Marketplace token checked (`vsce verify-pat`). The CHANGELOG heading stays `UNRELEASED` until `publish.sh` writes the day of publishing, with the links to that section, the README and the PR summary commit list, in one commit. `paranoia.sh` warns about commits missing from the PR summary commit list (each commit now adds its own subject) and about a CHANGELOG date other than today. `docs/PUBLISHING.md` rewritten around `publish.sh`, with the retirement of global Azure DevOps PATs (1 December 2026 in the VS Code docs, 27 January 2027 in the Azure DevOps blog) and its sources.
+  - **Files**: `publish.sh`, `scripts/paranoia/checks.py`, `docs/PUBLISHING.md`, `CLAUDE.md`, `docs/v0.13/GETTING_STARTED.md`, `docs/v0.13/UPGRADE_TEST_PLAN.md`, `docs/RELEASE_NOTES_0.13.0.md`, `docs/v0.13/PHASES.md`, `README.md`
+  - **Tests**: `./publish.sh --dry-run --skip-tests`; `scripts/paranoia/checks.py release 0.13.0 --base main`; `./paranoia.sh --full`
 - **Environment creation progress**: creating the extension environment (**Manage Extension Virtual Environment** → Create, or the walkthrough) shows a progress notification; it can take a few minutes.
   - **Files**: `src/python/ExtensionVirtualEnvironmentManagerUI.ts`
 - **Walkthrough docs**: README _Getting Started Walkthrough_ section and feature (from `docs/documentation.json`), commands table; `docs/DEVELOPMENT.md` (regenerating the bundled sample, manual checklist); `CLAUDE.md` (`src/onboarding/`, `.vsix` allow-list, `vsce ls` 79 files); architecture diagrams place `src/onboarding/`.

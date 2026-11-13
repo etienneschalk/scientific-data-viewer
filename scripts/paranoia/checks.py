@@ -109,6 +109,12 @@ def check_documents(f: Findings, ver: str, major_minor: str) -> list[Path]:
     heading = re.search(rf"^## \[?{re.escape(ver)}\]?(.*)$", changelog, re.M)
     if heading:
         f.ok(f"CHANGELOG.md has a {ver} section{heading.group(1)}")
+        # publish.sh replaces UNRELEASED with the day of publishing
+        date = heading.group(1).strip(" -")
+        if date.upper() != "UNRELEASED" and date != datetime.now().strftime("%Y-%m-%d"):
+            f.warn(
+                f"CHANGELOG.md {ver} is dated {date!r}: write UNRELEASED, publish.sh sets the date"
+            )
     else:
         f.fail(f"CHANGELOG.md has no '## [{ver}]' section")
 
@@ -124,19 +130,25 @@ def check_documents(f: Findings, ver: str, major_minor: str) -> list[Path]:
     return docs
 
 
-def check_commit_list(pr_summary: Path, base: str) -> None:
-    """Commits of the branch missing from the PR summary list (informational:
-    the list always lags behind the commit that updates it)."""
+def check_commit_list(f: Findings, pr_summary: Path, base: str) -> None:
+    """Commits of the branch missing from the PR summary list. Each commit adds
+    its own subject to the list (subjects only, so it can: CLAUDE.md)."""
     if not (pr_summary.exists() and base):
         return
-    listed = pr_summary.read_text(encoding="utf-8")
+    # prettier escapes markdown characters of the subjects (`\*.zarr.zip`)
+    listed = re.sub(
+        r"\\([\\`*_{}\[\]()#+\-.!<>|])", r"\1", pr_summary.read_text(encoding="utf-8")
+    )
     subjects = [s for s in git("log", "--format=%s", f"{base}..HEAD").splitlines() if s]
     missing = [s for s in subjects if s not in listed]
     for s in missing:
-        print(f"INFO not in the commit list of {pr_summary.name}: {s}")
-    print(
-        f"INFO {len(subjects) - len(missing)} of {len(subjects)} commits since {base} listed in {pr_summary.name}"
-    )
+        print(f"     not in the commit list of {pr_summary.name}: {s}")
+    if missing:
+        f.warn(
+            f"{len(missing)} of {len(subjects)} commits since {base} missing from the commit list of {pr_summary.name}"
+        )
+    else:
+        f.ok(f"{len(subjects)} commits since {base} listed in {pr_summary.name}")
 
 
 def check_not_released(f: Findings, ver: str, published: list[str]) -> None:
@@ -179,7 +191,7 @@ def cmd_release(args: argparse.Namespace) -> int:
     ver = args.version
     major_minor = ".".join(ver.split(".")[:2])
     release_notes, pr_summary = check_documents(f, ver, major_minor)
-    check_commit_list(pr_summary, args.base)
+    check_commit_list(f, pr_summary, args.base)
     check_not_released(f, ver, args.published)
     # Relative links of the documents users and reviewers read
     pages = [REPO / "README.md", REPO / "CHANGELOG.md", release_notes]
