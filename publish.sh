@@ -200,9 +200,10 @@ set_release_date() {
     sed -i -E "s/^(## \[?${ver_re}\]? - )[Uu][Nn][Rr][Ee][Ll][Ee][Aa][Ss][Ee][Dd]/\1${today}/" CHANGELOG.md
     files=(CHANGELOG.md)
 
-    mapfile -t linked < <(git grep -l -i "#${anchor_ver}---unreleased" -- '*.md' ':!README.md' ':!CHANGELOG.md' || true)
+    # Markdown links only ("CHANGELOG.md#0130---unreleased)"), not the text that explains them
+    mapfile -t linked < <(git grep -l -i "CHANGELOG\.md#${anchor_ver}---unreleased)" -- '*.md' ':!README.md' ':!CHANGELOG.md' || true)
     for f in "${linked[@]}"; do
-        sed -i "s/#${anchor_ver}---unreleased/#${anchor_ver}---${today}/gI" "$f"
+        sed -i "s/CHANGELOG\.md#${anchor_ver}---unreleased)/CHANGELOG.md#${anchor_ver}---${today})/gI" "$f"
         print_step "Link to the changelog section updated: ${f}"
         files+=("$f")
     done

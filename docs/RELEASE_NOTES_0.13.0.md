@@ -651,7 +651,8 @@ A check of the release procedure before publishing found that `publish.sh` pushe
 
 - `./publish.sh --dry-run --skip-tests` on the feature branch (warns about the branch, the token check passes, packages 80 files); `bash -n publish.sh`.
 - `scripts/paranoia/checks.py release 0.13.0 --base main`: the commit list check finds the commits that were missing, and no longer reports subjects that prettier escaped (`\*.zarr.zip`).
-- `./paranoia.sh --full` on the commit of this change.
+- The release-date step run in a throw-away clone: CHANGELOG heading, README, release notes and `PHASES.md` links dated, commit added to the list; only `CHANGELOG.md#…)` links are rewritten, not the text of `PUBLISHING.md` that explains them.
+- `./paranoia.sh --full` on 2026-11-13 (commit _fix(publish): tag after build and tests…_): `npm test` 348 passing, pytest 235 passed, e2e suites, walkthrough W1–W5, migration and failed / interrupted rebuilds from v0.12.1 passing, `.vsix` 80 files; differences from v0.12.1 (golden, info, plots, scenarios) as in the previous runs, plus the new `sample_climate.nc`; one failure, pre-commit, caused by a file edited during the run (fixed by the next commit).
 
 ---
 

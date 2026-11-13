@@ -30,7 +30,7 @@ What it does, in this order (nothing is committed, tagged or pushed before the b
 
 1. **Checks**: Node ≥ 22, Python ≥ 3.13 (`.venv`), vsce ≥ 4, ovsx; CHANGELOG section of the version (`UNRELEASED`, or dated today) and release notes; clean working tree (required); on `main` and not behind `origin/main`; tag `v<version>` absent (or at HEAD, from an interrupted run); `OPENVSX_TOKEN` set; `vsce verify-pat <publisher>`.
 2. **Build and test**: `npm ci`, `npm run lint` (fails if `eslint --fix` changed files), `npm run compile`, `npm test` (`ELECTRON_RUN_AS_NODE` is unset first, as in `paranoia.sh`, so it also works from a VS Code terminal).
-3. **Release date**: `UNRELEASED` in the CHANGELOG heading becomes today's date; the links to that section (`#0130---unreleased` in the release notes and other docs) and the README follow; the commit subject is added to the PR summary commit list; one commit, after confirmation.
+3. **Release date**: `UNRELEASED` in the CHANGELOG heading becomes today's date; the links to that section (`CHANGELOG.md#<version without dots>---unreleased` in the release notes and other docs) and the README follow; the commit subject is added to the PR summary commit list; one commit, after confirmation.
 4. **README check**: `README.md` must match `scripts/generate_readme.py` (it is packaged).
 5. **Package**: `artefacts/vsix-releases/<name>-<version>.vsix` (`-pre-release.vsix` with `--pre-release`).
 6. **Tag and push**, after a last confirmation: tag `v<version>` on HEAD, push `main` if it has the date commit, push the tag.

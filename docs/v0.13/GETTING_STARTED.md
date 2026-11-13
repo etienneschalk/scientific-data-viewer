@@ -97,10 +97,10 @@ Commits are grouped by area and listed with a one-line description in the [PR su
 ```bash
 nvm use                                         # Node 22
 npm install && npm run compile && npm run typecheck
-env -u ELECTRON_RUN_AS_NODE npm test            # 290 passing (env -u only needed from a VS Code terminal)
+env -u ELECTRON_RUN_AS_NODE npm test            # 348 passing (env -u only needed from a VS Code terminal)
 source .venv/bin/activate
-pytest python/tests -q                          # 165 passed
-python python/tools/golden_snapshots.py check   # 83 identical (needs a previous `record`: see DEVELOPMENT.md)
+pytest python/tests -q                          # 235 passed
+python python/tools/golden_snapshots.py check   # 82 cases identical (needs a previous `record`: see DEVELOPMENT.md)
 pre-commit run --all-files
 ```
 
