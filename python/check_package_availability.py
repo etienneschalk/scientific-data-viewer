@@ -5,12 +5,14 @@ Takes a list of package names as command line arguments and returns a JSON dict
 mapping package names to boolean availability status.
 """
 
+# Lazy annotations: an interpreter older than the backend supports must still
+# load this file to say so (``list[str]`` fails at definition on Python 3.8).
+from __future__ import annotations
+
 import json
 import sys
 import traceback
 from importlib.util import find_spec
-
-# test
 
 
 def _log(level: str, msg: str) -> None:
@@ -67,9 +69,29 @@ def check_package_availability(package_names: list[str]) -> dict[str, bool]:
     return availability
 
 
+MIN_PYTHON = (3, 10)
+
+
+def python_version_error() -> str | None:
+    """Message when this interpreter is older than the backend supports."""
+    if sys.version_info >= MIN_PYTHON:
+        return None
+    found = ".".join(str(part) for part in sys.version_info[:3])
+    required = ".".join(str(part) for part in MIN_PYTHON)
+    return (
+        f"Python {required} or newer is required by Scientific Data Viewer "
+        f"(this interpreter is Python {found}: {sys.executable})"
+    )
+
+
 def main() -> None:
     """Main function to handle command line arguments and output results."""
     _log("INFO", "check_package_availability script started")
+    version_error = python_version_error()
+    if version_error:
+        _log("ERROR", version_error)
+        print(json.dumps({"_error": version_error}), flush=True)
+        return
     _log("DEBUG", f"sys.argv: {sys.argv}")
     _log("DEBUG", f"sys.executable: {sys.executable}")
     _log("DEBUG", f"sys.version: {sys.version}")

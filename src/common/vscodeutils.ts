@@ -98,8 +98,11 @@ export function detectVSCodeTheme(): string {
     // Get the current VSCode theme
     const currentTheme = vscode.window.activeColorTheme;
 
-    // Check if it's a dark theme
-    if (currentTheme.kind === vscode.ColorThemeKind.Dark) {
+    // Check if it's a dark theme (HighContrast is the dark high contrast kind)
+    if (
+        currentTheme.kind === vscode.ColorThemeKind.Dark ||
+        currentTheme.kind === vscode.ColorThemeKind.HighContrast
+    ) {
         return 'dark_background';
     } else {
         return 'default';
@@ -126,14 +129,21 @@ export function getPackageJsonFromExtensionContext(
     return context.extension.packageJSON as PackageJson;
 }
 
-// TODO Should use this function everywhere the version is printed
-// It should also be added to the Troubleshooting section
 export function getVersion(): string {
     return getPackageJson().version;
 }
 
-export function getDisplayName(): string {
-    return getPackageJson().displayName;
+/**
+ * Short name shown in the UI: output channel, viewer title and outline,
+ * error messages, status bar, healthcheck. Not package.json "displayName":
+ * that one also lists the main formats so the Marketplace search finds the
+ * extension, and is too long for the UI. It must start with this name
+ * (checked by a test).
+ */
+export const PRODUCT_NAME = 'Scientific Data Viewer';
+
+export function getProductName(): string {
+    return PRODUCT_NAME;
 }
 
 function getCustomEditors(): CustomEditor[] {
@@ -170,4 +180,30 @@ export function getShowDialogFilters(ids?: string[]): {
         ),
     };
     return filters;
+}
+
+/**
+ * Context key set to true once the Python environment is ready (an
+ * interpreter with xarray was found): ticks the "Set up Python" step of the
+ * Getting Started walkthrough (completionEvents `onContext:`).
+ */
+export const CONTEXT_PYTHON_READY = 'scientificDataViewer.pythonReady';
+/**
+ * Context key set to true once a plot was created: ticks the "Explore and
+ * plot" step of the Getting Started walkthrough.
+ */
+export const CONTEXT_PLOT_CREATED = 'scientificDataViewer.plotCreated';
+/** Every context key named by a walkthrough completion event. */
+export const WALKTHROUGH_CONTEXT_KEYS: readonly string[] = [
+    CONTEXT_PYTHON_READY,
+    CONTEXT_PLOT_CREATED,
+];
+
+/** Set a context key (`setContext`); a failure is logged, never thrown. */
+export function setContextKey(key: string, value: boolean): void {
+    void Promise.resolve(
+        vscode.commands.executeCommand('setContext', key, value),
+    ).catch((error) => {
+        console.warn(`setContext ${key} failed: ${error}`);
+    });
 }

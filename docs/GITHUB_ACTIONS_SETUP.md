@@ -13,22 +13,34 @@ This document describes the GitHub Actions workflows configured to run pre-commi
 
 - Runs pre-commit on all files with verbose output
 - Includes TypeScript compilation check
-- Includes Python-specific checks
+- Python backend tests (`pytest python/tests`, Linux only, with the pinned `requirements-dev.txt`)
 - Security scanning with npm audit
 - Test execution with virtual display
 - Extension packaging
 - 20-minute timeout per job
 
+### 2. Paranoia (`.github/workflows/paranoia.yml`)
+
+**Triggers**: the `paranoia` label on a pull request (full profile, again on each push while labelled); **Run workflow** by hand (`quick` / `standard` / `full`, once the file is on the default branch); every Monday 03:00 UTC on the default branch (full)
+**Purpose**: every automated check before a release (`./paranoia.sh`, see [DEVELOPMENT.md § Paranoia](./DEVELOPMENT.md#paranoia-every-check-before-a-release)) without running it on your machine
+
+**Features**:
+
+- Ubuntu 24.04 runner: Node from `.nvmrc`, Python 3.13 with `requirements-dev.txt` (pinned) in `.venv`, uv, Xvfb, Graphviz, the image's Chrome
+- Full history and tags (last release, merge-base with `main` for the golden snapshots, old releases rebuilt from their tags)
+- Verdict and `REPORT.md` on the run's summary page; logs, plot differences, screenshots and the `.vsix` uploaded as an artifact (14 days)
+- 150-minute timeout; a new push cancels the run in progress for the same pull request
+- Create the `paranoia` label once (Issues → Labels, or `gh label create paranoia`)
+
 ## Workflow Features
 
 ### Pre-commit Integration
 
-All workflows use the `pre-commit/action@v3.0.1` action which:
+`pr-validation.yml` installs pre-commit with pip, caches `~/.cache/pre-commit` (`actions/cache`, keyed on `.pre-commit-config.yaml`) and runs `pre-commit run --show-diff-on-failure --all-files --verbose`. It does not use `pre-commit/action`: its latest release (v3.0.1) still calls `actions/cache@v4`, which targets Node.js 20, and the maintainer declined the bump ([#241](https://github.com/pre-commit/action/issues/241), [#243](https://github.com/pre-commit/action/issues/243), PRs [#242](https://github.com/pre-commit/action/pull/242), [#244](https://github.com/pre-commit/action/pull/244)). The `pre-commit/action` step is kept commented out in the workflow, to restore once a release moves to a Node 24 `actions/cache`. `paranoia.yml` runs pre-commit from `paranoia.sh`.
 
-- Automatically installs pre-commit
-- Runs all configured hooks
-- Provides detailed output
-- Supports both `--all-files` and changed-files-only modes
+### Action versions
+
+GitHub runners run JavaScript actions on Node.js 24 and are dropping Node.js 20. Keep every `uses:` on a major whose `action.yml` says `using: node24` (or a composite action that only calls such actions); otherwise the run summary shows _"Node.js 20 is deprecated…"_. Check with `curl -sL https://raw.githubusercontent.com/<owner>/<repo>/<tag>/action.yml | grep using:`. Check that the tag exists too: `astral-sh/setup-uv` publishes no major tag (`v10`) since v8.0.0, only full versions (`v10.3.3`).
 
 ### Multi-Environment Testing
 

@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for taking the time to report a bug! Please provide as much information as possible to help us reproduce and fix the issue.
+        Thank you for taking the time to report a bug! All fields are optional: share whatever you can, and the more detail, the easier it is to reproduce and fix.
 
   - type: input
     id: extension-version
@@ -16,7 +16,7 @@ body:
       description: What version of the Scientific Data Viewer extension are you using?
       placeholder: e.g., 0.2.0
     validations:
-      required: true
+      required: false
 
   - type: input
     id: vscode-version
@@ -25,7 +25,7 @@ body:
       description: What version of VSCode or Cursor are you using?
       placeholder: e.g., 1.85.0
     validations:
-      required: true
+      required: false
 
   - type: input
     id: os-version
@@ -34,7 +34,7 @@ body:
       description: What operating system are you using?
       placeholder: e.g., Windows 11, macOS 14.0, Ubuntu 22.04
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: bug-description
@@ -43,7 +43,7 @@ body:
       description: A clear and concise description of what the bug is.
       placeholder: Describe what happened and what you expected to happen.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: steps-to-reproduce
@@ -56,7 +56,7 @@ body:
         3. Scroll down to '...'
         4. See error
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: expected-behavior
@@ -64,7 +64,7 @@ body:
       label: Expected Behavior
       description: A clear and concise description of what you expected to happen.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: actual-behavior
@@ -72,7 +72,7 @@ body:
       label: Actual Behavior
       description: A clear and concise description of what actually happened.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: file-information
@@ -148,6 +148,6 @@ body:
       description: By submitting this issue, you agree to follow our Code of Conduct
       options:
         - label: I have searched existing issues and this is not a duplicate
-          required: true
+          required: false
         - label: I have read and agree to follow the [Contributing Guidelines](CONTRIBUTING.md)
-          required: true
+          required: false

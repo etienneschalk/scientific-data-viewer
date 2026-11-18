@@ -45,27 +45,33 @@ echo "✅ Python $PYTHON_VERSION detected"
 echo "📦 Installing Node.js dependencies..."
 npm install
 
-# Install Python dependencies
-echo "🐍 Installing Python dependencies..."
-pip3 install xarray netCDF4 zarr h5py numpy matplotlib h5netcdf scipy cfgrib rioxarray pandas pytest
+# Python development environment: the repository .venv, with the pinned
+# packages of requirements-dev.txt (also used by paranoia.sh, publish.sh and CI)
+echo "🐍 Creating .venv and installing requirements-dev.txt..."
+if [ ! -x .venv/bin/python ]; then
+    python3 -m venv .venv
+fi
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements-dev.txt
+PY=.venv/bin/python
 
 # Create sample data
 echo "📊 Creating sample data files..."
-echo "   This will regenerate all sample files including disposable test files..."
-python3 python/create_sample_data.py
+echo "   Existing files are kept (use --overwrite to regenerate them, --disposable for the deletion-test files)..."
+"$PY" python/create_sample_data.py
 
 # Issue #117 non-regression plot PNGs (versioned folder from package.json)
 _PKG_VERSION=$(node -p "require('./package.json').version")
 echo "📈 Generating non-regression plot snapshots (Issue #117)..."
-echo "   Output: sample-data/non_regression_test_plot/v${_PKG_VERSION}/"
+echo "   Output: artefacts/non-regression-plots/v${_PKG_VERSION}/"
 set +e
-python3 python/non_regression_test_plot.py
+"$PY" python/non_regression_test_plot.py
 NON_REG_PLOT_EXIT=$?
 set -e
 if [ $NON_REG_PLOT_EXIT -eq 0 ]; then
-    echo "✅ Non-regression plots generated (open sample-data/non_regression_test_plot/v*/ for visual check)"
+    echo "✅ Non-regression plots generated (open artefacts/non-regression-plots/v*/summary.md for visual check)"
 else
-    echo "⚠️  Non-regression plot script failed or data missing (exit $NON_REG_PLOT_EXIT). Place sample-data/hs-issue-0117.nc or run from repo root."
+    echo "⚠️  Non-regression plot script failed or data missing (exit $NON_REG_PLOT_EXIT). Check that python/create_sample_data.py created artefacts/sample-data/hs-issue-0117.nc."
 fi
 
 # Compile TypeScript
@@ -77,27 +83,15 @@ echo "🧪 Running tests..."
 echo "   Running TypeScript tests..."
 npm test
 
-# XXX No venv is used ; requires pytest to be installed globally.
-echo "   Running Python datetime edge case tests..."
+echo "   Running Python tests..."
 set +e  # Temporarily disable exit on error for test execution
-python3 -m pytest python/test_datetime_edge_cases.py -v
+"$PY" -m pytest python/tests -q
 PYTEST_EXIT_CODE=$?
 set -e  # Re-enable exit on error
 if [ $PYTEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python datetime edge case tests passed"
+    echo "✅ Python tests passed"
 else
-    echo "⚠️  Python datetime edge case tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
-fi
-
-echo "   Running Python display feature flag tests..."
-set +e
-python3 -m pytest python/test_display_feature_flags.py -v
-DISPLAY_FLAGS_PYTEST_EXIT_CODE=$?
-set -e
-if [ $DISPLAY_FLAGS_PYTEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ Python display feature flag tests passed"
-else
-    echo "⚠️  Python display feature flag tests failed (non-fatal, exit code: $DISPLAY_FLAGS_PYTEST_EXIT_CODE)"
+    echo "⚠️  Python tests failed (non-fatal, exit code: $PYTEST_EXIT_CODE)"
 fi
 
 echo ""
@@ -106,12 +100,13 @@ echo ""
 echo "Next steps:"
 echo "1. Open VSCode: code ."
 echo "2. Press F5 to run the extension in development mode"
-echo "3. Test with sample data files in the sample-data/ directory"
+echo "3. Test with sample data files in the artefacts/sample-data/ directory"
 echo ""
 echo "Useful commands:"
 echo "- npm run watch    # Watch for changes and recompile"
 echo "- npm test         # Run tests"
 echo "- npm run lint     # Check code style"
-echo "- npm run package  # Create .vsix package"
+echo "- npm run package  # Create .vsix package in artefacts/vsix-releases/"
+echo "- .venv/bin/python -m pytest python/tests   # Python tests"
 echo ""
 echo "Happy coding! 🚀"

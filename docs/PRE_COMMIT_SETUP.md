@@ -11,7 +11,7 @@ The pre-commit configuration ensures consistent code formatting and quality acro
 - `.pre-commit-config.yaml` - Main pre-commit configuration
 - `pyproject.toml` - Ruff configuration for Python formatting and linting
 - `.prettierrc` - Prettier configuration for code formatting
-- `.eslintrc.js` - ESLint configuration for TypeScript/JavaScript linting
+- `eslint.config.mjs` - ESLint configuration (flat config) for TypeScript/JavaScript linting
 - `.secrets.baseline` - Baseline for detect-secrets security scanning
 
 ## Tools Used
@@ -122,7 +122,7 @@ Uses the existing `.prettierrc` file with:
 
 ### ESLint Configuration
 
-Uses the existing `.eslintrc.js` with TypeScript support and custom rules:
+Uses `eslint.config.mjs` (ESLint flat config, `typescript-eslint` parser and plugin) with custom rules:
 
 - TypeScript parser and plugin support
 - Custom rules for code quality

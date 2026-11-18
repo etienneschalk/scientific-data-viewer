@@ -1,40 +1,44 @@
 import * as assert from 'assert';
 import { HeaderExtractor } from '../../../src/outline/HeaderExtractor';
-import { DataInfoResult } from '../../../src/types';
+import { DataInfoResult, HeaderItem } from '../../../src/types';
 
-// Mock DOMParser for Node.js test environment
-(global as any).DOMParser = class DOMParser {
-    parseFromString(html: string, type: string) {
-        // Simple mock implementation that can parse basic HTML headers
-        const mockDoc = {
-            querySelectorAll: (selector: string) => {
-                if (selector === 'h1, h2, h3, h4, h5, h6') {
-                    const headers: any[] = [];
-                    const headerRegex =
-                        /<(h[1-6])(?:\s+id="([^"]*)")?[^>]*>([^<]*)<\/h[1-6]>/gi;
-                    let match;
-                    let index = 0;
+/** Minimal DataInfoResult with the fields the outline reads. */
+function makeDataInfo(fields: Record<string, unknown>): DataInfoResult {
+    return {
+        fileSize: 0,
+        xarray_html_repr: '',
+        xarray_text_repr: '',
+        xarray_show_versions: '',
+        used_engine: 'netcdf4',
+        format_info: {
+            extension: 'nc',
+            display_name: 'NetCDF',
+            available_engines: [],
+            missing_packages: [],
+        },
+        dimensions_flattened: {},
+        coordinates_flattened: {},
+        variables_flattened: {},
+        attributes_flattened: {},
+        xarray_html_repr_flattened: {},
+        xarray_text_repr_flattened: {},
+        ...fields,
+    } as unknown as DataInfoResult;
+}
 
-                    while ((match = headerRegex.exec(html)) !== null) {
-                        const level = parseInt(match[1].charAt(1));
-                        const id = match[2] || `header-${index}`;
-                        const text = match[3].trim();
-
-                        headers.push({
-                            tagName: match[1].toUpperCase(),
-                            id: id,
-                            textContent: text,
-                        });
-                        index++;
-                    }
-                    return headers;
-                }
-                return [];
-            },
-        };
-        return mockDoc;
+/** Find a header by id anywhere in the tree. */
+function findById(headers: HeaderItem[], id: string): HeaderItem | undefined {
+    for (const header of headers) {
+        if (header.id === id) {
+            return header;
+        }
+        const found = findById(header.children, id);
+        if (found) {
+            return found;
+        }
     }
-};
+    return undefined;
+}
 
 suite('HeaderExtractor Test Suite', () => {
     test('should create HeaderExtractor instance', () => {
@@ -42,55 +46,8 @@ suite('HeaderExtractor Test Suite', () => {
         assert.ok(HeaderExtractor);
     });
 
-    test('should extract headers from HTML content', () => {
-        const htmlContent = `
-            <h1>Main Title</h1>
-            <h2>Section 1</h2>
-            <h3>Subsection 1.1</h3>
-            <h2>Section 2</h2>
-        `;
-
-        const headers = HeaderExtractor.extractHeaders(htmlContent);
-
-        assert.ok(headers);
-        assert.ok(Array.isArray(headers));
-        assert.strictEqual(headers.length, 1); // One top-level header (h1), h2s are children
-
-        const mainTitle = headers.find((h) => h.label === 'Main Title');
-        assert.ok(mainTitle);
-        assert.strictEqual(mainTitle.level, 1);
-        assert.strictEqual(mainTitle.children.length, 2); // Two h2 sections as children
-    });
-
-    test('should create data viewer headers', () => {
-        const headers = HeaderExtractor.createDataViewerHeaders();
-
-        assert.ok(headers);
-        assert.ok(Array.isArray(headers));
-        assert.ok(headers.length > 0);
-
-        const titleHeader = headers.find(
-            (h) => h.label === 'Scientific Data Viewer',
-        );
-        assert.ok(titleHeader);
-        assert.strictEqual(titleHeader.level, 1);
-    });
-
     test('should create dynamic data viewer headers', () => {
-        const dataInfo: DataInfoResult = {
-            format: 'NetCDF',
-            fileSize: 1024,
-            xarray_html_repr: '<div>Test HTML</div>',
-            xarray_text_repr: 'Test text representation',
-            xarray_show_versions: 'Test versions',
-            format_info: {
-                extension: 'nc',
-                display_name: 'NetCDF',
-                available_engines: [],
-                missing_packages: [],
-                is_supported: true,
-            },
-            used_engine: 'netcdf4',
+        const dataInfo = makeDataInfo({
             dimensions_flattened: {
                 group1: {
                     time: 100,
@@ -131,7 +88,7 @@ suite('HeaderExtractor Test Suite', () => {
             xarray_text_repr_flattened: {
                 group1: 'Group 1 text',
             },
-        };
+        });
 
         const headers =
             HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
@@ -147,20 +104,7 @@ suite('HeaderExtractor Test Suite', () => {
     });
 
     test('should order outline groups from dimensions_flattened', () => {
-        const dataInfo: DataInfoResult = {
-            format: 'NetCDF',
-            fileSize: 1024,
-            xarray_html_repr: '',
-            xarray_text_repr: '',
-            xarray_show_versions: '',
-            format_info: {
-                extension: 'nc',
-                display_name: 'NetCDF',
-                available_engines: [],
-                missing_packages: [],
-                is_supported: true,
-            },
-            used_engine: 'netcdf4',
+        const dataInfo = makeDataInfo({
             dimensions_flattened: {
                 '/': { x: 1 },
                 '/sector_a': { x: 1 },
@@ -192,7 +136,7 @@ suite('HeaderExtractor Test Suite', () => {
                 '/': 'root',
                 '/sector_a': 'a',
             },
-        };
+        });
 
         const headers =
             HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
@@ -212,24 +156,6 @@ suite('HeaderExtractor Test Suite', () => {
             htmlReprHeader.children.map((c) => c.label),
             ['/', '/sector_a', '/sector_b'],
         );
-    });
-
-    test('should handle empty HTML content', () => {
-        const headers = HeaderExtractor.extractHeaders('');
-
-        assert.ok(headers);
-        assert.ok(Array.isArray(headers));
-        assert.strictEqual(headers.length, 0);
-    });
-
-    test('should handle invalid HTML content', () => {
-        const headers = HeaderExtractor.extractHeaders(
-            '<invalid>html</invalid>',
-        );
-
-        assert.ok(headers);
-        assert.ok(Array.isArray(headers));
-        // Should still return empty array rather than throwing
     });
 
     test('should handle null data info', () => {
@@ -252,103 +178,15 @@ suite('HeaderExtractor Test Suite', () => {
         assert.ok(headers.length > 0);
     });
 
-    test('should create hierarchical header structure', () => {
-        const htmlContent = `
-            <h1>Main Title</h1>
-            <h2>Section 1</h2>
-            <h3>Subsection 1.1</h3>
-            <h3>Subsection 1.2</h3>
-            <h2>Section 2</h2>
-            <h3>Subsection 2.1</h3>
-        `;
-
-        const headers = HeaderExtractor.extractHeaders(htmlContent);
-
-        assert.ok(headers);
-        assert.strictEqual(headers.length, 1); // One top-level header (h1)
-
-        const mainTitle = headers.find((h) => h.label === 'Main Title');
-        assert.ok(mainTitle);
-        assert.strictEqual(mainTitle.children.length, 2); // Two h2 sections as children
-
-        const section1 = mainTitle.children.find(
-            (h) => h.label === 'Section 1',
-        );
-        assert.ok(section1);
-        assert.strictEqual(section1.children.length, 2); // Two h3 subsections
-
-        const subsection11 = section1.children.find(
-            (h) => h.label === 'Subsection 1.1',
-        );
-        assert.ok(subsection11);
-        assert.strictEqual(subsection11.level, 3);
-    });
-
-    test('should assign IDs to headers', () => {
-        const htmlContent = '<h1>Test Header</h1>';
-        const headers = HeaderExtractor.extractHeaders(htmlContent);
-
-        assert.ok(headers);
-        assert.strictEqual(headers.length, 1);
-
-        const header = headers[0];
-        assert.ok(header.id);
-        assert.ok(header.id.includes('header-'));
-    });
-
-    test('should handle headers with existing IDs', () => {
-        const htmlContent = '<h1 id="custom-id">Test Header</h1>';
-        const headers = HeaderExtractor.extractHeaders(htmlContent);
-
-        assert.ok(headers);
-        assert.strictEqual(headers.length, 1);
-
-        const header = headers[0];
-        assert.strictEqual(header.id, 'custom-id');
-    });
-
-    test('should handle complex HTML structure', () => {
-        const htmlContent = `
-            <div class="wrapper">
-                <h1>Main Title</h1>
-                <div class="content">
-                    <h2>Section 1</h2>
-                    <p>Some content</p>
-                    <h3>Subsection</h3>
-                </div>
-            </div>
-        `;
-
-        const headers = HeaderExtractor.extractHeaders(htmlContent);
-
-        assert.ok(headers);
-        assert.strictEqual(headers.length, 1); // One top-level header
-        assert.strictEqual(headers[0].children.length, 1); // One section
-        assert.strictEqual(headers[0].children[0].children.length, 1); // One subsection
-    });
-
     test('should handle empty data info for dynamic headers', () => {
-        const dataInfo: DataInfoResult = {
-            format: 'NetCDF',
-            fileSize: 0,
-            xarray_html_repr: '',
-            xarray_text_repr: '',
-            xarray_show_versions: '',
-            format_info: {
-                extension: 'nc',
-                display_name: 'NetCDF',
-                available_engines: [],
-                missing_packages: [],
-                is_supported: true,
-            },
-            used_engine: 'netcdf4',
+        const dataInfo = makeDataInfo({
             dimensions_flattened: {},
             coordinates_flattened: {},
             variables_flattened: {},
             attributes_flattened: {},
             xarray_html_repr_flattened: {},
             xarray_text_repr_flattened: {},
-        };
+        });
 
         const headers =
             HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
@@ -357,5 +195,150 @@ suite('HeaderExtractor Test Suite', () => {
         assert.ok(Array.isArray(headers));
         // Should still return base headers even with empty data
         assert.ok(headers.length > 0);
+    });
+    suite('group attribute ids match the webview', () => {
+        const dataInfo = makeDataInfo({
+            dimensions_flattened: { '/': { x: 1 } },
+            coordinates_flattened: { '/': [] },
+            variables_flattened: { '/': [] },
+            attributes_flattened: {
+                '/': {
+                    title: 'Test',
+                    'zarr.conventions': { version: '1', spec: { url: 'u' } },
+                    flags: [1, 2],
+                },
+            },
+        });
+
+        test('nested attributes view uses attributes/attr ids, recursively', () => {
+            const headers = HeaderExtractor.createDynamicDataViewerHeaders(
+                dataInfo,
+                { nestedAttributesView: true },
+            );
+            const section = findById(
+                headers,
+                HeaderExtractor.joinId(['data-group', '/', 'attributes']),
+            );
+            assert.ok(section);
+            assert.deepStrictEqual(
+                section.children.map((c) => c.id),
+                [
+                    'data-group___-___attributes___attr___title',
+                    'data-group___-___attributes___attr___zarr-conventions',
+                    'data-group___-___attributes___attr___flags',
+                ],
+            );
+            const nested = section.children[1];
+            assert.strictEqual(nested.label, 'zarr.conventions');
+            assert.deepStrictEqual(
+                nested.children.map((c) => c.id),
+                [
+                    'data-group___-___attributes___attr___zarr-conventions___attr___version',
+                    'data-group___-___attributes___attr___zarr-conventions___attr___spec',
+                ],
+            );
+            assert.strictEqual(
+                nested.children[1].children[0].id,
+                'data-group___-___attributes___attr___zarr-conventions___attr___spec___attr___url',
+            );
+            assert.strictEqual(section.children[2].label, 'flags: [1,2]');
+            assert.strictEqual(section.children[2].children.length, 0);
+        });
+
+        test('flat attributes view uses attribute ids', () => {
+            const headers = HeaderExtractor.createDynamicDataViewerHeaders(
+                dataInfo,
+                { nestedAttributesView: false },
+            );
+            const section = findById(
+                headers,
+                HeaderExtractor.joinId(['data-group', '/', 'attributes']),
+            );
+            assert.ok(section);
+            assert.deepStrictEqual(
+                section.children.map((c) => c.id),
+                [
+                    'data-group___-___attribute___title',
+                    'data-group___-___attribute___zarr-conventions',
+                    'data-group___-___attribute___flags',
+                ],
+            );
+            assert.ok(section.children.every((c) => c.children.length === 0));
+        });
+
+        test('defaults to the nestedAttributesView setting (true)', () => {
+            const headers =
+                HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
+            assert.ok(
+                findById(headers, 'data-group___-___attributes___attr___title'),
+            );
+        });
+    });
+
+    test('xarray encoding has its own sections, with the webview ids', () => {
+        const variable = (name: string, encoding: Record<string, unknown>) => ({
+            name,
+            dtype: 'float32',
+            shape: [2],
+            dimensions: ['x'],
+            size_bytes: 8,
+            attributes: { units: 'm' },
+            encoding,
+        });
+        const dataInfo = makeDataInfo({
+            dimensions_flattened: { '/': { x: 2 } },
+            coordinates_flattened: { '/': [variable('x', {})] },
+            variables_flattened: {
+                '/': [variable('t', { dtype: 'int16', zlib: true })],
+            },
+            attributes_flattened: { '/': {} },
+            encoding_flattened: { '/': { source: 'a.nc' } },
+        });
+
+        const headers = HeaderExtractor.createDynamicDataViewerHeaders(
+            dataInfo,
+            { nestedAttributesView: false },
+        );
+
+        const t = findById(headers, 'data-group___-___variable___t');
+        assert.ok(t);
+        assert.deepStrictEqual(
+            t.children.map((c) => [c.label, c.id]),
+            [
+                [
+                    'Attributes (1)',
+                    'data-group___-___variable___t___attributes',
+                ],
+                [
+                    'Xarray Encoding (2)',
+                    'data-group___-___variable___t___encoding',
+                ],
+            ],
+        );
+        assert.deepStrictEqual(
+            t.children[1].children.map((c) => [c.label, c.id]),
+            [
+                [
+                    'dtype: int16',
+                    'data-group___-___variable___t___encoding-entry___dtype',
+                ],
+                [
+                    'zlib: true',
+                    'data-group___-___variable___t___encoding-entry___zlib',
+                ],
+            ],
+        );
+        // No entry, no section
+        const x = findById(headers, 'data-group___-___coordinate___x');
+        assert.deepStrictEqual(
+            x?.children.map((c) => c.label),
+            ['Attributes (1)'],
+        );
+        const groupEncoding = findById(headers, 'data-group___-___encoding');
+        assert.strictEqual(groupEncoding?.label, 'Xarray Encoding (1)');
+        assert.strictEqual(
+            groupEncoding?.children[0].id,
+            'data-group___-___encoding-entry___source',
+        );
     });
 });

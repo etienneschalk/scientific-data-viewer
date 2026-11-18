@@ -233,27 +233,28 @@ def build_format_table(
         claimed = extensions_claimed_by_override.setdefault(language_id, set())
         claimed.update(override.get("extensions", []))
 
-    rows: list[list[str]] = []
-    seen_labels: set[str] = set()
+    # label -> extensions, in insertion order
+    rows: dict[str, list[str]] = {}
 
     for language in languages:
         alias = language.get("aliases", [language.get("id", "")])[0]
         language_id = language.get("id", "")
         claimed = extensions_claimed_by_override.get(language_id, set())
-        extensions = [
+        rows[alias] = [
             ext for ext in language.get("extensions", []) if ext not in claimed
         ]
-        rows.append([alias, ", ".join(extensions)])
-        seen_labels.add(alias)
 
+    # An override named like a language adds its extensions to that row (e.g.
+    # "Zarr (ZIP)": `.zarr.zip` is a language, a bare `.zip` is not)
     for label, override in overrides.items():
-        if label in seen_labels:
-            continue
-        extensions = ", ".join(override.get("extensions", []))
-        rows.append([label, extensions])
-        seen_labels.add(label)
+        extensions = rows.setdefault(label, [])
+        extensions.extend(
+            ext for ext in override.get("extensions", []) if ext not in extensions
+        )
 
-    return ["Format", "File Extension"], rows
+    return ["Format", "File Extension"], [
+        [label, ", ".join(extensions)] for label, extensions in rows.items()
+    ]
 
 
 def render_markdown_table(headers: list[str], rows: list[list[str]]) -> str:
@@ -269,7 +270,7 @@ def render_screenshots(sections: list[dict[str, Any]]) -> str:
         items = "\n\n".join(
             f"""<div align="center">
   <a href="{item["src"]}" target="_blank">
-    <img width="200" src="{item["src"]}" alt="{item["alt"]}">
+    <img width="{item.get("width", 400)}" src="{item["src"]}" alt="{item["alt"]}">
   </a>
   <p><em>{item["caption"]}</em></p>
 </div>"""
@@ -365,8 +366,19 @@ def render_banner(paths: Paths) -> str:
     return "<!--\n" + "\n".join(lines) + "\n-->\n"
 
 
+def render_hero(hero: dict[str, str] | None) -> str:
+    """Full-width image under the tagline: the first thing seen on the page."""
+    if not hero:
+        return ""
+    return f"""
+
+<div align="center">
+  <img src="{hero["src"]}" alt="{hero["alt"]}" width="800">
+</div>"""
+
+
 def render_header(
-    display_name: str,
+    title: str,
     version: str,
     tagline: str,
     icon: str,
@@ -374,16 +386,17 @@ def render_header(
     changelog_link: str,
     release_notes_link: str,
     warnings: list[str],
+    hero: dict[str, str] | None = None,
 ) -> str:
     warning_blocks = "\n\n".join(f"> {warning}" for warning in warnings)
     warnings_section = f"\n\n{warning_blocks}" if warning_blocks else ""
-    return f"""# {display_name} - VSCode Extension
+    return f"""# {title}
 
 <div align="center">
-  <img src="{icon}" alt="{display_name} Icon" width="128" height="128">
+  <img src="{icon}" alt="{title} Icon" width="128" height="128">
 </div>
 
-{tagline}
+{tagline}{render_hero(hero)}
 
 <div align="center">
 
@@ -621,7 +634,9 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
     sections = [
         render_banner(paths),
         render_header(
-            display_name,
+            # package.json displayName also lists formats for the Marketplace
+            # search; documentation.json "header.title" keeps the heading short.
+            header.get("title", f"{display_name} - VSCode Extension"),
             version,
             tagline,
             icon,
@@ -629,6 +644,7 @@ def generate(paths: Paths) -> tuple[str, list[str]]:
             changelog_link,
             release_notes_link,
             header.get("warnings", []),
+            header.get("hero"),
         ),
         render_features(package, doc, doc.get("features", [])),
         f"## 📸 Screenshot Gallery\n\n{render_screenshots(doc.get('screenshots', []))}",

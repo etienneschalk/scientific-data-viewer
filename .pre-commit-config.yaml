@@ -29,7 +29,8 @@ repos:
     hooks:
       - id: typescript-check
         name: TypeScript Type Check
-        entry: npx tsc --noEmit --project tsconfig.pre-commit.json
+        # Extension host (tsconfig.pre-commit.json) + webview (src/panel/webview, DOM types)
+        entry: npm run --silent typecheck
         language: system
         files: \.(ts|tsx)$
         pass_filenames: false
@@ -44,7 +45,7 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
         files: \.py$
         types: [python]
-        exclude: ^(out/|node_modules/|\.vscode-test/|python/create_sample_data.p)
+        exclude: ^(out/|node_modules/|\.vscode-test/)
 
       - id: ruff-format
         name: Ruff (Python Formatting)

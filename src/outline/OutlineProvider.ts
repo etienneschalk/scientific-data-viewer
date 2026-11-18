@@ -5,7 +5,9 @@ import { HeaderItem } from '../types';
 
 const VERBOSE_DEBUG_LOGS = false;
 
-export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
+export class OutlineProvider
+    implements vscode.TreeDataProvider<HeaderItem>, vscode.Disposable
+{
     private _onDidChangeTreeData: vscode.EventEmitter<
         HeaderItem | undefined | null | void
     > = new vscode.EventEmitter<HeaderItem | undefined | null | void>();
@@ -18,6 +20,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     private headersToPanelId: Map<number, HeaderItem[]> = new Map();
     private treeView?: vscode.TreeView<HeaderItem>;
     private expandedStates: Map<number, Set<string>> = new Map(); // panelId -> Set of expanded item IDs
+    private disposables: vscode.Disposable[] = [];
 
     constructor() {
         Logger.info('📋 🚀 OutlineProvider instantiated');
@@ -30,16 +33,29 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         this.treeView = treeView;
 
         // Set up event listeners for expand/collapse state tracking
-        this.treeView.onDidExpandElement((e) => {
-            this.saveExpandedState(e.element);
-        });
-
-        this.treeView.onDidCollapseElement((e) => {
-            this.saveCollapsedState(e.element);
-        });
+        this.disposables.push(
+            this.treeView.onDidExpandElement((e) => {
+                this.saveExpandedState(e.element);
+            }),
+            this.treeView.onDidCollapseElement((e) => {
+                this.saveCollapsedState(e.element);
+            }),
+        );
     }
 
+    /** Release the event emitter and tree view listeners. */
+    dispose(): void {
+        this.disposables.forEach((disposable) => disposable.dispose());
+        this.disposables = [];
+        this._onDidChangeTreeData.dispose();
+        this.treeView = undefined;
+    }
+
+    /** Incremented by each refresh: reveals started before it are stale. */
+    private treeGeneration = 0;
+
     refresh(): void {
+        this.treeGeneration++;
         this._onDidChangeTreeData.fire();
     }
 
@@ -156,6 +172,11 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
     public disposeForPanel(panelId: number): void {
         this.clearFileHeadersForPanel(panelId);
         this.clearExpandedStateForPanel(panelId);
+        if (panelId === this.currentPanelId) {
+            // The displayed panel was closed: do not keep showing its outline
+            this.currentPanelId = undefined;
+            this.clearOutline();
+        }
         Logger.info(
             `<${this.currentPanelId}> 📋 Disposed outline provider for panel with ID: ${panelId}`,
         );
@@ -240,20 +261,7 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
             );
         }
 
-        // Expand all elements by revealing them with expand: true
-        expandableElements.forEach((element) => {
-            try {
-                this.treeView!.reveal(element, {
-                    select: false,
-                    focus: false,
-                    expand: true,
-                });
-            } catch (error) {
-                Logger.debug(
-                    `<${this.currentPanelId}> 📋 Failed to expand element: ${element.label}, ${error}`,
-                );
-            }
-        });
+        void this.revealInOrder(expandableElements, true);
 
         Logger.info(
             `<${this.currentPanelId}> 📋 Expanded ${expandableElements.length} items in tree view`,
@@ -430,23 +438,72 @@ export class OutlineProvider implements vscode.TreeDataProvider<HeaderItem> {
         );
 
         // Find and expand all elements that should be expanded
-        const allElements = this.getAllElements(this.currentHeaders);
-        allElements.forEach((element) => {
-            const elementId = this.getElementId(element);
-            if (expandedIds.has(elementId) && element.children.length > 0) {
-                try {
-                    this.treeView!.reveal(element, {
-                        select: false,
-                        focus: false,
-                        expand: forceExpand,
-                    });
-                } catch (error) {
-                    Logger.debug(
-                        `<${this.currentPanelId}> 📋 Failed to expand element: ${elementId}, ${error}`,
-                    );
+        const toExpand = this.getAllElements(this.currentHeaders).filter(
+            (element) =>
+                expandedIds.has(this.getElementId(element)) &&
+                element.children.length > 0,
+        );
+        void this.revealInOrder(toExpand, forceExpand);
+    }
+
+    /**
+     * Reveal elements one after the other, parents first (`getAllElements`
+     * order). Hundreds of concurrent reveal() calls make VS Code fail on
+     * children whose parent is still being resolved ("Cannot resolve tree
+     * item"); a reveal can still fail while a freshly shown tree loads, so the
+     * failed ones are tried once more after the others. Stops at the next
+     * refresh of the tree: its nodes are rebuilt, and the items saved as
+     * expanded are rendered expanded anyway.
+     */
+    private async revealInOrder(
+        elements: HeaderItem[],
+        expand: boolean,
+    ): Promise<void> {
+        const generation = this.treeGeneration;
+        let pending = elements;
+        for (const lastAttempt of [false, true]) {
+            const failed: HeaderItem[] = [];
+            for (const element of pending) {
+                if (this.treeGeneration !== generation) {
+                    return;
+                }
+                if (
+                    !(await this.revealExpanded(element, expand, lastAttempt))
+                ) {
+                    failed.push(element);
                 }
             }
-        });
+            pending = failed;
+        }
+    }
+
+    /**
+     * Reveal (and expand) an element; false when reveal() rejected (e.g.
+     * element no longer in the tree), logged on the last attempt only.
+     */
+    private async revealExpanded(
+        element: HeaderItem,
+        expand: boolean,
+        logFailure = true,
+    ): Promise<boolean> {
+        if (!this.treeView) {
+            return false;
+        }
+        try {
+            await this.treeView.reveal(element, {
+                select: false,
+                focus: false,
+                expand,
+            });
+            return true;
+        } catch (error) {
+            if (logFailure) {
+                Logger.debug(
+                    `<${this.currentPanelId}> 📋 Failed to expand element: ${element.label}, ${error}`,
+                );
+            }
+            return false;
+        }
     }
 
     /**

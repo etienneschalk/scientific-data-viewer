@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { EnvironmentInfo } from './types';
-import { getDisplayName } from './common/vscodeutils';
+import { getProductName } from './common/vscodeutils';
 import { CMD_HEALTHCHECK } from './common/config';
 
 // Function to update status bar with current Python interpreter
@@ -28,7 +28,7 @@ export function updateStatusBarItem(
 
     const source = envInfo.source ?? 'unknown';
     statusBarItem.text = `${icon} SDV ${source}`;
-    statusBarItem.tooltip = `${getDisplayName()} - State
+    statusBarItem.tooltip = `${getProductName()} - State
 
 Status:
 ${tooltipStatus}

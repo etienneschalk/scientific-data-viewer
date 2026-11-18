@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from './common/Logger';
 import { UIController } from './panel/UIController';
+import { DataProcessor } from './python/DataProcessor';
 import { OutlineProvider } from './outline/OutlineProvider';
 import { HeaderExtractor } from './outline/HeaderExtractor';
 import { getOutlineEnabled } from './common/config';
@@ -18,6 +19,7 @@ export class DataViewerPanel {
 
     // Map of id to panel
     private static _outlineProvider?: OutlineProvider;
+    private static _dataProcessor?: DataProcessor;
     private static _extensionUri?: vscode.Uri;
     private static readonly _panels: Map<number, DataViewerPanel> = new Map();
     private static _createdCount = 0; // Used for identifying the panel
@@ -34,12 +36,19 @@ export class DataViewerPanel {
         DataViewerPanel._outlineProvider = outlineProvider;
     }
 
-    public static setExtensionUri(extensionUri: vscode.Uri): void {
-        DataViewerPanel._extensionUri = extensionUri;
+    public static setDataProcessor(dataProcessor: DataProcessor): void {
+        DataViewerPanel._dataProcessor = dataProcessor;
     }
 
-    public static getExtensionUri(): vscode.Uri | undefined {
-        return DataViewerPanel._extensionUri;
+    private static requireDataProcessor(): DataProcessor {
+        if (!DataViewerPanel._dataProcessor) {
+            throw new Error('DataViewerPanel used before setDataProcessor()');
+        }
+        return DataViewerPanel._dataProcessor;
+    }
+
+    public static setExtensionUri(extensionUri: vscode.Uri): void {
+        DataViewerPanel._extensionUri = extensionUri;
     }
 
     public static getPanel(panelId: number): DataViewerPanel | undefined {
@@ -56,10 +65,12 @@ export class DataViewerPanel {
 
     public static getActivePanel(): DataViewerPanel | undefined {
         Logger.debug(`🚚 🗂️ Getting active panel`);
-        // Find the panel that is currently visible
-        const activePanel = Array.from(DataViewerPanel._panels.values()).find(
-            (panel) => panel._webviewPanel.visible,
-        );
+        // The focused panel; else, e.g. when focus is in the Explorer, the
+        // first visible one. With split editors several panels are visible.
+        const panels = Array.from(DataViewerPanel._panels.values());
+        const activePanel =
+            panels.find((panel) => panel._webviewPanel.active) ??
+            panels.find((panel) => panel._webviewPanel.visible);
         if (activePanel) {
             Logger.debug(`🚚 🗂️ Found active panel: ${activePanel.getId()}`);
         } else {
@@ -74,17 +85,12 @@ export class DataViewerPanel {
         webviewOptions: vscode.WebviewOptions,
         webviewPanelOptions: vscode.WebviewPanelOptions,
     ) {
-        // Check if this file is already open in an existing panel (only if multiple tabs are not allowed)
+        // Check if this file is already open in an existing panel (only if multiple tabs are not allowed).
+        // The whole URI is compared so that "Open as Kerchunk" (query openAs=kerchunk)
+        // gets its own panel next to the plain JSON one.
         if (!getAllowMultipleTabsForSameFile()) {
             for (const panel of DataViewerPanel._panels.values()) {
-                Logger.debug(
-                    `🚚 🗂️ Checking if file ${
-                        fileUri.fsPath
-                    } is already opened in panel ${panel.getId()} (${
-                        panel.getFileUri().fsPath
-                    })`,
-                );
-                if (panel.getFileUri().fsPath === fileUri.fsPath) {
+                if (panel.getFileUri().toString() === fileUri.toString()) {
                     Logger.info(
                         `File ${fileUri.fsPath} is already open, focusing existing panel (allowMultipleTabsForSameFile: false)`,
                     );
@@ -102,7 +108,7 @@ export class DataViewerPanel {
         // File is not opened or multiple tabs are allowed, create a new panel
         const webviewPanel = vscode.window.createWebviewPanel(
             DataViewerPanel.viewType,
-            path.basename(fileUri.fsPath), // TODO eschalk add [counter] if dev mode !
+            path.basename(fileUri.fsPath),
             vscode.window.activeTextEditor?.viewColumn || vscode.ViewColumn.One,
             {
                 ...webviewOptions,
@@ -150,15 +156,15 @@ export class DataViewerPanel {
         return dataViewerPanel;
     }
 
-    public static async refreshPanelsWithErrors() {
+    public static async refreshPanelsWithErrors(): Promise<void> {
         Logger.debug(
             `[DataViewerPanel.refreshPanelsWithErrors] Refreshing panels with errors`,
         );
-        Array.from(DataViewerPanel._panels.values())
-            .filter((panel) => panel._hasError)
-            .forEach(async (panel) => {
-                await panel.refresh();
-            });
+        await Promise.all(
+            DataViewerPanel.getPanelsWithErrors().map((panel) =>
+                panel.refresh(),
+            ),
+        );
     }
 
     private static increaseCreatedCount() {
@@ -198,15 +204,6 @@ export class DataViewerPanel {
     public static getActivePanelCount(): number {
         return Array.from(DataViewerPanel._panels.values()).filter(
             (panel) => panel._webviewPanel.visible,
-        ).length;
-    }
-
-    /**
-     * Get the number of panels with errors
-     */
-    public static getPanelsWithErrorsCount(): number {
-        return Array.from(DataViewerPanel._panels.values()).filter(
-            (panel) => panel._hasError,
         ).length;
     }
 
@@ -252,6 +249,7 @@ export class DataViewerPanel {
                 Logger.info(`[UIController] Success: ${success}`);
                 this._hasError = false;
             },
+            DataViewerPanel.requireDataProcessor(),
             () => {
                 // Rebuild outline from fresh dataInfo (e.g. after refresh or
                 // orderGroupsAlphabetically change); then show this panel's tree.
@@ -264,8 +262,8 @@ export class DataViewerPanel {
         // Set initial HTML first
         this._uiController.setHtml();
 
-        // Load the file and handle success/error
-        this._uiController.loadFile(fileUri.fsPath);
+        // Load the file; errors are displayed in the webview
+        void this._uiController.loadFile(fileUri);
 
         // Check if devMode is enabled and run commands automatically after webview is ready
         this.handleDevMode();
@@ -286,7 +284,11 @@ export class DataViewerPanel {
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
-        this._webviewPanel.onDidDispose(() => this.disposePanel());
+        this._webviewPanel.onDidDispose(
+            () => this.disposePanel(),
+            null,
+            this._disposables,
+        );
     }
 
     /**
@@ -327,8 +329,9 @@ export class DataViewerPanel {
         const dataInfo = this._uiController.getDataInfo();
 
         // Create dynamic headers based on data information
-        const headers =
-            HeaderExtractor.createDynamicDataViewerHeaders(dataInfo);
+        const headers = HeaderExtractor.createDynamicDataViewerHeaders(
+            dataInfo ?? undefined,
+        );
         DataViewerPanel._outlineProvider.updateHeaders(this.getId(), headers);
     }
 
@@ -349,6 +352,10 @@ export class DataViewerPanel {
             );
             return;
         }
+        // Set first: _webviewPanel.dispose() below fires onDidDispose, which
+        // calls this method again, and a throwing step must not leave the
+        // panel half disposed but still "alive".
+        this._isDisposed = true;
 
         Logger.info(
             `[dispose] <${this.getId()}> 🚚 🗑️ Disposing panel for file: ${
@@ -360,11 +367,7 @@ export class DataViewerPanel {
         DataViewerPanel.removePanel(this);
 
         // Clear outline when panel is disposed
-        if (DataViewerPanel._outlineProvider) {
-            // Note: this will break if allowMultipleTabsForSameFile is true,
-            // as it will clear the outline for all panels with the same file path
-            DataViewerPanel._outlineProvider.disposeForPanel(this.getId());
-        }
+        DataViewerPanel._outlineProvider?.disposeForPanel(this.getId());
 
         // Clean up UI controller
         if (this._uiController) {
@@ -386,8 +389,6 @@ export class DataViewerPanel {
                 this.getFileUri().fsPath
             }`,
         );
-
-        this._isDisposed = true;
     }
 
     private async handleDevMode(): Promise<void> {

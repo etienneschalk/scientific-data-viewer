@@ -29,7 +29,7 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 3. **Install Python dependencies**:
 
    ```bash
-   pip install xarray netCDF4 zarr h5py numpy matplotlib
+   pip install "xarray>=2026.4.0" netCDF4 "zarr>=3" h5py numpy matplotlib "h5netcdf>=1.8"
    ```
 
 4. **Compile the extension**:
@@ -62,8 +62,10 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 
    ```bash
    npm run compile
-   npm test
-   npm run lint
+   npm run typecheck
+   npm test                       # from a VS Code terminal: env -u ELECTRON_RUN_AS_NODE npm test
+   pytest python/tests            # Python backend
+   pre-commit run --all-files     # formatting and lint (prettier needs Node 22: nvm use)
    ```
 
 4. **Run the extension**:
@@ -87,26 +89,14 @@ Thank you for your interest in contributing to the Scientific Data Viewer VSCode
 
 ## Project Structure
 
-```
-src/
-├── extension.ts          # Main extension entry point
-├── dataProvider.ts       # Tree data provider for file explorer
-├── dataProcessor.ts      # Python integration and data processing
-├── dataViewerPanel.ts    # Webview panel for data visualization
-└── pythonManager.ts      # Python environment management
-
-test/
-├── runTest.ts           # Test runner
-└── suite/               # Test suites
-    └── extension.test.ts
-```
+See [docs/TECHNICAL_ARCHITECTURE.md](docs/TECHNICAL_ARCHITECTURE.md) (extension host and webview) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) (Python backend `python/sdv_backend/`, sample data, tests in `test/suite/` and `python/tests/`).
 
 ## Areas for Contribution
 
 ### High Priority
 
 - **Performance improvements** for large files
-- **Additional file formats** (GRIB, TIFF, etc.)
+- **Additional file formats** (see `docs/v0.13/OUT_OF_SCOPE.md` for candidates: OME-Zarr, NWB, FITS, HDF4…)
 - **Enhanced visualizations** (3D plots, animations)
 - **Data export functionality**
 - **Better error handling and user feedback**

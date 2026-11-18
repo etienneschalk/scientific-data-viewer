@@ -1,5 +1,10 @@
 {
     "extends": "./tsconfig.json",
     "include": ["src/**/*"],
-    "exclude": ["test/**/*", "node_modules", ".vscode-test"]
+    "exclude": [
+        "test/**/*",
+        "node_modules",
+        ".vscode-test",
+        "src/panel/webview"
+    ]
 }
