@@ -765,3 +765,4 @@ Release procedure (2026-11-13):
 Manual test pass (2026-11-18):
 
 143.  fix(webview): changed plot controls visible in the 2026 themes; manual test pass of 2026-11-18
+144.  docs: set the 0.13.0 release date to 2026-11-18

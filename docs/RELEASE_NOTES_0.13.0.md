@@ -720,7 +720,7 @@ Existing settings from v0.12 still apply (`orderGroupsAlphabetically`, `showXarr
 
 ## Links
 
-- [Changelog](../CHANGELOG.md#0130---unreleased)
+- [Changelog](../CHANGELOG.md#0130---2026-11-18)
 - [Pull request summary / MR description](./v0.13/PR_SUMMARY_0.13.0.md)
 - [Getting started with v0.13 (review, test, release hub)](./v0.13/GETTING_STARTED.md)
 - [Manual test plan (step by step, with results sheet)](./v0.13/MANUAL_TEST_PLAN_0.13.0.md)
