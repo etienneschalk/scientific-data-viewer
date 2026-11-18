@@ -13,4 +13,8 @@ export const THEMES = [
     { id: 'light-modern', vscodeName: 'Default Light Modern' },
     { id: 'high-contrast', vscodeName: 'Default High Contrast' },
     { id: 'high-contrast-light', vscodeName: 'Default High Contrast Light' },
+    // Defaults of new profiles since VS Code 1.145 (theme picker: "2026 Dark",
+    // "2026 Light"; setting value "Dark 2026", "Light 2026")
+    { id: '2026-dark', vscodeName: 'Dark 2026' },
+    { id: '2026-light', vscodeName: 'Light 2026' },
 ];

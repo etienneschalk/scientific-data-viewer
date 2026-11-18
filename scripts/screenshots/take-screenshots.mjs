@@ -100,6 +100,34 @@ const SCENARIOS = [
     },
     { name: 'error-page', query: 'error' },
     { name: 'narrow', width: 420 },
+    {
+        // Controls changed by the user (outline and marker in the theme's
+        // --sdv-changed color) next to unchanged ones, and the plot layout
+        // line with items set by the user next to automatic ones
+        name: 'changed-controls',
+        action: async () => {
+            const group = '[data-group="/"]';
+            const type = (selector, value) => {
+                const input = document.querySelector(selector);
+                if (!input) {
+                    throw new Error(`no element ${selector}`);
+                }
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            type(
+                `.dimension-slice-input${group}[data-dimension="time"][data-part="start"]`,
+                '0:6',
+            );
+            type(`input[data-param="colWrap"]${group}`, '3');
+            document.querySelector('[data-action="create-plot"]').click();
+            await waitFor(
+                () => document.querySelector('.plot-error.error, .plot-image-container img'),
+                120000,
+            );
+        },
+    },
 ];
 
 function fail(message) {

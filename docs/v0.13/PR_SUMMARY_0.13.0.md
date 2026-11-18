@@ -173,7 +173,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Fields    | Name (editor font) + short hint above a full-width control, in a grid whose columns line up across blocks; two columns on narrow editors                                      |
 | Fieldsets | `PLOT_PARAMETERS` `row` / `width` → `group` (Facets, Axes, Color, Figure) / `hint`; table order = display order                                                               |
 | Behaviour | `clear-plot-controls` resets the block of its button (slices or parameters); new `clearPlotParametersButton`; ids, `data-*` attributes and plot payload unchanged             |
-| Docs      | Release notes § Plot controls layout and manual test plan T27; manual test plan B12, B15, B17 wording and B26                                                                 |
+| Docs      | Release notes § Plot controls layout and manual test plan T27; manual test plan B12, B15, B17 wording and B28                                                                 |
 
 ### Phase 14 — Dimension slice boxes and slider
 
@@ -182,7 +182,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Webview  | New `dimensionSlices.ts`: start : stop : step boxes joined into one control + two-handle slider (start / stop), synced both ways; slice text spread over the boxes on input                                                                                                                                                                        |
 | Rules    | Start with empty stop = index (step ignored, struck through); one handle rewrites one box (a box keeps its text while its index is unchanged); crossing changes both; handles at both ends = no selection; `5::2` → stop = size; negative = from the end, kept until its handle moves; negative step disables the slider; empty selection outlined |
 | Contract | Value sent unchanged (index or `start:stop:step`); start box keeps the historical id; `readDimensionSlices` composes the boxes                                                                                                                                                                                                                     |
-| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); manual test plan T28 and B27; architecture diagrams regenerated                                                                                                                                                                                            |
+| Docs     | `documentation.json` / README (Dimension Slices section, also the parameter fieldsets); manual test plan T28 and B29; architecture diagrams regenerated                                                                                                                                                                                            |
 
 ### Phase 15 — QA pass
 
@@ -216,7 +216,7 @@ Technology alignment release for **xarray 2026.4+** and **zarr-python 3**. Impro
 | Settings | `globalTimeControls` / `groupTimeControls` removed, not deprecated: VS Code ignores unknown keys (greyed out in `settings.json`), and a `deprecationMessage` only helps a setting that still does something      |
 | Webview  | Time range block (global, group), `timeControls.ts`, `data-baseline` of `changedFields.ts`, time CSS removed; `PlotOptions` / `buildCreatePlotCliArgs` drop the datetime fields                                  |
 | Backend  | Unchanged: `--datetime-variable` / `--start-datetime` / `--end-datetime` and `datetime_variables` still available from the CLI                                                                                   |
-| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed, manual test plan T31; manual test plan B17 / B26 |
+| Docs     | `documentation.json` / README, `PLOTTING.md`, `SCREENSHOTS.md`, `DEVELOPMENT.md`, `TECHNICAL_ARCHITECTURE.md`, diagrams; release notes § Time Controls removed, manual test plan T31; manual test plan B17 / B28 |
 
 ### Phase 18 — Paranoia: every check before a release
 
@@ -324,6 +324,64 @@ A last review of the code and docs before publishing; items in [`REVIEWS_0.13.0.
 | Docs       | `PUBLISHING.md` rewritten around `publish.sh`, § Marketplace authentication (global PAT retirement, sources); `GETTING_STARTED.md` release steps (merge into `main` first); `CLAUDE.md` commit-list rule                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Tooling    | Global `vsce` upgraded 3.9.2 → 4.1.0 (as `package-lock.json`); its first use offers to copy the saved PAT to the new credential store                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Tests      | `./publish.sh --dry-run --skip-tests`; `checks.py release 0.13.0 --base main`; release-date step run in a throw-away clone (only `CHANGELOG.md#…)` links rewritten); `./paranoia.sh --full` on 2026-11-13 (commit _fix(publish): tag after build and tests…_): `npm test` 348 passing, pytest 235 passed, e2e suites, walkthrough W1–W5, migration and failed / interrupted rebuilds from v0.12.1 passing, `.vsix` 80 files; differences from v0.12.1 (golden, info, plots, scenarios) as in the previous runs, plus the new `sample_climate.nc`; one failure, pre-commit, caused by a file edited during the run (fixed by the next commit) |
+
+### Manual test pass (2026-11-18)
+
+| Area        | Work                                                                                                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Why         | Manual test plan run before the merge; in a fresh profile (T39), whose default theme is 2026 Dark since VS Code 1.145, changed plot controls were outlined in grey and the plot layout line showed no item "set by you"                                                                                |
+| Webview     | `--sdv-changed` = `focusBorder` (was `inputOption.activeBorder`, `#2A2B2C` on `#121314` in 2026 Dark, `#F0F1F2` on white in 2026 Light); double line in the High Contrast themes                                                                                                                       |
+| Screenshots | Themes `2026-dark` / `2026-light` (recorded with VS Code 1.145.2; `capture-themes.mjs --theme` records only some themes); scenario `07-changed-controls` (slice and col_wrap changed in group `/`, plot with its layout line); 6 themes × 7 scenarios                                                  |
+| Test plan   | B18 and B22.6 / T19.4 struck through (no `broken_file.safe` sample any more, time selector removed); B24 / B25 slice `time` first, B25 counts (one root group, 2 variables); B30 lists `size 4` / `aspect 1`; duplicate B26 / B27 renumbered B26–B30; T40 note and D2 (README images come from `main`) |
+| Tests       | A3 again: pytest 235 passed, `npm test` 348 passing, golden 82 cases (recorded on this commit: the local folder was empty); `./paranoia.sh --only screenshots`; manual results sheet                                                                                                                   |
+
+#### Manual results sheet (2026-11-18, Linux, VS Code 1.145.2)
+
+| Test                                       | Result | Notes                                                                                                                                           |
+| ------------------------------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| A3 Automated checks                        | ✅     | pytest 235 passed, `npm test` 348 passing, golden 82 cases 0 failing (recorded on this commit: local folder was empty)                          |
+| A4 Test files created                      | ✅     |                                                                                                                                                 |
+| A5 VSIX built and installed (0.13.0)       | ✅     |                                                                                                                                                 |
+| B1 Healthcheck                             | ✅     |                                                                                                                                                 |
+| B2 Zarr v3 label                           | ✅     |                                                                                                                                                 |
+| B3 Zarr v2 label                           | ✅     |                                                                                                                                                 |
+| B4 Zarr folder without `.zarr`             | ✅     |                                                                                                                                                 |
+| B5 Zarr in ZIP                             | ✅     |                                                                                                                                                 |
+| B5 `.zarr.zip` on click, `.zip` from menu  | ✅     |                                                                                                                                                 |
+| B6 Normal ZIP error                        | ✅     |                                                                                                                                                 |
+| B7 Sharded Zarr encoding                   | ✅     |                                                                                                                                                 |
+| B8 Encoding setting off/on                 | ✅     |                                                                                                                                                 |
+| B9 NetCDF filters                          | ✅     |                                                                                                                                                 |
+| B10 NetCDF engine order                    | ✅     |                                                                                                                                                 |
+| B11 Inherited coordinates                  | ✅     |                                                                                                                                                 |
+| B12 Kerchunk open + plot                   | ✅     |                                                                                                                                                 |
+| B12 `kerchunk/` combined + inline samples  | ✅     |                                                                                                                                                 |
+| B13 Open as Kerchunk                       | ✅     |                                                                                                                                                 |
+| B14 COG label                              | ✅     |                                                                                                                                                 |
+| B15 col_wrap auto / number                 | ✅     |                                                                                                                                                 |
+| B16 facetgridFigsize                       | ✅     |                                                                                                                                                 |
+| B17 Empty selection message                | ✅     |                                                                                                                                                 |
+| B18 No `.safe` menu                        | ✅     | `broken_file.safe` sentence obsolete (sample no longer created), struck through                                                                 |
+| B19 uv environment auto-rebuild            | ✅     |                                                                                                                                                 |
+| B19 failed rebuild keeps old env, retries  | ✅     |                                                                                                                                                 |
+| B19 Recreate action                        | ✅     |                                                                                                                                                 |
+| B20 Real upgrade 0.12.1 → 0.13 (optional)  | ✅     | Environment deleted first so that 0.12.1 created its own                                                                                        |
+| B21 GRIB / TIFF with own environment       | ✅     |                                                                                                                                                 |
+| B22 Code review fixes                      | ✅     | Step 6 obsolete (time selector removed), struck through                                                                                         |
+| B23 Old xarray message (optional)          | ✅     | Python 3.10, xarray 2024.6.0                                                                                                                    |
+| B24 No plot type drop-down                 | ✅     | Slice `time` first (365 maps too big); added to the plan                                                                                        |
+| B25 Variable sections, Xarray Encoding     | ✅     | One root group with 2 variables: counts corrected in the plan                                                                                   |
+| B26 Cancel one plot                        | ✅     |                                                                                                                                                 |
+| B27 Load time in local time                | ✅     |                                                                                                                                                 |
+| B28 Plot controls layout                   | ✅     |                                                                                                                                                 |
+| B29 Dimension slices boxes and slider      | ✅     |                                                                                                                                                 |
+| B30 One setting changed, rest automatic    | ✅     | Layout line also lists `size 4`, `aspect 1`: added to the plan                                                                                  |
+| Upgrade sandbox script (UPGRADE_TEST_PLAN) | ✅     | `./paranoia.sh --full` of 2026-11-13 (normal, offline, interrupted)                                                                             |
+| C Old formats, export, outline             | ✅     |                                                                                                                                                 |
+| T39 Walkthrough (clean VS Code)            | ✅     | Step 6 found changed controls grey in 2026 Dark: fixed (`focusBorder`), checked again in the clean profile                                      |
+| T40 New icon                               | ⚠️     | README images on the details page come from `main` (old icon, missing screenshots) until the merge: D2; step 4 not run (no Material Icon Theme) |
+| D1 Issue forms optional (after merge)      |        | After the merge                                                                                                                                 |
+| D2 Extension page images (after merge)     |        | After the merge; step 2 after the (pre-)release                                                                                                 |
 
 ### Sample data & docs
 
@@ -703,3 +761,7 @@ Release procedure (2026-11-13):
 
 141.  fix(publish): tag after build and tests, one .vsix for both stores, date from UNRELEASED
 142.  fix(publish): rewrite only changelog links with the release date; test counts of the 2026-11-13 run
+
+Manual test pass (2026-11-18):
+
+143.  fix(webview): changed plot controls visible in the 2026 themes; manual test pass of 2026-11-18

@@ -36,11 +36,15 @@
     --sdv-success-color: var(--vscode-testing-iconPassed, #4caf50);
     --sdv-success-surface: transparent;
     --sdv-highlight: transparent;
-    /* Plot controls the user changed, and their items in the plot layout line */
-    --sdv-changed: var(
-        --vscode-inputOption-activeBorder,
-        var(--vscode-focusBorder)
-    );
+    /*
+     * Plot controls the user changed, and their items in the plot layout line.
+     * focusBorder, not inputOption.activeBorder: the 2026 Dark / Light themes
+     * (default of new profiles since VS Code 1.145) set the latter close to the
+     * background (#2A2B2C on #121314, #F0F1F2 on white), and changed controls
+     * then looked unchanged. focusBorder is blue in every default theme
+     * (orange in High Contrast).
+     */
+    --sdv-changed: var(--vscode-focusBorder);
 }
 
 @supports (color: color-mix(in srgb, red 50%, blue)) {
@@ -1258,6 +1262,21 @@ pre:not(.html-representation pre) {
 .plot-field--changed .plot-field-name::after {
     content: ' •';
     color: var(--sdv-changed);
+}
+
+/*
+ * High contrast: every border already has the contrast color, close to
+ * focusBorder in High Contrast Light (#0f4a85 / #006bbd): a double line tells
+ * changed controls and their layout items apart, without moving anything.
+ */
+:where(body.vscode-high-contrast, body.vscode-high-contrast-light)
+    .plot-field--changed {
+    outline-width: 2px;
+}
+
+:where(body.vscode-high-contrast, body.vscode-high-contrast-light)
+    .plot-layout-item--user {
+    box-shadow: 0 0 0 1px var(--sdv-changed);
 }
 
 .plot-field-label {

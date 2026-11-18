@@ -25,7 +25,7 @@ This note explains how to use the tool, how it works, what is real and what is s
 
 ```bash
 nvm use                  # Node 22
-npm run screenshots      # compiles, then 4 themes × 6 scenarios (~20 s)
+npm run screenshots      # compiles, then 6 themes × 7 scenarios (~20 s)
 ```
 
 Then open `artefacts/screenshots/v0.13/index.html` in a browser.
@@ -47,10 +47,13 @@ screenshots/                       (git-ignored, excluded from the VSIX)
     │   ├── 03-plots.png
     │   ├── 04-plot-error.png
     │   ├── 05-error-page.png
-    │   └── 06-narrow.png
+    │   ├── 06-narrow.png
+    │   └── 07-changed-controls.png
     ├── light-modern/
     ├── high-contrast/
-    └── high-contrast-light/
+    ├── high-contrast-light/
+    ├── 2026-dark/
+    └── 2026-light/
 ```
 
 - **Folder per version.** The version folder holds the major and minor numbers only, so every 0.13.x run writes to `v0.13/`, and a later run overwrites the files of an earlier one. Copy the folder (or pass `--out`) to keep a set.
@@ -59,23 +62,26 @@ screenshots/                       (git-ignored, excluded from the VSIX)
 
 ### Scenarios
 
-| #   | Name         | What the page shows                                                                                                                                                                                                                        |
-| --- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 01  | `overview`   | The page right after loading: the sections open by default and the first group open.                                                                                                                                                       |
-| 02  | `expanded`   | Every `<details>` element open: file information, xarray HTML and text representations (whole file and per group), plot controls, every group, variable and attribute, troubleshooting.                                                    |
-| 03  | `plots`      | **Create Plot** clicked on every data variable of every group. The script waits until no plot is loading (180 s at most).                                                                                                                  |
-| 04  | `plot-error` | `9999` typed in the first **Dimension Slices** input (the global one, first dimension in alphabetical order), then **Create Plot** on the first variable. The backend fails with an out-of-range `IndexError`, shown in the error callout. |
-| 05  | `error-page` | The page the panel shows when a file cannot be opened, with the backend's real error for a file that is not NetCDF.                                                                                                                        |
-| 06  | `narrow`     | The overview at 420 px: stacked variable rows, smaller gutters, labels above inputs.                                                                                                                                                       |
+| #   | Name               | What the page shows                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01  | `overview`         | The page right after loading: the sections open by default and the first group open.                                                                                                                                                                                                                                                                                                |
+| 02  | `expanded`         | Every `<details>` element open: file information, xarray HTML and text representations (whole file and per group), plot controls, every group, variable and attribute, troubleshooting.                                                                                                                                                                                             |
+| 03  | `plots`            | **Create Plot** clicked on every data variable of every group. The script waits until no plot is loading (180 s at most).                                                                                                                                                                                                                                                           |
+| 04  | `plot-error`       | `9999` typed in the first **Dimension Slices** input (the global one, first dimension in alphabetical order), then **Create Plot** on the first variable. The backend fails with an out-of-range `IndexError`, shown in the error callout.                                                                                                                                          |
+| 05  | `error-page`       | The page the panel shows when a file cannot be opened, with the backend's real error for a file that is not NetCDF.                                                                                                                                                                                                                                                                 |
+| 06  | `narrow`           | The overview at 420 px: stacked variable rows, smaller gutters, labels above inputs.                                                                                                                                                                                                                                                                                                |
+| 07  | `changed-controls` | In the **Group Plot Controls** of `/`, `0:6` typed in the **start** box of `time` and `3` in **col_wrap**, then **Create Plot** on `temperature`: the changed controls outlined in the theme's `focusBorder` color with a `•` after their name, and the plot layout line with `time 0:6` and `col_wrap 3` outlined (set by you) next to the automatic `col time`, `y lat`, `x lon`. |
 
 ### Themes
 
-| Folder                | VS Code theme               | Body classes                                      |
-| --------------------- | --------------------------- | ------------------------------------------------- |
-| `dark-modern`         | Default Dark Modern         | `vscode-dark`                                     |
-| `light-modern`        | Default Light Modern        | `vscode-light`                                    |
-| `high-contrast`       | Default High Contrast       | `vscode-high-contrast`                            |
-| `high-contrast-light` | Default High Contrast Light | `vscode-high-contrast-light vscode-high-contrast` |
+| Folder                | VS Code theme                                                        | Body classes                                      |
+| --------------------- | -------------------------------------------------------------------- | ------------------------------------------------- |
+| `dark-modern`         | Default Dark Modern                                                  | `vscode-dark`                                     |
+| `light-modern`        | Default Light Modern                                                 | `vscode-light`                                    |
+| `high-contrast`       | Default High Contrast                                                | `vscode-high-contrast`                            |
+| `high-contrast-light` | Default High Contrast Light                                          | `vscode-high-contrast-light vscode-high-contrast` |
+| `2026-dark`           | 2026 Dark (`Dark 2026`): default of new profiles since VS Code 1.145 | `vscode-dark`                                     |
+| `2026-light`          | 2026 Light (`Light 2026`)                                            | `vscode-light`                                    |
 
 ---
 
@@ -85,8 +91,8 @@ Pass options after `--` with npm: `npm run screenshots -- --theme dark-modern`.
 
 | Option              | Default                               | Effect                                                                                                                                                                                           |
 | ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--theme <id>`      | all four                              | Only this theme. Repeatable. IDs are the folder names above.                                                                                                                                     |
-| `--scenario <name>` | all six                               | Only this scenario. Repeatable.                                                                                                                                                                  |
+| `--theme <id>`      | all six                               | Only this theme. Repeatable. IDs are the folder names above.                                                                                                                                     |
+| `--scenario <name>` | all seven                             | Only this scenario. Repeatable.                                                                                                                                                                  |
 | `--setting <k=v>`   | `package.json` defaults               | Override an extension setting (name without `scientificDataViewer.`). The value is read as JSON when possible (`true`, `5`, `["a"]`), otherwise as text. Unknown names are an error. Repeatable. |
 | `--file <path>`     | generated dataset                     | Show this data file instead. Every scenario uses it; `plot-error` assumes the file has at least one dimension.                                                                                   |
 | `--python <path>`   | `$SDV_PYTHON`, `.venv`, `python3`     | Interpreter for the backend and the dataset generator.                                                                                                                                           |
@@ -205,20 +211,22 @@ Screenshots are taken one at a time. Plots within a scenario run in parallel, on
 
 The theme variables live in `scripts/screenshots/themes/<id>.json`, which are committed. Each file holds:
 
-| Field           | Content                                                                                      |
-| --------------- | -------------------------------------------------------------------------------------------- |
-| `id`            | Folder name of the screenshots                                                               |
-| `vscodeName`    | Value of `workbench.colorTheme`                                                              |
-| `vscodeVersion` | VS Code version it was recorded with (1.144.0 for the files committed with v0.13)            |
-| `htmlStyle`     | The `style` attribute of the webview's `<html>`: every `--vscode-*` variable, fonts included |
-| `body`          | Every attribute of the webview's `<body>`                                                    |
-| `defaultStyles` | Text of VS Code's `<style id="_defaultStyles">`                                              |
+| Field           | Content                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | Folder name of the screenshots                                                                                            |
+| `vscodeName`    | Value of `workbench.colorTheme`                                                                                           |
+| `vscodeVersion` | VS Code version it was recorded with (1.144.0 for the files committed with v0.13; 1.145.2 for `2026-dark` / `2026-light`) |
+| `htmlStyle`     | The `style` attribute of the webview's `<html>`: every `--vscode-*` variable, fonts included                              |
+| `body`          | Every attribute of the webview's `<body>`                                                                                 |
+| `defaultStyles` | Text of VS Code's `<style id="_defaultStyles">`                                                                           |
 
 To record them again (after a VS Code update that changes the default themes, or to add a theme):
 
 ```bash
-node scripts/screenshots/capture-themes.mjs [--vscode-version 1.150.0]
+node scripts/screenshots/capture-themes.mjs [--vscode-version 1.150.0] [--theme <id>]...
 ```
+
+`--theme` (repeatable) records only these themes and leaves the other files as they are, e.g. `--theme 2026-dark --theme 2026-light` after adding them to `themes.mjs`.
 
 The script starts a real VS Code with `@vscode/test-electron`, the package `npm test` uses, which also caches VS Code in `.vscode-test/`. It runs a throwaway extension (`theme-capture-extension/`) as that VS Code's test suite. For each theme of `themes.mjs`, the extension sets `workbench.colorTheme` in the test instance's own profile (never yours), waits for the theme to apply, opens a webview, and writes what the webview received to the JSON file. JSON is written with 4-space indentation, so the files pass prettier unchanged and a new capture only shows real differences in `git diff`.
 
@@ -261,7 +269,7 @@ Some differences are expected and do not come from the UI: the load time, the pl
 
 ```js
 {
-    name: 'variable-attributes',        // file: 07-variable-attributes.png
+    name: 'variable-attributes',        // file: 08-variable-attributes.png
     width: 800,                         // optional, default --width
     query: '',                          // optional, page URL query ('error' = error page)
     action: async () => {               // optional, runs inside the page
@@ -274,7 +282,7 @@ Some differences are expected and do not come from the UI: the load time, the pl
 
 `action` is converted to text and run in the page, so it can only use what the page has: the DOM and the injected `waitFor(condition, timeoutMs)` helper. It cannot use variables of the script. Add new scenarios at the end of the list: inserting one in the middle renumbers the files after it, and comparing with older folders gets harder.
 
-**Add a theme**: add `{ id, vscodeName }` to `THEMES` in `themes.mjs`, using the exact name in VS Code's theme picker. Then run `capture-themes.mjs`. Only themes shipped with VS Code can be captured, because the test instance runs with `--disable-extensions`.
+**Add a theme**: add `{ id, vscodeName }` to `THEMES` in `themes.mjs`. `vscodeName` is the value of `workbench.colorTheme`: the theme's `id` in VS Code's `extensions/theme-defaults/package.json`, usually the name in the theme picker (`Default Dark Modern`), but not always (the picker's "2026 Dark" is `Dark 2026`). Then run `capture-themes.mjs --theme <id>`. Only themes shipped with VS Code can be captured, because the test instance runs with `--disable-extensions`.
 
 **Change the dataset**: edit `make_fixture.py`. Every later screenshot changes, so do it at the start of a release, not in the middle of a comparison.
 

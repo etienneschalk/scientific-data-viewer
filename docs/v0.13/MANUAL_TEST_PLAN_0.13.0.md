@@ -329,7 +329,9 @@ This uses a file with 24 time steps; we plot several time steps side by side ("f
 
 1. Right-click the file **`fake.safe`** (created in A4) in `artefacts/sample-data`.
 
-✅ There is **no** "Open Scientific Data Viewer" entry for it. (Folders, such as `broken_file.safe`, always offer "Open Scientific Data Viewer (Folder)" — that is expected.)
+✅ There is **no** "Open Scientific Data Viewer" entry for it. ~~(Folders, such as `broken_file.safe`, always offer "Open Scientific Data Viewer (Folder)" — that is expected.)~~
+
+> _Obsolete:_ `create_sample_data.py` no longer creates a `broken_file.safe` folder, so there is no such folder to look at. Any folder still offers "Open Scientific Data Viewer (Folder)", whatever its name.
 
 ### B19. The extension's own Python environment rebuilds itself
 
@@ -426,7 +428,7 @@ Quick checks of the review fixes (details in [T16–T19](#t16-code-review-securi
 3. **Kerchunk in a second tab**: open `sample_data.nc`, then right-click `my_refs.json` (from A4) → **Open as Kerchunk / virtual Zarr** ✅ a second tab opens and shows the data.
 4. **Save plot**: plot a variable, click **Save** ✅ a PNG appears under `artefacts/sample-data/sdv-plots/`, with no "timeout" message.
 5. **Corrupt file**: open `broken_file.h5` ✅ a clear error message, with its error type, not a blank page.
-6. **GRIB time selector**: open `sample_data.grib` ✅ the time selector does not list `t` (temperature).
+6. ~~**GRIB time selector**: open `sample_data.grib` ✅ the time selector does not list `t` (temperature).~~ _Obsolete:_ the time selector is gone (Time Controls removed in v0.13, see [T31](#t31-time-controls-removed)); a time range is set with the **Dimension slices** of the plot controls, which list dimensions only.
 7. **Outline**: in the **Scientific Data Structure** panel, click an attribute of a group of `sample_data_multiple_groups.nc` ✅ the viewer scrolls to it.
 
 ### B23. Too-old xarray gives a clear message
@@ -441,19 +443,19 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ### B24. No plot type drop-down
 
-1. Open `sample_data.nc` and expand a group.
+1. Open `sample_data.nc` and expand its group (it has one, the root group `/`).
 
 ✅ Under each variable there is only the **Create Plot** button: the "Auto (Recommended)" drop-down is gone.
 
-2. Click **Create Plot** on `temperature`.
+2. Open **Global Plot Controls** and, under **Dimension slices**, type `0` in the **start** box of `time` (one time step: the whole year, 365 maps, is too big to plot). Click **Create Plot** on `temperature`.
 
 ✅ The plot appears, as before.
 
 ### B25. Variable sections and the Xarray Encoding section
 
-1. Open `sample_data.nc` and expand a group.
+1. Open `sample_data.nc` and expand its group (it has one, the root group `/`, with 2 variables: `temperature` and `pressure`). In **Global Plot Controls** → **Dimension slices**, type `0` in the **start** box of `time` (one time step; the whole year is too big to plot in step 4).
 
-✅ Each variable is a single line. Section titles show a number (e.g. **VARIABLES 3**). After **ATTRIBUTES** there is a closed **XARRAY ENCODING** section.
+✅ Each variable is a single line. Section titles show a number (e.g. **VARIABLES 2**). After **ATTRIBUTES** there is a closed **XARRAY ENCODING** section.
 
 2. Click a variable's line.
 
@@ -469,7 +471,7 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 5. Look at a whole group, then scroll down through it.
 
-✅ The group is one box: its title line shows counts (e.g. "3 dimensions · 3 coordinates · 3 variables"), and its parts (Group Plot Controls, Dimensions, … Xarray Encoding) are separated by thin lines inside the same border. While you scroll, the title line stays at the top until the group ends.
+✅ The group is one box: its title line shows counts ("3 dimensions · 3 coordinates · 2 variables"), and its parts (Group Plot Controls, Dimensions, … Xarray Encoding) are separated by thin lines inside the same border. While you scroll, the title line stays at the top until the group ends.
 
 ### B26. Cancel one plot
 
@@ -499,7 +501,7 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ Local time again.
 
-### B26. Plot controls are easy to read
+### B28. Plot controls are easy to read
 
 1. Open `sample_data.nc`, open **Global Plot Controls**.
 
@@ -517,7 +519,7 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The colorbar goes from 10 to 12 and most of the map is at one of the two end colors. Untick **add_colorbar**, **Create Plot** again → no colorbar.
 
-### B27. Dimension slices: boxes and slider
+### B29. Dimension slices: boxes and slider
 
 1. Open `sample_data.nc` → **Global Plot Controls** → **Dimension slices**.
 
@@ -543,11 +545,13 @@ Only if you have (or can make) a Python with an old xarray, e.g. `uv venv /tmp/o
 
 ✅ The `time` boxes show `1` and `3` and the handles are at the same place. You cannot type in the boxes or move the handles, and there is no **Reset** button.
 
-### B28. Changing one plot setting keeps the rest automatic
+### B30. Changing one plot setting keeps the rest automatic
+
+Do this test in your usual theme, then steps 2–3 again in **2026 Dark** (**Preferences: Color Theme**), the default theme of new VS Code profiles: the borders below must be blue there too, not grey.
 
 1. Open `sample_data_multiple_groups.nc`, find the variable `root_data` and click **Create Plot**.
 
-✅ One small map per day, 4 per row. Under the plot, a line starts with `image` and lists `col time`, `col_wrap 4`, `y lat`, `x lon`; none of them has a colored border.
+✅ One small map per day, 4 per row. Under the plot, a line starts with `image` and lists `col time`, `col_wrap 4`, `y lat`, `x lon`, `size 4`, `aspect 1`; none of them has a colored border.
 
 2. In **Global Plot Controls** → **Dimension slices**, type `5:15` in the **start** box of `lat`.
 
@@ -612,6 +616,18 @@ These checks are about the GitHub repository, not the extension. GitHub only rea
 3. On a fork (to avoid noise in the real project), submit a Bug Report with **only a title**.
 
 ✅ The issue is created.
+
+### D2. Extension page images after the merge
+
+The README shown on the extension's page loads its images from the `main` branch on GitHub (see [T40](#t40-new-icon)), so they are right only once this work is on `main`.
+
+1. After the merge to `main` (and the push), open the details page of the installed `.vsix` in the **Extensions** view.
+
+✅ The README starts with the new teal comet icon, and the screenshots (plot facets, overview, map, controls) are shown, none broken.
+
+2. After the pre-release or the release, open the extension page on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) and on [Open VSX](https://open-vsx.org/extension/eschalk0/scientific-data-viewer).
+
+✅ Same: the new icon in the page header and at the top of the README, and every screenshot shown.
 
 ---
 
@@ -923,7 +939,7 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 1. Open a corrupt `.nc` (e.g. `echo garbage > bad.nc`) → error page with an error type and suggestion (not the generic "file might be corrupted").
 2. Open a file with a `valid_max = inf` attribute → opens; the attribute shows `inf`.
 3. Attributes such as `_FillValue` / `valid_range` show numbers / arrays (`-999`, `[0.0, 2.0]`).
-4. GRIB sample with temperature `t` → `t` is **not** offered in the time selector.
+4. ~~GRIB sample with temperature `t` → `t` is **not** offered in the time selector.~~ _Obsolete:_ the time selector was removed with the Time Controls ([T31](#t31-time-controls-removed)).
 
 ### T20. eccodeslib pin (GRIB / TIFF crash)
 
@@ -1126,7 +1142,8 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 2. Switch to **Dark High Contrast** (viewer left open) → the **Xarray HTML Representation** turns dark (light text, dark gray rows) without **Refresh**; the file path and text representation are white on black.
 3. **Create Plot** on a variable → dark plot (`dark_background`), unless `scientificDataViewer.matplotlibStyle` is set.
 4. Switch back to **Light High Contrast** → the xarray repr turns light again.
-5. In **Dark High Contrast**, set `scientificDataViewer.webviewExportTheme` to `Default Light+` and export the webview → in the browser, the xarray repr is light.
+5. In each High Contrast theme, type `0` in a dimension slice → the field has a **double** outline (orange in Dark, blue in Light) and a `•` after its name; **Create Plot** → under the plot, the slice item has the same double outline, the automatic items a single one.
+6. In **Dark High Contrast**, set `scientificDataViewer.webviewExportTheme` to `Default Light+` and export the webview → in the browser, the xarray repr is light.
 
 ### T35. Variables of 0 bytes (empty dimension)
 
@@ -1247,6 +1264,9 @@ New fixtures include `sample_ocean_grid_v3/` (unsuffixed Zarr v3), `sample_zarr_
 **Test:**
 
 1. Install the `.vsix` (`npm run package`). In the **Extensions** view (dark theme, then **Preferences: Color Theme** → Light Modern), the extension shows three teal comets around a dot on a transparent background, not the old glowing ring; same on its details page.
+
+   > **Before the merge, the README part of the details page still shows the old icon and broken screenshots: expected.** `vsce` rewrites the README's relative images to `https://github.com/etienneschalk/scientific-data-viewer/raw/HEAD/…`, the default branch (`main`), where `media/icon.png` is still the old one and the `v0.13-*.png` screenshots do not exist yet. Only the page header (icon from the `.vsix`) shows the new icon. Check the README images again after the merge, then on the Marketplace after the (pre-)release: [D2](#d2-extension-page-images-after-the-merge).
+
 2. With the default file icon theme (**Seti**), open a folder holding `.nc`, `.h5`, `.zarr.zip`, `.grib2`, `.tif`, `.jp2`, `.cdf` and `.kerchunk.json` files (`artefacts/sample-data/`): each file in the **Explorer** has the teal comet icon, in both themes. Inside an expanded folder, the icon has a little space (about 4 px) between the indent guide line and its left side, and does not touch the guide.
 3. Open `sample_data.nc`: the editor tab of the viewer shows the same icon.
 4. Optional: with **Material Icon Theme**, its own icons replace the extension's file icons (expected: a file icon theme takes precedence over language icons).
@@ -1315,13 +1335,16 @@ Copy this table into your notes or the merge request and fill it in.
 | B23 Old xarray message (optional)          |        |       |
 | B24 No plot type drop-down                 |        |       |
 | B25 Variable sections, Xarray Encoding     |        |       |
-| B26 Plot controls layout                   |        |       |
-| B27 Dimension slices boxes and slider      |        |       |
-| B28 One setting changed, rest automatic    |        |       |
 | B26 Cancel one plot                        |        |       |
 | B27 Load time in local time                |        |       |
+| B28 Plot controls layout                   |        |       |
+| B29 Dimension slices boxes and slider      |        |       |
+| B30 One setting changed, rest automatic    |        |       |
 | Upgrade sandbox script (UPGRADE_TEST_PLAN) |        |       |
 | C Old formats, export, outline             |        |       |
+| T39 Walkthrough (clean VS Code)            |        |       |
+| T40 New icon                               |        |       |
 | D1 Issue forms optional (after merge)      |        |       |
+| D2 Extension page images (after merge)     |        |       |
 
-**Ready to ship** when every line of Parts A–C is ✅ (B20 is optional but recommended). **D1** is checked right after the merge.
+**Ready to ship** when every line of Parts A–C is ✅ (B20 is optional but recommended). **D1** and **D2** step 1 are checked right after the merge, D2 step 2 after the (pre-)release.

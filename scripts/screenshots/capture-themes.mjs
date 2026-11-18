@@ -8,6 +8,7 @@
 // default themes. Needs a display (Linux: DISPLAY or xvfb-run).
 //
 // Usage: node scripts/screenshots/capture-themes.mjs [--vscode-version 1.105.0]
+//        [--theme <id>]... (only these themes; the other files stay as they are)
 import { runTests } from '@vscode/test-electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,8 +20,24 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EXTENSION_DIR = path.join(HERE, 'theme-capture-extension');
 
 const { values } = parseArgs({
-    options: { 'vscode-version': { type: 'string' } },
+    options: {
+        'vscode-version': { type: 'string' },
+        theme: { type: 'string', multiple: true },
+    },
 });
+
+const unknown = (values.theme ?? []).filter(
+    (id) => !THEMES.some((t) => t.id === id),
+);
+if (unknown.length > 0) {
+    console.error(
+        `Unknown theme(s): ${unknown.join(', ')}; known: ${THEMES.map((t) => t.id).join(', ')}`,
+    );
+    process.exit(1);
+}
+const themes = values.theme
+    ? THEMES.filter((t) => values.theme.includes(t.id))
+    : THEMES;
 
 // Set by the VS Code integrated terminal; it would start VS Code as plain Node
 delete process.env.ELECTRON_RUN_AS_NODE;
@@ -32,7 +49,7 @@ try {
         extensionTestsPath: path.join(EXTENSION_DIR, 'index.js'),
         launchArgs: ['--disable-extensions', '--no-sandbox', '--disable-gpu'],
         extensionTestsEnv: {
-            SDV_THEMES: JSON.stringify(THEMES),
+            SDV_THEMES: JSON.stringify(themes),
             SDV_THEMES_DIR: THEMES_DIR,
         },
     });
