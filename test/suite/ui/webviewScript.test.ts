@@ -756,6 +756,59 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(request.payload.useFlags, false);
     });
 
+    test('Flags controls: selection, combination and hidden flags, group over global', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const safeId = 'group-plot___-';
+        const combine = doc.getElementById('flagCombineSelect');
+        assert.deepStrictEqual(
+            Array.from(
+                combine.querySelectorAll('option'),
+                (o: { value: string; textContent: string }) => [
+                    o.value,
+                    o.textContent,
+                ],
+            ),
+            [
+                ['', 'per flag'],
+                ['any', 'any'],
+                ['all', 'all'],
+                ['none', 'none'],
+            ],
+        );
+        const groupCombine = doc.getElementById(`group-flag-combine-${safeId}`);
+        assert.strictEqual(groupCombine.options[0].textContent, 'global');
+
+        harness.setValue(
+            doc.getElementById('flagSelectInput'),
+            ' cloud, cloud shadow ',
+        );
+        harness.setValue(combine, 'any');
+        harness.setValue(doc.getElementById('hideFlagsInput'), 'land');
+        harness.setValue(groupCombine, 'none');
+        harness.click(
+            harness
+                .plotControls('/temperature')
+                .querySelector('[data-action="create-plot"]'),
+        );
+        const [request] = harness.requests('createPlot');
+        assert.strictEqual(request.payload.flagSelect, 'cloud, cloud shadow');
+        assert.strictEqual(request.payload.flagCombine, 'none');
+        assert.strictEqual(request.payload.hideFlags, 'land');
+        // The changed outline marks the select like any other control
+        assert.ok(
+            combine
+                .closest('.plot-field')
+                .classList.contains('plot-field--changed'),
+        );
+
+        harness.click(doc.getElementById('clearPlotParametersButton'));
+        assert.strictEqual(combine.value, '');
+        assert.strictEqual(doc.getElementById('flagSelectInput').value, '');
+        // The dimension options refresh leaves the choice select alone
+        assert.strictEqual(combine.options.length, 4);
+    });
+
     test('no time range controls, even for datetime variables', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;

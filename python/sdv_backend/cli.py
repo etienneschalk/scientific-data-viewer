@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from sdv_backend._bootstrap import logger
+from sdv_backend.flags import parse_flag_names
 from sdv_backend.formats.zarr import resolve_store_path
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
@@ -15,6 +16,7 @@ from sdv_backend.info.display import (
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.plotting.api import create_plot
+from sdv_backend.plotting.flags import FLAG_COMBINE_CHOICES
 from sdv_backend.plotting.options import (
     PlotOptions,
     parse_col_wrap,
@@ -285,6 +287,32 @@ Examples:
     )
 
     parser.add_argument(
+        "--flag-select",
+        default=None,
+        help=(
+            "CF flag meanings to draw, separated by commas (case, '_' and spaces "
+            "ignored): flag_values highlighted, bit flags drawn alone"
+        ),
+    )
+    parser.add_argument(
+        "--flag-combine",
+        choices=FLAG_COMBINE_CHOICES,
+        default=None,
+        help=(
+            "Fold the selected bit flags (all without --flag-select) into one map: "
+            "any (OR), all (AND), none (where none is set)"
+        ),
+    )
+    parser.add_argument(
+        "--hide-flags",
+        default=None,
+        help=(
+            "Hide the points where a flag variable named in the variable's "
+            "ancillary_variables has one of these meanings set (commas)"
+        ),
+    )
+
+    parser.add_argument(
         "--small-variable-bytes",
         type=int,
         default=DEFAULT_SMALL_VARIABLE_BYTES,
@@ -395,6 +423,9 @@ def _plot_options(
         add_colorbar=not args.no_add_colorbar,
         add_legend=args.add_legend,
         use_flags=not args.no_flags,
+        flag_select=parse_flag_names(args.flag_select),
+        flag_combine=args.flag_combine,
+        hide_flags=parse_flag_names(args.hide_flags),
         netcdf_engine_order=args.netcdf_engine_order,
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,

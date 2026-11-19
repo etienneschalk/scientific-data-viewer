@@ -84,6 +84,19 @@ class FlagSpec:
     def is_valid(self) -> bool:
         return not self.problems
 
+    def match(self, names: Sequence[str]) -> tuple[list[int], list[str]]:
+        """Indexes of the flags named in ``names`` (in the spec's order), and
+        the names that match no meaning. Case and ``_`` / space / ``-`` are
+        ignored (``Cloud shadow`` is ``cloud_shadow``)."""
+        wanted = {normalize_meaning(n): n for n in names if normalize_meaning(n)}
+        found = [
+            i
+            for i, flag in enumerate(self.flags)
+            if normalize_meaning(flag.meaning) in wanted
+        ]
+        known = {normalize_meaning(self.flags[i].meaning) for i in found}
+        return found, [name for key, name in wanted.items() if key not in known]
+
     def to_json(self) -> dict[str, Any]:
         """For File Information. Values and masks are strings: a uint64 mask
         does not fit in a JavaScript number."""
@@ -106,6 +119,20 @@ class FlagSpec:
             "problems": list(self.problems),
             "notes": list(self.notes),
         }
+
+
+def normalize_meaning(name: str) -> str:
+    """``Cloud shadow`` / ``cloud-shadow`` / ``CLOUD_SHADOW`` -> ``cloud_shadow``."""
+    return "_".join(re.split(r"[\s_\-]+", str(name).strip().lower())).strip("_")
+
+
+def parse_flag_names(text: str | Sequence[str] | None) -> tuple[str, ...]:
+    """``"cloud, cloud shadow"`` -> ``("cloud", "cloud shadow")``: names are
+    separated by commas (a meaning typed with spaces is one name)."""
+    if text is None:
+        return ()
+    parts = text.split(",") if isinstance(text, str) else list(text)
+    return tuple(p.strip() for p in parts if str(p).strip())
 
 
 def has_flag_attributes(attrs: Mapping[Any, Any]) -> bool:

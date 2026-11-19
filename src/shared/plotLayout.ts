@@ -15,7 +15,9 @@ export type PlotLayoutRole =
     | 'aspect'
     | 'bins'
     /** CF flag variable drawn by meaning (reported, not an xarray kwarg) */
-    | 'flags';
+    | 'flags'
+    /** Points hidden by an ancillary flag variable (reported only) */
+    | 'hide_flags';
 
 export interface PlotLayoutChoice {
     role: PlotLayoutRole;

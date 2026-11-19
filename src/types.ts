@@ -55,6 +55,12 @@ export interface PlotOptions {
     addLegend?: boolean;
     /** When false, passes --no-flags: CF flag variables plotted as numbers */
     useFlags?: boolean;
+    /** CF flag meanings to draw, comma-separated (--flag-select) */
+    flagSelect?: string;
+    /** Bit flags folded into one map: any / all / none (--flag-combine) */
+    flagCombine?: string;
+    /** Meanings of the ancillary flag variables that hide points (--hide-flags) */
+    hideFlags?: string;
     /** Identifies the plot subprocess so the webview can abort it */
     operationId?: string;
 }

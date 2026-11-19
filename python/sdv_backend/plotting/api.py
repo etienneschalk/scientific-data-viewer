@@ -6,7 +6,9 @@ automatic, see ``layout``) -> draw -> render PNG.
 
 A CF flag variable (``flag_values`` / ``flag_masks`` + ``flag_meanings``) is
 read raw and replaced by its index array of meanings before the layout
-(``plotting/flags.py``); bit flags get one more dimension, ``flag``.
+(``plotting/flags.py``); bit flags get one more dimension, ``flag``. With
+``hide_flags``, the points where a flag variable of ``ancillary_variables``
+has one of those flags set are hidden first (after the slices).
 """
 
 import contextlib
@@ -22,7 +24,14 @@ from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.opening import ENGINES_WITH_PER_VARIABLE_DECODING, OpenedData
 from sdv_backend.plotting.draw import draw_plot
-from sdv_backend.plotting.flags import FlagPlot, adjust_layout, prepare_flag_plot
+from sdv_backend.plotting.flags import (
+    FlagChoice,
+    FlagPlot,
+    HiddenPoints,
+    adjust_layout,
+    hide_flagged,
+    prepare_flag_plot,
+)
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
 from sdv_backend.plotting.layout import PlotLayout, resolve_layout
 from sdv_backend.plotting.options import PlotOptions
@@ -115,21 +124,33 @@ def create_plot(
                 group_name, variable_name = split_variable_path(variable_path)
                 inherit = datatree_inherit_mode(options.show_inherited_coordinates)
                 group = opened.group(group_name, inherit)
-                var = get_variable(group, variable_name)
-                spec = _usable_flag_spec(var, options)
-                if spec is not None and _reopen_raw(var, opened):
+
+                def raw_group(names: tuple[str, ...]) -> xr.Dataset:
+                    """The group opened again with ``names`` not decoded."""
                     raw = OpenedData.open(
                         file_path,
                         file_format_info,
                         options.convert_bands_to_variables,
-                        raw_variables=(variable_name,),
+                        raw_variables=names,
                     )
                     stack.enter_context(closing(raw))
-                    var = get_variable(raw.group(group_name, inherit), variable_name)
+                    return raw.group(group_name, inherit)
+
+                var = get_variable(group, variable_name)
+                spec = _usable_flag_spec(var, options)
+                if spec is not None and _reopen_raw(var, opened):
+                    var = get_variable(raw_group((variable_name,)), variable_name)
                 slice_notes = ignored_slice_notes(var, options.dimension_slices)
                 var, applied_isel = apply_dimension_slices(
                     var, options.dimension_slices
                 )
+                hidden = (
+                    _hide_flags(var, group, applied_isel, options, opened, raw_group)
+                    if options.hide_flags
+                    else None
+                )
+                if hidden is not None:
+                    var = hidden.var
                 selection = apply_datetime_filter(
                     var, variable_name, group, group_name, opened, options
                 )
@@ -137,7 +158,12 @@ def create_plot(
             except PlotInputError as exc:
                 return CreatePlotError(error=str(exc), format_info=file_format_info)
             flag_plot = (
-                prepare_flag_plot(selection.var, spec, options.cmap)
+                prepare_flag_plot(
+                    selection.var,
+                    spec,
+                    options.cmap,
+                    FlagChoice(options.flag_select, options.flag_combine),
+                )
                 if spec is not None
                 else None
             )
@@ -149,7 +175,14 @@ def create_plot(
             bundle = _build_plot_kwargs(options, layout, flags=flag_plot is not None)
             if flag_plot is not None:
                 adjust_layout(flag_plot, layout, bundle.raw)
-            layout.notes[:0] = slice_notes + _flag_notes(var, options, flag_plot)
+            hide_notes: list[str] = []
+            if hidden is not None:
+                hide_notes = hidden.notes
+                if hidden.report is not None:
+                    layout.set("hide_flags", hidden.report, "user")
+            layout.notes[:0] = (
+                slice_notes + hide_notes + _flag_notes(var, options, flag_plot)
+            )
             if style_note:
                 layout.notes.append(style_note)
             logger.info("Plot layout: %s", layout.to_json())
@@ -243,6 +276,56 @@ def _reopen_raw(var: xr.DataArray, opened: OpenedData) -> bool:
         needs_raw_codes(var.dtype, var.encoding)
         and opened.used_engine in ENGINES_WITH_PER_VARIABLE_DECODING
     )
+
+
+def _hide_flags(
+    var: xr.DataArray,
+    group: xr.Dataset,
+    applied_isel: dict,
+    options: PlotOptions,
+    opened: OpenedData,
+    raw_group,
+) -> HiddenPoints:
+    """``var`` with the points flagged by its ``ancillary_variables`` hidden.
+
+    The flag variables are read raw when decoding changed them (as the
+    plotted flag variable is), and sliced as ``var``.
+    """
+    names = str(var.attrs.get("ancillary_variables", "") or "").split()
+    missing = [n for n in names if n not in group.variables]
+    found = []
+    for name in names:
+        if name in missing:
+            continue
+        flag_var = group[name]
+        spec = read_flag_spec(
+            flag_var.attrs, raw_dtype_of(flag_var.encoding, flag_var.dtype)
+        )
+        if spec is not None and spec.is_valid:
+            found.append((name, flag_var, spec))
+    raw_names = tuple(name for name, v, _ in found if _reopen_raw(v, opened))
+    if raw_names:
+        raw = raw_group(raw_names)
+        found = [
+            (name, raw[name] if name in raw_names else v, spec)
+            for name, v, spec in found
+        ]
+    sliced = [
+        (
+            name,
+            v.isel({d: i for d, i in applied_isel.items() if d in v.dims}).load(),
+            spec,
+        )
+        for name, v, spec in found
+    ]
+    hidden = hide_flagged(var, sliced, options.hide_flags)
+    if missing:
+        hidden.notes.insert(
+            0,
+            f"hide_flags: ancillary variable {', '.join(missing)} not found in "
+            "this group",
+        )
+    return hidden
 
 
 def _flag_notes(

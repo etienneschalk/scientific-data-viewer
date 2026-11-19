@@ -229,6 +229,30 @@ copy of the data per field), the last fields are left out. On engines that
 cannot read raw, a 64-bit variable read as floats gets a note (bits above
 2^53).
 
+### Selection by meaning and hidden points
+
+Controls of the **Flags** fieldset (`FlagChoice`, then `prepare_flag_plot`):
+
+- **flag_select** (`--flag-select a,b`): `FlagSpec.match` finds the meanings
+  (case, `_`, `-` and spaces ignored). `flag_values`: the chosen ones keep
+  their color, the others merge into one grey category. Bits: only the fields
+  holding a chosen meaning; their other states are `not set or not selected`.
+  Unknown names give a note; no match at all, the selection is ignored.
+- **flag_combine** (`--flag-combine any|all|none`, bits only): the chosen
+  flags (all of them without `flag_select`) become one map, no `flag`
+  dimension, two categories (`cloud OR cloud shadow` / `none of them`). On
+  `flag_values` it is ignored with a note.
+- With either set, the `flags` item of the layout line carries the selection
+  and its source is `user`.
+- **hide_flags** (`--hide-flags a,b`, `api._hide_flags` then
+  `flags.hide_flagged`): after the slices and before the datetime filter, the
+  flag variables named in `ancillary_variables` (same group, valid spec) are
+  read raw if needed, sliced with the same `isel`, and the points where one of
+  the named meanings is set become NaN. Broadcast by dimension name, no
+  coordinate alignment: a flag variable whose dimensions are not the
+  variable's (same sizes) is skipped with a note. Layout item `hide_flags`,
+  note with the count of values hidden.
+
 ## Known limitations
 
 - `imshow` assumes evenly spaced coordinates; irregular grids are drawn
@@ -248,7 +272,7 @@ cannot read raw, a 64-bit variable read as floats gets a note (bits above
 | --------------------- | -------------------------------------------------------------------------------- |
 | layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
 | CF flags              | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
-| flags tests           | `python/tests/test_flags.py`                                                     |
+| flags tests           | `python/tests/test_flags.py` (parsing, plots, selection, `hide_flags`)           |
 | xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
 | controls table, merge | `src/panel/webview/plotParams.ts`                                                |
 | changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |

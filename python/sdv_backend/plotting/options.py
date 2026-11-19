@@ -119,8 +119,16 @@ class PlotOptions:
         Whether to draw a colorbar for scalar-mappable plots (default True).
         Ignored for histograms.
     use_flags : bool
-        Draw a CF flag variable (``flag_values`` + ``flag_meanings``) by
-        meaning: one color per class, labelled colorbar (default True).
+        Draw a CF flag variable (``flag_values`` / ``flag_masks`` +
+        ``flag_meanings``) by meaning: one color per class, labelled colorbar,
+        one panel per bit flag (default True).
+    flag_select : tuple of str
+        Meanings to draw (names, case and ``_`` / space ignored); empty: all.
+    flag_combine : {"any", "all", "none"}, optional
+        Bits folded into one map (OR, AND, none set); None: one panel per flag.
+    hide_flags : tuple of str
+        Hide the points where a flag variable named in ``ancillary_variables``
+        has one of these flags set.
     add_legend : bool
         Whether to add a legend when xarray supports it (e.g. ``hue``). Omitted on
         generic ``DataArray.plot`` and ``plot.imshow`` when ``hue`` is not set, so
@@ -168,3 +176,6 @@ class PlotOptions:
     # CF flag variables (flag_values / flag_meanings) drawn by meaning; False:
     # plain numbers (plotting/flags.py)
     use_flags: bool = True
+    flag_select: tuple[str, ...] = ()
+    flag_combine: Literal["any", "all", "none"] | None = None
+    hide_flags: tuple[str, ...] = ()

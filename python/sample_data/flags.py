@@ -19,6 +19,8 @@
   -> one panel per bit, exact;
 - ``sensor_status_qc``: CF example 3.8, masks + values, 1D -> block plot
   (one row per field, bits 2-3 a three-state mode);
+- ``sst``: a data variable whose ``ancillary_variables`` names
+  ``pixel_flags quality_level`` -> ``hide_flags`` (cloud, bad data...);
 - ``broken_*``: specs the viewer must refuse with a note (counts that differ,
   a mixed value outside its mask, ``flag_colors`` of the wrong length, masks on
   a float variable).
@@ -96,6 +98,10 @@ def build_cf_flags_dataset(seed: int = 0) -> tuple[xr.Dataset, dict]:
         wqsf |= np.where(rng.random((ny, nx)) < 0.2 + 0.1 * i, mask, np.uint64(0))
     wqsf[0, :] = np.uint64(0xFFFFFFFFFFFFFFFF)  # fill
 
+    sst = (
+        15 + 12 * np.cos(np.radians(yy)) + 0.3 * rng.standard_normal((nt, ny, nx))
+    ).astype(np.float32)
+
     n_status = 60
     status = (rng.random(n_status) < 0.1) * 1 | (rng.random(n_status) < 0.05) * 2
     status = (status | np.repeat(np.array([0, 4, 8, 12], np.int8), 15)).astype(np.int8)
@@ -160,6 +166,14 @@ def build_cf_flags_dataset(seed: int = 0) -> tuple[xr.Dataset, dict]:
                 flag_values=np.array([1, 2, 4, 8, 12], np.int8),
                 flag_meanings="low_battery hardware_fault offline_mode "
                 "calibration_mode maintenance_mode",
+            ),
+            "sst": var(
+                ("time", "lat", "lon"),
+                sst,
+                long_name="Sea surface temperature",
+                standard_name="sea_surface_temperature",
+                units="degC",
+                ancillary_variables="pixel_flags quality_level",
             ),
             "broken_count": var(
                 ("lat", "lon"),
