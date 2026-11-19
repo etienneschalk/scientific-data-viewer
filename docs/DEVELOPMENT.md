@@ -110,6 +110,11 @@ Other scripts in `python/`:
 - **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `artefacts/sample-data/`
   (`record` before a refactoring, `check` after it)
 
+Exploration scripts behind a feature proposal live in `scripts/prototypes/` (e.g. `cf_flags.py`,
+behind `docs/v0.15/CF_FLAGS_PROPOSAL.md`): plain matplotlib, outside the backend, run with
+`.venv/bin/python scripts/prototypes/<name>.py`, output in `artefacts/prototypes/<name>/`. The
+`prototypes` step of `paranoia.sh` checks that they still run; delete one once its feature is built.
+
 Run the Python tests with `pytest python/tests` (pytest config is in `python/pyproject.toml`).
 
 Disclaimer: most visualization scripts are experimental and can produce unusable plots!
@@ -328,6 +333,7 @@ Everything a development script writes goes to `artefacts/` at the repository ro
 | `artefacts/sample-data/`                    | `python python/create_sample_data.py [--overwrite]` (seeded: the same files on every machine)                                                              |
 | `artefacts/golden/`                         | `python/tools/golden_snapshots.py record` (paths written `<SAMPLES>/…`, `<REPO>/…`)                                                                        |
 | `artefacts/non-regression-plots/v<ver>/`    | `python python/non_regression_test_plot.py`                                                                                                                |
+| `artefacts/prototypes/<name>/`              | `scripts/prototypes/<name>.py`                                                                                                                             |
 | `artefacts/screenshots/v<major.minor>/`     | `npm run screenshots`                                                                                                                                      |
 | `artefacts/qa/`                             | the QA harnesses of `scripts/qa/` (`$SDV_QA_OUT`)                                                                                                          |
 | `artefacts/paranoia/<date-time>/`, `latest` | `./paranoia.sh` (its own QA outputs, package, logs and report)                                                                                             |

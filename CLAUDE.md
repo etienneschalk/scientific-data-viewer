@@ -21,6 +21,7 @@ npm run screenshots         # full-page viewer screenshots -> artefacts/screensh
 python python/create_sample_data.py [--overwrite]   # create artefacts/sample-data/ (generators in python/sample_data/)
 python python/create_sample_data.py --bundled-sample [--check]   # rewrite / check the shipped media/samples/sample_climate.nc (walkthrough sample)
 python python/non_regression_test_plot.py   # plot gallery -> artefacts/non-regression-plots/v<version>/
+.venv/bin/python scripts/prototypes/cf_flags.py   # exploration behind a proposal -> artefacts/prototypes/<name>/
 scripts/release-vsix.sh 0.12.1      # rebuild an old release's .vsix from its tag -> artefacts/vsix-releases/
 python scripts/generate_readme.py --no-timestamp   # regenerate README.md (Node 22 for its prettier pass; paranoia `readme` fails on a timestamp)
 .venv/bin/python scripts/architecture/generate.py [--check]   # regenerate docs/architecture/ diagrams (Graphviz) / check they match the code
