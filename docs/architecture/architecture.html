@@ -1074,51 +1074,57 @@ footer {
 <path fill="none" stroke="black" stroke-width="0.9" d="M883.19,-48.96C876.99,-41.94 869.62,-33.62 863.46,-26.65"/>
 <polygon fill="black" stroke="black" stroke-width="0.9" points="864.96,-25.17 859.41,-22.07 861.81,-27.96 864.96,-25.17"/>
 </g>
+
+<g id="node28" class="node f&#45;shared">
+<title>shared/flags</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M955.17,-22C955.17,-22 915.83,-22 915.83,-22 912.17,-22 908.5,-18.33 908.5,-14.67 908.5,-14.67 908.5,-7.33 908.5,-7.33 908.5,-3.67 912.17,0 915.83,0 915.83,0 955.17,0 955.17,0 958.83,0 962.5,-3.67 962.5,-7.33 962.5,-7.33 962.5,-14.67 962.5,-14.67 962.5,-18.33 958.83,-22 955.17,-22"/>
+<text text-anchor="middle" x="935.5" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">flags</text>
+</g>
 </g>
 </svg></div><figcaption>Thick borders mark the four classes on the main request path: DataViewerPanel, UIController, DataProcessor, PythonManager. Hover a box in the HTML page for its full path.</figcaption></figure>
 </section>
 
 <section id="webview-modules">
 <h2><span class="n">4</span>Webview bundle</h2>
-<p>Built separately by esbuild into <code>out/webview/webview.js</code>, with its own <code>tsconfig.json</code> and DOM types. Outside its own folder it imports only <code>src/shared/icons.ts</code>, <code>src/shared/ids.ts</code>, <code>src/shared/plotLayout.ts</code> and <code>src/shared/time.ts</code>, so the message protocol is the only runtime contract between the two sides. <code>plotParams.ts</code> is the single table of plot controls.</p>
+<p>Built separately by esbuild into <code>out/webview/webview.js</code>, with its own <code>tsconfig.json</code> and DOM types. Outside its own folder it imports only <code>src/shared/flags.ts</code>, <code>src/shared/icons.ts</code>, <code>src/shared/ids.ts</code>, <code>src/shared/plotLayout.ts</code> and <code>src/shared/time.ts</code>, so the message protocol is the only runtime contract between the two sides. <code>plotParams.ts</code> is the single table of plot controls.</p>
 <figure><div class="scroll"><svg class="gv" role="img" aria-label="Webview bundle modules: main imports the feature modules, which share bus, state, util and src/shared." style="max-width:902px"
- viewBox="0.00 0.00 721.60 489.64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 478.84)">
+ viewBox="0.00 0.00 721.60 490.18" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 479.38)">
 
 <g id="node1" class="node f&#45;web key">
 <title>panel/webview/bus</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M502.17,-422C502.17,-422 462.83,-422 462.83,-422 459.17,-422 455.5,-418.33 455.5,-414.67 455.5,-414.67 455.5,-407.33 455.5,-407.33 455.5,-403.67 459.17,-400 462.83,-400 462.83,-400 502.17,-400 502.17,-400 505.83,-400 509.5,-403.67 509.5,-407.33 509.5,-407.33 509.5,-414.67 509.5,-414.67 509.5,-418.33 505.83,-422 502.17,-422"/>
-<text text-anchor="middle" x="482.5" y="-408.6" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M502.17,-439C502.17,-439 462.83,-439 462.83,-439 459.17,-439 455.5,-435.33 455.5,-431.67 455.5,-431.67 455.5,-424.33 455.5,-424.33 455.5,-420.67 459.17,-417 462.83,-417 462.83,-417 502.17,-417 502.17,-417 505.83,-417 509.5,-420.67 509.5,-424.33 509.5,-424.33 509.5,-431.67 509.5,-431.67 509.5,-435.33 505.83,-439 502.17,-439"/>
+<text text-anchor="middle" x="482.5" y="-425.6" font-family="DejaVu Sans Mono" font-size="10.50">bus</text>
 </g>
 
 <g id="node15" class="node f&#45;web">
 <title>panel/webview/util</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M659.17,-235C659.17,-235 619.83,-235 619.83,-235 616.17,-235 612.5,-231.33 612.5,-227.67 612.5,-227.67 612.5,-220.33 612.5,-220.33 612.5,-216.67 616.17,-213 619.83,-213 619.83,-213 659.17,-213 659.17,-213 662.83,-213 666.5,-216.67 666.5,-220.33 666.5,-220.33 666.5,-227.67 666.5,-227.67 666.5,-231.33 662.83,-235 659.17,-235"/>
-<text text-anchor="middle" x="639.5" y="-221.6" font-family="DejaVu Sans Mono" font-size="10.50">util</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M659.17,-267C659.17,-267 619.83,-267 619.83,-267 616.17,-267 612.5,-263.33 612.5,-259.67 612.5,-259.67 612.5,-252.33 612.5,-252.33 612.5,-248.67 616.17,-245 619.83,-245 619.83,-245 659.17,-245 659.17,-245 662.83,-245 666.5,-248.67 666.5,-252.33 666.5,-252.33 666.5,-259.67 666.5,-259.67 666.5,-263.33 662.83,-267 659.17,-267"/>
+<text text-anchor="middle" x="639.5" y="-253.6" font-family="DejaVu Sans Mono" font-size="10.50">util</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
 <title>panel/webview/bus&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M509.79,-405.78C521.2,-402.37 533.99,-396.84 543,-388 573.17,-358.41 557.77,-336.54 579,-300 592.01,-277.61 610.99,-254.56 624,-239.8"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="625.74,-241 628.16,-235.13 622.6,-238.21 625.74,-241"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M499.26,-416.89C511.77,-407.71 529.36,-393.95 543,-380 577.44,-344.78 610.99,-297.26 627.65,-272.52"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="629.54,-273.47 631.13,-267.31 626.05,-271.13 629.54,-273.47"/>
 </g>
 
-<g id="node18" class="node f&#45;shared">
+<g id="node19" class="node f&#45;shared">
 <title>shared/plotLayout</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M692.67,-327C692.67,-327 586.33,-327 586.33,-327 582.67,-327 579,-323.33 579,-319.67 579,-319.67 579,-312.33 579,-312.33 579,-308.67 582.67,-305 586.33,-305 586.33,-305 692.67,-305 692.67,-305 696.33,-305 700,-308.67 700,-312.33 700,-312.33 700,-319.67 700,-319.67 700,-323.33 696.33,-327 692.67,-327"/>
-<text text-anchor="middle" x="639.5" y="-313.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/plotLayout</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M692.67,-412C692.67,-412 586.33,-412 586.33,-412 582.67,-412 579,-408.33 579,-404.67 579,-404.67 579,-397.33 579,-397.33 579,-393.67 582.67,-390 586.33,-390 586.33,-390 692.67,-390 692.67,-390 696.33,-390 700,-393.67 700,-397.33 700,-397.33 700,-404.67 700,-404.67 700,-408.33 696.33,-412 692.67,-412"/>
+<text text-anchor="middle" x="639.5" y="-398.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/plotLayout</text>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>panel/webview/bus&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M509.68,-402.65C520.32,-398.81 532.55,-393.81 543,-388 572.36,-371.68 602.75,-347.23 621.15,-331.44"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="622.85,-332.75 626.01,-327.24 620.1,-329.58 622.85,-332.75"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M509.79,-423.42C527.16,-420.4 550.73,-416.29 572.95,-412.42"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="573.33,-414.48 578.88,-411.39 572.6,-410.35 573.33,-414.48"/>
 </g>
 
 <g id="node2" class="node f&#45;web">
 <title>panel/webview/changedFields</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M351.67,-222C351.67,-222 269.33,-222 269.33,-222 265.67,-222 262,-218.33 262,-214.67 262,-214.67 262,-207.33 262,-207.33 262,-203.67 265.67,-200 269.33,-200 269.33,-200 351.67,-200 351.67,-200 355.33,-200 359,-203.67 359,-207.33 359,-207.33 359,-214.67 359,-214.67 359,-218.33 355.33,-222 351.67,-222"/>
-<text text-anchor="middle" x="310.5" y="-208.6" font-family="DejaVu Sans Mono" font-size="10.50">changedFields</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M351.67,-233C351.67,-233 269.33,-233 269.33,-233 265.67,-233 262,-229.33 262,-225.67 262,-225.67 262,-218.33 262,-218.33 262,-214.67 265.67,-211 269.33,-211 269.33,-211 351.67,-211 351.67,-211 355.33,-211 359,-214.67 359,-218.33 359,-218.33 359,-225.67 359,-225.67 359,-229.33 355.33,-233 351.67,-233"/>
+<text text-anchor="middle" x="310.5" y="-219.6" font-family="DejaVu Sans Mono" font-size="10.50">changedFields</text>
 </g>
 
 <g id="node3" class="node f&#45;web">
@@ -1129,11 +1135,11 @@ footer {
 
 <g id="edge3" class="edge e&#45;host">
 <title>panel/webview/dimensionSlices&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M500.09,-120.07C512.12,-128.18 528.72,-139.56 543,-150 570.08,-169.8 600.61,-193.75 619.7,-208.93"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="618.77,-210.87 624.77,-212.97 621.38,-207.59 618.77,-210.87"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M502.01,-120.16C514.19,-127.88 530.18,-138.75 543,-150 575.74,-178.74 608.58,-218.03 625.92,-239.8"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="624.41,-241.28 629.78,-244.69 627.71,-238.68 624.41,-241.28"/>
 </g>
 
-<g id="node17" class="node f&#45;shared">
+<g id="node18" class="node f&#45;shared">
 <title>shared/ids</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M671.67,-120C671.67,-120 607.33,-120 607.33,-120 603.67,-120 600,-116.33 600,-112.67 600,-112.67 600,-105.33 600,-105.33 600,-101.67 603.67,-98 607.33,-98 607.33,-98 671.67,-98 671.67,-98 675.33,-98 679,-101.67 679,-105.33 679,-105.33 679,-112.67 679,-112.67 679,-116.33 675.33,-120 671.67,-120"/>
 <text text-anchor="middle" x="639.5" y="-106.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/ids</text>
@@ -1147,122 +1153,122 @@ footer {
 
 <g id="node4" class="node f&#45;web">
 <title>panel/webview/errors</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-396C330.67,-396 290.33,-396 290.33,-396 286.67,-396 283,-392.33 283,-388.67 283,-388.67 283,-381.33 283,-381.33 283,-377.67 286.67,-374 290.33,-374 290.33,-374 330.67,-374 330.67,-374 334.33,-374 338,-377.67 338,-381.33 338,-381.33 338,-388.67 338,-388.67 338,-392.33 334.33,-396 330.67,-396"/>
-<text text-anchor="middle" x="310.5" y="-382.6" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.67,-385C330.67,-385 290.33,-385 290.33,-385 286.67,-385 283,-381.33 283,-377.67 283,-377.67 283,-370.33 283,-370.33 283,-366.67 286.67,-363 290.33,-363 290.33,-363 330.67,-363 330.67,-363 334.33,-363 338,-366.67 338,-370.33 338,-370.33 338,-377.67 338,-377.67 338,-381.33 334.33,-385 330.67,-385"/>
+<text text-anchor="middle" x="310.5" y="-371.6" font-family="DejaVu Sans Mono" font-size="10.50">errors</text>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-389.06C368.09,-393.66 416.98,-401.13 449.19,-406.06"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.15,-408.18 455.4,-407.01 449.79,-404.03 449.15,-408.18"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-382.44C368.22,-392.02 417.39,-407.63 449.59,-417.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.05,-419.9 455.4,-419.71 450.32,-415.89 449.05,-419.9"/>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.29,-389.5C384.19,-395.74 479.07,-402.02 543,-361 569.5,-344 561.26,-326.01 579,-300 593.68,-278.48 612.47,-255.08 624.96,-240.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="626.72,-241.19 628.94,-235.23 623.49,-238.5 626.72,-241.19"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-378.19C382.8,-383.97 474.96,-390.34 543,-358 582.55,-339.2 613.81,-296.19 628.81,-272.47"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="630.72,-273.36 632.09,-267.16 627.15,-271.15 630.72,-273.36"/>
 </g>
 
-<g id="node16" class="node f&#45;shared">
+<g id="node17" class="node f&#45;shared">
 <title>shared/icons</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M520.67,-356C520.67,-356 444.33,-356 444.33,-356 440.67,-356 437,-352.33 437,-348.67 437,-348.67 437,-341.33 437,-341.33 437,-337.67 440.67,-334 444.33,-334 444.33,-334 520.67,-334 520.67,-334 524.33,-334 528,-337.67 528,-341.33 528,-341.33 528,-348.67 528,-348.67 528,-352.33 524.33,-356 520.67,-356"/>
-<text text-anchor="middle" x="482.5" y="-342.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M520.67,-353C520.67,-353 444.33,-353 444.33,-353 440.67,-353 437,-349.33 437,-345.67 437,-345.67 437,-338.33 437,-338.33 437,-334.67 440.67,-331 444.33,-331 444.33,-331 520.67,-331 520.67,-331 524.33,-331 528,-334.67 528,-338.33 528,-338.33 528,-345.67 528,-345.67 528,-349.33 524.33,-353 520.67,-353"/>
+<text text-anchor="middle" x="482.5" y="-339.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/icons</text>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>panel/webview/errors&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-378.75C362.84,-372.92 400.45,-364.07 430.95,-356.89"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="431.59,-358.9 436.95,-355.48 430.62,-354.81 431.59,-358.9"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.06,-369C362.84,-364.34 400.45,-357.26 430.95,-351.52"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="431.44,-353.56 436.95,-350.39 430.66,-349.43 431.44,-353.56"/>
 </g>
 
 <g id="node5" class="node f&#45;web">
 <title>panel/webview/export</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-418C164.67,-418 124.33,-418 124.33,-418 120.67,-418 117,-414.33 117,-410.67 117,-410.67 117,-403.33 117,-403.33 117,-399.67 120.67,-396 124.33,-396 124.33,-396 164.67,-396 164.67,-396 168.33,-396 172,-399.67 172,-403.33 172,-403.33 172,-410.67 172,-410.67 172,-414.33 168.33,-418 164.67,-418"/>
-<text text-anchor="middle" x="144.5" y="-404.6" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.67,-407C164.67,-407 124.33,-407 124.33,-407 120.67,-407 117,-403.33 117,-399.67 117,-399.67 117,-392.33 117,-392.33 117,-388.67 120.67,-385 124.33,-385 124.33,-385 164.67,-385 164.67,-385 168.33,-385 172,-388.67 172,-392.33 172,-392.33 172,-399.67 172,-399.67 172,-403.33 168.33,-407 164.67,-407"/>
+<text text-anchor="middle" x="144.5" y="-393.6" font-family="DejaVu Sans Mono" font-size="10.50">export</text>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M172.02,-411.88C189.77,-414.89 213.7,-418.46 235,-420 301.94,-424.84 318.96,-423.15 386,-420 407.07,-419.01 430.68,-416.8 449.14,-414.81"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.46,-416.89 455.2,-414.15 449.01,-412.71 449.46,-416.89"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M167.25,-407.16C184.97,-415.59 210.9,-426.46 235,-431 310.67,-445.27 401.74,-438 449.18,-432.42"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.59,-434.48 455.3,-431.68 449.09,-430.31 449.59,-434.48"/>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
 <title>panel/webview/export&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-403.42C200.69,-399.6 245.8,-393.54 276.48,-389.43"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="277.13,-391.46 282.8,-388.58 276.57,-387.3 277.13,-391.46"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M172.21,-392.42C200.69,-388.6 245.8,-382.54 276.48,-378.43"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.13,-380.46 282.8,-377.58 276.57,-376.3 277.13,-380.46"/>
 </g>
 
 <g id="node6" class="node f&#45;web key">
 <title>panel/webview/main</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-222C46.67,-222 7.33,-222 7.33,-222 3.67,-222 0,-218.33 0,-214.67 0,-214.67 0,-207.33 0,-207.33 0,-203.67 3.67,-200 7.33,-200 7.33,-200 46.67,-200 46.67,-200 50.33,-200 54,-203.67 54,-207.33 54,-207.33 54,-214.67 54,-214.67 54,-218.33 50.33,-222 46.67,-222"/>
-<text text-anchor="middle" x="27" y="-208.6" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M46.67,-233C46.67,-233 7.33,-233 7.33,-233 3.67,-233 0,-229.33 0,-225.67 0,-225.67 0,-218.33 0,-218.33 0,-214.67 3.67,-211 7.33,-211 7.33,-211 46.67,-211 46.67,-211 50.33,-211 54,-214.67 54,-218.33 54,-218.33 54,-225.67 54,-225.67 54,-229.33 50.33,-233 46.67,-233"/>
+<text text-anchor="middle" x="27" y="-219.6" font-family="DejaVu Sans Mono" font-size="10.50">main</text>
 </g>
 
 <g id="edge10" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M29.56,-222.2C35.37,-262.24 57.15,-397.31 90,-423 197.32,-506.95 376.47,-452.14 449.27,-424.35"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="450.32,-426.19 455.16,-422.07 448.8,-422.28 450.32,-426.19"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M28.03,-233.01C28.75,-265.7 35.59,-363.01 90,-412 191.79,-503.64 375.63,-461.03 449.5,-438.66"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="450.35,-440.59 455.46,-436.82 449.11,-436.58 450.35,-440.59"/>
 </g>
 
 <g id="edge11" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/changedFields</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.23,-211C100.02,-211 195.4,-211 255.72,-211"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="255.81,-213.1 261.81,-211 255.81,-208.9 255.81,-213.1"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.23,-222C100.02,-222 195.4,-222 255.72,-222"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="255.81,-224.1 261.81,-222 255.81,-219.9 255.81,-224.1"/>
 </g>
 
 <g id="edge12" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/dimensionSlices</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M33.9,-199.73C43.34,-182.92 63.5,-151.6 90,-136 193.57,-75.03 340.3,-85.27 421.53,-97.53"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="421.49,-99.64 427.74,-98.49 422.14,-95.49 421.49,-99.64"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M33.9,-210.73C43.34,-193.92 63.5,-162.6 90,-147 193.81,-85.89 340.45,-90.95 421.6,-100.01"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="421.61,-102.13 427.81,-100.73 422.09,-97.96 421.61,-102.13"/>
 </g>
 
 <g id="edge13" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M28.68,-222.36C31.12,-251.74 42.05,-330.43 90,-366 118.71,-387.3 222.5,-387.63 276.43,-386.25"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.82,-388.34 282.76,-386.07 276.7,-384.14 276.82,-388.34"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.48,-233.32C33.61,-259.75 47.83,-325.5 90,-355 119.29,-375.49 222.81,-376.19 276.56,-375.07"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="276.91,-377.17 282.86,-374.93 276.81,-372.97 276.91,-377.17"/>
 </g>
 
 <g id="edge14" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/export</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M28.68,-222.27C31.15,-253.16 42.22,-340.01 90,-388 95.76,-393.79 103.4,-397.82 111.1,-400.63"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="110.61,-402.68 116.96,-402.54 111.91,-398.68 110.61,-402.68"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.3,-233.1C33.18,-261.2 47.17,-335.82 90,-377 95.83,-382.61 103.42,-386.57 111.05,-389.37"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="110.5,-391.4 116.85,-391.29 111.82,-387.41 110.5,-391.4"/>
 </g>
 
 <g id="node7" class="node f&#45;web">
 <title>panel/webview/plotActions</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-292C179.67,-292 109.33,-292 109.33,-292 105.67,-292 102,-288.33 102,-284.67 102,-284.67 102,-277.33 102,-277.33 102,-273.67 105.67,-270 109.33,-270 109.33,-270 179.67,-270 179.67,-270 183.33,-270 187,-273.67 187,-277.33 187,-277.33 187,-284.67 187,-284.67 187,-288.33 183.33,-292 179.67,-292"/>
-<text text-anchor="middle" x="144.5" y="-278.6" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M179.67,-303C179.67,-303 109.33,-303 109.33,-303 105.67,-303 102,-299.33 102,-295.67 102,-295.67 102,-288.33 102,-288.33 102,-284.67 105.67,-281 109.33,-281 109.33,-281 179.67,-281 179.67,-281 183.33,-281 187,-284.67 187,-288.33 187,-288.33 187,-295.67 187,-295.67 187,-299.33 183.33,-303 179.67,-303"/>
+<text text-anchor="middle" x="144.5" y="-289.6" font-family="DejaVu Sans Mono" font-size="10.50">plotActions</text>
 </g>
 
 <g id="edge15" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotActions</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M46.3,-222.09C66.24,-234.18 98.19,-253.54 119.98,-266.74"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="119.06,-268.65 125.28,-269.96 121.24,-265.05 119.06,-268.65"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M46.3,-233.09C66.24,-245.18 98.19,-264.54 119.98,-277.74"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="119.06,-279.65 125.28,-280.96 121.24,-276.05 119.06,-279.65"/>
 </g>
 
 <g id="node8" class="node f&#45;web key">
 <title>panel/webview/plotParams</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-136C342.67,-136 278.33,-136 278.33,-136 274.67,-136 271,-132.33 271,-128.67 271,-128.67 271,-121.33 271,-121.33 271,-117.67 274.67,-114 278.33,-114 278.33,-114 342.67,-114 342.67,-114 346.33,-114 350,-117.67 350,-121.33 350,-121.33 350,-128.67 350,-128.67 350,-132.33 346.33,-136 342.67,-136"/>
-<text text-anchor="middle" x="310.5" y="-122.6" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M342.67,-147C342.67,-147 278.33,-147 278.33,-147 274.67,-147 271,-143.33 271,-139.67 271,-139.67 271,-132.33 271,-132.33 271,-128.67 274.67,-125 278.33,-125 278.33,-125 342.67,-125 342.67,-125 346.33,-125 350,-128.67 350,-132.33 350,-132.33 350,-139.67 350,-139.67 350,-143.33 346.33,-147 342.67,-147"/>
+<text text-anchor="middle" x="310.5" y="-133.6" font-family="DejaVu Sans Mono" font-size="10.50">plotParams</text>
 </g>
 
 <g id="edge16" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M40.84,-199.7C52.76,-189.82 71.42,-175.85 90,-168 147.39,-143.74 219.07,-133 264.58,-128.36"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.06,-130.42 270.82,-127.75 264.65,-126.24 265.06,-130.42"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M40.84,-210.7C52.76,-200.82 71.42,-186.85 90,-179 147.39,-154.74 219.07,-144 264.58,-139.36"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.06,-141.42 270.82,-138.75 264.65,-137.24 265.06,-141.42"/>
 </g>
 
 <g id="node9" class="node f&#45;web">
 <title>panel/webview/render/dataInfo</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-195C191.67,-195 97.33,-195 97.33,-195 93.67,-195 90,-191.33 90,-187.67 90,-187.67 90,-180.33 90,-180.33 90,-176.67 93.67,-173 97.33,-173 97.33,-173 191.67,-173 191.67,-173 195.33,-173 199,-176.67 199,-180.33 199,-180.33 199,-187.67 199,-187.67 199,-191.33 195.33,-195 191.67,-195"/>
-<text text-anchor="middle" x="144.5" y="-181.6" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M191.67,-206C191.67,-206 97.33,-206 97.33,-206 93.67,-206 90,-202.33 90,-198.67 90,-198.67 90,-191.33 90,-191.33 90,-187.67 93.67,-184 97.33,-184 97.33,-184 191.67,-184 191.67,-184 195.33,-184 199,-187.67 199,-191.33 199,-191.33 199,-198.67 199,-198.67 199,-202.33 195.33,-206 191.67,-206"/>
+<text text-anchor="middle" x="144.5" y="-192.6" font-family="DejaVu Sans Mono" font-size="10.50">render/dataInfo</text>
 </g>
 
 <g id="edge17" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/dataInfo</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-204.87C64.85,-202.39 77.55,-199.42 89.98,-196.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="90.69,-198.5 96.06,-195.09 89.74,-194.41 90.69,-198.5"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M54.21,-215.87C64.85,-213.39 77.55,-210.42 89.98,-207.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="90.69,-209.5 96.06,-206.09 89.74,-205.41 90.69,-209.5"/>
 </g>
 
 <g id="node11" class="node f&#45;web">
@@ -1273,170 +1279,170 @@ footer {
 
 <g id="edge18" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M28.09,-199.76C29.02,-168.26 36.46,-79.01 90,-41 141.85,-4.19 219.37,-14.09 267.06,-25.45"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="266.68,-27.52 273.01,-26.91 267.68,-23.44 266.68,-27.52"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M28.01,-210.97C28.71,-179.2 35.53,-87.19 90,-47 139.45,-10.52 213.59,-16.39 261.76,-25.76"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="261.5,-27.85 267.8,-26.97 262.33,-23.73 261.5,-27.85"/>
 </g>
 
 <g id="node14" class="node f&#45;web">
 <title>panel/webview/theme</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.17,-68C164.17,-68 124.83,-68 124.83,-68 121.17,-68 117.5,-64.33 117.5,-60.67 117.5,-60.67 117.5,-53.33 117.5,-53.33 117.5,-49.67 121.17,-46 124.83,-46 124.83,-46 164.17,-46 164.17,-46 167.83,-46 171.5,-49.67 171.5,-53.33 171.5,-53.33 171.5,-60.67 171.5,-60.67 171.5,-64.33 167.83,-68 164.17,-68"/>
-<text text-anchor="middle" x="144.5" y="-54.6" font-family="DejaVu Sans Mono" font-size="10.50">theme</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M164.17,-74C164.17,-74 124.83,-74 124.83,-74 121.17,-74 117.5,-70.33 117.5,-66.67 117.5,-66.67 117.5,-59.33 117.5,-59.33 117.5,-55.67 121.17,-52 124.83,-52 124.83,-52 164.17,-52 164.17,-52 167.83,-52 171.5,-55.67 171.5,-59.33 171.5,-59.33 171.5,-66.67 171.5,-66.67 171.5,-70.33 167.83,-74 164.17,-74"/>
+<text text-anchor="middle" x="144.5" y="-60.6" font-family="DejaVu Sans Mono" font-size="10.50">theme</text>
 </g>
 
 <g id="edge19" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;panel/webview/theme</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M30.06,-199.83C35.34,-174.26 51.74,-110.98 90,-76 96.03,-70.49 103.76,-66.55 111.46,-63.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="112.27,-65.7 117.32,-61.82 110.96,-61.71 112.27,-65.7"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M29.86,-210.81C34.79,-184.57 50.62,-118.51 90,-82 95.99,-76.45 103.71,-72.5 111.41,-69.7"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="112.22,-71.64 117.27,-67.77 110.91,-67.65 112.22,-71.64"/>
 </g>
 
 <g id="edge20" class="edge e&#45;host">
 <title>panel/webview/main&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M32.97,-222.03C41.79,-240.37 61.93,-277.08 90,-297 192.86,-370 350.39,-362.8 430.66,-353.02"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="431.08,-355.08 436.78,-352.25 430.56,-350.91 431.08,-355.08"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M32.49,-233.27C40.72,-252.3 60.17,-290.46 90,-308 146.42,-341.16 338.13,-343.72 430.69,-342.91"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="430.93,-345.01 436.91,-342.85 430.89,-340.81 430.93,-345.01"/>
 </g>
 
 <g id="edge21" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/bus</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M149.87,-292.23C160.26,-317.15 189.02,-376.75 235,-401 271.28,-420.13 391.24,-416.23 449.37,-413.06"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="449.6,-415.15 455.47,-412.71 449.36,-410.95 449.6,-415.15"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M150.18,-303.21C161,-327.49 190.27,-384.72 235,-409 271.12,-428.61 391.16,-429.51 449.34,-428.72"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="449.48,-430.82 455.45,-428.63 449.41,-426.62 449.48,-430.82"/>
 </g>
 
 <g id="edge22" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M153.07,-269.81C163.56,-254.26 183.01,-225.18 199,-200 215.47,-174.07 209.95,-158.78 235,-141 243.66,-134.86 254.21,-130.99 264.61,-128.58"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.26,-130.59 270.71,-127.32 264.41,-126.48 265.26,-130.59"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M153.07,-280.81C163.56,-265.26 183.01,-236.18 199,-211 215.47,-185.07 209.95,-169.78 235,-152 243.66,-145.86 254.21,-141.99 264.61,-139.58"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.26,-141.59 270.71,-138.32 264.41,-137.48 265.26,-141.59"/>
 </g>
 
 <g id="node10" class="node f&#45;web">
 <title>panel/webview/render/plotLayout</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M535.67,-300C535.67,-300 429.33,-300 429.33,-300 425.67,-300 422,-296.33 422,-292.67 422,-292.67 422,-285.33 422,-285.33 422,-281.67 425.67,-278 429.33,-278 429.33,-278 535.67,-278 535.67,-278 539.33,-278 543,-281.67 543,-285.33 543,-285.33 543,-292.67 543,-292.67 543,-296.33 539.33,-300 535.67,-300"/>
-<text text-anchor="middle" x="482.5" y="-286.6" font-family="DejaVu Sans Mono" font-size="10.50">render/plotLayout</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M535.67,-319C535.67,-319 429.33,-319 429.33,-319 425.67,-319 422,-315.33 422,-311.67 422,-311.67 422,-304.33 422,-304.33 422,-300.67 425.67,-297 429.33,-297 429.33,-297 535.67,-297 535.67,-297 539.33,-297 543,-300.67 543,-304.33 543,-304.33 543,-311.67 543,-311.67 543,-315.33 539.33,-319 535.67,-319"/>
+<text text-anchor="middle" x="482.5" y="-305.6" font-family="DejaVu Sans Mono" font-size="10.50">render/plotLayout</text>
 </g>
 
 <g id="edge23" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/render/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.04,-281.99C244.3,-283.35 348.1,-285.82 415.91,-287.44"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="415.9,-289.54 421.95,-287.58 416,-285.34 415.9,-289.54"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.04,-293.98C244.3,-296.7 348.1,-301.65 415.91,-304.88"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="415.86,-306.98 421.95,-305.16 416.06,-302.78 415.86,-306.98"/>
 </g>
 
 <g id="node13" class="node f&#45;web">
 <title>panel/webview/state</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.17,-254C330.17,-254 290.83,-254 290.83,-254 287.17,-254 283.5,-250.33 283.5,-246.67 283.5,-246.67 283.5,-239.33 283.5,-239.33 283.5,-235.67 287.17,-232 290.83,-232 290.83,-232 330.17,-232 330.17,-232 333.83,-232 337.5,-235.67 337.5,-239.33 337.5,-239.33 337.5,-246.67 337.5,-246.67 337.5,-250.33 333.83,-254 330.17,-254"/>
-<text text-anchor="middle" x="310.5" y="-240.6" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M330.17,-265C330.17,-265 290.83,-265 290.83,-265 287.17,-265 283.5,-261.33 283.5,-257.67 283.5,-257.67 283.5,-250.33 283.5,-250.33 283.5,-246.67 287.17,-243 290.83,-243 290.83,-243 330.17,-243 330.17,-243 333.83,-243 337.5,-246.67 337.5,-250.33 337.5,-250.33 337.5,-257.67 337.5,-257.67 337.5,-261.33 333.83,-265 330.17,-265"/>
+<text text-anchor="middle" x="310.5" y="-251.6" font-family="DejaVu Sans Mono" font-size="10.50">state</text>
 </g>
 
 <g id="edge24" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-271.31C215.25,-264.84 251.46,-256.45 277.19,-250.49"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="277.79,-252.5 283.16,-249.1 276.84,-248.41 277.79,-252.5"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.31,-282.31C215.25,-275.84 251.46,-267.45 277.19,-261.49"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="277.79,-263.5 283.16,-260.1 276.84,-259.41 277.79,-263.5"/>
 </g>
 
 <g id="edge25" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.27,-277.77C235.29,-273.92 316.44,-267 386,-259 465.32,-249.88 558.23,-236.23 606.2,-228.97"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.76,-231.01 612.38,-228.03 606.13,-226.85 606.76,-231.01"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187,-289.26C259.33,-284.44 413.15,-274.01 543,-264 564.01,-262.38 587.62,-260.4 606.1,-258.82"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="606.36,-260.91 612.16,-258.3 606,-256.72 606.36,-260.91"/>
 </g>
 
 <g id="edge26" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M164.69,-292.1C182.35,-301.74 209.57,-315.2 235,-322 301.03,-339.66 380.15,-344.25 430.62,-345.2"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="430.59,-347.3 436.63,-345.3 430.66,-343.1 430.59,-347.3"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M187.35,-299.24C202.37,-301.77 219.43,-304.59 235,-307 302.59,-317.46 380.8,-328.36 430.68,-335.16"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="430.69,-337.28 436.92,-336.01 431.26,-333.12 430.69,-337.28"/>
 </g>
 
 <g id="edge27" class="edge e&#45;host">
 <title>panel/webview/plotActions&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M187.34,-286.61C202.35,-288.5 219.42,-290.5 235,-292 353.8,-303.42 492.83,-310.26 572.79,-313.56"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="572.83,-315.67 578.91,-313.81 573.01,-311.47 572.83,-315.67"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M151.55,-303.19C163.91,-324.71 194.35,-371.41 235,-390 293.29,-416.66 474.29,-410.84 572.88,-405.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="573.09,-407.43 578.96,-405 572.85,-403.24 573.09,-407.43"/>
 </g>
 
 <g id="edge28" class="edge e&#45;host">
 <title>panel/webview/plotParams&#45;&gt;panel/webview/dimensionSlices</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-121.37C371.3,-119.37 398.09,-116.85 421.94,-114.61"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="422.16,-116.69 427.94,-114.04 421.76,-112.51 422.16,-116.69"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-129.87C371.3,-126.5 398.09,-122.25 421.94,-118.46"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="422.34,-120.52 427.94,-117.51 421.68,-116.37 422.34,-120.52"/>
 </g>
 
 <g id="edge29" class="edge e&#45;host">
 <title>panel/webview/plotParams&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.2,-133.16C361.73,-135.63 374.38,-138.38 386,-141 455.94,-156.75 475.42,-154.08 543,-178 567.53,-186.68 594.09,-199.8 612.96,-209.81"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="612.28,-211.83 618.56,-212.81 614.26,-208.13 612.28,-211.83"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.2,-140.68C397.36,-147.4 478.7,-162.25 543,-191 572.29,-204.1 602.26,-226.21 620.63,-240.95"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="619.51,-242.75 625.49,-244.9 622.16,-239.49 619.51,-242.75"/>
 </g>
 
 <g id="edge30" class="edge e&#45;host">
 <title>panel/webview/plotParams&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M350.08,-126.95C396.1,-128.83 475.31,-130.63 543,-125 559.56,-123.62 577.58,-120.92 593.45,-118.13"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="594.12,-120.14 599.65,-117.01 593.38,-116.01 594.12,-120.14"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M350.11,-135.56C396.16,-134.72 475.39,-132.24 543,-125 559.53,-123.23 577.53,-120.44 593.41,-117.68"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="594.07,-119.7 599.61,-116.59 593.34,-115.56 594.07,-119.7"/>
 </g>
 
 <g id="edge31" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/changedFields</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-192.84C217.33,-195.83 237.56,-199.16 255.7,-202.14"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="255.5,-204.24 261.76,-203.14 256.18,-200.09 255.5,-204.24"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-203.84C217.33,-206.83 237.56,-210.16 255.7,-213.14"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="255.5,-215.24 261.76,-214.14 256.18,-211.09 255.5,-215.24"/>
 </g>
 
 <g id="edge32" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/errors</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M154.55,-195.09C181.93,-228.65 263.95,-329.18 296.24,-368.74"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="294.85,-370.37 300.27,-373.69 298.11,-367.72 294.85,-370.37"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M155.76,-206.2C183.95,-236.96 262.63,-322.84 295.15,-358.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="293.64,-359.8 299.24,-362.81 296.74,-356.96 293.64,-359.8"/>
 </g>
 
 <g id="edge33" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/plotParams</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-172.87C182.95,-163.23 210.05,-149.54 235,-141 244.43,-137.77 254.77,-135.06 264.66,-132.84"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="265.33,-134.84 270.74,-131.51 264.43,-130.73 265.33,-134.84"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-183.87C182.95,-174.23 210.05,-160.54 235,-152 244.43,-148.77 254.77,-146.06 264.66,-143.84"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="265.33,-145.84 270.74,-142.51 264.43,-141.73 265.33,-145.84"/>
 </g>
 
 <g id="edge34" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/representations</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M154.78,-172.88C170.37,-154.56 203.21,-117.31 235,-90 251.2,-76.09 271.1,-62.35 286.25,-52.49"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="287.7,-54.05 291.61,-49.04 285.43,-50.52 287.7,-54.05"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M155.33,-183.92C171.44,-165.95 204.67,-129.6 235,-101 253.16,-83.88 275.1,-65.6 290.44,-53.16"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="292.03,-54.58 295.38,-49.18 289.39,-51.31 292.03,-54.58"/>
 </g>
 
 <g id="node12" class="node f&#45;web">
 <title>panel/webview/render/variables</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-168C360.67,-168 260.33,-168 260.33,-168 256.67,-168 253,-164.33 253,-160.67 253,-160.67 253,-153.33 253,-153.33 253,-149.67 256.67,-146 260.33,-146 260.33,-146 360.67,-146 360.67,-146 364.33,-146 368,-149.67 368,-153.33 368,-153.33 368,-160.67 368,-160.67 368,-164.33 364.33,-168 360.67,-168"/>
-<text text-anchor="middle" x="310.5" y="-154.6" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M360.67,-179C360.67,-179 260.33,-179 260.33,-179 256.67,-179 253,-175.33 253,-171.67 253,-171.67 253,-164.33 253,-164.33 253,-160.67 256.67,-157 260.33,-157 260.33,-157 360.67,-157 360.67,-157 364.33,-157 368,-160.67 368,-164.33 368,-164.33 368,-171.67 368,-171.67 368,-175.33 364.33,-179 360.67,-179"/>
+<text text-anchor="middle" x="310.5" y="-165.6" font-family="DejaVu Sans Mono" font-size="10.50">render/variables</text>
 </g>
 
 <g id="edge35" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/render/variables</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-175.16C214.37,-172.66 231.02,-169.92 246.68,-167.34"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="247.28,-169.37 252.86,-166.32 246.6,-165.23 247.28,-169.37"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.2,-186.16C214.37,-183.66 231.02,-180.92 246.68,-178.34"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="247.28,-180.37 252.86,-177.32 246.6,-176.23 247.28,-180.37"/>
 </g>
 
 <g id="edge36" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/state</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-195.13C182.95,-204.77 210.05,-218.46 235,-227 248.57,-231.64 264,-235.22 277.29,-237.81"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="276.95,-239.88 283.23,-238.92 277.72,-235.75 276.95,-239.88"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M165.19,-206.13C182.95,-215.77 210.05,-229.46 235,-238 248.57,-242.64 264,-246.22 277.29,-248.81"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="276.95,-250.88 283.23,-249.92 277.72,-246.75 276.95,-250.88"/>
 </g>
 
 <g id="edge37" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.09,-185.04C247.89,-186.31 321.9,-189.1 386,-195 402.09,-196.48 405.97,-198 422,-200 487.45,-208.17 564.22,-216.35 606.5,-220.73"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.29,-222.82 612.48,-221.35 606.73,-218.64 606.29,-222.82"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M199.06,-192.92C259.57,-191.37 353.83,-191.54 386,-206 406.93,-215.41 401.14,-233.45 422,-243 482.36,-270.65 562.28,-266.38 606.18,-261.04"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="606.71,-263.09 612.39,-260.25 606.18,-258.92 606.71,-263.09"/>
 </g>
 
 <g id="edge38" class="edge e&#45;host">
 <title>panel/webview/render/dataInfo&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M154.57,-172.92C169.37,-155.75 200.52,-123.23 235,-109 356.56,-58.83 516.81,-82.24 593.64,-98.29"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="593.62,-100.44 599.92,-99.63 594.49,-96.33 593.62,-100.44"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M154.92,-183.88C169.95,-166.96 201.13,-135.14 235,-120 355.25,-66.24 516.45,-85.49 593.63,-99.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="593.66,-101.67 599.94,-100.7 594.42,-97.54 593.66,-101.67"/>
 </g>
 
 <g id="edge39" class="edge e&#45;host">
 <title>panel/webview/render/plotLayout&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M520.92,-277.93C528.3,-275.5 535.95,-272.81 543,-270 566.86,-260.5 593.09,-247.68 612.01,-237.99"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="613.27,-239.71 617.64,-235.09 611.34,-235.98 613.27,-239.71"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M518.47,-296.99C526.54,-294.4 535.08,-291.63 543,-289 564.09,-281.99 587.69,-273.84 606.15,-267.39"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="607.24,-269.24 612.21,-265.27 605.85,-265.27 607.24,-269.24"/>
 </g>
 
 <g id="edge40" class="edge e&#45;host">
 <title>panel/webview/render/plotLayout&#45;&gt;shared/plotLayout</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M543.43,-299.44C553.09,-301.12 563.14,-302.87 572.93,-304.58"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="572.72,-306.67 578.99,-305.63 573.44,-302.53 572.72,-306.67"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M526.83,-319.02C532.4,-321.04 537.93,-323.36 543,-326 573.94,-342.1 604.78,-368.71 622.72,-385.53"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="621.63,-387.39 627.43,-389.99 624.52,-384.34 621.63,-387.39"/>
 </g>
 
 <g id="edge41" class="edge e&#45;host">
 <title>panel/webview/render/representations&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M380.99,-49.04C439.14,-59.27 516.69,-75.5 543,-93 586.97,-122.25 617.79,-179.01 631.12,-207.23"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="629.27,-208.23 633.69,-212.8 633.08,-206.47 629.27,-208.23"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M384.89,-49C442.9,-58.86 518.09,-74.57 543,-93 594.38,-131.02 622.87,-205.61 633.55,-239.06"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="631.55,-239.7 635.34,-244.81 635.56,-238.46 631.55,-239.7"/>
 </g>
 
 <g id="edge42" class="edge e&#45;host">
@@ -1445,7 +1451,7 @@ footer {
 <polygon fill="black" stroke="black" stroke-width="0.9" points="618.6,-95.83 624.65,-97.78 621.13,-92.48 618.6,-95.83"/>
 </g>
 
-<g id="node19" class="node f&#45;shared">
+<g id="node20" class="node f&#45;shared">
 <title>shared/time</title>
 <path fill="lightgrey" stroke="black" stroke-width="1.1" d="M517.67,-22C517.67,-22 447.33,-22 447.33,-22 443.67,-22 440,-18.33 440,-14.67 440,-14.67 440,-7.33 440,-7.33 440,-3.67 443.67,0 447.33,0 447.33,0 517.67,0 517.67,0 521.33,0 525,-3.67 525,-7.33 525,-7.33 525,-14.67 525,-14.67 525,-18.33 521.33,-22 517.67,-22"/>
 <text text-anchor="middle" x="482.5" y="-8.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/time</text>
@@ -1459,20 +1465,32 @@ footer {
 
 <g id="edge44" class="edge e&#45;host">
 <title>panel/webview/render/variables&#45;&gt;panel/webview/util</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M365.5,-168.06C434.11,-182.12 550.33,-205.93 606.38,-217.42"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="605.96,-219.48 612.26,-218.62 606.8,-215.36 605.96,-219.48"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M368.1,-178.97C374.33,-181.18 380.43,-183.83 386,-187 405.66,-198.2 401.81,-212.79 422,-223 453.62,-239 554,-249.2 606.22,-253.56"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="606.19,-255.66 612.35,-254.06 606.54,-251.48 606.19,-255.66"/>
+</g>
+
+<g id="node16" class="node f&#45;shared">
+<title>shared/flags</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M520.67,-218C520.67,-218 444.33,-218 444.33,-218 440.67,-218 437,-214.33 437,-210.67 437,-210.67 437,-203.33 437,-203.33 437,-199.67 440.67,-196 444.33,-196 444.33,-196 520.67,-196 520.67,-196 524.33,-196 528,-199.67 528,-203.33 528,-203.33 528,-210.67 528,-210.67 528,-214.33 524.33,-218 520.67,-218"/>
+<text text-anchor="middle" x="482.5" y="-204.6" font-family="DejaVu Sans Mono" font-size="10.50">shared/flags</text>
 </g>
 
 <g id="edge45" class="edge e&#45;host">
-<title>panel/webview/render/variables&#45;&gt;shared/icons</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M346.42,-168.14C360.4,-174.14 375.62,-182.86 386,-195 419.44,-234.09 390.97,-263.97 422,-305 430,-315.58 441.65,-324.28 452.53,-330.84"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="451.54,-332.69 457.78,-333.88 453.64,-329.06 451.54,-332.69"/>
+<title>panel/webview/render/variables&#45;&gt;shared/flags</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M359.76,-179.07C382.02,-184.18 408.44,-190.24 430.97,-195.41"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="430.59,-197.48 436.91,-196.77 431.53,-193.38 430.59,-197.48"/>
 </g>
 
 <g id="edge46" class="edge e&#45;host">
+<title>panel/webview/render/variables&#45;&gt;shared/icons</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M346.54,-179.04C360.54,-185.02 375.74,-193.76 386,-206 421.22,-248.02 383.18,-285.27 422,-324 424.76,-326.75 427.92,-329.08 431.32,-331.06"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="430.53,-333.02 436.83,-333.89 432.45,-329.28 430.53,-333.02"/>
+</g>
+
+<g id="edge47" class="edge e&#45;host">
 <title>panel/webview/render/variables&#45;&gt;shared/ids</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M368.45,-153.84C415.52,-150.63 483.97,-144.59 543,-134 560.43,-130.87 579.34,-126.2 595.71,-121.73"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="596.39,-123.72 601.61,-120.1 595.27,-119.68 596.39,-123.72"/>
+<path fill="none" stroke="black" stroke-width="0.9" d="M368.05,-162.86C415.17,-157.99 483.9,-149.55 543,-137 561.67,-133.04 582,-127.28 599.09,-122.02"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="600.12,-123.9 605.23,-120.11 598.88,-119.89 600.12,-123.9"/>
 </g>
 </g>
 </svg></div><figcaption><code>main.ts</code> installs one delegated click listener (the CSP forbids inline handlers) and dispatches on element ids and <code>data-action</code> attributes. Without a VS Code API (exported HTML opened in a browser) the bus runs in degraded mode and rejects every request.</figcaption></figure>
@@ -2340,191 +2358,212 @@ footer {
 <section id="backend-packages">
 <h2><span class="n">11</span>Python backend packages</h2>
 <p>At package level, with each edge labelled by the modules it imports. Dependencies only flow downward, from <code>cli</code> through <code>info</code> / <code>plotting</code> and <code>opening</code> to <code>formats</code> and <code>environment</code>. The one sideways edge is <code>plotting → info</code>, which reuses the DataTree inheritance mode and the monotonicity check.</p>
-<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:994px"
- viewBox="0.00 0.00 993.95 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:1166px"
+ viewBox="0.00 0.00 1165.81 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 429.8)">
 
 <g id="node1" class="node py">
 <title>cli</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M677.02,-418.75C677.02,-418.75 415.69,-418.75 415.69,-418.75 410.52,-418.75 405.35,-413.59 405.35,-408.42 405.35,-408.42 405.35,-398.08 405.35,-398.08 405.35,-392.91 410.52,-387.75 415.69,-387.75 415.69,-387.75 677.02,-387.75 677.02,-387.75 682.19,-387.75 687.35,-392.91 687.35,-398.08 687.35,-398.08 687.35,-408.42 687.35,-408.42 687.35,-413.59 682.19,-418.75 677.02,-418.75"/>
-<text text-anchor="start" x="527.85" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
-<text text-anchor="start" x="417.35" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M710.87,-418.75C710.87,-418.75 449.54,-418.75 449.54,-418.75 444.38,-418.75 439.21,-413.59 439.21,-408.42 439.21,-408.42 439.21,-398.08 439.21,-398.08 439.21,-392.91 444.38,-387.75 449.54,-387.75 449.54,-387.75 710.87,-387.75 710.87,-387.75 716.04,-387.75 721.21,-392.91 721.21,-398.08 721.21,-398.08 721.21,-408.42 721.21,-408.42 721.21,-413.59 716.04,-418.75 710.87,-418.75"/>
+<text text-anchor="start" x="561.71" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
+<text text-anchor="start" x="451.21" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
 </g>
 
 <g id="node2" class="node py">
 <title>serialization</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M869.52,-418.75C869.52,-418.75 769.19,-418.75 769.19,-418.75 764.02,-418.75 758.85,-413.59 758.85,-408.42 758.85,-408.42 758.85,-398.08 758.85,-398.08 758.85,-392.91 764.02,-387.75 769.19,-387.75 769.19,-387.75 869.52,-387.75 869.52,-387.75 874.69,-387.75 879.85,-392.91 879.85,-398.08 879.85,-398.08 879.85,-408.42 879.85,-408.42 879.85,-413.59 874.69,-418.75 869.52,-418.75"/>
-<text text-anchor="start" x="770.85" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
-<text text-anchor="start" x="774.35" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M903.37,-418.75C903.37,-418.75 803.04,-418.75 803.04,-418.75 797.88,-418.75 792.71,-413.59 792.71,-408.42 792.71,-408.42 792.71,-398.08 792.71,-398.08 792.71,-392.91 797.88,-387.75 803.04,-387.75 803.04,-387.75 903.37,-387.75 903.37,-387.75 908.54,-387.75 913.71,-392.91 913.71,-398.08 913.71,-398.08 913.71,-408.42 913.71,-408.42 913.71,-413.59 908.54,-418.75 903.37,-418.75"/>
+<text text-anchor="start" x="804.71" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
+<text text-anchor="start" x="808.21" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>cli&#45;&gt;serialization</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M687.65,-403.25C710.29,-403.25 732.75,-403.25 752.54,-403.25"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="752.6,-405.35 758.6,-403.25 752.6,-401.15 752.6,-405.35"/>
-<text text-anchor="middle" x="723.1" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M721.51,-403.25C744.14,-403.25 766.61,-403.25 786.4,-403.25"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="786.45,-405.35 792.45,-403.25 786.45,-401.15 786.45,-405.35"/>
+<text text-anchor="middle" x="756.96" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="node3" class="node py key">
 <title>info</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M905.52,-341.25C905.52,-341.25 581.19,-341.25 581.19,-341.25 576.02,-341.25 570.85,-336.09 570.85,-330.92 570.85,-330.92 570.85,-320.58 570.85,-320.58 570.85,-315.41 576.02,-310.25 581.19,-310.25 581.19,-310.25 905.52,-310.25 905.52,-310.25 910.69,-310.25 915.85,-315.41 915.85,-320.58 915.85,-320.58 915.85,-330.92 915.85,-330.92 915.85,-336.09 910.69,-341.25 905.52,-341.25"/>
-<text text-anchor="start" x="727.85" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
-<text text-anchor="start" x="582.85" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M946.37,-341.25C946.37,-341.25 622.04,-341.25 622.04,-341.25 616.88,-341.25 611.71,-336.09 611.71,-330.92 611.71,-330.92 611.71,-320.58 611.71,-320.58 611.71,-315.41 616.88,-310.25 622.04,-310.25 622.04,-310.25 946.37,-310.25 946.37,-310.25 951.54,-310.25 956.71,-315.41 956.71,-320.58 956.71,-320.58 956.71,-330.92 956.71,-330.92 956.71,-336.09 951.54,-341.25 946.37,-341.25"/>
+<text text-anchor="start" x="768.71" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
+<text text-anchor="start" x="623.71" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
 </g>
 
 <g id="edge3" class="edge e&#45;host">
 <title>cli&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M584.34,-387.69C617.31,-375.05 665.06,-356.75 699.63,-343.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="700.64,-345.37 705.49,-341.26 699.13,-341.45 700.64,-345.37"/>
-<text text-anchor="middle" x="737.85" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M619.54,-387.69C653.69,-375.05 703.14,-356.75 738.93,-343.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="740.1,-345.31 745,-341.26 738.64,-341.38 740.1,-345.31"/>
+<text text-anchor="middle" x="775.71" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
 </g>
 
 <g id="node4" class="node py key">
 <title>plotting</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M398.02,-341.25C398.02,-341.25 42.69,-341.25 42.69,-341.25 37.52,-341.25 32.35,-336.09 32.35,-330.92 32.35,-330.92 32.35,-320.58 32.35,-320.58 32.35,-315.41 37.52,-310.25 42.69,-310.25 42.69,-310.25 398.02,-310.25 398.02,-310.25 403.19,-310.25 408.35,-315.41 408.35,-320.58 408.35,-320.58 408.35,-330.92 408.35,-330.92 408.35,-336.09 403.19,-341.25 398.02,-341.25"/>
-<text text-anchor="start" x="192.85" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
-<text text-anchor="start" x="44.35" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · kwargs · layout · options · render · selection · style</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M438.87,-341.25C438.87,-341.25 41.54,-341.25 41.54,-341.25 36.38,-341.25 31.21,-336.09 31.21,-330.92 31.21,-330.92 31.21,-320.58 31.21,-320.58 31.21,-315.41 36.38,-310.25 41.54,-310.25 41.54,-310.25 438.87,-310.25 438.87,-310.25 444.04,-310.25 449.21,-315.41 449.21,-320.58 449.21,-320.58 449.21,-330.92 449.21,-330.92 449.21,-336.09 444.04,-341.25 438.87,-341.25"/>
+<text text-anchor="start" x="212.71" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
+<text text-anchor="start" x="43.21" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · flags · kwargs · layout · options · render · selection · style</text>
 </g>
 
 <g id="edge4" class="edge e&#45;host">
 <title>cli&#45;&gt;plotting</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M483.5,-387.69C427.8,-374.79 346.63,-356 289.2,-342.69"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="289.34,-340.57 283.02,-341.26 288.39,-344.66 289.34,-340.57"/>
-<text text-anchor="middle" x="445.85" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M514.65,-387.69C456.45,-374.77 371.57,-355.92 311.65,-342.61"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="311.88,-340.51 305.56,-341.26 310.96,-344.61 311.88,-340.51"/>
+<text text-anchor="middle" x="473.71" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, options </text>
 </g>
 
 <g id="node6" class="node py">
 <title>decoding</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M353.52,-186.25C353.52,-186.25 113.19,-186.25 113.19,-186.25 108.02,-186.25 102.85,-181.09 102.85,-175.92 102.85,-175.92 102.85,-165.58 102.85,-165.58 102.85,-160.41 108.02,-155.25 113.19,-155.25 113.19,-155.25 353.52,-155.25 353.52,-155.25 358.69,-155.25 363.85,-160.41 363.85,-165.58 363.85,-165.58 363.85,-175.92 363.85,-175.92 363.85,-181.09 358.69,-186.25 353.52,-186.25"/>
-<text text-anchor="start" x="199.85" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">decoding.py</text>
-<text text-anchor="start" x="114.85" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">decoders + backend_kwargs: sources, allowlist</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M296.37,-186.25C296.37,-186.25 56.04,-186.25 56.04,-186.25 50.88,-186.25 45.71,-181.09 45.71,-175.92 45.71,-175.92 45.71,-165.58 45.71,-165.58 45.71,-160.41 50.88,-155.25 56.04,-155.25 56.04,-155.25 296.37,-155.25 296.37,-155.25 301.54,-155.25 306.71,-160.41 306.71,-165.58 306.71,-165.58 306.71,-175.92 306.71,-175.92 306.71,-181.09 301.54,-186.25 296.37,-186.25"/>
+<text text-anchor="start" x="142.71" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">decoding.py</text>
+<text text-anchor="start" x="57.71" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">decoders + backend_kwargs: sources, allowlist</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
 <title>cli&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M405.19,-395.7C256.43,-387.31 40.06,-370.31 14.35,-341.5 -44.99,-274.99 96.32,-215.83 178.89,-188.22"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="179.7,-190.17 184.73,-186.29 178.38,-186.18 179.7,-190.17"/>
-<text text-anchor="middle" x="15.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M439,-396.8C280.37,-389.2 41.23,-372.68 13.21,-341.5 -38.22,-284.27 74.22,-219.38 137.27,-189.07"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="138.32,-190.9 142.83,-186.42 136.51,-187.1 138.32,-190.9"/>
+<text text-anchor="middle" x="15.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
-<g id="node7" class="node py">
+<g id="node8" class="node py">
 <title>formats</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M722.52,-186.25C722.52,-186.25 540.19,-186.25 540.19,-186.25 535.02,-186.25 529.85,-181.09 529.85,-175.92 529.85,-175.92 529.85,-165.58 529.85,-165.58 529.85,-160.41 535.02,-155.25 540.19,-155.25 540.19,-155.25 722.52,-155.25 722.52,-155.25 727.69,-155.25 732.85,-160.41 732.85,-165.58 732.85,-165.58 732.85,-175.92 732.85,-175.92 732.85,-181.09 727.69,-186.25 722.52,-186.25"/>
-<text text-anchor="start" x="606.85" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
-<text text-anchor="start" x="541.85" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M665.37,-186.25C665.37,-186.25 483.04,-186.25 483.04,-186.25 477.88,-186.25 472.71,-181.09 472.71,-175.92 472.71,-175.92 472.71,-165.58 472.71,-165.58 472.71,-160.41 477.88,-155.25 483.04,-155.25 483.04,-155.25 665.37,-155.25 665.37,-155.25 670.54,-155.25 675.71,-160.41 675.71,-165.58 675.71,-165.58 675.71,-175.92 675.71,-175.92 675.71,-181.09 670.54,-186.25 665.37,-186.25"/>
+<text text-anchor="start" x="549.71" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
+<text text-anchor="start" x="484.71" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>cli&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M687.57,-389.55C792.11,-378.61 918.99,-361.45 934.35,-341.5 966.22,-300.12 897.77,-243.84 881.35,-232.5 839.68,-203.71 785.88,-188.5 738.86,-180.5"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="739.13,-178.41 732.87,-179.51 738.44,-182.56 739.13,-178.41"/>
-<text text-anchor="middle" x="953.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M721.52,-389.96C767.83,-384.9 819.4,-378.15 866.21,-369.5 915.39,-360.41 929,-360.65 975.21,-341.5 1045.18,-312.51 1155.66,-289.87 1106.21,-232.5 1079.02,-200.97 829.37,-183.82 681.92,-176.36"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="681.95,-174.26 675.85,-176.06 681.74,-178.46 681.95,-174.26"/>
+<text text-anchor="middle" x="1125.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
 </g>
 
 <g id="node5" class="node py key">
 <title>opening</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M549.02,-263.75C549.02,-263.75 319.69,-263.75 319.69,-263.75 314.52,-263.75 309.35,-258.59 309.35,-253.42 309.35,-253.42 309.35,-243.08 309.35,-243.08 309.35,-237.91 314.52,-232.75 319.69,-232.75 319.69,-232.75 549.02,-232.75 549.02,-232.75 554.19,-232.75 559.35,-237.91 559.35,-243.08 559.35,-243.08 559.35,-253.42 559.35,-253.42 559.35,-258.59 554.19,-263.75 549.02,-263.75"/>
-<text text-anchor="start" x="403.85" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
-<text text-anchor="start" x="321.35" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_times fallback</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M491.87,-263.75C491.87,-263.75 262.54,-263.75 262.54,-263.75 257.38,-263.75 252.21,-258.59 252.21,-253.42 252.21,-253.42 252.21,-243.08 252.21,-243.08 252.21,-237.91 257.38,-232.75 262.54,-232.75 262.54,-232.75 491.87,-232.75 491.87,-232.75 497.04,-232.75 502.21,-237.91 502.21,-243.08 502.21,-243.08 502.21,-253.42 502.21,-253.42 502.21,-258.59 497.04,-263.75 491.87,-263.75"/>
+<text text-anchor="start" x="346.71" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
+<text text-anchor="start" x="264.21" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_times fallback</text>
 </g>
 
-<g id="edge9" class="edge e&#45;host">
+<g id="edge10" class="edge e&#45;host">
 <title>info&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M683.78,-310.19C630.98,-297.29 554.05,-278.5 499.61,-265.19"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="500.08,-263.15 493.75,-263.76 499.08,-267.23 500.08,-263.15"/>
-<text text-anchor="middle" x="613.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M705.73,-310.19C635.63,-297.19 533.22,-278.19 461.42,-264.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="461.72,-262.79 455.44,-263.76 460.96,-266.92 461.72,-262.79"/>
+<text text-anchor="middle" x="610.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>info&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M570.7,-317.53C459.21,-311.87 330.58,-303.11 306.35,-292 266.36,-273.65 246.5,-221.56 238.25,-192.32"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="240.25,-191.69 236.66,-186.44 236.2,-192.78 240.25,-191.69"/>
-<text text-anchor="middle" x="278.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M611.57,-315.87C482.45,-308.79 323.09,-298.94 292.21,-292 259.11,-284.56 246.11,-287.03 221.21,-264 200.13,-244.51 187.76,-213.02 181.49,-192.35"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="183.5,-191.74 179.8,-186.57 179.46,-192.91 183.5,-191.74"/>
+<text text-anchor="middle" x="227.71" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="node7" class="node py">
+<title>flags</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M898.87,-263.75C898.87,-263.75 669.54,-263.75 669.54,-263.75 664.38,-263.75 659.21,-258.59 659.21,-253.42 659.21,-253.42 659.21,-243.08 659.21,-243.08 659.21,-237.91 664.38,-232.75 669.54,-232.75 669.54,-232.75 898.87,-232.75 898.87,-232.75 904.04,-232.75 909.21,-237.91 909.21,-243.08 909.21,-243.08 909.21,-253.42 909.21,-253.42 909.21,-258.59 904.04,-263.75 898.87,-263.75"/>
+<text text-anchor="start" x="759.71" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">flags.py</text>
+<text text-anchor="start" x="671.21" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">CF flag_values / flag_masks / flag_meanings</text>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
+<title>info&#45;&gt;flags</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M784.21,-310.19C784.21,-298.81 784.21,-282.83 784.21,-270.09"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="786.31,-269.76 784.21,-263.76 782.11,-269.76 786.31,-269.76"/>
+<text text-anchor="middle" x="790.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge9" class="edge e&#45;host">
 <title>info&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M736.1,-310.03C726.55,-291.25 708.68,-258.14 689.35,-232.5 678.04,-217.49 663.42,-202.2 651.68,-190.71"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="652.95,-189.01 647.18,-186.34 650.03,-192.03 652.95,-189.01"/>
-<text text-anchor="middle" x="790.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M844.26,-310.24C895.77,-294.97 957.29,-268.2 927.21,-232.5 896.23,-195.74 773.92,-181.22 681.89,-175.49"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="681.99,-173.39 675.88,-175.13 681.74,-177.59 681.99,-173.39"/>
+<text text-anchor="middle" x="1015.71" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
 </g>
 
-<g id="edge16" class="edge e&#45;host">
+<g id="edge18" class="edge e&#45;host">
 <title>plotting&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M408.43,-325.75C459.22,-325.75 514.04,-325.75 564.32,-325.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="564.43,-327.85 570.43,-325.75 564.43,-323.65 564.43,-327.85"/>
-<text text-anchor="middle" x="489.6" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M449.37,-325.75C500.88,-325.75 555.57,-325.75 605.49,-325.75"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="605.56,-327.85 611.56,-325.75 605.56,-323.65 605.56,-327.85"/>
+<text text-anchor="middle" x="530.46" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
 </g>
 
-<g id="edge17" class="edge e&#45;host">
+<g id="edge19" class="edge e&#45;host">
 <title>plotting&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M261.61,-310.19C297.59,-297.5 349.74,-279.1 387.32,-265.84"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="388.26,-267.74 393.22,-263.76 386.86,-263.78 388.26,-267.74"/>
-<text text-anchor="middle" x="346.85" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
-</g>
-
-<g id="edge13" class="edge e&#45;host">
-<title>plotting&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M213.56,-309.97C206.05,-291.68 195.83,-259.63 202.35,-232.5 205.83,-218.06 213.34,-203.18 220.1,-191.76"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="222.01,-192.67 223.34,-186.45 218.42,-190.48 222.01,-192.67"/>
-<text text-anchor="middle" x="208.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
-</g>
-
-<g id="edge15" class="edge e&#45;host">
-<title>plotting&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M408.57,-318.92C499.59,-314.29 592.64,-306.15 608.35,-292 622.73,-279.05 628.29,-223.71 630.3,-192.81"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="632.41,-192.73 630.68,-186.62 628.22,-192.48 632.41,-192.73"/>
-<text text-anchor="middle" x="649.85" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
-</g>
-
-<g id="node8" class="node py">
-<title>environment</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M485.52,-108.75C485.52,-108.75 387.19,-108.75 387.19,-108.75 382.02,-108.75 376.85,-103.59 376.85,-98.42 376.85,-98.42 376.85,-88.08 376.85,-88.08 376.85,-82.91 382.02,-77.75 387.19,-77.75 387.19,-77.75 485.52,-77.75 485.52,-77.75 490.69,-77.75 495.85,-82.91 495.85,-88.08 495.85,-88.08 495.85,-98.42 495.85,-98.42 495.85,-103.59 490.69,-108.75 485.52,-108.75"/>
-<text text-anchor="start" x="399.85" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
-<text text-anchor="start" x="388.85" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M266.62,-310.19C289.18,-297.76 321.67,-279.86 345.6,-266.67"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="346.63,-268.5 350.87,-263.76 344.61,-264.82 346.63,-268.5"/>
+<text text-anchor="middle" x="323.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge14" class="edge e&#45;host">
+<title>plotting&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M197.2,-310.25C176.75,-300.73 154.73,-285.91 145.21,-264 134.62,-239.64 148.73,-210.41 161.19,-191.47"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="163,-192.56 164.64,-186.42 159.53,-190.19 163,-192.56"/>
+<text text-anchor="middle" x="151.71" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge16" class="edge e&#45;host">
+<title>plotting&#45;&gt;flags</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M449.44,-313.88C507,-309.03 569.25,-302.04 626.21,-292 662.41,-285.62 702.38,-274.77 733.06,-265.6"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="733.92,-267.53 739.06,-263.79 732.71,-263.51 733.92,-267.53"/>
+<text text-anchor="middle" x="675.71" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge17" class="edge e&#45;host">
+<title>plotting&#45;&gt;formats</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M410.56,-310.18C449.08,-301.02 488.05,-286.59 520.21,-264 545.05,-246.54 560.2,-213.72 567.89,-192.3"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="569.89,-192.94 569.87,-186.58 565.92,-191.57 569.89,-192.94"/>
+<text text-anchor="middle" x="571.71" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
+</g>
+
+<g id="node9" class="node py">
+<title>environment</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M428.37,-108.75C428.37,-108.75 330.04,-108.75 330.04,-108.75 324.88,-108.75 319.71,-103.59 319.71,-98.42 319.71,-98.42 319.71,-88.08 319.71,-88.08 319.71,-82.91 324.88,-77.75 330.04,-77.75 330.04,-77.75 428.37,-77.75 428.37,-77.75 433.54,-77.75 438.71,-82.91 438.71,-88.08 438.71,-88.08 438.71,-98.42 438.71,-98.42 438.71,-103.59 433.54,-108.75 428.37,-108.75"/>
+<text text-anchor="start" x="342.71" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
+<text text-anchor="start" x="331.71" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
+</g>
+
+<g id="edge15" class="edge e&#45;host">
 <title>plotting&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M192.79,-310.02C140.66,-280.33 36.92,-211.32 84.35,-155 120.23,-112.4 279.06,-99.67 370.63,-95.87"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="370.93,-97.96 376.84,-95.62 370.76,-93.76 370.93,-97.96"/>
-<text text-anchor="middle" x="110.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
-</g>
-
-<g id="edge10" class="edge e&#45;host">
-<title>opening&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M395.6,-232.69C361.95,-220.05 313.23,-201.75 277.97,-188.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="278.34,-186.41 271.99,-186.26 276.87,-190.34 278.34,-186.41"/>
-<text text-anchor="middle" x="352.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
-</g>
-
-<g id="edge12" class="edge e&#45;host">
-<title>opening&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M455.27,-232.7C469.21,-223.54 488.25,-212.07 506.35,-204.5 521.93,-197.99 539.15,-192.47 555.7,-187.93"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="556.52,-189.89 561.77,-186.31 555.43,-185.83 556.52,-189.89"/>
-<text text-anchor="middle" x="554.85" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M192.87,-310.21C113.93,-283.62 -30.51,-223.54 27.21,-155 63.09,-112.4 221.91,-99.67 313.49,-95.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="313.78,-97.96 319.69,-95.62 313.61,-93.76 313.78,-97.96"/>
+<text text-anchor="middle" x="53.71" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
 </g>
 
 <g id="edge11" class="edge e&#45;host">
+<title>opening&#45;&gt;decoding</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M338.45,-232.69C304.81,-220.05 256.09,-201.75 220.82,-188.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="221.2,-186.41 214.84,-186.26 219.72,-190.34 221.2,-186.41"/>
+<text text-anchor="middle" x="295.71" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+</g>
+
+<g id="edge13" class="edge e&#45;host">
+<title>opening&#45;&gt;formats</title>
+<path fill="none" stroke="black" stroke-width="0.9" d="M398.12,-232.7C412.07,-223.54 431.1,-212.07 449.21,-204.5 464.78,-197.99 482.01,-192.47 498.56,-187.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="499.37,-189.89 504.62,-186.31 498.28,-185.83 499.37,-189.89"/>
+<text text-anchor="middle" x="497.71" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
+</g>
+
+<g id="edge12" class="edge e&#45;host">
 <title>opening&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M434.55,-232.58C434.9,-205.35 435.67,-146.89 436.08,-115.39"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="438.18,-115.13 436.16,-109.1 433.98,-115.07 438.18,-115.13"/>
-<text text-anchor="middle" x="463.85" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M377.4,-232.58C377.76,-205.35 378.52,-146.89 378.93,-115.39"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="381.04,-115.13 379.01,-109.1 376.84,-115.07 381.04,-115.13"/>
+<text text-anchor="middle" x="406.71" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>formats&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M593.76,-155.19C561.11,-142.55 513.85,-124.25 479.64,-111.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="480.19,-108.97 473.84,-108.76 478.67,-112.89 480.19,-108.97"/>
-<text text-anchor="middle" x="572.85" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M536.61,-155.19C503.97,-142.55 456.7,-124.25 422.49,-111.01"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="423.04,-108.97 416.69,-108.76 421.53,-112.89 423.04,-108.97"/>
+<text text-anchor="middle" x="516.71" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
-<g id="node9" class="node f&#45;shared">
+<g id="node10" class="node f&#45;shared">
 <title>foundation</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M640.35,-40.25C640.35,-40.25 232.35,-40.25 232.35,-40.25 226.35,-40.25 220.35,-34.25 220.35,-28.25 220.35,-28.25 220.35,-12.25 220.35,-12.25 220.35,-6.25 226.35,-0.25 232.35,-0.25 232.35,-0.25 640.35,-0.25 640.35,-0.25 646.35,-0.25 652.35,-6.25 652.35,-12.25 652.35,-12.25 652.35,-28.25 652.35,-28.25 652.35,-34.25 646.35,-40.25 640.35,-40.25"/>
-<text text-anchor="start" x="351.85" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
-<text text-anchor="start" x="246.85" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
-<text text-anchor="start" x="354.85" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M583.21,-40.25C583.21,-40.25 175.21,-40.25 175.21,-40.25 169.21,-40.25 163.21,-34.25 163.21,-28.25 163.21,-28.25 163.21,-12.25 163.21,-12.25 163.21,-6.25 169.21,-0.25 175.21,-0.25 175.21,-0.25 583.21,-0.25 583.21,-0.25 589.21,-0.25 595.21,-6.25 595.21,-12.25 595.21,-12.25 595.21,-28.25 595.21,-28.25 595.21,-34.25 589.21,-40.25 583.21,-40.25"/>
+<text text-anchor="start" x="294.71" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
+<text text-anchor="start" x="189.71" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
+<text text-anchor="start" x="297.71" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
 </g>
 
 </g>

@@ -12,6 +12,7 @@ import pytest
 from sdv_backend.cli import _decoding_options, parse_cli_args
 from sdv_backend.decoding import (
     SOURCE_FALLBACK,
+    SOURCE_FLAGS,
     SOURCE_RAW,
     SOURCE_SETTING,
     SOURCE_VIEWER,
@@ -109,6 +110,37 @@ def test_time_fallback_and_raw_precedence() -> None:
     )
     assert "use_cftime" not in raw_fallback.decoders
     assert set(_sources(raw_fallback).values()) == {SOURCE_RAW}
+
+
+def test_raw_variables_read_without_mask_and_scale() -> None:
+    """CF flag codes: mask_and_scale off for those variables only."""
+    flags = ("land_cover", "pixel_flags")
+    resolved = resolve_open_kwargs(
+        "netcdf4", DecodingOptions(), NETCDF4_PARAMS, raw_variables=flags
+    )
+    assert resolved.decoders == {
+        "mask_and_scale": {"land_cover": False, "pixel_flags": False}
+    }
+    assert _sources(resolved) == {"mask_and_scale": SOURCE_FLAGS}
+    # A maskAndScale setting on: the other variables keep it (xarray's default
+    # for a name missing from the dict is True)
+    on = resolve_open_kwargs(
+        "netcdf4",
+        DecodingOptions(mask_and_scale=True, decode_times=False),
+        NETCDF4_PARAMS,
+        raw_variables=flags,
+    )
+    assert on.decoders["mask_and_scale"] == dict.fromkeys(flags, False)
+    assert on.decoders["decode_times"] is False
+    # Already raw (setting off, raw mode), or an engine without per-variable
+    # decoding: unchanged
+    for options in (DecodingOptions(mask_and_scale=False), DecodingOptions(raw=True)):
+        resolved = resolve_open_kwargs(
+            "netcdf4", options, NETCDF4_PARAMS, raw_variables=flags
+        )
+        assert resolved.decoders["mask_and_scale"] is False
+    grib = resolve_open_kwargs("cfgrib", DecodingOptions(), None, raw_variables=flags)
+    assert "mask_and_scale" not in grib.decoders
 
 
 def test_user_backend_kwargs_allowlist() -> None:

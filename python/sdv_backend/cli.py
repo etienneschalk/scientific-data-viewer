@@ -282,6 +282,15 @@ Examples:
     )
 
     parser.add_argument(
+        "--no-flags",
+        action="store_true",
+        help=(
+            "Plot CF flag variables (flag_values / flag_meanings) as plain numbers "
+            "instead of one color per meaning"
+        ),
+    )
+
+    parser.add_argument(
         "--small-variable-bytes",
         type=int,
         default=DEFAULT_SMALL_VARIABLE_BYTES,
@@ -456,6 +465,7 @@ def _plot_options(
         vmax=args.vmax,
         add_colorbar=not args.no_add_colorbar,
         add_legend=args.add_legend,
+        use_flags=not args.no_flags,
         netcdf_engine_order=args.netcdf_engine_order,
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,

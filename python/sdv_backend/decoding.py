@@ -16,7 +16,7 @@ never ones that write files, reach the network or take credentials.
 """
 
 import json
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -26,6 +26,7 @@ SOURCE_VIEWER = "viewer default"
 SOURCE_SETTING = "setting"
 SOURCE_FALLBACK = "time fallback"
 SOURCE_RAW = "raw mode"
+SOURCE_FLAGS = "flag codes read raw"
 
 KIND_DECODER = "decoder"
 KIND_BACKEND = "backend_kwargs"
@@ -60,6 +61,12 @@ TIME_FALLBACK_DECODERS: dict[str, Any] = {
 VIEWER_DEFAULT_DECODERS: dict[str, dict[str, Any]] = {
     "rasterio": {"mask_and_scale": False},
 }
+
+# Engines that take ``mask_and_scale`` per variable (``{name: False}``), checked
+# down to xarray 2024.10: used to read CF flag codes raw (see flags.py)
+ENGINES_WITH_PER_VARIABLE_DECODING: frozenset[str] = frozenset(
+    {"netcdf4", "h5netcdf", "scipy", "zarr"}
+)
 
 # Decoders an engine takes but only with its own value
 ENGINE_FIXED_DECODERS: dict[str, frozenset[str]] = {
@@ -181,6 +188,7 @@ def resolve_open_kwargs(
     time_fallback: bool = False,
     viewer_backend_kwargs: Mapping[str, tuple[Any, str]] | None = None,
     reserved: frozenset[str] = frozenset(),
+    raw_variables: Collection[str] = (),
 ) -> ResolvedOpen:
     """Decoders and ``backend_kwargs`` to open a file with ``engine``.
 
@@ -197,6 +205,12 @@ def resolve_open_kwargs(
     reserved : frozenset of str
         Keywords the viewer already passes for this file (ZIP Zarr store);
         user ``backend_kwargs`` cannot replace them.
+    raw_variables : collection of str
+        Variables read without ``mask_and_scale`` (the codes of a CF flag
+        variable, without ``_FillValue`` masking): ``mask_and_scale`` becomes
+        ``{name: False}`` on the engines of
+        ``ENGINES_WITH_PER_VARIABLE_DECODING``; the other variables keep
+        theirs (xarray's default for a variable missing from the dict: True).
     """
     notes: list[str] = []
 
@@ -221,6 +235,15 @@ def resolve_open_kwargs(
     elif time_fallback:
         for name, value in TIME_FALLBACK_DECODERS.items():
             layered[name] = (value, SOURCE_FALLBACK)
+    if (
+        raw_variables
+        and engine in ENGINES_WITH_PER_VARIABLE_DECODING
+        and layered.get("mask_and_scale", (True, ""))[0] is not False
+    ):
+        layered["mask_and_scale"] = (
+            dict.fromkeys(raw_variables, False),
+            SOURCE_FLAGS,
+        )
 
     decoders: dict[str, Any] = {}
     kwargs: list[OpenKwarg] = []

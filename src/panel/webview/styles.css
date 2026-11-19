@@ -1554,3 +1554,55 @@ pre:not(.html-representation pre) {
         animation-duration: 0s !important;
     }
 }
+
+/* CF flags of a variable (flag_values / flag_masks / flag_meanings) */
+.flags-container {
+    padding: 0 12px 10px var(--sdv-section-content-indent);
+}
+
+.flags-summary {
+    margin-bottom: 4px;
+}
+
+.flags-table {
+    border-collapse: collapse;
+}
+
+.flags-table th,
+.flags-table td {
+    padding: 1px 12px 1px 0;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.flags-table th {
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+/* Color of the meaning, from the file's flag_colors (inline style) */
+.flag-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--vscode-panel-border);
+}
+
+.flags-problems {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin: 4px 0;
+    color: var(
+        --vscode-editorWarning-foreground,
+        var(--vscode-descriptionForeground)
+    );
+}
+
+.flags-notes {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}

@@ -54,7 +54,7 @@ _Thick borders mark the four classes on the main request path: DataViewerPanel, 
 
 ## 4. Webview bundle
 
-Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/icons.ts`, `src/shared/ids.ts`, `src/shared/plotLayout.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls.
+Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/flags.ts`, `src/shared/icons.ts`, `src/shared/ids.ts`, `src/shared/plotLayout.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls.
 
 ![Webview bundle](svg/webview-modules.svg)
 

@@ -6,6 +6,7 @@ file was opened (shown in the viewer's Troubleshooting section).
 """
 
 import warnings
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal, cast
@@ -174,6 +175,7 @@ def _open_with_engine(
     convert_bands_to_variables: bool,
     options: DecodingOptions,
     failed_engines: list[EngineFailure],
+    raw_variables: Collection[str] = (),
 ) -> "tuple[xr.DataTree | DictOfDatasets, OpenReport]":
     """Open with one xarray engine: a DataTree, or ``{"/": Dataset}`` for engines
     without group support (GRIB, rasterio, kerchunk)."""
@@ -197,6 +199,7 @@ def _open_with_engine(
             time_fallback=time_fallback,
             viewer_backend_kwargs=viewer_backend_kwargs,
             reserved=frozenset(open_extra),
+            raw_variables=raw_variables,
         )
         opened = open_fn(
             location,
@@ -301,8 +304,12 @@ def open_datatree_with_fallback(
     file_format_info: FileFormatInfo,
     convert_bands_to_variables: bool = False,
     decoding: DecodingOptions | None = None,
+    raw_variables: Collection[str] = (),
 ) -> "tuple[xr.DataTree | DictOfDatasets, str, OpenReport]":
     """Open datatree or dataset, trying each available engine in turn.
+
+    ``raw_variables`` are read without ``mask_and_scale`` (the codes of CF flag
+    variables), on the engines of ``ENGINES_WITH_PER_VARIABLE_DECODING`` only.
 
     Returns
     -------
@@ -346,6 +353,7 @@ def open_datatree_with_fallback(
                 convert_bands_to_variables,
                 options,
                 list(failed_engines),
+                raw_variables,
             )
         except Exception as exc:
             exceptions.append(exc)
@@ -375,10 +383,15 @@ class OpenedData:
         file_format_info: FileFormatInfo,
         convert_bands_to_variables: bool = False,
         decoding: DecodingOptions | None = None,
+        raw_variables: Collection[str] = (),
     ) -> "OpenedData":
         """Open with engine fallback (see ``open_datatree_with_fallback``)."""
         data, used_engine, report = open_datatree_with_fallback(
-            file_path, file_format_info, convert_bands_to_variables, decoding
+            file_path,
+            file_format_info,
+            convert_bands_to_variables,
+            decoding,
+            raw_variables,
         )
         return cls(data, used_engine, report)
 

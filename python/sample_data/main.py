@@ -18,6 +18,7 @@ from sample_data.disposable import (
     create_disposable_netcdf_files,
     create_disposable_zarr_files,
 )
+from sample_data.flags import create_sample_netcdf_cf_flags
 from sample_data.geotiff import (
     create_sample_geotiff,
     create_sample_geotiff_cog,
@@ -130,6 +131,7 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             # Large 4D dataset for timeout testing (issue #97)
             G(create_sample_netcdf_large_4d, "NetCDF (Large 4D - Timeout Test)"),
             G(create_sample_netcdf_many_encoding, "NetCDF (Many Encoding)"),
+            G(create_sample_netcdf_cf_flags, "NetCDF (CF flag variables)"),
             G(create_sample_netcdf_no_attributes, "NetCDF (No Attributes)"),
             G(create_sample_netcdf_empty_dimension, "NetCDF (Empty Dimension)"),
             G(

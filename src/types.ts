@@ -1,3 +1,4 @@
+import { FlagsInfo } from './shared/flags';
 import { PlotLayoutReport } from './shared/plotLayout';
 
 export type EnvironmentSource =
@@ -52,6 +53,8 @@ export interface PlotOptions {
     addColorbar?: boolean;
     /** When true, passes --add-legend (Python defaults to false when omitted) */
     addLegend?: boolean;
+    /** When false, passes --no-flags: CF flag variables plotted as numbers */
+    useFlags?: boolean;
     /** Identifies the plot subprocess so the webview can abort it */
     operationId?: string;
 }
@@ -138,6 +141,8 @@ export interface DataInfoResult {
             attributes?: { [key: string]: any };
             encoding?: { [key: string]: any };
             display_value?: string;
+            /** CF flag_values / flag_masks / flag_meanings; null without them */
+            flags?: FlagsInfo | null;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };

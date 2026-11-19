@@ -525,6 +525,7 @@ suite('buildCreatePlotCliArgs', () => {
                 vmax: 1.5,
                 addColorbar: false,
                 addLegend: true,
+                useFlags: false,
             },
             {
                 ...baseOptions,
@@ -555,6 +556,7 @@ suite('buildCreatePlotCliArgs', () => {
             '--robust',
             '--no-add-colorbar',
             '--add-legend',
+            '--no-flags',
             '--convert-bands-to-variables',
             '--no-show-inherited-coordinates',
             '--open-as-kerchunk',

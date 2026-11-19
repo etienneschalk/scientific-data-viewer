@@ -1,0 +1,485 @@
+"""CF flag variables: parsing, raw codes, File Information, plots by meaning."""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+import xarray as xr
+from sample_data.flags import LAND_COVER_COLORS, build_cf_flags_dataset
+
+from sdv_backend.flags import mask_bits_text, needs_raw_codes, read_flag_spec
+from sdv_backend.formats.detect import detect_file_format
+from sdv_backend.info.variables import create_variable_info
+from sdv_backend.opening import OpenedData
+from sdv_backend.plotting.api import create_plot
+from sdv_backend.plotting.draw import draw_plot
+from sdv_backend.plotting.flags import (
+    OTHER_LABEL,
+    adjust_layout,
+    prepare_flag_plot,
+    share_text,
+)
+from sdv_backend.plotting.kwargs import PlotKwargsBundle
+from sdv_backend.plotting.layout import resolve_layout
+from sdv_backend.plotting.options import PlotOptions
+from sdv_backend.plotting.selection import DatetimeSelection
+from sdv_backend.results import CreatePlotResult
+
+CF_3_8 = {
+    "flag_masks": np.array([1, 2, 12, 12, 12], np.int8),
+    "flag_values": np.array([1, 2, 4, 8, 12], np.int8),
+    "flag_meanings": "low_battery hardware_fault offline_mode calibration_mode "
+    "maintenance_mode",
+}
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    yield
+    plt.close("all")
+
+
+@pytest.fixture(scope="module")
+def sample(tmp_path_factory) -> Path:
+    path = tmp_path_factory.mktemp("flags") / "sample_cf_flags.nc"
+    ds, encoding = build_cf_flags_dataset()
+    ds.to_netcdf(path, engine="netcdf4", encoding=encoding)
+    return path
+
+
+# --- parsing (CF section 3.5) -------------------------------------------------
+
+
+def test_flag_values_are_exclusive_codes() -> None:
+    spec = read_flag_spec(
+        {"flag_values": np.array([0, 1, 2], np.int8), "flag_meanings": "a b c_d"},
+        "int8",
+    )
+    assert spec is not None and spec.is_valid and spec.kind == "values"
+    assert [f.label for f in spec.flags] == ["a", "b", "c d"]
+    codes = np.array([2, 0, 1, 2], np.int8)
+    assert spec.flags[2].test(codes).tolist() == [True, False, False, True]
+
+
+def test_flag_masks_are_independent_bits() -> None:
+    spec = read_flag_spec(
+        {"flag_masks": np.array([1, 2, 4], np.uint8), "flag_meanings": "a b c"},
+        "uint8",
+    )
+    assert spec is not None and spec.is_valid and spec.kind == "masks"
+    codes = np.array([0, 3, 5, 7], np.uint8)
+    assert [f.test(codes).tolist() for f in spec.flags] == [
+        [False, True, True, True],
+        [False, True, False, True],
+        [False, False, True, True],
+    ]
+
+
+def test_cf_example_3_8_masks_and_values() -> None:
+    spec = read_flag_spec(CF_3_8, "int8")
+    assert spec is not None and spec.is_valid and spec.kind == "mixed"
+    codes = np.array([0, 1, 3, 5, 9, 15], np.int8)
+    result = {f.meaning: f.test(codes).astype(int).tolist() for f in spec.flags}
+    assert result == {
+        "low_battery": [0, 1, 1, 1, 1, 1],
+        "hardware_fault": [0, 0, 1, 0, 0, 1],
+        "offline_mode": [0, 0, 0, 1, 0, 0],
+        "calibration_mode": [0, 0, 0, 0, 1, 0],
+        "maintenance_mode": [0, 0, 0, 0, 0, 1],
+    }
+    assert [f["bits"] for f in spec.to_json()["flags"]] == [
+        "bit 0",
+        "bit 1",
+        "bits 2-3",
+        "bits 2-3",
+        "bits 2-3",
+    ]
+
+
+def test_no_flag_attribute_gives_none() -> None:
+    assert read_flag_spec({"units": "K"}, "float32") is None
+
+
+@pytest.mark.parametrize(
+    ("attrs", "dtype", "problem"),
+    [
+        (
+            {"flag_values": [0, 1, 2], "flag_meanings": "a b"},
+            "int8",
+            "3 flag_values for 2",
+        ),
+        ({"flag_values": [0, 1]}, "int8", "flag_meanings is missing"),
+        ({"flag_meanings": "a b"}, "int8", "without flag_values or flag_masks"),
+        (
+            {"flag_values": [0, 300], "flag_meanings": "a b"},
+            "uint8",
+            "300 does not fit",
+        ),
+        ({"flag_values": [0, 0], "flag_meanings": "a b"}, "int8", "listed twice: 0"),
+        ({"flag_masks": [0, 1], "flag_meanings": "a b"}, "int8", "mask 0 can never"),
+        ({"flag_masks": [1, 2], "flag_meanings": "a b"}, "float32", "integer variable"),
+        ({"flag_masks": [1.5, 2], "flag_meanings": "a b"}, "int8", "must be integers"),
+        (
+            {"flag_values": "a b", "flag_meanings": "a b"},
+            "int8",
+            "not a list of numbers",
+        ),
+        ({"flag_values": [0, 1], "flag_meanings": "a b"}, "<U3", "numeric variable"),
+        (
+            # The QC samples of sample_many_encoding.nc before 0.15: 3 & 4 != 3
+            {
+                "flag_values": [0, 1, 2, 3],
+                "flag_masks": [1, 2, 4, 8],
+                "flag_meanings": "good questionable bad missing",
+            },
+            "int8",
+            "questionable: value 1 has bits outside its mask 2",
+        ),
+    ],
+)
+def test_unusable_specs_are_explained(attrs, dtype, problem) -> None:
+    spec = read_flag_spec(attrs, dtype)
+    assert spec is not None and not spec.is_valid
+    assert any(problem in p for p in spec.problems), spec.problems
+
+
+def test_string_and_list_forms() -> None:
+    spec = read_flag_spec(
+        {"flag_values": "0, 1, 0x10", "flag_meanings": ["a", "b", "c"]}, "int16"
+    )
+    assert spec is not None and spec.is_valid
+    assert [f.value for f in spec.flags] == [0, 1, 16]
+    spec = read_flag_spec({"flag_values": 3, "flag_meanings": b"only"}, "int8")
+    assert spec is not None and spec.is_valid and spec.flags[0].value == 3
+
+
+def test_float_flag_values_on_a_float_variable() -> None:
+    spec = read_flag_spec(
+        {"flag_values": [0.0, 1.0], "flag_meanings": "a b"}, "float32"
+    )
+    assert spec is not None and spec.is_valid
+    assert spec.flags[1].test(np.array([1.0, 0.0], np.float32)).tolist() == [
+        True,
+        False,
+    ]
+
+
+def test_signed_byte_mask_of_bit_7() -> None:
+    """Bit 7 of a signed byte is written -128 or 128: both are the same bits."""
+    for mask in (-128, 128):
+        spec = read_flag_spec(
+            {"flag_masks": [mask, 1], "flag_meanings": "hi lo"}, "int8"
+        )
+        assert spec is not None and spec.is_valid, spec.problems
+        assert spec.flags[0].test(np.array([-128, 1, -127], np.int8)).tolist() == [
+            True,
+            False,
+            True,
+        ]
+        assert spec.to_json()["flags"][0]["bits"] == "bit 7"
+
+
+def test_uint64_masks_are_exact_and_sent_as_text() -> None:
+    masks = np.array([1, 1 << 62, 1 << 63], np.uint64)
+    spec = read_flag_spec({"flag_masks": masks, "flag_meanings": "a b c"}, "uint64")
+    assert spec is not None and spec.is_valid
+    codes = np.array([(1 << 63) | 1, 1 << 62], np.uint64)
+    assert [f.test(codes).tolist() for f in spec.flags] == [
+        [True, False],
+        [False, True],
+        [True, False],
+    ]
+    flags = spec.to_json()["flags"]
+    assert flags[2]["mask"] == str(1 << 63)
+    assert flags[2]["bits"] == "bit 63"
+
+
+def test_flag_colors() -> None:
+    attrs = {"flag_values": [0, 1, 2], "flag_meanings": "a b c"}
+    spec = read_flag_spec({**attrs, "flag_colors": "#ff0000 #0f0 blue"}, "int8")
+    assert spec is not None and spec.colors == ("#ff0000", "#0f0", "blue")
+    for colors, note in (
+        ("#ff0000 #00ff00", "2 colors for 3"),
+        ("#ff0000 #00ff00 url(x)", "not a color: url(x)"),
+    ):
+        spec = read_flag_spec({**attrs, "flag_colors": colors}, "int8")
+        assert spec is not None and spec.is_valid and spec.colors is None
+        assert any(note in n for n in spec.notes), spec.notes
+
+
+@pytest.mark.parametrize(
+    ("mask", "text"),
+    [(1, "bit 0"), (12, "bits 2-3"), (5, "bits 0, 2"), (0, "no bit"), (-128, "bit 7")],
+)
+def test_mask_bits_text(mask, text) -> None:
+    assert mask_bits_text(mask, 8) == text
+
+
+def test_many_encoding_samples_are_valid_cf_after_the_fix() -> None:
+    """``sample_many_encoding.nc``: the QC variables are status codes now; the
+    humidity flags (on a continuous variable) stay refused."""
+    from sample_data import netcdf_encoding
+
+    source = Path(netcdf_encoding.__file__).read_text()
+    assert source.count('"flag_masks": [1, 2, 4, 8],') == 0
+    spec = read_flag_spec(
+        {
+            "flag_values": [0, 1, 2, 3, 4],
+            "flag_meanings": "good questionable bad missing not_applicable",
+            "flag_masks": [1, 2, 4, 8, 16],
+        },
+        "int16",
+    )
+    assert spec is not None and not spec.is_valid
+
+
+# --- raw codes ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("engine", ["netcdf4", "h5netcdf"])
+def test_raw_variables_keep_their_codes(sample: Path, engine: str) -> None:
+    info = detect_file_format(sample, netcdf_engine_order=[engine])
+    opened = OpenedData.open(sample, info, raw_variables=("land_cover", "wqsf"))
+    try:
+        assert opened.used_engine == engine
+        group = opened.group("/", True)
+        assert group["land_cover"].dtype == np.uint8
+        assert int(group["land_cover"].values.max()) == 255
+        assert group["wqsf"].dtype == np.uint64
+        assert int(group["wqsf"].values[1].max()) <= (1 << 64) - 1
+        # The others are still decoded
+        assert group["quality_level"].dtype.kind == "f"
+    finally:
+        opened.close()
+
+
+def test_default_decoding_needs_raw_codes(sample: Path) -> None:
+    with xr.open_dataset(sample) as ds:
+        assert needs_raw_codes(ds["land_cover"].dtype, ds["land_cover"].encoding)
+        assert not needs_raw_codes(ds["lccs_class"].dtype, ds["lccs_class"].encoding)
+
+
+def test_raw_variables_on_zarr(tmp_path: Path) -> None:
+    pytest.importorskip("zarr")
+    path = tmp_path / "flags.zarr"
+    ds, encoding = build_cf_flags_dataset()
+    ds[["land_cover"]].to_zarr(path, encoding={"land_cover": encoding["land_cover"]})
+    info = detect_file_format(path)
+    if "zarr" not in info.available_engines:
+        pytest.skip("zarr engine not usable here (the viewer needs zarr>=3)")
+    opened = OpenedData.open(path, info, raw_variables=("land_cover",))
+    try:
+        assert opened.group("/", True)["land_cover"].dtype == np.uint8
+    finally:
+        opened.close()
+
+
+# --- File Information ------------------------------------------------------------
+
+
+def test_variable_info_lists_the_flags(sample: Path) -> None:
+    with xr.open_dataset(sample) as ds:
+        land_cover = create_variable_info("land_cover", ds["land_cover"]).flags
+        quality = create_variable_info("quality_level", ds["quality_level"]).flags
+        broken = create_variable_info("broken_mixed", ds["broken_mixed"]).flags
+        assert create_variable_info("lat", ds["lat"]).flags is None
+    assert land_cover is not None and land_cover["kind"] == "values"
+    assert land_cover["colors_source"] == "flag_colors"
+    assert land_cover["flags"][0] == {
+        "meaning": "cropland",
+        "value": "10",
+        "mask": None,
+        "bits": None,
+        "color": LAND_COVER_COLORS.split()[0],
+    }
+    # Checked against the stored type (int8), not the decoded float
+    assert quality is not None and quality["problems"] == []
+    assert broken is not None and broken["problems"]
+
+
+# --- plots by meaning -------------------------------------------------------------
+
+
+def _raw(sample: Path, name: str) -> xr.DataArray:
+    info = detect_file_format(sample, netcdf_engine_order=["netcdf4"])
+    opened = OpenedData.open(sample, info, raw_variables=(name,))
+    try:
+        return opened.group("/", True)[name].load()
+    finally:
+        opened.close()
+
+
+def _spec(var: xr.DataArray):
+    spec = read_flag_spec(var.attrs, var.encoding.get("dtype", var.dtype))
+    assert spec is not None and spec.is_valid
+    return spec
+
+
+def test_categories_from_flag_colors_with_fill_transparent(sample: Path) -> None:
+    var = _raw(sample, "land_cover")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert flag_plot.colors_source == "flag_colors"
+    assert [c.color for c in flag_plot.categories] == LAND_COVER_COLORS.split()
+    fill = (var.values == 255).sum()
+    assert fill > 0
+    assert int(np.isnan(flag_plot.index.values).sum()) == fill
+    assert flag_plot.total == var.size - fill
+    assert sum(c.count for c in flag_plot.categories) == flag_plot.total
+    assert flag_plot.index.attrs["long_name"] == "Land cover class"
+
+
+def test_fill_code_declared_as_meaning_is_shown(sample: Path) -> None:
+    """``127`` is both the _FillValue and the meaning ``not_measured``: raw
+    reading keeps it; code 9 is not declared and becomes 'other'."""
+    var = _raw(sample, "station_status")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    by_label = {c.label: c.count for c in flag_plot.categories}
+    assert by_label["not measured"] == 4
+    assert by_label[OTHER_LABEL] == 1
+    assert any("(9)" in note for note in flag_plot.notes)
+
+
+def test_decoded_floats_still_work(sample: Path) -> None:
+    """Engines that cannot read raw: NaN marks no data."""
+    with xr.open_dataset(sample) as ds:
+        var = ds["land_cover"].load()
+    assert var.dtype.kind == "f"
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert flag_plot.total == int(np.isfinite(var.values).sum())
+
+
+def test_many_classes_list_only_the_present_ones(sample: Path) -> None:
+    var = _raw(sample, "lccs_class")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert len(flag_plot.categories) == 8
+    assert flag_plot.notes == [
+        "29 of the 37 meanings are absent from the plotted data and not listed"
+    ]
+    assert set(np.unique(flag_plot.index.values)) == set(range(8))
+
+
+def test_user_cmap_wins_over_flag_colors(sample: Path) -> None:
+    var = _raw(sample, "land_cover")
+    flag_plot = prepare_flag_plot(var, _spec(var), cmap="Set2")
+    assert flag_plot.colors_source == "cmap Set2"
+    unknown = prepare_flag_plot(var, _spec(var), cmap="no_such_cmap")
+    assert unknown.colors_source == "flag_colors"
+    assert "cmap=no_such_cmap ignored" in unknown.notes[0]
+
+
+def _draw(var: xr.DataArray, options: PlotOptions = PlotOptions()):
+    flag_plot = prepare_flag_plot(var, _spec(var), options.cmap)
+    selection = DatetimeSelection(var=var)
+    index, layout = resolve_layout(flag_plot.index, options, selection)
+    bundle = PlotKwargsBundle.build(bins=options.bins, vmin=options.vmin)
+    adjust_layout(flag_plot, layout, bundle.raw)
+    draw_plot(index, layout, bundle, selection, str(var.name), flag_plot)
+    return plt.gcf(), layout
+
+
+def test_image_colorbar_names_the_meanings(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "land_cover"))
+    assert layout.kind == "image"
+    assert layout.value("flags") == "flag_values, 8 meanings, colors: flag_colors"
+    colorbar = fig.axes[-1]
+    labels = [t.get_text() for t in colorbar.get_yticklabels()]
+    assert labels[0].startswith("10 cropland (") and labels[-1].startswith(
+        "210 water ("
+    )
+
+
+def test_facets_share_one_labelled_colorbar(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "quality_level"))
+    assert layout.value("col") == "time"
+    images = [ax for ax in fig.axes if ax.images]
+    assert len(images) == 3
+    labels = [t.get_text() for t in fig.axes[-1].get_yticklabels()]
+    assert labels[5].startswith("5 best quality (")
+
+
+def test_1d_steps_with_meanings_on_the_y_axis(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "station_status"))
+    assert layout.kind == "line"
+    labels = [t.get_text() for t in fig.axes[0].get_yticklabels()]
+    assert labels[3].startswith("127 not measured (")
+    assert labels[-1].startswith(OTHER_LABEL)
+
+
+def test_bars_replace_the_histogram(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "land_cover"), PlotOptions(bins=10, vmin=1))
+    assert layout.kind == "bars"
+    assert "bins" not in layout.choices
+    assert layout.notes[:2] == [
+        "bins ignored: a CF flag variable is drawn as one bar per meaning",
+        "vmin ignored: CF flag meanings have one color each",
+    ]
+    assert len(fig.axes[0].patches) == 8
+
+
+@pytest.mark.parametrize(
+    ("count", "total", "text"),
+    [
+        (0, 10, "0%"),
+        (1, 1000, "<1%"),
+        (999, 1000, ">99%"),
+        (5, 10, "50%"),
+        (3, 0, "0%"),
+    ],
+)
+def test_share_text(count, total, text) -> None:
+    assert share_text(count, total) == text
+
+
+# --- create_plot end to end ----------------------------------------------------------
+
+
+def _plot(sample: Path, name: str, **options) -> CreatePlotResult:
+    result = create_plot(sample, f"/{name}", PlotOptions(**options))
+    assert isinstance(result, CreatePlotResult), result
+    return result
+
+
+def test_create_plot_reads_raw_codes(sample: Path) -> None:
+    layout = _plot(sample, "station_status").plot_layout
+    assert layout["kind"] == "line"
+    roles = {c["role"]: c["value"] for c in layout["choices"]}
+    assert roles["flags"] == "flag_values, 4 meanings, colors: tab10"
+
+
+def test_create_plot_kwargs_are_text(sample: Path) -> None:
+    kwargs = _plot(sample, "land_cover").applied_plot_kwargs
+    assert kwargs["cmap"] == "ListedColormap(8 colors: flag_colors)"
+    assert kwargs["norm"] == "BoundaryNorm(-0.5..7.5, 8)"
+
+
+def test_create_plot_without_flags(sample: Path) -> None:
+    layout = _plot(sample, "land_cover", use_flags=False).plot_layout
+    assert "flags" not in {c["role"] for c in layout["choices"]}
+    assert layout["notes"] == []
+
+
+@pytest.mark.parametrize(
+    ("name", "note"),
+    [
+        ("pixel_flags", "CF flag_masks (masks): plotted as numbers"),
+        ("sensor_status_qc", "CF flag_masks (mixed): plotted as numbers"),
+        ("broken_mixed", "CF flags not used (questionable: value 1 has bits"),
+        ("broken_count", "CF flags not used (3 flag_values for 2 flag_meanings"),
+    ],
+)
+def test_create_plot_explains_flags_not_drawn_by_meaning(
+    sample: Path, name: str, note: str
+) -> None:
+    layout = _plot(sample, name).plot_layout
+    assert "flags" not in {c["role"] for c in layout["choices"]}
+    assert any(n.startswith(note) for n in layout["notes"]), layout["notes"]
+
+
+def test_create_plot_reports_ignored_flag_colors(sample: Path) -> None:
+    layout = _plot(sample, "broken_colors").plot_layout
+    assert "flag_colors ignored: 2 colors for 3 flag_meanings" in layout["notes"]

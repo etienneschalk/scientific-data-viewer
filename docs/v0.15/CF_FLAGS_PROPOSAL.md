@@ -1,8 +1,14 @@
 # CF flag variables: proposal (v0.15)
 
-Status: **proposal**, nothing implemented. Branch `eschalk/v0.15-cf-flags`
-(from `main`; to rebase on `eschalk/v0.14-cf-decoding` once 0.14 is merged,
-both touch `opening.py`).
+Status: **P1 implemented** (0.15.0: `flag_values` plotted by meaning, raw
+codes, Flags section in File Information, `flags` control; see
+`CHANGELOG.md`). P2-P4 to do. Branch `eschalk/v0.15-cf-flags` (from `main`;
+to rebase on `eschalk/v0.14-cf-decoding` once 0.14 is merged, both touch
+`opening.py`).
+
+Answers to the open questions taken for P1: automatic display by default
+(the `flags` checkbox turns it off; it moved from P3 to P1, as the escape
+hatch of a default that changes plots), shares shown by default.
 
 ## Goal
 

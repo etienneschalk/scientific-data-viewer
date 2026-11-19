@@ -62,6 +62,7 @@ Available on:
 - **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and zipped Zarr: `*.zarr.zip` opens on click, other `.zip` archives with **Open Scientific Data Viewer** (right click); requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
 - **CF decoding you can inspect**: File Information shows the decoding mode (**CF decoded**, **degraded** when broken time units forced `decode_times=False`, or **raw**); **Reopen raw** reloads the file without any decoding (masking, scaling, times, coordinates) for investigation. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with its source
+- **CF flag variables plotted by meaning**: a variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) is drawn with one color per meaning (the file's `flag_colors` when present) and a colorbar naming each class with its share; 1D flags as steps with the meanings on the y-axis, bars instead of a histogram. The **Flags** section of each variable lists the meanings, values, masks and bits (`flag_masks` included); the **flags** plot control turns it off
 
 ## 📸 Screenshot Gallery
 
