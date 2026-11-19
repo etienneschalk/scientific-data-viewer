@@ -14,6 +14,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `src/panel/webview/styles.css`, `src/panel/webview/render/plotLayout.ts`, `docs/PLOTTING.md`, `docs/SCREENSHOTS.md`
   - **Tests**: `test/suite/ui/webviewScript.test.ts` (the legend shows the marker); `npm run screenshots -- --scenario changed-controls` in the 2026 Dark / Light themes (dot after `time 0:6` and `col_wrap 3`, not after the automatic items)
 
+- **Upgrade sandbox: a failed offline rebuild no longer fails on the state file it restores** (development): `scripts/upgrade-sandbox.sh --scenario offline` checked that no `sdv-environment.json` was left after a failed rebuild. That holds only when upgrading from a release before 0.13, which had no state file. When the release does not change the uv environment, `paranoia.sh` upgrades from the release itself with `--bump-new`: the failed rebuild correctly restores the previous environment with its state file, whose lower revision still asks for the rebuild, and the check failed (paranoia run of 0.13.1, `upgrade` step). The check now accepts no state file, or the state file of before the upgrade, unchanged.
+  - **Files**: `scripts/upgrade-sandbox.sh`
+  - **Tests**: `scripts/upgrade-sandbox.sh --old <0.13.1.vsix> --new <0.13.1.vsix> --bump-new --scenario offline`
+
 ### Security
 
 - **`python.overridePythonInterpreter` is read from user settings only**: it names the program the extension runs, and any scope could set it, so a repository's `.vscode/settings.json` could make the extension execute a file of the repository as soon as a data file was opened. The setting is now machine-scoped and the extension reads only its global (user, or remote machine) value; a workspace value is ignored and logged as a warning. Its description no longer suggests a relative `.venv/bin/python`; a per-project interpreter is chosen with **Python: Select Interpreter** (Python extension), which VS Code guards with workspace trust.

@@ -31,6 +31,14 @@ Patch release on top of 0.13.0, collecting the 0.13.1 fixes on `eschalk/v0.13.1-
 | Where | `package.json`, `src/common/config.ts`, `src/python/PythonManager.ts`, `README.md` (regenerated)                                                                                             |
 | Tests | `test/suite/config.test.ts`: machine scope; workspace and workspace-folder values ignored; user value read and trimmed; non-string value ignored                                             |
 
+### Development: upgrade sandbox, offline scenario
+
+| Area  | What                                                                                                                                                                                                                                                                                                                                                             |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why   | Paranoia `upgrade` step failed on 0.13.1 (`fails when: offline`). Without a uv environment change it upgrades from the release itself with `--bump-new`; the failed rebuild restores the previous environment with its `sdv-environment.json` (lower revision, rebuild still pending), but the check required no state file, true only from releases before 0.13 |
+| What  | The check accepts no state file, or the state file of before the upgrade, unchanged. The extension's behaviour is unchanged                                                                                                                                                                                                                                      |
+| Where | `scripts/upgrade-sandbox.sh`                                                                                                                                                                                                                                                                                                                                     |
+
 ## Testing
 
 ```bash
@@ -55,3 +63,4 @@ Manual verification: steps 1–8 of the [release notes](../RELEASE_NOTES_0.13.1.
 
 1. fix(webview): mark the items set by you in the plot layout line with a dot
 2. fix(config): read the interpreter override from user settings only
+3. fix(qa): accept the state file restored by a failed offline rebuild in the upgrade sandbox
