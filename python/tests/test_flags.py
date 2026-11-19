@@ -19,6 +19,7 @@ from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.api import create_plot
 from sdv_backend.plotting.draw import draw_plot
 from sdv_backend.plotting.flags import (
+    NOT_SET_LABEL,
     OTHER_LABEL,
     adjust_layout,
     prepare_flag_plot,
@@ -466,13 +467,11 @@ def test_create_plot_without_flags(sample: Path) -> None:
 @pytest.mark.parametrize(
     ("name", "note"),
     [
-        ("pixel_flags", "CF flag_masks (masks): plotted as numbers"),
-        ("sensor_status_qc", "CF flag_masks (mixed): plotted as numbers"),
         ("broken_mixed", "CF flags not used (questionable: value 1 has bits"),
         ("broken_count", "CF flags not used (3 flag_values for 2 flag_meanings"),
     ],
 )
-def test_create_plot_explains_flags_not_drawn_by_meaning(
+def test_create_plot_explains_unusable_flags(
     sample: Path, name: str, note: str
 ) -> None:
     layout = _plot(sample, name).plot_layout
@@ -483,3 +482,200 @@ def test_create_plot_explains_flags_not_drawn_by_meaning(
 def test_create_plot_reports_ignored_flag_colors(sample: Path) -> None:
     layout = _plot(sample, "broken_colors").plot_layout
     assert "flag_colors ignored: 2 colors for 3 flag_meanings" in layout["notes"]
+
+
+# --- bits (flag_masks, masks + values) -----------------------------------------
+
+
+def _masks_var(codes, masks, meanings, dtype=np.uint8, **attrs) -> xr.DataArray:
+    return xr.DataArray(
+        np.asarray(codes, dtype=dtype),
+        dims=("x",) if np.ndim(codes) == 1 else ("y", "x"),
+        name="bits",
+        attrs={
+            "flag_masks": np.asarray(masks, dtype=dtype),
+            "flag_meanings": meanings,
+            **attrs,
+        },
+    )
+
+
+def test_masks_get_one_entry_per_flag(sample: Path) -> None:
+    var = _raw(sample, "pixel_flags")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    index = flag_plot.index
+    assert index.dims == ("flag", "time", "lat", "lon")
+    assert list(index["flag"].values) == [
+        "cloud (bit 0)",
+        "cloud shadow (bit 1)",
+        "snow ice (bit 2)",
+        "invalid (bit 3)",
+    ]
+    labels = flag_plot.tick_labels()
+    assert labels[0].startswith("bit 0 cloud (") and labels[-1] == NOT_SET_LABEL
+    # Each panel holds its own category where the bit is set, else "not set"
+    for f in range(4):
+        expected = np.where(var.values & (1 << f), f, 4)
+        assert (index.values[f] == expected).all()
+    assert flag_plot.categories[0].count == int((var.values & 1 != 0).sum())
+
+
+def test_uint64_bits_62_and_63_are_counted(sample: Path) -> None:
+    var = _raw(sample, "wqsf")
+    assert var.dtype == np.uint64
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    valid = var.values != np.uint64(0xFFFFFFFFFFFFFFFF)
+    assert flag_plot.total == int(valid.sum())
+    by_label = {c.label: c.count for c in flag_plot.categories}
+    assert by_label["cloud"] == int((valid & (var.values >> 63 == 1)).sum()) > 0
+    assert by_label["ocl fail"] == int((valid & (var.values >> 62 & 1 == 1)).sum())
+    # The fill row stays without data in every panel
+    assert np.isnan(flag_plot.index.values[:, 0, :]).all()
+
+
+def test_mixed_fields_group_the_states_of_a_mask(sample: Path) -> None:
+    var = _raw(sample, "sensor_status_qc")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert [f.label for f in flag_plot.fields] == [
+        "low battery (bit 0)",
+        "hardware fault (bit 1)",
+        "bits 2-3: 3 states",
+    ]
+    assert [c.value for c in flag_plot.categories] == [
+        "bit 0",
+        "bit 1",
+        "bits 2-3 = 4",
+        "bits 2-3 = 8",
+        "bits 2-3 = 12",
+        "",
+    ]
+    mode = flag_plot.index.values[2]
+    bits = var.values & 12
+    assert (mode == np.select([bits == 4, bits == 8, bits == 12], [2, 3, 4], 5)).all()
+    assert flag_plot.report_value().startswith(
+        "flag_masks + flag_values, 5 meanings in 3 fields"
+    )
+
+
+def test_undeclared_bits_are_noted() -> None:
+    var = _masks_var([0, 1, 2, 5, 16 | 1, 32], [1, 2], "a b")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert "3 values have bits 2, 4, 5 set, in no flag_masks" in flag_plot.notes
+
+
+def test_signed_mask_of_bit_7() -> None:
+    var = _masks_var([0, -128, -127, 1], [1, -128], "low high", dtype=np.int8)
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert [c.count for c in flag_plot.set_categories()] == [2, 2]
+    assert flag_plot.fields[1].label == "high (bit 7)"
+    assert not any("in no flag_masks" in n for n in flag_plot.notes)
+
+
+def test_many_bits_draw_only_the_set_ones() -> None:
+    masks = [1 << i for i in range(30)]
+    meanings = " ".join(f"f{i}" for i in range(30))
+    var = _masks_var([1, 2, 1 << 29], masks, meanings, dtype=np.uint32)
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert [f.label for f in flag_plot.fields] == [
+        "f0 (bit 0)",
+        "f1 (bit 1)",
+        "f29 (bit 29)",
+    ]
+    assert "27 of the 30 flags are never set in the plotted data and not drawn" in (
+        flag_plot.notes
+    )
+
+
+def test_too_much_data_keeps_the_first_flags(monkeypatch) -> None:
+    import sdv_backend.plotting.flags as flags_module
+
+    monkeypatch.setattr(flags_module, "MAX_FIELD_POINTS", 10)
+    var = _masks_var(np.ones((2, 3)), [1, 2, 4], "a b c")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert flag_plot.index.sizes["flag"] == 1
+    assert flag_plot.notes[-1].startswith("only the first 1 of 3 flags drawn")
+
+
+def test_flag_dimension_name_does_not_clash() -> None:
+    var = _masks_var([1, 2], [1, 2], "a b").rename(x="flag")
+    flag_plot = prepare_flag_plot(var, _spec(var))
+    assert flag_plot.index.dims == ("flag_", "flag")
+
+
+def test_masks_maps_are_panels_with_full_titles(sample: Path) -> None:
+    var = _raw(sample, "wqsf")
+    fig, layout = _draw(var)
+    assert layout.kind == "image" and layout.value("col") == "flag"
+    assert layout.value("flags") == "flag_masks, 6 meanings, colors: tab10"
+    titles = [ax.get_title() for ax in fig.axes if ax.images]
+    assert titles[3] == "flag = highglint (bit 23)"
+    labels = [t.get_text() for t in fig.axes[-1].get_yticklabels()]
+    assert labels[-1] == NOT_SET_LABEL
+
+
+def test_masks_over_time_one_row_per_flag(sample: Path) -> None:
+    _, layout = _draw(_raw(sample, "pixel_flags"))
+    assert (layout.value("row"), layout.value("col")) == ("flag", "time")
+
+
+def test_1d_bits_are_a_block_plot(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "sensor_status_qc"))
+    assert layout.kind == "image"
+    assert (layout.value("x"), layout.value("y")) == ("status_time", "flag")
+    ax = fig.axes[0]
+    labels = [t.get_text() for t in ax.get_yticklabels()]
+    assert labels == [
+        "low battery (bit 0)",
+        "hardware fault (bit 1)",
+        "bits 2-3: 3 states",
+    ]
+    # The first flag on top
+    assert ax.get_ylim()[0] > ax.get_ylim()[1]
+
+
+def test_a_single_point_gives_bars(sample: Path) -> None:
+    var = _raw(sample, "sensor_status_qc").isel(status_time=20)
+    fig, layout = _draw(var)
+    assert layout.kind == "bars"
+    assert list(layout.choices) == ["flags"]
+    assert len(fig.axes[0].patches) == 5
+    assert (
+        fig.axes[0].get_xlabel() == "% of the 1 value with data where the flag is set"
+    )
+
+
+def test_bins_on_bits_give_bars(sample: Path) -> None:
+    fig, layout = _draw(_raw(sample, "pixel_flags"), PlotOptions(bins=5))
+    assert layout.kind == "bars"
+    labels = [t.get_text() for t in fig.axes[0].get_yticklabels()]
+    assert len(labels) == 4 and NOT_SET_LABEL not in labels
+
+
+@pytest.mark.parametrize(
+    ("name", "kind", "flags"),
+    [
+        ("pixel_flags", "image", "flag_masks, 4 meanings, colors: tab10"),
+        ("wqsf", "image", "flag_masks, 6 meanings, colors: tab10"),
+        (
+            "sensor_status_qc",
+            "image",
+            "flag_masks + flag_values, 5 meanings in 3 fields, colors: tab10",
+        ),
+    ],
+)
+def test_create_plot_draws_bits_by_meaning(
+    sample: Path, name: str, kind: str, flags: str
+) -> None:
+    layout = _plot(sample, name).plot_layout
+    assert layout["kind"] == kind
+    roles = {c["role"]: c["value"] for c in layout["choices"]}
+    assert roles["flags"] == flags
+    assert not any("plotted as numbers" in n for n in layout["notes"])
+
+
+def test_create_plot_single_point_of_bits(sample: Path) -> None:
+    result = _plot(
+        sample, "pixel_flags", dimension_slices={"time": 0, "lat": 3, "lon": 4}
+    )
+    assert result.plot_layout["kind"] == "bars"
+    assert result.applied_plot_kwargs == {"flags": "bars"}

@@ -1,14 +1,24 @@
 # CF flag variables: proposal (v0.15)
 
-Status: **P1 implemented** (0.15.0: `flag_values` plotted by meaning, raw
-codes, Flags section in File Information, `flags` control; see
-`CHANGELOG.md`). P2-P4 to do. Branch `eschalk/v0.15-cf-flags` (from `main`;
+Status: **P1 and P2 implemented** (0.15.0: `flag_values` plotted by meaning,
+raw codes, Flags section in File Information, `flags` control; `flag_masks`
+alone or with `flag_values` drawn as one panel per field, 1D block plots,
+bars; see `CHANGELOG.md`). P3-P4 to do. Branch `eschalk/v0.15-cf-flags` (from `main`;
 to rebase on `eschalk/v0.14-cf-decoding` once 0.14 is merged, both touch
 `opening.py`).
 
 Answers to the open questions taken for P1: automatic display by default
 (the `flags` checkbox turns it off; it moved from P3 to P1, as the escape
 hatch of a default that changes plots), shares shown by default.
+
+Choices made in P2 (differences from § 3 below): one colormap for all the
+panels (each field holds its meanings' categories where set, a shared grey
+`not set` elsewhere) rather than a boolean per panel, so each flag keeps its
+color and the colorbar names them all; the 1D "block plot" is the image that
+the layout engine already makes of `(flag, time)`, not a separate drawing;
+facet titles carry the bits (`flag = cloud (bit 0)`), the colorbar the
+shares. Added: a note for bits set in no `flag_masks`, and a limit of 50
+million points for the array of fields (one copy of the data per field).
 
 ## Goal
 

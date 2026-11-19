@@ -60,11 +60,11 @@ class Flag:
     def test(self, codes: np.ndarray) -> np.ndarray:
         """Boolean array: where the flag is set in ``codes`` (raw values)."""
         if self.mask is None:
-            return codes == _as_code(self.value, codes.dtype)
-        anded = codes & _as_code(self.mask, codes.dtype)
+            return codes == as_code(self.value, codes.dtype)
+        anded = codes & as_code(self.mask, codes.dtype)
         if self.value is None:
             return anded != 0
-        return anded == _as_code(self.value, codes.dtype)
+        return anded == as_code(self.value, codes.dtype)
 
 
 @dataclass(frozen=True)
@@ -87,7 +87,7 @@ class FlagSpec:
     def to_json(self) -> dict[str, Any]:
         """For File Information. Values and masks are strings: a uint64 mask
         does not fit in a JavaScript number."""
-        bits = _dtype_bits(self.dtype)
+        bits = dtype_bits(self.dtype)
         return {
             "kind": self.kind,
             "flags": [
@@ -363,7 +363,7 @@ def _check_consistency(kind: FlagKind, flags: Sequence[Flag]) -> list[str]:
 # --- helpers ---------------------------------------------------------------
 
 
-def _as_code(number: int | float | None, dtype: np.dtype) -> Any:
+def as_code(number: int | float | None, dtype: np.dtype) -> Any:
     """``number`` in the dtype of the codes. Integers wrap on purpose: a mask
     of a signed type written as unsigned (128 for bit 7 of a byte) is the
     same bit pattern."""
@@ -377,7 +377,7 @@ def _as_code(number: int | float | None, dtype: np.dtype) -> Any:
     return dtype.type(value)
 
 
-def _dtype_bits(dtype: str) -> int | None:
+def dtype_bits(dtype: str) -> int | None:
     try:
         return np.dtype(dtype).itemsize * 8
     except TypeError:

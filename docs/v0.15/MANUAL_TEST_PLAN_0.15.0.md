@@ -1,6 +1,6 @@
 # v0.15.0 — Manual test plan
 
-About 20 minutes. Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 25 minutes. Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
@@ -53,11 +53,19 @@ Open `sample_cf_flags.nc` for every step.
 3. Kind `bars` in the layout line; notes `bins ignored: …` and `vmin ignored: …`.
 4. **Reset** the group block.
 
-## M8 — Bit masks are listed, plotted as numbers
+## M8 — Bit flags: one panel per flag
 
 1. Expand `wqsf`: columns mask / bits / meaning; last row `9223372036854775808`, `bit 63`, `cloud`.
-2. Plot it: a numeric map and a note `CF flag_masks (masks): plotted as numbers; the meaning of each bit is listed in the variable's Flags section`.
-3. Expand `sensor_status_qc`: mask / bits / value / meaning, `12 bits 2-3 8 calibration_mode`.
+2. Plot it: six panels, `flag = invalid (bit 0)` … `flag = cloud (bit 63)` (titles not cut), each in its own color where set and grey elsewhere; the bottom row (fill value) empty.
+3. The colorbar reads `bit 0 invalid (…%)` … `bit 63 cloud (…%)`, then `not set` at the top. Layout line: `col flag`, `flags flag_masks, 6 meanings, colors: tab10`. No note `plotted as numbers`.
+4. Plot `pixel_flags`: four rows (cloud, cloud shadow, snow ice, invalid), three columns `time = 0, 1, 2`; layout line `row flag`, `col time`.
+
+## M11 — Block plot and bars of a mixed variable
+
+1. Expand `sensor_status_qc`: mask / bits / value / meaning, `12 bits 2-3 8 calibration_mode`.
+2. Plot it: one image with three rows, top to bottom `low battery (bit 0)`, `hardware fault (bit 1)`, `bits 2-3: 3 states`, along `status_time`. The last row is grey, then green, red and purple blocks; the colorbar names `bits 2-3 = 4 offline mode`, `= 8 calibration mode`, `= 12 maintenance mode`.
+3. Set the slice `status_time` = `20` and plot: bars, `bits 2-3 = 4 offline mode (100%)`, the others at `0%`; x-axis `% of the 1 value with data where the flag is set`.
+4. Clear the slice.
 
 ## M9 — Inconsistent flags are explained, not used
 
@@ -83,3 +91,4 @@ Open `sample_cf_flags.nc` for every step.
 | M8   |                         |
 | M9   |                         |
 | M10  |                         |
+| M11  |                         |

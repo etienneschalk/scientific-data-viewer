@@ -13,9 +13,12 @@
 - ``station_status``: 1D, the ``_FillValue`` 127 is also a meaning
   (``not_measured``), and one code (9) is not declared -> steps with the
   meanings on the y-axis, ``other``;
-- ``pixel_flags``: ``flag_masks`` (bits) and ``wqsf``: ``uint64`` masks with
-  a ``_FillValue`` -> plotted as numbers (phase P2), bits in File Information;
-- ``sensor_status_qc``: CF example 3.8, masks + values;
+- ``pixel_flags``: ``flag_masks`` (bits) along time -> one row of panels per
+  bit, one column per time;
+- ``wqsf``: ``uint64`` masks including bits 62 and 63, with a ``_FillValue``
+  -> one panel per bit, exact;
+- ``sensor_status_qc``: CF example 3.8, masks + values, 1D -> block plot
+  (one row per field, bits 2-3 a three-state mode);
 - ``broken_*``: specs the viewer must refuse with a note (counts that differ,
   a mixed value outside its mask, ``flag_colors`` of the wrong length, masks on
   a float variable).
