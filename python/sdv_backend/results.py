@@ -60,6 +60,10 @@ class VariableInfo:
         showXarrayEncodingAttributes is off
     display_value : Optional[str], optional
         Loaded value(s) as string when size_bytes <= small_variable_bytes (Issue #102; configurable, 0 = disabled).
+    flags : Optional[Dict[str, Any]], optional
+        CF flags (``flag_values`` / ``flag_masks`` / ``flag_meanings``) as
+        ``FlagSpec.to_json()``: kind, one entry per meaning, problems, notes.
+        None when the variable has no flag attribute.
     """
 
     name: str
@@ -70,6 +74,7 @@ class VariableInfo:
     attributes: dict[str, Any]
     encoding: dict[str, Any] = field(default_factory=dict)
     display_value: str | None = None
+    flags: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)

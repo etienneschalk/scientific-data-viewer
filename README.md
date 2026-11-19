@@ -18,7 +18,7 @@ Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files direct
 
 <div align="center">
 
-**Current Version: v0.13.0** • [Changelog](./CHANGELOG.md#0130---2026-11-18) • [v0.13.0 release notes](./docs/RELEASE_NOTES_0.13.0.md)
+**Current Version: v0.15.0** • [Changelog](./CHANGELOG.md#0150---unreleased) • [v0.15.0 release notes](./docs/RELEASE_NOTES_0.15.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -61,6 +61,7 @@ Available on:
 - **Experimental Features**: Configurable experimental features with clear warnings
 - **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and zipped Zarr: `*.zarr.zip` opens on click, other `.zip` archives with **Open Scientific Data Viewer** (right click); requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
+- **CF flag variables plotted by meaning**: a variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) is drawn with one color per meaning (the file's `flag_colors` when present) and a colorbar naming each class with its share; 1D flags as steps with the meanings on the y-axis, bars instead of a histogram. The **Flags** section of each variable lists the meanings, values, masks and bits (`flag_masks` included); the **flags** plot control turns it off
 
 ## 📸 Screenshot Gallery
 

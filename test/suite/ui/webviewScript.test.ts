@@ -373,6 +373,120 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('variable card: Flags section lists the CF meanings', () => {
+        const info = sampleDataInfo();
+        const flagVariable = (name: string, flags: unknown) => ({
+            name,
+            dtype: 'uint8',
+            shape: [3, 2],
+            dimensions: ['time', 'lat'],
+            size_bytes: 6,
+            attributes: {},
+            flags,
+        });
+        info.variables_flattened['/'].push(
+            flagVariable('land_cover', {
+                kind: 'values',
+                flags: [
+                    {
+                        meaning: 'tree_cover',
+                        value: '50',
+                        mask: null,
+                        bits: null,
+                        color: '#006400',
+                    },
+                    {
+                        meaning: `water${EVIL}`,
+                        value: '210',
+                        mask: null,
+                        bits: null,
+                        // Not a color: never written in a style attribute
+                        color: 'red;background-image:url(x)',
+                    },
+                ],
+                colors_source: 'flag_colors',
+                problems: [],
+                notes: [`flag_colors note${EVIL}`],
+            }),
+            flagVariable('wqsf', {
+                kind: 'masks',
+                flags: [
+                    {
+                        meaning: 'cloud',
+                        value: null,
+                        mask: '9223372036854775808',
+                        bits: 'bit 63',
+                        color: null,
+                    },
+                ],
+                colors_source: null,
+                problems: [],
+                notes: [],
+            }),
+            flagVariable('qc', {
+                kind: 'mixed',
+                flags: [
+                    {
+                        meaning: 'good',
+                        value: '3',
+                        mask: '4',
+                        bits: 'bit 2',
+                        color: null,
+                    },
+                ],
+                colors_source: null,
+                problems: [`good: value 3 has bits outside its mask 4${EVIL}`],
+                notes: [],
+            }),
+        );
+        harness.loadData(info);
+        const doc = harness.document;
+        const section = (name: string) =>
+            doc.getElementById(`data-group___-___variable___${name}___flags`);
+        const rows = (name: string) =>
+            Array.from(section(name).querySelectorAll('tbody tr')).map(
+                (row: any) =>
+                    Array.from(row.querySelectorAll('td')).map((td: any) =>
+                        td.textContent.trim(),
+                    ),
+            );
+
+        const landCover = section('land_cover');
+        assert.strictEqual(landCover.open, true);
+        assert.strictEqual(
+            landCover.querySelector('.count-badge').textContent,
+            '2',
+        );
+        assert.deepStrictEqual(rows('land_cover'), [
+            ['50', 'tree_cover'],
+            ['210', `water${EVIL}`],
+        ]);
+        const swatches = landCover.querySelectorAll('.flag-swatch');
+        assert.strictEqual(swatches.length, 1, 'unsafe color dropped');
+        assert.strictEqual(
+            (swatches[0] as any).style.backgroundColor,
+            'rgb(0, 100, 0)',
+        );
+        assert.ok(landCover.textContent.includes('colors from flag_colors'));
+        assert.ok(landCover.textContent.includes(`flag_colors note${EVIL}`));
+
+        // Masks: the uint64 mask is shown exactly, with its bit
+        assert.deepStrictEqual(rows('wqsf'), [
+            ['9223372036854775808', 'bit 63', 'cloud'],
+        ]);
+        // Mixed: mask, bits and value; problems say the plot uses numbers
+        assert.deepStrictEqual(rows('qc'), [['4', 'bit 2', '3', 'good']]);
+        assert.ok(
+            section('qc')
+                .querySelector('.flags-problems')
+                .textContent.includes('Not used for plots'),
+        );
+        // A variable without flags has no Flags section
+        assert.strictEqual(section('temperature'), null);
+        assert.strictEqual(doc.querySelectorAll('#content img').length, 0);
+        assert.strictEqual(harness.window.__pwned, undefined);
+    });
+
     test('variable row: size of 0 bytes (empty dimension) shows "Empty"', () => {
         const data = sampleDataInfo();
         data.dimensions_flattened['/'].obs = 0;
@@ -621,11 +735,25 @@ suite('Webview script (jsdom)', () => {
             yincrease: true,
             robust: false,
             addColorbar: true,
+            useFlags: true,
             addLegend: true,
             bins: 20,
             aspect: 1.5,
             cmap: 'magma',
         });
+    });
+
+    test('flags control: unchecked, the plot asks for plain numbers', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        doc.getElementById('useFlagsCheckbox').checked = false;
+        harness.click(
+            harness
+                .plotControls('/temperature')
+                .querySelector('[data-action="create-plot"]'),
+        );
+        const [request] = harness.requests('createPlot');
+        assert.strictEqual(request.payload.useFlags, false);
     });
 
     test('no time range controls, even for datetime variables', () => {

@@ -118,6 +118,9 @@ class PlotOptions:
     add_colorbar : bool
         Whether to draw a colorbar for scalar-mappable plots (default True).
         Ignored for histograms.
+    use_flags : bool
+        Draw a CF flag variable (``flag_values`` + ``flag_meanings``) by
+        meaning: one color per class, labelled colorbar (default True).
     add_legend : bool
         Whether to add a legend when xarray supports it (e.g. ``hue``). Omitted on
         generic ``DataArray.plot`` and ``plot.imshow`` when ``hue`` is not set, so
@@ -161,3 +164,7 @@ class PlotOptions:
     vmax: int | float | None = None
     add_colorbar: bool = True
     add_legend: bool = False
+
+    # CF flag variables (flag_values / flag_meanings) drawn by meaning; False:
+    # plain numbers (plotting/flags.py)
+    use_flags: bool = True

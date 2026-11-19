@@ -149,6 +149,9 @@ export function buildCreatePlotCliArgs(
     if (plot.addLegend === true) {
         args.push('--add-legend');
     }
+    if (plot.useFlags === false) {
+        args.push('--no-flags');
+    }
     args.push('--netcdf-engine-order', options.netcdfEngineOrder.join(','));
     if (!options.showInheritedCoordinates) {
         args.push('--no-show-inherited-coordinates');

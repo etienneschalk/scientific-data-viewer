@@ -34,7 +34,9 @@ from sdv_backend.plotting.options import (
 )
 from sdv_backend.plotting.selection import DatetimeSelection
 
-PlotKind = Literal["image", "line", "histogram"]
+# "bars": one bar per meaning of a CF flag variable, in place of the
+# histogram (see plotting/flags.py)
+PlotKind = Literal["image", "line", "histogram", "bars"]
 Source = Literal["user", "auto"]
 
 # Facet panels of the automatic layout: at most 4 columns, 4 x 4 inches each
@@ -42,8 +44,10 @@ AUTO_COL_WRAP = 4
 AUTO_FACET_SIZE = 4.0
 AUTO_FACET_ASPECT = 1.0
 
-# Roles in the order they are reported
-ROLES = ("row", "col", "col_wrap", "y", "x", "hue", "size", "aspect", "bins")
+# Roles in the order they are reported; "flags" (CF flag variable drawn by
+# meaning) is reported only, never passed to xarray
+ROLES = ("row", "col", "col_wrap", "y", "x", "hue", "size", "aspect", "bins", "flags")
+_NOT_XARRAY_KWARGS = ("bins", "flags")
 
 
 @dataclass(frozen=True)
@@ -80,7 +84,7 @@ class PlotLayout:
         return {
             role: self.choices[role].value
             for role in ROLES
-            if role in self.choices and role != "bins"
+            if role in self.choices and role not in _NOT_XARRAY_KWARGS
         }
 
     def to_json(self) -> dict[str, Any]:

@@ -183,6 +183,17 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         title: 'xarray add_colorbar (uncheck to hide colorbar when applicable)',
     },
     {
+        key: 'useFlags',
+        label: 'flags',
+        hint: 'CF meanings',
+        kind: 'bool',
+        default: true,
+        group: 'Color',
+        id: 'useFlagsCheckbox',
+        groupId: 'group-use-flags',
+        title: 'CF flag variables (flag_values + flag_meanings): one color per meaning, named in the colorbar, bars instead of a histogram. Uncheck to plot the raw numbers',
+    },
+    {
         key: 'size',
         label: 'size',
         hint: 'height, in',

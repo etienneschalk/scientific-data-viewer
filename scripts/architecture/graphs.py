@@ -71,6 +71,7 @@ HOST_LAYERS = [
         "shared/icons",
         "shared/time",
         "shared/plotLayout",
+        "shared/flags",
     ],
 ]
 # The main request path, drawn with a thick border
@@ -101,6 +102,7 @@ PY_PACKAGES = {
     "info": ("info/", None),
     "plotting": ("plotting/", None),
     "opening": ("opening.py", "OpenedData · engine + decode_cf fallback"),
+    "flags": ("flags.py", "CF flag_values / flag_masks / flag_meanings"),
     "formats": ("formats/", None),
     "environment": ("environment/", None),
 }

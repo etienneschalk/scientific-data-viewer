@@ -1,6 +1,6 @@
 """Opening files as xarray DataTree/Dataset, with decode_cf fallback."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal, cast
@@ -16,6 +16,13 @@ from sdv_backend.types import DictOfDatasets
 
 # Engines that do not take xarray's decode_cf (cdflib has its own API).
 _ENGINES_WITHOUT_DECODE_CF: frozenset[str] = frozenset({"rasterio", "cdflib"})
+
+
+# Engines that take ``mask_and_scale`` per variable (``{name: False}``), checked
+# down to xarray 2024.10: used to read CF flag codes raw (see flags.py)
+ENGINES_WITH_PER_VARIABLE_DECODING: frozenset[str] = frozenset(
+    {"netcdf4", "h5netcdf", "scipy", "zarr"}
+)
 
 
 # backend_kwargs passed to xarray, per engine
@@ -41,8 +48,17 @@ def _open_with_decode_cf_fallback(open_fn: Callable[[bool], Any]) -> tuple[Any, 
         return open_fn(False), True
 
 
-def _xr_open_kwargs(engine: str, decode_cf: bool) -> dict[str, Any]:
-    return {} if engine in _ENGINES_WITHOUT_DECODE_CF else {"decode_cf": decode_cf}
+def _xr_open_kwargs(
+    engine: str, decode_cf: bool, raw_variables: Collection[str] = ()
+) -> dict[str, Any]:
+    """``decode_cf``, and ``mask_and_scale=False`` for ``raw_variables`` only
+    (the codes of a CF flag variable, without ``_FillValue`` masking)."""
+    if engine in _ENGINES_WITHOUT_DECODE_CF:
+        return {}
+    kwargs: dict[str, Any] = {"decode_cf": decode_cf}
+    if decode_cf and raw_variables and engine in ENGINES_WITH_PER_VARIABLE_DECODING:
+        kwargs["mask_and_scale"] = dict.fromkeys(raw_variables, False)
+    return kwargs
 
 
 def _open_with_engine(
@@ -50,6 +66,7 @@ def _open_with_engine(
     engine: str,
     file_format_info: FileFormatInfo,
     convert_bands_to_variables: bool,
+    raw_variables: Collection[str] = (),
 ) -> "tuple[xr.DataTree | DictOfDatasets, bool]":
     """Open with one xarray engine: a DataTree, or ``{"/": Dataset}`` for engines
     without group support (GRIB, rasterio, kerchunk)."""
@@ -79,7 +96,7 @@ def _open_with_engine(
         lambda decode_cf: open_fn(
             open_location,
             engine=engine,
-            **_xr_open_kwargs(engine, decode_cf),
+            **_xr_open_kwargs(engine, decode_cf, raw_variables),
             **open_extra,
             backend_kwargs=backend_kwargs,
         )
@@ -92,6 +109,7 @@ def open_datatree_with_fallback(
     file_path: Path,
     file_format_info: FileFormatInfo,
     convert_bands_to_variables: bool = False,
+    raw_variables: Collection[str] = (),
 ) -> "tuple[xr.DataTree | DictOfDatasets, str, bool]":
     """Open datatree or dataset with fallback to different engines.
 
@@ -104,6 +122,9 @@ def open_datatree_with_fallback(
         Path to the data file
     file_format_info : FileFormatInfo
         Format information for the file
+    raw_variables : Collection[str]
+        Variables read without ``mask_and_scale`` (engines of
+        ``ENGINES_WITH_PER_VARIABLE_DECODING`` only; the others ignore it)
 
     Returns
     -------
@@ -151,7 +172,11 @@ def open_datatree_with_fallback(
             continue
         try:
             data, decode_cf_degraded = _open_with_engine(
-                file_path, engine, file_format_info, convert_bands_to_variables
+                file_path,
+                engine,
+                file_format_info,
+                convert_bands_to_variables,
+                raw_variables,
             )
         except Exception as exc:
             exceptions.append(exc)
@@ -179,10 +204,11 @@ class OpenedData:
         file_path: Path,
         file_format_info: FileFormatInfo,
         convert_bands_to_variables: bool = False,
+        raw_variables: Collection[str] = (),
     ) -> "OpenedData":
         """Open with engine fallback (see ``open_datatree_with_fallback``)."""
         data, used_engine, decode_cf_degraded = open_datatree_with_fallback(
-            file_path, file_format_info, convert_bands_to_variables
+            file_path, file_format_info, convert_bands_to_variables, raw_variables
         )
         return cls(data, used_engine, decode_cf_degraded)
 

@@ -1,3 +1,4 @@
+import { FlagsInfo, isSafeFlagColor } from '../../../shared/flags';
 import { ICONS } from '../../../shared/icons';
 import { joinId } from '../../../shared/ids';
 import { attributeValueStrings, escapeHtml, formatFileSize } from '../util';
@@ -12,6 +13,62 @@ export interface VariableInfo {
     attributes?: Record<string, unknown>;
     encoding?: Record<string, unknown>;
     display_value?: string;
+    /** CF flags; null or absent without flag attributes */
+    flags?: FlagsInfo | null;
+}
+
+const FLAG_KIND_TEXT: Record<FlagsInfo['kind'], string> = {
+    values: 'flag_values: one code per meaning',
+    masks: 'flag_masks: one bit field per meaning, several can be set',
+    mixed: 'flag_masks + flag_values: bit fields holding a flag or a state',
+};
+
+/**
+ * Content of the Flags section: one row per meaning (value and / or mask
+ * with its bits, swatch of `flag_colors`), then why the flags cannot be
+ * used for plots, and notes.
+ */
+export function renderFlags(flags: FlagsInfo): string {
+    const hasValues = flags.kind !== 'masks';
+    const hasMasks = flags.kind !== 'values';
+    const hasColors = flags.flags.some((f) => isSafeFlagColor(f.color));
+    const head = [
+        hasMasks ? '<th>mask</th><th>bits</th>' : '',
+        hasValues ? '<th>value</th>' : '',
+        '<th>meaning</th>',
+    ].join('');
+    const rows = flags.flags
+        .map((flag) => {
+            const swatch =
+                hasColors && isSafeFlagColor(flag.color)
+                    ? `<span class="flag-swatch" style="background-color: ${flag.color}" title="${escapeHtml(flag.color)}"></span>`
+                    : '';
+            const cells = [
+                hasMasks
+                    ? `<td><code>${escapeHtml(flag.mask ?? '')}</code></td><td class="muted-text">${escapeHtml(flag.bits ?? '')}</td>`
+                    : '',
+                hasValues
+                    ? `<td><code>${escapeHtml(flag.value ?? '')}</code></td>`
+                    : '',
+                `<td>${swatch}<span class="flag-meaning">${escapeHtml(flag.meaning)}</span></td>`,
+            ].join('');
+            return `<tr>${cells}</tr>`;
+        })
+        .join('');
+    const summary = `${FLAG_KIND_TEXT[flags.kind] ?? escapeHtml(flags.kind)}${flags.colors_source ? ' · colors from flag_colors' : ''}`;
+    const problems = flags.problems.length
+        ? /*html*/ `<div class="flags-problems">${ICONS.warning}<span>Not used for plots (plain numbers instead): ${flags.problems.map(escapeHtml).join('; ')}</span></div>`
+        : '';
+    const notes = flags.notes.length
+        ? `<ul class="flags-notes muted-text">${flags.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
+        : '';
+    return /*html*/ `
+        <div class="flags-container">
+            <div class="flags-summary muted-text">${summary}</div>
+            ${problems}
+            ${flags.flags.length ? `<table class="flags-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>` : ''}
+            ${notes}
+        </div>`;
 }
 
 export function renderGroupDimensions(
@@ -194,6 +251,14 @@ function renderVariableDetails(
                   'Attributes',
                   /*html*/ `<div class="attributes-container">${renderKeyValueItems(attributes, baseId, 'attribute')}</div>`,
                   { open: true, count: attributeCount },
+              )
+            : '',
+        variable.flags
+            ? renderVariableSection(
+                  joinId([baseId, 'flags']),
+                  'Flags',
+                  renderFlags(variable.flags),
+                  { open: true, count: variable.flags.flags.length },
               )
             : '',
         encodingCount > 0

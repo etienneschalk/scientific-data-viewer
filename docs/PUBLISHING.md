@@ -282,7 +282,7 @@ A token that stops working around the retirement dates of global PATs is not a t
 #### Package Errors
 
 ```bash
-# List the files the .vsix will contain (80 files: CLAUDE.md, .vscodeignore)
+# List the files the .vsix will contain (83 files: CLAUDE.md, .vscodeignore)
 npx vsce ls
 
 # Build the package without publishing

@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 from xarray.coding.times import contains_cftime_datetimes
 
+from sdv_backend.flags import raw_dtype_of, read_flag_spec
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
     format_small_value,
@@ -44,6 +45,7 @@ def create_variable_info(
     display_value = None
     if small_variable_bytes > 0 and var.nbytes <= small_variable_bytes:
         display_value = format_small_value(var, max_len=small_value_display_max_len)
+    flags = read_flag_spec(var.attrs, raw_dtype_of(var.encoding, var.dtype))
 
     return VariableInfo(
         name=str(var_name),
@@ -54,6 +56,7 @@ def create_variable_info(
         attributes=collect_attributes(var),
         encoding=collect_encoding(var) if show_xarray_encoding_attributes else {},
         display_value=display_value,
+        flags=None if flags is None else flags.to_json(),
     )
 
 

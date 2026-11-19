@@ -3,6 +3,9 @@
 Pipeline: detect format -> open file -> pick variable -> apply dimension slices
 -> apply datetime filter -> resolve the layout (user choices first, the rest
 automatic, see ``layout``) -> draw -> render PNG.
+
+A CF flag variable (``flag_values`` + ``flag_meanings``) is read raw and
+replaced by its index array before the layout (``plotting/flags.py``).
 """
 
 import contextlib
@@ -13,10 +16,12 @@ import xarray as xr
 
 from sdv_backend._bootstrap import logger
 from sdv_backend.environment.packages import check_package_availability
+from sdv_backend.flags import FlagSpec, needs_raw_codes, raw_dtype_of, read_flag_spec
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.info.datatree import datatree_inherit_mode
-from sdv_backend.opening import OpenedData
+from sdv_backend.opening import ENGINES_WITH_PER_VARIABLE_DECODING, OpenedData
 from sdv_backend.plotting.draw import draw_plot
+from sdv_backend.plotting.flags import FlagPlot, adjust_layout, prepare_flag_plot
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
 from sdv_backend.plotting.layout import PlotLayout, resolve_layout
 from sdv_backend.plotting.options import PlotOptions
@@ -103,14 +108,23 @@ def create_plot(
         opened = OpenedData.open(
             file_path, file_format_info, options.convert_bands_to_variables
         )
-        with closing(opened):
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(closing(opened))
             try:
                 group_name, variable_name = split_variable_path(variable_path)
-                group = opened.group(
-                    group_name,
-                    datatree_inherit_mode(options.show_inherited_coordinates),
-                )
+                inherit = datatree_inherit_mode(options.show_inherited_coordinates)
+                group = opened.group(group_name, inherit)
                 var = get_variable(group, variable_name)
+                spec = _usable_flag_spec(var, options)
+                if spec is not None and _reopen_raw(var, opened):
+                    raw = OpenedData.open(
+                        file_path,
+                        file_format_info,
+                        options.convert_bands_to_variables,
+                        raw_variables=(variable_name,),
+                    )
+                    stack.enter_context(closing(raw))
+                    var = get_variable(raw.group(group_name, inherit), variable_name)
                 slice_notes = ignored_slice_notes(var, options.dimension_slices)
                 var, applied_isel = apply_dimension_slices(
                     var, options.dimension_slices
@@ -121,9 +135,20 @@ def create_plot(
                 ensure_not_empty(selection.var, options)
             except PlotInputError as exc:
                 return CreatePlotError(error=str(exc), format_info=file_format_info)
-            var, layout = resolve_layout(selection.var, options, selection)
-            bundle = _build_plot_kwargs(options, layout)
-            layout.notes[:0] = slice_notes
+            flag_plot = (
+                prepare_flag_plot(selection.var, spec, options.cmap)
+                if spec is not None
+                else None
+            )
+            var, layout = resolve_layout(
+                selection.var if flag_plot is None else flag_plot.index,
+                options,
+                selection,
+            )
+            bundle = _build_plot_kwargs(options, layout, flags=flag_plot is not None)
+            if flag_plot is not None:
+                adjust_layout(flag_plot, layout, bundle.raw)
+            layout.notes[:0] = slice_notes + _flag_notes(var, options, flag_plot)
             if style_note:
                 layout.notes.append(style_note)
             logger.info("Plot layout: %s", layout.to_json())
@@ -137,7 +162,7 @@ def create_plot(
             )
             with xarray_plot_ctx, mpl.rc_context(MATPLOTLIB_RC_CONTEXT):
                 applied_plot_kwargs = draw_plot(
-                    var, layout, bundle, selection, variable_name
+                    var, layout, bundle, selection, variable_name, flag_plot
                 )
 
                 suptitle = build_suptitle(
@@ -197,11 +222,52 @@ def describe_exception(exc: Exception) -> str:
     return described
 
 
-def _build_plot_kwargs(options: PlotOptions, layout: PlotLayout) -> PlotKwargsBundle:
+def _usable_flag_spec(var: xr.DataArray, options: PlotOptions) -> FlagSpec | None:
+    """The ``flag_values`` spec of ``var`` when it is drawn by meaning."""
+    if not options.use_flags:
+        return None
+    spec = read_flag_spec(var.attrs, raw_dtype_of(var.encoding, var.dtype))
+    if spec is None or not spec.is_valid or spec.kind != "values":
+        return None
+    return spec
+
+
+def _reopen_raw(var: xr.DataArray, opened: OpenedData) -> bool:
+    """Whether decoding changed the codes and the engine can read them raw.
+
+    Other engines keep the decoded floats: NaN then marks the points without
+    data, and a fill code that is also a meaning is not shown.
+    """
+    return (
+        needs_raw_codes(var.dtype, var.encoding)
+        and opened.used_engine in ENGINES_WITH_PER_VARIABLE_DECODING
+    )
+
+
+def _flag_notes(
+    var: xr.DataArray, options: PlotOptions, flag_plot: FlagPlot | None
+) -> list[str]:
+    """Why flag attributes present on ``var`` were not used."""
+    if flag_plot is not None or not options.use_flags:
+        return []
+    spec = read_flag_spec(var.attrs, raw_dtype_of(var.encoding, var.dtype))
+    if spec is None:
+        return []
+    if not spec.is_valid:
+        return [f"CF flags not used ({'; '.join(spec.problems)}): plotted as numbers"]
+    return [
+        f"CF flag_masks ({spec.kind}): plotted as numbers; the meaning of each "
+        "bit is listed in the variable's Flags section"
+    ]
+
+
+def _build_plot_kwargs(
+    options: PlotOptions, layout: PlotLayout, *, flags: bool = False
+) -> PlotKwargsBundle:
     """Style kwargs the user set (the layout ones are resolved separately).
 
     vmin above vmax is swapped, with a note in ``layout`` when the plot is
-    color-mapped (lines and histograms ignore both).
+    color-mapped (lines and histograms ignore both, and so do flag variables).
     """
     logger.info(
         "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
@@ -227,7 +293,7 @@ def _build_plot_kwargs(options: PlotOptions, layout: PlotLayout) -> PlotKwargsBu
     )
     vmin, vmax = options.vmin, options.vmax
     if vmin is not None and vmax is not None and vmin > vmax:
-        if layout.kind == "image":
+        if layout.kind == "image" and not flags:
             layout.notes.append(
                 f"vmin={vmin:g} is above vmax={vmax:g}: the two are swapped"
             )

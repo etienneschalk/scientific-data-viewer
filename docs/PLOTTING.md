@@ -160,6 +160,49 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 }
 ```
 
+## CF flag variables (0.15)
+
+A variable with `flag_values` and `flag_meanings` (CF conventions § 3.5:
+land cover classes, quality levels, status codes) is drawn **by meaning**,
+unless the **flags** control (Color) is unchecked. Design and research:
+[`v0.15/CF_FLAGS_PROPOSAL.md`](v0.15/CF_FLAGS_PROPOSAL.md).
+
+1. `read_flag_spec` (`python/sdv_backend/flags.py`) parses the attributes
+   and checks them against the type stored in the file: counts, values that
+   fit the type, no value listed twice, masks not 0, mixed values inside their
+   masks. A problem keeps the plain numeric plot, with a note
+   `CF flags not used (...)`.
+2. The codes are read **raw**: when xarray's `mask_and_scale` changed the
+   variable (an integer with a `_FillValue` becomes float), the file is opened
+   again with `mask_and_scale={name: False}` for this variable only (netcdf4,
+   h5netcdf, scipy, zarr). `_FillValue`, `missing_value` and `valid_range`
+   then mark the points without data, **except a code that is a declared
+   meaning** (`127 = not_measured` is shown as a class).
+3. `prepare_flag_plot` (`plotting/flags.py`) replaces the variable by an
+   index array: 0..n-1 per meaning, NaN without data, one more category
+   `other` (black, with a note) for codes not in `flag_values`. More than
+   20 meanings: only the ones present in the data are listed.
+4. The layout is resolved on that array as for any variable (facets, slices,
+   x / y / hue work the same). The layout line gets an automatic item
+   `flags  flag_values, 8 meanings, colors: flag_colors`.
+
+| Kind     | Drawn as                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| image    | `imshow` / `pcolormesh` with a `ListedColormap` + `BoundaryNorm`: one color per meaning, no data transparent, colorbar ticks `value meaning (share %)` (shared by the facets) |
+| line     | steps (`drawstyle="steps-mid"`) with the meanings on the y-axis; one line: points colored by meaning                                                                          |
+| **bars** | in place of the histogram (a single value, `bins` set, too many dimensions): one bar per meaning, its share of the values with data                                           |
+
+Colors: the `cmap` you set (sampled into one color per meaning), else
+`flag_colors` (not CF, written by ESA CCI Land Cover) when it has one valid
+color per meaning, else `tab10`, `tab20`, `tab20` + `tab20b` + `tab20c`,
+then `turbo`. `vmin`, `vmax` and `robust` are ignored with a note; `bins`
+too (bars).
+
+`flag_masks` (bit fields, alone or with `flag_values`) are not drawn by
+meaning yet (phase P2 of the proposal): the variable is plotted as numbers,
+with a note; the **Flags** section of File Information lists each mask and
+its bits.
+
 ## Known limitations
 
 - `imshow` assumes evenly spaced coordinates; irregular grids are drawn
@@ -178,6 +221,8 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 | What                  | Where                                                                            |
 | --------------------- | -------------------------------------------------------------------------------- |
 | layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
+| CF flags              | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
+| flags tests           | `python/tests/test_flags.py`                                                     |
 | xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
 | controls table, merge | `src/panel/webview/plotParams.ts`                                                |
 | changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |
