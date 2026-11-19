@@ -6,6 +6,14 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.13.1] - UNRELEASED
+
+### Fixed
+
+- **Items "set by you" in the plot layout line get the `•` of the changed controls**: the plot layout line outlined the items set in the plot controls (dimension slices, `col_wrap`, `x`…) in the theme's `focusBorder` color, but no other mark told them apart from the automatic ones. In themes where that color is close to the other borders (High Contrast, some third-party themes), "set by you" and "automatic" items looked the same. They now end with the same `•`, in the same color, as a plot control changed from its default, and the legend reads `outlined •: set by you · others: automatic`. The dot is a CSS `::after`, so the item's text (and its copy) is unchanged.
+  - **Files**: `src/panel/webview/styles.css`, `src/panel/webview/render/plotLayout.ts`, `docs/PLOTTING.md`, `docs/SCREENSHOTS.md`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts` (the legend shows the marker); `npm run screenshots -- --scenario changed-controls` in the 2026 Dark / Light themes (dot after `time 0:6` and `col_wrap 3`, not after the automatic items)
+
 ## [0.13.0] - 2026-11-18
 
 ### Added

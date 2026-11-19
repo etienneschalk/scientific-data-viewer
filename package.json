@@ -2,7 +2,7 @@
     "name": "scientific-data-viewer",
     "displayName": "Scientific Data Viewer – NetCDF, Zarr, HDF5, GRIB, GeoTIFF",
     "description": "View NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF and Kerchunk files in VS Code: browse dimensions, variables and attributes, and plot any variable with xarray.",
-    "version": "0.13.0",
+    "version": "0.13.1",
     "publisher": "eschalk0",
     "icon": "media/icon.png",
     "galleryBanner": {

@@ -1100,10 +1100,22 @@ pre:not(.html-representation pre) {
     white-space: nowrap;
 }
 
-/* Same outline as a changed control */
+/*
+ * Same outline and marker as a changed control: the marker tells the items
+ * apart where the outline color is close to the other borders.
+ */
 .plot-layout-item--user {
     border-color: var(--sdv-changed);
     color: var(--vscode-foreground);
+}
+
+.plot-layout-item--user::after,
+.plot-layout-marker {
+    color: var(--sdv-changed);
+}
+
+.plot-layout-item--user::after {
+    content: ' •';
 }
 
 .plot-layout-legend {

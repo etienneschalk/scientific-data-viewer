@@ -67,12 +67,13 @@ The result carries, next to the image, the layout the backend resolved
 (`plot_layout`) and the slices it applied. A line under the plot lists them:
 
 ```
-image   [lat 5:15]  col time  [col_wrap 5]  y lat  x lon  size 4  aspect 1     outlined: set by you · others: automatic
+image   [lat 5:15 •]  col time  [col_wrap 5 •]  y lat  x lon  size 4  aspect 1     outlined •: set by you · others: automatic
 ```
 
-Items you set are outlined like the changed fields; the others were chosen
-automatically, so that line tells which control to set to change them. Choices
-that could not be used are listed below it, with the reason.
+Items you set are outlined and end with a dot, like the changed fields; the
+others were chosen automatically, so that line tells which control to set to
+change them. Choices that could not be used are listed below it, with the
+reason.
 
 ## In the backend: the layout decision
 
