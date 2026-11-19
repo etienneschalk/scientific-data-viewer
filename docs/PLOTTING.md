@@ -162,8 +162,9 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 
 ## CF flag variables (0.15)
 
-A variable with `flag_values` and `flag_meanings` (CF conventions § 3.5:
-land cover classes, quality levels, status codes) is drawn **by meaning**,
+A variable with `flag_values` or `flag_masks`, and `flag_meanings` (CF
+conventions § 3.5: land cover classes, quality levels, status codes, bit
+flags) is drawn **by meaning**,
 unless the **flags** control (Color) is unchecked. Design and research:
 [`v0.15/CF_FLAGS_PROPOSAL.md`](v0.15/CF_FLAGS_PROPOSAL.md).
 
@@ -198,10 +199,35 @@ color per meaning, else `tab10`, `tab20`, `tab20` + `tab20b` + `tab20c`,
 then `turbo`. `vmin`, `vmax` and `robust` are ignored with a note; `bins`
 too (bars).
 
-`flag_masks` (bit fields, alone or with `flag_values`) are not drawn by
-meaning yet (phase P2 of the proposal): the variable is plotted as numbers,
-with a note; the **Flags** section of File Information lists each mask and
-its bits.
+### Bit flags
+
+With `flag_masks` (alone, or with `flag_values`: bit fields holding a state),
+several flags can be set at once. `prepare_flag_plot` adds a dimension
+`flag` (`flag_`, ... if the name is taken) with one entry per **field**: a
+mask, or, with `flag_values`, a distinct mask whose repeated entries are its
+states (CF example 3.8: `bits 2-3` = offline / calibration / maintenance).
+Each entry holds the category of its meaning where it is set, `not set`
+(grey) elsewhere, NaN without data. One colormap then serves every panel:
+the categories are the meanings, plus `not set`.
+
+The layout engine places `flag` like any free dimension (it comes first, so
+the axes keep the variable's last two dimensions):
+
+| Variable       | Layout                                   | Drawn as                                                                               |
+| -------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| 2D             | `col=flag`                               | one panel per flag, titled `flag = cloud (bit 0)` (titles up to 60 characters, not 30) |
+| 3D             | `row=flag`, `col=<first dimension>`      | one row of panels per flag                                                             |
+| 1D             | image, `y=flag`                          | block plot: one row per flag (tick labels, the first on top unless `yincrease` is set) |
+| a single point | line with `x=flag`, turned into **bars** | the share of the points where each flag is set (`not set` not listed)                  |
+| `bins`, 4D+    | histogram, turned into **bars**          | same                                                                                   |
+
+The colorbar ticks are `bits meaning (share)`, with the value when it is not
+simply all the bits of the mask (`bits 2-3 = 4 offline mode`). Notes: bits
+set in the data but in no `flag_masks`; above 20 fields, the ones never set
+are not drawn; above `MAX_FIELD_POINTS` (50 million: the array holds one
+copy of the data per field), the last fields are left out. On engines that
+cannot read raw, a 64-bit variable read as floats gets a note (bits above
+2^53).
 
 ## Known limitations
 

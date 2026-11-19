@@ -4,8 +4,9 @@ Pipeline: detect format -> open file -> pick variable -> apply dimension slices
 -> apply datetime filter -> resolve the layout (user choices first, the rest
 automatic, see ``layout``) -> draw -> render PNG.
 
-A CF flag variable (``flag_values`` + ``flag_meanings``) is read raw and
-replaced by its index array before the layout (``plotting/flags.py``).
+A CF flag variable (``flag_values`` / ``flag_masks`` + ``flag_meanings``) is
+read raw and replaced by its index array of meanings before the layout
+(``plotting/flags.py``); bit flags get one more dimension, ``flag``.
 """
 
 import contextlib
@@ -223,11 +224,11 @@ def describe_exception(exc: Exception) -> str:
 
 
 def _usable_flag_spec(var: xr.DataArray, options: PlotOptions) -> FlagSpec | None:
-    """The ``flag_values`` spec of ``var`` when it is drawn by meaning."""
+    """The flag spec of ``var`` when it is drawn by meaning."""
     if not options.use_flags:
         return None
     spec = read_flag_spec(var.attrs, raw_dtype_of(var.encoding, var.dtype))
-    if spec is None or not spec.is_valid or spec.kind != "values":
+    if spec is None or not spec.is_valid:
         return None
     return spec
 
@@ -251,14 +252,9 @@ def _flag_notes(
     if flag_plot is not None or not options.use_flags:
         return []
     spec = read_flag_spec(var.attrs, raw_dtype_of(var.encoding, var.dtype))
-    if spec is None:
+    if spec is None or spec.is_valid:
         return []
-    if not spec.is_valid:
-        return [f"CF flags not used ({'; '.join(spec.problems)}): plotted as numbers"]
-    return [
-        f"CF flag_masks ({spec.kind}): plotted as numbers; the meaning of each "
-        "bit is listed in the variable's Flags section"
-    ]
+    return [f"CF flags not used ({'; '.join(spec.problems)}): plotted as numbers"]
 
 
 def _build_plot_kwargs(

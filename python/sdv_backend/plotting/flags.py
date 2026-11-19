@@ -1,23 +1,34 @@
-"""Plots of CF flag variables by meaning (``flag_values``).
+"""Plots of CF flag variables by meaning.
 
-``prepare_flag_plot`` turns the codes of a ``flag_values`` variable into an
-index array (0..n-1 for the meanings, NaN where there is no data) with one
-color per meaning. The layout engine then places it like any other variable
-(``layout.resolve_layout``: image, line, facets), and ``draw.draw_plot``
-draws it with the categories' colors and labels:
+``prepare_flag_plot`` turns the codes of a flag variable into an index array
+of categories (one color per meaning, NaN where there is no data). The layout
+engine then places it like any other variable (``layout.resolve_layout``:
+image, line, facets), and ``draw.draw_plot`` draws it with the categories'
+colors and labels.
+
+``flag_values`` (exclusive codes): index 0..n-1 per meaning.
 
 - image: one color per meaning, colorbar labelled ``value meaning (share)``,
   no data transparent;
 - line (1D): steps, with the meanings on the y-axis;
 - bars (in place of the histogram of codes): share of each meaning.
 
+``flag_masks`` (bits) and masks + values (bit fields): one more dimension,
+``flag``, with one entry per *field* (a mask; a mask repeated in
+``flag_masks`` is one field with several states, CF example 3.8). Each entry
+holds the category of its meaning where it is set, else "not set" (grey).
+The layout engine puts ``flag`` on the facets like any free dimension:
+
+- maps: one panel per flag, titled ``flag = cloud (bit 0)``;
+- 1D: an image with one row per flag along the x-axis (block plot);
+- a single point, ``bins`` or too many dimensions: bars, the share of the
+  points where each flag is set.
+
 Colors: the user's ``cmap`` when set, else ``flag_colors`` when the file has a
 valid one, else a qualitative palette (``tab10``, ``tab20``, then more).
 Codes not declared in ``flag_values`` are drawn as one more category,
-"other", with a note: they show a gap in the metadata.
-
-``flag_masks`` (bit fields) are not drawn by meaning yet: the variable is
-plotted as numbers, with a note (docs/v0.15/CF_FLAGS_PROPOSAL.md, phase P2).
+"other", and bits outside ``flag_masks`` are counted in a note: they show a
+gap in the metadata.
 """
 
 from dataclasses import dataclass, field
@@ -26,14 +37,26 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
-from sdv_backend.flags import FlagSpec, raw_dtype_of
+from sdv_backend.flags import (
+    FlagSpec,
+    as_code,
+    dtype_bits,
+    mask_bits_text,
+    raw_dtype_of,
+)
 from sdv_backend.plotting.layout import PlotLayout
 
-# Above this many meanings, only the ones present in the plotted data are
-# listed (ESA CCI Land Cover declares 37)
+# Above this many meanings (or fields of bits), only the ones present in the
+# plotted data are listed (ESA CCI Land Cover declares 37 classes, Sentinel-3
+# OLCI WQSF about 40 bits)
 MAX_LISTED_ABSENT = 20
 OTHER_COLOR = "#000000"
 OTHER_LABEL = "other (code not in flag_values)"
+NOT_SET_COLOR = "#d9d9d9"
+NOT_SET_LABEL = "not set"
+# Bits: the index array has one copy of the data per field; above this many
+# points, the last fields are left out (with a note)
+MAX_FIELD_POINTS = 50_000_000
 
 # Style options that make no sense for classes: one color each
 _IGNORED_STYLE = ("vmin", "vmax", "robust")
@@ -45,13 +68,25 @@ class Category:
 
     label: str
     color: Any
-    count: int
-    # flag_values entry ("" for other)
+    # Points where the meaning is set; None for "not set" (no share shown)
+    count: int | None
+    # flag_values entry, or the bits of a mask ("" for other / not set)
     value: str = ""
 
     def tick_label(self, total: int) -> str:
         prefix = f"{self.value} " if self.value else ""
+        if self.count is None:
+            return f"{prefix}{self.label}"
         return f"{prefix}{self.label} ({share_text(self.count, total)})"
+
+
+@dataclass(frozen=True)
+class FlagField:
+    """One entry of the ``flag`` dimension: a mask, and the meanings it holds
+    (one for a bit; several states for a mask repeated in ``flag_masks``)."""
+
+    label: str
+    flags: tuple[int, ...]
 
 
 @dataclass
@@ -67,6 +102,9 @@ class FlagPlot:
     # Where the colors come from: "cmap", "flag_colors" or the palette name
     colors_source: str
     notes: list[str] = field(default_factory=list)
+    # Bits: name of the dimension added for the fields (None for flag_values)
+    flag_dim: str | None = None
+    fields: list[FlagField] = field(default_factory=list)
 
     def cmap_and_norm(self) -> tuple[Any, Any]:
         from matplotlib.colors import BoundaryNorm, ListedColormap
@@ -82,7 +120,20 @@ class FlagPlot:
     def report_value(self) -> str:
         """Value of the ``flags`` item of the plot layout line."""
         meanings = len(self.spec.flags)
-        return f"flag_values, {meanings} meaning{'s' if meanings > 1 else ''}, colors: {self.colors_source}"
+        text = {
+            "values": "flag_values",
+            "masks": "flag_masks",
+            "mixed": "flag_masks + flag_values",
+        }[self.spec.kind]
+        text += f", {meanings} meaning{'s' if meanings > 1 else ''}"
+        if self.spec.kind == "mixed":
+            fields = len(flag_fields(self.spec))
+            text += f" in {fields} field{'s' if fields > 1 else ''}"
+        return f"{text}, colors: {self.colors_source}"
+
+    def set_categories(self) -> list[Category]:
+        """The categories with a share (not "not set")."""
+        return [c for c in self.categories if c.count is not None]
 
 
 def share_text(count: int, total: int) -> str:
@@ -114,8 +165,8 @@ def flag_codes(var: xr.DataArray, spec: FlagSpec) -> tuple[np.ndarray, np.ndarra
     if values.dtype.kind == "f":
         valid &= np.isfinite(values)
     declared = np.zeros(values.shape, dtype=bool)
-    for flag in spec.flags:
-        if flag.value is not None:
+    if spec.kind == "values":
+        for flag in spec.flags:
             declared |= values == flag.value
     no_data = _no_data(values, var.attrs, var.encoding)
     return values, valid & ~(no_data & ~declared)
@@ -143,7 +194,13 @@ def _no_data(values: np.ndarray, attrs: dict, encoding: dict) -> np.ndarray:
 def prepare_flag_plot(
     var: xr.DataArray, spec: FlagSpec, cmap: str | None = None
 ) -> FlagPlot:
-    """Index array and categories of a valid ``flag_values`` variable."""
+    """Index array and categories of a valid flag variable."""
+    if spec.kind == "values":
+        return _prepare_values(var, spec, cmap)
+    return _prepare_fields(var, spec, cmap)
+
+
+def _prepare_values(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> FlagPlot:
     codes, valid = flag_codes(var, spec)
     total = int(valid.sum())
     index = np.full(codes.shape, np.nan)
@@ -194,15 +251,159 @@ def prepare_flag_plot(
         index[other] = len(categories)
         categories.append(Category(OTHER_LABEL, OTHER_COLOR, int(other.sum())))
 
-    attrs = {
+    index_da = xr.DataArray(
+        index, dims=var.dims, coords=var.coords, name=var.name, attrs=_attrs(var)
+    )
+    return FlagPlot(spec, index_da, categories, total, colors_source, notes)
+
+
+def flag_fields(spec: FlagSpec) -> list[FlagField]:
+    """The fields of a ``flag_masks`` spec: one per bit flag; with
+    ``flag_values`` too, one per distinct mask (its states share it)."""
+    bits = dtype_bits(spec.dtype)
+    if spec.kind == "masks":
+        return [
+            FlagField(f"{flag.label} ({mask_bits_text(flag.mask or 0, bits)})", (i,))
+            for i, flag in enumerate(spec.flags)
+        ]
+    by_mask: dict[int, list[int]] = {}
+    for i, flag in enumerate(spec.flags):
+        by_mask.setdefault(flag.mask or 0, []).append(i)
+    fields = []
+    for mask, members in by_mask.items():
+        bits_text = mask_bits_text(mask, bits)
+        if len(members) == 1:
+            label = f"{spec.flags[members[0]].label} ({bits_text})"
+        else:
+            label = f"{bits_text}: {len(members)} states"
+        fields.append(FlagField(label, tuple(members)))
+    return fields
+
+
+def _flag_prefix(spec: FlagSpec, i: int, states: int) -> str:
+    """Colorbar prefix of a bit flag: its bits, and its value when it is not
+    simply "all the bits set" (``bits 2-3 = 4``, one of ``states``)."""
+    flag = spec.flags[i]
+    bits_text = mask_bits_text(flag.mask or 0, dtype_bits(spec.dtype))
+    if flag.value is None or (states == 1 and int(flag.value) == flag.mask):
+        return bits_text
+    return f"{bits_text} = {_value_text(flag.value)}"
+
+
+def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> FlagPlot:
+    """Bits: one entry of the ``flag`` dimension per field."""
+    codes, valid = flag_codes(var, spec)
+    total = int(valid.sum())
+    notes: list[str] = list(spec.notes)
+    raw_dtype = raw_dtype_of(var.encoding, var.dtype)
+    if var.dtype.kind == "f" and raw_dtype.itemsize == 8:
+        notes.append(
+            "codes read as floats by this engine: bits above 2^53 may be wrong"
+        )
+    hits = [valid & flag.test(codes) for flag in spec.flags]
+    counts = [int(hit.sum()) for hit in hits]
+
+    fields = flag_fields(spec)
+    if len(fields) > MAX_LISTED_ABSENT:
+        set_fields = [f for f in fields if any(counts[i] for i in f.flags)]
+        if len(set_fields) < len(fields):
+            notes.append(
+                f"{len(fields) - len(set_fields)} of the {len(fields)} flags are "
+                "never set in the plotted data and not drawn"
+            )
+        fields = set_fields or fields[:1]
+    room = max(1, MAX_FIELD_POINTS // max(codes.size, 1))
+    if len(fields) > room:
+        notes.append(
+            f"only the first {room} of {len(fields)} flags drawn: one panel each "
+            f"is too much data ({codes.size} points); slice the variable to see "
+            "the others"
+        )
+        fields = fields[:room]
+    _note_undeclared_bits(codes, valid, spec, notes)
+
+    keep = [i for f in fields for i in f.flags]
+    states = {i: len(f.flags) for f in fields for i in f.flags}
+    colors, colors_source = _palette(spec, keep, cmap, notes)
+    categories = [
+        Category(
+            spec.flags[i].label,
+            colors[k],
+            counts[i],
+            _flag_prefix(spec, i, states[i]),
+        )
+        for k, i in enumerate(keep)
+    ]
+    not_set = len(categories)
+    categories.append(Category(NOT_SET_LABEL, NOT_SET_COLOR, None))
+    category_of = {i: k for k, i in enumerate(keep)}
+
+    index = np.full((len(fields), *codes.shape), np.nan, dtype=np.float32)
+    for f, flag_field in enumerate(fields):
+        panel = index[f, ...]  # a view, also for a single point (0-D)
+        panel[valid] = not_set
+        for i in flag_field.flags:
+            panel[hits[i]] = category_of[i]
+
+    flag_dim = _new_dim_name(var)
+    coords = {
+        name: coord for name, coord in var.coords.items() if flag_dim not in coord.dims
+    }
+    index_da = xr.DataArray(
+        index,
+        dims=(flag_dim, *var.dims),
+        coords={**coords, flag_dim: [f.label for f in fields]},
+        name=var.name,
+        attrs=_attrs(var),
+    )
+    return FlagPlot(
+        spec,
+        index_da,
+        categories,
+        total,
+        colors_source,
+        notes,
+        flag_dim=flag_dim,
+        fields=fields,
+    )
+
+
+def _note_undeclared_bits(
+    codes: np.ndarray, valid: np.ndarray, spec: FlagSpec, notes: list[str]
+) -> None:
+    """Bits set in the data but in no ``flag_masks``: a gap in the metadata."""
+    if codes.dtype.kind not in "iu":
+        return
+    declared = codes.dtype.type(0)
+    for flag in spec.flags:
+        declared |= as_code(flag.mask or 0, codes.dtype)
+    stray = codes[valid] & ~declared
+    stray = stray[stray != 0]
+    if stray.size == 0:
+        return
+    bits = int(np.bitwise_or.reduce(stray))
+    if bits < 0:
+        bits &= (1 << (codes.dtype.itemsize * 8)) - 1
+    count = int(stray.size)
+    notes.append(
+        f"{count} value{' has' if count == 1 else 's have'} "
+        f"{mask_bits_text(bits, codes.dtype.itemsize * 8)} set, in no flag_masks"
+    )
+
+
+def _new_dim_name(var: xr.DataArray) -> str:
+    name = "flag"
+    while name in var.dims or name in var.coords:
+        name += "_"
+    return name
+
+
+def _attrs(var: xr.DataArray) -> dict[str, Any]:
+    return {
         key: var.attrs[key]
         for key in ("long_name", "standard_name")
         if key in var.attrs
     }
-    index_da = xr.DataArray(
-        index, dims=var.dims, coords=var.coords, name=var.name, attrs=attrs
-    )
-    return FlagPlot(spec, index_da, categories, total, colors_source, notes)
 
 
 def _value_text(value: Any) -> str:
@@ -265,6 +466,15 @@ def adjust_layout(flag_plot: FlagPlot, layout: PlotLayout, raw: dict[str, Any]) 
                 "bins ignored: a CF flag variable is drawn as one bar per meaning"
             )
             layout.choices.pop("bins", None)
+    elif (
+        layout.kind == "line"
+        and flag_plot.flag_dim is not None
+        and layout.value("x") == flag_plot.flag_dim
+        and "hue" not in layout.choices
+    ):
+        # A single point: one bar per flag
+        layout.kind = "bars"
+        layout.choices = {}
     layout.set("flags", flag_plot.report_value(), "auto")
     ignored = [key for key in _IGNORED_STYLE if raw.pop(key, None) is not None]
     if ignored and layout.kind != "line":
@@ -278,13 +488,36 @@ def draw_flag_image(
     var: xr.DataArray, flag_plot: FlagPlot, kwargs: dict[str, Any], method: str
 ) -> None:
     """``plot.imshow`` / ``plot.pcolormesh`` with one color per category."""
+    import matplotlib.pyplot as plt
+
     cmap, norm = flag_plot.cmap_and_norm()
     n = len(flag_plot.categories)
     kwargs = {**kwargs, "cmap": cmap, "norm": norm}
+    flag_axis = _flag_axis(var, flag_plot, kwargs)
+    if flag_axis is not None:
+        # Bits along an axis (block plot): integer positions, labelled below;
+        # the first flag on top
+        labels = [str(v) for v in var[flag_plot.flag_dim].values]
+        var = var.assign_coords({flag_plot.flag_dim: np.arange(len(labels))})
+        if flag_axis == "y":
+            kwargs.setdefault("yincrease", False)
     add_colorbar = kwargs.get("add_colorbar", True)
     if add_colorbar:
         kwargs["cbar_kwargs"] = {"ticks": list(range(n))}
     result = getattr(var.plot, method)(**kwargs)
+    if flag_axis is not None:
+        axes = list(result.axs.flat) if hasattr(result, "axs") else [plt.gca()]
+        for ax in axes:
+            getattr(ax, f"set_{flag_axis}ticks")(
+                list(range(len(labels))), labels=labels
+            )
+            getattr(ax, f"set_{flag_axis}label")("")
+    if hasattr(result, "set_titles") and flag_plot.flag_dim in (
+        kwargs.get("row"),
+        kwargs.get("col"),
+    ):
+        # xarray cuts facet titles at 30 characters
+        result.set_titles(maxchar=60)
     if not add_colorbar:
         return
     colorbar = getattr(result, "cbar", None) or getattr(result, "colorbar", None)
@@ -293,6 +526,18 @@ def draw_flag_image(
     colorbar.set_ticks(list(range(n)), labels=flag_plot.tick_labels())
     colorbar.ax.tick_params(length=0, labelsize=8 if n > 12 else None)
     colorbar.ax.minorticks_off()
+
+
+def _flag_axis(
+    var: xr.DataArray, flag_plot: FlagPlot, kwargs: dict[str, Any]
+) -> str | None:
+    """``"x"`` / ``"y"`` when the bits dimension is an axis of the image."""
+    if flag_plot.flag_dim is None or flag_plot.flag_dim not in var.dims:
+        return None
+    for axis in ("x", "y"):
+        if kwargs.get(axis) == flag_plot.flag_dim:
+            return axis
+    return None
 
 
 def draw_flag_line(
@@ -327,18 +572,21 @@ def draw_flag_bars(var: xr.DataArray, flag_plot: FlagPlot) -> None:
     """One horizontal bar per category: its share of the points with data."""
     import matplotlib.pyplot as plt
 
-    categories = flag_plot.categories
+    categories = flag_plot.set_categories()
     n = len(categories)
     fig, ax = plt.subplots(figsize=(6.4, max(2.0, 0.35 * n + 1)))
     shares = [
-        100 * c.count / flag_plot.total if flag_plot.total else 0 for c in categories
+        100 * (c.count or 0) / flag_plot.total if flag_plot.total else 0
+        for c in categories
     ]
     ax.barh(range(n), shares, color=[c.color for c in categories], edgecolor="0.3")
     ax.set_yticks(
         list(range(n)), labels=[c.tick_label(flag_plot.total) for c in categories]
     )
     ax.invert_yaxis()
-    ax.set_xlabel(f"% of the {flag_plot.total} values with data")
+    where = "" if flag_plot.flag_dim is None else " where the flag is set"
+    values = "value" if flag_plot.total == 1 else "values"
+    ax.set_xlabel(f"% of the {flag_plot.total} {values} with data{where}")
     ax.set_xlim(0, max([*shares, 1]) * 1.1)
     title = var.attrs.get("long_name") or var.name or ""
     if title:

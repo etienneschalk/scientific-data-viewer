@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.15.0 Release Notes
 
-**TL;DR** — Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. The **flags** plot control turns it all off.
+**TL;DR** — Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. The **flags** plot control turns it all off.
 
 **Start here** to review, test or release v0.15: [`docs/v0.15/GETTING_STARTED.md`](./v0.15/GETTING_STARTED.md).
 
@@ -16,15 +16,17 @@ A CF flag variable stores numbers that stand for names. Before 0.15 the viewer d
 | Quality level `0 … 5` along time           | Shades of one colormap, a numeric colorbar per facet                | Six named colors, one colorbar for the facets                         |
 | 1D status, fill value `127` also a meaning | Line between codes; `127` masked as missing (it disappeared)        | Steps, meanings on the y-axis, `127 not measured` shown               |
 | A single value, or `bins` set              | Histogram of codes                                                  | One bar per meaning with its share                                    |
-| `flag_masks` (bit fields)                  | Sums of powers of two                                               | Still numbers in plots (next phase), bits listed in **Flags**         |
+| `flag_masks` (bit fields), a map           | Sums of powers of two (`13 = 8 + 4 + 1`)                            | One panel per flag, colored where it is set, bits in the colorbar     |
+| `flag_masks` along time only (1D)          | A line between sums of powers of two                                | Block plot: one row per flag along time                               |
+| Masks + values (bit fields with states)    | Sums of powers of two                                               | One panel or row per field, one color per state                       |
 
-The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.15/CF_FLAGS_PROPOSAL.md`](./v0.15/CF_FLAGS_PROPOSAL.md). This release is phase P1.
+The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.15/CF_FLAGS_PROPOSAL.md`](./v0.15/CF_FLAGS_PROPOSAL.md). This release holds phases P1 (`flag_values`) and P2 (`flag_masks`, alone or with `flag_values`).
 
 ---
 
 ## Upgrade notes (read before updating)
 
-- **Flag variables look different by default.** Plots of variables with `flag_values` + `flag_meanings` change, as described above. To get the plain numeric plot back, uncheck **flags** in the plot controls (Color), globally or for one group.
+- **Flag variables look different by default.** Plots of variables with `flag_values` or `flag_masks` + `flag_meanings` change, as described above; a bit-flag map becomes one panel per flag. To get the plain numeric plot back, uncheck **flags** in the plot controls (Color), globally or for one group.
 - **Inconsistent flags are not used.** When the attributes contradict each other (counts that differ, a value outside its mask, a value the variable's type cannot hold), the plot stays numeric and a note under it says why: `CF flags not used (...)`. The **Flags** section shows the same reason.
 - **Style options ignored for flag plots**: `vmin`, `vmax` and `robust` (one color per class), and `bins` (bars per meaning). A note says so. `cmap` still applies: it is sampled into one color per meaning.
 - **Backend JSON contract**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the role `flags`. Scripts that compare the backend output, such as golden snapshots recorded with 0.13, must record again.
@@ -59,6 +61,23 @@ Masks and values are shown exactly, `uint64` included. The swatch is the `flag_c
 - **More than 20 meanings** (ESA CCI Land Cover declares 37): only the ones present in the plotted data are listed, with a note.
 - The plot layout line shows an automatic item `flags  flag_values, 8 meanings, colors: flag_colors`.
 
+### Bit flags (`flag_masks`, alone or with `flag_values`)
+
+Each flag can be set independently, so one map cannot show them all. The plot adds a dimension `flag` with one entry per flag. The entry holds the flag's color where it is set, grey `not set` elsewhere, and transparent where there is no data. A mask repeated in `flag_masks` (CF example 3.8: `bits 2-3` hold `offline`, `calibration` or `maintenance` mode) is one entry, with one color per state. The layout engine then places `flag` like any other dimension:
+
+| Data                                            | Drawn as                                                             |
+| ----------------------------------------------- | -------------------------------------------------------------------- |
+| A map                                           | One panel per flag, titled `flag = cloud (bit 0)`                    |
+| A map over time                                 | One row of panels per flag, one column per time                      |
+| 1D (time series)                                | Block plot: one row per flag along the x-axis, the first flag on top |
+| A single point, `bins` set, too many dimensions | Bars: the share of the points where each flag is set                 |
+
+- The colorbar names each flag with its bits and share: `bit 0 cloud (22%)`, `bits 2-3 = 8 calibration mode (25%)`, then `not set`. The shares of bit flags do not add up to 100%: several can be set at once.
+- **Bits set in the data but in no `flag_masks`** are counted in a note (`3 values have bits 4, 5 set, in no flag_masks`).
+- **More than 20 flags** (Sentinel-3 OLCI `WQSF` has about 40): only those set somewhere in the plotted data are drawn, with a note.
+- **Large data**: the plot holds one copy of the data per flag. Above 50 million points in all, the last flags are left out, with a note; slice the variable to see them.
+- The layout line reads `flags  flag_masks, 6 meanings, colors: tab10`, or `flag_masks + flag_values, 5 meanings in 3 fields, …`.
+
 ### Why codes are read raw
 
 xarray's default decoding (`mask_and_scale`) turns an integer variable with a `_FillValue` into floats. For flags this breaks two things:
@@ -81,8 +100,11 @@ With `python python/create_sample_data.py`, then `artefacts/sample-data/sample_c
 5. Plot `station_status`: steps, `127 not measured` on the y-axis, one black point `other (code not in flag_values)`, a note listing code `9`.
 6. Plot `lccs_class`: 8 classes listed, note `29 of the 37 meanings are absent from the plotted data and not listed`.
 7. Plot `land_cover` with `bins` = 10: bars per meaning, note `bins ignored: …`.
-8. Expand `wqsf`: masks shown exactly (`9223372036854775808`, `bit 63`); plot it: numbers, note `CF flag_masks (masks): plotted as numbers …`.
-9. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
+8. Expand `wqsf`: masks shown exactly (`9223372036854775808`, `bit 63`). Plot it: six panels `flag = invalid (bit 0)` … `flag = cloud (bit 63)`, each in its color where set and grey elsewhere, the bottom row (fill value) transparent; colorbar `bit 63 cloud (…%)`.
+9. Plot `pixel_flags`: one row per flag (cloud, cloud shadow, snow ice, invalid), one column per time.
+10. Plot `sensor_status_qc`: block plot, rows `low battery (bit 0)`, `hardware fault (bit 1)`, `bits 2-3: 3 states` (top to bottom); the last row in three colors along time.
+11. Plot `sensor_status_qc` with `status_time` = `20`: bars, `bits 2-3 = 4 offline mode (100%)`.
+12. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
 
 The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15.0.md`](./v0.15/MANUAL_TEST_PLAN_0.15.0.md).
 
@@ -90,8 +112,9 @@ The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15
 
 ## Known limitations
 
-- **`flag_masks` are not drawn by meaning yet** (bit fields, alone or with `flag_values`). They are plotted as numbers, with a note, and their bits are listed in **Flags**. One panel per flag and 1D block plots are phase P2 of the proposal.
-- **No selection by meaning yet** (`cloud OR cloud_shadow`, highlight two classes): phase P3. Today, slice the data or use **Flags** to read the codes.
+- **One panel per flag can be a lot**: a product with 40 bits set somewhere gives 40 panels. Picking the flags to draw, or combining them (`cloud OR cloud_shadow`), is phase P3. Today, slice the data, or uncheck **flags**.
+- **Bit flags read as floats lose bits above 2⁵³** on engines that cannot read raw (cfgrib, rasterio, kerchunk, cdflib); a note says so for 64-bit variables.
+- **No selection by meaning yet** (highlight two classes, `cloud OR cloud_shadow`): phase P3. Today, slice the data or use **Flags** to read the codes.
 - **Other engines read decoded values** (cfgrib, rasterio, kerchunk, cdflib). A fill code that is also a meaning is shown as no data there.
 - **`flag_colors` is not CF.** It is honoured only with exactly one valid color per meaning, otherwise ignored with a note.
 - **Shares count the plotted selection**: with dimension slices, the percentages are those of the slice, not of the whole variable.
@@ -103,6 +126,7 @@ The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15
 | Area             | Change                                                                                                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------ |
 | Plots            | `flag_values` variables by meaning: images, steps, bars; colors from `cmap`, `flag_colors`, palette    |
+| Bit flags        | `flag_masks` (alone or with `flag_values`): one panel per flag, 1D block plot, bars of shares          |
 | Reading          | Flag codes read raw (`mask_and_scale` off for that variable only) on netcdf4 / h5netcdf / scipy / zarr |
 | File Information | **Flags** section: kind, values, masks, bits, swatches, problems, notes                                |
 | Controls         | **flags** checkbox (Color, default on), CLI `--no-flags`                                               |
