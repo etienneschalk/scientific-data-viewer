@@ -24,6 +24,15 @@ The layout engine puts ``flag`` on the facets like any free dimension:
 - a single point, ``bins`` or too many dimensions: bars, the share of the
   points where each flag is set.
 
+Selection (``FlagChoice``): ``flag_select`` names the meanings to draw
+(``flag_values``: the others merge into one grey category; bits: only the
+fields holding them). ``flag_combine`` (bits) folds the chosen flags, or all
+of them, into one map: ``any`` (OR, the usual "invalid pixel" mask), ``all``
+(AND) or ``none`` (where none is set: the clear points).
+
+``hide_flagged`` hides the points of a data variable where a flag variable
+named in its ``ancillary_variables`` has one of the chosen flags set.
+
 Colors: the user's ``cmap`` when set, else ``flag_colors`` when the file has a
 valid one, else a qualitative palette (``tab10``, ``tab20``, then more).
 Codes not declared in ``flag_values`` are drawn as one more category,
@@ -31,8 +40,9 @@ Codes not declared in ``flag_values`` are drawn as one more category,
 gap in the metadata.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import xarray as xr
@@ -42,6 +52,7 @@ from sdv_backend.flags import (
     as_code,
     dtype_bits,
     mask_bits_text,
+    normalize_meaning,
     raw_dtype_of,
 )
 from sdv_backend.plotting.layout import PlotLayout
@@ -54,6 +65,10 @@ OTHER_COLOR = "#000000"
 OTHER_LABEL = "other (code not in flag_values)"
 NOT_SET_COLOR = "#d9d9d9"
 NOT_SET_LABEL = "not set"
+FlagCombine = Literal["any", "all", "none"]
+FLAG_COMBINE_CHOICES: tuple[str, ...] = ("any", "all", "none")
+# Above this many names, a combined label counts them instead
+MAX_NAMED_IN_LABEL = 3
 # Bits: the index array has one copy of the data per field; above this many
 # points, the last fields are left out (with a note)
 MAX_FIELD_POINTS = 50_000_000
@@ -81,6 +96,19 @@ class Category:
 
 
 @dataclass(frozen=True)
+class FlagChoice:
+    """What the user asked to draw: meanings by name, and how to combine
+    bits (None: one panel per flag)."""
+
+    select: tuple[str, ...] = ()
+    combine: FlagCombine | None = None
+
+    @property
+    def is_set(self) -> bool:
+        return bool(self.select) or self.combine is not None
+
+
+@dataclass(frozen=True)
 class FlagField:
     """One entry of the ``flag`` dimension: a mask, and the meanings it holds
     (one for a bit; several states for a mask repeated in ``flag_masks``)."""
@@ -105,6 +133,8 @@ class FlagPlot:
     # Bits: name of the dimension added for the fields (None for flag_values)
     flag_dim: str | None = None
     fields: list[FlagField] = field(default_factory=list)
+    # The selection / combination applied ("" when none), for the layout line
+    choice_text: str = ""
 
     def cmap_and_norm(self) -> tuple[Any, Any]:
         from matplotlib.colors import BoundaryNorm, ListedColormap
@@ -129,6 +159,8 @@ class FlagPlot:
         if self.spec.kind == "mixed":
             fields = len(flag_fields(self.spec))
             text += f" in {fields} field{'s' if fields > 1 else ''}"
+        if self.choice_text:
+            text += f", {self.choice_text}"
         return f"{text}, colors: {self.colors_source}"
 
     def set_categories(self) -> list[Category]:
@@ -192,15 +224,57 @@ def _no_data(values: np.ndarray, attrs: dict, encoding: dict) -> np.ndarray:
 
 
 def prepare_flag_plot(
-    var: xr.DataArray, spec: FlagSpec, cmap: str | None = None
+    var: xr.DataArray,
+    spec: FlagSpec,
+    cmap: str | None = None,
+    choice: FlagChoice = FlagChoice(),
 ) -> FlagPlot:
     """Index array and categories of a valid flag variable."""
+    notes: list[str] = list(spec.notes)
+    selected = _selected(spec, choice.select, notes)
     if spec.kind == "values":
-        return _prepare_values(var, spec, cmap)
-    return _prepare_fields(var, spec, cmap)
+        if choice.combine is not None:
+            notes.append(
+                f"flag_combine={choice.combine} ignored: flag_values are exclusive "
+                "codes (flag_select highlights some of them)"
+            )
+        return _prepare_values(var, spec, cmap, selected, notes)
+    if choice.combine is not None:
+        return _prepare_combined(var, spec, cmap, selected, choice.combine, notes)
+    return _prepare_fields(var, spec, cmap, selected, notes)
 
 
-def _prepare_values(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> FlagPlot:
+def _selected(
+    spec: FlagSpec, names: Sequence[str], notes: list[str]
+) -> list[int] | None:
+    """Indexes of the flags named by ``flag_select`` (None: no selection)."""
+    if not names:
+        return None
+    found, unknown = spec.match(names)
+    if not found:
+        notes.append(
+            f"flag_select ignored: no meaning of this variable is named "
+            f"{', '.join(names)}"
+        )
+        return None
+    if unknown:
+        notes.append(
+            f"flag_select: {', '.join(unknown)} not among the meanings of this variable"
+        )
+    return found
+
+
+def _names_text(spec: FlagSpec, indexes: Sequence[int]) -> str:
+    return ", ".join(spec.flags[i].label for i in indexes)
+
+
+def _prepare_values(
+    var: xr.DataArray,
+    spec: FlagSpec,
+    cmap: str | None,
+    selected: list[int] | None,
+    notes: list[str],
+) -> FlagPlot:
     codes, valid = flag_codes(var, spec)
     total = int(valid.sum())
     index = np.full(codes.shape, np.nan)
@@ -212,10 +286,11 @@ def _prepare_values(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         matched |= hit
         counts.append(int(hit.sum()))
     other = valid & ~matched
-    notes: list[str] = list(spec.notes)
 
     keep = list(range(len(spec.flags)))
-    if len(keep) > MAX_LISTED_ABSENT:
+    if selected is not None:
+        keep = selected
+    elif len(keep) > MAX_LISTED_ABSENT:
         keep = [i for i in keep if counts[i] > 0]
         absent = len(spec.flags) - len(keep)
         if absent:
@@ -234,6 +309,18 @@ def _prepare_values(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         for k, i in enumerate(keep)
     ]
     remap = np.full(len(spec.flags), np.nan)
+    if selected is not None:
+        # The meanings not selected: one grey category
+        rest = [i for i in range(len(spec.flags)) if i not in keep]
+        if rest:
+            remap[rest] = len(keep)
+            categories.append(
+                Category(
+                    f"the {len(rest)} other meaning{'s' if len(rest) > 1 else ''}",
+                    NOT_SET_COLOR,
+                    sum(counts[i] for i in rest),
+                )
+            )
     remap[keep] = np.arange(len(keep))
     with np.errstate(invalid="ignore"):
         index = np.where(
@@ -254,7 +341,16 @@ def _prepare_values(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
     index_da = xr.DataArray(
         index, dims=var.dims, coords=var.coords, name=var.name, attrs=_attrs(var)
     )
-    return FlagPlot(spec, index_da, categories, total, colors_source, notes)
+    choice_text = "" if selected is None else f"selected: {_names_text(spec, keep)}"
+    return FlagPlot(
+        spec,
+        index_da,
+        categories,
+        total,
+        colors_source,
+        notes,
+        choice_text=choice_text,
+    )
 
 
 def flag_fields(spec: FlagSpec) -> list[FlagField]:
@@ -290,21 +386,35 @@ def _flag_prefix(spec: FlagSpec, i: int, states: int) -> str:
     return f"{bits_text} = {_value_text(flag.value)}"
 
 
-def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> FlagPlot:
-    """Bits: one entry of the ``flag`` dimension per field."""
+def _bit_hits(
+    var: xr.DataArray, spec: FlagSpec, notes: list[str]
+) -> tuple[np.ndarray, np.ndarray, list[np.ndarray]]:
+    """Codes, where there is data, and where each flag is set."""
     codes, valid = flag_codes(var, spec)
-    total = int(valid.sum())
-    notes: list[str] = list(spec.notes)
     raw_dtype = raw_dtype_of(var.encoding, var.dtype)
     if var.dtype.kind == "f" and raw_dtype.itemsize == 8:
         notes.append(
             "codes read as floats by this engine: bits above 2^53 may be wrong"
         )
-    hits = [valid & flag.test(codes) for flag in spec.flags]
+    return codes, valid, [valid & flag.test(codes) for flag in spec.flags]
+
+
+def _prepare_fields(
+    var: xr.DataArray,
+    spec: FlagSpec,
+    cmap: str | None,
+    selected: list[int] | None,
+    notes: list[str],
+) -> FlagPlot:
+    """Bits: one entry of the ``flag`` dimension per field."""
+    codes, valid, hits = _bit_hits(var, spec, notes)
+    total = int(valid.sum())
     counts = [int(hit.sum()) for hit in hits]
 
     fields = flag_fields(spec)
-    if len(fields) > MAX_LISTED_ABSENT:
+    if selected is not None:
+        fields = [f for f in fields if any(i in selected for i in f.flags)]
+    elif len(fields) > MAX_LISTED_ABSENT:
         set_fields = [f for f in fields if any(counts[i] for i in f.flags)]
         if len(set_fields) < len(fields):
             notes.append(
@@ -322,7 +432,7 @@ def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         fields = fields[:room]
     _note_undeclared_bits(codes, valid, spec, notes)
 
-    keep = [i for f in fields for i in f.flags]
+    keep = [i for f in fields for i in f.flags if selected is None or i in selected]
     states = {i: len(f.flags) for f in fields for i in f.flags}
     colors, colors_source = _palette(spec, keep, cmap, notes)
     categories = [
@@ -335,7 +445,12 @@ def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         for k, i in enumerate(keep)
     ]
     not_set = len(categories)
-    categories.append(Category(NOT_SET_LABEL, NOT_SET_COLOR, None))
+    # States of a kept field that were not selected are drawn as "not set"
+    hidden_states = any(i not in keep for f in fields for i in f.flags)
+    not_set_label = (
+        f"{NOT_SET_LABEL} or not selected" if hidden_states else NOT_SET_LABEL
+    )
+    categories.append(Category(not_set_label, NOT_SET_COLOR, None))
     category_of = {i: k for k, i in enumerate(keep)}
 
     index = np.full((len(fields), *codes.shape), np.nan, dtype=np.float32)
@@ -343,7 +458,8 @@ def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         panel = index[f, ...]  # a view, also for a single point (0-D)
         panel[valid] = not_set
         for i in flag_field.flags:
-            panel[hits[i]] = category_of[i]
+            if i in category_of:
+                panel[hits[i]] = category_of[i]
 
     flag_dim = _new_dim_name(var)
     coords = {
@@ -365,6 +481,84 @@ def _prepare_fields(var: xr.DataArray, spec: FlagSpec, cmap: str | None) -> Flag
         notes,
         flag_dim=flag_dim,
         fields=fields,
+        choice_text="" if selected is None else f"selected: {_names_text(spec, keep)}",
+    )
+
+
+def combined_labels(
+    spec: FlagSpec, indexes: Sequence[int], combine: FlagCombine
+) -> tuple[str, str]:
+    """Labels of the two categories of a combination: where it holds, and
+    the rest (``cloud OR cloud shadow`` / ``none of them``)."""
+    labels = [spec.flags[i].label for i in indexes]
+    if len(labels) == 1:
+        name = labels[0]
+        return {
+            "any": (name, f"not {name}"),
+            "all": (name, f"not {name}"),
+            "none": (f"not {name}", name),
+        }[combine]
+    if len(labels) > MAX_NAMED_IN_LABEL:
+        named = f"{len(labels)} flags"
+        return {
+            "any": (f"any of {named}", "none of them"),
+            "all": (f"all {named}", "not all of them"),
+            "none": (f"none of {named}", "at least one of them"),
+        }[combine]
+    return {
+        "any": (" OR ".join(labels), "none of them"),
+        "all": (" AND ".join(labels), "not all of them"),
+        "none": (f"none of {', '.join(labels)}", "at least one of them"),
+    }[combine]
+
+
+def flags_set(
+    hits: Sequence[np.ndarray], indexes: Sequence[int], combine: FlagCombine
+) -> np.ndarray:
+    """Where the combination of the flags ``indexes`` holds."""
+    chosen = [hits[i] for i in indexes]
+    if combine == "all":
+        return np.logical_and.reduce(chosen)
+    anyset = np.logical_or.reduce(chosen)
+    return ~anyset if combine == "none" else anyset
+
+
+def _prepare_combined(
+    var: xr.DataArray,
+    spec: FlagSpec,
+    cmap: str | None,
+    selected: list[int] | None,
+    combine: FlagCombine,
+    notes: list[str],
+) -> FlagPlot:
+    """Bits folded into one map: two categories, where the combination of
+    the chosen flags (all of them without ``flag_select``) holds, and the rest."""
+    codes, valid, hits = _bit_hits(var, spec, notes)
+    total = int(valid.sum())
+    _note_undeclared_bits(codes, valid, spec, notes)
+    chosen = selected if selected is not None else list(range(len(spec.flags)))
+    holds = valid & flags_set(hits, chosen, combine)
+    colors, colors_source = _palette(spec, chosen[:1], cmap, notes)
+    label, rest_label = combined_labels(spec, chosen, combine)
+    count = int(holds.sum())
+    categories = [
+        Category(label, colors[0], count),
+        Category(rest_label, NOT_SET_COLOR, total - count),
+    ]
+    index = np.where(holds, 0.0, np.where(valid, 1.0, np.nan))
+    index_da = xr.DataArray(
+        index, dims=var.dims, coords=var.coords, name=var.name, attrs=_attrs(var)
+    )
+    return FlagPlot(
+        spec,
+        index_da,
+        categories,
+        total,
+        colors_source,
+        notes,
+        choice_text=f"{combine}: {_names_text(spec, chosen)}"
+        if len(chosen) <= MAX_NAMED_IN_LABEL
+        else f"{combine} of {len(chosen)} flags",
     )
 
 
@@ -453,6 +647,84 @@ def _palette(
     return [turbo(x) for x in np.linspace(0, 1, n)], "turbo"
 
 
+@dataclass
+class HiddenPoints:
+    """The result of ``hide_flagged``: the variable, what hid its points."""
+
+    var: xr.DataArray
+    notes: list[str]
+    # Layout line item ("cloud, invalid (pixel_flags)"), None when nothing applied
+    report: str | None = None
+
+
+def hide_flagged(
+    var: xr.DataArray,
+    flag_vars: Sequence[tuple[str, xr.DataArray, FlagSpec]],
+    names: Sequence[str],
+) -> HiddenPoints:
+    """``var`` with NaN where a flag variable of ``flag_vars`` (its
+    ``ancillary_variables``, sliced as ``var``) has a flag of ``names`` set.
+
+    A flag variable is used when its dimensions are dimensions of ``var``
+    with the same sizes; it is broadcast along the others (a 2D land mask
+    hides the same points at every time).
+    """
+    notes: list[str] = []
+    hidden: xr.DataArray | None = None
+    used: list[str] = []
+    matched: set[str] = set()
+    for name, flag_var, spec in flag_vars:
+        found, _ = spec.match(names)
+        if not found:
+            continue
+        mismatch = [
+            str(d)
+            for d in flag_var.dims
+            if d not in var.dims or var.sizes[d] != flag_var.sizes[d]
+        ]
+        if mismatch:
+            notes.append(
+                f"hide_flags: {name} not used, its dimension "
+                f"{', '.join(mismatch)} is not one of the variable's with the "
+                f"same size (dimensions: {', '.join(map(str, var.dims)) or 'none'})"
+            )
+            continue
+        codes, valid = flag_codes(flag_var, spec)
+        hit = np.logical_or.reduce([valid & spec.flags[i].test(codes) for i in found])
+        # No coordinates: the two variables come from the same group, sliced alike
+        hit_da = xr.DataArray(hit, dims=flag_var.dims)
+        hidden = hit_da if hidden is None else (hidden | hit_da)
+        used.append(f"{_names_text(spec, found)} ({name})")
+        matched |= {normalize_meaning(spec.flags[i].meaning) for i in found}
+    if hidden is None:
+        if not notes:
+            where = (
+                ", ".join(name for name, _, _ in flag_vars)
+                if flag_vars
+                else "no flag variable in ancillary_variables"
+            )
+            notes.append(
+                f"hide_flags ignored: no flag named {', '.join(names)} ({where})"
+            )
+        return HiddenPoints(var, notes)
+    unknown = [n for n in names if normalize_meaning(n) not in matched]
+    if unknown:
+        notes.append(
+            f"hide_flags: {', '.join(unknown)} not a meaning of "
+            f"{', '.join(name for name, _, _ in flag_vars)}"
+        )
+    masked = var.where(~hidden)
+    masked.attrs = dict(var.attrs)
+    masked.encoding = dict(var.encoding)
+    before = int(var.notnull().sum())
+    removed = before - int(masked.notnull().sum())
+    notes.append(
+        f"hide_flags: {removed} of {before} values hidden "
+        f"({share_text(removed, before)}) where {'; '.join(used)} is set"
+    )
+    return HiddenPoints(masked, notes, "; ".join(used))
+
+
 def adjust_layout(flag_plot: FlagPlot, layout: PlotLayout, raw: dict[str, Any]) -> None:
     """Report the flags in the layout line, and what they make useless.
 
@@ -475,7 +747,9 @@ def adjust_layout(flag_plot: FlagPlot, layout: PlotLayout, raw: dict[str, Any]) 
         # A single point: one bar per flag
         layout.kind = "bars"
         layout.choices = {}
-    layout.set("flags", flag_plot.report_value(), "auto")
+    layout.set(
+        "flags", flag_plot.report_value(), "user" if flag_plot.choice_text else "auto"
+    )
     ignored = [key for key in _IGNORED_STYLE if raw.pop(key, None) is not None]
     if ignored and layout.kind != "line":
         layout.notes.append(

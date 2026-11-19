@@ -12,16 +12,25 @@ import pytest
 import xarray as xr
 from sample_data.flags import LAND_COVER_COLORS, build_cf_flags_dataset
 
-from sdv_backend.flags import mask_bits_text, needs_raw_codes, read_flag_spec
+from sdv_backend.flags import (
+    mask_bits_text,
+    needs_raw_codes,
+    normalize_meaning,
+    parse_flag_names,
+    read_flag_spec,
+)
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.info.variables import create_variable_info
 from sdv_backend.opening import OpenedData
 from sdv_backend.plotting.api import create_plot
 from sdv_backend.plotting.draw import draw_plot
 from sdv_backend.plotting.flags import (
+    NOT_SET_COLOR,
     NOT_SET_LABEL,
     OTHER_LABEL,
+    FlagChoice,
     adjust_layout,
+    hide_flagged,
     prepare_flag_plot,
     share_text,
 )
@@ -679,3 +688,227 @@ def test_create_plot_single_point_of_bits(sample: Path) -> None:
     )
     assert result.plot_layout["kind"] == "bars"
     assert result.applied_plot_kwargs == {"flags": "bars"}
+
+
+# --- selection by meaning (flag_select / flag_combine) ------------------------------
+
+
+def test_names_match_whatever_the_case_and_separators() -> None:
+    spec = read_flag_spec(
+        {
+            "flag_masks": np.array([1, 2], np.uint8),
+            "flag_meanings": "cloud cloud_shadow",
+        },
+        np.uint8,
+    )
+    assert spec is not None
+    assert spec.match(["Cloud Shadow", "CLOUD", "snow"]) == ([0, 1], ["snow"])
+    assert parse_flag_names(" cloud, cloud shadow ,, ") == ("cloud", "cloud shadow")
+    assert normalize_meaning("cloud-shadow") == "cloud_shadow"
+
+
+def _choose(var: xr.DataArray, select=(), combine=None):
+    return prepare_flag_plot(var, _spec(var), choice=FlagChoice(tuple(select), combine))
+
+
+def test_select_values_greys_the_others(sample: Path) -> None:
+    var = _raw(sample, "land_cover")
+    flag_plot = _choose(var, ["Water", "urban"])
+    labels = [c.label for c in flag_plot.categories]
+    assert labels == ["urban", "water", "the 6 other meanings"]
+    assert flag_plot.categories[2].color == NOT_SET_COLOR
+    assert sum(c.count or 0 for c in flag_plot.categories) == flag_plot.total
+    water = var.values == 210
+    assert (flag_plot.index.values[water] == 1).all()
+    assert flag_plot.report_value() == (
+        "flag_values, 8 meanings, selected: urban, water, colors: flag_colors"
+    )
+
+
+def test_select_unknown_names_are_noted(sample: Path) -> None:
+    var = _raw(sample, "land_cover")
+    partly = _choose(var, ["water", "glacier"])
+    assert "flag_select: glacier not among the meanings of this variable" in (
+        partly.notes
+    )
+    none = _choose(var, ["glacier"])
+    assert none.choice_text == ""
+    assert len(none.categories) == 8
+    assert none.notes[-1].startswith("flag_select ignored: no meaning")
+
+
+def test_select_bits_keeps_their_panels(sample: Path) -> None:
+    var = _raw(sample, "pixel_flags")
+    flag_plot = _choose(var, ["snow ice", "cloud"])
+    assert list(flag_plot.index["flag"].values) == ["cloud (bit 0)", "snow ice (bit 2)"]
+    assert [c.label for c in flag_plot.categories] == [
+        "cloud",
+        "snow ice",
+        NOT_SET_LABEL,
+    ]
+
+
+def test_select_one_state_of_a_field(sample: Path) -> None:
+    var = _raw(sample, "sensor_status_qc")
+    flag_plot = _choose(var, ["offline_mode"])
+    assert [f.label for f in flag_plot.fields] == ["bits 2-3: 3 states"]
+    assert [c.label for c in flag_plot.categories] == [
+        "offline mode",
+        "not set or not selected",
+    ]
+    mode = flag_plot.index.values[0]
+    assert ((mode == 0) == ((var.values & 12) == 4)).all()
+
+
+@pytest.mark.parametrize(
+    ("combine", "label", "rest", "expected"),
+    [
+        ("any", "cloud OR cloud shadow", "none of them", lambda v: (v & 3) != 0),
+        ("all", "cloud AND cloud shadow", "not all of them", lambda v: (v & 3) == 3),
+        (
+            "none",
+            "none of cloud, cloud shadow",
+            "at least one of them",
+            lambda v: (v & 3) == 0,
+        ),
+    ],
+)
+def test_combine_bits_into_one_map(
+    sample: Path, combine, label, rest, expected
+) -> None:
+    var = _raw(sample, "pixel_flags")
+    flag_plot = _choose(var, ["cloud", "cloud_shadow"], combine)
+    assert flag_plot.flag_dim is None
+    assert flag_plot.index.dims == var.dims
+    assert [c.label for c in flag_plot.categories] == [label, rest]
+    holds = expected(var.values)
+    assert (flag_plot.index.values == np.where(holds, 0, 1)).all()
+    assert flag_plot.categories[0].count == int(holds.sum())
+    assert flag_plot.choice_text == f"{combine}: cloud, cloud shadow"
+
+
+def test_combine_without_selection_uses_every_flag(sample: Path) -> None:
+    var = _raw(sample, "pixel_flags")
+    flag_plot = _choose(var, combine="none")
+    assert flag_plot.categories[0].label == "none of 4 flags"
+    assert flag_plot.categories[0].count == int((var.values == 0).sum())
+
+
+def test_combine_on_values_is_noted(sample: Path) -> None:
+    flag_plot = _choose(_raw(sample, "land_cover"), ["water"], "any")
+    assert flag_plot.notes[0].startswith("flag_combine=any ignored")
+
+
+def test_combined_map_is_drawn_with_two_colors(sample: Path) -> None:
+    var = _raw(sample, "pixel_flags").isel(time=0)
+    flag_plot = _choose(var, ["cloud", "cloud shadow"], "any")
+    selection = DatetimeSelection(var=var)
+    index, layout = resolve_layout(flag_plot.index, PlotOptions(), selection)
+    adjust_layout(flag_plot, layout, {})
+    assert layout.choices["flags"].source == "user"
+    draw_plot(
+        index, layout, PlotKwargsBundle.build(), selection, "pixel_flags", flag_plot
+    )
+    labels = [t.get_text() for t in plt.gcf().axes[-1].get_yticklabels()]
+    assert labels[0].startswith("cloud OR cloud shadow (") and labels[1].startswith(
+        "none of them ("
+    )
+
+
+# --- hide_flags (ancillary_variables) ------------------------------------------------
+
+
+def test_hide_flagged_points(sample: Path) -> None:
+    result = _plot(sample, "sst", hide_flags=("cloud", "Bad data"))
+    roles = {c["role"]: c for c in result.plot_layout["choices"]}
+    assert roles["hide_flags"] == {
+        "role": "hide_flags",
+        "value": "cloud (pixel_flags); bad data (quality_level)",
+        "source": "user",
+    }
+    note = result.plot_layout["notes"][0]
+    assert note.startswith("hide_flags: ") and "values hidden" in note
+
+
+def test_hide_flagged_counts_the_right_points(sample: Path) -> None:
+    with xr.open_dataset(sample) as ds:
+        sst = ds["sst"].load()
+    bits = _raw(sample, "pixel_flags")
+    hidden = hide_flagged(sst, [("pixel_flags", bits, _spec(bits))], ["cloud"])
+    cloud = (bits.values & 1) != 0
+    assert np.isnan(hidden.var.values[cloud]).all()
+    assert np.isfinite(hidden.var.values[~cloud]).all()
+    assert hidden.var.attrs["units"] == "degC"
+    assert hidden.report == "cloud (pixel_flags)"
+
+
+def test_hide_flags_broadcast_a_2d_mask_over_time(sample: Path) -> None:
+    with xr.open_dataset(sample) as ds:
+        sst = ds["sst"].load()
+    land = _raw(sample, "land_cover")
+    hidden = hide_flagged(sst, [("land_cover", land, _spec(land))], ["water"])
+    water = land.values == 210
+    for t in range(sst.sizes["time"]):
+        assert np.isnan(hidden.var.values[t][water]).all()
+
+
+def test_hide_flags_on_another_shape_is_refused(sample: Path) -> None:
+    with xr.open_dataset(sample) as ds:
+        sst = ds["sst"].load()
+    status = _raw(sample, "station_status")
+    hidden = hide_flagged(sst, [("station_status", status, _spec(status))], ["nominal"])
+    assert hidden.var is sst
+    assert hidden.notes[0].startswith(
+        "hide_flags: station_status not used, its dimension obs_time"
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "names", "note"),
+    [
+        (
+            "sst",
+            ("glacier",),
+            "hide_flags ignored: no flag named glacier (pixel_flags, quality_level)",
+        ),
+        (
+            "land_cover",
+            ("cloud",),
+            "hide_flags ignored: no flag named cloud (no flag variable in ancillary_variables)",
+        ),
+    ],
+)
+def test_hide_flags_not_applied_is_noted(sample: Path, name, names, note) -> None:
+    layout = _plot(sample, name, hide_flags=names).plot_layout
+    assert note in layout["notes"]
+    assert "hide_flags" not in {c["role"] for c in layout["choices"]}
+
+
+def test_hide_flags_follow_the_slices(sample: Path) -> None:
+    result = _plot(sample, "sst", hide_flags=("cloud",), dimension_slices={"time": 1})
+    assert result.plot_layout["kind"] == "image"
+    assert "hide_flags" in {c["role"] for c in result.plot_layout["choices"]}
+
+
+def test_cli_parses_the_flag_options() -> None:
+    from sdv_backend import cli
+
+    args = cli.parse_cli_args(
+        [
+            "plot",
+            "f.nc",
+            "/v",
+            "--flag-select",
+            "cloud, cloud shadow",
+            "--flag-combine",
+            "any",
+            "--hide-flags",
+            "land",
+        ]
+    )
+    options = cli._plot_options(args, None)
+    assert options.flag_select == ("cloud", "cloud shadow")
+    assert options.flag_combine == "any"
+    assert options.hide_flags == ("land",)
+    with pytest.raises(SystemExit):
+        cli.parse_cli_args(["plot", "f.nc", "/v", "--flag-combine", "xor"])

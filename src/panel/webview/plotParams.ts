@@ -7,10 +7,16 @@ import {
 import { escapeHtml } from './util';
 
 type PlotParameterKind =
-    'dimension' | 'bool' | 'int' | 'float' | 'text' | 'colWrap';
+    'dimension' | 'bool' | 'int' | 'float' | 'text' | 'colWrap' | 'choice';
 
 /** Fieldsets of the plot parameters, in display order */
-const PLOT_PARAMETER_GROUPS = ['Facets', 'Axes', 'Color', 'Figure'] as const;
+const PLOT_PARAMETER_GROUPS = [
+    'Facets',
+    'Axes',
+    'Color',
+    'Flags',
+    'Figure',
+] as const;
 type PlotParameterGroup = (typeof PLOT_PARAMETER_GROUPS)[number];
 
 export interface PlotParameter {
@@ -34,6 +40,10 @@ export interface PlotParameter {
     /** Reject values <= 0 (float) */
     positive?: boolean;
     placeholder?: string;
+    /** choice only: the values offered after the empty (automatic) one */
+    choices?: readonly string[];
+    /** choice only: label of the empty value */
+    emptyLabel?: string;
     /** colWrap only: the "auto" checkbox */
     autoId?: string;
     groupAutoId?: string;
@@ -188,10 +198,44 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         hint: 'CF meanings',
         kind: 'bool',
         default: true,
-        group: 'Color',
+        group: 'Flags',
         id: 'useFlagsCheckbox',
         groupId: 'group-use-flags',
-        title: 'CF flag variables (flag_values + flag_meanings): one color per meaning, named in the colorbar, bars instead of a histogram. Uncheck to plot the raw numbers',
+        title: 'CF flag variables (flag_values / flag_masks + flag_meanings): one color per meaning, named in the colorbar, one panel per bit flag. Uncheck to plot the raw numbers',
+    },
+    {
+        key: 'flagSelect',
+        label: 'flag_select',
+        hint: 'meanings',
+        kind: 'text',
+        group: 'Flags',
+        id: 'flagSelectInput',
+        groupId: 'group-flag-select',
+        placeholder: 'e.g. cloud, water',
+        title: 'CF flag meanings to draw, separated by commas (case, _ and spaces ignored). flag_values: the others in grey; bit flags: only their panels',
+    },
+    {
+        key: 'flagCombine',
+        label: 'flag_combine',
+        hint: 'bits',
+        kind: 'choice',
+        choices: ['any', 'all', 'none'],
+        emptyLabel: 'per flag',
+        group: 'Flags',
+        id: 'flagCombineSelect',
+        groupId: 'group-flag-combine',
+        title: 'Bit flags (flag_masks) in one map: any = set for at least one (OR), all = set for all (AND), none = set for none (the clear points). Uses the flag_select meanings, else all. Empty: one panel per flag',
+    },
+    {
+        key: 'hideFlags',
+        label: 'hide_flags',
+        hint: 'ancillary',
+        kind: 'text',
+        group: 'Flags',
+        id: 'hideFlagsInput',
+        groupId: 'group-hide-flags',
+        placeholder: 'e.g. cloud, land',
+        title: "Hide the points where a flag variable named in the variable's ancillary_variables has one of these meanings set (commas)",
     },
     {
         key: 'size',
@@ -326,6 +370,16 @@ function renderPlotParameterControl(
                     <input type="number" id="${id}" class="plot-input" min="1" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />
                     <label for="${autoId}" class="plot-inline-check" title="${escapeHtml(param.autoTitle)}"><input type="checkbox" id="${autoId}" class="plot-checkbox plot-col-wrap-auto" data-param="${param.key}Auto"${groupAttr} />auto</label>
                 </span>`;
+        }
+        case 'choice': {
+            const options = [
+                `<option value="">${escapeHtml(scope.groupName === null ? param.emptyLabel : 'global')}</option>`,
+                ...(param.choices ?? []).map(
+                    (c) =>
+                        `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`,
+                ),
+            ].join('');
+            return /*html*/ `<select id="${id}" class="plot-choice" data-param="${param.key}"${groupAttr} title="${title}">${options}</select>`;
         }
         case 'int':
             return /*html*/ `<input type="number" id="${id}" class="plot-input"${param.min !== undefined ? ` min="${param.min}"` : ''} data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;

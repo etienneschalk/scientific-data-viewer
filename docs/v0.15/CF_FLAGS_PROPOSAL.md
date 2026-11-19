@@ -1,9 +1,10 @@
 # CF flag variables: proposal (v0.15)
 
-Status: **P1 and P2 implemented** (0.15.0: `flag_values` plotted by meaning,
+Status: **P1 to P4 implemented** (0.15.0: `flag_values` plotted by meaning,
 raw codes, Flags section in File Information, `flags` control; `flag_masks`
 alone or with `flag_values` drawn as one panel per field, 1D block plots,
-bars; see `CHANGELOG.md`). P3-P4 to do. Branch `eschalk/v0.15-cf-flags` (from `main`;
+bars; `flag_select` / `flag_combine` controls; `hide_flags` through
+`ancillary_variables`; see `CHANGELOG.md`). Branch `eschalk/v0.15-cf-flags` (from `main`;
 to rebase on `eschalk/v0.14-cf-decoding` once 0.14 is merged, both touch
 `opening.py`).
 
@@ -19,6 +20,17 @@ the layout engine already makes of `(flag, time)`, not a separate drawing;
 facet titles carry the bits (`flag = cloud (bit 0)`), the colorbar the
 shares. Added: a note for bits set in no `flag_masks`, and a limit of 50
 million points for the array of fields (one copy of the data per field).
+
+Choices made in P3 and P4: the controls are `flag_select`, `flag_combine`
+and `hide_flags`, in a **Flags** fieldset with the `flags` checkbox (which is
+`flag_display`); `flag_combine` keeps "empty = one panel per flag" instead of
+a `panels` value, as the other controls; for `flag_values`, `flag_select`
+greys the other classes and `flag_combine` is ignored (exclusive codes). The
+datalist of § 4 is not done: the controls take several names separated by
+commas, which a datalist cannot suggest. `hide_flags` is a separate control,
+not `flag_select` applied to the ancillary variables: showing the chosen
+classes and hiding the flagged points are opposite intents. It answers open
+question 3: P4 is in 0.15.
 
 ## Goal
 

@@ -152,6 +152,9 @@ export function buildCreatePlotCliArgs(
         ['--plot-y', plot.plotY],
         ['--plot-hue', plot.plotHue],
         ['--cmap', plot.cmap?.trim()],
+        ['--flag-select', plot.flagSelect?.trim()],
+        ['--flag-combine', plot.flagCombine?.trim()],
+        ['--hide-flags', plot.hideFlags?.trim()],
     ];
     for (const [flag, value] of stringFlags) {
         if (isNonEmpty(value)) {

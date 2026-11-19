@@ -45,9 +45,22 @@ AUTO_FACET_SIZE = 4.0
 AUTO_FACET_ASPECT = 1.0
 
 # Roles in the order they are reported; "flags" (CF flag variable drawn by
-# meaning) is reported only, never passed to xarray
-ROLES = ("row", "col", "col_wrap", "y", "x", "hue", "size", "aspect", "bins", "flags")
-_NOT_XARRAY_KWARGS = ("bins", "flags")
+# meaning) and "hide_flags" (points hidden by an ancillary flag variable) are
+# reported only, never passed to xarray
+ROLES = (
+    "row",
+    "col",
+    "col_wrap",
+    "y",
+    "x",
+    "hue",
+    "size",
+    "aspect",
+    "bins",
+    "flags",
+    "hide_flags",
+)
+_NOT_XARRAY_KWARGS = ("bins", "flags", "hide_flags")
 
 
 @dataclass(frozen=True)

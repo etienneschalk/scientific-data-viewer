@@ -1,6 +1,6 @@
 # Scientific Data Viewer v0.15.0 Release Notes
 
-**TL;DR** — Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. The **flags** plot control turns it all off.
+**TL;DR** — Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. New **Flags** plot controls pick meanings by name (`flag_select`), fold bit flags into one map (`flag_combine`: `cloud OR cloud_shadow`), and hide the points of a data variable that its quality flag marks (`hide_flags`, through `ancillary_variables`). The **flags** checkbox turns it all off.
 
 **Start here** to review, test or release v0.15: [`docs/v0.15/GETTING_STARTED.md`](./v0.15/GETTING_STARTED.md).
 
@@ -20,16 +20,17 @@ A CF flag variable stores numbers that stand for names. Before 0.15 the viewer d
 | `flag_masks` along time only (1D)          | A line between sums of powers of two                                | Block plot: one row per flag along time                               |
 | Masks + values (bit fields with states)    | Sums of powers of two                                               | One panel or row per field, one color per state                       |
 
-The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.15/CF_FLAGS_PROPOSAL.md`](./v0.15/CF_FLAGS_PROPOSAL.md). This release holds phases P1 (`flag_values`) and P2 (`flag_masks`, alone or with `flag_values`).
+The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.15/CF_FLAGS_PROPOSAL.md`](./v0.15/CF_FLAGS_PROPOSAL.md). This release holds the four phases: P1 (`flag_values`), P2 (`flag_masks`, alone or with `flag_values`), P3 (selection and combination by name) and P4 (hiding points through `ancillary_variables`).
 
 ---
 
 ## Upgrade notes (read before updating)
 
-- **Flag variables look different by default.** Plots of variables with `flag_values` or `flag_masks` + `flag_meanings` change, as described above; a bit-flag map becomes one panel per flag. To get the plain numeric plot back, uncheck **flags** in the plot controls (Color), globally or for one group.
+- **Flag variables look different by default.** Plots of variables with `flag_values` or `flag_masks` + `flag_meanings` change, as described above; a bit-flag map becomes one panel per flag. To get the plain numeric plot back, uncheck **flags** in the plot controls (**Flags** fieldset), globally or for one group.
+- **New Flags fieldset** in the plot controls, between Color and Figure: **flags** (moved from Color), **flag_select**, **flag_combine**, **hide_flags**. All empty by default: nothing changes until you set them.
 - **Inconsistent flags are not used.** When the attributes contradict each other (counts that differ, a value outside its mask, a value the variable's type cannot hold), the plot stays numeric and a note under it says why: `CF flags not used (...)`. The **Flags** section shows the same reason.
 - **Style options ignored for flag plots**: `vmin`, `vmax` and `robust` (one color per class), and `bins` (bars per meaning). A note says so. `cmap` still applies: it is sampled into one color per meaning.
-- **Backend JSON contract**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the role `flags`. Scripts that compare the backend output, such as golden snapshots recorded with 0.13, must record again.
+- **Backend JSON contract**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the roles `flags` and `hide_flags`. Scripts that compare the backend output, such as golden snapshots recorded with 0.13, must record again.
 - **No change to Python environments**: no new package. The extension's own uv environment is not rebuilt (`ENVIRONMENT_REVISION` unchanged).
 
 ---
@@ -78,6 +79,26 @@ Each flag can be set independently, so one map cannot show them all. The plot ad
 - **Large data**: the plot holds one copy of the data per flag. Above 50 million points in all, the last flags are left out, with a note; slice the variable to see them.
 - The layout line reads `flags  flag_masks, 6 meanings, colors: tab10`, or `flag_masks + flag_values, 5 meanings in 3 fields, …`.
 
+### Choosing flags by name (`flag_select`, `flag_combine`)
+
+| Control          | Values                                           | `flag_values` (classes)                                                         | Bit flags                                                                                                |
+| ---------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **flag_select**  | meanings, separated by commas                    | The chosen classes keep their color, the others are one grey `N other meanings` | Only the panels of the chosen flags; unchosen states of a field are `not set or not selected`            |
+| **flag_combine** | empty (one panel per flag), `any`, `all`, `none` | Ignored, with a note (codes are exclusive)                                      | One map of the chosen flags (all without `flag_select`): `cloud OR cloud shadow`, `… AND …`, `none of …` |
+
+- Names are matched whatever their case, and `_`, `-` and spaces are alike: `Cloud shadow` finds `cloud_shadow`.
+- Set globally, a selection applies to every flag variable that has one of the names; names it does not have are noted (`flag_select: glacier not among the meanings of this variable`), and a selection with no match is ignored with a note.
+- The layout line shows the selection in the `flags` item (`selected: urban, water`, `any: cloud, cloud shadow`), outlined as a choice of yours.
+
+### Hiding flagged points (`hide_flags`)
+
+CF links a data variable to its quality flags with `ancillary_variables` (`sst:ancillary_variables = "pixel_flags quality_level"`). With **hide_flags** set to meanings of those flag variables (`cloud, bad data`), plotting `sst` hides the points where any of them is set.
+
+- The flag variables are read raw, sliced like the variable, and broadcast along its other dimensions: a 2D land mask hides the same points at every time step. A flag variable with a dimension the variable does not have, or of another size, is skipped with a note.
+- The layout line shows `hide_flags  cloud (pixel_flags); bad data (quality_level)`, and a note counts the values hidden: `1420 of 4050 values hidden (35%)`.
+- When nothing applies, a note says why: no `ancillary_variables`, no flag with that name, an ancillary variable not in the group.
+- Only variables of the same group are looked up (`ancillary_variables` names, not paths).
+
 ### Why codes are read raw
 
 xarray's default decoding (`mask_and_scale`) turns an integer variable with a `_FillValue` into floats. For flags this breaks two things:
@@ -104,7 +125,10 @@ With `python python/create_sample_data.py`, then `artefacts/sample-data/sample_c
 9. Plot `pixel_flags`: one row per flag (cloud, cloud shadow, snow ice, invalid), one column per time.
 10. Plot `sensor_status_qc`: block plot, rows `low battery (bit 0)`, `hardware fault (bit 1)`, `bits 2-3: 3 states` (top to bottom); the last row in three colors along time.
 11. Plot `sensor_status_qc` with `status_time` = `20`: bars, `bits 2-3 = 4 offline mode (100%)`.
-12. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
+12. Set **flag_select** = `water, urban` and plot `land_cover`: water and urban in their colors, the rest grey `the 6 other meanings`; layout item `flags … selected: urban, water` outlined.
+13. Set **flag_select** = `cloud, cloud shadow` and **flag_combine** = `any`, plot `pixel_flags`: one map per time, `cloud OR cloud shadow (…%)` in blue, `none of them` in grey.
+14. Clear them, set **hide_flags** = `cloud, bad data`, plot `sst`: holes where it is cloudy; layout item `hide_flags cloud (pixel_flags); bad data (quality_level)`, note `… values hidden (…%) …`.
+15. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
 
 The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15.0.md`](./v0.15/MANUAL_TEST_PLAN_0.15.0.md).
 
@@ -112,9 +136,11 @@ The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15
 
 ## Known limitations
 
-- **One panel per flag can be a lot**: a product with 40 bits set somewhere gives 40 panels. Picking the flags to draw, or combining them (`cloud OR cloud_shadow`), is phase P3. Today, slice the data, or uncheck **flags**.
+- **One panel per flag can be a lot**: a product with 40 bits set somewhere gives 40 panels; use **flag_select** or **flag_combine**.
+- **Names are typed, not picked**: no suggestion list yet. The **Flags** section of File Information lists the meanings to copy.
+- **`hide_flags` looks in the variable's own group only**, and only at `ancillary_variables`; a quality flag not linked that way cannot hide points.
+- **`flag_select` is for flag variables**: set globally, it does not affect a plain data variable (no note), use **hide_flags** for those.
 - **Bit flags read as floats lose bits above 2⁵³** on engines that cannot read raw (cfgrib, rasterio, kerchunk, cdflib); a note says so for 64-bit variables.
-- **No selection by meaning yet** (highlight two classes, `cloud OR cloud_shadow`): phase P3. Today, slice the data or use **Flags** to read the codes.
 - **Other engines read decoded values** (cfgrib, rasterio, kerchunk, cdflib). A fill code that is also a meaning is shown as no data there.
 - **`flag_colors` is not CF.** It is honoured only with exactly one valid color per meaning, otherwise ignored with a note.
 - **Shares count the plotted selection**: with dimension slices, the percentages are those of the slice, not of the whole variable.
@@ -123,13 +149,15 @@ The click-by-click plan with a results sheet: [`docs/v0.15/MANUAL_TEST_PLAN_0.15
 
 ## Summary
 
-| Area             | Change                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------ |
-| Plots            | `flag_values` variables by meaning: images, steps, bars; colors from `cmap`, `flag_colors`, palette    |
-| Bit flags        | `flag_masks` (alone or with `flag_values`): one panel per flag, 1D block plot, bars of shares          |
-| Reading          | Flag codes read raw (`mask_and_scale` off for that variable only) on netcdf4 / h5netcdf / scipy / zarr |
-| File Information | **Flags** section: kind, values, masks, bits, swatches, problems, notes                                |
-| Controls         | **flags** checkbox (Color, default on), CLI `--no-flags`                                               |
-| Backend JSON     | `variables_flattened[*].flags`; plot layout kind `bars`, role `flags`                                  |
-| Samples          | `sample_cf_flags.nc`; invalid QC flags of `sample_many_encoding.nc` fixed                              |
-| Development      | `scripts/prototypes/cf_flags.py`, `paranoia.sh` step `prototypes`                                      |
+| Area             | Change                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| Plots            | `flag_values` variables by meaning: images, steps, bars; colors from `cmap`, `flag_colors`, palette         |
+| Bit flags        | `flag_masks` (alone or with `flag_values`): one panel per flag, 1D block plot, bars of shares               |
+| Selection        | **flag_select** (meanings by name), **flag_combine** (`any` / `all` / `none` of bit flags)                  |
+| Hiding           | **hide_flags**: points of a data variable hidden where its `ancillary_variables` flags are set              |
+| Reading          | Flag codes read raw (`mask_and_scale` off for that variable only) on netcdf4 / h5netcdf / scipy / zarr      |
+| File Information | **Flags** section: kind, values, masks, bits, swatches, problems, notes                                     |
+| Controls         | **Flags** fieldset: **flags** (default on, `--no-flags`), **flag_select**, **flag_combine**, **hide_flags** |
+| Backend JSON     | `variables_flattened[*].flags`; plot layout kind `bars`, roles `flags` and `hide_flags`                     |
+| Samples          | `sample_cf_flags.nc`; invalid QC flags of `sample_many_encoding.nc` fixed                                   |
+| Development      | `scripts/prototypes/cf_flags.py`, `paranoia.sh` step `prototypes`                                           |

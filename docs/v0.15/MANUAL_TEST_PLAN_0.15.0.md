@@ -1,12 +1,12 @@
 # v0.15.0 — Manual test plan
 
-About 25 minutes. Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 35 minutes. Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
 1. Install the build under test: `npm run package`, then **Extensions > … > Install from VSIX** with `artefacts/vsix-releases/scientific-data-viewer-0.15.0.vsix` (or press F5 from the repository).
 2. Create the sample files: `python python/create_sample_data.py`. They land in `artefacts/sample-data/`. v0.15 adds `sample_cf_flags.nc`.
-3. Reset the plot controls (**Reset** in Global Plot Controls): **flags** (Color) checked.
+3. Reset the plot controls (**Reset** in Global Plot Controls): **flags** (Flags fieldset) checked, **flag_select**, **flag_combine** (`per flag`) and **hide_flags** empty.
 
 Open `sample_cf_flags.nc` for every step.
 
@@ -25,7 +25,7 @@ Open `sample_cf_flags.nc` for every step.
 
 ## M3 — The flags control
 
-1. Uncheck **flags** (Color) in the Global Plot Controls; it gets the changed outline.
+1. Uncheck **flags** (Flags fieldset, between Color and Figure) in the Global Plot Controls; it gets the changed outline.
 2. Plot `land_cover` again: a continuous colormap from 10 to 210, no `flags` item.
 3. **Reset**: **flags** is checked again.
 
@@ -77,6 +77,30 @@ Open `sample_cf_flags.nc` for every step.
 
 1. With the plot of `land_cover` displayed, **Export** the viewer to HTML and open the file: the Flags table and swatches are there.
 
+## M12 — Choose classes by name
+
+1. In the Global Plot Controls, set **flag_select** = `Water, urban` and plot `land_cover`.
+2. Water (blue) and urban (red) in their colors, everything else grey; colorbar `190 urban (…%)`, `210 water (…%)`, `the 6 other meanings (…%)`.
+3. The layout item `flags … selected: urban, water` is outlined (your choice).
+4. Set **flag_select** = `water, glacier`: same plot, note `flag_select: glacier not among the meanings of this variable`.
+
+## M13 — Combine bit flags
+
+1. Set **flag_select** = `cloud, cloud shadow`, **flag_combine** = `any`; plot `pixel_flags`.
+2. Three panels (time), each `cloud OR cloud shadow (…%)` in color, `none of them` in grey.
+3. **flag_combine** = `none`: the colored points are now the clear ones (`none of cloud, cloud shadow`).
+4. In the Group Plot Controls of `/`, the **flag_combine** list starts with `global`; choose `all`: the group value wins (`cloud AND cloud shadow`).
+5. Plot `land_cover` (still `any`): note `flag_combine=any ignored: flag_values are exclusive codes …`.
+6. **Reset** both blocks: the selects are back to `per flag` / `global`.
+
+## M14 — Hide the points a quality flag marks
+
+1. Set **hide_flags** = `cloud, bad data`; plot `sst`.
+2. Three panels with holes where it is cloudy; layout item `hide_flags cloud (pixel_flags); bad data (quality_level)`; note `hide_flags: … values hidden (…%) …`.
+3. Slice `time` = `1` and plot again: one map, still with the cloud holes of that time.
+4. Plot `land_cover` (no `ancillary_variables`): note `hide_flags ignored: no flag named cloud, bad data (no flag variable in ancillary_variables)`.
+5. **Reset**.
+
 ## Results sheet
 
 | Step | Result (OK / KO + note) |
@@ -92,3 +116,6 @@ Open `sample_cf_flags.nc` for every step.
 | M9   |                         |
 | M10  |                         |
 | M11  |                         |
+| M12  |                         |
+| M13  |                         |
+| M14  |                         |

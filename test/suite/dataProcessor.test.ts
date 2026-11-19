@@ -526,6 +526,9 @@ suite('buildCreatePlotCliArgs', () => {
                 addColorbar: false,
                 addLegend: true,
                 useFlags: false,
+                flagSelect: ' cloud, cloud shadow ',
+                flagCombine: 'any',
+                hideFlags: 'land',
             },
             {
                 ...baseOptions,
@@ -552,6 +555,9 @@ suite('buildCreatePlotCliArgs', () => {
         assert.strictEqual(flagValue('--vmin'), '0');
         assert.strictEqual(flagValue('--vmax'), '1.5');
         assert.strictEqual(flagValue('--facetgrid-figsize'), '4,3');
+        assert.strictEqual(flagValue('--flag-select'), 'cloud, cloud shadow');
+        assert.strictEqual(flagValue('--flag-combine'), 'any');
+        assert.strictEqual(flagValue('--hide-flags'), 'land');
         for (const flag of [
             '--robust',
             '--no-add-colorbar',
