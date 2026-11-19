@@ -14,6 +14,12 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `src/panel/webview/styles.css`, `src/panel/webview/render/plotLayout.ts`, `docs/PLOTTING.md`, `docs/SCREENSHOTS.md`
   - **Tests**: `test/suite/ui/webviewScript.test.ts` (the legend shows the marker); `npm run screenshots -- --scenario changed-controls` in the 2026 Dark / Light themes (dot after `time 0:6` and `col_wrap 3`, not after the automatic items)
 
+### Security
+
+- **`python.overridePythonInterpreter` is read from user settings only**: it names the program the extension runs, and any scope could set it, so a repository's `.vscode/settings.json` could make the extension execute a file of the repository as soon as a data file was opened. The setting is now machine-scoped and the extension reads only its global (user, or remote machine) value; a workspace value is ignored and logged as a warning. Its description no longer suggests a relative `.venv/bin/python`; a per-project interpreter is chosen with **Python: Select Interpreter** (Python extension), which VS Code guards with workspace trust.
+  - **Files**: `package.json`, `src/common/config.ts` (`getOverridePythonInterpreter`, `getIgnoredWorkspaceOverridePythonInterpreter`), `src/python/PythonManager.ts`, `README.md` (regenerated)
+  - **Tests**: `test/suite/config.test.ts` (machine scope; workspace and workspace-folder values ignored, user value read and trimmed)
+
 ## [0.13.0] - 2026-11-18
 
 ### Added
