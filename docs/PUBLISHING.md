@@ -2,7 +2,7 @@
 
 This guide covers the complete process of publishing the Scientific Data Viewer VSCode extension to the VS Code Marketplace and Open VSX. **`./publish.sh` is the way to publish**: it runs the checks, builds, tests, tags and publishes one `.vsix` to both marketplaces. The manual commands at the end are a fallback.
 
-> **⚠ The Marketplace login is changing.** Azure DevOps is retiring global personal access tokens (PATs), the kind `vsce login` has used so far. Check [§ Marketplace authentication](#marketplace-authentication-check-before-each-release) before each release: this procedure may need to be updated.
+> **⚠ The Marketplace login is changing.** Azure DevOps is retiring global personal access tokens (PATs), the kind `vsce login` has used so far: they stop working on 27 January 2027 at the latest. The replacement is [§ Trusted publishing](#trusted-publishing-github-actions) (`./publish.sh --via-github`, a GitHub Actions workflow publishes). Check [§ Marketplace authentication](#marketplace-authentication-check-before-each-release) before each release.
 
 ## Overview
 
@@ -37,7 +37,9 @@ What it does, in this order (nothing is committed, tagged or pushed before the b
 7. **Publish that same `.vsix`** to the VS Code Marketplace (`vsce publish --packagePath`) and Open VSX (`ovsx publish <vsix>`). If one fails, run again with `--skip-vscode` or `--skip-openvsx`: the tag at HEAD is reused.
 8. **GitHub release**: printed command, `gh release create v<version> --notes-file docs/RELEASE_NOTES_<version>.md`.
 
-Options: `--dry-run`, `--pre-release`, `--skip-tests`, `--skip-vscode`, `--skip-openvsx` (`./publish.sh --help`).
+Options: `--dry-run`, `--pre-release`, `--skip-tests`, `--skip-vscode`, `--skip-openvsx`, `--via-github` (`./publish.sh --help`).
+
+With **`--via-github`**, steps 1–6 are the same except the marketplace logins (not needed: `gh auth login` instead), and step 7 becomes: create the GitHub release `v<version>` (`--prerelease` with `--pre-release`), which starts `.github/workflows/release.yml`. The workflow builds and tests the tag again, publishes its `.vsix` to both marketplaces with trusted publishing and attaches it to the release. See [§ Trusted publishing](#trusted-publishing-github-actions).
 
 ### Pre-release
 
@@ -53,7 +55,7 @@ Options: `--dry-run`, `--pre-release`, `--skip-tests`, `--skip-vscode`, `--skip-
 
 ## Marketplace authentication (check before each release)
 
-**Status as of 2026-11-13: this procedure may need to be updated.** `publish.sh` and the steps below log in to the VS Code Marketplace with an Azure DevOps **personal access token** (`vsce login <publisher>`, scope _Marketplace (Manage)_, organization _All accessible organizations_). That is a **global PAT**, and Azure DevOps is retiring them:
+**Status as of 2026-11-19: the PAT still works; the replacement is ready on branch `eschalk/publishing-trusted`, not yet registered** (investigation: [`docs/design/PUBLISHING_AUTH.md`](design/PUBLISHING_AUTH.md)). `publish.sh` and the steps below log in to the VS Code Marketplace with an Azure DevOps **personal access token** (`vsce login <publisher>`, scope _Marketplace (Manage)_, organization _All accessible organizations_). That is a **global PAT**, and Azure DevOps is retiring them:
 
 - The VS Code publishing documentation says: "On December 1, 2026, global Personal Access Tokens (PATs) in Azure DevOps are retired", and now labels PAT publishing "Not Recommended" ([Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)).
 - The Azure DevOps blog post on the retirement says, in its update of 23 October, that the date was postponed "to avoid disruption during the December holiday season": existing global PATs stop working after **27 January 2027**. Its update of 5 March cancelled the block on creating new global PATs. The post does not mention the Marketplace or `vsce` ([Retirement of Global Personal Access Tokens in Azure DevOps](https://devblogs.microsoft.com/devops/retirement-of-global-personal-access-tokens-in-azure-devops)).
@@ -61,11 +63,36 @@ Options: `--dry-run`, `--pre-release`, `--skip-tests`, `--skip-vscode`, `--skip-
 What this means here:
 
 - Until one of those dates, `vsce login` with the existing PAT works: `vsce verify-pat eschalk0` said so on 2026-11-13, and `publish.sh` runs that check before building.
-- After it, publishing from this machine with a PAT may fail. The replacements the VS Code documentation describes are **Trusted Publishing** from GitHub Actions (OpenID Connect, `npx @vscode/vsce publish --oidc`, no stored secret) and **Microsoft Entra ID** from Azure Pipelines (`vsce publish --azure-credential`, vsce ≥ 2.26.1). Neither is set up for this repository yet: moving to one means a release workflow in `.github/workflows/` and changes to `publish.sh` (it would build, check and tag here, and the workflow would publish). Before relying on it, check the current state of the VS Code documentation: a third-party report describes `--azure-credential` with a federated service principal passing `verify-pat` and then failing at publish ([classmethod.jp, 2026](https://dev.classmethod.jp/en/articles/publish-vscode-extension-ci-marketplace-openvsx-npm/)).
-- **Open VSX** uses its own access token (`OPENVSX_TOKEN`) and is not concerned by this change.
+- After it, publishing from this machine with a PAT fails: no PAT-free login exists for a local `vsce publish`. The replacements the VS Code documentation describes are **Trusted Publishing** from GitHub Actions (OpenID Connect, `vsce publish --oidc`, vsce ≥ 4.1.0, no stored secret) and **Microsoft Entra ID** from Azure Pipelines (`vsce publish --azure-credential`). This repository uses the first: [§ Trusted publishing](#trusted-publishing-github-actions). Dart-Code published with it on 2026-11-09 ([Dart-Code#6152](https://github.com/Dart-Code/Dart-Code/issues/6152)). The second needs an Azure subscription and an Azure Pipeline, and a third-party report has it failing at publish from GitHub Actions ([classmethod.jp, 2026](https://dev.classmethod.jp/en/articles/publish-vscode-extension-ci-marketplace-openvsx-npm/)).
+- **Emergency fallback without any token**: `./publish.sh --dry-run` (or `--skip-vscode`), then upload `artefacts/vsix-releases/<name>-<version>.vsix` by hand on the [publisher management page](https://marketplace.visualstudio.com/manage/publishers/eschalk0) (**…** → **Update**).
+- **Open VSX** access tokens (`OPENVSX_TOKEN`) are not being retired. Open VSX has offered trusted publishing too since 30 September 2026 ([Eclipse blog](https://blogs.eclipse.org/post/tamas-cservenak/trusted-publishing-open-vsx), `ovsx publish --trusted-publishing`, ovsx ≥ 1.2.0); the release workflow uses it, so no long-lived token is left once it is in use.
 - **vsce 4 keeps tokens in a new credential store.** A token saved with vsce 3 is not lost: the first vsce 4 command that needs it, in an interactive terminal, asks _"A saved PAT for publisher 'eschalk0' was found in the previous credential store. Copy it to the new store? [y/N]"_: answer `y` (run `vsce verify-pat eschalk0` once after upgrading vsce).
 
 Update this section when the login method changes, with the date and the sources.
+
+### Trusted publishing (GitHub Actions)
+
+`./publish.sh --via-github` tags the release and creates its GitHub release; `.github/workflows/release.yml` then publishes it. The marketplaces trust that workflow file (in the GitHub environment `release`) instead of a token: the job exchanges a GitHub OpenID Connect token for a credential valid a few minutes (`vsce publish --oidc`, `ovsx publish --trusted-publishing`). Design, options considered and validation plan: [`docs/design/PUBLISHING_AUTH.md`](design/PUBLISHING_AUTH.md).
+
+One-time setup:
+
+1. **Marketplace**: [publisher management page](https://marketplace.visualstudio.com/manage/publishers/eschalk0) → **Trusted Publishing** → **Create**: owner `etienneschalk`, repository `scientific-data-viewer`, workflow `release.yml`, environment `release`.
+2. **Open VSX**: [open-vsx.org](https://open-vsx.org) → **Settings** → **Trusted Publishers** → namespace `eschalk0` → GitHub Actions, same four fields. Needs a namespace owner and a verified namespace (`eschalk0` is).
+3. **GitHub**: **Settings** → **Environments** → `release`, with yourself as **required reviewer** (the registrations are not tied to a branch or tag: the approval is the last gate).
+4. `gh auth login`, then `gh variable set TRUSTED_PUBLISHING --body true`. Until this variable is `true`, the workflow skips its jobs and `publish.sh --via-github` refuses to tag.
+
+Each release:
+
+```bash
+nvm use
+./publish.sh --via-github --dry-run
+./publish.sh --via-github             # or --via-github --pre-release
+gh run watch                          # approve the publish job if the environment asks
+```
+
+- A registry failed: `gh workflow run release.yml -f tag=v<version>`. Versions already published are skipped (`--skip-duplicate`).
+- Renaming `release.yml` or the environment breaks publishing until both registrations are created again.
+- The tests run again in the workflow: if they fail after the tag is pushed, nothing is published (see [§ publish.sh stopped half-way](#publishsh-stopped-half-way)).
 
 ### Publishing to Open VSX (for Cursor and other editors)
 
@@ -293,7 +320,8 @@ npx vsce ls
 
 - **Before "Tag and push"**: nothing was committed except, maybe, the release date commit (local). Fix the cause and run it again.
 - **After the tag, a marketplace failed**: run it again with `--skip-vscode` or `--skip-openvsx` for the one that succeeded; the tag at HEAD is reused.
-- **Tag pushed, nothing published, and a new commit is needed**: delete the tag (`git tag -d v<version> && git push origin :refs/tags/v<version>`), commit, run again.
+- **Tag pushed, nothing published, and a new commit is needed**: delete the tag (`git tag -d v<version> && git push origin :refs/tags/v<version>`), commit, run again. With `--via-github`, delete the GitHub release first (`gh release delete v<version>`).
+- **`--via-github`, the release workflow failed**: open the run (`gh run list --workflow release.yml`). After a fix outside the repository (registration, environment), `gh workflow run release.yml -f tag=v<version>`; after a fix in the code, the tag must move (as above) or the version be bumped.
 
 #### Publishing Errors
 

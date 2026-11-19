@@ -9,18 +9,25 @@
 #   -> release date (UNRELEASED -> today, committed) -> package
 #   -> tag v<version> + push -> publish this one .vsix to both marketplaces
 # Nothing is tagged, pushed or committed before the build and tests pass.
+# With --via-github, the last step is a GitHub release instead: the workflow
+# .github/workflows/release.yml builds the tag and publishes it with trusted
+# publishing (no token on this machine; docs/design/PUBLISHING_AUTH.md).
 #
 # Prerequisites:
 #   - Release branch merged into main, main checked out and pulled
 #   - VS Code Marketplace: `vsce login <publisher>` with your PAT (checked
 #     with `vsce verify-pat`; global PATs are retired, see PUBLISHING.md)
 #   - Open VSX: Set OPENVSX_TOKEN environment variable
+#   - With --via-github instead of both: `gh auth login`, and the trusted
+#     publishers registered (docs/PUBLISHING.md § Trusted publishing)
 #
 # Usage:
 #   ./publish.sh              # Full publish to both marketplaces
 #   ./publish.sh --dry-run    # Checks, build, tests and package only
 #   ./publish.sh --skip-tests # Skip tests (use with caution)
 #   ./publish.sh --pre-release # Publish as a pre-release (both marketplaces)
+#   ./publish.sh --via-github # Tag and create the GitHub release; the release
+#                             # workflow publishes (trusted publishing)
 # =============================================================================
 
 set -e  # Exit on error
@@ -47,6 +54,7 @@ SKIP_TESTS=false
 SKIP_VSCODE=false
 SKIP_OPENVSX=false
 PRE_RELEASE=false
+VIA_GITHUB=false
 
 for arg in "$@"; do
     case $arg in
@@ -65,6 +73,9 @@ for arg in "$@"; do
         --pre-release)
             PRE_RELEASE=true
             ;;
+        --via-github)
+            VIA_GITHUB=true
+            ;;
         --help|-h)
             echo "Usage: ./publish.sh [options]"
             echo ""
@@ -78,6 +89,10 @@ for arg in "$@"; do
             echo "                 'Switch to Pre-Release Version' get it. The version"
             echo "                 number is then used up: the next stable release"
             echo "                 needs a higher one (e.g. 0.13.0 pre-release -> 0.13.1)"
+            echo "  --via-github   Do not publish from this machine: after the tag, create"
+            echo "                 the GitHub release (gh); .github/workflows/release.yml"
+            echo "                 builds the tag and publishes it to both marketplaces"
+            echo "                 with trusted publishing (no PAT, no OPENVSX_TOKEN)"
             echo "  --help, -h     Show this help message"
             echo ""
             echo "Run it from main, after merging the release branch. A CHANGELOG"
@@ -272,6 +287,13 @@ if [ "$PRE_RELEASE" = true ]; then
 else
     print_info "Channel: stable"
 fi
+if [ "$VIA_GITHUB" = true ]; then
+    print_info "Publishing: GitHub release -> .github/workflows/release.yml (trusted publishing)"
+    if [ "$SKIP_VSCODE" = true ] || [ "$SKIP_OPENVSX" = true ]; then
+        print_error "--skip-vscode / --skip-openvsx do not apply with --via-github: run the workflow again instead (gh workflow run release.yml -f tag=v${PACKAGE_VERSION})"
+        exit 1
+    fi
+fi
 if [ "$DRY_RUN" = true ]; then
     print_info "Dry run: nothing is committed, tagged, pushed or published"
 fi
@@ -340,7 +362,25 @@ if [ "${VSCE_VERSION%%.*}" -lt "$REQUIRED_VSCE_MAJOR" ]; then
 fi
 print_success "vsce: ${VSCE_VERSION} (${VSCE_CMD})"
 
-if command -v ovsx &> /dev/null; then
+if [ "$VIA_GITHUB" = true ]; then
+    # The workflow publishes; gh creates the release that starts it
+    if ! command -v gh &> /dev/null; then
+        print_error "gh not found: --via-github creates the GitHub release with it (https://cli.github.com)"
+        exit 1
+    fi
+    GH_READY=true
+    if ! gh auth status &> /dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            print_warning "gh is not logged in (gh auth login): dry run, the GitHub release checks are skipped"
+            GH_READY=false
+        else
+            print_error "gh is not logged in: gh auth login"
+            exit 1
+        fi
+    else
+        print_success "gh: $(gh --version | head -1) (logged in)"
+    fi
+elif command -v ovsx &> /dev/null; then
     OVSX_CMD="ovsx"
     print_success "ovsx: $(ovsx --version) (global)"
 elif npx ovsx --version &> /dev/null; then
@@ -465,9 +505,28 @@ if [ "$PRE_RELEASE" = true ]; then
     # Own name, so it is never mistaken for (or overwritten by) a stable package
     VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}-pre-release.vsix"
     PRE_RELEASE_FLAG="--pre-release"
+    GH_PRERELEASE_FLAG="--prerelease"
 else
     VSIX_FILE="${VSIX_DIR}/${EXTENSION_NAME}-${PACKAGE_VERSION}.vsix"
     PRE_RELEASE_FLAG=""
+    GH_PRERELEASE_FLAG=""
+fi
+
+if [ "$VIA_GITHUB" = true ] && [ "$GH_READY" = true ]; then
+    # The release starts the workflow: it must not exist yet
+    print_step "Checking the GitHub release..."
+    if gh release view "$TAG_NAME" &> /dev/null; then
+        print_error "GitHub release ${TAG_NAME} already exists: to publish it again, gh workflow run release.yml -f tag=${TAG_NAME}"
+        exit 1
+    fi
+    print_success "GitHub release ${TAG_NAME} does not exist yet"
+    if [ "$(gh variable get TRUSTED_PUBLISHING 2>/dev/null)" != "true" ]; then
+        print_error "Repository variable TRUSTED_PUBLISHING is not \"true\": the release workflow would skip publishing"
+        print_info "Register the trusted publishers first (docs/PUBLISHING.md § Trusted publishing), then: gh variable set TRUSTED_PUBLISHING --body true"
+        CHECKS_PASSED=false
+    else
+        print_success "Release workflow enabled (TRUSTED_PUBLISHING=true)"
+    fi
 fi
 
 if [ "$CHECKS_PASSED" = false ]; then
@@ -480,6 +539,13 @@ fi
 # =============================================================================
 
 print_header "Authentication Checks"
+
+if [ "$VIA_GITHUB" = true ]; then
+    # No marketplace credential here: the workflow gets short-lived ones
+    print_info "--via-github: no marketplace token needed on this machine"
+    SKIP_OPENVSX=true
+    SKIP_VSCODE=true
+fi
 
 if [ "$SKIP_OPENVSX" = false ]; then
     print_step "Checking Open VSX token..."
@@ -606,13 +672,22 @@ print_header "Publishing"
 
 # Confirmation
 echo ""
-if [ "$PRE_RELEASE" = true ]; then
+if [ "$VIA_GITHUB" = true ]; then
+    CHANNEL_TEXT=""
+    [ "$PRE_RELEASE" = true ] && CHANNEL_TEXT=" as a PRE-RELEASE"
+    echo "Ready to tag ${TAG_NAME} and create its GitHub release${CHANNEL_TEXT}."
+    echo "The release workflow then builds the tag and publishes it to:"
+    echo "  • VS Code Marketplace"
+    echo "  • Open VSX Registry"
+elif [ "$PRE_RELEASE" = true ]; then
     echo "Ready to tag ${TAG_NAME} and publish ${VSIX_FILE} as a PRE-RELEASE to:"
 else
     echo "Ready to tag ${TAG_NAME} and publish ${VSIX_FILE} to:"
 fi
-[ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
-[ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
+if [ "$VIA_GITHUB" = false ]; then
+    [ "$SKIP_VSCODE" = false ] && echo "  • VS Code Marketplace"
+    [ "$SKIP_OPENVSX" = false ] && echo "  • Open VSX Registry"
+fi
 echo ""
 if [ "$PRE_RELEASE" = true ]; then
     print_warning "Only users who chose 'Switch to Pre-Release Version' will get it."
@@ -638,6 +713,27 @@ if [ -d ".git" ]; then
         git push origin "${TAG_NAME}"
         print_success "Pushed tag ${TAG_NAME} to origin"
     fi
+fi
+
+if [ "$VIA_GITHUB" = true ]; then
+    print_step "Creating the GitHub release ${TAG_NAME} (starts .github/workflows/release.yml)..."
+    if ! gh release create "$TAG_NAME" --verify-tag --title "$TAG_NAME" --notes-file "$RELEASE_NOTES_FILE" $GH_PRERELEASE_FLAG; then
+        print_error "Could not create the GitHub release; the tag ${TAG_NAME} is pushed"
+        print_info "Create it by hand: gh release create ${TAG_NAME} --verify-tag --title ${TAG_NAME} --notes-file ${RELEASE_NOTES_FILE} ${GH_PRERELEASE_FLAG}"
+        exit 1
+    fi
+    print_header "Summary"
+    print_success "GitHub release ${TAG_NAME} created: the release workflow builds, tests and publishes it"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Follow the run: gh run watch \$(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
+    echo "     If the environment 'release' has a required reviewer, approve the publish job"
+    echo "  2. Verify the extension on the marketplaces:"
+    echo "     • https://marketplace.visualstudio.com/items?itemName=${PUBLISHER}.${EXTENSION_NAME}"
+    echo "     • https://open-vsx.org/extension/${PUBLISHER}/${EXTENSION_NAME}"
+    echo "  3. If a registry failed: gh workflow run release.yml -f tag=${TAG_NAME} (already published versions are skipped)"
+    echo "  (${PACKAGE_VERSION} built here: ${VSIX_FILE}; the workflow publishes the one it builds from the tag)"
+    exit 0
 fi
 
 PUBLISH_SUCCESS=true
@@ -685,7 +781,7 @@ if [ "$PUBLISH_SUCCESS" = true ]; then
     echo "Next steps:"
     echo "  1. Verify the extension on the marketplaces"
     echo "  2. Create the GitHub release of tag ${TAG_NAME}:"
-    echo "     gh release create ${TAG_NAME} --notes-file ${RELEASE_NOTES_FILE} $PRE_RELEASE_FLAG"
+    echo "     gh release create ${TAG_NAME} --notes-file ${RELEASE_NOTES_FILE} $GH_PRERELEASE_FLAG"
     echo "     (${REPO_URL}/releases/tag/${TAG_NAME})"
     if [ "$PRE_RELEASE" = true ]; then
         echo "  3. Install it in VS Code: Extensions view > Scientific Data Viewer >"

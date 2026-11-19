@@ -1,0 +1,199 @@
+# Publishes a release to the VS Code Marketplace and Open VSX with trusted
+# publishing (OpenID Connect): no token is stored in the repository or on a
+# developer machine. See docs/design/PUBLISHING_AUTH.md and docs/PUBLISHING.md.
+#
+# Flow: `./publish.sh --via-github` (checks, build, tests, release date, tag)
+# creates the GitHub release of tag v<version>; this workflow then builds that
+# tag again in a clean runner, tests it, and publishes the one .vsix it built
+# to both registries, then attaches it to the GitHub release.
+#
+# Off until the repository variable TRUSTED_PUBLISHING is "true" (Settings >
+# Secrets and variables > Actions > Variables), so a GitHub release created
+# before the trusted publishers are registered does not start a failing run.
+#
+# Registrations this workflow needs (docs/PUBLISHING.md § Trusted publishing):
+# - Marketplace: publisher eschalk0 > Trusted Publishing, workflow release.yml,
+#   environment release
+# - Open VSX: Settings > Trusted Publishers, namespace eschalk0, GitHub Actions,
+#   workflow release.yml, environment release
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag of an existing GitHub release (e.g. v0.13.1), to run a failed release again"
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test the tag
+    if: vars.TRUSTED_PUBLISHING == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      vsix: ${{ steps.package.outputs.vsix }}
+    steps:
+      - name: Resolve the release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          prerelease=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "Release $TAG, pre-release: $prerelease"
+
+      - name: Checkout the tag
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Same rules as publish.sh: the tag names the package.json version, marks
+      # a commit of main, and the release documents are dated
+      - name: Check the release
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          package_version=$(node -p "require('./package.json').version")
+          [ "$package_version" = "$VERSION" ] || { echo "::error::Tag v$VERSION, package.json $package_version"; exit 1; }
+          git merge-base --is-ancestor HEAD origin/main || { echo "::error::Tag v$VERSION is not on main"; exit 1; }
+          grep -q "^## \[$VERSION\] - [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}" CHANGELOG.md || { echo "::error::CHANGELOG.md has no dated section for $VERSION"; exit 1; }
+          [ -f "docs/RELEASE_NOTES_$VERSION.md" ] || { echo "::error::docs/RELEASE_NOTES_$VERSION.md is missing"; exit 1; }
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          npm ci
+
+      - name: README matches its generator (it is packaged)
+        run: |
+          python scripts/generate_readme.py --no-timestamp
+          git diff --exit-code README.md
+
+      - name: Lint, compile, Python tests
+        run: |
+          npm run lint
+          git diff --exit-code
+          npm run compile
+          python -m pytest python/tests -q -p no:cacheprovider
+
+      - name: Extension tests (virtual display)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3
+          npm test
+
+      - name: Package
+        id: package
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          mkdir -p artefacts/vsix-releases
+          if [ "$PRERELEASE" = true ]; then
+            vsix="scientific-data-viewer-$VERSION-pre-release.vsix"
+            npx vsce package --pre-release --out "artefacts/vsix-releases/$vsix"
+          else
+            vsix="scientific-data-viewer-$VERSION.vsix"
+            npx vsce package --out "artefacts/vsix-releases/$vsix"
+          fi
+          echo "vsix=$vsix" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v7
+        with:
+          name: vsix
+          path: artefacts/vsix-releases/${{ steps.package.outputs.vsix }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish to the VS Code Marketplace and Open VSX
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Both registries trust this workflow file in this environment. Add a
+    # required reviewer to it (Settings > Environments > release) for a last
+    # manual approval: the registrations are not tied to a branch or a tag.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VSIX: ${{ needs.build.outputs.vsix }}
+      PRERELEASE_FLAG: ${{ needs.build.outputs.prerelease == 'true' && '--pre-release' || '' }}
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: vsix
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # vsce >= 4.1.0 has --oidc. --skip-duplicate: running the workflow again
+      # after a failure of the other registry does not fail here
+      - name: VS Code Marketplace
+        run: npx --yes @vscode/vsce@4.1.1 publish --oidc --skip-duplicate $PRERELEASE_FLAG --packagePath "$VSIX"
+
+      # ovsx >= 1.2.0 has --trusted-publishing; an OVSX_PAT or --pat would take
+      # precedence over it, so none is set. Runs even if the Marketplace failed
+      - name: Open VSX
+        if: success() || failure()
+        run: npx --yes ovsx@1.4.0 publish "$VSIX" --trusted-publishing --skip-duplicate $PRERELEASE_FLAG
+
+  attach:
+    name: Attach the package to the GitHub release
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: vsix
+
+      - name: Upload it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VSIX: ${{ needs.build.outputs.vsix }}
+        run: gh release upload "$TAG" "$VSIX" --clobber --repo "$GITHUB_REPOSITORY"
