@@ -88,6 +88,7 @@ STEPS=(
     "package|quick|Build|Package the .vsix|300"
     "vsix|quick|Package|.vsix contents|300"
     "sample-data|quick|Tests|Sample data regenerated|300"
+    "prototypes|quick|Tests|Prototype scripts still run|300"
     "vsix-backend|quick|Package|Packaged backend on sample files|600"
     "pytest|quick|Tests|Python tests (pytest)|600"
     "npm-test|quick|Tests|Extension tests in VS Code (npm test)|900"
@@ -443,6 +444,24 @@ step_sample_data() {
         note "artefacts/sample-data/ regenerated ($(find "$SAMPLES" -mindepth 1 -maxdepth 1 | wc -l) entries)"
     else
         fail "python/create_sample_data.py failed"
+    fi
+}
+
+step_prototypes() {
+    # Exploration scripts of scripts/prototypes/ (output in artefacts/prototypes/):
+    # kept runnable while the feature they explore is being built
+    local script failed=() n=0
+    for script in scripts/prototypes/*.py; do
+        [ -e "$script" ] || continue
+        n=$((n + 1))
+        run "$PY" "$script" || failed+=("$(basename "$script")")
+    done
+    if [ ${#failed[@]} -gt 0 ]; then
+        fail "failed: ${failed[*]}"
+    elif [ $n -eq 0 ]; then
+        skip "no prototype script"
+    else
+        note "$n prototype script(s) ran, output in artefacts/prototypes/"
     fi
 }
 
