@@ -8,7 +8,7 @@ This guide covers the complete process of publishing the Scientific Data Viewer 
 
 ### Preparing for Publication
 
-1. **Update version** in `package.json`.
+1. **Update version** in `package.json`. Committing it regenerates `docs/architecture/` (pre-commit hook `architecture-version`, needs Graphviz): add the regenerated files and commit again.
 2. **Update CHANGELOG.md** with new features and fixes, under the heading `## [<version>] - UNRELEASED`. Never write the date by hand: `publish.sh` writes the day of publishing.
 3. **Python requirements changed?** If existing users' uv environments must change (new/changed entry in `ALL_REQUIREMENTS` or `ENVIRONMENT_CONSTRAINTS`, or to force newer packages), bump `ENVIRONMENT_REVISION` in `src/python/ExtensionVirtualEnvironmentManager.ts` and add a line to its history comment. Users with `useExtensionOwnEnvironment` then get their environment deleted and rebuilt once at their next start.
 4. **Test the upgrade from the previous release**: `npm run package`, then `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-<previous>.vsix` (`scripts/release-vsix.sh <previous>` rebuilds it from its tag); `./paranoia.sh --full` runs every check, this one included (and `--scenario offline`, `--scenario interrupted` when the environment changed). See `docs/v0.13/UPGRADE_TEST_PLAN.md`.

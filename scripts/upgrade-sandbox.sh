@@ -360,7 +360,11 @@ if [ "$SCENARIO" = offline ]; then
     stop
     check "old environment kept after a failed rebuild" test -f "$OLD_MARKER"
     check "no backup folder left" test ! -e "$ENV_DIR.previous"
-    check "rebuild still pending (no state file)" test ! -f "$STATE"
+    # The restored environment keeps its state file, if it had one (old
+    # release >= 0.13): its revision, lower than the new one, still asks for
+    # the rebuild
+    check "rebuild still pending (state file absent or unchanged)" \
+        bash -c '[ ! -f "$1" ] || cmp -s "$2" "$1"' _ "$STATE" "$SANDBOX/state.before.json"
     step "2b. Next start, back online"
 fi
 

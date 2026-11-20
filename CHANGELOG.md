@@ -6,6 +6,27 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 <!-- and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). -->
 
+## [0.13.1] - UNRELEASED
+
+### Fixed
+
+- **Items "set by you" in the plot layout line get the `•` of the changed controls**: the plot layout line outlined the items set in the plot controls (dimension slices, `col_wrap`, `x`…) in the theme's `focusBorder` color, but no other mark told them apart from the automatic ones. In themes where that color is close to the other borders (High Contrast, some third-party themes), "set by you" and "automatic" items looked the same. They now end with the same `•`, in the same color, as a plot control changed from its default, and the legend reads `outlined •: set by you · others: automatic`. The dot is a CSS `::after`, so the item's text (and its copy) is unchanged.
+  - **Files**: `src/panel/webview/styles.css`, `src/panel/webview/render/plotLayout.ts`, `docs/PLOTTING.md`, `docs/SCREENSHOTS.md`
+  - **Tests**: `test/suite/ui/webviewScript.test.ts` (the legend shows the marker); `npm run screenshots -- --scenario changed-controls` in the 2026 Dark / Light themes (dot after `time 0:6` and `col_wrap 3`, not after the automatic items)
+
+- **Upgrade sandbox: a failed offline rebuild no longer fails on the state file it restores** (development): `scripts/upgrade-sandbox.sh --scenario offline` checked that no `sdv-environment.json` was left after a failed rebuild. That holds only when upgrading from a release before 0.13, which had no state file. When the release does not change the uv environment, `paranoia.sh` upgrades from the release itself with `--bump-new`: the failed rebuild correctly restores the previous environment with its state file, whose lower revision still asks for the rebuild, and the check failed (paranoia run of 0.13.1, `upgrade` step). The check now accepts no state file, or the state file of before the upgrade, unchanged.
+  - **Files**: `scripts/upgrade-sandbox.sh`
+  - **Tests**: `scripts/upgrade-sandbox.sh --old <0.13.1.vsix> --new <0.13.1.vsix> --bump-new --scenario offline`
+- **Architecture diagrams follow the version** (development): `docs/architecture/` shows the version of `package.json`, and the 0.13.1 bump left it at v0.13.0, so the paranoia `architecture` step failed (regenerated diagrams differ from the committed ones). The diagrams are regenerated for 0.13.1, and a new pre-commit hook, `architecture-version`, runs `generate.py --if-version-changed` when `package.json` is committed: it regenerates the diagrams when the version differs from their stamp (the commit then stops on the modified files, to add) and does nothing otherwise, without Graphviz.
+  - **Files**: `.pre-commit-config.yaml`, `scripts/architecture/generate.py` (`--if-version-changed`, `stamped_version`), `docs/architecture/` (regenerated), `docs/DEVELOPMENT.md`, `docs/PUBLISHING.md`, `CLAUDE.md`
+  - **Tests**: `pre-commit run architecture-version --files package.json` with the version raised to 0.13.2 (diagrams regenerated, only the three version stamps change; hook fails on the modified files, passes when run again), then restored (regenerated back, no diff); with matching versions it passes and writes nothing
+
+### Security
+
+- **`python.overridePythonInterpreter` is read from user settings only**: it names the program the extension runs, and any scope could set it, so a repository's `.vscode/settings.json` could make the extension execute a file of the repository as soon as a data file was opened. The setting is now machine-scoped and the extension reads only its global (user, or remote machine) value; a workspace value is ignored and logged as a warning. Its description no longer suggests a relative `.venv/bin/python`; a per-project interpreter is chosen with **Python: Select Interpreter** (Python extension), which VS Code guards with workspace trust.
+  - **Files**: `package.json`, `src/common/config.ts` (`getOverridePythonInterpreter`, `getIgnoredWorkspaceOverridePythonInterpreter`), `src/python/PythonManager.ts`, `README.md` (regenerated)
+  - **Tests**: `test/suite/config.test.ts` (machine scope; workspace and workspace-folder values ignored, user value read and trimmed)
+
 ## [0.13.0] - 2026-11-18
 
 ### Added

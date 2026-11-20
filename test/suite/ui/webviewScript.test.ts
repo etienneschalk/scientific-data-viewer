@@ -888,6 +888,12 @@ suite('Webview script (jsdom)', () => {
             ['col time', false],
             ['col_wrap 2', true],
         ]);
+        // The legend shows the `•` that styles.css adds after the user items
+        assert.strictEqual(
+            layoutLine.querySelector('.plot-layout-legend .plot-layout-marker')
+                .textContent,
+            '•',
+        );
         assert.strictEqual(
             layoutLine.querySelector('.plot-layout-notes li').textContent,
             `row=${EVIL} ignored`,

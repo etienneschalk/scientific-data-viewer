@@ -3,9 +3,9 @@ import { escapeHtml } from '../util';
 
 /**
  * One line under a plot: what was drawn and where each dimension went.
- * Items set in the plot controls are outlined like the changed controls
- * (see changedFields.ts); the others were chosen by the backend. Notes
- * explain user choices that could not be used.
+ * Items set in the plot controls are outlined and marked `•` like the
+ * changed controls (see changedFields.ts); the others were chosen by the
+ * backend. Notes explain user choices that could not be used.
  */
 export function renderPlotLayout(response: CreatePlotResponse): string {
     const { layout, appliedSlices = {} } = response;
@@ -39,7 +39,7 @@ export function renderPlotLayout(response: CreatePlotResponse): string {
         <div class="plot-layout-line">
             <span class="plot-layout-kind" title="Plot kind">${escapeHtml(layout.kind)}</span>
             ${items.join('')}
-            <span class="plot-layout-legend">outlined: set by you · others: automatic</span>
+            <span class="plot-layout-legend">outlined <span class="plot-layout-marker">•</span>: set by you · others: automatic</span>
         </div>
         ${notes}`;
 }

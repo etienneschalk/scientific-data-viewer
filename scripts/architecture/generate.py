@@ -8,6 +8,11 @@ statements; the flows are drawn by ``figures.py``.
 
     python scripts/architecture/generate.py           # needs Graphviz (`dot`)
     python scripts/architecture/generate.py --check   # consistency checks only
+    python scripts/architecture/generate.py --if-version-changed   # pre-commit hook
+
+The diagrams are stamped with the version of ``package.json``; with
+``--if-version-changed`` the script does nothing when that stamp already matches
+(no Graphviz needed), and regenerates everything after a version bump.
 
 Before writing anything, and with ``--check``, the script verifies that every
 module is placed in the diagrams, that every symbol the figures and text name
@@ -17,7 +22,10 @@ still exists in its file, and that the protocol notes match ``MessageTypes.ts``.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
+import subprocess
 import sys
 from html import escape
 from pathlib import Path
@@ -335,6 +343,17 @@ def markdown_index(f, sections, requests, events) -> str:
 
 # ---------------------------------------------------------------- main
 
+STAMP = re.compile(r"Generated from the source of v(\S+)\. ")
+
+
+def stamped_version(out: Path) -> str | None:
+    """Version the diagrams in ``out`` were generated from (None: none yet)."""
+    try:
+        match = STAMP.search((out / "README.md").read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    return match.group(1) if match else None
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
@@ -349,7 +368,42 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="only check that the diagrams still match the code",
     )
+    parser.add_argument(
+        "--if-version-changed",
+        action="store_true",
+        help="regenerate only when the version of package.json differs from the one the diagrams show "
+        "(pre-commit hook on package.json)",
+    )
     args = parser.parse_args(argv)
+
+    if args.if_version_changed:
+        # Read before parsing the codebase: this is the common case, run by
+        # pre-commit on every machine (CI included, where Graphviz may be missing)
+        version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))[
+            "version"
+        ]
+        stamped = stamped_version(args.out)
+        if stamped == version:
+            return 0
+        print(
+            f"Version {version} in package.json, diagrams of v{stamped}: regenerating {args.out}",
+            flush=True,
+        )
+        if sys.version_info < (3, 10):  # noqa: UP036 (pre-commit may use an older Python)
+            # pre-commit may build the hook environment on an old system Python;
+            # the diagrams need 3.10+: hand over to the development environment
+            venv = (
+                ROOT
+                / ".venv"
+                / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            )
+            if not venv.exists():
+                print(
+                    f"Python 3.10+ is required to regenerate the diagrams: run {Path(__file__).name} with it",
+                    file=sys.stderr,
+                )
+                return 1
+            return subprocess.call([str(venv), __file__, "--out", str(args.out)])
 
     try:
         found = problems()

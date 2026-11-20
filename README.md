@@ -18,7 +18,7 @@ Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files direct
 
 <div align="center">
 
-**Current Version: v0.13.0** • [Changelog](./CHANGELOG.md#0130---2026-11-18) • [v0.13.0 release notes](./docs/RELEASE_NOTES_0.13.0.md)
+**Current Version: v0.13.1** • [Changelog](./CHANGELOG.md#0131---unreleased) • [v0.13.1 release notes](./docs/RELEASE_NOTES_0.13.1.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -372,8 +372,9 @@ The extension includes specific settings for virtual environment management:
 - **`scientificDataViewer.python.overridePythonInterpreter`**
   - (type: `string`, default: `""` (empty string))
   - Override the Python interpreter path for the Scientific Data Viewer extension. If set, this will take precedence over the extension's own virtual environment, Python extension's interpreter, and any auto-detected environments.
-  - **Examples:** - `.venv/bin/python` - Local virtual environment - `C:\venv\Scripts\python.exe` - Windows virtual environment - `/usr/bin/python3` - System Python
+  - **Examples:** - `/home/me/project/.venv/bin/python` - Virtual environment - `C:\venv\Scripts\python.exe` - Windows virtual environment - `/usr/bin/python3` - System Python
   - **Note:** This setting has the highest priority and overrides all other interpreter selection methods.
+  - **User settings only:** a value in a workspace `.vscode/settings.json` is ignored, so that a cloned repository cannot choose the program the extension runs. For a per-project interpreter, select it with **Python: Select Interpreter** (Python extension).
 - **`scientificDataViewer.python.useExtensionOwnEnvironment`**
   - (type: `boolean`, default: `false`)
   - When enabled, the extension will create and use its own isolated virtual environment stored in VSCode's extension storage.
