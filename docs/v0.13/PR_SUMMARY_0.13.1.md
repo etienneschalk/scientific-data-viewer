@@ -39,6 +39,15 @@ Patch release on top of 0.13.0, collecting the 0.13.1 fixes on `eschalk/v0.13.1-
 | What  | The check accepts no state file, or the state file of before the upgrade, unchanged. The extension's behaviour is unchanged                                                                                                                                                                                                                                      |
 | Where | `scripts/upgrade-sandbox.sh`                                                                                                                                                                                                                                                                                                                                     |
 
+### Development: architecture diagrams follow the version
+
+| Area  | What                                                                                                                                                                                                                                                                                                                                               |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Why   | Paranoia `architecture` step failed on 0.13.1: the diagrams are stamped with the version of `package.json` and still showed v0.13.0                                                                                                                                                                                                                |
+| What  | Regenerated for 0.13.1; pre-commit hook `architecture-version` on `package.json` runs `generate.py --if-version-changed`: regenerates when the version differs from the stamp of `docs/architecture/README.md` (commit stops on the modified files), no-op otherwise (no Graphviz needed, CI unaffected); below Python 3.10, hands over to `.venv` |
+| Where | `.pre-commit-config.yaml`, `scripts/architecture/generate.py`, `docs/DEVELOPMENT.md`, `docs/PUBLISHING.md`, `CLAUDE.md`                                                                                                                                                                                                                            |
+| Tests | `pre-commit run architecture-version --files package.json`: version raised to 0.13.2 then restored (regenerated each time, only the three stamps change), versions equal (passes, writes nothing)                                                                                                                                                  |
+
 ## Testing
 
 ```bash
@@ -65,3 +74,4 @@ Manual verification: steps 1–8 of the [release notes](../RELEASE_NOTES_0.13.1.
 2. fix(config): read the interpreter override from user settings only
 3. fix(qa): accept the state file restored by a failed offline rebuild in the upgrade sandbox
 4. docs(architecture): regenerate the diagrams for 0.13.1
+5. build(pre-commit): regenerate the architecture diagrams when the version changes

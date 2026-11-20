@@ -57,4 +57,5 @@ The `•` is added by CSS (`::after`), in the same `--sdv-changed` color as the 
 | **Security**    | `python.overridePythonInterpreter` read from user settings only (`package.json` scope, `config.ts`, `PythonManager.ts`) |
 | **Fixed**       | Plot layout line: items set by you end with a `•`, like the changed plot controls                                       |
 | **Development** | `scripts/upgrade-sandbox.sh`: the offline scenario accepts the state file restored with the previous environment        |
+| **Development** | Pre-commit hook `architecture-version`: a version bump regenerates `docs/architecture/` (stamped with the version)      |
 | **Docs**        | `docs/PLOTTING.md` (layout line example), `docs/SCREENSHOTS.md` (`changed-controls` scene), `README.md` (setting)       |

@@ -53,6 +53,18 @@ repos:
         types: [python]
         exclude: ^(out/|node_modules/|\.vscode-test/)
 
+  # Architecture diagrams stamped with the version: regenerated when the
+  # version of package.json changes (needs Graphviz then; a no-op otherwise).
+  # The commit stops on the modified files: add them and commit again
+  - repo: local
+    hooks:
+      - id: architecture-version
+        name: Architecture diagrams follow the version
+        entry: python scripts/architecture/generate.py --if-version-changed
+        language: python
+        files: ^package\.json$
+        pass_filenames: false
+
   # Additional file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0 # Latest stable version
