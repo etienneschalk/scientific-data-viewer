@@ -65,3 +65,4 @@ python python/get_data_info.py info artefacts/sample-data/broken_datetime_packed
 
 - feat(decoding): show and control how files are decoded (v0.14.0)
 - fix(config): read the interpreter override from user settings only
+- docs: proposals for a log color scale and seaborn colormaps

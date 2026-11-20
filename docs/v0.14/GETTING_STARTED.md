@@ -17,13 +17,15 @@ It is built on the v0.13.0 branch (`eschalk/backend-package`): merge v0.13 first
 
 ## Map of the v0.14 documents
 
-| Document                                                   | What it is for                                                               | Read it when                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------ |
-| **GETTING_STARTED.md** (this page)                         | Hub: reading order, risks, review and test plan                              | First                                      |
-| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)      | For users and reviewers: what changed, why (decoding history), upgrade notes | Before testing; published with the release |
-| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)        | Every change with its files and tests                                        | To find where something was changed        |
-| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)             | Merge request description: tables, test commands, commit list                | When opening / reviewing the PR            |
-| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md) | Click-by-click test plan with a results sheet                                | Before merging                             |
+| Document                                                       | What it is for                                                               | Read it when                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                              | First                                       |
+| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history), upgrade notes | Before testing; published with the release  |
+| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                        | To find where something was changed         |
+| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                | When opening / reviewing the PR             |
+| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet                                | Before merging                              |
+| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Proposal: a `norm` plot control for a logarithmic color / data scale         | Before opening its issue or implementing it |
+| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Proposal: `seaborn:<name>` colormaps in `cmap`, seaborn optional             | Before opening its issue or implementing it |
 
 No upgrade test plan: v0.14 adds no package and does not rebuild the extension's own environment (`ENVIRONMENT_REVISION` unchanged).
 
