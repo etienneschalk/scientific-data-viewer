@@ -44,9 +44,9 @@ AUTO_COL_WRAP = 4
 AUTO_FACET_SIZE = 4.0
 AUTO_FACET_ASPECT = 1.0
 
-# Roles in the order they are reported; "flags" (CF flag variable drawn by
-# meaning) and "hide_flags" (points hidden by an ancillary flag variable) are
-# reported only, never passed to xarray
+# Roles in the order they are reported; "norm" (log scale, plotting/norm.py),
+# "flags" (CF flag variable drawn by meaning) and "hide_flags" (points hidden
+# by an ancillary flag variable) are reported only, never passed to xarray
 ROLES = (
     "row",
     "col",
@@ -57,10 +57,11 @@ ROLES = (
     "size",
     "aspect",
     "bins",
+    "norm",
     "flags",
     "hide_flags",
 )
-_NOT_XARRAY_KWARGS = ("bins", "flags", "hide_flags")
+_NOT_XARRAY_KWARGS = ("bins", "norm", "flags", "hide_flags")
 
 
 @dataclass(frozen=True)

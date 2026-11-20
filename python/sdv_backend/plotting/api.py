@@ -4,6 +4,9 @@ Pipeline: detect format -> open file -> pick variable -> apply dimension slices
 -> apply datetime filter -> resolve the layout (user choices first, the rest
 automatic, see ``layout``) -> draw -> render PNG.
 
+``norm=log`` turns the style kwargs into a ``LogNorm`` (or a log axis) once
+the layout is known (``norm``).
+
 A CF flag variable (``flag_values`` / ``flag_masks`` + ``flag_meanings``) is
 read raw and replaced by its index array of meanings before the layout
 (``plotting/flags.py``); bit flags get one more dimension, ``flag``. With
@@ -35,6 +38,7 @@ from sdv_backend.plotting.flags import (
 )
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
 from sdv_backend.plotting.layout import PlotLayout, resolve_layout
+from sdv_backend.plotting.norm import apply_norm
 from sdv_backend.plotting.options import PlotOptions
 from sdv_backend.plotting.render import (
     build_suptitle,
@@ -180,6 +184,9 @@ def create_plot(
             bundle = _build_plot_kwargs(options, layout, flags=flag_plot is not None)
             if flag_plot is not None:
                 adjust_layout(flag_plot, layout, bundle.raw)
+            var, bundle = apply_norm(
+                var, layout, bundle, options, flags=flag_plot is not None
+            )
             hide_notes: list[str] = []
             if hidden is not None:
                 hide_notes = hidden.notes
@@ -356,7 +363,7 @@ def _build_plot_kwargs(
     logger.info(
         "Plot params received: row=%r, col=%r, plot_x=%r, plot_y=%r, plot_hue=%r, "
         "bins=%s, xincrease=%s, yincrease=%s, aspect=%s, size=%s, robust=%s, cmap=%r, "
-        "col_wrap=%s, vmin=%s, vmax=%s, add_colorbar=%s, add_legend=%s",
+        "col_wrap=%s, vmin=%s, vmax=%s, norm=%s, add_colorbar=%s, add_legend=%s",
         options.facet_row,
         options.facet_col,
         options.plot_x,
@@ -372,6 +379,7 @@ def _build_plot_kwargs(
         options.col_wrap,
         options.vmin,
         options.vmax,
+        options.norm,
         options.add_colorbar,
         options.add_legend,
     )

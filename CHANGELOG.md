@@ -49,6 +49,11 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/sample_data/flags.py` (new, `build_cf_flags_dataset` also used by the tests), `python/sample_data/main.py`
 - **Prototype scripts** (development): `scripts/prototypes/cf_flags.py` draws the proposed plots in plain matplotlib into `artefacts/prototypes/cf_flags/`; `paranoia.sh` step `prototypes` (quick) checks that every `scripts/prototypes/*.py` still runs.
   - **Files**: `scripts/prototypes/cf_flags.py`, `paranoia.sh`, `docs/DEVELOPMENT.md`, `CLAUDE.md`
+- **Log color scale: the `norm` plot control** ([`docs/v0.14/FEATURE_LOG_COLOR_SCALE.md`](docs/v0.14/FEATURE_LOG_COLOR_SCALE.md)): a select in the Color fieldset, `linear` (default, nothing passed) or `log` (CLI `--norm log`), global and group scopes. An image (imshow / pcolormesh, facets included) is drawn with a `LogNorm` built from the values above 0: colors follow `log10(value)`, one colorbar with log ticks labelled in data units, `vmin` / `vmax` typed in data units. A line gets a log scale on the axis of its values (`yscale`, or `xscale` when the variable is drawn along `y`). Values ≤ 0 are not drawn (transparent, a gap in a line) and counted in a note (`norm=log: 14 of 239 values ≤ 0 not shown (5.9%)`); with no value above 0 the plot stays linear with a note; a `vmin` / `vmax` ≤ 0 is ignored with a note; `robust` takes the 2nd / 98th percentiles of the values above 0; `center=False` keeps xarray from picking a diverging colormap for data of both signs. Histograms, bars, dates and CF flag variables ignore it with a note. The layout line gets an item `norm log, 0.001 to 12.5` (set by you); `applied_plot_kwargs` holds the norm as text (`"LogNorm(vmin=0.001, vmax=12.5)"`), the object goes to xarray only. Rationale: variables over several orders of magnitude (chlorophyll, precipitation, counts) look empty on a linear scale, and a log scale keeps the colorbar, the limits and the units in data values, unlike `log10(data)`.
+  - **Files**: `python/sdv_backend/plotting/norm.py` (new: `apply_norm`), `python/sdv_backend/plotting/kwargs.py` (`PlotKwargsBundle.objects`, `with_kwargs`, `for_call`), `python/sdv_backend/plotting/api.py`, `python/sdv_backend/plotting/draw.py`, `python/sdv_backend/plotting/options.py` (`PlotOptions.norm`), `python/sdv_backend/plotting/layout.py` (role `norm`), `python/sdv_backend/cli.py` (`--norm`), `src/panel/webview/plotParams.ts`, `src/types.ts` (`PlotOptions.norm`), `src/python/DataProcessor.ts`, `src/shared/plotLayout.ts`
+  - **Tests**: `python/tests/test_plot_norm.py` (new: image, facets with one norm, notes, user limits, robust, linear fallback, no diverging colormap, integers, constant field, pcolormesh, line y / x axis, hue, histogram, dates, flag variable, CLI), `test/suite/ui/webviewScript.test.ts` (select, payload, group over global, outline, reset), `test/suite/dataProcessor.test.ts` (`--norm`), `scripts/qa/webview/controls.mjs`, golden case `plot__norm_log`, gallery case `26_norm_log`
+- **Sample file for the log scale**: `artefacts/sample-data/sample_log_scale.nc` (`create_sample_data.py`): lognormal chlorophyll over six orders of magnitude with land (NaN) and exact zeros, a 1D particle count with a zero, a field of both signs, a field with no value above 0.
+  - **Files**: `python/sample_data/log_scale.py` (new), `python/sample_data/main.py`
 
 ### Changed
 
@@ -62,6 +67,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `src/panel/webview/plotParams.ts`
 - **Backend JSON**: data variables of the info result get `flags` (`FlagSpec.to_json()`, `null` without flag attributes); the plot layout gets the kind `bars` and the roles `flags` and `hide_flags`. Golden snapshots recorded with 0.13 differ on `flags`: record them again.
   - **Files**: `python/sdv_backend/results.py`, `python/sdv_backend/plotting/layout.py`, `src/shared/plotLayout.ts`, `scripts/architecture/graphs.py`, `docs/architecture/` (regenerated)
+- **Backend JSON (log scale)**: the plot layout gets the role `norm` (`log, 0.001 to 12.5` or `log (y axis)`), and `applied_plot_kwargs` the keys `norm` (text), `center`, `extend`, `xscale` / `yscale` when the log scale is used.
+  - **Files**: `python/sdv_backend/plotting/layout.py`, `src/shared/plotLayout.ts`
 
 ### Fixed
 
@@ -81,6 +88,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 - **v0.14 documents**: release notes `docs/RELEASE_NOTES_0.14.0.md`; `docs/v0.14/` hub (`GETTING_STARTED.md`), pull request summary (`PR_SUMMARY_0.14.0.md`) and manual test plan (`MANUAL_TEST_PLAN_0.14.0.md`). `docs/DEVELOPMENT.md` (backend module table), `CLAUDE.md`, `docs/documentation.json` (feature, settings group, troubleshooting entry), `README.md` (regenerated), `docs/architecture/` (regenerated: `decoding` and `flags` packages, `setRawMode` request).
 - **CF flags folded into 0.14**: the flags work was written for 0.15 (branch `eschalk/v0.15-cf-flags`, from 0.13.0) and cherry-picked onto this branch; its documents are merged into the 0.14 ones: release notes (sections on CF flags), manual test plan (M10-M24), hub (risks 7-12), pull request summary, and the design moved to `docs/v0.14/CF_FLAGS_PROPOSAL.md`. `docs/PLOTTING.md` § CF flag variables.
+- **Log color scale implemented**: `docs/v0.14/FEATURE_LOG_COLOR_SCALE.md` marked implemented, with the answers to its open questions; `docs/PLOTTING.md` § Log scale; manual test plan M25-M27.
 
 ## [0.13.1] - UNRELEASED
 

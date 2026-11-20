@@ -520,6 +520,7 @@ suite('buildCreatePlotCliArgs', () => {
                 size: 3,
                 robust: true,
                 cmap: ' viridis ',
+                norm: 'log',
                 bins: 20,
                 vmin: 0,
                 vmax: 1.5,
@@ -551,6 +552,7 @@ suite('buildCreatePlotCliArgs', () => {
         assert.strictEqual(flagValue('--aspect'), '2');
         assert.strictEqual(flagValue('--size'), '3');
         assert.strictEqual(flagValue('--cmap'), 'viridis');
+        assert.strictEqual(flagValue('--norm'), 'log');
         assert.strictEqual(flagValue('--bins'), '20');
         assert.strictEqual(flagValue('--vmin'), '0');
         assert.strictEqual(flagValue('--vmax'), '1.5');

@@ -816,6 +816,67 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(request.payload.useFlags, false);
     });
 
+    test('norm control: linear by default, log sent, group over global', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        const safeId = 'group-plot___-';
+        const norm = doc.getElementById('plotNormSelect');
+        assert.deepStrictEqual(
+            Array.from(
+                norm.querySelectorAll('option'),
+                (o: { value: string; textContent: string }) => [
+                    o.value,
+                    o.textContent,
+                ],
+            ),
+            [
+                ['', 'linear'],
+                ['log', 'log'],
+            ],
+        );
+        // In the Color fieldset, after cmap
+        const field = norm.closest('.plot-field');
+        assert.strictEqual(
+            field.previousElementSibling.querySelector('[data-param]').id,
+            'plotCmapInput',
+        );
+        const createPlot = () =>
+            harness.click(
+                harness
+                    .plotControls('/temperature')
+                    .querySelector('[data-action="create-plot"]'),
+            );
+
+        createPlot();
+        assert.strictEqual(
+            harness.requests('createPlot')[0].payload.norm,
+            undefined,
+        );
+
+        harness.setValue(norm, 'log');
+        assert.ok(field.classList.contains('plot-field--changed'));
+        createPlot();
+        assert.strictEqual(
+            harness.requests('createPlot')[1].payload.norm,
+            'log',
+        );
+
+        // A group select left at "global" inherits; set, it wins
+        const groupNorm = doc.getElementById(`group-plot-norm-${safeId}`);
+        assert.strictEqual(groupNorm.options[0].textContent, 'global');
+        harness.setValue(norm, '');
+        harness.setValue(groupNorm, 'log');
+        createPlot();
+        assert.strictEqual(
+            harness.requests('createPlot')[2].payload.norm,
+            'log',
+        );
+
+        harness.click(doc.getElementById('clearPlotParametersButton'));
+        assert.strictEqual(norm.value, '');
+        assert.ok(!field.classList.contains('plot-field--changed'));
+    });
+
     test('Flags controls: selection, combination and hidden flags, group over global', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;

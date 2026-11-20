@@ -1,11 +1,12 @@
-# v0.14.0 — CF decoding you can see and control, CF flags plotted by meaning
+# v0.14.0 — CF decoding you can see and control, CF flags plotted by meaning, log color scale
 
 Branch `eschalk/v0.14-cf-decoding`, based on `eschalk/v0.13.1-release` (0.13.1).
 
-Two parts:
+Three parts:
 
 - **CF decoding** (commits 1-4): see and control how a file is decoded.
 - **CF flags** (commits 5-9): variables with `flag_values` / `flag_masks` / `flag_meanings` plotted by meaning. Designed in [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md) (research, plot kinds, phases P1-P4) and written for 0.15 on `eschalk/v0.15-cf-flags` (from 0.13.0), then cherry-picked here: the flag codes are read raw through the decoding layer (`resolve_open_kwargs(raw_variables=...)`), so the decoding settings and **Reopen raw** apply to flag plots too. All four phases are in: **P1** (`flag_values`), **P2** (`flag_masks`, alone or with `flag_values`), **P3** (`flag_select`, `flag_combine`), **P4** (`hide_flags` through `ancillary_variables`).
+- **Log color scale** (commit 10): the **norm** plot control (`log`), as specified in [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md) (commit 3).
 
 Start with [GETTING_STARTED.md](./GETTING_STARTED.md).
 
@@ -43,6 +44,16 @@ Start with [GETTING_STARTED.md](./GETTING_STARTED.md).
 | Samples                          | `sample_cf_flags.nc`; the invalid QC flags of `sample_many_encoding.nc` fixed                                                                                                |
 | Proposal, prototype              | `docs/v0.14/CF_FLAGS_PROPOSAL.md`; `scripts/prototypes/cf_flags.py`, `paranoia.sh` step `prototypes`                                                                         |
 
+### Log color scale
+
+| Change                 | User-visible effect                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **norm** `log` (Color) | Image / facets: `LogNorm` from the values above 0, one colorbar in data units; line: log axis of the values; histogram, flags, dates: ignored with a note |
+| Values ≤ 0             | Not drawn (transparent, a gap), counted in a note; no value above 0: linear with a note; `vmin` / `vmax` ≤ 0 ignored with a note                          |
+| `robust` with `log`    | 2nd / 98th percentiles of the values above 0                                                                                                              |
+| Backend JSON           | Layout role `norm`; `applied_plot_kwargs` `norm` (text), `center`, `extend`, `xscale` / `yscale`                                                          |
+| Sample                 | `sample_log_scale.nc`: lognormal chlorophyll with land and zeros, 1D counts, both signs, nothing above 0                                                  |
+
 ## Design
 
 ### CF decoding
@@ -71,31 +82,45 @@ Each decoder is passed only if the engine's `open_dataset_parameters` has it (ke
 | Hidden points   | `plotting/api.py`, `plotting/flags.py`         | `_hide_flags` (lookup, raw read, slices) -> `hide_flagged` (NaN, notes, `hide_flags` item)                                                                                                                                                |
 | Draw            | `plotting/draw.py` -> `plotting/flags.py`      | `ListedColormap` + `BoundaryNorm`, labelled colorbar; steps; bars; `flag` axis ticks, facet titles                                                                                                                                        |
 
+### Log color scale
+
+| Step           | Where                        | What                                                                                                                                                         |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Kwargs objects | `plotting/kwargs.py`         | `PlotKwargsBundle.objects` (LogNorm) next to `raw` (text, returned as `applied_plot_kwargs`); `for_call` swaps them in for the xarray call                   |
+| Log scale      | `plotting/norm.py`, `api.py` | `apply_norm` after the layout: kind / dtype / flag checks, values above 0, `LogNorm` + `center=False` + `extend` (image) or `yscale` / `xscale` + NaN (line) |
+| Report         | `plotting/layout.py`         | Role `norm` (reported only, not an xarray kwarg)                                                                                                             |
+| Control        | `plotParams.ts`              | `norm`: kind `choice`, options `linear` (empty) / `log`                                                                                                      |
+
 ## Files
 
-| Area      | Files                                                                                                                                                                                                                                                                                                                                                        |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Backend   | `decoding.py` (new), `opening.py`, `results.py`, `cli.py`, `info/options.py`, `info/extract.py`, `plotting/options.py`, `plotting/api.py`; `flags.py` (new), `plotting/flags.py` (new), `plotting/api.py`, `plotting/draw.py`, `plotting/layout.py`, `plotting/options.py`, `opening.py`, `results.py`, `info/variables.py`, `cli.py`                        |
-| Extension | `package.json`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/panel/communication/MessageTypes.ts`, `src/panel/HTMLGenerator.ts`, `src/types.ts`; `src/shared/flags.ts` (new), `src/shared/plotLayout.ts`, `src/types.ts`, `src/python/DataProcessor.ts`                                                          |
-| Webview   | `bus.ts`, `main.ts`, `render/dataInfo.ts`, `render/representations.ts`; `render/variables.ts` (`renderFlags`), `plotParams.ts` (Flags fieldset: `useFlags`, `flagSelect`, `flagCombine`, `hideFlags`; kind `choice`), `styles.css`                                                                                                                           |
-| Samples   | `python/sample_data/netcdf.py`, `geotiff.py`, `main.py`; `flags.py` (new), `netcdf_encoding.py`                                                                                                                                                                                                                                                              |
-| Tests     | `python/tests/test_decoding.py` (new), `test_decode_times_fallback.py` (renamed); `test/suite/dataProcessor.test.ts`, `config.test.ts`, `ui/UIController.test.ts`, `ui/webviewScript.test.ts`, `integration.test.ts`, `pythonManager.test.ts`; `python/tests/test_flags.py` (new); `test/suite/ui/webviewScript.test.ts`, `test/suite/dataProcessor.test.ts` |
-| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.14.0.md`, `docs/v0.14/` (incl. `CF_FLAGS_PROPOSAL.md`), `docs/PLOTTING.md`, `docs/DEVELOPMENT.md`, `CLAUDE.md`, `docs/documentation.json`, `README.md`, `scripts/architecture/`, `docs/architecture/`                                                                                                                  |
-| Tooling   | `scripts/prototypes/cf_flags.py` (new), `paranoia.sh` (`prototypes`), `scripts/architecture/graphs.py`, `docs/architecture/` (regenerated)                                                                                                                                                                                                                   |
+| Area      | Files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend   | `decoding.py` (new), `opening.py`, `results.py`, `cli.py`, `info/options.py`, `info/extract.py`, `plotting/options.py`, `plotting/api.py`; `flags.py` (new), `plotting/flags.py` (new), `plotting/api.py`, `plotting/draw.py`, `plotting/layout.py`, `plotting/options.py`, `opening.py`, `results.py`, `info/variables.py`, `cli.py`                                                                                                                                                                                          |
+| Extension | `package.json`, `src/common/config.ts`, `src/python/DataProcessor.ts`, `src/panel/UIController.ts`, `src/panel/communication/MessageTypes.ts`, `src/panel/HTMLGenerator.ts`, `src/types.ts`; `src/shared/flags.ts` (new), `src/shared/plotLayout.ts`, `src/types.ts`, `src/python/DataProcessor.ts`                                                                                                                                                                                                                            |
+| Webview   | `bus.ts`, `main.ts`, `render/dataInfo.ts`, `render/representations.ts`; `render/variables.ts` (`renderFlags`), `plotParams.ts` (Flags fieldset: `useFlags`, `flagSelect`, `flagCombine`, `hideFlags`; kind `choice`), `styles.css`                                                                                                                                                                                                                                                                                             |
+| Samples   | `python/sample_data/netcdf.py`, `geotiff.py`, `main.py`; `flags.py` (new), `netcdf_encoding.py`                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Tests     | `python/tests/test_decoding.py` (new), `test_decode_times_fallback.py` (renamed); `test/suite/dataProcessor.test.ts`, `config.test.ts`, `ui/UIController.test.ts`, `ui/webviewScript.test.ts`, `integration.test.ts`, `pythonManager.test.ts`; `python/tests/test_flags.py` (new); `test/suite/ui/webviewScript.test.ts`, `test/suite/dataProcessor.test.ts`                                                                                                                                                                   |
+| Docs      | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.14.0.md`, `docs/v0.14/` (incl. `CF_FLAGS_PROPOSAL.md`), `docs/PLOTTING.md`, `docs/DEVELOPMENT.md`, `CLAUDE.md`, `docs/documentation.json`, `README.md`, `scripts/architecture/`, `docs/architecture/`                                                                                                                                                                                                                                                                                    |
+| Log scale | `plotting/norm.py` (new), `plotting/kwargs.py`, `plotting/api.py`, `plotting/draw.py`, `plotting/layout.py`, `plotting/options.py`, `cli.py`; `src/panel/webview/plotParams.ts`, `src/types.ts`, `src/python/DataProcessor.ts`, `src/shared/plotLayout.ts`; `python/sample_data/log_scale.py` (new); tests `python/tests/test_plot_norm.py` (new), `test/suite/ui/webviewScript.test.ts`, `dataProcessor.test.ts`; `scripts/qa/webview/controls.mjs`, `python/tools/golden_snapshots.py`, `python/non_regression_test_plot.py` |
+| Tooling   | `scripts/prototypes/cf_flags.py` (new), `paranoia.sh` (`prototypes`), `scripts/architecture/graphs.py`, `docs/architecture/` (regenerated)                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Testing
 
-| Check                                                                              | Result                                                                                                                                                                               |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pytest python/tests`                                                              | 342 passed (88 in `test_flags.py`, 2 new tests for the raw re-read through `decoding.py`)                                                                                            |
-| `test_flags.py`, `test_decoding.py` on Python 3.10, xarray 2024.10, matplotlib 3.9 | 87 passed, 2 skipped (zarr 2 and no rasterio in that env)                                                                                                                            |
-| `npm test` (VS Code, `env -u ELECTRON_RUN_AS_NODE`)                                | 360 passing                                                                                                                                                                          |
-| `npm run typecheck`, `npm run lint`                                                | clean                                                                                                                                                                                |
-| `scripts/architecture/generate.py --check`                                         | clean (diagrams regenerated)                                                                                                                                                         |
-| `npx vsce ls`                                                                      | 84 files (`decoding.py`, `flags.py`, `plotting/flags.py`, `out/src/shared/flags.js` added)                                                                                           |
-| Backend on sample data, decoded and raw                                            | NetCDF, HDF5, Zarr dir / ZIP, GRIB, GeoTIFF, JPEG-2000, Kerchunk, CDF: all open                                                                                                      |
-| Backend on `sample_cf_flags.nc`                                                    | Every variable plotted: images, facets, steps, bars, panels per bit, block plot, notes as expected; `station_status` the same decoded, raw, with `decodeTimes` or `maskAndScale` off |
-| Manual test plan                                                                   | [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md): to run (M1-M9 decoding, M10-M24 flags)                                                                                   |
+| Check                                                                                                   | Result                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pytest python/tests`                                                                                   | 361 passed (88 in `test_flags.py`, 19 in `test_plot_norm.py`)                                                                                                                        |
+| `test_flags.py`, `test_decoding.py`, `test_plot_norm.py` on Python 3.10, xarray 2024.10, matplotlib 3.9 | 106 passed, 2 skipped (zarr 2 and no rasterio in that env)                                                                                                                           |
+| `npm test` (VS Code, `env -u ELECTRON_RUN_AS_NODE`)                                                     | 361 passing                                                                                                                                                                          |
+| `npm run typecheck`, `npm run lint`                                                                     | clean                                                                                                                                                                                |
+| `scripts/architecture/generate.py --check`                                                              | clean (diagrams regenerated)                                                                                                                                                         |
+| `npx vsce ls`                                                                                           | 85 files (`decoding.py`, `flags.py`, `plotting/flags.py`, `plotting/norm.py`, `out/src/shared/flags.js` added)                                                                       |
+| Webview QA `controls.mjs` (`SDV_PYTHON=.venv/bin/python`)                                               | 31/31 (new: `norm` log sent, outlined, layout item)                                                                                                                                  |
+| Golden snapshots, plot cases                                                                            | 29/29 (new: `plot__norm_log`); the info cases recorded with 0.13 differ on `open_report` / `flags`, as documented                                                                    |
+| Non-regression gallery                                                                                  | All cases drawn, new `26_norm_log`                                                                                                                                                   |
+| Backend on `sample_log_scale.nc` with `--norm log`                                                      | `chlorophyll` facets on one LogNorm, `particle_count` log y-axis with a gap, `net_flux` half shown in viridis, `depth_negative` linear with a note                                   |
+| Backend on sample data, decoded and raw                                                                 | NetCDF, HDF5, Zarr dir / ZIP, GRIB, GeoTIFF, JPEG-2000, Kerchunk, CDF: all open                                                                                                      |
+| Backend on `sample_cf_flags.nc`                                                                         | Every variable plotted: images, facets, steps, bars, panels per bit, block plot, notes as expected; `station_status` the same decoded, raw, with `decodeTimes` or `maskAndScale` off |
+| Manual test plan                                                                                        | [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md): to run (M1-M9 decoding, M10-M24 flags, M25-M27 log scale)                                                                |
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use
@@ -109,6 +134,9 @@ env -u ELECTRON_RUN_AS_NODE npm test
 .venv/bin/python python/get_data_info.py plot artefacts/sample-data/sample_cf_flags.nc /wqsf
 .venv/bin/python python/get_data_info.py plot artefacts/sample-data/sample_cf_flags.nc /pixel_flags --flag-select cloud,cloud_shadow --flag-combine any
 .venv/bin/python python/get_data_info.py plot artefacts/sample-data/sample_cf_flags.nc /sst --hide-flags "cloud, bad data"
+.venv/bin/python python/get_data_info.py plot artefacts/sample-data/sample_log_scale.nc /chlorophyll --norm log
+.venv/bin/python python/non_regression_test_plot.py
+SDV_PYTHON=$PWD/.venv/bin/python node scripts/qa/webview/controls.mjs
 .venv/bin/python scripts/prototypes/cf_flags.py
 ./paranoia.sh --quick
 ```
@@ -124,3 +152,4 @@ env -u ELECTRON_RUN_AS_NODE npm test
 7. feat(flags): draw CF bit flags (flag_masks) as one panel per flag, 1D as a block plot (P2)
 8. feat(flags): choose flags by name, combine bit flags, hide points flagged by ancillary_variables (P3, P4)
 9. docs(v0.14): fold the CF flags release (0.15.0) into 0.14.0
+10. feat(plotting): log color scale, the norm plot control

@@ -64,6 +64,8 @@ def draw_plot(
 ) -> dict[str, Any]:
     """Draw ``var`` on the current matplotlib figure; return the kwargs used.
 
+    The kwargs returned are readable (a ``LogNorm`` as text); the call gets
+    the objects (``bundle.for_call``).
     With ``flag_plot``, ``var`` is its index array (one integer per meaning).
     """
     if flag_plot is not None:
@@ -72,20 +74,21 @@ def draw_plot(
         **layout.plot_kwargs(),
         **bundle.for_kind(layout.kind, hue="hue" in layout.choices),
     }
+    call = bundle.for_call(kwargs)
     if layout.kind == "histogram":
-        var.plot.hist(**kwargs)
+        var.plot.hist(**call)
         _log_plot_route("DataArray.plot.hist")
     elif layout.kind == "line":
         if layout.against_datetime:
             var = _with_datetime_dimension(var, selection, variable_name)
-        var.plot.line(**kwargs)
+        var.plot.line(**call)
         _log_plot_route("DataArray.plot.line")
     elif _axes_are_dimensions(var, layout):
-        var.plot.imshow(**kwargs)
+        var.plot.imshow(**call)
         _log_plot_route("DataArray.plot.imshow")
         _equal_aspect_if_map(layout)
     else:
-        var.plot.pcolormesh(**kwargs)
+        var.plot.pcolormesh(**call)
         _log_plot_route("DataArray.plot.pcolormesh")
         _equal_aspect_if_map(layout)
     return kwargs

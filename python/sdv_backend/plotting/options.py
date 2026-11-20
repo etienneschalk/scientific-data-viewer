@@ -105,9 +105,8 @@ class PlotOptions:
     """Everything the user can tune for one plot (one field per CLI flag).
 
     Other xarray ``DataArray.plot`` kwargs worth wiring later (see xarray plotting
-    docs) include ``norm``, ``center``, ``levels``, ``extend``, ``subplot_kws``,
-    ``cbar_kwargs``, ``edgecolors``, ``linewidth``, ``marker``, ``linestyle``,
-    and ``alpha``.
+    docs) include ``levels``, ``subplot_kws``, ``cbar_kwargs``, ``edgecolors``,
+    ``linewidth``, ``marker``, ``linestyle``, and ``alpha``.
 
     Attributes
     ----------
@@ -116,6 +115,9 @@ class PlotOptions:
     vmin, vmax : float, optional
         Color scale limits (passed to colormap plots only; not histograms or plain
         line plots).
+    norm : {"linear", "log"}
+        ``log``: logarithmic color scale of an image, log data axis of a line;
+        values ≤ 0 are not shown (``plotting/norm.py``).
     add_colorbar : bool
         Whether to draw a colorbar for scalar-mappable plots (default True).
         Ignored for histograms.
@@ -172,6 +174,7 @@ class PlotOptions:
     bins: int | None = None
     vmin: int | float | None = None
     vmax: int | float | None = None
+    norm: Literal["linear", "log"] = "linear"
     add_colorbar: bool = True
     add_legend: bool = False
 

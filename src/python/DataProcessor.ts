@@ -152,6 +152,7 @@ export function buildCreatePlotCliArgs(
         ['--plot-y', plot.plotY],
         ['--plot-hue', plot.plotHue],
         ['--cmap', plot.cmap?.trim()],
+        ['--norm', plot.norm?.trim()],
         ['--flag-select', plot.flagSelect?.trim()],
         ['--flag-combine', plot.flagCombine?.trim()],
         ['--hide-flags', plot.hideFlags?.trim()],

@@ -39,6 +39,7 @@ from sample_data.kerchunk import (
     create_sample_kerchunk_collection,
     create_sample_kerchunk_reference,
 )
+from sample_data.log_scale import create_sample_netcdf_log_scale
 from sample_data.netcdf import (
     create_sample_file_with_spaces,
     create_sample_netcdf,
@@ -132,6 +133,7 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             G(create_sample_netcdf_large_4d, "NetCDF (Large 4D - Timeout Test)"),
             G(create_sample_netcdf_many_encoding, "NetCDF (Many Encoding)"),
             G(create_sample_netcdf_cf_flags, "NetCDF (CF flag variables)"),
+            G(create_sample_netcdf_log_scale, "NetCDF (log color scale)"),
             G(create_sample_netcdf_no_attributes, "NetCDF (No Attributes)"),
             G(create_sample_netcdf_empty_dimension, "NetCDF (Empty Dimension)"),
             G(

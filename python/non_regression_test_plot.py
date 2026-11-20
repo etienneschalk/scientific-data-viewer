@@ -104,6 +104,7 @@ class PlotCase:
     cmap: str | None = None
     vmin: float | None = None
     vmax: float | None = None
+    norm: Literal["linear", "log"] = "linear"
     # None = use create_plot default (colorbar on, legend off)
     add_colorbar: bool | None = None
     add_legend: bool | None = None
@@ -325,7 +326,30 @@ def all_cases(full_grid: bool) -> list[PlotCase]:
         core
         + _extended_plot_cases(full_grid)
         + _cases_vmin_vmax_colorbar_legend(full_grid)
+        + _cases_norm(full_grid)
     )
+
+
+def _cases_norm(full_grid: bool) -> list[PlotCase]:
+    """Case 26 (v0.14): log color scale."""
+    slices = (
+        _merge_slices(_FULL_GRID_BASE_SLICES, {"time": 0}) if full_grid else {"time": 0}
+    )
+    return [
+        PlotCase(
+            slug="26_norm_log",
+            doc="norm=log: LogNorm from the values above 0, colorbar in data units",
+            title="Log color scale (norm=log)",
+            xarray_code=(
+                "from matplotlib.colors import LogNorm\n"
+                "sub = hs.isel(time=0)\n"
+                "plt.figure()\n"
+                "sub.plot.imshow(norm=LogNorm(sub.where(sub > 0).min(), sub.max()))"
+            ),
+            dimension_slices=slices,
+            norm="log",
+        ),
+    ]
 
 
 def _cases_vmin_vmax_colorbar_legend(full_grid: bool) -> list[PlotCase]:
@@ -780,6 +804,8 @@ def _case_extra_create_plot_kwargs(case: PlotCase) -> str:
         lines.append(f"- `vmin={case.vmin}`")
     if case.vmax is not None:
         lines.append(f"- `vmax={case.vmax}`")
+    if case.norm != "linear":
+        lines.append(f"- `norm={case.norm!r}`")
     if case.add_colorbar is not None:
         lines.append(f"- `add_colorbar={case.add_colorbar}`")
     if case.add_legend is not None:
@@ -984,6 +1010,7 @@ def main() -> int:
                 bins=case.bins,
                 vmin=case.vmin,
                 vmax=case.vmax,
+                norm=case.norm,
                 add_colorbar=True if case.add_colorbar is None else case.add_colorbar,
                 add_legend=False if case.add_legend is None else case.add_legend,
             ),

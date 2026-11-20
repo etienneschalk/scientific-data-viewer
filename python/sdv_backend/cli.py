@@ -23,6 +23,7 @@ from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.plotting.api import create_plot
 from sdv_backend.plotting.flags import FLAG_COMBINE_CHOICES
+from sdv_backend.plotting.norm import NORM_CHOICES
 from sdv_backend.plotting.options import (
     PlotOptions,
     parse_col_wrap,
@@ -261,6 +262,17 @@ Examples:
     )
 
     parser.add_argument(
+        "--norm",
+        choices=NORM_CHOICES,
+        default="linear",
+        help=(
+            "Scale of the values: log colors an image by log10(value) with a "
+            "colorbar in data units, and makes the data axis of a line "
+            "logarithmic; values <= 0 are not shown"
+        ),
+    )
+
+    parser.add_argument(
         "--vmin",
         type=float,
         default=None,
@@ -491,6 +503,7 @@ def _plot_options(
         bins=args.bins,
         vmin=args.vmin,
         vmax=args.vmax,
+        norm=args.norm,
         add_colorbar=not args.no_add_colorbar,
         add_legend=args.add_legend,
         use_flags=not args.no_flags,

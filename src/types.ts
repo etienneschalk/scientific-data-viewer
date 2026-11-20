@@ -43,6 +43,8 @@ export interface PlotOptions {
     robust?: boolean;
     /** Matplotlib colormap name (cmap kwarg) */
     cmap?: string;
+    /** `log`: log color scale / log data axis (--norm); empty: linear */
+    norm?: string;
     /** Number of bins for histogram-style plots (Issue #117) */
     bins?: number | null;
     /** Lower color scale limit (scalar-mappable plots) */

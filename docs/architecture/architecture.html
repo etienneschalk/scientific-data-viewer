@@ -2358,219 +2358,219 @@ footer {
 <section id="backend-packages">
 <h2><span class="n">11</span>Python backend packages</h2>
 <p>At package level, with each edge labelled by the modules it imports. Dependencies only flow downward, from <code>cli</code> through <code>info</code> / <code>plotting</code> and <code>opening</code> to <code>formats</code> and <code>environment</code>. The one sideways edge is <code>plotting → info</code>, which reuses the DataTree inheritance mode and the monotonicity check.</p>
-<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:1259px"
- viewBox="0.00 0.00 1259.50 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<figure><div class="scroll"><svg class="gv" role="img" aria-label="Backend packages: cli calls info and plotting, which use opening and formats, which use environment; results, types and _bootstrap are imported everywhere." style="max-width:1275px"
+ viewBox="0.00 0.00 1274.91 440.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(10.8 429.8)">
 
 <g id="node1" class="node py">
 <title>cli</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M915.56,-418.75C915.56,-418.75 654.23,-418.75 654.23,-418.75 649.07,-418.75 643.9,-413.59 643.9,-408.42 643.9,-408.42 643.9,-398.08 643.9,-398.08 643.9,-392.91 649.07,-387.75 654.23,-387.75 654.23,-387.75 915.56,-387.75 915.56,-387.75 920.73,-387.75 925.9,-392.91 925.9,-398.08 925.9,-398.08 925.9,-408.42 925.9,-408.42 925.9,-413.59 920.73,-418.75 915.56,-418.75"/>
-<text text-anchor="start" x="766.4" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
-<text text-anchor="start" x="655.9" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M953.97,-418.75C953.97,-418.75 692.65,-418.75 692.65,-418.75 687.48,-418.75 682.31,-413.59 682.31,-408.42 682.31,-408.42 682.31,-398.08 682.31,-398.08 682.31,-392.91 687.48,-387.75 692.65,-387.75 692.65,-387.75 953.97,-387.75 953.97,-387.75 959.14,-387.75 964.31,-392.91 964.31,-398.08 964.31,-398.08 964.31,-408.42 964.31,-408.42 964.31,-413.59 959.14,-418.75 953.97,-418.75"/>
+<text text-anchor="start" x="804.81" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">cli.py</text>
+<text text-anchor="start" x="694.31" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">argparse: info | plot → InfoOptions / PlotOptions</text>
 </g>
 
 <g id="node2" class="node py">
 <title>serialization</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1108.06,-418.75C1108.06,-418.75 1007.73,-418.75 1007.73,-418.75 1002.57,-418.75 997.4,-413.59 997.4,-408.42 997.4,-408.42 997.4,-398.08 997.4,-398.08 997.4,-392.91 1002.57,-387.75 1007.73,-387.75 1007.73,-387.75 1108.06,-387.75 1108.06,-387.75 1113.23,-387.75 1118.4,-392.91 1118.4,-398.08 1118.4,-398.08 1118.4,-408.42 1118.4,-408.42 1118.4,-413.59 1113.23,-418.75 1108.06,-418.75"/>
-<text text-anchor="start" x="1009.4" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
-<text text-anchor="start" x="1012.9" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1146.47,-418.75C1146.47,-418.75 1046.15,-418.75 1046.15,-418.75 1040.98,-418.75 1035.81,-413.59 1035.81,-408.42 1035.81,-408.42 1035.81,-398.08 1035.81,-398.08 1035.81,-392.91 1040.98,-387.75 1046.15,-387.75 1046.15,-387.75 1146.47,-387.75 1146.47,-387.75 1151.64,-387.75 1156.81,-392.91 1156.81,-398.08 1156.81,-398.08 1156.81,-408.42 1156.81,-408.42 1156.81,-413.59 1151.64,-418.75 1146.47,-418.75"/>
+<text text-anchor="start" x="1047.81" y="-405.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">serialization.py</text>
+<text text-anchor="start" x="1051.31" y="-396.3" font-family="DejaVu Sans Mono" font-size="9.00">JSON, best effort</text>
 </g>
 
 <g id="edge6" class="edge e&#45;host">
 <title>cli&#45;&gt;serialization</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M926.2,-403.25C948.84,-403.25 971.3,-403.25 991.09,-403.25"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="991.14,-405.35 997.14,-403.25 991.14,-401.15 991.14,-405.35"/>
-<text text-anchor="middle" x="961.65" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M964.61,-403.25C987.25,-403.25 1009.71,-403.25 1029.5,-403.25"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="1029.55,-405.35 1035.55,-403.25 1029.55,-401.15 1029.55,-405.35"/>
+<text text-anchor="middle" x="1000.06" y="-408.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="node3" class="node py key">
 <title>info</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M947.06,-341.25C947.06,-341.25 622.73,-341.25 622.73,-341.25 617.57,-341.25 612.4,-336.09 612.4,-330.92 612.4,-330.92 612.4,-320.58 612.4,-320.58 612.4,-315.41 617.57,-310.25 622.73,-310.25 622.73,-310.25 947.06,-310.25 947.06,-310.25 952.23,-310.25 957.4,-315.41 957.4,-320.58 957.4,-320.58 957.4,-330.92 957.4,-330.92 957.4,-336.09 952.23,-341.25 947.06,-341.25"/>
-<text text-anchor="start" x="769.4" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
-<text text-anchor="start" x="624.4" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M985.47,-341.25C985.47,-341.25 661.15,-341.25 661.15,-341.25 655.98,-341.25 650.81,-336.09 650.81,-330.92 650.81,-330.92 650.81,-320.58 650.81,-320.58 650.81,-315.41 655.98,-310.25 661.15,-310.25 661.15,-310.25 985.47,-310.25 985.47,-310.25 990.64,-310.25 995.81,-315.41 995.81,-320.58 995.81,-320.58 995.81,-330.92 995.81,-330.92 995.81,-336.09 990.64,-341.25 985.47,-341.25"/>
+<text text-anchor="start" x="807.81" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">info/</text>
+<text text-anchor="start" x="662.81" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">datatree · display · encoding · extract · options · variables</text>
 </g>
 
 <g id="edge4" class="edge e&#45;host">
 <title>cli&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M784.9,-387.69C784.9,-376.31 784.9,-360.33 784.9,-347.59"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="787,-347.26 784.9,-341.26 782.8,-347.26 787,-347.26"/>
-<text text-anchor="middle" x="866.4" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M823.31,-387.69C823.31,-376.31 823.31,-360.33 823.31,-347.59"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="825.41,-347.26 823.31,-341.26 821.21,-347.26 825.41,-347.26"/>
+<text text-anchor="middle" x="904.81" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> display, extract, options </text>
 </g>
 
 <g id="node4" class="node py key">
 <title>plotting</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M439.56,-341.25C439.56,-341.25 42.23,-341.25 42.23,-341.25 37.07,-341.25 31.9,-336.09 31.9,-330.92 31.9,-330.92 31.9,-320.58 31.9,-320.58 31.9,-315.41 37.07,-310.25 42.23,-310.25 42.23,-310.25 439.56,-310.25 439.56,-310.25 444.73,-310.25 449.9,-315.41 449.9,-320.58 449.9,-320.58 449.9,-330.92 449.9,-330.92 449.9,-336.09 444.73,-341.25 439.56,-341.25"/>
-<text text-anchor="start" x="213.4" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
-<text text-anchor="start" x="43.9" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · flags · kwargs · layout · options · render · selection · style</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M477.47,-341.25C477.47,-341.25 43.15,-341.25 43.15,-341.25 37.98,-341.25 32.81,-336.09 32.81,-330.92 32.81,-330.92 32.81,-320.58 32.81,-320.58 32.81,-315.41 37.98,-310.25 43.15,-310.25 43.15,-310.25 477.47,-310.25 477.47,-310.25 482.64,-310.25 487.81,-315.41 487.81,-320.58 487.81,-320.58 487.81,-330.92 487.81,-330.92 487.81,-336.09 482.64,-341.25 477.47,-341.25"/>
+<text text-anchor="start" x="232.81" y="-328.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">plotting/</text>
+<text text-anchor="start" x="44.81" y="-318.8" font-family="DejaVu Sans Mono" font-size="9.00">api · draw · flags · kwargs · layout · norm · options · render · selection · style</text>
 </g>
 
 <g id="edge5" class="edge e&#45;host">
 <title>cli&#45;&gt;plotting</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M680.33,-387.74C586.01,-374.65 447.73,-355.46 351.57,-342.11"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="351.82,-340.02 345.59,-341.28 351.25,-344.18 351.82,-340.02"/>
-<text text-anchor="middle" x="608.4" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, flags, options </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M715.09,-387.74C617.48,-374.65 474.37,-355.46 374.85,-342.11"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="374.88,-340 368.66,-341.28 374.33,-344.16 374.88,-340"/>
+<text text-anchor="middle" x="656.81" y="-361.9" font-family="DejaVu Sans Mono" font-size="9.50"> api, flags, norm, options </text>
 </g>
 
 <g id="node6" class="node py">
 <title>decoding</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M316.06,-186.25C316.06,-186.25 75.73,-186.25 75.73,-186.25 70.57,-186.25 65.4,-181.09 65.4,-175.92 65.4,-175.92 65.4,-165.58 65.4,-165.58 65.4,-160.41 70.57,-155.25 75.73,-155.25 75.73,-155.25 316.06,-155.25 316.06,-155.25 321.23,-155.25 326.4,-160.41 326.4,-165.58 326.4,-165.58 326.4,-175.92 326.4,-175.92 326.4,-181.09 321.23,-186.25 316.06,-186.25"/>
-<text text-anchor="start" x="162.4" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">decoding.py</text>
-<text text-anchor="start" x="77.4" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">decoders + backend_kwargs: sources, allowlist</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M332.47,-186.25C332.47,-186.25 92.15,-186.25 92.15,-186.25 86.98,-186.25 81.81,-181.09 81.81,-175.92 81.81,-175.92 81.81,-165.58 81.81,-165.58 81.81,-160.41 86.98,-155.25 92.15,-155.25 92.15,-155.25 332.47,-155.25 332.47,-155.25 337.64,-155.25 342.81,-160.41 342.81,-165.58 342.81,-165.58 342.81,-175.92 342.81,-175.92 342.81,-181.09 337.64,-186.25 332.47,-186.25"/>
+<text text-anchor="start" x="178.81" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">decoding.py</text>
+<text text-anchor="start" x="93.81" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">decoders + backend_kwargs: sources, allowlist</text>
 </g>
 
 <g id="edge1" class="edge e&#45;host">
 <title>cli&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M643.61,-401.26C432.69,-398.3 55.65,-386.67 13.9,-341.5 -41.23,-281.86 82.72,-218.29 152.49,-188.71"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="153.52,-190.55 158.24,-186.29 151.89,-186.68 153.52,-190.55"/>
-<text text-anchor="middle" x="15.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M682.26,-401.85C462.46,-399.74 58.67,-389.32 14.31,-341.5 -43.32,-279.39 89.09,-217.38 164.51,-188.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="165.42,-190.41 170.29,-186.32 163.93,-186.49 165.42,-190.41"/>
+<text text-anchor="middle" x="15.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="node7" class="node py">
 <title>flags</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1153.56,-263.75C1153.56,-263.75 924.23,-263.75 924.23,-263.75 919.07,-263.75 913.9,-258.59 913.9,-253.42 913.9,-253.42 913.9,-243.08 913.9,-243.08 913.9,-237.91 919.07,-232.75 924.23,-232.75 924.23,-232.75 1153.56,-232.75 1153.56,-232.75 1158.73,-232.75 1163.9,-237.91 1163.9,-243.08 1163.9,-243.08 1163.9,-253.42 1163.9,-253.42 1163.9,-258.59 1158.73,-263.75 1153.56,-263.75"/>
-<text text-anchor="start" x="1014.4" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">flags.py</text>
-<text text-anchor="start" x="925.9" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">CF flag_values / flag_masks / flag_meanings</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M1169.97,-263.75C1169.97,-263.75 940.65,-263.75 940.65,-263.75 935.48,-263.75 930.31,-258.59 930.31,-253.42 930.31,-253.42 930.31,-243.08 930.31,-243.08 930.31,-237.91 935.48,-232.75 940.65,-232.75 940.65,-232.75 1169.97,-232.75 1169.97,-232.75 1175.14,-232.75 1180.31,-237.91 1180.31,-243.08 1180.31,-243.08 1180.31,-253.42 1180.31,-253.42 1180.31,-258.59 1175.14,-263.75 1169.97,-263.75"/>
+<text text-anchor="start" x="1030.81" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">flags.py</text>
+<text text-anchor="start" x="942.31" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">CF flag_values / flag_masks / flag_meanings</text>
 </g>
 
 <g id="edge2" class="edge e&#45;host">
 <title>cli&#45;&gt;flags</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M919.07,-387.62C932.44,-383 945.33,-377.08 956.9,-369.5 994.23,-345.03 1019.08,-297.08 1030.91,-269.7"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="1032.97,-270.2 1033.36,-263.86 1029.1,-268.57 1032.97,-270.2"/>
-<text text-anchor="middle" x="1016.4" y="-323.15" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M935.22,-387.69C961.12,-382.8 984.32,-376.72 995.31,-369.5 1029.93,-346.75 1045.39,-297.7 1051.61,-269.79"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="1053.69,-270.14 1052.87,-263.84 1049.58,-269.27 1053.69,-270.14"/>
+<text text-anchor="middle" x="1044.81" y="-323.15" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="node8" class="node py">
 <title>formats</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M685.06,-186.25C685.06,-186.25 502.73,-186.25 502.73,-186.25 497.57,-186.25 492.4,-181.09 492.4,-175.92 492.4,-175.92 492.4,-165.58 492.4,-165.58 492.4,-160.41 497.57,-155.25 502.73,-155.25 502.73,-155.25 685.06,-155.25 685.06,-155.25 690.23,-155.25 695.4,-160.41 695.4,-165.58 695.4,-165.58 695.4,-175.92 695.4,-175.92 695.4,-181.09 690.23,-186.25 685.06,-186.25"/>
-<text text-anchor="start" x="569.4" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
-<text text-anchor="start" x="504.4" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M701.47,-186.25C701.47,-186.25 519.15,-186.25 519.15,-186.25 513.98,-186.25 508.81,-181.09 508.81,-175.92 508.81,-175.92 508.81,-165.58 508.81,-165.58 508.81,-160.41 513.98,-155.25 519.15,-155.25 519.15,-155.25 701.47,-155.25 701.47,-155.25 706.64,-155.25 711.81,-160.41 711.81,-165.58 711.81,-165.58 711.81,-175.92 711.81,-175.92 711.81,-181.09 706.64,-186.25 701.47,-186.25"/>
+<text text-anchor="start" x="585.81" y="-173.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">formats/</text>
+<text text-anchor="start" x="520.81" y="-163.8" font-family="DejaVu Sans Mono" font-size="9.00">detect · geotiff · kerchunk · zarr</text>
 </g>
 
 <g id="edge3" class="edge e&#45;host">
 <title>cli&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M926.21,-388.63C1071.54,-369.3 1265.68,-325.39 1181.9,-232.5 1150.41,-197.58 862.65,-181.53 701.69,-175.22"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="701.62,-173.12 695.54,-174.98 701.46,-177.31 701.62,-173.12"/>
-<text text-anchor="middle" x="1219.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M952.44,-387.74C1090.42,-367.3 1279.08,-322.05 1198.31,-232.5 1166.82,-197.58 879.06,-181.53 718.1,-175.22"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="718.03,-173.12 711.95,-174.98 717.87,-177.31 718.03,-173.12"/>
+<text text-anchor="middle" x="1234.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> zarr </text>
 </g>
 
 <g id="node5" class="node py key">
 <title>opening</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M511.56,-263.75C511.56,-263.75 282.23,-263.75 282.23,-263.75 277.07,-263.75 271.9,-258.59 271.9,-253.42 271.9,-253.42 271.9,-243.08 271.9,-243.08 271.9,-237.91 277.07,-232.75 282.23,-232.75 282.23,-232.75 511.56,-232.75 511.56,-232.75 516.73,-232.75 521.9,-237.91 521.9,-243.08 521.9,-243.08 521.9,-253.42 521.9,-253.42 521.9,-258.59 516.73,-263.75 511.56,-263.75"/>
-<text text-anchor="start" x="366.4" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
-<text text-anchor="start" x="283.9" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_times fallback</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M527.97,-263.75C527.97,-263.75 298.65,-263.75 298.65,-263.75 293.48,-263.75 288.31,-258.59 288.31,-253.42 288.31,-253.42 288.31,-243.08 288.31,-243.08 288.31,-237.91 293.48,-232.75 298.65,-232.75 298.65,-232.75 527.97,-232.75 527.97,-232.75 533.14,-232.75 538.31,-237.91 538.31,-243.08 538.31,-243.08 538.31,-253.42 538.31,-253.42 538.31,-258.59 533.14,-263.75 527.97,-263.75"/>
+<text text-anchor="start" x="382.81" y="-250.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">opening.py</text>
+<text text-anchor="start" x="300.31" y="-241.3" font-family="DejaVu Sans Mono" font-size="9.00">OpenedData · engine + decode_times fallback</text>
 </g>
 
 <g id="edge11" class="edge e&#45;host">
 <title>info&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M710.09,-310.19C643.4,-297.22 546.02,-278.27 477.59,-264.95"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="477.77,-262.85 471.48,-263.76 476.97,-266.97 477.77,-262.85"/>
-<text text-anchor="middle" x="620.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M744.26,-310.19C673.64,-297.19 570.47,-278.19 498.14,-264.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="498.4,-262.78 492.12,-263.76 497.64,-266.91 498.4,-262.78"/>
+<text text-anchor="middle" x="648.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge8" class="edge e&#45;host">
 <title>info&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M612.36,-316.18C485.75,-309.36 330.85,-299.71 300.9,-292 272.4,-284.66 261.89,-284.63 240.9,-264 220.51,-243.96 208.01,-212.82 201.51,-192.35"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="203.44,-191.49 199.68,-186.37 199.43,-192.72 203.44,-191.49"/>
-<text text-anchor="middle" x="247.4" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M650.71,-316.58C517.65,-309.77 351.11,-299.93 319.31,-292 289.97,-284.68 279,-285.06 257.31,-264 236.8,-244.09 224.32,-212.91 217.87,-192.4"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="219.8,-191.54 216.06,-186.41 215.78,-192.76 219.8,-191.54"/>
+<text text-anchor="middle" x="263.81" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge9" class="edge e&#45;host">
 <title>info&#45;&gt;flags</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M833.87,-310.19C876.92,-297.4 939.49,-278.8 984.17,-265.52"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="984.92,-267.49 990.08,-263.76 983.73,-263.46 984.92,-267.49"/>
-<text text-anchor="middle" x="933.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M868.04,-310.19C907.2,-297.45 964.04,-278.95 1004.82,-265.68"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="1005.66,-267.62 1010.71,-263.76 1004.36,-263.62 1005.66,-267.62"/>
+<text text-anchor="middle" x="958.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge10" class="edge e&#45;host">
 <title>info&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M763.09,-310.14C755.06,-304.61 745.96,-298.16 737.9,-292 692.87,-257.62 642.56,-214.44 614.92,-190.3"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="616.26,-188.68 610.36,-186.3 613.49,-191.84 616.26,-188.68"/>
-<text text-anchor="middle" x="783.4" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M788.35,-310.24C777.16,-305.05 764.92,-298.79 754.31,-292 706.08,-261.12 656.17,-215.93 629.64,-190.66"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="631.06,-189.11 625.28,-186.48 628.16,-192.15 631.06,-189.11"/>
+<text text-anchor="middle" x="795.81" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect, geotiff, kerchunk </text>
 </g>
 
 <g id="edge19" class="edge e&#45;host">
 <title>plotting&#45;&gt;info</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M450.06,-325.75C501.57,-325.75 556.26,-325.75 606.18,-325.75"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="606.25,-327.85 612.25,-325.75 606.25,-323.65 606.25,-327.85"/>
-<text text-anchor="middle" x="531.15" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M488.09,-325.75C540.25,-325.75 594.98,-325.75 644.73,-325.75"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="644.77,-327.85 650.77,-325.75 644.77,-323.65 644.77,-327.85"/>
+<text text-anchor="middle" x="569.31" y="-331.15" font-family="DejaVu Sans Mono" font-size="9.50"> datatree, variables </text>
 </g>
 
 <g id="edge20" class="edge e&#45;host">
 <title>plotting&#45;&gt;opening</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M270.98,-310.19C296.77,-297.71 333.97,-279.71 361.25,-266.5"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="362.43,-268.27 366.91,-263.76 360.6,-264.49 362.43,-268.27"/>
-<text text-anchor="middle" x="335.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M289.81,-310.19C315.1,-297.71 351.59,-279.71 378.35,-266.5"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="379.45,-268.3 383.9,-263.76 377.59,-264.53 379.45,-268.3"/>
+<text text-anchor="middle" x="352.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge15" class="edge e&#45;host">
 <title>plotting&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M210.93,-310.19C193.71,-299.96 173.79,-284.45 164.9,-264 154.31,-239.64 168.42,-210.41 180.89,-191.47"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="182.69,-192.56 184.34,-186.42 179.22,-190.19 182.69,-192.56"/>
-<text text-anchor="middle" x="171.4" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M228.25,-310.08C210.51,-299.97 190.27,-284.63 181.31,-264 170.72,-239.64 184.83,-210.41 197.3,-191.47"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="199.1,-192.56 200.75,-186.42 195.63,-190.19 199.1,-192.56"/>
+<text text-anchor="middle" x="187.81" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge17" class="edge e&#45;host">
 <title>plotting&#45;&gt;flags</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M416.88,-310.23C481.39,-304.75 554.98,-298.31 621.9,-292 717.41,-283 825.12,-271.93 907.14,-263.32"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="907.75,-265.36 913.5,-262.65 907.31,-261.19 907.75,-265.36"/>
-<text text-anchor="middle" x="719.4" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M434.43,-310.24C498.55,-304.75 571.75,-298.29 638.31,-292 733.81,-282.97 841.52,-271.9 923.55,-263.29"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="924.16,-265.34 929.91,-262.63 923.72,-261.16 924.16,-265.34"/>
+<text text-anchor="middle" x="735.81" y="-284.4" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge18" class="edge e&#45;host">
 <title>plotting&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M450.05,-313.67C509.17,-308.62 560.43,-301.56 570.9,-292 598.35,-266.91 599.02,-219.94 596.7,-192.72"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="598.77,-192.35 596.09,-186.58 594.59,-192.76 598.77,-192.35"/>
-<text text-anchor="middle" x="620.4" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M488.14,-311.68C537.69,-306.8 578.18,-300.35 587.31,-292 614.75,-266.9 615.43,-219.94 613.1,-192.72"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="615.18,-192.34 612.5,-186.58 611,-192.75 615.18,-192.34"/>
+<text text-anchor="middle" x="636.81" y="-245.65" font-family="DejaVu Sans Mono" font-size="9.50"> detect </text>
 </g>
 
 <g id="node9" class="node py">
 <title>environment</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M448.06,-108.75C448.06,-108.75 349.73,-108.75 349.73,-108.75 344.57,-108.75 339.4,-103.59 339.4,-98.42 339.4,-98.42 339.4,-88.08 339.4,-88.08 339.4,-82.91 344.57,-77.75 349.73,-77.75 349.73,-77.75 448.06,-77.75 448.06,-77.75 453.23,-77.75 458.4,-82.91 458.4,-88.08 458.4,-88.08 458.4,-98.42 458.4,-98.42 458.4,-103.59 453.23,-108.75 448.06,-108.75"/>
-<text text-anchor="start" x="362.4" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
-<text text-anchor="start" x="351.4" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M464.47,-108.75C464.47,-108.75 366.15,-108.75 366.15,-108.75 360.98,-108.75 355.81,-103.59 355.81,-98.42 355.81,-98.42 355.81,-88.08 355.81,-88.08 355.81,-82.91 360.98,-77.75 366.15,-77.75 366.15,-77.75 464.47,-77.75 464.47,-77.75 469.64,-77.75 474.81,-82.91 474.81,-88.08 474.81,-88.08 474.81,-98.42 474.81,-98.42 474.81,-103.59 469.64,-108.75 464.47,-108.75"/>
+<text text-anchor="start" x="378.81" y="-95.6" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">environment/</text>
+<text text-anchor="start" x="367.81" y="-86.3" font-family="DejaVu Sans Mono" font-size="9.00">engines · packages</text>
 </g>
 
 <g id="edge16" class="edge e&#45;host">
 <title>plotting&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M199.36,-310.23C127.28,-282.86 -8.24,-220.47 46.9,-155 82.78,-112.4 241.6,-99.67 333.18,-95.87"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="333.47,-97.96 339.38,-95.62 333.3,-93.76 333.47,-97.96"/>
-<text text-anchor="middle" x="73.4" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M217.91,-310.23C144.76,-282.99 7.76,-220.96 63.31,-155 99.19,-112.4 258.01,-99.67 349.59,-95.87"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="349.88,-97.96 355.79,-95.62 349.71,-93.76 349.88,-97.96"/>
+<text text-anchor="middle" x="90.81" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> packages </text>
 </g>
 
 <g id="edge12" class="edge e&#45;host">
 <title>opening&#45;&gt;decoding</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M358.14,-232.69C324.5,-220.05 275.78,-201.75 240.51,-188.51"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="240.89,-186.41 234.53,-186.26 239.41,-190.34 240.89,-186.41"/>
-<text text-anchor="middle" x="315.4" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M374.55,-232.69C340.91,-220.05 292.19,-201.75 256.92,-188.51"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="257.3,-186.41 250.95,-186.26 255.82,-190.34 257.3,-186.41"/>
+<text text-anchor="middle" x="331.81" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> &#160;</text>
 </g>
 
 <g id="edge14" class="edge e&#45;host">
 <title>opening&#45;&gt;formats</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M417.81,-232.7C431.76,-223.54 450.79,-212.07 468.9,-204.5 484.48,-197.99 501.7,-192.47 518.25,-187.93"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="519.06,-189.89 524.31,-186.31 517.97,-185.83 519.06,-189.89"/>
-<text text-anchor="middle" x="517.4" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M434.22,-232.7C448.17,-223.54 467.2,-212.07 485.31,-204.5 500.89,-197.99 518.11,-192.47 534.66,-187.93"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="535.47,-189.89 540.72,-186.31 534.38,-185.83 535.47,-189.89"/>
+<text text-anchor="middle" x="533.81" y="-206.9" font-family="DejaVu Sans Mono" font-size="9.50"> kerchunk, zarr </text>
 </g>
 
 <g id="edge13" class="edge e&#45;host">
 <title>opening&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M397.09,-232.58C397.45,-205.35 398.21,-146.89 398.62,-115.39"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="400.73,-115.13 398.7,-109.1 396.53,-115.07 400.73,-115.13"/>
-<text text-anchor="middle" x="426.4" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M413.5,-232.58C413.86,-205.35 414.62,-146.89 415.03,-115.39"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="417.14,-115.13 415.12,-109.1 412.94,-115.07 417.14,-115.13"/>
+<text text-anchor="middle" x="442.81" y="-168.15" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
 <g id="edge7" class="edge e&#45;host">
 <title>formats&#45;&gt;environment</title>
-<path fill="none" stroke="black" stroke-width="0.9" d="M556.3,-155.19C523.66,-142.55 476.39,-124.25 442.18,-111.01"/>
-<polygon fill="black" stroke="black" stroke-width="0.9" points="442.73,-108.97 436.38,-108.76 441.22,-112.89 442.73,-108.97"/>
-<text text-anchor="middle" x="536.4" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
+<path fill="none" stroke="black" stroke-width="0.9" d="M572.71,-155.19C540.07,-142.55 492.8,-124.25 458.59,-111.01"/>
+<polygon fill="black" stroke="black" stroke-width="0.9" points="459.15,-108.97 452.79,-108.76 457.63,-112.89 459.15,-108.97"/>
+<text text-anchor="middle" x="552.81" y="-129.4" font-family="DejaVu Sans Mono" font-size="9.50"> engines </text>
 </g>
 
 <g id="node10" class="node f&#45;shared">
 <title>foundation</title>
-<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M602.9,-40.25C602.9,-40.25 194.9,-40.25 194.9,-40.25 188.9,-40.25 182.9,-34.25 182.9,-28.25 182.9,-28.25 182.9,-12.25 182.9,-12.25 182.9,-6.25 188.9,-0.25 194.9,-0.25 194.9,-0.25 602.9,-0.25 602.9,-0.25 608.9,-0.25 614.9,-6.25 614.9,-12.25 614.9,-12.25 614.9,-28.25 614.9,-28.25 614.9,-34.25 608.9,-40.25 602.9,-40.25"/>
-<text text-anchor="start" x="314.4" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
-<text text-anchor="start" x="209.4" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
-<text text-anchor="start" x="317.4" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
+<path fill="lightgrey" stroke="black" stroke-width="1.1" d="M619.31,-40.25C619.31,-40.25 211.31,-40.25 211.31,-40.25 205.31,-40.25 199.31,-34.25 199.31,-28.25 199.31,-28.25 199.31,-12.25 199.31,-12.25 199.31,-6.25 205.31,-0.25 211.31,-0.25 211.31,-0.25 619.31,-0.25 619.31,-0.25 625.31,-0.25 631.31,-6.25 631.31,-12.25 631.31,-12.25 631.31,-28.25 631.31,-28.25 631.31,-34.25 625.31,-40.25 619.31,-40.25"/>
+<text text-anchor="start" x="330.81" y="-27.1" font-family="DejaVu Sans Mono" font-weight="bold" font-size="10.50">results · types · _bootstrap</text>
+<text text-anchor="start" x="225.81" y="-17.8" font-family="DejaVu Sans Mono" font-size="9.00">JSON result dataclasses · type aliases · logger + xarray display options</text>
+<text text-anchor="start" x="333.81" y="-8.8" font-family="DejaVu Sans Mono" font-size="9.00">imported by every package above</text>
 </g>
 
 </g>

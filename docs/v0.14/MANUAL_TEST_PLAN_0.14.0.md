@@ -1,13 +1,13 @@
 # v0.14.0 — Manual test plan
 
-About 60 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 75 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M27 for the log scale (10 min). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
 1. Install the build under test: `npm run package`, then **Extensions > … > Install from VSIX** with `artefacts/vsix-releases/scientific-data-viewer-0.14.0.vsix` (or press F5 from the repository).
-2. Create the sample files: `python python/create_sample_data.py`. They land in `artefacts/sample-data/`. v0.14 adds `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif` and `sample_cf_flags.nc`.
+2. Create the sample files: `python python/create_sample_data.py`. They land in `artefacts/sample-data/`. v0.14 adds `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc` and `sample_log_scale.nc`.
 3. Reset the settings this plan touches: `scientificDataViewer.decoding.*` to `default`, `scientificDataViewer.engineBackendKwargs` removed, `scientificDataViewer.convertBandsToVariables` on.
-4. Reset the plot controls (**Reset** in Global Plot Controls): **flags** (Flags fieldset) checked, **flag_select**, **flag_combine** (`per flag`) and **hide_flags** empty.
+4. Reset the plot controls (**Reset** in Global Plot Controls): **flags** (Flags fieldset) checked, **flag_select**, **flag_combine** (`per flag`) and **hide_flags** empty, **norm** `linear`, **cmap** empty.
 
 Where to look:
 
@@ -193,6 +193,29 @@ Open `sample_cf_flags.nc` for every step from M10 on.
 3. Click **Reopen decoded**. Set `scientificDataViewer.decoding.decodeTimes` to `off`, **Refresh**, plot `station_status`: steps by meaning, with `obs_time` as numbers on the x-axis (the second, raw read of the flag codes keeps the decoding settings).
 4. Set `decodeTimes` back to `default`.
 
+# Log scale
+
+Open `sample_log_scale.nc` for M25-M27. The **norm** select is in the Color fieldset, after **cmap**.
+
+## M25 — Log color scale on facets
+
+1. Plot `chlorophyll` (norm `linear`): four facets in one flat dark color, a few bright pixels near the coast.
+2. Set **norm** = `log` (Global Plot Controls): the field is outlined. Plot again: gradients from west to east, **one** colorbar labelled `10⁻²` … `10³`, the land disc and the bottom-left corner (zeros) left blank.
+3. Layout line: `norm log, 0.00487 to 2.41e+03`, outlined (set by you). Note: `norm=log: 192 of 19064 values ≤ 0 not shown (1%)`.
+
+## M26 — Limits and robust on a log scale
+
+1. Keep **norm** = `log`, set **vmin** = `0.1`, **vmax** = `10`: colorbar from `10⁻¹` to `10¹`, arrows at both ends; layout item `norm log, 0.1 to 10`.
+2. Set **vmin** = `-1`: note `vmin=-1 ignored: a log scale starts above 0 (0.00487 used)`.
+3. Clear vmin / vmax, check **robust**: the limits shrink (2nd / 98th percentiles of the values above 0), arrows at both ends.
+
+## M27 — Lines, both signs, nothing above 0
+
+1. Clear robust. Plot `particle_count`: log y-axis from about `10⁻¹` to `10⁵`, a gap at sample 17; note `1 of 120 values ≤ 0 not shown`.
+2. Plot `net_flux`: only the positive half colored, in `viridis` (not red and blue); half the values counted in the note.
+3. Plot `depth_negative`: a linear plot with note `norm=log ignored: no value above 0, linear scale`.
+4. In the group controls of `/`, set **norm** = `log` with the global one back to `linear`: `chlorophyll` is drawn on a log scale (the group wins). Reset both.
+
 ## Results sheet
 
 | Step | Result (OK / KO + note) | Tester / date |
@@ -221,3 +244,6 @@ Open `sample_cf_flags.nc` for every step from M10 on.
 | M22  |                         |               |
 | M23  |                         |               |
 | M24  |                         |               |
+| M25  |                         |               |
+| M26  |                         |               |
+| M27  |                         |               |

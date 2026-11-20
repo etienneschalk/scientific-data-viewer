@@ -142,6 +142,13 @@ const typeChars = async (p, sel, text) => {
     r = await plot(p, '/precipitation');
     check('cmap invalid → readable error', /not a valid value for cmap/.test(r.msg), { msg: r.msg.slice(0, 300) });
     await setParam(S, 'cmap', '');
+    // norm = log (v0.14)
+    await p.eval(`(() => { const s = document.querySelector('${S} [data-param="norm"]'); s.value = 'log'; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);
+    r = await plot(p, '/precipitation');
+    const normItem = await p.eval(`[...document.querySelectorAll('.plot-layout-item--user')].map((e) => e.textContent).find((t) => t.startsWith('norm')) ?? ''`);
+    const normOutlined = await p.eval(`document.querySelector('${S} [data-param="norm"]').closest('.plot-field').classList.contains('plot-field--changed')`);
+    check('norm "log" → plot OK, "--norm log" sent, outlined, layout item "norm log, …"', r.img && r.args?.join(' ').includes('--norm log') && /^norm log, /.test(normItem) && normOutlined, { args: r.args, normItem, normOutlined, msg: r.msg.slice(0, 300) });
+    await p.eval(`(() => { const s = document.querySelector('${S} [data-param="norm"]'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);
     // col_wrap auto (group + global)
     await p.eval(`(() => { const a = document.querySelector('${S} [data-param="colWrapAuto"]'); a.click(); })(); true`);
     const groupColWrapDisabled = await p.eval(`document.querySelector('${S} [data-param="colWrap"]').disabled`);

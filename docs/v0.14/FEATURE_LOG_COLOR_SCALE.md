@@ -1,6 +1,11 @@
 # Feature (v0.14): log color scale
 
-> Status: **proposed** for v0.14. This page is the spec an issue points to.
+> Status: **implemented** in v0.14.0 (`python/sdv_backend/plotting/norm.py`,
+> the **norm** select of the Color fieldset, `--norm log`). This page is the
+> spec it was built from; the [decisions](#decisions-made-while-implementing)
+> at the end record where the implementation settled the open questions or
+> went further. User documentation: [`docs/PLOTTING.md`](../PLOTTING.md)
+> § Log scale.
 
 ## Summary
 
@@ -150,3 +155,25 @@ layout line must mark it with the "set by you" dot like the other controls.
   `log` checkbox?
 - Should the note about values ≤ 0 be shown when they are only a few (e.g.
   below 0.1 %)?
+
+## Decisions made while implementing
+
+- **Control shape**: a `norm` select (`linear` empty, `log`), built on the
+  `choice` kind that `flag_combine` had already added to `plotParams.ts`;
+  `symlog` can be one more option.
+- **Note about values ≤ 0**: always shown, with the count and the share
+  (`norm=log: 14 of 239 values ≤ 0 not shown (5.9%)`): a hidden zero is worth
+  knowing even when rare.
+- **Lines**: the values ≤ 0 are made NaN before drawing, so they are a gap,
+  not a line plunging to the bottom edge (matplotlib's `nonpositive="clip"`):
+  the note says "not shown" for every kind.
+- **`center=False`** is passed with the norm: xarray's diverging default for
+  data of both signs is avoided (a test checks `viridis` is kept).
+- **`extend`** (colorbar arrows) is computed from the values above 0, so the
+  values ≤ 0 do not add an arrow at the bottom.
+- **One user limit beyond the data** (only `vmin`, above the largest value):
+  both limits take it, instead of an inverted norm that matplotlib refuses.
+- **Dates, flag variables**: ignored with a note, like histograms.
+- **Kwargs objects**: `PlotKwargsBundle` keeps readable values (returned as
+  `applied_plot_kwargs`) and an `objects` dict swapped in by `for_call` just
+  before the xarray call.

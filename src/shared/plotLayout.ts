@@ -14,6 +14,8 @@ export type PlotLayoutRole =
     | 'size'
     | 'aspect'
     | 'bins'
+    /** Log scale and its limits (reported, not an xarray kwarg) */
+    | 'norm'
     /** CF flag variable drawn by meaning (reported, not an xarray kwarg) */
     | 'flags'
     /** Points hidden by an ancillary flag variable (reported only) */

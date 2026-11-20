@@ -212,6 +212,12 @@ PLOT_CASES: list[tuple[str, str, str, list[str]]] = [
         ],
     ),
     (
+        "norm_log",
+        HS,
+        "/hs",
+        ["--dimension-slices", '{"time": 0}', "--norm", "log", "--robust"],
+    ),
+    (
         "kwargs_mix",
         HS,
         "/hs",

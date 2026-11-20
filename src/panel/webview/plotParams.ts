@@ -172,6 +172,18 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         title: 'Matplotlib colormap name (user must provide a valid existing cmap)',
     },
     {
+        key: 'norm',
+        label: 'norm',
+        hint: 'scale',
+        kind: 'choice',
+        choices: ['log'],
+        emptyLabel: 'linear',
+        group: 'Color',
+        id: 'plotNormSelect',
+        groupId: 'group-plot-norm',
+        title: 'log: colors follow log10(value), colorbar in data units (images); log data axis (lines). Values <= 0 are not shown. Empty: linear',
+    },
+    {
         key: 'robust',
         label: 'robust',
         hint: '2–98 %',

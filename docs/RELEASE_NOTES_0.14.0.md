@@ -4,6 +4,8 @@
 
 **CF flags.** Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. New **Flags** plot controls pick meanings by name (`flag_select`), fold bit flags into one map (`flag_combine`: `cloud OR cloud_shadow`), and hide the points of a data variable that its quality flag marks (`hide_flags`, through `ancillary_variables`). The **flags** checkbox turns it all off.
 
+**Log color scale.** A new **norm** plot control draws a variable on a **logarithmic scale** without changing the data: the colors follow `log10(value)` and the colorbar shows the values (`10⁻³`, `10⁻²`…), so a chlorophyll or precipitation field over several orders of magnitude no longer looks empty. On a line plot the axis of the values becomes logarithmic. Values ≤ 0 are left out and counted in a note.
+
 **Start here** to review, test or release v0.14: [`docs/v0.14/GETTING_STARTED.md`](./v0.14/GETTING_STARTED.md).
 
 ---
@@ -53,6 +55,10 @@ A CF flag variable stores numbers that stand for names. Before 0.14 the viewer d
 
 The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.14/CF_FLAGS_PROPOSAL.md`](./v0.14/CF_FLAGS_PROPOSAL.md). All four phases are in this release: P1 (`flag_values`), P2 (`flag_masks`, alone or with `flag_values`), P3 (selection and combination by name) and P4 (hiding points through `ancillary_variables`).
 
+### Log color scale
+
+Users asked to "log10 a variable before plotting it". A log **scale** is better than a log10 transform of the data: the colorbar stays in the variable's units, `vmin` / `vmax` are typed in data units, zeros and negative values are left out instead of becoming `-inf` / `NaN` with warnings, and the title and units still match the data. matplotlib does it with one object, `LogNorm`. The design and the comparison are in [`docs/v0.14/FEATURE_LOG_COLOR_SCALE.md`](./v0.14/FEATURE_LOG_COLOR_SCALE.md).
+
 ---
 
 ## Upgrade notes (read before updating)
@@ -68,6 +74,8 @@ The goal is to reward producers who describe their masks with the CF attributes:
 - **Style options ignored for flag plots**: `vmin`, `vmax` and `robust` (one color per class), and `bins` (bars per meaning). A note says so. `cmap` still applies: it is sampled into one color per meaning.
 - **Backend JSON contract (flags)**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the roles `flags` and `hide_flags`. Golden snapshots recorded with 0.13 differ on these keys too.
 - **No change to Python environments**: no new package. The extension's own uv environment is not rebuilt (`ENVIRONMENT_REVISION` unchanged).
+- **norm changes nothing until you use it**: it is empty (`linear`) by default.
+- **Backend JSON contract (log scale)**: the plot layout can have the role `norm`, and `applied_plot_kwargs` the keys `norm` (text such as `"LogNorm(vmin=0.001, vmax=12.5)"`), `center`, `extend`, `xscale` / `yscale`.
 
 ---
 
@@ -243,9 +251,32 @@ With **Reopen raw** or `decoding.maskAndScale: off`, the codes are already raw a
 
 ---
 
+## Log color scale (norm = log)
+
+A select in the **Color** fieldset of the plot controls, global and per group: `linear` (default, nothing passed) or `log`. Command line: `--norm log`.
+
+| Plot kind        | norm = log                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| Image, facets    | Colors follow `log10(value)`; one colorbar for every panel, log ticks, labels in data units |
+| Line             | Log scale on the axis of the values (y, or x when the variable is drawn along y)            |
+| Histogram, bars  | Ignored, with a note                                                                        |
+| CF flag variable | Ignored, with a note (one color per meaning)                                                |
+
+What a log scale cannot show:
+
+- **Values ≤ 0** are not drawn: transparent on an image, a gap in a line. A note counts them: `norm=log: 14 of 239 values ≤ 0 not shown (5.9%)`.
+- **No value above 0**: the plot stays linear, `norm=log ignored: no value above 0, linear scale`.
+- **`vmin` / `vmax` ≤ 0**: ignored with a note, the smallest / largest value above 0 is used. Limits above 0 are honoured, in data units.
+- **`robust`**: the 2nd and 98th percentiles of the values above 0.
+- Data of both signs keeps the sequential colormap (`viridis`): xarray's diverging default (`RdBu_r`, centred on 0) makes no sense on a log scale.
+
+The layout line under the plot shows the scale and its limits, `norm log, 0.001 to 12.5`, outlined as set by you.
+
+---
+
 ## Manual verification
 
-Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding and flags) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
+Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, `sample_log_scale.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding, flags and log scale) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
 
 **Decoding**:
 
@@ -279,6 +310,12 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 25. Clear them, set **hide_flags** = `cloud, bad data`, plot `sst`: holes where it is cloudy; layout item `hide_flags cloud (pixel_flags); bad data (quality_level)`, note `… values hidden (…%) …`.
 26. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
 
+**Log scale**, with `artefacts/sample-data/sample_log_scale.nc`:
+
+27. Plot `chlorophyll`: four facets in one flat dark color with a few bright pixels. Set **norm** = `log` (Color) and plot again: gradients appear, one colorbar labelled `10⁻²` … `10³`, the land disc and the zero corner transparent; layout item `norm log, … to …` outlined, note `norm=log: … values ≤ 0 not shown (…%)`.
+28. Set **vmin** = `0.1`, **vmax** = `10`: the colorbar runs from `10⁻¹` to `10¹` with arrows at both ends. Set **vmin** = `-1`: note `vmin=-1 ignored: a log scale starts above 0 (… used)`.
+29. Plot `particle_count`: log y-axis, a gap at sample 17 (a zero). Plot `net_flux`: only the positive half colored, in `viridis` (not red / blue). Plot `depth_negative`: linear plot, note `norm=log ignored: no value above 0, linear scale`.
+
 ## Known limitations
 
 ### Decoding
@@ -300,6 +337,12 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 - **Other engines read decoded values** (cfgrib, rasterio, kerchunk, cdflib). A fill code that is also a meaning is shown as no data there.
 - **`flag_colors` is not CF.** It is honoured only with exactly one valid color per meaning, otherwise ignored with a note.
 - **Shares count the plotted selection**: with dimension slices, the percentages are those of the slice, not of the whole variable.
+
+### Log scale
+
+- **`log` only**: no `symlog` yet for data of both signs (the negative half is left out); no log-spaced bins for histograms; no log scale on a coordinate axis (pressure levels).
+- **Limits come from the plotted selection**: with dimension slices, the automatic limits are those of the slice.
+- **The values ≤ 0 note is always shown**, even for a handful of values.
 
 ## Summary
 
@@ -325,3 +368,6 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 | Layout kind `bars`, roles `flags`, `hide_flags`          | Changed       | Backend JSON contract                                                    |
 | `sample_cf_flags.nc`; `sample_many_encoding.nc` QC flags | Added / Fixed | `python/sample_data/`                                                    |
 | Flags prototype                                          | Added         | `scripts/prototypes/cf_flags.py`, `paranoia.sh` step `prototypes`        |
+| **norm** `log`: log color scale, log data axis           | Added         | Color fieldset; `--norm log`; `plotting/norm.py`                         |
+| Layout role `norm`                                       | Changed       | Backend JSON contract                                                    |
+| `sample_log_scale.nc`                                    | Added         | `python/sample_data/log_scale.py`                                        |
