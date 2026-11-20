@@ -228,7 +228,7 @@ npm run watch
 
 ### Core Components
 
-See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) for the modules of `src/` and how they talk to each other, and the backend section below for `python/sdv_backend/`.
+See [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md) for the modules of `src/` and how they talk to each other, and the backend section below for `python/sdv_backend/`. Design documents for planned features live in [`docs/design/`](design/) (e.g. [Remote Zarr and STAC browsing](design/REMOTE_ZARR.md), with its exploration script `scripts/prototypes/remote_zarr.py`: needs network, writes to `artefacts/prototypes/remote_zarr/`).
 
 ### Data Flow
 
