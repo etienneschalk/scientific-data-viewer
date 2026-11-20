@@ -1,6 +1,6 @@
 # v0.14.0 — CF decoding you can see and control
 
-Branch `eschalk/v0.14-cf-decoding`, based on `eschalk/backend-package` (v0.13.0).
+Branch `eschalk/v0.14-cf-decoding`, based on `eschalk/v0.13.1-release` (0.13.1).
 
 ## Summary
 
@@ -66,3 +66,4 @@ python python/get_data_info.py info artefacts/sample-data/broken_datetime_packed
 - feat(decoding): show and control how files are decoded (v0.14.0)
 - fix(config): read the interpreter override from user settings only
 - docs: proposals for a log color scale and seaborn colormaps
+- docs(v0.14): rebase on the 0.13.1 release branch

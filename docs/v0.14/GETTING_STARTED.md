@@ -2,7 +2,7 @@
 
 v0.14.0 is a focused release about **how files are decoded**: the time fallback turns off time decoding only, **Reopen raw** shows stored values, **Troubleshooting > How this file was opened** gives the reproducible xarray call, and decoding plus engine `backend_kwargs` become settings. This page is the entry point: what to read, what to review closely, what to test.
 
-It is built on the v0.13.0 branch (`eschalk/backend-package`): merge v0.13 first.
+It is built on the 0.13.1 release branch (`eschalk/v0.13.1-release`): merge 0.13.1 first. The interpreter-override fix (risk 6, M9) ships in 0.13.1; it is listed here for users who upgrade from 0.13.0 straight to 0.14.0.
 
 ---
 
