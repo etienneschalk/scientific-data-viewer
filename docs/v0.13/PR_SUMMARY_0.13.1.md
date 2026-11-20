@@ -75,3 +75,4 @@ Manual verification: steps 1–8 of the [release notes](../RELEASE_NOTES_0.13.1.
 3. fix(qa): accept the state file restored by a failed offline rebuild in the upgrade sandbox
 4. docs(architecture): regenerate the diagrams for 0.13.1
 5. build(pre-commit): regenerate the architecture diagrams when the version changes
+6. docs: set the 0.13.1 release date to 2026-11-20

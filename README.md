@@ -18,7 +18,7 @@ Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files direct
 
 <div align="center">
 
-**Current Version: v0.13.1** • [Changelog](./CHANGELOG.md#0131---unreleased) • [v0.13.1 release notes](./docs/RELEASE_NOTES_0.13.1.md)
+**Current Version: v0.13.1** • [Changelog](./CHANGELOG.md#0131---2026-11-20) • [v0.13.1 release notes](./docs/RELEASE_NOTES_0.13.1.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
