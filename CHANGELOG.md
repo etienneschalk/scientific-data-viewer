@@ -21,6 +21,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `.pre-commit-config.yaml`, `scripts/architecture/generate.py` (`--if-version-changed`, `stamped_version`), `docs/architecture/` (regenerated), `docs/DEVELOPMENT.md`, `docs/PUBLISHING.md`, `CLAUDE.md`
   - **Tests**: `pre-commit run architecture-version --files package.json` with the version raised to 0.13.2 (diagrams regenerated, only the three version stamps change; hook fails on the modified files, passes when run again), then restored (regenerated back, no diff); with matching versions it passes and writes nothing
 
+- **`publish.sh` commits the release date at the first try** (development): the release date step appended its commit to the PR summary list with two spaces after the number (`6.  docs: ...`); prettier rewrote it to one in the pre-commit hook of the commit, so the commit failed and left the date staged (publishing 0.13.1). The item now has one space, the files are formatted (`pre-commit run`) before they are staged, and a failed commit says how to finish and run `publish.sh` again (a heading dated today is accepted).
+  - **Files**: `publish.sh`
+  - **Tests**: prettier rewrites `6.  docs: ...` and fails the hook, leaves `6. docs: ...` unchanged; `bash -n publish.sh`
+
 ### Security
 
 - **`python.overridePythonInterpreter` is read from user settings only**: it names the program the extension runs, and any scope could set it, so a repository's `.vscode/settings.json` could make the extension execute a file of the repository as soon as a data file was opened. The setting is now machine-scoped and the extension reads only its global (user, or remote machine) value; a workspace value is ignored and logged as a warning. Its description no longer suggests a relative `.venv/bin/python`; a per-project interpreter is chosen with **Python: Select Interpreter** (Python extension), which VS Code guards with workspace trust.
