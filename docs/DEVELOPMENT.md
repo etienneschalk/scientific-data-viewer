@@ -112,7 +112,7 @@ Other scripts in `python/`:
   (`record` before a refactoring, `check` after it)
 
 Exploration scripts behind a feature proposal live in `scripts/prototypes/` (e.g. `cf_flags.py`,
-behind `docs/v0.15/CF_FLAGS_PROPOSAL.md`): plain matplotlib, outside the backend, run with
+behind `docs/v0.14/CF_FLAGS_PROPOSAL.md`): plain matplotlib, outside the backend, run with
 `.venv/bin/python scripts/prototypes/<name>.py`, output in `artefacts/prototypes/<name>/`. The
 `prototypes` step of `paranoia.sh` checks that they still run; delete one once its feature is built.
 

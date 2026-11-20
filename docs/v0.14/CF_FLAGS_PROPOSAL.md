@@ -1,12 +1,14 @@
-# CF flag variables: proposal (v0.15)
+# CF flag variables: proposal (v0.14)
 
-Status: **P1 to P4 implemented** (0.15.0: `flag_values` plotted by meaning,
+Status: **P1 to P4 implemented** (0.14.0: `flag_values` plotted by meaning,
 raw codes, Flags section in File Information, `flags` control; `flag_masks`
 alone or with `flag_values` drawn as one panel per field, 1D block plots,
 bars; `flag_select` / `flag_combine` controls; `hide_flags` through
-`ancillary_variables`; see `CHANGELOG.md`). Branch `eschalk/v0.15-cf-flags` (from `main`;
-to rebase on `eschalk/v0.14-cf-decoding` once 0.14 is merged, both touch
-`opening.py`).
+`ancillary_variables`; see `CHANGELOG.md`). Written for 0.15 on branch
+`eschalk/v0.15-cf-flags` (from `main`), then moved into 0.14 on
+`eschalk/v0.14-cf-decoding`: the flag codes are read raw through the decoding
+layer of 0.14 (`resolve_open_kwargs(raw_variables=...)`), so the decoding
+settings also apply to that second read.
 
 Answers to the open questions taken for P1: automatic display by default
 (the `flags` checkbox turns it off; it moved from P3 to P1, as the escape
@@ -30,7 +32,7 @@ datalist of § 4 is not done: the controls take several names separated by
 commas, which a datalist cannot suggest. `hide_flags` is a separate control,
 not `flag_select` applied to the ancillary variables: showing the chosen
 classes and hiding the flagged points are opposite intents. It answers open
-question 3: P4 is in 0.15.
+question 3: P4 is in the same release (0.14).
 
 ## Goal
 
@@ -217,7 +219,7 @@ It also fixes the samples in `netcdf_encoding.py`.
    producer without the user doing anything.
 2. Shares (%) in the colorbar / panel titles by default? Recommended: yes,
    they cost one pass over the codes.
-3. Is P4 (`ancillary_variables`) in 0.15 or a later release?
+3. Is P4 (`ancillary_variables`) in the same release or a later one?
 
 ## Sources
 

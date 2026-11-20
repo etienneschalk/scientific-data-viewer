@@ -1,31 +1,37 @@
 # v0.14 — Getting started
 
-v0.14.0 is a focused release about **how files are decoded**: the time fallback turns off time decoding only, **Reopen raw** shows stored values, **Troubleshooting > How this file was opened** gives the reproducible xarray call, and decoding plus engine `backend_kwargs` become settings. This page is the entry point: what to read, what to review closely, what to test.
+v0.14.0 has two parts:
 
-It is built on the 0.13.1 release branch (`eschalk/v0.13.1-release`): merge 0.13.1 first. The interpreter-override fix (risk 6, M9) ships in 0.13.1; it is listed here for users who upgrade from 0.13.0 straight to 0.14.0.
+- **How files are decoded**: the time fallback turns off time decoding only, **Reopen raw** shows stored values, **Troubleshooting > How this file was opened** gives the reproducible xarray call, and decoding plus engine `backend_kwargs` become settings.
+- **CF flag variables**: a variable with `flag_values` and `flag_meanings` is plotted by meaning (one color per class, named colorbar, steps for 1D, bars instead of a histogram); bit flags (`flag_masks`) get one panel per flag, or a block plot for 1D data; the codes are read raw, and File Information lists the flags. A **Flags** fieldset of plot controls picks meanings by name, folds bit flags into one map (`cloud OR cloud_shadow`) and hides the points a quality flag marks (`ancillary_variables`). The four phases of the [proposal](./CF_FLAGS_PROPOSAL.md) are done.
+
+This page is the entry point: what to read, what to review closely, what to test.
+
+It is built on the 0.13.1 release branch (`eschalk/v0.13.1-release`): merge 0.13.1 first. The interpreter-override fix (risk 6, M9) ships in 0.13.1; it is listed here for users who upgrade from 0.13.0 straight to 0.14.0. The CF flags were written for 0.15 on `eschalk/v0.15-cf-flags` (from 0.13.0), then cherry-picked onto this branch; their codes are now read raw through the decoding layer of 0.14 (risk 9).
 
 ---
 
 ## Where to start
 
-| Time you have | Do this                                                                                                                                                                                          |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **15 min**    | Read the TL;DR and **Upgrade notes** of the [release notes](../RELEASE_NOTES_0.14.0.md), and [§ What could break users](#what-could-break-users). Run the [automated checks](#automated-checks). |
-| **1 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 30 min) and a review of [the high-risk code](#review).                                                                           |
+| Time you have | Do this                                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **15 min**    | Read the TL;DR and **Upgrade notes** of the [release notes](../RELEASE_NOTES_0.14.0.md), and [§ What could break users](#what-could-break-users). Run the [automated checks](#automated-checks).         |
+| **2 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 60 min), a review of [the high-risk code](#review), and the [flags proposal](./CF_FLAGS_PROPOSAL.md) for the choices made in each phase. |
 
 ---
 
 ## Map of the v0.14 documents
 
-| Document                                                       | What it is for                                                               | Read it when                                |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
-| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                              | First                                       |
-| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history), upgrade notes | Before testing; published with the release  |
-| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                        | To find where something was changed         |
-| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                | When opening / reviewing the PR             |
-| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet                                | Before merging                              |
-| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Proposal: a `norm` plot control for a logarithmic color / data scale         | Before opening its issue or implementing it |
-| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Proposal: `seaborn:<name>` colormaps in `cmap`, seaborn optional             | Before opening its issue or implementing it |
+| Document                                                       | What it is for                                                                      | Read it when                                |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------- |
+| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                                     | First                                       |
+| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history, flags), upgrade notes | Before testing; published with the release  |
+| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                               | To find where something was changed         |
+| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                       | When opening / reviewing the PR             |
+| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet (M1-M9 decoding, M10-M24 flags)       | Before merging                              |
+| [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md)                 | Design: CF § 3.5, what other tools do, plot kinds, phases P1-P4                     | To understand the choices and what is next  |
+| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Proposal: a `norm` plot control for a logarithmic color / data scale                | Before opening its issue or implementing it |
+| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Proposal: `seaborn:<name>` colormaps in `cmap`, seaborn optional                    | Before opening its issue or implementing it |
 
 No upgrade test plan: v0.14 adds no package and does not rebuild the extension's own environment (`ENVIRONMENT_REVISION` unchanged).
 
@@ -33,14 +39,20 @@ No upgrade test plan: v0.14 adds no package and does not rebuild the extension's
 
 ## What could break users
 
-| #   | Risk                                                                                                        | Who                                                | Safety net                                                                                                                                   | Left to check by hand              |
-| --- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| 1   | **A decoder passed to an engine that does not take it** (`TypeError` from xarray) makes a format unreadable | Everyone                                           | Decoders filtered by each engine's `open_dataset_parameters`; rioxarray's `decode_coords` pinned; every sample format opened decoded and raw | One file per format (test plan M2) |
-| 2   | **Different values** for files that used to hit the time fallback: now masked and scaled                    | Files with broken time units                       | Intended; `test_decode_times_fallback.py`; **Reopen raw** shows the old (stored) values                                                      | M1                                 |
-| 3   | **`engineBackendKwargs` abused** by a workspace to pass dangerous keywords                                  | Anyone opening untrusted repos                     | Machine scope + global value only (TS); allowlist checked again by the backend (Python)                                                      | M7                                 |
-| 4   | **Raster time coordinate changes dtype** (cftime → `datetime64`)                                            | GeoTIFF users with time tags                       | Only standard calendars, only 1-D coordinates; `useCftime: on` keeps cftime                                                                  | M5                                 |
-| 5   | **Scripts parsing the backend JSON** read `decode_cf_degraded`                                              | Integrators, golden snapshots                      | Documented in the upgrade notes                                                                                                              | Re-record golden snapshots         |
-| 6   | **Interpreter override set in a project** stops applying (now user settings only)                           | Users with a workspace `overridePythonInterpreter` | Warning in the logs; fallback to own env / Python extension; documented in upgrade notes                                                     | M9                                 |
+| #   | Risk                                                                                                                                   | Who                                                | Safety net                                                                                                                                                                         | Left to check by hand              |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| 1   | **A decoder passed to an engine that does not take it** (`TypeError` from xarray) makes a format unreadable                            | Everyone                                           | Decoders filtered by each engine's `open_dataset_parameters`; rioxarray's `decode_coords` pinned; every sample format opened decoded and raw                                       | One file per format (test plan M2) |
+| 2   | **Different values** for files that used to hit the time fallback: now masked and scaled                                               | Files with broken time units                       | Intended; `test_decode_times_fallback.py`; **Reopen raw** shows the old (stored) values                                                                                            | M1                                 |
+| 3   | **`engineBackendKwargs` abused** by a workspace to pass dangerous keywords                                                             | Anyone opening untrusted repos                     | Machine scope + global value only (TS); allowlist checked again by the backend (Python)                                                                                            | M7                                 |
+| 4   | **Raster time coordinate changes dtype** (cftime → `datetime64`)                                                                       | GeoTIFF users with time tags                       | Only standard calendars, only 1-D coordinates; `useCftime: on` keeps cftime                                                                                                        | M5                                 |
+| 5   | **Scripts parsing the backend JSON** read `decode_cf_degraded`, or meet the new `flags` key, kind `bars`, roles `flags` / `hide_flags` | Integrators, golden snapshots                      | Documented in the upgrade notes                                                                                                                                                    | Re-record golden snapshots         |
+| 6   | **Interpreter override set in a project** stops applying (now user settings only)                                                      | Users with a workspace `overridePythonInterpreter` | Warning in the logs; fallback to own env / Python extension; documented in upgrade notes                                                                                           | M9                                 |
+| 7   | **A variable wrongly taken for flags** (attributes present but meant otherwise) is drawn as classes                                    | Files with odd flag attributes                     | Strict checks (counts, types, duplicates, masks); inconsistent specs keep the numeric plot with a note; **flags** control off restores it                                          | M12, M19                           |
+| 8   | **Plots differ** for flag variables (intended)                                                                                         | Everyone with CF flags                             | Release notes; **flags** checkbox; golden snapshots: only `flags` keys and the fixed sample differ                                                                                 | M10-M16                            |
+| 9   | **The raw re-read of flag codes fails** or ignores the decoding settings                                                               | Flag variables with a `_FillValue`                 | Only netcdf4 / h5netcdf / scipy / zarr re-read (tested on xarray 2024.10 and 2026.7); the second open gets the tab's `DecodingOptions` (test); none when the codes are already raw | M11, M14, M24                      |
+| 10  | **Colors from the file reach the page** (`flag_colors`)                                                                                | Anyone opening untrusted files                     | Hex codes or color names only, checked in the backend and again in the webview; test with a CSS injection attempt                                                                  | —                                  |
+| 11  | **Too many panels or too much memory** for a bit-flag variable (one copy of the data per flag)                                         | Products with dozens of bits                       | Above 20 flags only those set are drawn; above 50 million points the last flags are left out, with a note; **flags** off restores the single plot                                  | M17                                |
+| 12  | **`hide_flags` hides the wrong points** (flag variable on other coordinates, misaligned)                                               | Users masking data with quality flags              | Same group only, same dimension names and sizes required, else skipped with a note; broadcast by name, no coordinate alignment; tests check the hidden points one by one           | M23                                |
 
 ---
 
@@ -48,21 +60,27 @@ No upgrade test plan: v0.14 adds no package and does not rebuild the extension's
 
 Review closely, in this order:
 
-1. `python/sdv_backend/decoding.py`: `resolve_open_kwargs` (layers, filtering, allowlist) and `USER_BACKEND_KWARGS_ALLOWED`: any key added there must not write, reach the network or take credentials.
+1. `python/sdv_backend/decoding.py`: `resolve_open_kwargs` (layers, filtering, allowlist, `raw_variables`) and `USER_BACKEND_KWARGS_ALLOWED`: any key added there must not write, reach the network or take credentials.
 2. `python/sdv_backend/opening.py`: `_open_with_engine` (fallback), `_cftime_to_datetime64`, `_open_with_cdflib`.
 3. `src/common/config.ts`: `getEngineBackendKwargs` and `getOverridePythonInterpreter` (global value only), and `package.json` (`"scope": "machine"` on both).
 4. `src/panel/UIController.ts`: `setRawMode` / `openFileOptions` (raw mode reaches info **and** plots).
+5. `python/sdv_backend/flags.py`: the parsing and checks: what is accepted decides which variables change; `Flag.test` (signed / uint64 masks).
+6. `python/sdv_backend/plotting/flags.py`: `flag_codes` (fill vs declared meaning), `prepare_flag_plot` (categories, remapping above 20 meanings), palette; `flag_fields` / `_prepare_fields` (fields of masks + values, the `flag` dimension, the size limit), `draw_flag_image` (block plot ticks, facet titles); `hide_flagged`.
+7. `python/sdv_backend/plotting/api.py`: the second, raw open of the file (`_reopen_raw`, `raw_group`), `_hide_flags` (ancillary variables: raw read, the same slices as the variable, broadcast by dimension name), the notes when flags are not used.
+8. `src/panel/webview/plotParams.ts`: the **Flags** fieldset and the control kind `choice` (a select that is not a dimension select); `src/panel/webview/render/variables.ts`: `renderFlags` (file-derived text escaped, colors inlined only after `isSafeFlagColor`).
 
-The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`) render text through `escapeHtml` / `textContent`; a jsdom test feeds file-derived markup into the report.
+The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`, `variables.ts`) render text through `escapeHtml` / `textContent`; jsdom tests feed file-derived markup into the report and the Flags section.
 
 ## Automated checks
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use
 npm run compile && npm run lint && npm run typecheck
-env -u ELECTRON_RUN_AS_NODE npm test              # 332 tests
-.venv/bin/python -m pytest python/tests           # 246 tests
+env -u ELECTRON_RUN_AS_NODE npm test              # 360 tests
+.venv/bin/python -m pytest python/tests           # 342 tests
+.venv/bin/python python/create_sample_data.py --overwrite
 .venv/bin/python scripts/architecture/generate.py --check
-npx vsce ls | wc -l                               # 73 files (decoding.py added)
+.venv/bin/python scripts/prototypes/cf_flags.py
+npx vsce ls | wc -l                               # 84 files
 ./paranoia.sh --quick                             # readiness report
 ```

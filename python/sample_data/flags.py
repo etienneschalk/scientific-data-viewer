@@ -1,7 +1,7 @@
 """NetCDF sample of CF flag variables (flag_values / flag_masks / flag_meanings).
 
 ``sample_cf_flags.nc`` holds one variable per case the viewer handles
-(docs/v0.15/CF_FLAGS_PROPOSAL.md):
+(docs/v0.14/CF_FLAGS_PROPOSAL.md):
 
 - ``land_cover``: ``flag_values`` with non-contiguous codes, ``flag_colors``
   and a ``_FillValue`` (the top rows) -> categorical map in the producer's

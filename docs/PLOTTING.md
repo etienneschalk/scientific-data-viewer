@@ -161,13 +161,13 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 }
 ```
 
-## CF flag variables (0.15)
+## CF flag variables (0.14)
 
 A variable with `flag_values` or `flag_masks`, and `flag_meanings` (CF
 conventions § 3.5: land cover classes, quality levels, status codes, bit
 flags) is drawn **by meaning**,
 unless the **flags** control (Color) is unchecked. Design and research:
-[`v0.15/CF_FLAGS_PROPOSAL.md`](v0.15/CF_FLAGS_PROPOSAL.md).
+[`v0.14/CF_FLAGS_PROPOSAL.md`](v0.14/CF_FLAGS_PROPOSAL.md).
 
 1. `read_flag_spec` (`python/sdv_backend/flags.py`) parses the attributes
    and checks them against the type stored in the file: counts, values that

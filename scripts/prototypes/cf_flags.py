@@ -1,6 +1,6 @@
 """Prototype: plots of CF flag variables (flag_values / flag_masks / flag_meanings).
 
-Throwaway exploration behind docs/v0.15/CF_FLAGS_PROPOSAL.md. It writes a
+Throwaway exploration behind docs/v0.14/CF_FLAGS_PROPOSAL.md. It writes a
 synthetic CF file, reopens it with xarray's default decoding and renders the
 proposed plot kinds with plain matplotlib, outside the viewer's backend:
 

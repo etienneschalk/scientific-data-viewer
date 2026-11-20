@@ -12,6 +12,7 @@ import pytest
 import xarray as xr
 from sample_data.flags import LAND_COVER_COLORS, build_cf_flags_dataset
 
+from sdv_backend.decoding import DecodingOptions
 from sdv_backend.flags import (
     mask_bits_text,
     needs_raw_codes,
@@ -141,7 +142,7 @@ def test_no_flag_attribute_gives_none() -> None:
         ),
         ({"flag_values": [0, 1], "flag_meanings": "a b"}, "<U3", "numeric variable"),
         (
-            # The QC samples of sample_many_encoding.nc before 0.15: 3 & 4 != 3
+            # The QC samples of sample_many_encoding.nc before 0.14: 3 & 4 != 3
             {
                 "flag_values": [0, 1, 2, 3],
                 "flag_masks": [1, 2, 4, 8],
@@ -459,6 +460,30 @@ def test_create_plot_reads_raw_codes(sample: Path) -> None:
     assert layout["kind"] == "line"
     roles = {c["role"]: c["value"] for c in layout["choices"]}
     assert roles["flags"] == "flag_values, 4 meanings, colors: tab10"
+
+
+def test_raw_reopen_keeps_the_decoding_settings(
+    sample: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The second open (flag codes read raw) gets the plot's decoding options."""
+    calls = []
+    original = OpenedData.open.__func__
+
+    def spy(cls, *args, **kwargs):
+        calls.append((args, kwargs))
+        return original(cls, *args, **kwargs)
+
+    monkeypatch.setattr(OpenedData, "open", classmethod(spy))
+    decoding = DecodingOptions(decode_times=False)
+    _plot(sample, "station_status", decoding=decoding)
+    assert len(calls) == 2
+    raw_args, raw_kwargs = calls[1]
+    assert raw_args[3] is decoding
+    assert raw_kwargs["raw_variables"] == ("station_status",)
+    # Reopen raw: the codes are not decoded, no second open
+    calls.clear()
+    _plot(sample, "station_status", decoding=DecodingOptions(raw=True))
+    assert len(calls) == 1
 
 
 def test_create_plot_kwargs_are_text(sample: Path) -> None:
