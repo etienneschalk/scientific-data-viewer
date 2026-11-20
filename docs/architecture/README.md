@@ -4,7 +4,7 @@
 
 How the VS Code extension is put together: three processes, two message boundaries, and the modules on each side. The module graphs are computed from the import statements in `src/` and `python/sdv_backend/`; the flows follow the code paths they name.
 
-Generated from the source of v0.13.0. The same diagrams are in one page in [architecture.html](architecture.html): open it in a browser (it adds hover tooltips with module paths).
+Generated from the source of v0.13.1. The same diagrams are in one page in [architecture.html](architecture.html): open it in a browser (it adds hover tooltips with module paths).
 
 Colors: teal is the webview, blue the extension host, green the Python backend, yellow what lies outside the extension (VS Code, uv, data files, xarray), red a failure path. Solid arrows are calls, dashed arrows returns or responses.
 

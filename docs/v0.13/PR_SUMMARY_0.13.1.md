@@ -64,3 +64,4 @@ Manual verification: steps 1–8 of the [release notes](../RELEASE_NOTES_0.13.1.
 1. fix(webview): mark the items set by you in the plot layout line with a dot
 2. fix(config): read the interpreter override from user settings only
 3. fix(qa): accept the state file restored by a failed offline rebuild in the upgrade sandbox
+4. docs(architecture): regenerate the diagrams for 0.13.1
