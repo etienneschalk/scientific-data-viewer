@@ -816,7 +816,7 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(request.payload.useFlags, false);
     });
 
-    test('norm control: linear by default, log sent, group over global', () => {
+    test('norm control: linear by default, log sent, group over global, seaborn hint', () => {
         harness.loadData(sampleDataInfo());
         const doc = harness.document;
         const safeId = 'group-plot___-';
@@ -839,6 +839,10 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(
             field.previousElementSibling.querySelector('[data-param]').id,
             'plotCmapInput',
+        );
+        assert.match(
+            doc.getElementById('plotCmapInput').getAttribute('placeholder'),
+            /seaborn:rocket/,
         );
         const createPlot = () =>
             harness.click(

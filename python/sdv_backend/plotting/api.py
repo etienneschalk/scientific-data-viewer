@@ -4,8 +4,10 @@ Pipeline: detect format -> open file -> pick variable -> apply dimension slices
 -> apply datetime filter -> resolve the layout (user choices first, the rest
 automatic, see ``layout``) -> draw -> render PNG.
 
-``norm=log`` turns the style kwargs into a ``LogNorm`` (or a log axis) once
-the layout is known (``norm``).
+A ``seaborn:`` colormap is resolved first (``colormaps``): a missing seaborn
+or an unknown name fails before the file is read. ``norm=log`` turns the
+style kwargs into a ``LogNorm`` (or a log axis) once the layout is known
+(``norm``).
 
 A CF flag variable (``flag_values`` / ``flag_masks`` + ``flag_meanings``) is
 read raw and replaced by its index array of meanings before the layout
@@ -27,6 +29,7 @@ from sdv_backend.flags import FlagSpec, needs_raw_codes, raw_dtype_of, read_flag
 from sdv_backend.formats.detect import detect_file_format
 from sdv_backend.info.datatree import datatree_inherit_mode
 from sdv_backend.opening import OpenedData
+from sdv_backend.plotting.colormaps import ColormapError, resolve_cmap
 from sdv_backend.plotting.draw import draw_plot
 from sdv_backend.plotting.flags import (
     FlagChoice,
@@ -119,6 +122,11 @@ def create_plot(
             )
 
         mpl, plt, style_note = setup_pyplot(options.style)
+        try:
+            cmap_object = resolve_cmap(options.cmap)
+        except ColormapError as exc:
+            logger.error(str(exc))
+            return CreatePlotError(error=str(exc), format_info=file_format_info)
 
         opened = OpenedData.open(
             file_path,
@@ -181,7 +189,9 @@ def create_plot(
                 options,
                 selection,
             )
-            bundle = _build_plot_kwargs(options, layout, flags=flag_plot is not None)
+            bundle = _build_plot_kwargs(
+                options, layout, flags=flag_plot is not None, cmap_object=cmap_object
+            )
             if flag_plot is not None:
                 adjust_layout(flag_plot, layout, bundle.raw)
             var, bundle = apply_norm(
@@ -353,9 +363,16 @@ def _flag_notes(
 
 
 def _build_plot_kwargs(
-    options: PlotOptions, layout: PlotLayout, *, flags: bool = False
+    options: PlotOptions,
+    layout: PlotLayout,
+    *,
+    flags: bool = False,
+    cmap_object=None,
 ) -> PlotKwargsBundle:
     """Style kwargs the user set (the layout ones are resolved separately).
+
+    ``cmap_object``: the colormap of a ``seaborn:`` name, passed to xarray in
+    place of the name.
 
     vmin above vmax is swapped, with a note in ``layout`` when the plot is
     color-mapped (lines and histograms ignore both, and so do flag variables).
@@ -396,6 +413,7 @@ def _build_plot_kwargs(
         xincrease=options.xincrease,
         yincrease=options.yincrease,
         cmap=options.cmap,
+        cmap_object=cmap_object,
         vmin=vmin,
         vmax=vmax,
         add_colorbar=options.add_colorbar,

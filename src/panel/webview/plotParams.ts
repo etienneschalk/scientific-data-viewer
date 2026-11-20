@@ -168,8 +168,8 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         group: 'Color',
         id: 'plotCmapInput',
         groupId: 'group-plot-cmap',
-        placeholder: 'e.g. viridis',
-        title: 'Matplotlib colormap name (user must provide a valid existing cmap)',
+        placeholder: 'e.g. viridis, seaborn:rocket',
+        title: 'Matplotlib colormap name (viridis, magma...), or seaborn:<name> for a seaborn colormap or palette (seaborn:rocket, seaborn:mako_r, seaborn:light:seagreen; needs the seaborn package)',
     },
     {
         key: 'norm',

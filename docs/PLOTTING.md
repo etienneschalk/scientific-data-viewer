@@ -163,6 +163,29 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 }
 ```
 
+### Colormaps: matplotlib and seaborn (0.14)
+
+`cmap` takes a matplotlib colormap name, as before, or **`seaborn:<name>`**: a
+[seaborn colormap or palette](https://seaborn.pydata.org/tutorial/color_palettes.html),
+anything `seaborn.color_palette(<name>, as_cmap=True)` accepts:
+
+- the colormaps `rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire` and their
+  `_r` variants: `seaborn:rocket`, `seaborn:mako_r`;
+- palette strings: `seaborn:light:seagreen`, `seaborn:dark:salmon_r`,
+  `seaborn:blend:#7AB,#EDA`, `seaborn:ch:s=.25,rot=-.25` (cubehelix); only
+  the first colon is the prefix;
+- qualitative palettes (`seaborn:deep`, `seaborn:Set2`...) become a stepped
+  colormap.
+
+`plotting/colormaps.py` resolves the name before the file is read
+(`resolve_cmap`): seaborn is imported only for a `seaborn:` name (it loads
+pandas), and the plot fails with one line when seaborn is missing (`cmap=seaborn:rocket: needs the seaborn package: install it ... or use the
+extension's own environment`) or does not know the name. xarray gets the
+`Colormap` object; `applied_plot_kwargs` keeps the text. seaborn is installed
+in the extension's own environment, optional anywhere else. Line plots and
+histograms ignore `cmap`, as before; CF flag variables take one color per
+meaning from it.
+
 ### Log scale: norm = log (0.14)
 
 The **norm** select of the Color fieldset (`linear` by default, nothing
@@ -318,6 +341,7 @@ Controls of the **Flags** fieldset (`FlagChoice`, then `prepare_flag_plot`):
 | CF flags              | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
 | flags tests           | `python/tests/test_flags.py` (parsing, plots, selection, `hide_flags`)           |
 | xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
+| seaborn colormaps     | `python/sdv_backend/plotting/colormaps.py`; `python/tests/test_colormaps.py`     |
 | log scale             | `python/sdv_backend/plotting/norm.py`; `python/tests/test_plot_norm.py`          |
 | controls table, merge | `src/panel/webview/plotParams.ts`                                                |
 | changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |

@@ -1,6 +1,6 @@
 # v0.14.0 — Manual test plan
 
-About 75 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M27 for the log scale (10 min). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 80 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M30 for the log scale, seaborn colormaps and the environment upgrade (15 min, plus the rebuild). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
@@ -8,6 +8,7 @@ About 75 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M2
 2. Create the sample files: `python python/create_sample_data.py`. They land in `artefacts/sample-data/`. v0.14 adds `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc` and `sample_log_scale.nc`.
 3. Reset the settings this plan touches: `scientificDataViewer.decoding.*` to `default`, `scientificDataViewer.engineBackendKwargs` removed, `scientificDataViewer.convertBandsToVariables` on.
 4. Reset the plot controls (**Reset** in Global Plot Controls): **flags** (Flags fieldset) checked, **flag_select**, **flag_combine** (`per flag`) and **hide_flags** empty, **norm** `linear`, **cmap** empty.
+5. For M30 only: keep an extension environment created by v0.13 (`useExtensionOwnEnvironment` on, environment created with the 0.13.x `.vsix`) before installing the 0.14 build.
 
 Where to look:
 
@@ -193,9 +194,9 @@ Open `sample_cf_flags.nc` for every step from M10 on.
 3. Click **Reopen decoded**. Set `scientificDataViewer.decoding.decodeTimes` to `off`, **Refresh**, plot `station_status`: steps by meaning, with `obs_time` as numbers on the x-axis (the second, raw read of the flag codes keeps the decoding settings).
 4. Set `decodeTimes` back to `default`.
 
-# Log scale
+# Log scale and seaborn colormaps
 
-Open `sample_log_scale.nc` for M25-M27. The **norm** select is in the Color fieldset, after **cmap**.
+Open `sample_log_scale.nc` for M25-M28. The **norm** select is in the Color fieldset, after **cmap**.
 
 ## M25 — Log color scale on facets
 
@@ -215,6 +216,26 @@ Open `sample_log_scale.nc` for M25-M27. The **norm** select is in the Color fiel
 2. Plot `net_flux`: only the positive half colored, in `viridis` (not red and blue); half the values counted in the note.
 3. Plot `depth_negative`: a linear plot with note `norm=log ignored: no value above 0, linear scale`.
 4. In the group controls of `/`, set **norm** = `log` with the global one back to `linear`: `chlorophyll` is drawn on a log scale (the group wins). Reset both.
+
+## M28 — seaborn colormaps
+
+1. Set **cmap** = `seaborn:rocket`, plot `chlorophyll`: black, red and cream colors. With **norm** = `log` too: the same colors on the log scale.
+2. **cmap** = `seaborn:light:seagreen`: white to green. **cmap** = `seaborn:mako_r`: light to dark blue.
+3. **cmap** = `seaborn:rockett`: the plot fails with one line `cmap=seaborn:rockett: not a seaborn colormap or palette ('rockett' is not a valid palette name). Examples: …`.
+4. Open `sample_cf_flags.nc`, **cmap** = `seaborn:rocket`, plot `land_cover`: eight classes in rocket colors; layout item `flags … colors: cmap seaborn:rocket`. Clear **cmap**.
+
+## M29 — seaborn missing
+
+1. Select an interpreter without seaborn (**Use My Own Interpreter**, e.g. a venv with `xarray netCDF4 matplotlib` only).
+2. Plot any variable with **cmap** = `seaborn:rocket`: one-line error `cmap=seaborn:rocket: needs the seaborn package: install it in the viewer's Python environment (pip install seaborn), or use the extension's own environment (…)`.
+3. **cmap** = `viridis`: the plot works. **Run the healthcheck**: `seaborn` is listed among the missing optional packages (a warning, not an error).
+
+## M30 — The extension's own environment is rebuilt once
+
+1. With the v0.13 environment of step 5 of [Before you start](#before-you-start), install the 0.14 build and reload VS Code.
+2. A notification shows the environment being deleted and recreated (`environment revision 2 is older than required revision 3` in **Show Extension Logs**). Files open once it is done.
+3. **Run the healthcheck**: `seaborn` among the available packages. `seaborn:rocket` plots work.
+4. Reload VS Code again: no rebuild this time.
 
 ## Results sheet
 
@@ -247,3 +268,6 @@ Open `sample_log_scale.nc` for M25-M27. The **norm** select is in the Color fiel
 | M25  |                         |               |
 | M26  |                         |               |
 | M27  |                         |               |
+| M28  |                         |               |
+| M29  |                         |               |
+| M30  |                         |               |

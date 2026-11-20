@@ -41,7 +41,7 @@ export interface PlotOptions {
     size?: number | null;
     /** xarray plot robust (2nd/98th percentiles for color limits) */
     robust?: boolean;
-    /** Matplotlib colormap name (cmap kwarg) */
+    /** Matplotlib colormap name, or `seaborn:<name>` (cmap kwarg) */
     cmap?: string;
     /** `log`: log color scale / log data axis (--norm); empty: linear */
     norm?: string;

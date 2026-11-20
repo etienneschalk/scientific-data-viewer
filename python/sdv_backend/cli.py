@@ -258,7 +258,13 @@ Examples:
         "--cmap",
         type=str,
         default=None,
-        help="Matplotlib colormap name (user must provide a valid existing cmap). See https://matplotlib.org/stable/users/explain/colors/colormaps.html",
+        help=(
+            "Matplotlib colormap name (user must provide a valid existing cmap), or "
+            "seaborn:<name> for a seaborn colormap or palette (needs seaborn), e.g. "
+            "seaborn:rocket, seaborn:light:seagreen. See "
+            "https://matplotlib.org/stable/users/explain/colors/colormaps.html and "
+            "https://seaborn.pydata.org/tutorial/color_palettes.html"
+        ),
     )
 
     parser.add_argument(

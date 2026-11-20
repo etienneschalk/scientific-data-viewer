@@ -141,6 +141,13 @@ const typeChars = async (p, sel, text) => {
     await setParam(S, 'cmap', 'notacmap');
     r = await plot(p, '/precipitation');
     check('cmap invalid → readable error', /not a valid value for cmap/.test(r.msg), { msg: r.msg.slice(0, 300) });
+    // seaborn colormaps (v0.14; seaborn installed in the backend's interpreter)
+    await setParam(S, 'cmap', 'seaborn:mako');
+    r = await plot(p, '/precipitation');
+    check('cmap "seaborn:mako" → plot OK, sent as typed', r.img && r.args?.join(' ').includes('--cmap seaborn:mako'), { args: r.args, msg: r.msg.slice(0, 300) });
+    await setParam(S, 'cmap', 'seaborn:nope');
+    r = await plot(p, '/precipitation');
+    check('cmap "seaborn:nope" → one-line error naming the colormap', /cmap=seaborn:nope: not a seaborn colormap/.test(r.msg), { msg: r.msg.slice(0, 300) });
     await setParam(S, 'cmap', '');
     // norm = log (v0.14)
     await p.eval(`(() => { const s = document.querySelector('${S} [data-param="norm"]'); s.value = 'log'; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);

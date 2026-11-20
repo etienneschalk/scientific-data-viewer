@@ -6,7 +6,7 @@ user set down to the ones the chosen plot kind accepts.
 
 The kwargs are kept as JSON-friendly values (they are returned as
 ``applied_plot_kwargs``); the objects matplotlib needs in their place (a
-``LogNorm``) are in ``objects`` and swapped in by
+seaborn ``Colormap``, a ``LogNorm``) are in ``objects`` and swapped in by
 ``for_call`` just before the xarray call.
 """
 
@@ -48,11 +48,14 @@ class PlotKwargsBundle:
         xincrease: bool | None = None,
         yincrease: bool | None = None,
         cmap: str | None = None,
+        cmap_object: Any = None,
         vmin: int | float | None = None,
         vmax: int | float | None = None,
         add_colorbar: bool = True,
         add_legend: bool = False,
     ) -> "PlotKwargsBundle":
+        """``cmap_object``: the colormap of a ``seaborn:`` name (``cmap`` is
+        kept as text for the result)."""
         plot_kwargs: dict[str, Any] = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
@@ -72,7 +75,8 @@ class PlotKwargsBundle:
             plot_kwargs["add_colorbar"] = False
         if add_legend:
             plot_kwargs["add_legend"] = True
-        return PlotKwargsBundle(raw=plot_kwargs)
+        objects = {"cmap": cmap_object} if cmap_object is not None else {}
+        return PlotKwargsBundle(raw=plot_kwargs, objects=objects)
 
     def with_kwargs(
         self,

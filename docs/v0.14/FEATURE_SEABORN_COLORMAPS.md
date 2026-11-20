@@ -1,6 +1,11 @@
 # Feature (v0.14): seaborn colormaps
 
-> Status: **proposed** for v0.14. This page is the spec an issue points to.
+> Status: **implemented** in v0.14.0 (`python/sdv_backend/plotting/colormaps.py`,
+> seaborn in the extension's own environment, `ENVIRONMENT_REVISION` 3). This
+> page is the spec it was built from; the
+> [decisions](#decisions-made-while-implementing) at the end record where the
+> implementation settled the open question or went further. User
+> documentation: [`docs/PLOTTING.md`](../PLOTTING.md) § Colormaps.
 
 ## Summary
 
@@ -147,3 +152,25 @@ breaking `seaborn:` names.
 - Should plain `rocket` (no prefix) also work? Importing seaborn registers its
   six colormaps in matplotlib, but that would import seaborn for every plot,
   and the prefix keeps it explicit.
+
+## Decisions made while implementing
+
+- **Plain `rocket` without the prefix**: not supported. It would import
+  seaborn for every plot; the prefix keeps the name explicit (a test checks a
+  matplotlib name does not import seaborn).
+- **Resolved before the file is read**, in `create_plot`: a missing seaborn
+  or an unknown name fails fast with one line, whatever the plot kind (line
+  plots and histograms included, though they ignore `cmap`).
+- **Qualitative palettes** (`seaborn:deep`, `seaborn:Set2`): seaborn returns
+  a list of colors even with `as_cmap=True`; they are wrapped in a
+  `ListedColormap` (a stepped colormap) instead of failing.
+- **The prefix is case-insensitive** (`Seaborn:rocket`); the name after it is
+  passed to seaborn as typed.
+- **CF flag variables** take their colors from a `seaborn:` cmap like from a
+  matplotlib one (`get_colormap`).
+- **`ENVIRONMENT_REVISION` bumped to 3**: changing `ALL_REQUIREMENTS` alone
+  already triggers the rebuild; the bump records it in the revision history
+  and the logs give the reason (`revision 2 is older than required revision
+3`).
+- **No `<datalist>`** of suggestions on the `cmap` input yet: the placeholder
+  and tooltip mention the prefix.

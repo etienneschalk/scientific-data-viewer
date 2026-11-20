@@ -64,8 +64,8 @@ def draw_plot(
 ) -> dict[str, Any]:
     """Draw ``var`` on the current matplotlib figure; return the kwargs used.
 
-    The kwargs returned are readable (a ``LogNorm`` as text); the call gets
-    the objects (``bundle.for_call``).
+    The kwargs returned are readable (a seaborn colormap by its name, a
+    ``LogNorm`` as text); the call gets the objects (``bundle.for_call``).
     With ``flag_plot``, ``var`` is its index array (one integer per meaning).
     """
     if flag_plot is not None:

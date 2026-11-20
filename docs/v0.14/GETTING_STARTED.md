@@ -4,7 +4,7 @@ v0.14.0 has three parts:
 
 - **How files are decoded**: the time fallback turns off time decoding only, **Reopen raw** shows stored values, **Troubleshooting > How this file was opened** gives the reproducible xarray call, and decoding plus engine `backend_kwargs` become settings.
 - **CF flag variables**: a variable with `flag_values` and `flag_meanings` is plotted by meaning (one color per class, named colorbar, steps for 1D, bars instead of a histogram); bit flags (`flag_masks`) get one panel per flag, or a block plot for 1D data; the codes are read raw, and File Information lists the flags. A **Flags** fieldset of plot controls picks meanings by name, folds bit flags into one map (`cloud OR cloud_shadow`) and hides the points a quality flag marks (`ancillary_variables`). The four phases of the [proposal](./CF_FLAGS_PROPOSAL.md) are done.
-- **Log color scale**: a **norm** plot control (`log`: colors follow `log10(value)`, colorbar in data units; log data axis for lines; values ≤ 0 left out with a note). Spec: [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md).
+- **Log scale and seaborn colormaps**: a **norm** plot control (`log`: colors follow `log10(value)`, colorbar in data units; log data axis for lines; values ≤ 0 left out with a note), and `seaborn:<name>` colormaps in **cmap**. seaborn joins the extension's own environment, which is rebuilt once (`ENVIRONMENT_REVISION` 3). Specs: [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md), [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md).
 
 This page is the entry point: what to read, what to review closely, what to test.
 
@@ -17,24 +17,24 @@ It is built on the 0.13.1 release branch (`eschalk/v0.13.1-release`): merge 0.13
 | Time you have | Do this                                                                                                                                                                                                  |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **15 min**    | Read the TL;DR and **Upgrade notes** of the [release notes](../RELEASE_NOTES_0.14.0.md), and [§ What could break users](#what-could-break-users). Run the [automated checks](#automated-checks).         |
-| **2 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 75 min), a review of [the high-risk code](#review), and the [flags proposal](./CF_FLAGS_PROPOSAL.md) for the choices made in each phase. |
+| **2 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 80 min), a review of [the high-risk code](#review), and the [flags proposal](./CF_FLAGS_PROPOSAL.md) for the choices made in each phase. |
 
 ---
 
 ## Map of the v0.14 documents
 
-| Document                                                       | What it is for                                                                                   | Read it when                                |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                                                  | First                                       |
-| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history, flags), upgrade notes              | Before testing; published with the release  |
-| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                                            | To find where something was changed         |
-| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                                    | When opening / reviewing the PR             |
-| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet (M1-M9 decoding, M10-M24 flags, M25-M27 log scale) | Before merging                              |
-| [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md)                 | Design: CF § 3.5, what other tools do, plot kinds, phases P1-P4                                  | To understand the choices and what is next  |
-| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Spec of the `norm` plot control (implemented), with the decisions made                           | To understand the log scale rules           |
-| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Proposal: `seaborn:<name>` colormaps in `cmap`, seaborn optional                                 | Before opening its issue or implementing it |
+| Document                                                       | What it is for                                                                                                     | Read it when                               |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                                                                    | First                                      |
+| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history, flags), upgrade notes                                | Before testing; published with the release |
+| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                                                              | To find where something was changed        |
+| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                                                      | When opening / reviewing the PR            |
+| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet (M1-M9 decoding, M10-M24 flags, M25-M30 log scale, seaborn, upgrade) | Before merging                             |
+| [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md)                 | Design: CF § 3.5, what other tools do, plot kinds, phases P1-P4                                                    | To understand the choices and what is next |
+| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Spec of the `norm` plot control (implemented), with the decisions made                                             | To understand the log scale rules          |
+| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Spec of `seaborn:<name>` colormaps (implemented), with the decisions made                                          | To understand the seaborn handling         |
 
-No upgrade test plan: v0.14 adds no package and does not rebuild the extension's own environment (`ENVIRONMENT_REVISION` unchanged).
+No separate upgrade test plan: the one environment change (seaborn, `ENVIRONMENT_REVISION` 2 → 3, rebuilt once) is step M30 of the manual test plan, covered by unit tests (`extensionEnvironmentUpdate.test.ts`), and to be played before release with `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.13.1.vsix --expect rebuild` (not run yet).
 
 ---
 
@@ -54,7 +54,9 @@ No upgrade test plan: v0.14 adds no package and does not rebuild the extension's
 | 10  | **Colors from the file reach the page** (`flag_colors`)                                                                                | Anyone opening untrusted files                     | Hex codes or color names only, checked in the backend and again in the webview; test with a CSS injection attempt                                                                   | —                                  |
 | 11  | **Too many panels or too much memory** for a bit-flag variable (one copy of the data per flag)                                         | Products with dozens of bits                       | Above 20 flags only those set are drawn; above 50 million points the last flags are left out, with a note; **flags** off restores the single plot                                   | M17                                |
 | 12  | **`hide_flags` hides the wrong points** (flag variable on other coordinates, misaligned)                                               | Users masking data with quality flags              | Same group only, same dimension names and sizes required, else skipped with a note; broadcast by name, no coordinate alignment; tests check the hidden points one by one            | M23                                |
-| 13  | **A log plot fails or misleads** (values ≤ 0, limits ≤ 0, `robust` negative, xarray `vmin` vs norm conflict, diverging colormap)       | Users of **norm** `log`                            | Limits built from the values above 0, `vmin` / `vmax` / `robust` never passed next to the norm, `center=False`, linear fallback with a note; 19 tests, Python 3.10 / xarray 2024.10 | M25-M27                            |
+| 13  | **The environment rebuild fails or takes long** (seaborn, `ENVIRONMENT_REVISION` 3)                                                    | Users of `useExtensionOwnEnvironment`              | Rebuild mechanism of 0.13 (previous environment kept and restored, retried next start); unit test for revision 2 → 3; seaborn is a pure-Python wheel                                | M30, `upgrade-sandbox.sh`          |
+| 14  | **A log plot fails or misleads** (values ≤ 0, limits ≤ 0, `robust` negative, xarray `vmin` vs norm conflict, diverging colormap)       | Users of **norm** `log`                            | Limits built from the values above 0, `vmin` / `vmax` / `robust` never passed next to the norm, `center=False`, linear fallback with a note; 19 tests, Python 3.10 / xarray 2024.10 | M25-M27                            |
+| 15  | **seaborn breaks plots that do not ask for it** (import time, rcParams)                                                                | Everyone                                           | seaborn imported only for a `seaborn:` name (subprocess test); rcParams unchanged after resolving a name (test); missing seaborn: one-line error                                    | M28, M29                           |
 
 ---
 
@@ -71,6 +73,7 @@ Review closely, in this order:
 7. `python/sdv_backend/plotting/api.py`: the second, raw open of the file (`_reopen_raw`, `raw_group`), `_hide_flags` (ancillary variables: raw read, the same slices as the variable, broadcast by dimension name), the notes when flags are not used.
 8. `src/panel/webview/plotParams.ts`: the **Flags** fieldset and the control kind `choice` (a select that is not a dimension select); `src/panel/webview/render/variables.ts`: `renderFlags` (file-derived text escaped, colors inlined only after `isSafeFlagColor`).
 9. `python/sdv_backend/plotting/norm.py`: `apply_norm` / `_log_norm` (limits from the values above 0, user limits ≤ 0, one limit beyond the data, `extend`), and `plotting/kwargs.py` (`objects` / `for_call`: objects reach xarray, text reaches the JSON).
+10. `python/sdv_backend/plotting/colormaps.py` (`resolve_cmap`: lazy import, error messages) and `src/python/ExtensionVirtualEnvironmentManager.ts` (`ALL_REQUIREMENTS` + seaborn, `ENVIRONMENT_REVISION` 3).
 
 The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`, `variables.ts`) render text through `escapeHtml` / `textContent`; jsdom tests feed file-derived markup into the report and the Flags section.
 
@@ -79,13 +82,13 @@ The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`, `variables.
 ```bash
 source ~/.nvm/nvm.sh && nvm use
 npm run compile && npm run lint && npm run typecheck
-env -u ELECTRON_RUN_AS_NODE npm test              # 361 tests
-.venv/bin/python -m pytest python/tests           # 361 tests
+env -u ELECTRON_RUN_AS_NODE npm test              # 362 tests
+.venv/bin/python -m pytest python/tests           # 387 tests (seaborn: pip install -r requirements-dev.txt)
 .venv/bin/python python/create_sample_data.py --overwrite
 .venv/bin/python scripts/architecture/generate.py --check
 .venv/bin/python scripts/prototypes/cf_flags.py
-npx vsce ls | wc -l                               # 85 files
-SDV_PYTHON=$PWD/.venv/bin/python node scripts/qa/webview/controls.mjs   # 31 checks
-.venv/bin/python python/tools/golden_snapshots.py check -k plot__   # 29 plot cases
+npx vsce ls | wc -l                               # 86 files
+SDV_PYTHON=$PWD/.venv/bin/python node scripts/qa/webview/controls.mjs   # 33 checks
+.venv/bin/python python/tools/golden_snapshots.py check -k plot__   # 30 plot cases
 ./paranoia.sh --quick                             # readiness report
 ```

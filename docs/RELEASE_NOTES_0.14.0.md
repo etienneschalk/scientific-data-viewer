@@ -4,7 +4,7 @@
 
 **CF flags.** Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. New **Flags** plot controls pick meanings by name (`flag_select`), fold bit flags into one map (`flag_combine`: `cloud OR cloud_shadow`), and hide the points of a data variable that its quality flag marks (`hide_flags`, through `ancillary_variables`). The **flags** checkbox turns it all off.
 
-**Log color scale.** A new **norm** plot control draws a variable on a **logarithmic scale** without changing the data: the colors follow `log10(value)` and the colorbar shows the values (`10⁻³`, `10⁻²`…), so a chlorophyll or precipitation field over several orders of magnitude no longer looks empty. On a line plot the axis of the values becomes logarithmic. Values ≤ 0 are left out and counted in a note.
+**Log scale and seaborn colormaps.** A new **norm** plot control draws a variable on a **logarithmic scale** without changing the data: the colors follow `log10(value)` and the colorbar shows the values (`10⁻³`, `10⁻²`…), so a chlorophyll or precipitation field over several orders of magnitude no longer looks empty. On a line plot the axis of the values becomes logarithmic. Values ≤ 0 are left out and counted in a note. **cmap** also takes **seaborn colormaps** with a `seaborn:` prefix (`seaborn:rocket`, `seaborn:mako_r`, `seaborn:light:seagreen`); seaborn is added to the extension's own environment, which is **rebuilt once** at the first start of 0.14.
 
 **Start here** to review, test or release v0.14: [`docs/v0.14/GETTING_STARTED.md`](./v0.14/GETTING_STARTED.md).
 
@@ -55,9 +55,11 @@ A CF flag variable stores numbers that stand for names. Before 0.14 the viewer d
 
 The goal is to reward producers who describe their masks with the CF attributes: a well-described file reads like its product user guide. The research and full design (what CF section 3.5 says, what cf_xarray, ARM ACT, ESA SNAP, satpy and ESA CCI do, four phases) are in [`docs/v0.14/CF_FLAGS_PROPOSAL.md`](./v0.14/CF_FLAGS_PROPOSAL.md). All four phases are in this release: P1 (`flag_values`), P2 (`flag_masks`, alone or with `flag_values`), P3 (selection and combination by name) and P4 (hiding points through `ancillary_variables`).
 
-### Log color scale
+### Log scale and seaborn colormaps
 
 Users asked to "log10 a variable before plotting it". A log **scale** is better than a log10 transform of the data: the colorbar stays in the variable's units, `vmin` / `vmax` are typed in data units, zeros and negative values are left out instead of becoming `-inf` / `NaN` with warnings, and the title and units still match the data. matplotlib does it with one object, `LogNorm`. The design and the comparison are in [`docs/v0.14/FEATURE_LOG_COLOR_SCALE.md`](./v0.14/FEATURE_LOG_COLOR_SCALE.md).
+
+seaborn's colormaps (`rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire`) are perceptually uniform like viridis and are the defaults of many papers' figures; a plot in the viewer can now match them. The `seaborn:` prefix keeps the name explicit, imports seaborn only when asked, and leaves room for other catalogues later (`cmocean:`, `crameri:`) through the `cmap` package. Design: [`docs/v0.14/FEATURE_SEABORN_COLORMAPS.md`](./v0.14/FEATURE_SEABORN_COLORMAPS.md).
 
 ---
 
@@ -73,8 +75,8 @@ Users asked to "log10 a variable before plotting it". A log **scale** is better 
 - **Inconsistent flags are not used.** When the attributes contradict each other (counts that differ, a value outside its mask, a value the variable's type cannot hold), the plot stays numeric and a note under it says why: `CF flags not used (...)`. The **Flags** section shows the same reason.
 - **Style options ignored for flag plots**: `vmin`, `vmax` and `robust` (one color per class), and `bins` (bars per meaning). A note says so. `cmap` still applies: it is sampled into one color per meaning.
 - **Backend JSON contract (flags)**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the roles `flags` and `hide_flags`. Golden snapshots recorded with 0.13 differ on these keys too.
-- **No change to Python environments**: no new package. The extension's own uv environment is not rebuilt (`ENVIRONMENT_REVISION` unchanged).
-- **norm changes nothing until you use it**: it is empty (`linear`) by default.
+- **The extension's own environment is rebuilt once** (users of `useExtensionOwnEnvironment` only): `seaborn` is a new requirement and `ENVIRONMENT_REVISION` goes from 2 to 3. At the first start of 0.14, a notification shows the environment being deleted and recreated (a few minutes, network needed). If the rebuild fails (offline), the previous environment keeps being used and the rebuild is retried at the next start. Interpreters you chose (Python extension, `overridePythonInterpreter`) are never modified: install seaborn there yourself (`pip install seaborn`) if you want `seaborn:` colormaps.
+- **norm and seaborn colormaps change nothing until you use them.** **norm** is empty (`linear`) by default, and `cmap` names without the `seaborn:` prefix are matplotlib colormaps as before.
 - **Backend JSON contract (log scale)**: the plot layout can have the role `norm`, and `applied_plot_kwargs` the keys `norm` (text such as `"LogNorm(vmin=0.001, vmax=12.5)"`), `center`, `extend`, `xscale` / `yscale`.
 
 ---
@@ -272,11 +274,21 @@ What a log scale cannot show:
 
 The layout line under the plot shows the scale and its limits, `norm log, 0.001 to 12.5`, outlined as set by you.
 
+## seaborn colormaps
+
+`cmap` accepts `seaborn:<name>`, anything `seaborn.color_palette(<name>, as_cmap=True)` accepts:
+
+- the colormaps `rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire`, and their `_r` variants;
+- palette strings: `seaborn:light:seagreen`, `seaborn:dark:salmon_r`, `seaborn:blend:#7AB,#EDA`, `seaborn:ch:s=.25,rot=-.25` (only the first colon is the prefix);
+- qualitative palettes (`seaborn:deep`, `seaborn:Set2`), as a stepped colormap.
+
+Without the prefix, the name is a matplotlib colormap, as before. seaborn is imported only for a `seaborn:` name. When seaborn is missing or does not know the name, the plot fails with one line that says what to do: `cmap=seaborn:rocket: needs the seaborn package: install it in the viewer's Python environment (pip install seaborn), or use the extension's own environment (...)`. CF flag variables take their colors from it like from any `cmap`.
+
 ---
 
 ## Manual verification
 
-Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, `sample_log_scale.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding, flags and log scale) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
+Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, `sample_log_scale.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding, flags, log scale and seaborn) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
 
 **Decoding**:
 
@@ -310,11 +322,14 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 25. Clear them, set **hide_flags** = `cloud, bad data`, plot `sst`: holes where it is cloudy; layout item `hide_flags cloud (pixel_flags); bad data (quality_level)`, note `… values hidden (…%) …`.
 26. Expand `broken_mixed`: the Flags section warns `Not used for plots …: questionable: value 1 has bits outside its mask 2 …`; its plot carries the same note.
 
-**Log scale**, with `artefacts/sample-data/sample_log_scale.nc`:
+**Log scale and seaborn**, with `artefacts/sample-data/sample_log_scale.nc`:
 
 27. Plot `chlorophyll`: four facets in one flat dark color with a few bright pixels. Set **norm** = `log` (Color) and plot again: gradients appear, one colorbar labelled `10⁻²` … `10³`, the land disc and the zero corner transparent; layout item `norm log, … to …` outlined, note `norm=log: … values ≤ 0 not shown (…%)`.
 28. Set **vmin** = `0.1`, **vmax** = `10`: the colorbar runs from `10⁻¹` to `10¹` with arrows at both ends. Set **vmin** = `-1`: note `vmin=-1 ignored: a log scale starts above 0 (… used)`.
 29. Plot `particle_count`: log y-axis, a gap at sample 17 (a zero). Plot `net_flux`: only the positive half colored, in `viridis` (not red / blue). Plot `depth_negative`: linear plot, note `norm=log ignored: no value above 0, linear scale`.
+30. Set **norm** back to `linear`, **cmap** = `seaborn:rocket`, plot `chlorophyll`: black-red-cream colors. `seaborn:light:seagreen`: white to green. `seaborn:rockett`: the plot fails with `cmap=seaborn:rockett: not a seaborn colormap or palette (...)`.
+31. With an interpreter without seaborn (**Use My Own Interpreter**), plot with `seaborn:rocket`: one-line error `… needs the seaborn package …`. A `viridis` plot still works.
+32. Upgrade, with `useExtensionOwnEnvironment` on and an environment created by 0.13: the first start of 0.14 shows the environment being rebuilt once; the healthcheck then lists `seaborn` among the available packages; a second start does not rebuild.
 
 ## Known limitations
 
@@ -338,11 +353,13 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 - **`flag_colors` is not CF.** It is honoured only with exactly one valid color per meaning, otherwise ignored with a note.
 - **Shares count the plotted selection**: with dimension slices, the percentages are those of the slice, not of the whole variable.
 
-### Log scale
+### Log scale and seaborn colormaps
 
 - **`log` only**: no `symlog` yet for data of both signs (the negative half is left out); no log-spaced bins for histograms; no log scale on a coordinate axis (pressure levels).
 - **Limits come from the plotted selection**: with dimension slices, the automatic limits are those of the slice.
 - **The values ≤ 0 note is always shown**, even for a handful of values.
+- **seaborn colormap names are typed, not picked**: no list of suggestions or previews yet.
+- **A `seaborn:` name fails every plot when seaborn is missing**, line plots and histograms included (they would ignore `cmap`): the name is checked before the file is read.
 
 ## Summary
 
@@ -369,5 +386,7 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 | `sample_cf_flags.nc`; `sample_many_encoding.nc` QC flags | Added / Fixed | `python/sample_data/`                                                    |
 | Flags prototype                                          | Added         | `scripts/prototypes/cf_flags.py`, `paranoia.sh` step `prototypes`        |
 | **norm** `log`: log color scale, log data axis           | Added         | Color fieldset; `--norm log`; `plotting/norm.py`                         |
+| `seaborn:` colormaps in **cmap**                         | Added         | `plotting/colormaps.py`; seaborn optional                                |
+| seaborn in the extension's own environment               | Changed       | `ALL_REQUIREMENTS`, `ENVIRONMENT_REVISION` 3: rebuilt once               |
 | Layout role `norm`                                       | Changed       | Backend JSON contract                                                    |
 | `sample_log_scale.nc`                                    | Added         | `python/sample_data/log_scale.py`                                        |

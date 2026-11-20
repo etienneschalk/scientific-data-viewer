@@ -115,6 +115,8 @@ class PlotOptions:
     vmin, vmax : float, optional
         Color scale limits (passed to colormap plots only; not histograms or plain
         line plots).
+    cmap : str, optional
+        Matplotlib colormap name, or ``seaborn:<name>`` (``plotting/colormaps.py``).
     norm : {"linear", "log"}
         ``log``: logarithmic color scale of an image, log data axis of a line;
         values ≤ 0 are not shown (``plotting/norm.py``).

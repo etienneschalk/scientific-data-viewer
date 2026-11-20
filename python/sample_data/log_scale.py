@@ -1,4 +1,4 @@
-"""NetCDF sample for the log color scale (``norm = log``).
+"""NetCDF sample for the log color scale (``norm = log``) and seaborn colormaps.
 
 ``sample_log_scale.nc`` holds variables spanning several orders of magnitude,
 the case a linear scale draws as one flat color:

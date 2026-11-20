@@ -41,6 +41,7 @@ The interpreter needs Python 3.10 or newer, and these packages:
 | GeoTIFF / JPEG-2000     | `rioxarray`                                 |
 | NASA CDF                | `cdflib`                                    |
 | Kerchunk (experimental) | `kerchunk`                                  |
+| `seaborn:` colormaps    | `seaborn`                                   |
 
 To open the sample file, `xarray`, `netCDF4` and `matplotlib` are enough:
 

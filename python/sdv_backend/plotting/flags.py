@@ -55,6 +55,7 @@ from sdv_backend.flags import (
     normalize_meaning,
     raw_dtype_of,
 )
+from sdv_backend.plotting.colormaps import ColormapError, get_colormap
 from sdv_backend.plotting.layout import PlotLayout
 
 # Above this many meanings (or fields of bits), only the ones present in the
@@ -617,9 +618,9 @@ def _palette(
     n = max(len(keep), 1)
     if cmap:
         try:
-            colormap = mpl.colormaps[cmap]
-        except KeyError:
-            notes.append(f"cmap={cmap} ignored: not a matplotlib colormap")
+            colormap = get_colormap(cmap)
+        except ColormapError as exc:
+            notes.append(f"cmap={exc.cmap} ignored: {exc.reason}")
         else:
             if isinstance(colormap, ListedColormap) and n <= colormap.N:
                 colors = list(colormap.colors)[:n]  # type: ignore[arg-type]

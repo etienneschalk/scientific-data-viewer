@@ -326,12 +326,12 @@ def all_cases(full_grid: bool) -> list[PlotCase]:
         core
         + _extended_plot_cases(full_grid)
         + _cases_vmin_vmax_colorbar_legend(full_grid)
-        + _cases_norm(full_grid)
+        + _cases_norm_and_seaborn(full_grid)
     )
 
 
-def _cases_norm(full_grid: bool) -> list[PlotCase]:
-    """Case 26 (v0.14): log color scale."""
+def _cases_norm_and_seaborn(full_grid: bool) -> list[PlotCase]:
+    """Cases 26+ (v0.14): log color scale, seaborn colormap (needs seaborn)."""
     slices = (
         _merge_slices(_FULL_GRID_BASE_SLICES, {"time": 0}) if full_grid else {"time": 0}
     )
@@ -348,6 +348,19 @@ def _cases_norm(full_grid: bool) -> list[PlotCase]:
             ),
             dimension_slices=slices,
             norm="log",
+        ),
+        PlotCase(
+            slug="27_cmap_seaborn_rocket",
+            doc="cmap=seaborn:rocket (seaborn.color_palette('rocket', as_cmap=True))",
+            title="seaborn colormap (cmap=seaborn:rocket)",
+            xarray_code=(
+                "import seaborn as sns\n"
+                "plt.figure()\n"
+                "hs.isel(time=0).plot.imshow("
+                "cmap=sns.color_palette('rocket', as_cmap=True))"
+            ),
+            dimension_slices=slices,
+            cmap="seaborn:rocket",
         ),
     ]
 

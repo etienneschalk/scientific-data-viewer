@@ -176,4 +176,4 @@ layout line must mark it with the "set by you" dot like the other controls.
 - **Dates, flag variables**: ignored with a note, like histograms.
 - **Kwargs objects**: `PlotKwargsBundle` keeps readable values (returned as
   `applied_plot_kwargs`) and an `objects` dict swapped in by `for_call` just
-  before the xarray call.
+  before the xarray call; the seaborn colormaps use the same mechanism.
