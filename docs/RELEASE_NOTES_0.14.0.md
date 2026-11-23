@@ -394,4 +394,4 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 | seaborn in the extension's own environment               | Changed       | `ALL_REQUIREMENTS`, `ENVIRONMENT_REVISION` 3: rebuilt once               |
 | Layout role `norm`                                       | Changed       | Backend JSON contract                                                    |
 | `sample_log_scale.nc`                                    | Added         | `python/sample_data/log_scale.py`                                        |
-| Demo video, filmed and edited by a script (development)  | Added         | `scripts/demo-video/`; `paranoia.sh --full` step `demo-video`            |
+| Demo video, filmed and edited by a script (development)  | Added         | `scripts/demo-video/`; `paranoia.sh --full-with-extras` (`demo-video`)   |

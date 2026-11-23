@@ -457,7 +457,17 @@ def cmd_info_diff(args: argparse.Namespace) -> int:
 # report
 # --------------------------------------------------------------------------- #
 
-ICON = {"PASS": "✅ PASS", "FAIL": "❌ FAIL", "WARN": "⚠️ WARN", "SKIP": "⏭️ SKIP"}
+# EXTRA: a step of --full-with-extras (not a check, e.g. the demo video) left
+# out of the run; it never lowers the verdict
+ICON = {
+    "PASS": "✅ PASS",
+    "FAIL": "❌ FAIL",
+    "WARN": "⚠️ WARN",
+    "SKIP": "⏭️ SKIP",
+    "EXTRA": "🎁 EXTRA",
+}
+# Profiles that run every check (--full-with-extras adds extras, not checks)
+FULL_PROFILES = ("full", "full-with-extras")
 
 
 def read_results(run: Path) -> list[dict]:
@@ -509,10 +519,10 @@ def verdict(rows: list[dict], profile: str) -> tuple[str, str]:
             "NOT READY",
             f"{count['FAIL']} check(s) failed. Fix them before publishing.",
         )
-    if profile != "full" or count["SKIP"]:
+    if profile not in FULL_PROFILES or count["SKIP"]:
         why = (
             f"profile `{profile}`"
-            if profile != "full"
+            if profile not in FULL_PROFILES
             else f"{count['SKIP']} check(s) skipped"
         )
         return "NOT FULLY VERIFIED", (
@@ -591,7 +601,7 @@ def cmd_report(args: argparse.Namespace) -> int:
                 "```",
                 "",
             ]
-    skipped = [r for r in rows if r["status"] == "SKIP"]
+    skipped = [r for r in rows if r["status"] in ("SKIP", "EXTRA")]
     if skipped:
         out += ["", "## Not run", ""]
         out += [f"- **{r['title']}** (`{r['id']}`): {r['summary']}" for r in skipped]

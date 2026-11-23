@@ -21,16 +21,20 @@
 #   users         uv environment change; migration from every older release
 #                 to this one, played as a user (environment rebuilt or kept as
 #                 ENVIRONMENT_REVISION says, settings kept, file shown); failed
-#                 and interrupted rebuilds; screenshots, demo video, npm audit,
-#                 CI status
+#                 and interrupted rebuilds; screenshots, npm audit, CI status
+#   extras        not checks, but useful before a release: the demo video
+#                 (--full-with-extras only)
 #
 # Usage: ./paranoia.sh [options]
 #   --quick            static checks, build, package, unit tests (~5 min)
 #   --standard         (default) + golden snapshots, backend vs last release, webview
 #                      harness, npm audit, CI status (~20 min)
 #   --full             + e2e suites, migration from every release, upgrade
-#                      failure modes, screenshots, demo video (~50 min). Only
-#                      a full run can conclude READY.
+#                      failure modes, screenshots (~45 min). Only a full run
+#                      can conclude READY.
+#   --full-with-extras + extras, not checks: the demo video (~50 min). Same
+#                      verdict as --full; a --full run lists the extras as
+#                      EXTRA, not run, without lowering its verdict
 #   --only a,b         run only these steps (ids: --list)
 #   --skip a,b         skip these steps
 #   --baseline <ref>   last release to compare with (default: newest v* tag
@@ -107,7 +111,7 @@ STEPS=(
     "migration|full|Users|Migration from every release (uv environment, settings, viewer)|3600"
     "upgrade|full|Users|Failed and interrupted environment rebuilds|2400"
     "screenshots|full|Users|Viewer screenshots|1200"
-    "demo-video|full|Users|Demo video: first use filmed in a fresh VS Code, then edited|1800"
+    "demo-video|full-with-extras|Extras|Demo video: first use filmed in a fresh VS Code, then edited|1800"
 )
 
 PROFILE=standard
@@ -125,14 +129,15 @@ while [ $# -gt 0 ]; do
         --quick) PROFILE=quick; shift ;;
         --standard) PROFILE=standard; shift ;;
         --full) PROFILE=full; shift ;;
+        --full-with-extras) PROFILE=full-with-extras; shift ;;
         --only) ONLY="$2"; shift 2 ;;
         --skip) SKIP_LIST="$2"; shift 2 ;;
         --baseline) BASELINE="$2"; shift 2 ;;
         --out) OUT="$2"; shift 2 ;;
         -v|--verbose) VERBOSE=true; shift ;;
         --list)
-            printf '%-14s %-9s %-13s %-6s %s\n' ID PROFILE AREA LIMIT TITLE
-            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title limit <<<"$s"; printf '%-14s %-9s %-13s %-6s %s\n' "$id" "$prof" "$area" "${limit}s" "$title"; done
+            printf '%-14s %-16s %-13s %-6s %s\n' ID PROFILE AREA LIMIT TITLE
+            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title limit <<<"$s"; printf '%-14s %-16s %-13s %-6s %s\n' "$id" "$prof" "$area" "${limit}s" "$title"; done
             exit 0 ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
@@ -819,7 +824,7 @@ step_demo_video() {
 # Runner
 # =============================================================================
 
-profile_rank() { case "$1" in quick) echo 1 ;; standard) echo 2 ;; full) echo 3 ;; esac; }
+profile_rank() { case "$1" in quick) echo 1 ;; standard) echo 2 ;; full) echo 3 ;; full-with-extras) echo 4 ;; esac; }
 in_list() { [[ ",$2," == *",$1,"* ]]; }
 step_profile() {
     local s
@@ -882,6 +887,11 @@ for s in "${STEPS[@]}"; do
     start=$SECONDS
     if [ -n "$ONLY" ] && ! in_list "$id" "$ONLY"; then
         continue
+    elif [ -z "$ONLY" ] && [ "$prof" = full-with-extras ] \
+        && { [ "$PROFILE" != full-with-extras ] || in_list "$id" "$SKIP_LIST"; }; then
+        # Not a check: listed as EXTRA, never lowers the verdict of a full run
+        STATUS=EXTRA
+        SUMMARY="extra, not a check: --full-with-extras (or --only $id)"
     elif in_list "$id" "$SKIP_LIST"; then
         skip "skipped with --skip"
     elif [ -z "$ONLY" ] && [ "$(profile_rank "$prof")" -gt "$(profile_rank "$PROFILE")" ]; then

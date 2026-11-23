@@ -33,7 +33,7 @@ node scripts/qa/webview/run-all.mjs                     # QA: real webview in he
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/runner.cjs all   # QA: suites in a real VS Code
 env -u ELECTRON_RUN_AS_NODE node scripts/qa/e2e/walkthrough.cjs   # QA: Getting Started walkthrough, every path to a first plot in a fresh VS Code (uv, network)
 ./publish.sh [--dry-run] [--pre-release]   # from main: checks, build, tests, release date, package, tag, both marketplaces (docs/PUBLISHING.md)
-./paranoia.sh [--quick|--full]   # all of the above + package audit -> artefacts/paranoia/latest/REPORT.md (readiness verdict)
+./paranoia.sh [--quick|--full|--full-with-extras]   # all of the above + package audit -> artefacts/paranoia/latest/REPORT.md (readiness verdict); extras (demo video) are not checks
 # On GitHub: label a PR `paranoia`, or Actions > Paranoia > Run workflow (.github/workflows/paranoia.yml)
 .venv/bin/pip install -r requirements-dev.txt   # development Python packages (pinned; used by the CI paranoia run)
 ```
