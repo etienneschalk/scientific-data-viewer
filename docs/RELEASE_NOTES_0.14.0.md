@@ -365,6 +365,13 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 - **seaborn colormap names are typed, not picked**: no list of suggestions or previews yet.
 - **A `seaborn:` name fails every plot when seaborn is missing**, line plots and histograms included (they would ignore `cmap`): the name is checked before the file is read.
 
+### Found while testing (not fixed)
+
+Two limitations found while building `sample_log_scale.nc`. Both predate v0.14, come from xarray (the viewer passes its behavior through) and do not depend on the log scale. They are recorded here, not fixed in this release.
+
+- **A map of dates cannot be plotted.** A variable whose values are dates (`datetime64`) on two dimensions, such as a "date of the last bloom" map, fails with `UFuncTypeError: ufunc 'add' cannot use operands with types datetime64 and datetime64`, on a linear scale as on a log one. To turn values into colors, xarray computes the color limits with arithmetic (`_determine_cmap_params`) that does not exist for dates; plain `da.plot()` fails the same way (xarray 2026.7). Dates along an axis (time series) are not affected. A possible fix: color the dates as numbers (days since the earliest one) with date labels on the colorbar, or at least an error that says a map of dates cannot be drawn. This is also why `sample_log_scale.nc` tests "not numbers" with booleans (`is_bloom`) rather than dates.
+- **Depth is drawn upside down.** A y coordinate with the CF attribute `positive: "down"` (depth: 0 m at the surface, growing downward) is drawn like any other: 0 at the bottom, the deepest values at the top. Neither xarray nor the viewer reads `positive`. Workaround: **yincrease** = `false`. A possible fix: set `yincrease=False` automatically when the y coordinate has `positive: "down"` and the user has not set **yincrease**, as the plot layout already does for its other automatic choices. Seen with `chlorophyll_profile` plotted with **y** = `depth` (manual test plan M27, step 9).
+
 ## Summary
 
 | Change                                                   | Kind          | Where                                                                    |

@@ -168,3 +168,4 @@ uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-vide
 12. chore(demo-video): film and edit the demo video by script, paranoia step demo-video
 13. chore(paranoia): run the demo video only with --full-with-extras
 14. feat(samples): sample_log_scale.nc gets one variable per case of the log scale
+15. docs(v0.14): record two plotting limitations found while testing (dates as a map, depth upside down)
