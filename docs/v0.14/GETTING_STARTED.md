@@ -83,7 +83,7 @@ The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`, `variables.
 source ~/.nvm/nvm.sh && nvm use
 npm run compile && npm run lint && npm run typecheck
 env -u ELECTRON_RUN_AS_NODE npm test              # 362 tests
-.venv/bin/python -m pytest python/tests           # 387 tests (seaborn: pip install -r requirements-dev.txt)
+.venv/bin/python -m pytest python/tests           # 405 tests (seaborn: pip install -r requirements-dev.txt)
 .venv/bin/python python/create_sample_data.py --overwrite
 .venv/bin/python scripts/architecture/generate.py --check
 .venv/bin/python scripts/prototypes/cf_flags.py

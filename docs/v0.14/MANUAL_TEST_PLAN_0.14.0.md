@@ -1,6 +1,6 @@
 # v0.14.0 — Manual test plan
 
-About 80 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M30 for the log scale, seaborn colormaps and the environment upgrade (15 min, plus the rebuild). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 90 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M30 for the log scale, seaborn colormaps and the environment upgrade (25 min, plus the rebuild). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
@@ -210,12 +210,22 @@ Open `sample_log_scale.nc` for M25-M28. The **norm** select is in the Color fiel
 2. Set **vmin** = `-1`: note `vmin=-1 ignored: a log scale starts above 0 (0.00487 used)`.
 3. Clear vmin / vmax, check **robust**: the limits shrink (2nd / 98th percentiles of the values above 0), arrows at both ends.
 
-## M27 — Lines, both signs, nothing above 0
+## M27 — Lines, both signs, edge cases, ignored cases
+
+**norm** = `log` (Global Plot Controls) for every step but the last. Each variable's `long_name` says what it tests.
 
 1. Clear robust. Plot `particle_count`: log y-axis from about `10⁻¹` to `10⁵`, a gap at sample 17; note `1 of 120 values ≤ 0 not shown`.
 2. Plot `net_flux`: only the positive half colored, in `viridis` (not red and blue); half the values counted in the note.
 3. Plot `depth_negative`: a linear plot with note `norm=log ignored: no value above 0, linear scale`.
-4. In the group controls of `/`, set **norm** = `log` with the global one back to `linear`: `chlorophyll` is drawn on a log scale (the group wins). Reset both.
+4. Plot `photon_counts` (integers): a bright disc, colorbar `10⁰` to `10⁴`, the zero pixels around it transparent; note `norm=log: 1988 of 4941 values ≤ 0 not shown (40%)`.
+5. Plot `rain_rate`: rain bands, the dry area transparent (note `… values ≤ 0 not shown (23%)`), the storm cores in the top colors. Check **robust**: limits about `0.986 to 34.1`, arrows at both ends, the cores saturated. Clear robust.
+6. Plot `aerosol_tiny` then `no2_column_huge`: readable colorbar labels, `10⁻¹¹` … `10⁻⁷` and `10¹⁴` … `10¹⁶`; no note.
+7. Plot `backscatter_with_inf`: three short blank rows (`+inf`, `-inf`, NaN), the colorbar from the finite values; no error.
+8. Plot `constant_positive`: one color, a colorbar around `3` (layout item `norm log, 3 to 3`); no error.
+9. Plot `chlorophyll_profile`: log y-axis (layout `norm log (y axis)`). Set **y** = `depth`: the values on a log x-axis (`norm log (x axis)`); **yincrease** = `false` puts the surface at the top. Clear y and yincrease.
+10. Plot `chlorophyll_packed`: like the first month of `chlorophyll`, layout `norm log, 0.0049 to 431`, note `48 of 4766 values ≤ 0`. Set `decoding.maskAndScale` to `off`, **Refresh**, plot again: the raw integers, `norm log, 49 to 4.31e+06`, note `223 of 4941 values ≤ 0 not shown (4.5%)` (the 175 fill values `-1` among them). Reset `maskAndScale` to `default`.
+11. Plot `water_class`: drawn by meaning (four classes), note `norm=log ignored: a CF flag variable is drawn by meaning`. Plot `is_bloom`: note `norm=log ignored: the values are not numbers (bool)`. Set **bins** = `50`, plot `photon_counts`: a histogram, note `norm=log ignored: not used by a histogram`. Clear bins.
+12. In the group controls of `/`, set **norm** = `log` with the global one back to `linear`: `chlorophyll` is drawn on a log scale (the group wins). Reset both.
 
 ## M28 — seaborn colormaps
 
