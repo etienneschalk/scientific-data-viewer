@@ -336,6 +336,7 @@ Everything a development script writes goes to `artefacts/` at the repository ro
 | `artefacts/non-regression-plots/v<ver>/`    | `python python/non_regression_test_plot.py`                                                                                                                |
 | `artefacts/prototypes/<name>/`              | `scripts/prototypes/<name>.py`                                                                                                                             |
 | `artefacts/screenshots/v<major.minor>/`     | `npm run screenshots`                                                                                                                                      |
+| `artefacts/demo-video/`                     | `scripts/demo-video/record.mjs` (profile, footage) and `montage.py` (`scientific-data-viewer-demo.mp4`)                                                    |
 | `artefacts/qa/`                             | the QA harnesses of `scripts/qa/` (`$SDV_QA_OUT`)                                                                                                          |
 | `artefacts/paranoia/<date-time>/`, `latest` | `./paranoia.sh` (its own QA outputs, package, logs and report)                                                                                             |
 | `artefacts/vsix-releases/`                  | `npm run package`, `publish.sh`, and `scripts/release-vsix.sh <version>`, which rebuilds a release from its git tag (Open VSX download if the build fails) |
@@ -361,6 +362,19 @@ npm run screenshots -- --scale 2 --width 1280         # sharper images for docs
 ```
 
 The theme variables come from `scripts/screenshots/themes/*.json`. They were recorded from a real VS Code by `node scripts/screenshots/capture-themes.mjs`, which starts VS Code through `@vscode/test-electron` (like `npm test`, so it needs a display) and switches through the themes listed in `scripts/screenshots/themes.mjs`. Re-run it when VS Code changes its default themes, then commit the JSON files.
+
+#### Demo video
+
+Full note: [`scripts/demo-video/README.md`](../scripts/demo-video/README.md).
+
+`scripts/demo-video/` films a new user's first minute in a real VS Code and edits it into `artefacts/demo-video/scientific-data-viewer-demo.mp4` (1920 × 1080, about 1 min 20 s). The minute covers Python set up from the Getting Started walkthrough (uv), a NetCDF file opened from the Explorer, its structure browsed, then plots made and tuned. VS Code runs offscreen (Ozone headless): no window opens and no display is needed. The packaged extension is installed in a fresh profile under `artefacts/demo-video/run/`, and `scenario.mjs` drives it over the DevTools protocol: mouse, keyboard, viewer webview. `montage.py` adds the title and end cards, cursor, clicks, shortcut key caps, captions and zooms, and speeds up the wait for uv.
+
+```bash
+node scripts/demo-video/record.mjs [--skip-setup]     # footage + cues -> artefacts/demo-video/recording/
+uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py [--sheet] [--gif]
+```
+
+`--skip-setup` uses the repository `.venv` and skips the Python chapter: use it while editing the storyboard. `./paranoia.sh --full` makes the video from the release package (step `demo-video`).
 
 #### Architecture diagrams
 

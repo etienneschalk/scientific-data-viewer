@@ -18,6 +18,8 @@ pytest python/tests         # Python-side tests (need xarray etc. installed)
 python python/tools/golden_snapshots.py check   # backend JSON vs snapshots in artefacts/golden/ (record first)
 pre-commit run --all-files  # prettier, eslint, tsc --noEmit, ruff, ruff-format, detect-secrets...
 npm run screenshots         # full-page viewer screenshots -> artefacts/screenshots/v<major.minor>/<theme>/ (scripts/screenshots/, docs/SCREENSHOTS.md)
+node scripts/demo-video/record.mjs [--skip-setup]   # demo video footage: fresh VS Code offscreen (no display), uv set up, plots (scripts/demo-video/README.md)
+uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py   # edit it -> artefacts/demo-video/scientific-data-viewer-demo.mp4
 python python/create_sample_data.py [--overwrite]   # create artefacts/sample-data/ (generators in python/sample_data/)
 python python/create_sample_data.py --bundled-sample [--check]   # rewrite / check the shipped media/samples/sample_climate.nc (walkthrough sample)
 python python/non_regression_test_plot.py   # plot gallery -> artefacts/non-regression-plots/v<version>/

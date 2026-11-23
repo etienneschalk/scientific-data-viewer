@@ -109,6 +109,7 @@ Each decoder is passed only if the engine's `open_dataset_parameters` has it (ke
 | Docs          | `CHANGELOG.md`, `docs/RELEASE_NOTES_0.14.0.md`, `docs/v0.14/` (incl. `CF_FLAGS_PROPOSAL.md`), `docs/PLOTTING.md`, `docs/DEVELOPMENT.md`, `CLAUDE.md`, `docs/documentation.json`, `README.md`, `scripts/architecture/`, `docs/architecture/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Log / seaborn | `plotting/norm.py` (new), `plotting/colormaps.py` (new), `plotting/kwargs.py`, `plotting/api.py`, `plotting/draw.py`, `plotting/flags.py`, `plotting/layout.py`, `plotting/options.py`, `cli.py`; `src/panel/webview/plotParams.ts`, `src/types.ts`, `src/python/DataProcessor.ts`, `src/shared/plotLayout.ts`, `src/python/ExtensionVirtualEnvironmentManager.ts`, `media/walkthrough/setup-python.md`, `requirements-dev.txt`; `python/sample_data/log_scale.py` (new); tests `python/tests/test_plot_norm.py` (new), `test_colormaps.py` (new), `test/suite/ui/webviewScript.test.ts`, `dataProcessor.test.ts`, `python/extensionEnvironmentUpdate.test.ts`; `scripts/qa/webview/controls.mjs`, `python/tools/golden_snapshots.py`, `python/non_regression_test_plot.py`, `scripts/generate_readme.py` |
 | Tooling       | `scripts/prototypes/cf_flags.py` (new), `paranoia.sh` (`prototypes`), `scripts/architecture/graphs.py`, `docs/architecture/` (regenerated)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Demo video    | `scripts/demo-video/` (new: `record.mjs`, `scenario.mjs`, `montage.py`, `README.md`, `lib/`), `paranoia.sh` (`demo-video`), `docs/DEVELOPMENT.md`, `CLAUDE.md`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Testing
 
@@ -127,6 +128,7 @@ Each decoder is passed only if the engine's `open_dataset_parameters` has it (ke
 | `scripts/upgrade-sandbox.sh --old 0.13.1 --expect rebuild`                                                                                   | not run yet (release checklist)                                                                                                                                                      |
 | Backend on sample data, decoded and raw                                                                                                      | NetCDF, HDF5, Zarr dir / ZIP, GRIB, GeoTIFF, JPEG-2000, Kerchunk, CDF: all open                                                                                                      |
 | Backend on `sample_cf_flags.nc`                                                                                                              | Every variable plotted: images, facets, steps, bars, panels per bit, block plot, notes as expected; `station_status` the same decoded, raw, with `decodeTimes` or `maskAndScale` off |
+| `scripts/demo-video/record.mjs` + `montage.py` (VS Code 1.147.0, empty uv cache)                                                             | 1926 frames in 75 s; MP4 82 s, 1920 × 1080, 8.3 MB; uv set up in 5 s (Python 3.13 and 41 packages downloaded); watchdog: `--limit 25` and `kill -9` of the recorder leave no process |
 | Manual test plan                                                                                                                             | [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md): to run (M1-M9 decoding, M10-M24 flags, M25-M30 log scale, seaborn, upgrade)                                              |
 
 ```bash
@@ -146,6 +148,8 @@ env -u ELECTRON_RUN_AS_NODE npm test
 SDV_PYTHON=$PWD/.venv/bin/python node scripts/qa/webview/controls.mjs
 .venv/bin/python scripts/prototypes/cf_flags.py
 ./paranoia.sh --quick
+node scripts/demo-video/record.mjs
+uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py
 ```
 
 ## Commits
@@ -161,3 +165,4 @@ SDV_PYTHON=$PWD/.venv/bin/python node scripts/qa/webview/controls.mjs
 9. docs(v0.14): fold the CF flags release (0.15.0) into 0.14.0
 10. feat(plotting): log color scale, the norm plot control
 11. feat(plotting): seaborn colormaps in cmap, seaborn in the extension's environment
+12. chore(demo-video): film and edit the demo video by script, paranoia step demo-video

@@ -331,6 +331,10 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 31. With an interpreter without seaborn (**Use My Own Interpreter**), plot with `seaborn:rocket`: one-line error `… needs the seaborn package …`. A `viridis` plot still works.
 32. Upgrade, with `useExtensionOwnEnvironment` on and an environment created by 0.13: the first start of 0.14 shows the environment being rebuilt once; the healthcheck then lists `seaborn` among the available packages; a second start does not rebuild.
 
+**Demo video** (development, no display needed):
+
+33. Run `node scripts/demo-video/record.mjs`, then `uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py`. `artefacts/demo-video/scientific-data-viewer-demo.mp4` plays in about 1 min 20 s: title card, Python set up from the walkthrough (the uv download, sped up with a `×N` badge when it takes more than 5 s), the sample opened from the Explorer, its attributes, 12 monthly maps, the time series, then every third month in `RdYlBu_r`, end card. No VS Code window opened during the recording, and none is left running (`pgrep -f artefacts/demo-video/run` finds nothing).
+
 ## Known limitations
 
 ### Decoding
@@ -390,3 +394,4 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 | seaborn in the extension's own environment               | Changed       | `ALL_REQUIREMENTS`, `ENVIRONMENT_REVISION` 3: rebuilt once               |
 | Layout role `norm`                                       | Changed       | Backend JSON contract                                                    |
 | `sample_log_scale.nc`                                    | Added         | `python/sample_data/log_scale.py`                                        |
+| Demo video, filmed and edited by a script (development)  | Added         | `scripts/demo-video/`; `paranoia.sh --full` step `demo-video`            |

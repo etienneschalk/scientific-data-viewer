@@ -21,14 +21,15 @@
 #   users         uv environment change; migration from every older release
 #                 to this one, played as a user (environment rebuilt or kept as
 #                 ENVIRONMENT_REVISION says, settings kept, file shown); failed
-#                 and interrupted rebuilds; screenshots, npm audit, CI status
+#                 and interrupted rebuilds; screenshots, demo video, npm audit,
+#                 CI status
 #
 # Usage: ./paranoia.sh [options]
 #   --quick            static checks, build, package, unit tests (~5 min)
 #   --standard         (default) + golden snapshots, backend vs last release, webview
 #                      harness, npm audit, CI status (~20 min)
 #   --full             + e2e suites, migration from every release, upgrade
-#                      failure modes, screenshots (~45 min). Only
+#                      failure modes, screenshots, demo video (~50 min). Only
 #                      a full run can conclude READY.
 #   --only a,b         run only these steps (ids: --list)
 #   --skip a,b         skip these steps
@@ -106,6 +107,7 @@ STEPS=(
     "migration|full|Users|Migration from every release (uv environment, settings, viewer)|3600"
     "upgrade|full|Users|Failed and interrupted environment rebuilds|2400"
     "screenshots|full|Users|Viewer screenshots|1200"
+    "demo-video|full|Users|Demo video: first use filmed in a fresh VS Code, then edited|1800"
 )
 
 PROFILE=standard
@@ -789,6 +791,27 @@ step_screenshots() {
         ARTIFACTS+=("Viewer screenshots in every theme: \`$gallery\`")
     else
         fail "npm run screenshots failed"
+    fi
+}
+
+# Demo video (scripts/demo-video/README.md): the packaged extension in a fresh
+# VS Code, offscreen, played like a new user (Python set up with uv, the sample
+# opened from the Explorer, plots), filmed, then edited into an MP4. Needs uv and
+# network (uv environment, Pillow and ffmpeg for the montage); no display.
+step_demo_video() {
+    [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
+    command -v uv >/dev/null || { skip "uv not installed"; return; }
+    local out="$ARTEFACTS/demo-video"
+    if ! run node scripts/demo-video/record.mjs --vsix "$VSIX" --out "$out"; then
+        fail "recording failed: see artefacts/demo-video/recording/failure.png"
+        return
+    fi
+    if run uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py \
+        --recording "$out/recording" --out "$out/scientific-data-viewer-demo.mp4"; then
+        note "artefacts/demo-video/scientific-data-viewer-demo.mp4"
+        ARTIFACTS+=("Demo video (first use, from Python set up to plots): \`$out/scientific-data-viewer-demo.mp4\`")
+    else
+        fail "montage.py failed"
     fi
 }
 
