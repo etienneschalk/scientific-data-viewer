@@ -1,6 +1,6 @@
 # How a plot is made
 
-This page explains how the viewer turns the plot controls into a figure: which
+This page explains how the viewer turns the plot settings into a figure: which
 values are sent, how the backend chooses what you left empty, and how the page
 shows what was chosen. The diagrams are generated from the code by
 `scripts/architecture/generate.py` (see [architecture](architecture/README.md),
@@ -31,35 +31,57 @@ Before 0.13, setting any slice or layout control switched the whole plot to a
 “user layout” where nothing was chosen automatically: slicing `lat` alone gave
 a histogram of the 3D array instead of the time facets.
 
-## In the webview: what is sent
+## In the webview: from the settings to the request
 
 ![Plot parameters, from the controls to the request](architecture/svg/plot-parameters.svg)
 
-1. **Create Plot** first checks the numbers typed (`invalidPlotOptions`): a
-   wrong value blocks the plot with a message, instead of being silently ignored.
-2. The Global Plot Controls and the variable's Group Plot Controls are read,
-   then merged **field by field** (`mergePlotControls`): the group value when
-   set, else the global one. Dimension slices are one block: the group's
-   replace the global ones when the group has any. A group checkbox showing a
-   dash uses the global value.
-3. `compactPlotPayload` drops the empty fields: **only the fields you set are
+Since 0.14 every setting belongs to a **level**: a data variable, a group
+(its variables and those of its subgroups), or the whole file (the root group
+`/`). The **Settings** buttons open the editor (`plotEditor.ts`) with one tab
+per level of the chain: **This variable**, **Group /a**, its parent groups,
+**Whole file**. The editor is built when opened and removed when closed; it
+writes the text of its controls to the store of `plotSettings.ts`. Design:
+[`docs/v0.14/FEATURE_PLOT_SETTINGS_UI.md`](v0.14/FEATURE_PLOT_SETTINGS_UI.md).
+
+1. **Create Plot** asks `plotRequestFor(variable)` for its options. For each
+   parameter, and for the slice of each dimension, **the first level of the
+   chain that sets it wins** (`scopeChain`: the variable, its group, the
+   parent groups, `/`). Slices merge dimension by dimension. True / false
+   parameters fall back to their default and are always sent.
+2. A number typed wrong at the level that wins blocks the plot with a message
+   naming that level (`Whole file: vmin: "1,5" is not a number`), instead of
+   being silently ignored. A wrong value that a nearer level overrides does
+   not count.
+3. `compactPlotPayload` drops the empty fields: **only the fields set are
    sent**, and become CLI flags (`buildCreatePlotCliArgs`).
 
-### The “changed” outline
+The request is the same as in 0.13 for the same settings: what changed is
+where they are set.
 
-A field whose value differs from its default is outlined, with a dot after its
-name (`changedFields.ts`). The outlines are therefore exactly what the request
-overrides; everything else is automatic. The default of a field is:
+### The “changed” outline and the grey fallback
 
-| Field                  | Default (not outlined)                               |
-| ---------------------- | ---------------------------------------------------- |
-| text / number / select | empty, `None`                                        |
-| checkbox (global)      | its initial state (`xincrease` on, `robust` off...)  |
-| checkbox (group)       | the dash: use the global value                       |
-| dimension slice        | the three boxes empty (the slider only mirrors them) |
+In the editor, a field that holds a value **at the level shown** is outlined,
+with a dot after its name (`changedFields.ts`). An empty field shows in grey
+what it falls back to: the value of a level further right (`magma (file)`,
+`0:6 (group /a)` next to a dimension's size), else the default (`true
+(default)`, `linear`, `auto`).
 
-**Reset** clears its block, and the outlines with it. Exported HTML keeps the
-outlines of the moment of the export.
+| Field                 | Empty (not outlined) shows                      |
+| --------------------- | ----------------------------------------------- |
+| text / number         | the inherited value, else an example (`e.g. 4`) |
+| select (dimension)    | the inherited value, else `auto`                |
+| select (true / false) | the inherited value, else the default           |
+| select (norm...)      | the inherited value, else `linear`, `per flag`  |
+| dimension slice       | the inherited slice after the size of the field |
+
+**Reset** clears its block (slices or parameters) at the level shown.
+
+### Summaries
+
+Under each Plot button (variable or group), **Settings:** lists every setting
+that applies with the level that sets it: `time 0:6 file`, `vmax 10
+variable` (`effectiveSettings`). A click opens the editor on that level and
+field. Exported HTML keeps the summaries and leaves the editor out.
 
 ### The layout line under the plot
 
@@ -67,12 +89,14 @@ The result carries, next to the image, the layout the backend resolved
 (`plot_layout`) and the slices it applied. A line under the plot lists them:
 
 ```
-image   [lat 5:15 •]  col time  [col_wrap 5 •]  y lat  x lon  size 4  aspect 1     outlined •: set by you · others: automatic
+image   [lat 5:15 •]  col time  [col_wrap 5 •]  y lat  x lon  size 4  aspect 1     outlined •: set by you · others: automatic · click one to change it
 ```
 
 Items you set are outlined and end with a dot, like the changed fields; the
 others were chosen automatically, so that line tells which control to set to
-change them. Choices that could not be used are listed below it, with the
+change them. Each item is a button: a click opens the settings on its field,
+at the level that sets it (or the variable's own level for an automatic
+choice). Choices that could not be used are listed below it, with the
 reason.
 
 ## In the backend: the layout decision
@@ -335,16 +359,18 @@ Controls of the **Flags** fieldset (`FlagChoice`, then `prepare_flag_plot`):
 
 ## Code and tests
 
-| What                  | Where                                                                            |
-| --------------------- | -------------------------------------------------------------------------------- |
-| layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
-| CF flags              | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
-| flags tests           | `python/tests/test_flags.py` (parsing, plots, selection, `hide_flags`)           |
-| xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
-| seaborn colormaps     | `python/sdv_backend/plotting/colormaps.py`; `python/tests/test_colormaps.py`     |
-| log scale             | `python/sdv_backend/plotting/norm.py`; `python/tests/test_plot_norm.py`          |
-| controls table, merge | `src/panel/webview/plotParams.ts`                                                |
-| changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |
-| layout line           | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`             |
-| backend tests         | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`, `test_plot_notes.py` |
-| webview tests         | `test/suite/ui/webviewScript.test.ts`                                            |
+| What                 | Where                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| layout decision      | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
+| CF flags             | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
+| flags tests          | `python/tests/test_flags.py` (parsing, plots, selection, `hide_flags`)           |
+| xarray call          | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
+| seaborn colormaps    | `python/sdv_backend/plotting/colormaps.py`; `python/tests/test_colormaps.py`     |
+| log scale            | `python/sdv_backend/plotting/norm.py`; `python/tests/test_plot_norm.py`          |
+| controls table       | `src/panel/webview/plotParams.ts`                                                |
+| levels, store, merge | `src/panel/webview/plotSettings.ts`                                              |
+| settings editor      | `src/panel/webview/plotEditor.ts`                                                |
+| changed outline      | `src/panel/webview/changedFields.ts`, `styles.css`                               |
+| layout line          | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`             |
+| backend tests        | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`, `test_plot_notes.py` |
+| webview tests        | `test/suite/ui/webviewScript.test.ts`                                            |

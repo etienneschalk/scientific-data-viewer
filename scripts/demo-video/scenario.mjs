@@ -9,9 +9,10 @@ const PROGRESS_TOAST = main('.notifications-toasts .notification-toast', { text:
 
 const variable = (name, css = '') => viewer(`.variable-plot-controls[data-variable="${name}"] ${css}`);
 const variableSummary = (text) => viewer('details.variable-details > summary', { text });
-const groupControls = (css) => viewer(`.group-plot-controls-section[data-group="/"] ${css}`);
+// The plot settings editor (one open at a time, under the Settings button that opened it)
+const editor = (css = '') => viewer(`.plot-editor ${css}`);
 const sliceBox = (dim, part) =>
-    groupControls(`.dimension-slice-row[data-dimension="${dim}"] .slice-part[data-part="${part}"]`);
+    editor(`.dimension-slice-row[data-dimension="${dim}"] .slice-part[data-part="${part}"]`);
 
 /** Is the "Set up Python" step of the walkthrough checked? */
 const setUpPythonDone = (d) =>
@@ -141,18 +142,21 @@ export async function scenario(d, { skipSetup = false } = {}) {
     await d.pause(2600);
     await d.zoom(null);
 
-    // 6. Tune: slice a dimension, change the colormap, plot again
-    d.caption('Slice dimensions, pick a colormap, plot again', { step: 6 });
-    await d.scrollIntoView(groupControls('.dimension-slice-row[data-dimension="time"]'), {
+    // 6. Tune: Settings of the variable, slice a dimension, change the colormap, plot again
+    d.caption('Settings: slice dimensions, pick a colormap, plot again', { step: 6 });
+    await d.scrollIntoView(variable('/tas', '.plot-settings-button'), { block: 'center', durationMs: 1200 });
+    await d.click(variable('/tas', '.plot-settings-button'));
+    await d.waitFor(editor(), { timeoutMs: 10000 });
+    await d.scrollIntoView(editor('.dimension-slice-row[data-dimension="time"]'), {
         block: 'center',
         durationMs: 1800,
     });
-    const controls = await d.rect(groupControls(''));
+    const controls = await d.rect(editor(''));
     await d.zoom({ x: controls.x, y: controls.viewTop + 40, width: controls.width, height: 620 }, { padding: 0 });
     await d.click(sliceBox('time', 'start'));
     await d.type('0:12:3', { delayMs: 140 });
     await d.pause(600);
-    await d.click(groupControls('[data-param="cmap"]'));
+    await d.click(editor('[data-param="cmap"]'));
     await d.type('RdYlBu_r', { delayMs: 90 });
     await d.pause(900);
     await d.zoom(null);

@@ -394,7 +394,8 @@ class Page {
         await this.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x2, y: y2, button: 'left', clickCount: 1 });
     }
     async typeInto(selector, text, { clear = true } = {}) {
-        await this.eval(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({block:'center'}); el.focus(); ${clear ? "el.select && el.select(); el.value='';" : ''} })()`);
+        // Clearing fires `input` like select-all + Delete would (the plot settings store listens to it)
+        await this.eval(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({block:'center'}); el.focus(); ${clear ? "el.select && el.select(); el.value=''; el.dispatchEvent(new Event('input', { bubbles: true }));" : ''} })()`);
         await this.send('Input.insertText', { text });
     }
     async close() {

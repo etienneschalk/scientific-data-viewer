@@ -2,9 +2,11 @@
 
 **TL;DR** — You can now see and control **how a file is decoded**. When CF time units are broken, the viewer turns off **only time decoding** (`decode_times=False`). `scale_factor` / `add_offset` and `_FillValue` masking keep working on the rest of the file. Before, it switched off all CF decoding (`decode_cf=False`). **Reopen raw** in File Information reloads the file with no decoding at all, to compare with the stored values. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with where it comes from. Four **Decoding** settings (`maskAndScale`, `decodeTimes`, `decodeCoords`, `useCftime`) and a **`engineBackendKwargs`** setting (allowed keys only, user settings only) make the rest configurable. GeoTIFF / JPEG-2000 times are decoded as `datetime64`, like NetCDF ones. **Security**: `python.overridePythonInterpreter` is now read from user settings only, so a cloned repository can no longer choose the program the extension runs.
 
-**CF flags.** Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. New **Flags** plot controls pick meanings by name (`flag_select`), fold bit flags into one map (`flag_combine`: `cloud OR cloud_shadow`), and hide the points of a data variable that its quality flag marks (`hide_flags`, through `ancillary_variables`). The **flags** checkbox turns it all off.
+**CF flags.** Variables that follow the CF conventions for flags are now **plotted by meaning**. A variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) gets one color per class and a colorbar that names each class with its share: `210 water (14%)`. The colors are the producer's own when the file has a `flag_colors` attribute. 1D flags are drawn as steps with the meanings on the y-axis, and bars replace the meaningless histogram of codes. **Bit flags** (`flag_masks`: cloud, cloud shadow, snow…) get **one panel per flag**, colored where the bit is set, and 1D bit flags a **block plot** with one row per flag. The codes are read **raw**, so a class that shares its number with the fill value (`127 = not_measured`) is still shown. A new **Flags** section in File Information lists every meaning with its value, mask and bits, and says why inconsistent flags cannot be used. New **Flags** plot controls pick meanings by name (`flag_select`), fold bit flags into one map (`flag_combine`: `cloud OR cloud_shadow`), and hide the points of a data variable that its quality flag marks (`hide_flags`, through `ancillary_variables`). Setting **flags** to `false` turns it all off.
 
 **Log scale and seaborn colormaps.** A new **norm** plot control draws a variable on a **logarithmic scale** without changing the data: the colors follow `log10(value)` and the colorbar shows the values (`10⁻³`, `10⁻²`…), so a chlorophyll or precipitation field over several orders of magnitude no longer looks empty. On a line plot the axis of the values becomes logarithmic. Values ≤ 0 are left out and counted in a note. **cmap** also takes **seaborn colormaps** with a `seaborn:` prefix (`seaborn:rocket`, `seaborn:mako_r`, `seaborn:light:seagreen`); seaborn is added to the extension's own environment, which is **rebuilt once** at the first start of 0.14.
+
+**Plot settings, remade.** The _Global Plot Controls_ and the _Group Plot Controls_ of every group are replaced by **one settings editor**, opened by a **Settings** button right next to **Create Plot**. Its tabs are the levels a setting can belong to: **This variable**, **Group /a**, **Whole file**. The nearest level wins, and an empty field shows in grey what it falls back to (`magma (file)`). You can now set a colormap **for one variable**, a group's settings apply to its **subgroups**, and nothing has to be scrolled to: the editor opens under the button, above the plot. A short **summary** under each Plot button says what applies and from where; click an item, or an item of the line under a plot, to change it. **Plot all**, **Cancel all**, **Save all** and **Clear all plots** are now in the header, and each group has **Plot group**.
 
 **Start here** to review, test or release v0.14: [`docs/v0.14/GETTING_STARTED.md`](./v0.14/GETTING_STARTED.md).
 
@@ -63,6 +65,17 @@ seaborn's colormaps (`rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire`) are 
 
 ---
 
+### Plot settings
+
+Up to 0.13 the plot controls came twice: a _Global Plot Controls_ section near the top of the page and a _Group Plot Controls_ block in every group, with the same ~20 fields. Users met four problems:
+
+- **Which value wins?** Field by field the group's value, if set, else the global one; but for dimension slices, the group's whole set replaced the global one. The README needed a paragraph to explain it.
+- **Scrolling.** The controls were far from the variable. Tuning a plot meant scrolling up to the controls, down to **Create Plot**, then to the image, again and again.
+- **No per-variable setting.** Two variables of one group could not get two colormaps.
+- **Weight.** Every group carried its controls, open or not: 19 parameters plus three boxes and a slider per dimension. A file with many groups built thousands of controls nobody used.
+
+v0.14 keeps one rule, "the nearest level that sets a value wins", and one editor that shows the levels as tabs. The editor is built when you open it and removed when you close it, so the page holds at most one set of controls. The design and what was left out are in [`docs/v0.14/FEATURE_PLOT_SETTINGS_UI.md`](./v0.14/FEATURE_PLOT_SETTINGS_UI.md).
+
 ## Upgrade notes (read before updating)
 
 - **Nothing to do by default.** With every new setting left at `default`, files open as in v0.13. The one change is files with broken time units: they now keep masking and scaling, so packed variables show physical values (e.g. `273.15` K instead of `0`) and fill values show as `NaN`.
@@ -70,14 +83,20 @@ seaborn's colormaps (`rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire`) are 
 - **`engineBackendKwargs` in a workspace is ignored on purpose.** The setting is machine-scoped, so put it in your **user** settings. VS Code flags a value in `.vscode/settings.json` as not applicable, and the extension does not read it.
 - **Backend JSON contract**: the info result's `decode_cf_degraded` (boolean) is replaced by `open_report` (object, see `OpenReport` in `python/sdv_backend/results.py`). Scripts that parse `get_data_info.py info` output must read `open_report.degraded_decoders` instead. Golden snapshots recorded with v0.13 (`python/tools/golden_snapshots.py`) differ on this key: record them again.
 - **`python.overridePythonInterpreter` in a workspace is now ignored.** If you set it in a project's `.vscode/settings.json` (e.g. `.venv/bin/python`), the extension falls back to the next interpreter source (own environment, then the Python extension's interpreter) and logs a warning. Either select that interpreter with **Python: Select Interpreter**, or move the override to your **user** settings with an absolute path. See [§ Interpreter override](#interpreter-override-user-settings-only).
-- **Flag variables look different by default.** Plots of variables with `flag_values` or `flag_masks` + `flag_meanings` change, as described above; a bit-flag map becomes one panel per flag. To get the plain numeric plot back, uncheck **flags** in the plot controls (**Flags** fieldset), globally or for one group.
-- **New Flags fieldset** in the plot controls, between Color and Figure: **flags** (moved from Color), **flag_select**, **flag_combine**, **hide_flags**. All empty by default: nothing changes until you set them.
+- **Flag variables look different by default.** Plots of variables with `flag_values` or `flag_masks` + `flag_meanings` change, as described above; a bit-flag map becomes one panel per flag. To get the plain numeric plot back, set **flags** to `false` in the plot settings (**Flags** fieldset), for the whole file, a group or one variable.
+- **New Flags fieldset** in the plot settings, between Color and Figure: **flags** (moved from Color), **flag_select**, **flag_combine**, **hide_flags**. All empty by default: nothing changes until you set them. The fieldset is shown only where flags apply (a variable with CF flags or `ancillary_variables`, or a group holding one).
 - **Inconsistent flags are not used.** When the attributes contradict each other (counts that differ, a value outside its mask, a value the variable's type cannot hold), the plot stays numeric and a note under it says why: `CF flags not used (...)`. The **Flags** section shows the same reason.
 - **Style options ignored for flag plots**: `vmin`, `vmax` and `robust` (one color per class), and `bins` (bars per meaning). A note says so. `cmap` still applies: it is sampled into one color per meaning.
 - **Backend JSON contract (flags)**: each data variable of the info result has a new `flags` key (`null` without flag attributes). The plot layout can have the kind `bars` and the roles `flags` and `hide_flags`. Golden snapshots recorded with 0.13 differ on these keys too.
 - **The extension's own environment is rebuilt once** (users of `useExtensionOwnEnvironment` only): `seaborn` is a new requirement and `ENVIRONMENT_REVISION` goes from 2 to 3. At the first start of 0.14, a notification shows the environment being deleted and recreated (a few minutes, network needed). If the rebuild fails (offline), the previous environment keeps being used and the rebuild is retried at the next start. Interpreters you chose (Python extension, `overridePythonInterpreter`) are never modified: install seaborn there yourself (`pip install seaborn`) if you want `seaborn:` colormaps.
 - **norm and seaborn colormaps change nothing until you use them.** **norm** is empty (`linear`) by default, and `cmap` names without the `seaborn:` prefix are matplotlib colormaps as before.
 - **Backend JSON contract (log scale)**: the plot layout can have the role `norm`, and `applied_plot_kwargs` the keys `norm` (text such as `"LogNorm(vmin=0.001, vmax=12.5)"`), `center`, `extend`, `xscale` / `yscale`.
+- **Where the plot controls went.** _Global Plot Controls_ is gone: its settings are the **Whole file** tab, opened by **Settings** in the **Plot** section of the group `/` (the first group card), or from any variable. _Group Plot Controls_ is the **Group /a** tab. **Plot all** and **Cancel all** are in the header, with **Save all plots** (disk icon) and **Clear all plots** (bin icon).
+- **A group's settings now apply to its subgroups**, and **slices merge dimension by dimension**. In 0.13 a group's slices replaced every global slice; now a slice of `time` for the whole file and a slice of `lat` for a group both apply. To cancel a slice set higher up for one variable, give that variable the full range (e.g. start `0`, stop the size).
+- **True / false parameters are lists**: empty (falls back, shown in grey), `true`, `false`. The dash of the old three-state checkbox is gone.
+- **Settings `globalDimensionSlices` and `groupDimensionSlices` are removed** (they showed or hid the old blocks). A value left in your `settings.json` is ignored; VS Code greys it out as unknown, and you can delete it.
+- **Settings are kept while the tab is open**, also through **Refresh**, and forgotten when the tab is closed (as in 0.13).
+- **The HTML export** keeps the summary of the settings under each Plot button, not the editor.
 
 ---
 
@@ -228,7 +247,7 @@ Each flag can be set independently, so one map cannot show them all. The plot ad
 | **flag_combine** | empty (one panel per flag), `any`, `all`, `none` | Ignored, with a note (codes are exclusive)                                      | One map of the chosen flags (all without `flag_select`): `cloud OR cloud shadow`, `… AND …`, `none of …` |
 
 - Names are matched whatever their case, and `_`, `-` and spaces are alike: `Cloud shadow` finds `cloud_shadow`.
-- Set globally, a selection applies to every flag variable that has one of the names; names it does not have are noted (`flag_select: glacier not among the meanings of this variable`), and a selection with no match is ignored with a note.
+- Set for the whole file, a selection applies to every flag variable that has one of the names; names it does not have are noted (`flag_select: glacier not among the meanings of this variable`), and a selection with no match is ignored with a note.
 - The layout line shows the selection in the `flags` item (`selected: urban, water`, `any: cloud, cloud shadow`), outlined as a choice of yours.
 
 ### Hiding flagged points (`hide_flags`)
@@ -255,7 +274,7 @@ With **Reopen raw** or `decoding.maskAndScale: off`, the codes are already raw a
 
 ## Log color scale (norm = log)
 
-A select in the **Color** fieldset of the plot controls, global and per group: `linear` (default, nothing passed) or `log`. Command line: `--norm log`.
+A select in the **Color** fieldset of the plot settings, at any level (whole file, group, variable): `linear` (default, nothing passed) or `log`. Command line: `--norm log`.
 
 | Plot kind        | norm = log                                                                                  |
 | ---------------- | ------------------------------------------------------------------------------------------- |
@@ -286,6 +305,44 @@ Without the prefix, the name is a matplotlib colormap, as before. seaborn is imp
 
 ---
 
+## Plot settings: one editor, three levels
+
+### Levels
+
+| Level         | Tab title       | Applies to                                       |
+| ------------- | --------------- | ------------------------------------------------ |
+| a variable    | `This variable` | this variable only                               |
+| a group       | `Group /a`      | the variables of `/a` and of its subgroups       |
+| the group `/` | `Whole file`    | every variable of the file (the former _global_) |
+
+The tabs of a variable's editor are its own level, then its group, the parent groups, and the whole file. For each plot parameter, and for the slice of each dimension, **the first tab from the left that sets it wins**. Without one, the plot chooses it automatically, as before; true / false parameters take their default. A file with one group has two tabs: **This variable** and **Whole file**.
+
+### The editor
+
+- **Settings** opens it under the button: next to **Create Plot** in a variable's **Plot** section, or in the new **Plot** section at the top of each group card (with **Plot group**). It is part of the page, not a pop-up window, so the plot under it stays visible.
+- Each tab shows how many values it sets. An empty field shows in grey what it falls back to: `magma (file)`, `0:6 (group /a)` next to a dimension's size, `true (default)`, `auto`, `linear`. A field set in the tab shown is outlined with a `•`, as before.
+- **Reset** clears the slices, or the parameters, of the tab shown only.
+- **Enter** in a box plots; **Escape**, **Close** or `×` closes the editor. Opening another editor closes the first: there is one at a time, and none is built until you ask.
+- The **Flags** fieldset only appears where flags apply.
+- A number typed wrong is outlined in red and blocks the plot with a message naming the tab: `Whole file: vmin: "1,5" is not a number (use a dot as decimal separator)`. A value set nearer (in **This variable**) replaces it and the plot goes.
+
+### Summaries and clicks
+
+Under each Plot button, **Settings:** lists every setting that applies, with where it comes from: `time 0:6 file`, `cmap magma file`, `vmax 10 variable`. Items set at the level of that variable or group are outlined; with nothing set it reads `Settings: all automatic`. Click an item: the editor opens on that tab, with the cursor in that field.
+
+The items of the line under a plot (`col time`, `col_wrap 3 •`, `x lon`…) are buttons too: a click opens the field, in the tab that sets it, or in **This variable** for an automatic choice. When a setting that applies to a displayed plot changes, the plot says **Settings changed: plot again to apply them**.
+
+### Buttons
+
+| Button                    | Where                   | What it does                                                  |
+| ------------------------- | ----------------------- | ------------------------------------------------------------- |
+| **Plot all**              | header                  | every data variable of the file, 5 at a time                  |
+| **Cancel all**            | header, while plots run | stops every running plot (also those of Plot group)           |
+| **Save all plots** (disk) | header                  | saves every displayed plot under `sdv-plots/`                 |
+| **Clear all plots** (bin) | header                  | removes every plot from the page; the settings stay           |
+| **Plot group**            | Plot section of a group | the group's own data variables (its subgroups have their own) |
+| **Settings**              | variable and group      | opens / closes the editor of that variable or group           |
+
 ## Manual verification
 
 Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, `sample_log_scale.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding, flags, log scale and seaborn) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
@@ -308,7 +365,7 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 
 12. Expand `land_cover`: **Flags** section, `flag_values: one code per meaning · colors from flag_colors`, 8 rows with swatches.
 13. Plot `land_cover`: the colors of the swatches, colorbar `10 cropland (…%)` to `210 water (…%)`, the top rows (fill value) transparent. Layout line: `flags flag_values, 8 meanings, colors: flag_colors`.
-14. Uncheck **flags** (Flags) and plot again: the plain numeric plot (viridis, 10 to 210), no `flags` item.
+14. Open **Settings** of `land_cover`, set **flags** (Flags) to `false` and plot again: the plain numeric plot (viridis, 10 to 210), no `flags` item.
 15. Plot `quality_level`: three facets (time), one colorbar `0 no data` … `5 best quality`.
 16. Plot `station_status`: steps, `127 not measured` on the y-axis, one black point `other (code not in flag_values)`, a note listing code `9`.
 17. Plot `lccs_class`: 8 classes listed, note `29 of the 37 meanings are absent from the plotted data and not listed`.
@@ -335,6 +392,18 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 
 33. Run `node scripts/demo-video/record.mjs`, then `uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py`. `artefacts/demo-video/scientific-data-viewer-demo.mp4` plays in about 1 min 20 s: title card, Python set up from the walkthrough (the uv download, sped up with a `×N` badge when it takes more than 5 s), the sample opened from the Explorer, its attributes, 12 monthly maps, the time series, then every third month in `RdYlBu_r`, end card. No VS Code window opened during the recording, and none is left running (`pgrep -f artefacts/demo-video/run` finds nothing).
 
+**Plot settings**, with `artefacts/sample-data/sample_data_multiple_groups.nc` and the sample file (**Scientific Data Viewer: Open Sample File**). The full recipe, for a tester who does not read code, is M31-M38 of the [manual test plan](./v0.14/MANUAL_TEST_PLAN_0.14.0.md#plot-settings-ui-remake).
+
+34. Open the sample file. No _Global Plot Controls_ section; the header has **Plot all**, a disk and a bin icon. The group `/` starts with a **Plot** section: **Plot group**, **Settings**, `Settings: all automatic`.
+35. Expand `tas`, click **Settings** next to **Create Plot**: an editor opens under it with tabs **This variable** and **Whole file**. Click **Settings** of the group `/`: the first editor closes, a **Whole file** editor opens.
+36. In **Whole file**, type `0:12:3` in the start box of `time` and `RdYlBu_r` in **cmap**. The summaries of the group and of `tas` read `time 0:12:3 file`, `cmap RdYlBu_r file`. Plot `tas`: four maps in red-yellow-blue.
+37. Open **Settings** of `tas`: **cmap** shows `RdYlBu_r (file)` in grey. Type `magma` and press **Enter**: `tas` is plotted in magma; `tas_global_mean` still gets the file values.
+38. Click the `cmap magma variable` item of the summary: the editor of `tas` opens on **This variable**, cursor in **cmap**. Click `col time` under the plot: cursor in **col**.
+39. Change **cmap** of **Whole file**: the `tas_global_mean` plot (if plotted) says **Settings changed: plot again to apply them**.
+40. Open `sample_data_multiple_groups.nc`: a variable of a subgroup has one tab per parent group. A **cmap** set on a group applies to its subgroups' variables, not to the other groups.
+41. **Plot group** plots only that group's variables; **Plot all** and every **Plot group** are disabled while it runs; **Cancel all** stops it.
+42. Export the viewer: the summaries are in the HTML file, not the editor; in a browser the Settings buttons are hidden.
+
 ## Known limitations
 
 ### Decoding
@@ -351,7 +420,7 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 - **One panel per flag can be a lot**: a product with 40 bits set somewhere gives 40 panels; use **flag_select** or **flag_combine**.
 - **Names are typed, not picked**: no suggestion list yet. The **Flags** section of File Information lists the meanings to copy.
 - **`hide_flags` looks in the variable's own group only**, and only at `ancillary_variables`; a quality flag not linked that way cannot hide points.
-- **`flag_select` is for flag variables**: set globally, it does not affect a plain data variable (no note), use **hide_flags** for those.
+- **`flag_select` is for flag variables**: set for the whole file, it does not affect a plain data variable (no note), use **hide_flags** for those.
 - **Bit flags read as floats lose bits above 2⁵³** on engines that cannot read raw (cfgrib, rasterio, kerchunk, cdflib); a note says so for 64-bit variables.
 - **Other engines read decoded values** (cfgrib, rasterio, kerchunk, cdflib). A fill code that is also a meaning is shown as no data there.
 - **`flag_colors` is not CF.** It is honoured only with exactly one valid color per meaning, otherwise ignored with a note.
@@ -364,6 +433,13 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 - **The values ≤ 0 note is always shown**, even for a handful of values.
 - **seaborn colormap names are typed, not picked**: no list of suggestions or previews yet.
 - **A `seaborn:` name fails every plot when seaborn is missing**, line plots and histograms included (they would ignore `cmap`): the name is checked before the file is read.
+
+### Plot settings
+
+- **No "apply to the group" button yet**: a value set for one variable has to be typed again in the group's tab to apply it to its neighbours.
+- **A slice set higher up cannot be emptied for one variable**: give the full range instead (start `0`, stop the size).
+- **Settings are not saved** with the file or the workspace: they live as long as the tab (Refresh keeps them).
+- **The x / y / hue / row / col lists offer dimensions only**, as in 0.13 (not other coordinates).
 
 ### Found while testing (not fixed)
 
@@ -402,3 +478,10 @@ Two limitations found while building `sample_log_scale.nc`. Both predate v0.14, 
 | Layout role `norm`                                       | Changed       | Backend JSON contract                                                    |
 | `sample_log_scale.nc`                                    | Added         | `python/sample_data/log_scale.py`                                        |
 | Demo video, filmed and edited by a script (development)  | Added         | `scripts/demo-video/`; `paranoia.sh --full-with-extras` (`demo-video`)   |
+| Plot settings: one editor, levels as tabs                | Changed       | **Settings** buttons; `plotSettings.ts`, `plotEditor.ts`                 |
+| Settings per variable; groups apply to subgroups         | Added         | Tabs **This variable**, **Group /a**, **Whole file**                     |
+| Slices merged dimension by dimension                     | Changed       | `plotRequestFor`                                                         |
+| Summaries and clickable layout items                     | Added         | Under each Plot button and each plot                                     |
+| Plot all / Cancel all / Save all / Clear all in header   | Changed       | `HTMLGenerator.generateHeader`                                           |
+| **Plot group**                                           | Added         | Plot section of each group                                               |
+| `globalDimensionSlices`, `groupDimensionSlices`          | Removed       | `package.json`                                                           |

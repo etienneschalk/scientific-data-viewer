@@ -355,6 +355,15 @@ kbd {
     align-items: center;
 }
 
+/* Plot all, Cancel all, Save all, Clear all: left of the tree controls */
+.plot-toolbar {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    padding-right: 10px;
+    border-right: 1px solid var(--sdv-border);
+}
+
 /* Buttons: primary by default, secondary variants below */
 button {
     display: inline-flex;
@@ -478,9 +487,34 @@ button:disabled {
     stroke-linejoin: round;
 }
 
-.header-control-button .sdv-icon {
+.header-control-button .sdv-icon,
+.header-text-button .sdv-icon {
     width: 16px;
     height: 16px;
+}
+
+/* Toolbar button with a label (Plot all, Cancel all) */
+.header-text-button {
+    gap: 4px;
+    height: 28px;
+    min-height: 0;
+    padding: 0 8px 0 6px;
+    font-size: 12px;
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    background-color: transparent;
+    border: none;
+    border-radius: var(--sdv-radius);
+}
+
+.header-text-button:hover:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-hoverBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+.header-text-button.cancel-button {
+    color: var(--vscode-errorForeground);
 }
 
 h3 .sdv-icon,
@@ -773,7 +807,7 @@ pre:not(.html-representation pre) {
 
 /*
  * Group cards: a sticky header row (group name and counts), then sections
- * divided by hairlines (Group Plot Controls, Dimensions, Coordinates,
+ * divided by hairlines (Plot, Dimensions, Coordinates,
  * Variables, Attributes, Xarray Encoding), built like the variable cards.
  * overflow: clip (not hidden) rounds the corners without breaking the
  * sticky header.
@@ -1028,8 +1062,7 @@ pre:not(.html-representation pre) {
     padding: 0 12px 12px var(--sdv-section-content-indent);
 }
 
-.plot-actions,
-.global-plot-controls {
+.plot-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -1093,11 +1126,22 @@ pre:not(.html-representation pre) {
     color: var(--vscode-foreground);
 }
 
+/* A button: a click opens the plot settings on its field */
 .plot-layout-item {
+    gap: 4px;
+    min-height: 0;
     padding: 1px 6px;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    background-color: transparent;
     border: 1px solid var(--sdv-border);
     border-radius: var(--sdv-radius-sm);
     white-space: nowrap;
+}
+
+.plot-layout-item:hover:not(:disabled) {
+    background-color: var(--sdv-surface-hover);
 }
 
 /*
@@ -1155,30 +1199,186 @@ pre:not(.html-representation pre) {
 }
 
 /*
- * Plot controls (Global Plot Controls card, Group Plot Controls section):
- * blocks (Dimension slices, Plot parameters) divided by
+ * Plot settings: under the Plot buttons of a variable or a group, the summary
+ * of the settings that apply (one chip per setting, with the level that sets
+ * it), then the settings editor when open (plotEditor.ts).
+ */
+.variable-plot-controls > .plot-settings-summary {
+    padding: 0 12px 10px var(--sdv-section-content-indent);
+}
+
+.variable-plot-controls > .plot-editor-host {
+    padding: 0 12px 0 var(--sdv-section-content-indent);
+}
+
+.group-plot-content > .plot-controls-row {
+    padding: 2px 0 10px;
+}
+
+.plot-settings-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    font-size: 12px;
+}
+
+.plot-settings-label {
+    color: var(--vscode-descriptionForeground);
+}
+
+.settings-chip {
+    gap: 5px;
+    min-height: 0;
+    padding: 1px 6px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--vscode-foreground);
+    background-color: transparent;
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-sm);
+}
+
+.settings-chip:hover:not(:disabled) {
+    background-color: var(--sdv-surface-hover);
+}
+
+/* Set at the level of this variable or group, like a changed control */
+.settings-chip--here {
+    border-color: var(--sdv-changed);
+}
+
+.settings-chip-name {
+    font-family: var(--sdv-mono);
+    font-weight: 600;
+}
+
+.settings-chip code {
+    padding: 0;
+    font-size: 12px;
+    background-color: transparent;
+}
+
+.settings-chip-source {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-stale-note {
+    font-size: 12px;
+    color: var(
+        --vscode-editorWarning-foreground,
+        var(--vscode-descriptionForeground)
+    );
+}
+
+/* The editor: tabs (levels), a hint, the two blocks, then Plot and Close */
+.plot-editor {
+    margin: 2px 0 12px;
+    padding: 0 16px;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--sdv-border);
+    border-radius: var(--sdv-radius-lg);
+    box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
+.plot-editor-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    border-bottom: 1px solid var(--sdv-border);
+}
+
+.plot-editor-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    min-width: 0;
+}
+
+.plot-editor-tab {
+    gap: 6px;
+    min-height: 0;
+    padding: 8px 10px 6px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+}
+
+.plot-editor-tab:hover:not(:disabled) {
+    color: var(--vscode-foreground);
+    background-color: var(--sdv-surface-hover);
+}
+
+.plot-editor-tab[aria-selected='true'] {
+    color: var(--vscode-foreground);
+    border-bottom-color: var(
+        --vscode-panelTitle-activeBorder,
+        var(--vscode-focusBorder)
+    );
+}
+
+.plot-editor-close {
+    align-self: center;
+    width: 26px;
+    height: 26px;
+    min-height: 0;
+    margin-left: auto;
+    padding: 0;
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    background-color: transparent;
+    border: none;
+    border-radius: var(--sdv-radius);
+}
+
+.plot-editor-close:hover:not(:disabled) {
+    background-color: var(
+        --vscode-toolbar-hoverBackground,
+        var(--sdv-surface-hover)
+    );
+}
+
+.plot-editor-hint {
+    margin: 10px 0;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.plot-editor-hint strong {
+    color: var(--vscode-foreground);
+}
+
+.plot-editor-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 12px;
+    border-top: 1px solid var(--sdv-border);
+}
+
+.plot-editor-tip {
+    flex: 1;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+/* The field a summary chip or a layout item opened */
+.plot-field--focus {
+    background-color: var(--sdv-highlight);
+    box-shadow: 0 0 0 4px var(--sdv-highlight);
+    border-radius: var(--sdv-radius-sm);
+}
+
+/*
+ * Blocks of the editor (Dimension slices, Plot parameters) divided by
  * hairlines, each a heading row with its Reset button, a one-line hint and a
  * grid of fields (name above, control below) whose columns line up across
  * blocks and fieldsets.
  */
-.plot-controls-card {
-    margin-top: 12px;
-    padding: 0 16px;
-    background-color: var(--sdv-surface);
-    border: 1px solid var(--sdv-border);
-    border-radius: var(--sdv-radius-lg);
-}
-
-/* Clips the hairline above the first visible block (blocks hide themselves) */
-.plot-controls-content {
-    clip-path: inset(1px -8px -8px -8px);
-}
-
-.group-section > .plot-controls-content {
-    padding-top: 0;
-    padding-bottom: 0;
-}
-
 .plot-controls-subsection {
     padding: 12px 0 14px;
     border-top: 1px solid var(--sdv-border);
@@ -1520,6 +1720,15 @@ pre:not(.html-representation pre) {
 
     .plot-fields {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    /* Header: icons only */
+    .header-text-button > span {
+        display: none;
+    }
+
+    .plot-editor {
+        padding: 0 10px;
     }
 
     .variable-summary .variable-name,

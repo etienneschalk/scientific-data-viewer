@@ -48,8 +48,6 @@ const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
-const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
-const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
@@ -76,8 +74,6 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
-const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
-const DEFAULT_GROUP_DIMENSION_SLICES = true;
 const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
 const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
@@ -199,20 +195,6 @@ export function getConvertBandsToVariables(): boolean {
     return getWorkspaceConfig().get<boolean>(
         CONVERT_BANDS_TO_VARIABLES,
         DEFAULT_CONVERT_BANDS_TO_VARIABLES,
-    );
-}
-
-export function getGlobalDimensionSlices(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GLOBAL_DIMENSION_SLICES,
-        DEFAULT_GLOBAL_DIMENSION_SLICES,
-    );
-}
-
-export function getGroupDimensionSlices(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GROUP_DIMENSION_SLICES,
-        DEFAULT_GROUP_DIMENSION_SLICES,
     );
 }
 
@@ -420,8 +402,6 @@ export function withKerchunkOpenQuery(uri: vscode.Uri): vscode.Uri {
  */
 export function getExtensionConfigForWebview(): Record<string, unknown> {
     return {
-        globalDimensionSlices: getGlobalDimensionSlices(),
-        groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
         plotTimeoutMs: getPlotTimeoutMs(),
         outlineEnabled: getOutlineEnabled(),

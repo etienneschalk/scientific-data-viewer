@@ -57,7 +57,6 @@ export class HeaderExtractor {
                 'Xarray Text Representation (for each group)',
                 'section-text-representation-for-groups',
             ),
-            section('Global Plot Controls', 'section-global-plot-controls'),
             section('Data Groups', 'section-data-groups'),
             section('Troubleshooting', 'section-troubleshooting'),
         ];

@@ -1,14 +1,8 @@
+import { ICONS } from '../../../shared/icons';
 import { joinId } from '../../../shared/ids';
-import { refreshChangedFields } from '../changedFields';
 import { displayGlobalError, hideGlobalError } from '../errors';
-import {
-    globalPlotScope,
-    groupPlotScope,
-    renderDimensionSliceInputs,
-    renderPlotParameters,
-    setDimensionOptions,
-    showInheritedCheckboxes,
-} from '../plotParams';
+import { closePlotEditor, refreshSettingsSummaries } from '../plotEditor';
+import { groupScope, groupVariables, setPlotModel } from '../plotSettings';
 import { globalState } from '../state';
 import { clampPlotTimeout, escapeHtml, formatFileSize } from '../util';
 import {
@@ -64,10 +58,7 @@ export interface DataLoadedPayload {
 }
 
 interface DisplayFlags {
-    globalDimensionSlices: boolean;
-    groupDimensionSlices: boolean;
     nestedAttributesView: boolean;
-    isFirstRootGroup?: boolean;
 }
 
 export function displayAll(state: DataLoadedPayload): void {
@@ -75,8 +66,6 @@ export function displayAll(state: DataLoadedPayload): void {
     const dataInfo = data.dataInfo ?? null;
     const extensionConfig = state?.extension?.extensionConfig;
     displayDataInfo(dataInfo, data.currentFile ?? null, extensionConfig);
-    // Rendering resets some controls (Refresh keeps the others)
-    refreshChangedFields(document);
     if (dataInfo && !dataInfo.error) {
         displayHtmlRepresentation(dataInfo.xarray_html_repr, false);
         displayTextRepresentation(dataInfo.xarray_text_repr, false);
@@ -92,14 +81,6 @@ export function displayAll(state: DataLoadedPayload): void {
         false,
         extensionConfig?.showLoadTimeInLocalTime !== false,
     );
-}
-
-/** Render the global plot parameters once (exported HTML keeps its own). */
-export function renderGlobalPlotParameters(): void {
-    const container = document.getElementById('globalPlotParameters');
-    if (container && container.children.length === 0) {
-        container.innerHTML = renderPlotParameters(globalPlotScope(), []);
-    }
 }
 
 function displayDataInfo(
@@ -119,15 +100,15 @@ function displayDataInfo(
     // Feature flags (default true when config not available)
     const config = extensionConfig ?? {};
     const flags: DisplayFlags = {
-        globalDimensionSlices: config.globalDimensionSlices !== false,
-        groupDimensionSlices: config.groupDimensionSlices !== false,
         nestedAttributesView: config.nestedAttributesView !== false,
     };
     globalState.plotTimeoutMs = clampPlotTimeout(config.plotTimeoutMs);
     globalState.currentDatasetFilePath = filePath;
 
     hideGlobalError();
-    renderGlobalPlotParameters();
+    // The plot settings are kept (Refresh); the editor is rebuilt on demand
+    closePlotEditor();
+    setPlotModel(data);
 
     const filePathCode = document.getElementById('filePathCode');
     if (filePathCode) {
@@ -149,14 +130,9 @@ function displayDataInfo(
                 : [];
         if (groups.length > 0) {
             groupInfoContainer.innerHTML = groups
-                .map((groupName, index) =>
-                    renderGroup(data, groupName, {
-                        ...flags,
-                        isFirstRootGroup: index === 0,
-                    }),
-                )
+                .map((groupName) => renderGroup(data, groupName, flags))
                 .join('');
-            showInheritedCheckboxes(groupInfoContainer);
+            refreshSettingsSummaries(groupInfoContainer);
             // Open the first group by default
             const firstGroup = groupInfoContainer.querySelector('details');
             if (firstGroup) {
@@ -167,8 +143,6 @@ function displayDataInfo(
                 '<p class="muted-text">No data available</p>';
         }
     }
-
-    populateDimensionSlices(data, flags.globalDimensionSlices);
 
     document.getElementById('loading')?.classList.add('hidden');
     document.getElementById('content')?.classList.remove('hidden');
@@ -292,7 +266,7 @@ function renderGroup(
                     )}</span>
                 </summary>
                 <div class="group-card-body">
-                    ${renderGroupPlotControls(data, groupName, flags)}
+                    ${renderGroupPlotSection(data, groupName)}
                     ${section('dimensions', 'Dimensions', dimensionsHtml, dimensionCount)}
                     ${section('coordinates', 'Coordinates', coordinatesHtml, coordinateCount)}
                     ${section('variables', 'Variables', variablesHtml, variableCount)}
@@ -319,105 +293,61 @@ function renderGroupSection(
     options: {
         open: boolean;
         count?: number;
-        /** Group Plot Controls: `.group-plot-controls-section` with data-group */
+        /**
+         * Plot section: `.group-plot-section` with data-group, host of the
+         * plot settings editor (`data-settings-scope`)
+         */
         plotGroup?: string;
     },
 ): string {
     const { open, count, plotGroup } = options;
     const plotAttrs =
-        plotGroup === undefined ? '' : ` data-group="${escapeHtml(plotGroup)}"`;
+        plotGroup === undefined
+            ? ''
+            : ` data-group="${escapeHtml(plotGroup)}" data-settings-scope="${escapeHtml(groupScope(plotGroup))}"`;
     return /*html*/ `
-                    <details class="group-section${plotGroup === undefined ? '' : ' group-plot-controls-section'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                    <details class="group-section${plotGroup === undefined ? '' : ' group-plot-section'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
                         <summary class="group-section-summary"><h4>${title}</h4>${count ? countBadge(count) : ''}</summary>
                         ${content}
                     </details>`;
 }
 
-/** Group dimension slices and plot parameters (same markup roles as the global ones). */
-function renderGroupPlotControls(
-    data: DataInfo,
-    groupName: string,
-    flags: DisplayFlags,
-): string {
-    const scope = groupPlotScope(groupName);
-    const groupDims = data.dimensions_flattened?.[groupName] ?? {};
-    const dimNames = Object.keys(groupDims).sort();
-    if (!flags.groupDimensionSlices || dimNames.length === 0) {
+/**
+ * Plot section of a group: Plot group (its own data variables), Settings
+ * (the editor of this group, and of its parents up to the whole file), and
+ * the summary of the settings that apply to the group. Absent when neither
+ * the group nor its subgroups hold a data variable.
+ */
+function renderGroupPlotSection(data: DataInfo, groupName: string): string {
+    const prefix = groupName === '/' ? '/' : `${groupName}/`;
+    const hasVariables = Object.entries(data.variables_flattened ?? {}).some(
+        ([group, variables]) =>
+            (group === groupName || group.startsWith(prefix)) &&
+            variables.length > 0,
+    );
+    if (!hasVariables) {
         return '';
     }
-
-    const heading = (title: string, action: string, help: string) => /*html*/ `
-                        <div class="plot-controls-heading">
-                            <h5 class="plot-controls-subsection-title">${title}</h5>
-                            <button type="button" class="plot-reset-button" data-action="${action}" title="${help}">Reset</button>
-                        </div>`;
-    const dimensionSlicesHtml = /*html*/ `
-                <div class="group-plot-controls dimension-slices-section">
-                    <div class="plot-controls-subsection dimension-slices-isel">
-                        ${heading('Dimension slices <code>isel</code>', 'clear-plot-controls', 'Clear the dimension slices')}
-                        <p class="dimension-slices-hint">Start with an empty stop selects one index (<code>130</code>); start, stop and step select a slice (<code>100:120</code>, <code>0:24:2</code>; stop excluded; negative counts from the end). The slider moves start and stop. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
-                        <div class="plot-fields plot-fields--slices dimension-slices-container">
-                            ${renderDimensionSliceInputs(scope, groupDims)}
-                        </div>
-                    </div>
-                    <div class="plot-controls-subsection plot-parameters">
-                        ${heading('Plot parameters <code>plot</code>', 'clear-plot-controls', 'Reset the plot parameters')}
-                        <p class="dimension-slices-hint">Override the global plot parameters for this group; empty fields and checkboxes showing a dash use the global ones. See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
-                        <div class="dimension-slices-facets">
-                            ${renderPlotParameters(scope, dimNames)}
-                        </div>
-                    </div>
-                </div>`;
-
+    const count = groupVariables(groupName).length;
+    const plotButton =
+        count > 0
+            ? /*html*/ `<button type="button" class="plot-action-button" data-action="plot-group" title="Plot the ${count === 1 ? 'data variable' : `${count} data variables`} of this group, 5 at a time (subgroups have their own button)">${ICONS.play} Plot group</button>`
+            : '';
+    const settingsTitle =
+        groupName === '/'
+            ? 'Slices and plot parameters of every variable of the file'
+            : 'Slices and plot parameters of the variables of this group and its subgroups, or of the whole file';
     return renderGroupSection(
-        joinId(['data-group', groupName, 'group-plot-controls']),
-        'Group Plot Controls',
-        /*html*/ `<div class="plot-controls-content">${dimensionSlicesHtml}</div>`,
-        { open: !!flags.isFirstRootGroup, plotGroup: groupName },
+        joinId(['data-group', groupName, 'plot']),
+        'Plot',
+        /*html*/ `<div class="group-plot-content">
+                        <div class="plot-controls-row">
+                            ${plotButton}
+                            <button type="button" class="plot-action-button plot-settings-button" data-action="open-settings" aria-expanded="false" title="${escapeHtml(settingsTitle)}">${ICONS.settings} Settings</button>
+                        </div>
+                        <div class="plot-settings-summary"></div>
+                        <div class="plot-editor-host"></div>
+                    </div>`,
+        { open: true, plotGroup: groupName },
     );
-}
-
-/** Global dimension slices: every dimension of every group (max size), sorted. */
-function populateDimensionSlices(
-    data: DataInfo,
-    globalDimensionSlices: boolean,
-): void {
-    const section = document.querySelector<HTMLElement>(
-        '#section-global-plot-controls .dimension-slices-section',
-    );
-    if (!section) {
-        return;
-    }
-    const dims = data.dimensions_flattened ?? {};
-    if (!globalDimensionSlices || Object.keys(dims).length === 0) {
-        section.style.display = 'none';
-        return;
-    }
-    section.style.display = 'block';
-
-    const mergedDimensions: Record<string, number> = {};
-    for (const groupDims of Object.values(dims)) {
-        for (const [dimName, size] of Object.entries(groupDims ?? {})) {
-            const existing = mergedDimensions[dimName];
-            if (existing === undefined || size > existing) {
-                mergedDimensions[dimName] = size;
-            }
-        }
-    }
-    const dimNames = Object.keys(mergedDimensions).sort();
-
-    const container = document.getElementById('dimensionSlicesContainer');
-    if (container) {
-        container.innerHTML =
-            dimNames.length > 0
-                ? renderDimensionSliceInputs(
-                      globalPlotScope(),
-                      mergedDimensions,
-                  )
-                : '<p class="muted-text">No dimensions in any group.</p>';
-    }
-    const parameters = document.getElementById('globalPlotParameters');
-    if (parameters) {
-        setDimensionOptions(parameters, dimNames);
-    }
 }

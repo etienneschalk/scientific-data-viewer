@@ -1,6 +1,7 @@
 import { FlagsInfo, isSafeFlagColor } from '../../../shared/flags';
 import { ICONS } from '../../../shared/icons';
 import { joinId } from '../../../shared/ids';
+import { dataVariablePath, variableScope } from '../plotSettings';
 import { attributeValueStrings, escapeHtml, formatFileSize } from '../util';
 
 /** A coordinate or data variable as sent by the Python backend. */
@@ -195,7 +196,10 @@ function renderVariableSection(
     options: {
         open: boolean;
         count?: number;
-        /** Plot section: `.variable-plot-controls` with its data-variable */
+        /**
+         * Plot section: `.variable-plot-controls` with its data-variable, and
+         * the host of the plot settings editor (`data-settings-scope`)
+         */
         plotVariable?: string;
     },
 ): string {
@@ -203,7 +207,7 @@ function renderVariableSection(
     const plotAttrs =
         plotVariable === undefined
             ? ''
-            : ` data-variable="${escapeHtml(plotVariable)}"`;
+            : ` data-variable="${escapeHtml(plotVariable)}" data-settings-scope="${escapeHtml(variableScope(plotVariable))}"`;
     return /*html*/ `
                 <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
                     <summary class="variable-section-summary">
@@ -309,7 +313,7 @@ export function renderDataVariable(
     groupName: string,
 ): string {
     // For datatree variables, use full path (group/variable) for plotting
-    const fullVariableName = `${groupName === '/' ? '' : groupName}/${variable.name}`;
+    const fullVariableName = dataVariablePath(groupName, variable.name);
     return renderVariableDetails(
         variable,
         groupName,
@@ -321,13 +325,19 @@ export function renderDataVariable(
 /**
  * Content of a data variable's Plot section (the section element is the
  * `.variable-plot-controls`); its buttons are handled through `data-action`.
+ * The summary of the settings is filled by plotEditor.ts, the settings
+ * editor opens in `.plot-editor-host`.
  */
 function renderPlotControls(): string {
     return /*html*/ `
                     <div class="plot-controls-row">
                         <button class="create-plot-button" data-action="create-plot">Create Plot</button>
                         <button class="plot-action-button cancel-button hidden" data-action="cancel-plot" title="Cancel this plot operation">${ICONS.stop} Cancel</button>
+                        <button type="button" class="plot-action-button plot-settings-button" data-action="open-settings" aria-expanded="false" title="Slices and plot parameters of this variable, its group or the whole file">${ICONS.settings} Settings</button>
+                        <span class="plot-stale-note hidden" title="The settings that apply to this variable changed after this plot was made">Settings changed: plot again to apply them</span>
                     </div>
+                    <div class="plot-settings-summary"></div>
+                    <div class="plot-editor-host"></div>
                     <div class="plot-container hidden">
                         <div class="plot-actions">
                             <button class="plot-action-button" data-action="reset-plot">Reset</button>

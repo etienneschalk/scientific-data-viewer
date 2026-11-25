@@ -3,8 +3,8 @@
  * out/webview/webview.js (scripts/build-webview.mjs).
  *
  * No inline event handlers (the webview CSP forbids them): every click goes
- * through one delegated listener, using element ids for the header/global
- * buttons and `data-action` attributes for everything rendered dynamically.
+ * through one delegated listener, using element ids for the header buttons
+ * and `data-action` attributes for everything rendered dynamically.
  */
 import { ICONS } from '../../shared/icons';
 import { messageBus } from './bus';
@@ -14,7 +14,7 @@ import {
     executeShowLogsCommand,
     executeShowSettingsCommand,
 } from './errors';
-import { handleChangedFieldEvent, refreshChangedFields } from './changedFields';
+import { handleChangedFieldEvent } from './changedFields';
 import { handleDimensionSliceEvent } from './dimensionSlices';
 import { handleExportWebview } from './export';
 import {
@@ -22,26 +22,33 @@ import {
     createVariablePlot,
     handleCancelAllPlots,
     handleCreateAllPlots,
+    handlePlotGroup,
     handleResetAllPlots,
     handleSaveAllPlots,
     hidePlotControlsForBrowser,
     openVariablePlot,
+    refreshStalePlots,
     resetVariablePlot,
     saveVariablePlot,
     saveVariablePlotAs,
 } from './plotActions';
 import {
-    handleInheritedCheckboxChange,
-    resetPlotControls,
-    showInheritedCheckboxes,
+    closePlotEditor,
+    editSetting,
+    handlePlotEditorEvent,
+    handlePlotEditorKey,
+    plotFromEditor,
+    refreshSettingsSummaries,
+    resetEditorBlock,
+    selectEditorTab,
+    togglePlotEditor,
+} from './plotEditor';
+import {
     syncColWrapAutoCheckbox,
     validatePlotParameterInput,
 } from './plotParams';
-import {
-    DataLoadedPayload,
-    displayAll,
-    renderGlobalPlotParameters,
-} from './render/dataInfo';
+import { onPlotSettingsChange } from './plotSettings';
+import { DataLoadedPayload, displayAll } from './render/dataInfo';
 import { displayTimestamp } from './render/representations';
 import { watchThemeKind } from './theme';
 
@@ -69,11 +76,8 @@ function showDegradedModeIndicator(): void {
         }
     });
 
+    // The settings summaries stay as a record; nothing can be edited or run
     hidePlotControlsForBrowser();
-    // The exported controls are a frozen record: nothing to reset
-    document
-        .querySelectorAll<HTMLElement>('.plot-reset-button')
-        .forEach((button) => button.classList.add('hidden'));
 }
 
 async function handleTextCopy(button: HTMLElement): Promise<void> {
@@ -180,14 +184,17 @@ const ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
         executeInstallPackagesCommand(
             (element.dataset.packages ?? '').split(',').filter(Boolean),
         ),
-    // Resets the block of the button: dimension slices or plot parameters
-    'clear-plot-controls': (element) => {
-        const section = element.closest('.plot-controls-subsection');
-        if (section) {
-            resetPlotControls(section);
-            refreshChangedFields(section);
-        }
-    },
+    'plot-group': (element) => handlePlotGroup(element),
+};
+
+/** Plot settings actions (plotEditor.ts); none in an exported page. */
+const SETTINGS_ACTIONS: Record<string, (element: HTMLElement) => unknown> = {
+    'open-settings': togglePlotEditor,
+    'edit-setting': editSetting,
+    'editor-tab': selectEditorTab,
+    'editor-reset': resetEditorBlock,
+    'editor-close': () => closePlotEditor(),
+    'editor-plot': () => plotFromEditor(),
 };
 
 /** Reload the file without / with CF decoding ("Reopen raw" / "Reopen decoded"). */
@@ -237,6 +244,10 @@ async function handleDocumentClick(event: MouseEvent): Promise<void> {
             return;
         }
         await PLOT_ACTIONS[action](controls);
+    } else if (SETTINGS_ACTIONS[action]) {
+        if (!messageBus.isDegradedMode) {
+            await SETTINGS_ACTIONS[action](actionElement);
+        }
     } else if (ACTIONS[action]) {
         await ACTIONS[action](actionElement);
     }
@@ -256,17 +267,19 @@ function setupEventListeners(): void {
         ) {
             syncColWrapAutoCheckbox(target);
         }
-        handleInheritedCheckboxChange(target);
         handleDimensionSliceEvent(target);
         validatePlotParameterInput(target);
         // Last: the handlers above may rewrite other controls
         handleChangedFieldEvent(target);
+        handlePlotEditorEvent(target);
     });
     document.addEventListener('input', (event) => {
         handleDimensionSliceEvent(event.target);
         validatePlotParameterInput(event.target);
         handleChangedFieldEvent(event.target);
+        handlePlotEditorEvent(event.target);
     });
+    document.addEventListener('keydown', handlePlotEditorKey);
 }
 
 function setupMessageHandlers(): void {
@@ -292,12 +305,15 @@ function setupMessageHandlers(): void {
 
 function initialize(): void {
     watchThemeKind();
-    renderGlobalPlotParameters();
     setupEventListeners();
     if (messageBus.isDegradedMode) {
         // Exported HTML viewed in a browser: static content, no extension.
         showDegradedModeIndicator();
-        showInheritedCheckboxes(document);
+    } else {
+        onPlotSettingsChange(() => {
+            refreshSettingsSummaries();
+            refreshStalePlots();
+        });
     }
 }
 

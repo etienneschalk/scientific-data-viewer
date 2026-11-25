@@ -54,7 +54,7 @@ _Thick borders mark the four classes on the main request path: DataViewerPanel, 
 
 ## 4. Webview bundle
 
-Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/flags.ts`, `src/shared/icons.ts`, `src/shared/ids.ts`, `src/shared/plotLayout.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls.
+Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. Outside its own folder it imports only `src/shared/flags.ts`, `src/shared/icons.ts`, `src/shared/ids.ts`, `src/shared/plotLayout.ts` and `src/shared/time.ts`, so the message protocol is the only runtime contract between the two sides. `plotParams.ts` is the single table of plot controls; `plotSettings.ts` keeps their values for every level (variable, group, whole file).
 
 ![Webview bundle](svg/webview-modules.svg)
 
@@ -74,19 +74,19 @@ The webview generates an `operationId` that travels down to `PythonManager`, whi
 
 ![Creating and cancelling a plot](svg/plot.svg)
 
-_Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and shows the plot as cancelled at once; the response that follows is ignored. “Create all plots” runs these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a 1 s grace period._
+_Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and shows the plot as cancelled at once; the response that follows is ignored. “Plot all” (header) and “Plot group” run these requests with a concurrency limit so that cancel requests still get through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a 1 s grace period._
 
 Read: `src/panel/webview/plotActions.ts` · `src/python/PythonManager.ts (runPythonScript, abortProcess, parseScriptResult)` · `src/common/runProcess.ts`
 
 ## 7. Plot parameters, from the controls to the request
 
-Every plot control is optional. The webview merges the variable's Group Plot Controls over the Global ones field by field, then sends only the fields that are set: an empty field means “choose it for me”. A field that differs from its default is outlined, so the outlines are exactly what the request overrides.
+Every plot setting is optional and belongs to a level: a variable, a group (with its subgroups) or the whole file (group `/`). The settings editor, built when a Settings button is clicked, writes the text of its controls to the store of `plotSettings.ts`. For each parameter and each dimension slice, the first level of the variable's chain (variable, its group, the parent groups, the file) that sets it wins, and only the fields set are sent: an empty field means “choose it for me”.
 
 ![Plot parameters, from the controls to the request](svg/plot-parameters.svg)
 
 _The result carries, next to the PNG, the layout the backend resolved: the plot kind and each role (x, y, hue, row, col, col_wrap, size, aspect) with its value and whether it was set by the user or chosen automatically. The line under the plot outlines the user's items the same way, and lists the choices that could not be used._
 
-Read: `src/panel/webview/plotParams.ts` · `src/panel/webview/changedFields.ts` · `src/panel/webview/plotActions.ts` · `src/panel/webview/render/plotLayout.ts` · `docs/PLOTTING.md`
+Read: `src/panel/webview/plotSettings.ts` · `src/panel/webview/plotEditor.ts` · `src/panel/webview/plotParams.ts` · `src/panel/webview/changedFields.ts` · `src/panel/webview/plotActions.ts` · `src/panel/webview/render/plotLayout.ts` · `docs/PLOTTING.md`
 
 ## 8. Plot layout decision in the backend
 

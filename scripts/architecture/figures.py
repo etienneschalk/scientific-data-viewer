@@ -273,8 +273,8 @@ def processes(facts: Facts) -> str:
             rows[0],
             ww,
             h,
-            "plotActions · plotParams",
-            ["plot controls, Create / Cancel / Save"],
+            "plotActions · plotSettings",
+            ["plot settings, Create / Cancel / Save"],
             "web",
         )
     )

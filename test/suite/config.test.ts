@@ -3,8 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-    getGlobalDimensionSlices,
-    getGroupDimensionSlices,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
     getNestedAttributesView,
@@ -44,16 +42,6 @@ function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
 }
 
 suite('Config Test Suite', () => {
-    test('getGlobalDimensionSlices returns a boolean', () => {
-        const value = getGlobalDimensionSlices();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
-    test('getGroupDimensionSlices returns a boolean', () => {
-        const value = getGroupDimensionSlices();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
     test('getSmallVariableBytes returns a number', () => {
         const value = getSmallVariableBytes();
         assert.strictEqual(typeof value, 'number');
@@ -72,8 +60,6 @@ suite('Config Test Suite', () => {
     test('getExtensionConfigForWebview returns object with expected keys', () => {
         const config = getExtensionConfigForWebview();
         assert.strictEqual(typeof config, 'object');
-        assert.strictEqual(typeof config.globalDimensionSlices, 'boolean');
-        assert.strictEqual(typeof config.groupDimensionSlices, 'boolean');
         assert.strictEqual(typeof config.nestedAttributesView, 'boolean');
         assert.strictEqual(typeof config.outlineEnabled, 'boolean');
         assert.strictEqual(typeof config.orderGroupsAlphabetically, 'boolean');

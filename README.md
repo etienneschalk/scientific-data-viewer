@@ -230,20 +230,21 @@ The data viewer editor shows:
 - **File Information**: Path, size, format, and basic metadata. GeoTIFF files (`.tif` / `.tiff`) opened via rasterio are labeled **Cloud Optimized GeoTIFF (COG)** when GDAL reports `LAYOUT=COG` or tiled overviews; plain striped TIFFs stay **GeoTIFF**.
 - **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
 - **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dataset()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dataset.html) (`inherit='all_coords'` by default). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups. Parent coordinates appear on child groups when **`scientificDataViewer.showInheritedCoordinates`** is enabled (default); they are marked with an `inherited_from` attribute.
-- **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
-- **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
+- **Header**: besides export, collapse / expand all and refresh, **Plot all** plots every data variable of the file (5 at a time; slow on large files), **Cancel all** stops the running plots, the disk icon saves every plot and the bin icon clears them.
+- **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with plotting. Feature parity is not reached yet as no sample data is currently displayed.
+  - **Plot**: **Plot group** plots the data variables of the group (its subgroups have their own button); **Settings** opens the plot settings of the group (see [Dimension Slices](#-dimension-slices)); a summary lists the settings that apply.
   - **Dimensions**: Dataset dimensions and their sizes
   - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Clicking on a coordinate reveals its attributes and its xarray encoding.
   - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Clicking on a variable's row reveals or hides all its sections at once: **Attributes** (open by default), **Xarray Encoding** (collapsed by default) and **Plot**; each section can also be collapsed on its own. Creating a plot opens the variable.
-    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
+    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib, and **Settings** to set slices and plot parameters for this variable, its group or the whole file. Under the buttons, a summary lists the settings that apply and where they are set.
   - **Attributes**: Show group's attributes.
   - **Xarray Encoding** (collapsed by default): the group's xarray encoding (e.g. `source`, `unlimited_dims`). Groups, coordinates and variables show this section when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
 
 ### 📐 Dimension Slices
 
-Dimension Slices let you subset data by dimension index or slice before plotting. They are available in **Global Plot Controls** (dimensions merged from all groups) and, when enabled, in each group's **Group Plot Controls**.
+Dimension Slices let you subset data by dimension index or slice before plotting. They are in the **plot settings**, with the plot parameters: click **Settings** next to **Create Plot** of a variable, or in the **Plot** section of a group card. The settings open under the button, in the page (no pop-up window), one panel at a time; **Escape** closes it and **Enter** in a box plots.
 
-- **Where to find it**: In the plot controls area, look for the **Dimension slices** block. Each dimension of the dataset (or group) has three boxes, **start : stop : step**, and a slider below them.
+- **Where to find it**: In the plot settings, look for the **Dimension slices** block. Each dimension of the variable (or of the group and its subgroups) has three boxes, **start : stop : step**, and a slider below them.
 - **Slice syntax** (Python-style, stop excluded):
   - **Single index**: start with an empty stop, e.g. `130` — use one position along that dimension (a step is then ignored and shown struck through).
   - **Range**: start and stop, e.g. `100` : `120` — from index 100 up to (but not including) 120.
@@ -255,19 +256,19 @@ Dimension Slices let you subset data by dimension index or slice before plotting
 - Slices are applied as xarray's `isel()` before plotting. Invalid slice strings produce a clear error. **Reset** next to the block title clears the slices.
 - **Plot parameters** are grouped below the slices, each with its xarray name above its control:
   - **Facets**: **row** / **col** choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels); **col_wrap** is an optional positive integer limiting the number of columns, or check **auto** to use xarray `col_wrap='auto'` (xarray 2026.04+).
-  - **Axes**: **x**, **y**, **hue** (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)) choose a dimension or coordinate for the x-axis, y-axis, or hue (e.g. multiple lines); **xincrease** / **yincrease** control the axes direction (uncheck to reverse an axis).
+  - **Axes**: **x**, **y**, **hue** (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)) choose a dimension or coordinate for the x-axis, y-axis, or hue (e.g. multiple lines); **xincrease** / **yincrease** control the axes direction (`false` reverses an axis).
   - **Color**: **vmin** / **vmax** / **cmap** for the color scale (**cmap** takes a matplotlib name or `seaborn:<name>`, e.g. `seaborn:rocket`); **norm** `log` for a logarithmic scale (values ≤ 0 are not shown); **robust** uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)); **add_colorbar**.
-  - **Flags** (CF flag variables): **flags** draws them by meaning (uncheck for plain numbers); **flag_select** names the meanings to draw (commas; case, `_` and spaces ignored); **flag_combine** folds bit flags into one map (**any**, **all**, **none**); **hide_flags** hides the points of a data variable where a flag variable of its `ancillary_variables` has one of these meanings set.
+  - **Flags** (CF flag variables): **flags** draws them by meaning (`false` for plain numbers); **flag_select** names the meanings to draw (commas; case, `_` and spaces ignored); **flag_combine** folds bit flags into one map (**any**, **all**, **none**); **hide_flags** hides the points of a data variable where a flag variable of its `ancillary_variables` has one of these meanings set.
   - **Figure**: **size** / **aspect** for the figure size (xarray: `figsize = (aspect * size, size)` in inches); **bins** for histogram-style plots; **add_legend**.
 
-**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields you changed are outlined** (with a dot after their name), so you can see at a glance what differs from the defaults. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically, and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
+**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields set at the level shown are outlined** (with a dot after their name); an empty field shows in grey what it falls back to. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically (click an item to change it), and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
 
 The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
-**Global vs. Group (inheritance)**
-The extension uses **inheritance** per field: for each plot parameter, the **group** value is used when set (non-empty), otherwise **global** is used. So the two can be mixed (e.g. group's dimension slices with global's facet row when the group left facet at "None"). Empty or "None" in group selectors (facet row/col, plot x/y/hue, cmap) falls back to global. **Only dimension slices are atomic**: they form one set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we do not merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; all other fields (facet row/col, plot x/y/hue, colWrap, aspect, size, robust, cmap, bins, checkboxes) inherit per field (group when set, else global).
+**Levels (inheritance)**
+A setting belongs to a level, shown as a tab of the plot settings: **This variable**, **Group /a** (its variables and those of its subgroups, then each parent group), **Whole file** (the root group). For each plot parameter, and for the slice of each dimension, the **first tab from the left that sets it wins**; without one, it is chosen automatically (true / false parameters take their default). For example, `cmap` = `magma` in **Whole file** and `cmap` = `viridis` for one variable: that variable is drawn in viridis, the others in magma. A slice of `time` for the whole file and a slice of `lat` for a group both apply to the variables of that group. Settings are kept while the tab is open (also through **Refresh**). Before v0.14, the same controls came twice, as **Global Plot Controls** and **Group Plot Controls**, and a group's slices replaced every global slice.
 
-**Feature flags**: **Global Dimension Slices** and **Group Dimension Slices** (both **on by default**) control whether each block is shown. You can turn them on or off in [Settings](#️-settings). To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
+To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
 
 ### 🖼️ Export Webview Content
 
@@ -404,15 +405,6 @@ The extension includes specific settings for virtual environment management:
   - (type: `boolean`, default: `true`)
   - When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.
   - **Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation.
-
-**Plot controls (Global and Group)**
-
-- **`scientificDataViewer.globalDimensionSlices`**
-  - (type: `boolean`, default: `true`)
-  - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**
-- **`scientificDataViewer.groupDimensionSlices`**
-  - (type: `boolean`, default: `true`)
-  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
 
 **Display**
 

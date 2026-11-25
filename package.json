@@ -704,20 +704,6 @@
                     "description": "Convert bands of GeoTIFF rasters to variables for better readability",
                     "markdownDescription": "When enabled, multi-band GeoTIFF files will have their bands converted to separate variables instead of a single 3D DataArray. This improves readability and plotting capabilities by treating each band as an individual variable.\n\n**Supported formats:** GeoTIFF (.tif, .tiff, .geotiff)\n\n**Benefits:**\n- Better color scale readability for different bands\n- Individual band plotting and analysis\n- Improved data structure visualization\n- Each band treated as a separate variable"
                 },
-                "scientificDataViewer.globalDimensionSlices": {
-                    "type": "boolean",
-                    "default": true,
-                    "order": 1002,
-                    "description": "Enable Global Dimension Slices in the plot controls area",
-                    "markdownDescription": "Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**"
-                },
-                "scientificDataViewer.groupDimensionSlices": {
-                    "type": "boolean",
-                    "default": true,
-                    "order": 1004,
-                    "description": "Enable Group Dimension Slices (per-group dimension slice inputs)",
-                    "markdownDescription": "Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global)."
-                },
                 "scientificDataViewer.smallVariableBytes": {
                     "type": "number",
                     "default": 1000,

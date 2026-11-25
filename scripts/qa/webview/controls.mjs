@@ -3,8 +3,18 @@ import { IMG_DIR, SAMPLES, makeChecker, openViewer, shutdown } from './harness.m
 const NC = `${SAMPLES}/sample_data.netcdf`; // precipitation(time 6, lat 45, lon 90)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const { check, finish } = makeChecker();
-const G = (group = '/') => `.group-plot-controls-section[data-group="${group}"]`;
-const GLOBAL = '#section-global-plot-controls';
+// The plot settings editor (one open at a time): every control below is looked up in it
+const S = '.plot-editor';
+/** Open the settings editor of the whole file (Plot section of group /) or of a variable, if not already open there. */
+const openSettings = (p, variable = null) =>
+    p.eval(`(() => {
+        const host = ${variable === null ? `document.querySelector('.group-plot-section[data-group="/"]')` : `[...document.querySelectorAll('.variable-plot-controls')].find(c => c.dataset.variable === ${JSON.stringify(variable)})`};
+        if (!host.querySelector('.plot-editor')) host.querySelector('.plot-settings-button').click();
+        return !!host.querySelector('.plot-editor');
+    })()`);
+const resetBlock = (p, part) => p.eval(`document.querySelector('${S} [data-action="editor-reset"][data-part="${part}"]').click(); true`);
+const setSelect = (p, key, value) =>
+    p.eval(`(() => { const s = document.querySelector('${S} [data-param="${key}"]'); s.value = ${JSON.stringify(value)}; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);
 const box = (scope, dim, part) => `${scope} .dimension-slice-row[data-dimension="${dim}"] .slice-part[data-part="${part}"]`;
 const boxes = (p, scope, dim) =>
     p.eval(`(() => { const row = document.querySelector('${scope} .dimension-slice-row[data-dimension="${dim}"]'); const v = (q) => row.querySelector(q); return {
@@ -36,7 +46,11 @@ const typeChars = async (p, sel, text) => {
 {
     const p = await openViewer(NC);
     await p.eval(`document.querySelectorAll('details').forEach(d => d.open = true); true`);
-    const S = G('/');
+    const fieldsBefore = await p.eval(`document.querySelectorAll('.plot-field').length`);
+    check('settings: no plot control is built before a Settings button is clicked', fieldsBefore === 0, { fieldsBefore });
+    const opened = await openSettings(p);
+    const fileTabs = await p.eval(`[...document.querySelectorAll('${S} .plot-editor-tab')].map((t) => t.childNodes[0].textContent)`);
+    check('settings: the whole file editor opens from the Plot section of group /', opened && JSON.stringify(fileTabs) === '["Whole file"]', { opened, fileTabs });
     // A. pasted full slice
     await typeText(p, box(S, 'time', 'start'), '0:4:2');
     let b = await boxes(p, S, 'time');
@@ -93,13 +107,15 @@ const typeChars = async (p, sel, text) => {
     // I. Reset of the slices block only
     await typeText(p, box(S, 'time', 'start'), '1');
     await typeText(p, `${S} [data-param="cmap"]`, 'magma');
-    await p.eval(`document.querySelector('${S} .dimension-slices-isel [data-action="clear-plot-controls"]').click(); true`);
+    await resetBlock(p, 'slices');
     const afterResetSlices = { time: await boxes(p, S, 'time'), cmap: await p.eval(`document.querySelector('${S} [data-param="cmap"]').value`) };
     await typeText(p, box(S, 'time', 'start'), '1');
-    await p.eval(`document.querySelector('${S} .plot-parameters [data-action="clear-plot-controls"]').click(); true`);
+    await resetBlock(p, 'params');
     const afterResetParams = { time: await boxes(p, S, 'time'), cmap: await p.eval(`document.querySelector('${S} [data-param="cmap"]').value`) };
-    check('Reset (slices) clears only slices; Reset (plot params) clears only params', afterResetSlices.time.start === '' && afterResetSlices.cmap === 'magma' && afterResetParams.time.start === '1' && afterResetParams.cmap === '', { afterResetSlices, afterResetParams });
-    await p.eval(`document.querySelector('${S} .dimension-slices-isel [data-action="clear-plot-controls"]').click(); true`);
+    // The summary shows the store: a Reset must not be undone by the change event of the box it removes
+    const summaryAfterReset = await p.eval(`document.querySelector('.group-plot-section[data-group="/"] .plot-settings-summary').textContent`);
+    check('Reset (slices) clears only slices; Reset (plot params) clears only params, in the stored settings too', afterResetSlices.time.start === '' && afterResetSlices.cmap === 'magma' && afterResetParams.time.start === '1' && afterResetParams.cmap === '' && summaryAfterReset === 'Settings:time1file', { afterResetSlices, afterResetParams, summaryAfterReset });
+    await resetBlock(p, 'slices');
 
     // J. real mouse drag on the "from" handle of lon (size 90)
     await p.eval(`document.querySelector('${S} .dimension-slice-row[data-dimension="lon"]').scrollIntoView({block:'center'}); true`);
@@ -115,7 +131,7 @@ const typeChars = async (p, sel, text) => {
     const crossed = await boxes(p, S, 'lon');
     const sentCross = (await plot(p, '/precipitation')).payload?.dimensionSlices;
     check('slider: crossing handles gives a valid (non-empty) slice', crossed.stopInvalid !== 'true' && sentCross?.lon !== undefined && Number(String(sentCross.lon).split(':')[0]) < Number(String(sentCross.lon).split(':')[1] ?? 1e9), { crossed, sentCross });
-    await p.eval(`document.querySelector('${S} .dimension-slices-isel [data-action="clear-plot-controls"]').click(); true`);
+    await resetBlock(p, 'slices');
 
     // ---------- plot parameters ----------
     const setParam = (scope, key, value) => typeText(p, `${scope} [data-param="${key}"]`, value);
@@ -150,45 +166,63 @@ const typeChars = async (p, sel, text) => {
     check('cmap "seaborn:nope" → one-line error naming the colormap', /cmap=seaborn:nope: not a seaborn colormap/.test(r.msg), { msg: r.msg.slice(0, 300) });
     await setParam(S, 'cmap', '');
     // norm = log (v0.14)
-    await p.eval(`(() => { const s = document.querySelector('${S} [data-param="norm"]'); s.value = 'log'; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);
+    await setSelect(p, 'norm', 'log');
     r = await plot(p, '/precipitation');
     const normItem = await p.eval(`[...document.querySelectorAll('.plot-layout-item--user')].map((e) => e.textContent).find((t) => t.startsWith('norm')) ?? ''`);
     const normOutlined = await p.eval(`document.querySelector('${S} [data-param="norm"]').closest('.plot-field').classList.contains('plot-field--changed')`);
     check('norm "log" → plot OK, "--norm log" sent, outlined, layout item "norm log, …"', r.img && r.args?.join(' ').includes('--norm log') && /^norm log, /.test(normItem) && normOutlined, { args: r.args, normItem, normOutlined, msg: r.msg.slice(0, 300) });
-    await p.eval(`(() => { const s = document.querySelector('${S} [data-param="norm"]'); s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); })(); true`);
-    // col_wrap auto (group + global)
-    await p.eval(`(() => { const a = document.querySelector('${S} [data-param="colWrapAuto"]'); a.click(); })(); true`);
-    const groupColWrapDisabled = await p.eval(`document.querySelector('${S} [data-param="colWrap"]').disabled`);
-    await p.eval(`(() => { const a = document.querySelector('${GLOBAL} [data-param="colWrapAuto"]'); a.click(); })(); true`);
-    const globalColWrapDisabled = await p.eval(`document.querySelector('${GLOBAL} [data-param="colWrap"]').disabled`);
-    check('col_wrap auto disables the number box (group and global)', groupColWrapDisabled && globalColWrapDisabled, { groupColWrapDisabled, globalColWrapDisabled });
+    await setSelect(p, 'norm', '');
+    // col_wrap auto, at the file level and at the variable level
+    await p.eval(`document.querySelector('${S} [data-param="colWrapAuto"]').click(); true`);
+    const fileColWrapDisabled = await p.eval(`document.querySelector('${S} [data-param="colWrap"]').disabled`);
     await typeText(p, box(S, 'time', 'start'), '');
-    await p.eval(`document.querySelector('${S} [data-param="facetCol"]').value = 'time'; document.querySelector('${S} [data-param="facetCol"]').dispatchEvent(new Event('change', {bubbles: true})); true`);
+    await openSettings(p, '/precipitation');
+    const inheritedColWrap = await p.eval(`document.querySelector('${S} [data-param="colWrap"]').placeholder`);
+    await p.eval(`document.querySelector('${S} [data-param="colWrapAuto"]').click(); true`);
+    const variableColWrapDisabled = await p.eval(`document.querySelector('${S} [data-param="colWrap"]').disabled`);
+    check('col_wrap auto disables the number box (file and variable); the variable shows "auto (file)" before', fileColWrapDisabled && variableColWrapDisabled && inheritedColWrap === 'auto (file)', { fileColWrapDisabled, variableColWrapDisabled, inheritedColWrap });
+    await setSelect(p, 'facetCol', 'time');
     r = await plot(p, '/precipitation');
     check('facet col=time + col_wrap auto → plot OK, "--col-wrap auto" sent', r.img && r.args?.join(' ').includes('--col-wrap auto'), { args: r.args, msg: r.msg.slice(0, 300) });
-    await p.eval(`document.querySelector('${S} .plot-parameters [data-action="clear-plot-controls"]').click(); document.querySelector('${GLOBAL} .plot-parameters [data-action="clear-plot-controls"]')?.click(); true`);
-    const afterReset = await p.eval(`({ g: document.querySelector('${S} [data-param="colWrap"]').disabled, gl: document.querySelector('${GLOBAL} [data-param="colWrap"]').disabled, glAuto: document.querySelector('${GLOBAL} [data-param="colWrapAuto"]').checked })`);
-    check('Reset re-enables col_wrap', !afterReset.g && !afterReset.gl && !afterReset.glAuto, afterReset);
+    await resetBlock(p, 'params');
+    const variableAfterReset = await p.eval(`({ disabled: document.querySelector('${S} [data-param="colWrap"]').disabled, auto: document.querySelector('${S} [data-param="colWrapAuto"]').checked })`);
+    await openSettings(p);
+    await resetBlock(p, 'params');
+    await resetBlock(p, 'slices');
+    const fileAfterReset = await p.eval(`({ disabled: document.querySelector('${S} [data-param="colWrap"]').disabled, auto: document.querySelector('${S} [data-param="colWrapAuto"]').checked })`);
+    check('Reset re-enables col_wrap (variable and file)', !variableAfterReset.disabled && !variableAfterReset.auto && !fileAfterReset.disabled && !fileAfterReset.auto, { variableAfterReset, fileAfterReset });
 
-    // group overrides field by field
-    await setParam(GLOBAL, 'cmap', 'magma');
-    await p.eval(`document.querySelector('${GLOBAL} [data-param="robust"]').click(); true`);
+    // The nearest level wins, field by field: file cmap + robust, variable vmax + slice
+    await setParam(S, 'cmap', 'magma');
+    await setSelect(p, 'robust', 'true');
+    await openSettings(p, '/precipitation');
+    const tabs = await p.eval(`[...document.querySelectorAll('${S} .plot-editor-tab')].map((t) => t.childNodes[0].textContent)`);
+    check('variable editor: tabs "This variable", "Whole file"', JSON.stringify(tabs) === '["This variable","Whole file"]', tabs);
     await setParam(S, 'vmax', '10');
     await typeText(p, box(S, 'time', 'start'), '0');
     r = await plot(p, '/precipitation');
-    check('group override: group vmax + global cmap + global robust all applied', r.payload?.cmap === 'magma' && r.payload?.robust === true && r.payload?.vmax === 10, { payload: r.payload });
-    // group checkbox cannot turn off a global true
-    await p.eval(`document.querySelector('${GLOBAL} [data-param="addColorbar"]').click(); true`); // global off
-    const inheritedState = await p.eval(`document.querySelector('${S} [data-param="addColorbar"]').indeterminate`);
+    check('levels: variable vmax + file cmap + file robust all applied', r.payload?.cmap === 'magma' && r.payload?.robust === true && r.payload?.vmax === 10, { payload: r.payload });
+    const chips = await p.eval(`[...[...document.querySelectorAll('.variable-plot-controls')].find(c => c.dataset.variable === '/precipitation').querySelectorAll('.settings-chip')].map((c) => c.textContent)`);
+    check('summary under the Plot buttons: each setting with its level', JSON.stringify(chips) === JSON.stringify(['time0variable', 'vmax10variable', 'cmapmagmafile', 'robusttruefile']), chips);
+    // A true / false setting: the file turns add_colorbar off, the variable on again
+    await openSettings(p);
+    await setSelect(p, 'addColorbar', 'false');
+    await openSettings(p, '/precipitation');
+    const inheritedLabel = await p.eval(`document.querySelector('${S} [data-param="addColorbar"]').options[0].textContent`);
     r = await plot(p, '/precipitation');
     const inherited = r.payload?.addColorbar;
-    await p.eval(`document.querySelector('${S} [data-param="addColorbar"]').click(); true`); // group: own value (on)
+    await setSelect(p, 'addColorbar', 'true');
     r = await plot(p, '/precipitation');
-    check('group checkbox shows "use the global value" until clicked, then overrides the global one (add_colorbar)', inheritedState === true && inherited === false && r.payload?.addColorbar === true, { inheritedState, inherited, afterClick: r.payload?.addColorbar });
-    // global slices replaced by group slices
-    await typeText(p, box(GLOBAL, 'lat', 'start'), '0:10');
+    check('true / false: the variable shows "false (file)", then its own value wins (add_colorbar)', inheritedLabel === 'false (file)' && inherited === false && r.payload?.addColorbar === true, { inheritedLabel, inherited, afterSet: r.payload?.addColorbar });
+    // Slices merge dimension by dimension
+    await openSettings(p);
+    await typeText(p, box(S, 'lat', 'start'), '0:10');
     r = await plot(p, '/precipitation');
-    check('[design] global slice lat=0:10 + group slice time=0 → only group slices sent', JSON.stringify(r.payload?.dimensionSlices) === '{"time":0}', { sent: r.payload?.dimensionSlices });
+    check('[design] file slice lat=0:10 + variable slice time=0 → both sent', JSON.stringify(r.payload?.dimensionSlices) === '{"lat":"0:10","time":0}', { sent: r.payload?.dimensionSlices });
+    const stale = await p.eval(`![...document.querySelectorAll('.variable-plot-controls')].find(c => c.dataset.variable === '/precipitation').querySelector('.plot-stale-note').classList.contains('hidden')`);
+    await setParam(S, 'cmap', 'viridis');
+    const staleAfter = await p.eval(`[...document.querySelectorAll('.variable-plot-controls')].find(c => c.dataset.variable === '/precipitation').querySelector('.plot-stale-note').classList.contains('hidden')`);
+    check('a plot says "Settings changed" once a setting that applies to it changes', !stale && !staleAfter, { staleRightAfterPlot: stale, hiddenAfterChange: staleAfter });
     console.log('QA', JSON.stringify(await p.qa()));
     await p.screenshot(`${IMG_DIR}/ui_controls_end.png`);
     await p.close();
