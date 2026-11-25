@@ -367,7 +367,7 @@ The theme variables come from `scripts/screenshots/themes/*.json`. They were rec
 
 Full note: [`scripts/demo-video/README.md`](../scripts/demo-video/README.md).
 
-`scripts/demo-video/` films a new user's first minute in a real VS Code and edits it into `artefacts/demo-video/scientific-data-viewer-demo.mp4` (1920 × 1080, about 1 min 20 s). The minute covers Python set up from the Getting Started walkthrough (uv), a NetCDF file opened from the Explorer, its structure browsed, then plots made and tuned. VS Code runs offscreen (Ozone headless): no window opens and no display is needed. The packaged extension is installed in a fresh profile under `artefacts/demo-video/run/`, and `scenario.mjs` drives it over the DevTools protocol: mouse, keyboard, viewer webview. `montage.py` adds the title and end cards, cursor, clicks, shortcut key caps, captions and zooms, and speeds up the wait for uv.
+`scripts/demo-video/` films a new user's first minute in a real VS Code and edits it into `artefacts/demo-video/scientific-data-viewer-demo.mp4` (1920 × 1080, about 1 min 30 s). The minute covers Python set up from the Getting Started walkthrough (uv), a NetCDF file opened from the Explorer, its structure browsed, then plots made and tuned. VS Code runs offscreen (Ozone headless): no window opens and no display is needed. The packaged extension is installed in a fresh profile under `artefacts/demo-video/run/`, and `scenario.mjs` drives it over the DevTools protocol: mouse, keyboard, viewer webview. `montage.py` adds the title and end cards, cursor, clicks, shortcut key caps, captions and zooms, and speeds up the wait for uv.
 
 ```bash
 node scripts/demo-video/record.mjs [--skip-setup]     # footage + cues -> artefacts/demo-video/recording/

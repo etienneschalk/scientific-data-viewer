@@ -390,7 +390,7 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 
 **Demo video** (development, no display needed):
 
-33. Run `node scripts/demo-video/record.mjs`, then `uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py`. `artefacts/demo-video/scientific-data-viewer-demo.mp4` plays in about 1 min 20 s: title card, Python set up from the walkthrough (the uv download, sped up with a `×N` badge when it takes more than 5 s), the sample opened from the Explorer, its attributes, 12 monthly maps, the time series, then every third month in `RdYlBu_r`, end card. No VS Code window opened during the recording, and none is left running (`pgrep -f artefacts/demo-video/run` finds nothing).
+33. Run `node scripts/demo-video/record.mjs`, then `uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py`. `artefacts/demo-video/scientific-data-viewer-demo.mp4` plays in about 1 min 30 s: title card, Python set up from the walkthrough (the uv download, sped up with a `×N` badge when it takes more than 5 s), the sample opened from the Explorer, its attributes, 12 monthly maps, the time series, then **Settings** of `tas` opened, a time slice and `RdYlBu_r` typed there, every third month in `RdYlBu_r`, end card. No VS Code window opened during the recording, and none is left running (`pgrep -f artefacts/demo-video/run` finds nothing).
 
 **Plot settings**, with `artefacts/sample-data/sample_data_multiple_groups.nc` and the sample file (**Scientific Data Viewer: Open Sample File**). The full recipe, for a tester who does not read code, is M31-M38 of the [manual test plan](./v0.14/MANUAL_TEST_PLAN_0.14.0.md#plot-settings-ui-remake).
 

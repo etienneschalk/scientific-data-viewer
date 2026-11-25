@@ -13,7 +13,7 @@ uv run --no-project --with pillow --with imageio-ffmpeg \
     python scripts/demo-video/montage.py              # edit: artefacts/demo-video/scientific-data-viewer-demo.mp4
 ```
 
-The output is a 1920 × 1080, 30 fps H.264 MP4, about 1 min 20 s long and 9 MB
+The output is a 1920 × 1080, 30 fps H.264 MP4, about 1 min 30 s long and 9 MB
 (under GitHub's 10 MB upload limit). Everything goes to `artefacts/demo-video/`
 (git-ignored).
 
