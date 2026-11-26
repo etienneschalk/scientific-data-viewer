@@ -13,6 +13,10 @@ repos:
         args: [--write]
         types: [file]
         exclude: ^(out/|node_modules/|\.vscode-test/)$
+        # One process for all the files. By default pre-commit starts one per
+        # CPU: on --all-files (paranoia.sh) that was 20 Prettier processes of
+        # about 1 GB each at once, and the system ran out of memory
+        require_serial: true
 
   - repo: local
     hooks:
@@ -23,6 +27,8 @@ repos:
         files: \.(ts|tsx|js|jsx)$
         args: [--fix, --max-warnings=0]
         exclude: ^(out/|test/|node_modules/|\.vscode-test/)
+        # One process, as for Prettier: ESLint lints every file in under a second
+        require_serial: true
 
   # TypeScript type checking
   - repo: local

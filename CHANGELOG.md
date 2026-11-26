@@ -97,6 +97,9 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
   - **Files**: `python/sample_data/netcdf_encoding.py`
   - **Tests**: `python/tests/test_flags.py` (`test_many_encoding_samples_are_valid_cf_after_the_fix`)
 
+- **`pre-commit run --all-files` ran out of memory** (development; `paranoia.sh` step `pre-commit`): pre-commit starts one process per CPU for a hook that takes file names. On a 20-CPU machine, Prettier 4.0.0-alpha.8 ran as about 20 processes of about 1 GB each at once (13.4 GB in the kernel's report); with the other programs open, the system killed the VS Code window, and the paranoia run started from it. Prettier and ESLint now run as one process each (`require_serial: true`): the Prettier pass on every file peaks at 2.4 GB and takes 2.7 s; ESLint 310 MB, 1 s.
+  - **Files**: `.pre-commit-config.yaml`
+
 ### Security
 
 - **`engineBackendKwargs` is read from user settings only**: it is machine-scoped (`"scope": "machine"`), so VS Code ignores it in a workspace `.vscode/settings.json`, and the extension reads only its global value as well. A cloned repository cannot pass keywords to xarray (writing modes, `storage_options`, drivers, credentials); the backend allowlist is a second barrier.

@@ -211,3 +211,4 @@ uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-vide
 17. docs(v0.14): demo video recorded again with the plot settings editor (length and size)
 18. merge: main after the 0.13.1 release (release date, publish.sh fix)
 19. docs(readme): v0.14 screenshots: header buttons, plot settings editor, CF flags
+20. fix(pre-commit): run Prettier and ESLint as one process each (all files ran out of memory)
