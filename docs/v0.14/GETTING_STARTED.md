@@ -9,7 +9,7 @@ v0.14.0 has four parts:
 
 This page is the entry point: what to read, what to review closely, what to test.
 
-It is built on the 0.13.1 release branch (`eschalk/v0.13.1-release`): merge 0.13.1 first. The interpreter-override fix (risk 6, M9) ships in 0.13.1; it is listed here for users who upgrade from 0.13.0 straight to 0.14.0. The CF flags were written for 0.15 on `eschalk/v0.15-cf-flags` (from 0.13.0), then cherry-picked onto this branch; their codes are now read raw through the decoding layer of 0.14 (risk 9).
+It is built on 0.13.1, released on 2026-11-20 (tag `v0.13.1`), and has `main` merged in since then. The interpreter-override fix (risk 6, M9) shipped in 0.13.1; it is listed here for users who upgrade from 0.13.0 straight to 0.14.0. The CF flags were written for 0.15 on `eschalk/v0.15-cf-flags` (from 0.13.0), then cherry-picked onto this branch; their codes are now read raw through the decoding layer of 0.14 (risk 9).
 
 ---
 

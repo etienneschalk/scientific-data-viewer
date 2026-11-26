@@ -217,7 +217,7 @@ set_release_date() {
         last_item=$(grep -E '^[0-9]+\.[[:space:]]' "$pr_summary" | tail -1 || true)
         if [ -n "$last_item" ] && [ "$(grep -vE '^[[:space:]]*$' "$pr_summary" | tail -1)" = "$last_item" ]; then
             next_number=$(( ${last_item%%.*} + 1 ))
-            printf '%d.  %s\n' "$next_number" "$subject" >> "$pr_summary"
+            printf '%d. %s\n' "$next_number" "$subject" >> "$pr_summary"
             print_step "Commit added to the commit list of ${pr_summary}"
             files+=("$pr_summary")
         else
@@ -225,6 +225,11 @@ set_release_date() {
         fi
     fi
 
+    # The commit runs the pre-commit hooks, and a hook that changes a file
+    # fails it (0.13.1: prettier rewrote the list item): format first
+    if command -v pre-commit > /dev/null; then
+        pre-commit run --files "${files[@]}" > /dev/null 2>&1 || true
+    fi
     git add -- "${files[@]}"
     echo ""
     git --no-pager diff --cached --stat
@@ -235,7 +240,11 @@ set_release_date() {
         print_error "Aborted: the release date is staged but not committed (git restore --staged --worktree ${files[*]} to undo)"
         exit 1
     fi
-    git commit -m "$subject"
+    if ! git commit -m "$subject"; then
+        print_error "The commit failed (pre-commit hook above): the release date is staged"
+        print_info "Fix what the hook reports, git add, git commit -m \"${subject}\", then run ./publish.sh again (a heading dated today is accepted)"
+        exit 1
+    fi
     print_success "Committed: ${subject}"
 }
 

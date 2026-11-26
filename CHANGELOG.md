@@ -110,7 +110,7 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Log color scale and seaborn colormaps implemented**: `docs/v0.14/FEATURE_LOG_COLOR_SCALE.md` and `FEATURE_SEABORN_COLORMAPS.md` marked implemented, with the answers to their open questions; `docs/PLOTTING.md` § Colormaps and § Log scale; manual test plan M25-M30; `scripts/qa/README.md` (the webview QA needs seaborn in its interpreter).
 - **Plot settings UI remake**: design note `docs/v0.14/FEATURE_PLOT_SETTINGS_UI.md`; manual test plan M31-M38 (written for a tester who does not read code) and every earlier step moved from the global / group blocks to the editor; release notes § Plot settings; `docs/PLOTTING.md` § From the controls to the request; `docs/SCREENSHOTS.md` (scenario 08 `plot-settings`); `docs/documentation.json` (Data Structure, Dimension Slices, levels) and `README.md` (regenerated); `docs/TECHNICAL_ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `CLAUDE.md` (webview modules). Demo video recorded again (step 6 tunes `tas` through **Settings**; 88 s, 8.9 MB): its length updated in the release notes, `docs/DEVELOPMENT.md`, `scripts/demo-video/README.md` and the PR summary.
 
-## [0.13.1] - UNRELEASED
+## [0.13.1] - 2026-11-20
 
 ### Fixed
 
@@ -124,6 +124,10 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 - **Architecture diagrams follow the version** (development): `docs/architecture/` shows the version of `package.json`, and the 0.13.1 bump left it at v0.13.0, so the paranoia `architecture` step failed (regenerated diagrams differ from the committed ones). The diagrams are regenerated for 0.13.1, and a new pre-commit hook, `architecture-version`, runs `generate.py --if-version-changed` when `package.json` is committed: it regenerates the diagrams when the version differs from their stamp (the commit then stops on the modified files, to add) and does nothing otherwise, without Graphviz.
   - **Files**: `.pre-commit-config.yaml`, `scripts/architecture/generate.py` (`--if-version-changed`, `stamped_version`), `docs/architecture/` (regenerated), `docs/DEVELOPMENT.md`, `docs/PUBLISHING.md`, `CLAUDE.md`
   - **Tests**: `pre-commit run architecture-version --files package.json` with the version raised to 0.13.2 (diagrams regenerated, only the three version stamps change; hook fails on the modified files, passes when run again), then restored (regenerated back, no diff); with matching versions it passes and writes nothing
+
+- **`publish.sh` commits the release date at the first try** (development): the release date step appended its commit to the PR summary list with two spaces after the number (`6.  docs: ...`); prettier rewrote it to one in the pre-commit hook of the commit, so the commit failed and left the date staged (publishing 0.13.1). The item now has one space, the files are formatted (`pre-commit run`) before they are staged, and a failed commit says how to finish and run `publish.sh` again (a heading dated today is accepted).
+  - **Files**: `publish.sh`
+  - **Tests**: prettier rewrites `6.  docs: ...` and fails the hook, leaves `6. docs: ...` unchanged; `bash -n publish.sh`
 
 ### Security
 

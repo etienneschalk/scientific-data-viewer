@@ -1,6 +1,6 @@
 # v0.14.0 — CF decoding you can see and control, CF flags plotted by meaning, log scale and seaborn colormaps, plot settings remade
 
-Branch `eschalk/v0.14-cf-decoding`, based on `eschalk/v0.13.1-release` (0.13.1).
+Branch `eschalk/v0.14-cf-decoding`, based on the 0.13.1 release branch; `main` merged in after 0.13.1 was released (tag `v0.13.1`, 2026-11-20).
 
 Four parts:
 
@@ -209,3 +209,4 @@ uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-vide
 15. docs(v0.14): record two plotting limitations found while testing (dates as a map, depth upside down)
 16. feat(ui): one plot settings editor with levels as tabs, plot buttons in the header (v0.14 UI remake)
 17. docs(v0.14): demo video recorded again with the plot settings editor (length and size)
+18. merge: main after the 0.13.1 release (release date, publish.sh fix)
