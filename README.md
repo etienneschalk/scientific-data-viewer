@@ -13,7 +13,7 @@
 Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files directly in VS Code and VS Code-based editors (Cursor, VSCodium… via Open VSX): browse groups, dimensions, variables and attributes, and plot any variable in one click. Built on xarray.
 
 <div align="center">
-  <img src="media/screenshots/v0.13-plot-facets-dark.png" alt="A (time, lat, lon) temperature variable plotted as one map per month, with the plot controls chosen automatically" width="800">
+  <img src="media/screenshots/v0.14-plot-facets-dark.png" alt="A (time, lat, lon) temperature variable plotted as one map per month, with the plot settings chosen automatically" width="800">
 </div>
 
 <div align="center">
@@ -70,26 +70,35 @@ Available on:
 **Explore the file structure**
 
 <div align="center">
-  <a href="media/screenshots/v0.13-overview-light.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-overview-light.png" alt="File information and xarray DataTree representation of a NetCDF file">
+  <a href="media/screenshots/v0.14-overview-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-overview-light.png" alt="File information and xarray DataTree representation of a NetCDF file">
   </a>
-  <p><em>File information and the xarray DataTree of a NetCDF file with a nested group</em></p>
+  <p><em>File information and the xarray DataTree of a NetCDF file with a nested group; Plot all in the header</em></p>
 </div>
 
 **Plot any variable**
 
 <div align="center">
-  <a href="media/screenshots/v0.13-plot-map-dark.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-plot-map-dark.png" alt="A 2D elevation variable plotted as a map, dark theme">
+  <a href="media/screenshots/v0.14-plot-map-dark.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-plot-map-dark.png" alt="A 2D elevation variable plotted as a map, dark theme">
   </a>
   <p><em>One click on Create Plot: the layout (x, y, facets) is chosen from the dimensions and shown above the plot</em></p>
 </div>
 
 <div align="center">
-  <a href="media/screenshots/v0.13-controls-light.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-controls-light.png" alt="Dimension slices and plot parameters, light theme">
+  <a href="media/screenshots/v0.14-plot-settings-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-plot-settings-light.png" alt="Plot settings of a variable, with the tabs This variable and Whole file, light theme">
   </a>
-  <p><em>Slice dimensions and set xarray plot parameters; the controls you change are outlined, the others stay automatic</em></p>
+  <p><em>Settings opens the slices and xarray plot parameters under the button, for this variable, its group or the whole file; values set elsewhere show in grey</em></p>
+</div>
+
+**CF flag variables**
+
+<div align="center">
+  <a href="media/screenshots/v0.14-cf-flags-dark.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-cf-flags-dark.png" alt="A land cover variable with flag_values and flag_meanings, its Flags table and its map drawn by meaning, dark theme">
+  </a>
+  <p><em>Variables with CF flags are drawn by meaning: one color per class, named in the colorbar with its share</em></p>
 </div>
 
 ## 📦 Installation

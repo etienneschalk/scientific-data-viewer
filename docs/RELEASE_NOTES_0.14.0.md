@@ -97,6 +97,7 @@ v0.14 keeps one rule, "the nearest level that sets a value wins", and one editor
 - **Settings `globalDimensionSlices` and `groupDimensionSlices` are removed** (they showed or hid the old blocks). A value left in your `settings.json` is ignored; VS Code greys it out as unknown, and you can delete it.
 - **Settings are kept while the tab is open**, also through **Refresh**, and forgotten when the tab is closed (as in 0.13).
 - **The HTML export** keeps the summary of the settings under each Plot button, not the editor.
+- **README and Marketplace page**: new v0.14 screenshots (header buttons, the settings editor, a CF flag variable drawn by meaning).
 
 ---
 

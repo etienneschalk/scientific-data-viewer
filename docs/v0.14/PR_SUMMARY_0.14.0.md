@@ -210,3 +210,4 @@ uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-vide
 16. feat(ui): one plot settings editor with levels as tabs, plot buttons in the header (v0.14 UI remake)
 17. docs(v0.14): demo video recorded again with the plot settings editor (length and size)
 18. merge: main after the 0.13.1 release (release date, publish.sh fix)
+19. docs(readme): v0.14 screenshots: header buttons, plot settings editor, CF flags

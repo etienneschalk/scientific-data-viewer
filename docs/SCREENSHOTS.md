@@ -264,6 +264,20 @@ Some differences are expected and do not come from the UI: the load time, the pl
 
 ---
 
+## README images
+
+The images of the README (and so of the Marketplace page) are crops of these screenshots, 1024 px wide, saved in `media/screenshots/` with the version in their name. For v0.14:
+
+| File                            | Taken from                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `v0.14-overview-light.png`      | `light-modern/01-overview.png`, from the top to the group `/` Plot section                                    |
+| `v0.14-plot-facets-dark.png`    | `dark-modern/03-plots.png`, the `temperature` card (README hero)                                              |
+| `v0.14-plot-map-dark.png`       | `dark-modern/03-plots.png`, the `elevation` card                                                              |
+| `v0.14-plot-settings-light.png` | `light-modern/08-plot-settings.png`, the Plot section of `temperature` with its settings editor               |
+| `v0.14-cf-flags-dark.png`       | `--file artefacts/sample-data/sample_cf_flags.nc --scenario plots --theme dark-modern`, the `land_cover` card |
+
+`docs/documentation.json` (`header.hero`, `screenshots`) names them; run `scripts/generate_readme.py --no-timestamp` after a change. Keep the images of the published version until the next one is published: vsce points the Marketplace page to the images on the default branch of the repository.
+
 ## Extending
 
 **Add a scenario**: add an entry to `SCENARIOS` in `take-screenshots.mjs`.
