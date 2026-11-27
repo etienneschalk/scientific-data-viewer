@@ -97,6 +97,7 @@ v0.14 keeps one rule, "the nearest level that sets a value wins", and one editor
 - **Settings `globalDimensionSlices` and `groupDimensionSlices` are removed** (they showed or hid the old blocks). A value left in your `settings.json` is ignored; VS Code greys it out as unknown, and you can delete it.
 - **Settings are kept while the tab is open**, also through **Refresh**, and forgotten when the tab is closed (as in 0.13).
 - **The HTML export** keeps the summary of the settings under each Plot button, not the editor.
+- **Expand All no longer opens the Xarray Encoding sections.** They are long and filled the page. To get the 0.13 behavior back, set `scientificDataViewer.expandAllIncludesXarrayEncoding` to `true` (then **Refresh** an open viewer).
 - **README and Marketplace page**: new v0.14 screenshots (header buttons, the settings editor, a CF flag variable drawn by meaning).
 
 ---
@@ -344,6 +345,16 @@ The items of the line under a plot (`col time`, `col_wrap 3 •`, `x lon`…) ar
 | **Plot group**            | Plot section of a group | the group's own data variables (its subgroups have their own) |
 | **Settings**              | variable and group      | opens / closes the editor of that variable or group           |
 
+## Expand All and the Xarray Encoding sections
+
+**Expand All** (header) opens every section except the **Xarray Encoding** sections of groups, coordinates and variables: a file with many variables showed long lists of `_FillValue`, `dtype`, `chunksizes`, `source`… between the attributes. An encoding section you opened by hand stays open, and **Collapse All** still closes everything. The button's tooltip says so: `Expand All Sections (except Xarray Encoding)`.
+
+| Setting                                                | Default | Effect                                                    |
+| ------------------------------------------------------ | ------- | --------------------------------------------------------- |
+| `scientificDataViewer.expandAllIncludesXarrayEncoding` | `false` | `true`: Expand All opens the Xarray Encoding sections too |
+
+The setting is read when a file loads (**Refresh** applies it to an open viewer). The page keeps it on the button, so an exported HTML page opened in a browser expands the same way.
+
 ## Manual verification
 
 Create the sample files first: `python python/create_sample_data.py` (new in v0.14: `broken_datetime_packed_variable.nc`, `sample_geotiff_time_bands.tif`, `sample_cf_flags.nc`, `sample_log_scale.nc`, in `artefacts/sample-data/`). The full step-by-step plan with a results sheet (decoding, flags, log scale and seaborn) is [`docs/v0.14/MANUAL_TEST_PLAN_0.14.0.md`](./v0.14/MANUAL_TEST_PLAN_0.14.0.md).
@@ -404,6 +415,11 @@ Create the sample files first: `python python/create_sample_data.py` (new in v0.
 40. Open `sample_data_multiple_groups.nc`: a variable of a subgroup has one tab per parent group. A **cmap** set on a group applies to its subgroups' variables, not to the other groups.
 41. **Plot group** plots only that group's variables; **Plot all** and every **Plot group** are disabled while it runs; **Cancel all** stops it.
 42. Export the viewer: the summaries are in the HTML file, not the editor; in a browser the Settings buttons are hidden.
+
+**Expand All**, with the sample file:
+
+43. Click **Expand All** (header): every section opens but the **Xarray Encoding** ones (group `/`, `tas`, `time`…); the tooltip reads `Expand All Sections (except Xarray Encoding)`. **Collapse All** closes everything.
+44. Set `scientificDataViewer.expandAllIncludesXarrayEncoding` to `true`, **Refresh**, **Expand All**: the encoding sections open too. Export the viewer and open the file in a browser: **Expand All** there follows the setting of the moment of the export.
 
 ## Known limitations
 
@@ -486,3 +502,4 @@ Two limitations found while building `sample_log_scale.nc`. Both predate v0.14, 
 | Plot all / Cancel all / Save all / Clear all in header   | Changed       | `HTMLGenerator.generateHeader`                                           |
 | **Plot group**                                           | Added         | Plot section of each group                                               |
 | `globalDimensionSlices`, `groupDimensionSlices`          | Removed       | `package.json`                                                           |
+| Expand All leaves Xarray Encoding closed                 | Changed       | Setting `expandAllIncludesXarrayEncoding` (default `false`)              |

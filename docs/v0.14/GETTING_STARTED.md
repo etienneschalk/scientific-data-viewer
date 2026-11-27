@@ -15,26 +15,26 @@ It is built on 0.13.1, released on 2026-11-20 (tag `v0.13.1`), and has `main` me
 
 ## Where to start
 
-| Time you have | Do this                                                                                                                                                                                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **15 min**    | Read the TL;DR and **Upgrade notes** of the [release notes](../RELEASE_NOTES_0.14.0.md), and [§ What could break users](#what-could-break-users). Run the [automated checks](#automated-checks).                                                                                     |
-| **2 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 110 min; M31-M38 alone, 20 min, check the plot settings and need no code knowledge), a review of [the high-risk code](#review), and the [flags proposal](./CF_FLAGS_PROPOSAL.md) for the choices made in each phase. |
+| Time you have | Do this                                                                                                                                                                                                                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **15 min**    | Read the TL;DR and **Upgrade notes** of the [release notes](../RELEASE_NOTES_0.14.0.md), and [§ What could break users](#what-could-break-users). Run the [automated checks](#automated-checks).                                                                                                    |
+| **2 h**       | Add the [manual test plan](./MANUAL_TEST_PLAN_0.14.0.md) (about 115 min; M31-M39 alone, 25 min, check the plot settings and Expand All and need no code knowledge), a review of [the high-risk code](#review), and the [flags proposal](./CF_FLAGS_PROPOSAL.md) for the choices made in each phase. |
 
 ---
 
 ## Map of the v0.14 documents
 
-| Document                                                       | What it is for                                                                                                                            | Read it when                               |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                                                                                           | First                                      |
-| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history, flags), upgrade notes                                                       | Before testing; published with the release |
-| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                                                                                     | To find where something was changed        |
-| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                                                                             | When opening / reviewing the PR            |
-| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet (M1-M9 decoding, M10-M24 flags, M25-M30 log scale, seaborn, upgrade, M31-M38 plot settings) | Before merging                             |
-| [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md)                 | Design: CF § 3.5, what other tools do, plot kinds, phases P1-P4                                                                           | To understand the choices and what is next |
-| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Spec of the `norm` plot control (implemented), with the decisions made                                                                    | To understand the log scale rules          |
-| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Spec of `seaborn:<name>` colormaps (implemented), with the decisions made                                                                 | To understand the seaborn handling         |
-| [FEATURE_PLOT_SETTINGS_UI.md](./FEATURE_PLOT_SETTINGS_UI.md)   | Design of the plot settings remake: levels, editor, summaries, what was left out                                                          | To understand the new plot settings        |
+| Document                                                       | What it is for                                                                                                                                            | Read it when                               |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **GETTING_STARTED.md** (this page)                             | Hub: reading order, risks, review and test plan                                                                                                           | First                                      |
+| [RELEASE_NOTES_0.14.0.md](../RELEASE_NOTES_0.14.0.md)          | For users and reviewers: what changed, why (decoding history, flags), upgrade notes                                                                       | Before testing; published with the release |
+| [CHANGELOG.md](../../CHANGELOG.md) (0.14.0 section)            | Every change with its files and tests                                                                                                                     | To find where something was changed        |
+| [PR_SUMMARY_0.14.0.md](./PR_SUMMARY_0.14.0.md)                 | Merge request description: tables, test commands, commit list                                                                                             | When opening / reviewing the PR            |
+| [MANUAL_TEST_PLAN_0.14.0.md](./MANUAL_TEST_PLAN_0.14.0.md)     | Click-by-click test plan with a results sheet (M1-M9 decoding, M10-M24 flags, M25-M30 log scale, seaborn, upgrade, M31-M38 plot settings, M39 Expand All) | Before merging                             |
+| [CF_FLAGS_PROPOSAL.md](./CF_FLAGS_PROPOSAL.md)                 | Design: CF § 3.5, what other tools do, plot kinds, phases P1-P4                                                                                           | To understand the choices and what is next |
+| [FEATURE_LOG_COLOR_SCALE.md](./FEATURE_LOG_COLOR_SCALE.md)     | Spec of the `norm` plot control (implemented), with the decisions made                                                                                    | To understand the log scale rules          |
+| [FEATURE_SEABORN_COLORMAPS.md](./FEATURE_SEABORN_COLORMAPS.md) | Spec of `seaborn:<name>` colormaps (implemented), with the decisions made                                                                                 | To understand the seaborn handling         |
+| [FEATURE_PLOT_SETTINGS_UI.md](./FEATURE_PLOT_SETTINGS_UI.md)   | Design of the plot settings remake: levels, editor, summaries, what was left out                                                                          | To understand the new plot settings        |
 
 No separate upgrade test plan: the one environment change (seaborn, `ENVIRONMENT_REVISION` 2 → 3, rebuilt once) is step M30 of the manual test plan, covered by unit tests (`extensionEnvironmentUpdate.test.ts`), and to be played before release with `scripts/upgrade-sandbox.sh --old artefacts/vsix-releases/scientific-data-viewer-0.13.1.vsix --expect rebuild` (not run yet).
 
@@ -88,7 +88,7 @@ The webview changes (`dataInfo.ts`, `representations.ts`, `main.ts`, `variables.
 ```bash
 source ~/.nvm/nvm.sh && nvm use
 npm run compile && npm run lint && npm run typecheck
-env -u ELECTRON_RUN_AS_NODE npm test              # 367 tests
+env -u ELECTRON_RUN_AS_NODE npm test              # 371 tests
 .venv/bin/python -m pytest python/tests           # 405 tests (seaborn: pip install -r requirements-dev.txt)
 .venv/bin/python python/create_sample_data.py --overwrite
 .venv/bin/python scripts/architecture/generate.py --check

@@ -55,6 +55,7 @@ const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 const OUTLINE_ENABLED = 'outlineEnabled';
 const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
 const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
+const EXPAND_ALL_INCLUDES_XARRAY_ENCODING = 'expandAllIncludesXarrayEncoding';
 const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
 const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
 const FACETGRID_FIGSIZE = 'facetgridFigsize';
@@ -82,6 +83,7 @@ const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 const DEFAULT_OUTLINE_ENABLED = true;
 const DEFAULT_ORDER_GROUPS_ALPHABETICALLY = true;
 const DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES = true;
+const DEFAULT_EXPAND_ALL_INCLUDES_XARRAY_ENCODING = false;
 const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
     'netcdf4',
     'h5netcdf',
@@ -251,6 +253,14 @@ export function getShowXarrayEncodingAttributes(): boolean {
     );
 }
 
+/** Expand All (viewer header) also opens the Xarray Encoding sections. */
+export function getExpandAllIncludesXarrayEncoding(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        EXPAND_ALL_INCLUDES_XARRAY_ENCODING,
+        DEFAULT_EXPAND_ALL_INCLUDES_XARRAY_ENCODING,
+    );
+}
+
 export function getNetcdfEngineOrder(): string[] {
     const raw = getWorkspaceConfig().get<string[]>(NETCDF_ENGINE_ORDER, [
         ...DEFAULT_NETCDF_ENGINE_ORDER,
@@ -407,6 +417,7 @@ export function getExtensionConfigForWebview(): Record<string, unknown> {
         outlineEnabled: getOutlineEnabled(),
         orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
         showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+        expandAllIncludesXarrayEncoding: getExpandAllIncludesXarrayEncoding(),
         netcdfEngineOrder: getNetcdfEngineOrder(),
         showInheritedCoordinates: getShowInheritedCoordinates(),
         showLoadTimeInLocalTime: getShowLoadTimeInLocalTime(),

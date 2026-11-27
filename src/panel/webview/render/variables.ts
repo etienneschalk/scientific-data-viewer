@@ -201,15 +201,17 @@ function renderVariableSection(
          * the host of the plot settings editor (`data-settings-scope`)
          */
         plotVariable?: string;
+        /** Xarray Encoding: `.xarray-encoding-section`, left closed by Expand All */
+        encoding?: boolean;
     },
 ): string {
-    const { open, count, plotVariable } = options;
+    const { open, count, plotVariable, encoding } = options;
     const plotAttrs =
         plotVariable === undefined
             ? ''
             : ` data-variable="${escapeHtml(plotVariable)}" data-settings-scope="${escapeHtml(variableScope(plotVariable))}"`;
     return /*html*/ `
-                <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}${encoding ? ' xarray-encoding-section' : ''}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
                     <summary class="variable-section-summary">
                         <span class="variable-section-title">${title}</span>
                         ${count === undefined ? '' : countBadge(count)}
@@ -270,7 +272,7 @@ function renderVariableDetails(
                   joinId([baseId, 'encoding']),
                   'Xarray Encoding',
                   /*html*/ `<div class="attributes-container">${renderKeyValueItems(encoding, baseId, 'encoding-entry')}</div>`,
-                  { open: false, count: encodingCount },
+                  { open: false, count: encodingCount, encoding: true },
               )
             : '',
         kind === 'variable'

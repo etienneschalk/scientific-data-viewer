@@ -117,8 +117,24 @@ async function handleRefresh(): Promise<void> {
     }
 }
 
+/**
+ * Expand All / Collapse All. Expand All leaves the Xarray Encoding sections
+ * as they are (long lists that fill the page), unless the setting
+ * `expandAllIncludesXarrayEncoding` is on: render/dataInfo.ts writes it on
+ * the button, so an exported page behaves the same in a browser.
+ */
 function setAllDetailsOpen(open: boolean): void {
+    const skipEncoding =
+        open &&
+        document.getElementById('expandAllButton')?.dataset.includeEncoding !==
+            'true';
     document.querySelectorAll('details').forEach((details) => {
+        if (
+            skipEncoding &&
+            details.classList.contains('xarray-encoding-section')
+        ) {
+            return;
+        }
         details.open = open;
     });
 }

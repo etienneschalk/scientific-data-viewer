@@ -19,6 +19,7 @@ import {
     getIgnoredWorkspaceOverridePythonInterpreter,
     getDecodingSettings,
     getEngineBackendKwargs,
+    getExpandAllIncludesXarrayEncoding,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
@@ -71,6 +72,20 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof config.showInheritedCoordinates, 'boolean');
         assert.strictEqual(typeof config.showLoadTimeInLocalTime, 'boolean');
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
+        assert.strictEqual(
+            typeof config.expandAllIncludesXarrayEncoding,
+            'boolean',
+        );
+    });
+
+    test('Expand All leaves the Xarray Encoding sections closed by default', () => {
+        assert.strictEqual(getExpandAllIncludesXarrayEncoding(), false);
+        assert.strictEqual(
+            getPackageJsonDefaults()[
+                'scientificDataViewer.expandAllIncludesXarrayEncoding'
+            ].default,
+            false,
+        );
     });
 
     test('display feature config getters return booleans', () => {

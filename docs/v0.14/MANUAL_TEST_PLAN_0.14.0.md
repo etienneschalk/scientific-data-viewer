@@ -1,6 +1,6 @@
 # v0.14.0 — Manual test plan
 
-About 110 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M30 for the log scale, seaborn colormaps and the environment upgrade (25 min, plus the rebuild), M31-M38 for the new plot settings (20 min, no code knowledge needed). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
+About 110 minutes: M1-M9 for decoding (30 min), M10-M24 for CF flags (35 min), M25-M30 for the log scale, seaborn colormaps and the environment upgrade (25 min, plus the rebuild), M31-M38 for the new plot settings (20 min, no code knowledge needed), M39 for Expand All (5 min). Each step says what to do and what you should see. Write the result in the [results sheet](#results-sheet) at the end.
 
 ## Before you start
 
@@ -327,6 +327,16 @@ Most steps use the sample file. Open it with the Command Palette (**Ctrl+Shift+P
 6. Close the viewer tab and open the file again: every summary reads `Settings: all automatic` (settings are not saved).
 7. Open your user settings as JSON (Command Palette: **Preferences: Open User Settings (JSON)**). If `scientificDataViewer.globalDimensionSlices` or `scientificDataViewer.groupDimensionSlices` is there, VS Code greys it out as an unknown setting. Delete it.
 
+## M39 — Expand All leaves the Xarray Encoding sections closed
+
+1. Open the sample file. In the header, hover the icon of a square with a **+** inside: the tooltip reads `Expand All Sections (except Xarray Encoding)`. Click it.
+2. Every section opens (File Information, the representations, the groups, the variables and their attributes, Troubleshooting) **except** the sections titled **XARRAY ENCODING**, in the group `/` and in its variables and coordinates (`tas`, `time`…): they stay closed.
+3. Click one **XARRAY ENCODING** title to open it, then **Expand All** again: that one stays open.
+4. Click the icon of a square with a **−** inside (**Collapse All**): everything closes, the encoding sections too.
+5. Open the settings (Command Palette: **Preferences: Open Settings (UI)**), search `expandAllIncludesXarrayEncoding` and tick it. In the viewer, click **Refresh** (circular arrow), then **Expand All**: the encoding sections open too, and the tooltip reads `Expand All Sections`.
+6. Click the export icon (arrow down), save the HTML file and open it in a web browser. Click **Expand All** there: the encoding sections open (the setting was on when you exported).
+7. Untick the setting, **Refresh**, export again and open the new file in the browser: **Expand All** leaves the encoding sections closed.
+
 ## Results sheet
 
 | Step | Result (OK / KO + note) | Tester / date |
@@ -369,3 +379,4 @@ Most steps use the sample file. Open it with the Command Palette (**Ctrl+Shift+P
 | M36  |                         |               |
 | M37  |                         |               |
 | M38  |                         |               |
+| M39  |                         |               |

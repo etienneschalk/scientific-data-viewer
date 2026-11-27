@@ -761,6 +761,13 @@
                     "description": "Sort multi-group datasets alphabetically by group path in the data viewer.",
                     "markdownDescription": "When enabled (**default**), groups from multi-group NetCDF / DataTree files are sorted alphabetically by path in the viewer. Disable to preserve the order returned from the file ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Use **Refresh** (🔄) after changing."
                 },
+                "scientificDataViewer.expandAllIncludesXarrayEncoding": {
+                    "type": "boolean",
+                    "default": false,
+                    "order": 1011,
+                    "description": "Expand All (viewer header) also opens the Xarray Encoding sections.",
+                    "markdownDescription": "When enabled, **Expand All** (button in the viewer's header) also opens the **Xarray Encoding** sections of groups, coordinates and variables. **Off by default**: encodings are long and fill the page, so Expand All opens every other section and leaves them closed; open one by clicking its title. Exported HTML pages keep this choice. Applies at the next load or **Refresh** of a viewer."
+                },
                 "scientificDataViewer.showXarrayEncodingAttributes": {
                     "type": "boolean",
                     "default": true,

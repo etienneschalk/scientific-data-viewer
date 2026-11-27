@@ -205,7 +205,7 @@ export class HTMLGenerator {
             <div class="tree-controls">
                 <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content" aria-label="Export Webview Content">${ICONS.export}</button>
                 <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections" aria-label="Collapse All Sections">${ICONS.collapseAll}</button>
-                <button id="expandAllButton" class="header-control-button" title="Expand All Sections" aria-label="Expand All Sections">${ICONS.expandAll}</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections (except Xarray Encoding)" aria-label="Expand All Sections (except Xarray Encoding)">${ICONS.expandAll}</button>
                 <button id="refreshButton" class="header-control-button" title="Refresh" aria-label="Refresh">${ICONS.refresh}</button>
             </div>
         </div>

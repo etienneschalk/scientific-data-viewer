@@ -83,6 +83,24 @@ export function displayAll(state: DataLoadedPayload): void {
     );
 }
 
+/**
+ * Record on the Expand All button whether it opens the Xarray Encoding
+ * sections (setting `expandAllIncludesXarrayEncoding`, off by default). The
+ * page itself holds the choice, so an exported page keeps it.
+ */
+function configureExpandAll(includeEncoding: boolean): void {
+    const button = document.getElementById('expandAllButton');
+    if (!button) {
+        return;
+    }
+    button.dataset.includeEncoding = String(includeEncoding);
+    const label = includeEncoding
+        ? 'Expand All Sections'
+        : 'Expand All Sections (except Xarray Encoding)';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+}
+
 function displayDataInfo(
     data: DataInfo | null,
     filePath: string | null,
@@ -103,6 +121,7 @@ function displayDataInfo(
         nestedAttributesView: config.nestedAttributesView !== false,
     };
     globalState.plotTimeoutMs = clampPlotTimeout(config.plotTimeoutMs);
+    configureExpandAll(config.expandAllIncludesXarrayEncoding === true);
     globalState.currentDatasetFilePath = filePath;
 
     hideGlobalError();
@@ -249,7 +268,7 @@ function renderGroup(
             joinId(['data-group', groupName, name]),
             title,
             /*html*/ `<div class="${name}">${content}</div>`,
-            { open, count },
+            { open, count, encoding: name === 'encoding' },
         );
 
     return /*html*/ `
@@ -298,15 +317,17 @@ function renderGroupSection(
          * plot settings editor (`data-settings-scope`)
          */
         plotGroup?: string;
+        /** Xarray Encoding: `.xarray-encoding-section`, left closed by Expand All */
+        encoding?: boolean;
     },
 ): string {
-    const { open, count, plotGroup } = options;
+    const { open, count, plotGroup, encoding } = options;
     const plotAttrs =
         plotGroup === undefined
             ? ''
             : ` data-group="${escapeHtml(plotGroup)}" data-settings-scope="${escapeHtml(groupScope(plotGroup))}"`;
     return /*html*/ `
-                    <details class="group-section${plotGroup === undefined ? '' : ' group-plot-section'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                    <details class="group-section${plotGroup === undefined ? '' : ' group-plot-section'}${encoding ? ' xarray-encoding-section' : ''}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
                         <summary class="group-section-summary"><h4>${title}</h4>${count ? countBadge(count) : ''}</summary>
                         ${content}
                     </details>`;

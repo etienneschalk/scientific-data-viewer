@@ -1778,6 +1778,111 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
+    suite('Expand All and the Xarray Encoding sections', () => {
+        /** Export the page and open it as a browser would (degraded mode). */
+        async function exportedPage(): Promise<any> {
+            harness.click(
+                harness.document.getElementById('exportWebviewButton'),
+            );
+            const exported = harness.requests('exportWebview').pop().payload
+                .htmlContent as string;
+            const offline = new JSDOM(exported, { runScripts: 'dangerously' });
+            await new Promise((resolve) =>
+                offline.window.addEventListener('load', resolve),
+            );
+            return offline;
+        }
+        const closedDetails = (doc: any) =>
+            Array.from(doc.querySelectorAll('#content details')).filter(
+                (details: any) => !details.open,
+            );
+
+        test('Expand All leaves them closed by default, Collapse All closes them', () => {
+            harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+            const doc = harness.document;
+            const expand = doc.getElementById('expandAllButton');
+            assert.strictEqual(expand.dataset.includeEncoding, 'false');
+            assert.strictEqual(
+                expand.title,
+                'Expand All Sections (except Xarray Encoding)',
+            );
+            // The group / and its temperature variable, the hostile group
+            const encodings = Array.from(
+                doc.querySelectorAll('.xarray-encoding-section'),
+            ) as any[];
+            assert.strictEqual(encodings.length, 3);
+            assert.ok(
+                encodings.every((section) =>
+                    section
+                        .querySelector('summary')
+                        .textContent.includes('Xarray Encoding'),
+                ),
+            );
+
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(doc), encodings);
+
+            // One opened by hand stays open
+            encodings[0].open = true;
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(doc), encodings.slice(1));
+
+            harness.click(doc.getElementById('collapseAllButton'));
+            assert.ok(encodings.every((section) => !section.open));
+            assert.ok(
+                Array.from(doc.querySelectorAll('#content details')).every(
+                    (details: any) => !details.open,
+                ),
+            );
+        });
+
+        test('with expandAllIncludesXarrayEncoding, Expand All opens them too', () => {
+            harness.loadData(sampleDataInfo(), {
+                expandAllIncludesXarrayEncoding: true,
+            });
+            const expand = harness.document.getElementById('expandAllButton');
+            assert.strictEqual(expand.dataset.includeEncoding, 'true');
+            assert.strictEqual(expand.title, 'Expand All Sections');
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(harness.document), []);
+        });
+
+        test('an exported page keeps the choice', async () => {
+            harness.loadData(sampleDataInfo());
+            let offline = await exportedPage();
+            try {
+                const off = offline.window.document;
+                assert.ok(off.getElementById('degraded-mode-indicator'));
+                off.getElementById('expandAllButton').dispatchEvent(
+                    new offline.window.MouseEvent('click', { bubbles: true }),
+                );
+                const closed = closedDetails(off) as any[];
+                assert.strictEqual(closed.length, 3);
+                assert.ok(
+                    closed.every((details) =>
+                        details.classList.contains('xarray-encoding-section'),
+                    ),
+                );
+            } finally {
+                offline.window.close();
+            }
+
+            harness.loadData(sampleDataInfo(), {
+                expandAllIncludesXarrayEncoding: true,
+            });
+            offline = await exportedPage();
+            try {
+                const off = offline.window.document;
+                off.getElementById('expandAllButton').dispatchEvent(
+                    new offline.window.MouseEvent('click', { bubbles: true }),
+                );
+                assert.deepStrictEqual(closedDetails(off), []);
+            } finally {
+                offline.window.close();
+            }
+        });
+    });
+
     test('Plot group plots the variables of its group only', async () => {
         harness.loadData(sampleDataInfo());
         const groupButton = (group: string) =>
