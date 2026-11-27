@@ -1,20 +1,29 @@
-import { joinId } from '../../shared/ids';
-import {
-    readDimensionSlices,
-    renderDimensionSliceFields,
-    resetDimensionSlices,
-} from './dimensionSlices';
 import { escapeHtml } from './util';
 
+/**
+ * The plot parameters: one table drives the controls of the settings editor
+ * (plotEditor.ts), their reading, checking and merging (plotSettings.ts).
+ *
+ * Every value is kept as the text of its control (`RawParams`, '' = not set
+ * at this level), so an editor can be removed and rebuilt from the store
+ * without losing anything, a wrong number included.
+ */
+
 type PlotParameterKind =
-    'dimension' | 'bool' | 'int' | 'float' | 'text' | 'colWrap';
+    'dimension' | 'bool' | 'int' | 'float' | 'text' | 'colWrap' | 'choice';
 
 /** Fieldsets of the plot parameters, in display order */
-const PLOT_PARAMETER_GROUPS = ['Facets', 'Axes', 'Color', 'Figure'] as const;
+const PLOT_PARAMETER_GROUPS = [
+    'Facets',
+    'Axes',
+    'Color',
+    'Flags',
+    'Figure',
+] as const;
 type PlotParameterGroup = (typeof PLOT_PARAMETER_GROUPS)[number];
 
 export interface PlotParameter {
-    /** createPlot payload field */
+    /** createPlot payload field, and `data-param` of the control */
     key: string;
     label: string;
     /** Short help shown after the label (the full help is in `title`) */
@@ -22,29 +31,24 @@ export interface PlotParameter {
     kind: PlotParameterKind;
     /** Fieldset the control is shown in */
     group: PlotParameterGroup;
-    /** Element id in the Global Plot Controls */
-    id: string;
-    /** Element id prefix in a Group Plot Controls block (`-<safe group id>` appended) */
-    groupId: string;
     title: string;
-    /** Checkbox default (bool) */
+    /** Value used when no level sets it (bool), always sent */
     default?: boolean;
     /** Minimum (int, colWrap) */
     min?: number;
     /** Reject values <= 0 (float) */
     positive?: boolean;
+    /** Example shown in an empty input that inherits nothing */
     placeholder?: string;
-    /** colWrap only: the "auto" checkbox */
-    autoId?: string;
-    groupAutoId?: string;
+    /** choice only: the values offered after the empty (automatic) one */
+    choices?: readonly string[];
+    /** choice only: label of the empty value */
+    emptyLabel?: string;
+    /** colWrap only: title of the "auto" checkbox */
     autoTitle?: string;
 }
 
-/**
- * Plot parameters shared by the Global Plot Controls and every Group Plot
- * Controls block, in display order. Each entry drives rendering, reading,
- * resetting and merging. `id` / `groupId` keep the historical element ids.
- */
+/** Plot parameters, in display order. */
 export const PLOT_PARAMETERS: PlotParameter[] = [
     {
         key: 'facetRow',
@@ -52,8 +56,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         hint: 'facets',
         kind: 'dimension',
         group: 'Facets',
-        id: 'facetRowSelect',
-        groupId: 'group-facet-row',
         title: 'xarray row: dimension to facet along rows',
     },
     {
@@ -62,8 +64,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         hint: 'facets',
         kind: 'dimension',
         group: 'Facets',
-        id: 'facetColSelect',
-        groupId: 'group-facet-col',
         title: 'xarray col: dimension to facet along columns',
     },
     {
@@ -73,10 +73,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'colWrap',
         min: 1,
         group: 'Facets',
-        id: 'plotColWrapInput',
-        groupId: 'group-plot-col-wrap',
-        autoId: 'plotColWrapAutoCheckbox',
-        groupAutoId: 'group-plot-col-wrap-auto',
         placeholder: 'e.g. 4',
         title: 'xarray col_wrap: max columns in faceted grid (positive integer)',
         autoTitle:
@@ -87,8 +83,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'x',
         kind: 'dimension',
         group: 'Axes',
-        id: 'plotXSelect',
-        groupId: 'group-plot-x',
         title: 'xarray x: dimension for the x-axis',
     },
     {
@@ -96,8 +90,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'y',
         kind: 'dimension',
         group: 'Axes',
-        id: 'plotYSelect',
-        groupId: 'group-plot-y',
         title: 'xarray y: dimension for the y-axis',
     },
     {
@@ -106,8 +98,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         hint: 'colors',
         kind: 'dimension',
         group: 'Axes',
-        id: 'plotHueSelect',
-        groupId: 'group-plot-hue',
         title: 'xarray hue: dimension mapped to colors',
     },
     {
@@ -116,9 +106,7 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'bool',
         default: true,
         group: 'Axes',
-        id: 'xIncreaseCheckbox',
-        groupId: 'group-x-increase',
-        title: 'xarray xincrease (uncheck to reverse x-axis)',
+        title: 'xarray xincrease: false reverses the x-axis',
     },
     {
         key: 'yincrease',
@@ -126,17 +114,13 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'bool',
         default: true,
         group: 'Axes',
-        id: 'yIncreaseCheckbox',
-        groupId: 'group-y-increase',
-        title: 'xarray yincrease (uncheck to reverse y-axis)',
+        title: 'xarray yincrease: false reverses the y-axis',
     },
     {
         key: 'vmin',
         label: 'vmin',
         kind: 'float',
         group: 'Color',
-        id: 'plotVminInput',
-        groupId: 'group-plot-vmin',
         placeholder: 'auto',
         title: 'Color scale minimum (float)',
     },
@@ -145,8 +129,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         label: 'vmax',
         kind: 'float',
         group: 'Color',
-        id: 'plotVmaxInput',
-        groupId: 'group-plot-vmax',
         placeholder: 'auto',
         title: 'Color scale maximum (float)',
     },
@@ -156,10 +138,18 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         hint: 'colormap',
         kind: 'text',
         group: 'Color',
-        id: 'plotCmapInput',
-        groupId: 'group-plot-cmap',
-        placeholder: 'e.g. viridis',
-        title: 'Matplotlib colormap name (user must provide a valid existing cmap)',
+        placeholder: 'e.g. viridis, seaborn:rocket',
+        title: 'Matplotlib colormap name (viridis, magma...), or seaborn:<name> for a seaborn colormap or palette (seaborn:rocket, seaborn:mako_r, seaborn:light:seagreen; needs the seaborn package)',
+    },
+    {
+        key: 'norm',
+        label: 'norm',
+        hint: 'scale',
+        kind: 'choice',
+        choices: ['log'],
+        emptyLabel: 'linear',
+        group: 'Color',
+        title: 'log: colors follow log10(value), colorbar in data units (images); log data axis (lines). Values <= 0 are not shown. linear by default',
     },
     {
         key: 'robust',
@@ -168,8 +158,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'bool',
         default: false,
         group: 'Color',
-        id: 'robustCheckbox',
-        groupId: 'group-robust',
         title: 'xarray robust: use 2nd/98th percentiles for color limits (helps with outliers)',
     },
     {
@@ -178,9 +166,44 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'bool',
         default: true,
         group: 'Color',
-        id: 'addColorbarCheckbox',
-        groupId: 'group-add-colorbar',
-        title: 'xarray add_colorbar (uncheck to hide colorbar when applicable)',
+        title: 'xarray add_colorbar: false hides the colorbar',
+    },
+    {
+        key: 'useFlags',
+        label: 'flags',
+        hint: 'CF meanings',
+        kind: 'bool',
+        default: true,
+        group: 'Flags',
+        title: 'CF flag variables (flag_values / flag_masks + flag_meanings): one color per meaning, named in the colorbar, one panel per bit flag. false: plot the raw numbers',
+    },
+    {
+        key: 'flagSelect',
+        label: 'flag_select',
+        hint: 'meanings',
+        kind: 'text',
+        group: 'Flags',
+        placeholder: 'e.g. cloud, water',
+        title: 'CF flag meanings to draw, separated by commas (case, _ and spaces ignored). flag_values: the others in grey; bit flags: only their panels',
+    },
+    {
+        key: 'flagCombine',
+        label: 'flag_combine',
+        hint: 'bits',
+        kind: 'choice',
+        choices: ['any', 'all', 'none'],
+        emptyLabel: 'per flag',
+        group: 'Flags',
+        title: 'Bit flags (flag_masks) in one map: any = set for at least one (OR), all = set for all (AND), none = set for none (the clear points). Uses the flag_select meanings, else all. Empty: one panel per flag',
+    },
+    {
+        key: 'hideFlags',
+        label: 'hide_flags',
+        hint: 'ancillary',
+        kind: 'text',
+        group: 'Flags',
+        placeholder: 'e.g. cloud, land',
+        title: "Hide the points where a flag variable named in the variable's ancillary_variables has one of these meanings set (commas)",
     },
     {
         key: 'size',
@@ -189,8 +212,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'float',
         positive: true,
         group: 'Figure',
-        id: 'plotSizeInput',
-        groupId: 'group-plot-size',
         placeholder: 'e.g. 5',
         title: 'xarray size in inches (fig height, float)',
     },
@@ -201,8 +222,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'float',
         positive: true,
         group: 'Figure',
-        id: 'plotAspectInput',
-        groupId: 'group-plot-aspect',
         placeholder: 'e.g. 1.5',
         title: 'xarray aspect (fig width = aspect * size, float)',
     },
@@ -213,8 +232,6 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'int',
         min: 1,
         group: 'Figure',
-        id: 'plotBinsInput',
-        groupId: 'group-bins',
         placeholder: 'e.g. 100',
         title: 'Number of bins for histogram-style plots',
     },
@@ -224,65 +241,84 @@ export const PLOT_PARAMETERS: PlotParameter[] = [
         kind: 'bool',
         default: true,
         group: 'Figure',
-        id: 'addLegendCheckbox',
-        groupId: 'group-add-legend',
-        title: 'xarray add_legend (default on: typical xarray plot defaults; backend omits when unsafe for imshow)',
+        title: 'xarray add_legend (true by default; left out where xarray cannot use it)',
     },
 ];
 
-export type PlotParameterValue = string | number | boolean | undefined;
-
-/** Values read from one scope: one entry per PLOT_PARAMETERS key, plus the slices. */
-export interface PlotControlsValues {
-    [key: string]: PlotParameterValue | Record<string, string | number>;
-    dimensionSlices: Record<string, string | number>;
-}
+export const PLOT_PARAMETER_BY_KEY = new Map(
+    PLOT_PARAMETERS.map((param) => [param.key, param]),
+);
 
 /**
- * Either the global controls (`groupName === null`) or one group's
- * controls. It decides element ids and the data-group attribute.
+ * Parameter behind each role of the layout line under a plot (render/
+ * plotLayout.ts), so a click on an item opens its control.
  */
-export interface PlotScope {
-    groupName: string | null;
-    safeId?: string;
+export const LAYOUT_ROLE_PARAMETERS: Record<string, string> = {
+    row: 'facetRow',
+    col: 'facetCol',
+    col_wrap: 'colWrap',
+    x: 'plotX',
+    y: 'plotY',
+    hue: 'plotHue',
+    size: 'size',
+    aspect: 'aspect',
+    bins: 'bins',
+    norm: 'norm',
+    flags: 'useFlags',
+    hide_flags: 'hideFlags',
+};
+
+export type PlotParameterValue = string | number | boolean | undefined;
+
+/** Text of the controls of one level, by parameter key ('' or absent: not set). */
+export type RawParams = Record<string, string>;
+
+/** Value of a level after this one, shown in grey in an empty control. */
+export interface InheritedValue {
+    raw: string;
+    /** Where it is set: `file`, `group /a`... */
+    source: string;
 }
 
-export function globalPlotScope(): PlotScope {
-    return { groupName: null };
+/** Text of a set value, as the controls and the summaries show it. */
+export function displayPlotValue(raw: string): string {
+    return raw.trim();
 }
 
-export function groupPlotScope(groupName: string): PlotScope {
-    return { groupName, safeId: joinId(['group-plot', groupName]) };
-}
-
-function plotParamElementId(
-    scope: PlotScope,
+/** What an empty control falls back to: the inherited value, else the default. */
+function fallbackText(
     param: PlotParameter,
-    which: 'main' | 'auto' = 'main',
+    inherited?: InheritedValue,
 ): string {
-    if (scope.groupName === null) {
-        return (which === 'auto' ? param.autoId : param.id) ?? '';
+    if (inherited) {
+        return `${displayPlotValue(inherited.raw)} (${inherited.source})`;
     }
-    const base = which === 'auto' ? param.groupAutoId : param.groupId;
-    return `${base}-${scope.safeId}`;
+    switch (param.kind) {
+        case 'bool':
+            return `${param.default ? 'true' : 'false'} (default)`;
+        case 'choice':
+            return param.emptyLabel ?? 'auto';
+        case 'dimension':
+            return 'auto';
+        default:
+            return param.placeholder ?? 'auto';
+    }
 }
 
-function groupAttribute(scope: PlotScope): string {
-    return scope.groupName === null
-        ? ''
-        : ` data-group="${escapeHtml(scope.groupName)}"`;
+/** Element id of a control: one editor is open at a time. */
+export function plotSettingId(key: string): string {
+    return `plot-setting-${key}`;
 }
 
-function dimensionOptionsHtml(dimNames: string[]): string {
-    return (
-        '<option value="">None</option>' +
-        dimNames
-            .map(
-                (d) =>
-                    `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`,
-            )
-            .join('')
-    );
+export interface ParameterRenderContext {
+    /** Dimensions offered by the dimension selects */
+    dimNames: string[];
+    /** Values set at the level being edited */
+    values: RawParams;
+    /** Value each empty control falls back to, from the levels after this one */
+    inherited: Record<string, InheritedValue | undefined>;
+    /** Show the Flags fieldset (a CF flag variable, or ancillary_variables) */
+    showFlags: boolean;
 }
 
 /** Label of a field: the xarray name, then a short muted hint. */
@@ -290,132 +326,107 @@ function fieldLabel(id: string, name: string, hint?: string): string {
     return /*html*/ `<label for="${id}" class="plot-field-label"><span class="plot-field-name">${escapeHtml(name)}</span>${hint ? `<span class="plot-field-hint">${escapeHtml(hint)}</span>` : ''}</label>`;
 }
 
-/** Control of one parameter (the cell's second line). */
+/** Control of one parameter (the field's second line). */
 function renderPlotParameterControl(
-    scope: PlotScope,
     param: PlotParameter,
-    dimNames: string[],
+    context: ParameterRenderContext,
 ): string {
-    const id = plotParamElementId(scope, param);
-    const groupAttr = groupAttribute(scope);
+    const id = plotSettingId(param.key);
+    const raw = context.values[param.key] ?? '';
+    const fallback = fallbackText(param, context.inherited[param.key]);
     const title = escapeHtml(param.title);
-    const placeholder = escapeHtml(param.placeholder);
+    const option = (value: string, label: string) =>
+        `<option value="${escapeHtml(value)}"${value === raw ? ' selected' : ''}>${escapeHtml(label)}</option>`;
+    const select = (values: readonly string[]) =>
+        /*html*/ `<select id="${id}" class="plot-choice" data-param="${param.key}" title="${title}">${option('', fallback)}${values.map((value) => option(value, value)).join('')}</select>`;
+    const input = (inputMode: string, value: string, disabled = false) =>
+        /*html*/ `<input type="text" id="${id}" class="plot-input" data-param="${param.key}" value="${escapeHtml(value)}" placeholder="${escapeHtml(fallback)}" title="${title}" inputmode="${inputMode}" autocomplete="off" spellcheck="false"${disabled ? ' disabled' : ''} />`;
     switch (param.kind) {
         case 'dimension':
-            return /*html*/ `<select id="${id}" class="facet-select" data-param="${param.key}"${groupAttr} title="${title}">${dimensionOptionsHtml(dimNames)}</select>`;
+            // A value set for dimensions no longer listed (Refresh) stays visible
+            return select(
+                raw && !context.dimNames.includes(raw)
+                    ? [...context.dimNames, raw]
+                    : context.dimNames,
+            );
         case 'bool':
-            // A group checkbox starts at "use the global value" (indeterminate)
-            return scope.groupName === null
-                ? /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${param.default ? ' checked' : ''} title="${title}" /></span>`
-                : /*html*/ `<span class="plot-field-check"><input type="checkbox" id="${id}" class="plot-checkbox" data-param="${param.key}"${groupAttr} data-inherit="true" title="${escapeHtml(INHERIT_TITLE)}" /></span>`;
+            return select(['true', 'false']);
+        case 'choice':
+            return select(param.choices ?? []);
         case 'colWrap': {
-            const autoId = plotParamElementId(scope, param, 'auto');
+            const auto = raw === 'auto';
             return /*html*/ `
                 <span class="plot-field-pair">
-                    <input type="number" id="${id}" class="plot-input" min="1" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />
-                    <label for="${autoId}" class="plot-inline-check" title="${escapeHtml(param.autoTitle)}"><input type="checkbox" id="${autoId}" class="plot-checkbox plot-col-wrap-auto" data-param="${param.key}Auto"${groupAttr} />auto</label>
+                    ${input('numeric', auto ? '' : raw, auto)}
+                    <label for="${id}-auto" class="plot-inline-check" title="${escapeHtml(param.autoTitle)}"><input type="checkbox" id="${id}-auto" class="plot-checkbox plot-col-wrap-auto" data-param="${param.key}Auto"${auto ? ' checked' : ''} />auto</label>
                 </span>`;
         }
         case 'int':
-            return /*html*/ `<input type="number" id="${id}" class="plot-input"${param.min !== undefined ? ` min="${param.min}"` : ''} data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
+            return input('numeric', raw);
+        case 'float':
+            return input('decimal', raw);
         default:
-            // float and text
-            return /*html*/ `<input type="text" id="${id}" class="plot-input" data-param="${param.key}"${groupAttr} placeholder="${placeholder}" title="${title}" />`;
+            return input('text', raw);
     }
 }
 
 /**
- * HTML of the plot parameters of a scope: one fieldset per group (Facets,
+ * HTML of the plot parameters of one level: one fieldset per group (Facets,
  * Axes...), each parameter a cell (name above, control below) of a grid
  * whose columns line up across fieldsets.
  */
-export function renderPlotParameters(
-    scope: PlotScope,
-    dimNames: string[],
-): string {
-    return PLOT_PARAMETER_GROUPS.map((group) => {
-        const cells = PLOT_PARAMETERS.filter((param) => param.group === group)
-            .map(
-                (param) => /*html*/ `
-                    <div class="plot-field" title="${escapeHtml(param.title)}">
-                        ${fieldLabel(plotParamElementId(scope, param), param.label, param.hint)}
-                        ${renderPlotParameterControl(scope, param, dimNames)}
-                    </div>`,
+export function renderPlotParameters(context: ParameterRenderContext): string {
+    return PLOT_PARAMETER_GROUPS.filter(
+        (group) => group !== 'Flags' || context.showFlags,
+    )
+        .map((group) => {
+            const cells = PLOT_PARAMETERS.filter(
+                (param) => param.group === group,
             )
-            .join('');
-        return /*html*/ `
+                .map(
+                    (param) => /*html*/ `
+                    <div class="plot-field" data-field="${param.key}" title="${escapeHtml(param.title)}">
+                        ${fieldLabel(plotSettingId(param.key), param.label, param.hint)}
+                        ${renderPlotParameterControl(param, context)}
+                    </div>`,
+                )
+                .join('');
+            return /*html*/ `
                 <div class="plot-fieldset">
                     <div class="plot-fieldset-caption">${group}</div>
                     <div class="plot-fields">${cells}</div>
                 </div>`;
-    }).join('');
+        })
+        .join('');
 }
 
-/** Replace the options of every dimension select under `root`, keeping valid selections. */
-export function setDimensionOptions(
-    root: ParentNode,
-    dimNames: string[],
-): void {
-    root.querySelectorAll<HTMLSelectElement>(
-        'select.facet-select[data-param]',
-    ).forEach((select) => {
-        const previous = select.value;
-        select.innerHTML = dimensionOptionsHtml(dimNames);
-        select.value = dimNames.includes(previous) ? previous : '';
-    });
-}
-
-function paramElement(root: ParentNode, key: string): HTMLInputElement | null {
-    // `key` comes from PLOT_PARAMETERS (constant identifiers), safe in a selector.
-    return root.querySelector<HTMLInputElement>(`[data-param="${key}"]`);
-}
-
-function readNumber(
-    element: HTMLInputElement,
-    param: PlotParameter,
-): number | undefined {
-    const raw = element.value.trim();
-    if (raw === '') {
-        return undefined;
-    }
-    const n = Number(raw);
-    if (!Number.isFinite(n)) {
-        return undefined;
-    }
-    if (param.kind === 'int' || param.kind === 'colWrap') {
-        if (!Number.isInteger(n) || n < (param.min ?? 1)) {
-            return undefined;
+/** Text of every parameter control under `root` (only the controls shown). */
+export function readPlotParameterTexts(root: ParentNode): RawParams {
+    const values: RawParams = {};
+    for (const param of PLOT_PARAMETERS) {
+        // `key` comes from PLOT_PARAMETERS (constant identifiers), safe in a selector
+        const element = root.querySelector<
+            HTMLInputElement | HTMLSelectElement
+        >(`[data-param="${param.key}"]`);
+        if (!element) {
+            continue;
         }
+        const auto =
+            param.kind === 'colWrap'
+                ? root.querySelector<HTMLInputElement>(
+                      `[data-param="${param.key}Auto"]`,
+                  )
+                : null;
+        values[param.key] = auto?.checked ? 'auto' : element.value.trim();
     }
-    if (param.positive && n <= 0) {
-        return undefined;
-    }
-    return n;
+    return values;
 }
 
-const PLOT_PARAMETER_BY_KEY = new Map(
-    PLOT_PARAMETERS.map((param) => [param.key, param]),
-);
-
-/** Why the number typed in a control is rejected, or null when it is fine or empty. */
-function plotParameterError(
-    element: HTMLInputElement,
-    param: PlotParameter,
-): string | null {
-    if (!['int', 'float', 'colWrap'].includes(param.kind) || element.disabled) {
-        return null;
-    }
-    // A number input holds '' for text it cannot parse, flagged as badInput
-    if (element.validity?.badInput) {
-        return `${param.label}: not a number`;
-    }
-    const raw = element.value.trim();
-    if (raw === '') {
-        return null;
-    }
-    const n = Number(raw);
+/** Why a number typed for `param` cannot be used, or null. */
+function numberError(param: PlotParameter, text: string): string | null {
+    const n = Number(text);
     if (!Number.isFinite(n)) {
-        return `${param.label}: "${raw}" is not a number${raw.includes(',') ? ' (use a dot as decimal separator)' : ''}`;
+        return `${param.label}: "${text}" is not a number${text.includes(',') ? ' (use a dot as decimal separator)' : ''}`;
     }
     const min = param.min ?? 1;
     if (
@@ -430,22 +441,33 @@ function plotParameterError(
     return null;
 }
 
-function showPlotParameterError(
-    element: HTMLInputElement,
+/** Value sent for a text, or why it cannot be used. Nothing for ''. */
+export function parsePlotParameter(
     param: PlotParameter,
-    message: string | null,
-): void {
-    element.setCustomValidity(message ?? '');
-    // An attribute, unlike the custom validity, is kept by the HTML export
-    if (message) {
-        element.setAttribute('aria-invalid', 'true');
-    } else {
-        element.removeAttribute('aria-invalid');
+    raw: string,
+): { value?: PlotParameterValue; error?: string } {
+    const text = raw.trim();
+    if (text === '') {
+        return {};
     }
-    element.title = message ?? param.title;
+    switch (param.kind) {
+        case 'bool':
+            return { value: text === 'true' };
+        case 'colWrap':
+        case 'int':
+        case 'float': {
+            if (param.kind === 'colWrap' && text === 'auto') {
+                return { value: 'auto' };
+            }
+            const error = numberError(param, text);
+            return error ? { error } : { value: Number(text) };
+        }
+        default:
+            return { value: text };
+    }
 }
 
-/** `input` / `change` listener: outline a numeric plot parameter typed wrong. */
+/** `input` / `change` listener: outline a number typed wrong, with the reason. */
 export function validatePlotParameterInput(target: EventTarget | null): void {
     if (
         !(target instanceof HTMLInputElement) ||
@@ -454,173 +476,28 @@ export function validatePlotParameterInput(target: EventTarget | null): void {
         return;
     }
     const param = PLOT_PARAMETER_BY_KEY.get(target.dataset.param ?? '');
-    if (param) {
-        showPlotParameterError(
-            target,
-            param,
-            plotParameterError(target, param),
-        );
+    if (!param || !['int', 'float', 'colWrap'].includes(param.kind)) {
+        return;
     }
-}
-
-/** Numeric controls under `root` whose value cannot be used, with the reason. */
-export function invalidPlotParameters(
-    root: ParentNode,
-): Array<{ key: string; message: string }> {
-    return PLOT_PARAMETERS.flatMap((param) => {
-        const element = paramElement(root, param.key);
-        const message = element ? plotParameterError(element, param) : null;
-        return message ? [{ key: param.key, message }] : [];
-    });
-}
-
-const INHERIT_TITLE =
-    'Uses the global value. Click to set a value for this group; Reset goes back to the global value.';
-
-/** Group checkbox: "use the global value" (indeterminate) or the group's own value. */
-function setInherited(element: HTMLInputElement, inherited: boolean): void {
-    element.indeterminate = inherited;
-    if (inherited) {
-        element.checked = false;
-        element.setAttribute('data-inherit', 'true');
-        element.title = INHERIT_TITLE;
+    const text = target.value.trim();
+    const message =
+        target.disabled || text === '' ? null : numberError(param, text);
+    target.setCustomValidity(message ?? '');
+    if (message) {
+        target.setAttribute('aria-invalid', 'true');
     } else {
-        element.removeAttribute('data-inherit');
-        const param = PLOT_PARAMETER_BY_KEY.get(element.dataset.param ?? '');
-        element.title = param?.title ?? '';
+        target.removeAttribute('aria-invalid');
     }
+    target.title = message ?? param.title;
 }
 
-/**
- * Show the group checkboxes still at "use the global value" as indeterminate
- * (a property, not an attribute: set it after rendering or loading a page).
- */
-export function showInheritedCheckboxes(root: ParentNode): void {
-    root.querySelectorAll<HTMLInputElement>(
-        'input.plot-checkbox[data-inherit]',
-    ).forEach((element) => {
-        element.indeterminate = true;
-    });
-}
-
-/** `change` listener: a click gives a group checkbox its own value. */
-export function handleInheritedCheckboxChange(
-    target: EventTarget | null,
-): void {
-    if (
-        target instanceof HTMLInputElement &&
-        target.classList.contains('plot-checkbox') &&
-        target.hasAttribute('data-inherit')
-    ) {
-        setInherited(target, false);
-    }
-}
-
-/** Value of one parameter, or undefined when the control is empty or invalid. */
-function readPlotParameter(
-    root: ParentNode,
-    param: PlotParameter,
-): PlotParameterValue {
-    const element = paramElement(root, param.key);
-    if (!element) {
-        return undefined;
-    }
-    switch (param.kind) {
-        case 'bool':
-            return element.hasAttribute('data-inherit')
-                ? undefined
-                : element.checked;
-        case 'colWrap': {
-            const auto = paramElement(root, `${param.key}Auto`);
-            if (auto && auto.checked) {
-                return 'auto';
-            }
-            return readNumber(element, param);
-        }
-        case 'int':
-        case 'float':
-            return readNumber(element, param);
-        default: {
-            const value = element.value.trim();
-            return value === '' ? undefined : value;
-        }
-    }
-}
-
-/** All plot options of a scope root (global section or group section). */
-export function readPlotControls(root: ParentNode): PlotControlsValues {
-    const values: PlotControlsValues = {
-        dimensionSlices: readDimensionSlices(root),
-    };
-    for (const param of PLOT_PARAMETERS) {
-        values[param.key] = readPlotParameter(root, param);
-    }
-    return values;
-}
-
-/**
- * Group values win when set; a group control left empty (or a checkbox left
- * at "use the global value") falls back to the global control. Dimension
- * slices: the group's slices replace the global ones when the group has any.
- */
-export function mergePlotControls(
-    groupValues: PlotControlsValues | null,
-    globalValues: PlotControlsValues,
-): PlotControlsValues {
-    const groupSlices = groupValues?.dimensionSlices ?? {};
-    const merged: PlotControlsValues = {
-        dimensionSlices:
-            Object.keys(groupSlices).length > 0
-                ? groupSlices
-                : globalValues.dimensionSlices,
-    };
-    for (const param of PLOT_PARAMETERS) {
-        const groupValue = groupValues?.[param.key];
-        merged[param.key] =
-            groupValue !== undefined ? groupValue : globalValues[param.key];
-    }
-    return merged;
-}
-
-/** Reset dimension slices and plot parameters under `root` to their defaults. */
-export function resetPlotControls(root: ParentNode): void {
-    resetDimensionSlices(root);
-    for (const param of PLOT_PARAMETERS) {
-        const element = paramElement(root, param.key);
-        if (!element) {
-            continue;
-        }
-        if (param.kind === 'bool' && element.hasAttribute('data-group')) {
-            setInherited(element, true);
-        } else if (param.kind === 'bool') {
-            element.checked = param.default === true;
-        } else {
-            element.value = '';
-            element.disabled = false;
-            showPlotParameterError(element, param, null);
-        }
-        if (param.kind === 'colWrap') {
-            const auto = paramElement(root, `${param.key}Auto`);
-            if (auto) {
-                auto.checked = false;
-            }
-        }
-    }
-}
-
-/** col_wrap "auto" disables the numeric input next to it. */
+/** col_wrap "auto" disables the number box next to it. */
 export function syncColWrapAutoCheckbox(autoCheckbox: HTMLInputElement): void {
-    const root = autoCheckbox.closest('.dimension-slices-facets');
-    const numberInput = root ? paramElement(root, 'colWrap') : null;
+    const numberInput = autoCheckbox
+        .closest('.plot-field')
+        ?.querySelector<HTMLInputElement>('[data-param="colWrap"]');
     if (numberInput) {
         numberInput.disabled = autoCheckbox.checked;
         validatePlotParameterInput(numberInput);
     }
-}
-
-export function renderDimensionSliceInputs(
-    scope: PlotScope,
-    dimSizes: Record<string, number>,
-): string {
-    return renderDimensionSliceFields(dimSizes, scope.groupName, scope.safeId);
 }

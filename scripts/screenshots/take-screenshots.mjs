@@ -18,7 +18,7 @@
 //   --file <path>       screenshot this data file instead of the generated one
 //   --theme <id>        only this theme (repeatable; see themes.mjs)
 //   --scenario <name>   only this scenario (repeatable)
-//   --setting <k=v>     override an extension setting, e.g. groupDimensionSlices=false
+//   --setting <k=v>     override an extension setting, e.g. nestedAttributesView=false
 //                       (repeatable; defaults come from package.json)
 //   --out <dir>         root folder (default: artefacts/screenshots)
 //   --width <px>        viewport width (default: 1024)
@@ -86,7 +86,9 @@ const SCENARIOS = [
     {
         name: 'plot-error',
         action: async () => {
-            // An out-of-range slice makes the backend fail like a real user error
+            // An out-of-range slice makes the backend fail like a real user
+            // error: the first Settings button is the whole file's (group /)
+            document.querySelector('.plot-settings-button').click();
             const input = document.querySelector('.dimension-slice-input');
             input.value = '9999';
             input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -106,7 +108,6 @@ const SCENARIOS = [
         // line with items set by the user next to automatic ones
         name: 'changed-controls',
         action: async () => {
-            const group = '[data-group="/"]';
             const type = (selector, value) => {
                 const input = document.querySelector(selector);
                 if (!input) {
@@ -116,16 +117,45 @@ const SCENARIOS = [
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             };
-            type(
-                `.dimension-slice-input${group}[data-dimension="time"][data-part="start"]`,
-                '0:6',
-            );
-            type(`input[data-param="colWrap"]${group}`, '3');
+            // Settings of the whole file (group /), left open
+            document.querySelector('.group-plot-section .plot-settings-button').click();
+            type('.plot-editor .slice-part[data-dimension="time"][data-part="start"]', '0:6');
+            type('.plot-editor [data-param="colWrap"]', '3');
             document.querySelector('[data-action="create-plot"]').click();
             await waitFor(
                 () => document.querySelector('.plot-error.error, .plot-image-container img'),
                 120000,
             );
+        },
+    },
+    {
+        // The settings editor of a variable: tabs (this variable, the whole
+        // file), values of the file shown in grey, the variable's own value
+        // outlined, and the summary under the Plot buttons
+        name: 'plot-settings',
+        action: async () => {
+            const type = (selector, value) => {
+                const input = document.querySelector(selector);
+                if (!input) {
+                    throw new Error(`no element ${selector}`);
+                }
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            document.querySelector('.group-plot-section .plot-settings-button').click();
+            type('.plot-editor .slice-part[data-dimension="time"][data-part="start"]', '0:6');
+            type('.plot-editor [data-param="cmap"]', 'magma');
+            const variable = document.querySelector('.variable-plot-controls');
+            variable.closest('details.variable-details').open = true;
+            variable.querySelector('.plot-settings-button').click();
+            type('.plot-editor [data-param="colWrap"]', '3');
+            variable.querySelector('[data-action="create-plot"]').click();
+            await waitFor(
+                () => variable.querySelector('.plot-error.error, .plot-image-container img'),
+                120000,
+            );
+            variable.scrollIntoView();
         },
     },
 ];

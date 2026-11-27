@@ -1,6 +1,6 @@
 # How a plot is made
 
-This page explains how the viewer turns the plot controls into a figure: which
+This page explains how the viewer turns the plot settings into a figure: which
 values are sent, how the backend chooses what you left empty, and how the page
 shows what was chosen. The diagrams are generated from the code by
 `scripts/architecture/generate.py` (see [architecture](architecture/README.md),
@@ -31,35 +31,57 @@ Before 0.13, setting any slice or layout control switched the whole plot to a
 “user layout” where nothing was chosen automatically: slicing `lat` alone gave
 a histogram of the 3D array instead of the time facets.
 
-## In the webview: what is sent
+## In the webview: from the settings to the request
 
 ![Plot parameters, from the controls to the request](architecture/svg/plot-parameters.svg)
 
-1. **Create Plot** first checks the numbers typed (`invalidPlotOptions`): a
-   wrong value blocks the plot with a message, instead of being silently ignored.
-2. The Global Plot Controls and the variable's Group Plot Controls are read,
-   then merged **field by field** (`mergePlotControls`): the group value when
-   set, else the global one. Dimension slices are one block: the group's
-   replace the global ones when the group has any. A group checkbox showing a
-   dash uses the global value.
-3. `compactPlotPayload` drops the empty fields: **only the fields you set are
+Since 0.14 every setting belongs to a **level**: a data variable, a group
+(its variables and those of its subgroups), or the whole file (the root group
+`/`). The **Settings** buttons open the editor (`plotEditor.ts`) with one tab
+per level of the chain: **This variable**, **Group /a**, its parent groups,
+**Whole file**. The editor is built when opened and removed when closed; it
+writes the text of its controls to the store of `plotSettings.ts`. Design:
+[`docs/v0.14/FEATURE_PLOT_SETTINGS_UI.md`](v0.14/FEATURE_PLOT_SETTINGS_UI.md).
+
+1. **Create Plot** asks `plotRequestFor(variable)` for its options. For each
+   parameter, and for the slice of each dimension, **the first level of the
+   chain that sets it wins** (`scopeChain`: the variable, its group, the
+   parent groups, `/`). Slices merge dimension by dimension. True / false
+   parameters fall back to their default and are always sent.
+2. A number typed wrong at the level that wins blocks the plot with a message
+   naming that level (`Whole file: vmin: "1,5" is not a number`), instead of
+   being silently ignored. A wrong value that a nearer level overrides does
+   not count.
+3. `compactPlotPayload` drops the empty fields: **only the fields set are
    sent**, and become CLI flags (`buildCreatePlotCliArgs`).
 
-### The “changed” outline
+The request is the same as in 0.13 for the same settings: what changed is
+where they are set.
 
-A field whose value differs from its default is outlined, with a dot after its
-name (`changedFields.ts`). The outlines are therefore exactly what the request
-overrides; everything else is automatic. The default of a field is:
+### The “changed” outline and the grey fallback
 
-| Field                  | Default (not outlined)                               |
-| ---------------------- | ---------------------------------------------------- |
-| text / number / select | empty, `None`                                        |
-| checkbox (global)      | its initial state (`xincrease` on, `robust` off...)  |
-| checkbox (group)       | the dash: use the global value                       |
-| dimension slice        | the three boxes empty (the slider only mirrors them) |
+In the editor, a field that holds a value **at the level shown** is outlined,
+with a dot after its name (`changedFields.ts`). An empty field shows in grey
+what it falls back to: the value of a level further right (`magma (file)`,
+`0:6 (group /a)` next to a dimension's size), else the default (`true
+(default)`, `linear`, `auto`).
 
-**Reset** clears its block, and the outlines with it. Exported HTML keeps the
-outlines of the moment of the export.
+| Field                 | Empty (not outlined) shows                      |
+| --------------------- | ----------------------------------------------- |
+| text / number         | the inherited value, else an example (`e.g. 4`) |
+| select (dimension)    | the inherited value, else `auto`                |
+| select (true / false) | the inherited value, else the default           |
+| select (norm...)      | the inherited value, else `linear`, `per flag`  |
+| dimension slice       | the inherited slice after the size of the field |
+
+**Reset** clears its block (slices or parameters) at the level shown.
+
+### Summaries
+
+Under each Plot button (variable or group), **Settings:** lists every setting
+that applies with the level that sets it: `time 0:6 file`, `vmax 10
+variable` (`effectiveSettings`). A click opens the editor on that level and
+field. Exported HTML keeps the summaries and leaves the editor out.
 
 ### The layout line under the plot
 
@@ -67,12 +89,14 @@ The result carries, next to the image, the layout the backend resolved
 (`plot_layout`) and the slices it applied. A line under the plot lists them:
 
 ```
-image   [lat 5:15 •]  col time  [col_wrap 5 •]  y lat  x lon  size 4  aspect 1     outlined •: set by you · others: automatic
+image   [lat 5:15 •]  col time  [col_wrap 5 •]  y lat  x lon  size 4  aspect 1     outlined •: set by you · others: automatic · click one to change it
 ```
 
 Items you set are outlined and end with a dot, like the changed fields; the
 others were chosen automatically, so that line tells which control to set to
-change them. Choices that could not be used are listed below it, with the
+change them. Each item is a button: a click opens the settings on its field,
+at the level that sets it (or the variable's own level for an automatic
+choice). Choices that could not be used are listed below it, with the
 reason.
 
 ## In the backend: the layout decision
@@ -123,11 +147,11 @@ facets, 1D line, more than 4 dimensions a histogram.
 `draw_plot` (`plotting/draw.py`) makes one call per kind and passes the style
 options only where they are accepted (`PlotKwargsBundle.for_kind`):
 
-| Kind      | xarray call                                                      | Style options passed                                         |
-| --------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| image     | `plot.imshow` (both axes are dimensions), else `plot.pcolormesh` | cmap, vmin, vmax, robust, add_colorbar, xincrease, yincrease |
-| line      | `plot.line`                                                      | xincrease, yincrease, add_legend (with hue only)             |
-| histogram | `plot.hist`                                                      | bins, xincrease, yincrease                                   |
+| Kind      | xarray call                                                      | Style options passed                                                   |
+| --------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| image     | `plot.imshow` (both axes are dimensions), else `plot.pcolormesh` | cmap, vmin, vmax, robust, norm, add_colorbar, xincrease, yincrease     |
+| line      | `plot.line`                                                      | xincrease, yincrease, norm (log data axis), add_legend (with hue only) |
+| histogram | `plot.hist`                                                      | bins, xincrease, yincrease                                             |
 
 A single map (both axes named like `lat` / `lon` / `x` / `y`, no facets, no
 aspect set) gets equal x / y scales.
@@ -138,6 +162,8 @@ aspect set) gets equal x / y scales.
   apply to every variable): `Slice on depth ignored: not a dimension of this
 variable (dimensions: time, lat, lon)`, listed first;
 - **vmin above vmax** on an image: the two are swapped, with a note;
+- **norm = log** (see [below](#log-scale-norm--log-014)): the values ≤ 0 not
+  shown, a limit ≤ 0 ignored, or the scale not used;
 - a **style** matplotlib does not know (setting
   `scientificDataViewer.matplotlibStyle`): the default style is used, with a
   note.
@@ -161,6 +187,163 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 }
 ```
 
+### Colormaps: matplotlib and seaborn (0.14)
+
+`cmap` takes a matplotlib colormap name, as before, or **`seaborn:<name>`**: a
+[seaborn colormap or palette](https://seaborn.pydata.org/tutorial/color_palettes.html),
+anything `seaborn.color_palette(<name>, as_cmap=True)` accepts:
+
+- the colormaps `rocket`, `mako`, `flare`, `crest`, `vlag`, `icefire` and their
+  `_r` variants: `seaborn:rocket`, `seaborn:mako_r`;
+- palette strings: `seaborn:light:seagreen`, `seaborn:dark:salmon_r`,
+  `seaborn:blend:#7AB,#EDA`, `seaborn:ch:s=.25,rot=-.25` (cubehelix); only
+  the first colon is the prefix;
+- qualitative palettes (`seaborn:deep`, `seaborn:Set2`...) become a stepped
+  colormap.
+
+`plotting/colormaps.py` resolves the name before the file is read
+(`resolve_cmap`): seaborn is imported only for a `seaborn:` name (it loads
+pandas), and the plot fails with one line when seaborn is missing (`cmap=seaborn:rocket: needs the seaborn package: install it ... or use the
+extension's own environment`) or does not know the name. xarray gets the
+`Colormap` object; `applied_plot_kwargs` keeps the text. seaborn is installed
+in the extension's own environment, optional anywhere else. Line plots and
+histograms ignore `cmap`, as before; CF flag variables take one color per
+meaning from it.
+
+### Log scale: norm = log (0.14)
+
+The **norm** select of the Color fieldset (`linear` by default, nothing
+passed; CLI `--norm log`) draws the values on a logarithmic scale without
+changing the data. `plotting/norm.py` (`apply_norm`) runs once the layout is
+known:
+
+| Kind             | norm = log                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| image, facets    | `LogNorm(vmin, vmax)` built from the values above 0, one for every panel (one colorbar, log ticks, labels in data units) |
+| line             | log scale on the axis of the values: `yscale="log"`, or `xscale` when the variable is drawn along `y`                    |
+| histogram, bars  | ignored, with a note                                                                                                     |
+| CF flag variable | ignored, with a note (one color per meaning)                                                                             |
+
+The rules for what a log scale cannot show:
+
+- **Values ≤ 0** are not drawn (transparent on an image, a gap in a line) and
+  counted in a note: `norm=log: 14 of 239 values ≤ 0 not shown (5.9%)`. The
+  note is always given, even for a few values.
+- **No value above 0** (or only NaN): the plot stays linear, note
+  `norm=log ignored: no value above 0, linear scale`. Values that are not
+  numbers (dates): ignored with a note.
+- **`vmin` / `vmax` ≤ 0** typed in the controls: ignored with a note, the
+  smallest / largest value above 0 is used. A single limit beyond the data
+  (only `vmin`, above the largest value) gives both limits that value.
+- **`robust`**: the 2nd / 98th percentiles of the values **above 0** (xarray's
+  own percentiles of every value can be negative, which `LogNorm` refuses).
+- xarray picks a **diverging colormap** (`RdBu_r`) for data of both signs:
+  the log scale passes `center=False` so the sequential default (`viridis`)
+  is kept. **`extend`** (the colorbar arrows) is computed on the values above
+  0 only.
+
+xarray refuses a `vmin` next to a norm with another `vmin`, so the limits go
+into the norm and `vmin` / `vmax` / `robust` are not passed. A `LogNorm`
+object is not JSON: `applied_plot_kwargs` holds `"norm": "LogNorm(vmin=0.001,
+vmax=12.5)"`, `"center": false` and `"extend"`; the layout line gets an item
+`norm log, 0.001 to 12.5` (or `norm log (y axis)`), set by you.
+
+Later: `symlog` for data of both signs, log-spaced histogram bins, a log scale
+on a coordinate axis (pressure levels).
+
+## CF flag variables (0.14)
+
+A variable with `flag_values` or `flag_masks`, and `flag_meanings` (CF
+conventions § 3.5: land cover classes, quality levels, status codes, bit
+flags) is drawn **by meaning**,
+unless the **flags** control (Color) is unchecked. Design and research:
+[`v0.14/CF_FLAGS_PROPOSAL.md`](v0.14/CF_FLAGS_PROPOSAL.md).
+
+1. `read_flag_spec` (`python/sdv_backend/flags.py`) parses the attributes
+   and checks them against the type stored in the file: counts, values that
+   fit the type, no value listed twice, masks not 0, mixed values inside their
+   masks. A problem keeps the plain numeric plot, with a note
+   `CF flags not used (...)`.
+2. The codes are read **raw**: when xarray's `mask_and_scale` changed the
+   variable (an integer with a `_FillValue` becomes float), the file is opened
+   again with `mask_and_scale={name: False}` for this variable only (netcdf4,
+   h5netcdf, scipy, zarr). `_FillValue`, `missing_value` and `valid_range`
+   then mark the points without data, **except a code that is a declared
+   meaning** (`127 = not_measured` is shown as a class).
+3. `prepare_flag_plot` (`plotting/flags.py`) replaces the variable by an
+   index array: 0..n-1 per meaning, NaN without data, one more category
+   `other` (black, with a note) for codes not in `flag_values`. More than
+   20 meanings: only the ones present in the data are listed.
+4. The layout is resolved on that array as for any variable (facets, slices,
+   x / y / hue work the same). The layout line gets an automatic item
+   `flags  flag_values, 8 meanings, colors: flag_colors`.
+
+| Kind     | Drawn as                                                                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| image    | `imshow` / `pcolormesh` with a `ListedColormap` + `BoundaryNorm`: one color per meaning, no data transparent, colorbar ticks `value meaning (share %)` (shared by the facets) |
+| line     | steps (`drawstyle="steps-mid"`) with the meanings on the y-axis; one line: points colored by meaning                                                                          |
+| **bars** | in place of the histogram (a single value, `bins` set, too many dimensions): one bar per meaning, its share of the values with data                                           |
+
+Colors: the `cmap` you set (sampled into one color per meaning), else
+`flag_colors` (not CF, written by ESA CCI Land Cover) when it has one valid
+color per meaning, else `tab10`, `tab20`, `tab20` + `tab20b` + `tab20c`,
+then `turbo`. `vmin`, `vmax` and `robust` are ignored with a note; `bins`
+too (bars).
+
+### Bit flags
+
+With `flag_masks` (alone, or with `flag_values`: bit fields holding a state),
+several flags can be set at once. `prepare_flag_plot` adds a dimension
+`flag` (`flag_`, ... if the name is taken) with one entry per **field**: a
+mask, or, with `flag_values`, a distinct mask whose repeated entries are its
+states (CF example 3.8: `bits 2-3` = offline / calibration / maintenance).
+Each entry holds the category of its meaning where it is set, `not set`
+(grey) elsewhere, NaN without data. One colormap then serves every panel:
+the categories are the meanings, plus `not set`.
+
+The layout engine places `flag` like any free dimension (it comes first, so
+the axes keep the variable's last two dimensions):
+
+| Variable       | Layout                                   | Drawn as                                                                               |
+| -------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| 2D             | `col=flag`                               | one panel per flag, titled `flag = cloud (bit 0)` (titles up to 60 characters, not 30) |
+| 3D             | `row=flag`, `col=<first dimension>`      | one row of panels per flag                                                             |
+| 1D             | image, `y=flag`                          | block plot: one row per flag (tick labels, the first on top unless `yincrease` is set) |
+| a single point | line with `x=flag`, turned into **bars** | the share of the points where each flag is set (`not set` not listed)                  |
+| `bins`, 4D+    | histogram, turned into **bars**          | same                                                                                   |
+
+The colorbar ticks are `bits meaning (share)`, with the value when it is not
+simply all the bits of the mask (`bits 2-3 = 4 offline mode`). Notes: bits
+set in the data but in no `flag_masks`; above 20 fields, the ones never set
+are not drawn; above `MAX_FIELD_POINTS` (50 million: the array holds one
+copy of the data per field), the last fields are left out. On engines that
+cannot read raw, a 64-bit variable read as floats gets a note (bits above
+2^53).
+
+### Selection by meaning and hidden points
+
+Controls of the **Flags** fieldset (`FlagChoice`, then `prepare_flag_plot`):
+
+- **flag_select** (`--flag-select a,b`): `FlagSpec.match` finds the meanings
+  (case, `_`, `-` and spaces ignored). `flag_values`: the chosen ones keep
+  their color, the others merge into one grey category. Bits: only the fields
+  holding a chosen meaning; their other states are `not set or not selected`.
+  Unknown names give a note; no match at all, the selection is ignored.
+- **flag_combine** (`--flag-combine any|all|none`, bits only): the chosen
+  flags (all of them without `flag_select`) become one map, no `flag`
+  dimension, two categories (`cloud OR cloud shadow` / `none of them`). On
+  `flag_values` it is ignored with a note.
+- With either set, the `flags` item of the layout line carries the selection
+  and its source is `user`.
+- **hide_flags** (`--hide-flags a,b`, `api._hide_flags` then
+  `flags.hide_flagged`): after the slices and before the datetime filter, the
+  flag variables named in `ancillary_variables` (same group, valid spec) are
+  read raw if needed, sliced with the same `isel`, and the points where one of
+  the named meanings is set become NaN. Broadcast by dimension name, no
+  coordinate alignment: a flag variable whose dimensions are not the
+  variable's (same sizes) is skipped with a note. Layout item `hide_flags`,
+  note with the count of values hidden.
+
 ## Known limitations
 
 - `imshow` assumes evenly spaced coordinates; irregular grids are drawn
@@ -176,12 +359,18 @@ The JSON result keeps `applied_plot_kwargs` (the kwargs of the call) and adds
 
 ## Code and tests
 
-| What                  | Where                                                                            |
-| --------------------- | -------------------------------------------------------------------------------- |
-| layout decision       | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
-| xarray call           | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
-| controls table, merge | `src/panel/webview/plotParams.ts`                                                |
-| changed outline       | `src/panel/webview/changedFields.ts`, `styles.css`                               |
-| layout line           | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`             |
-| backend tests         | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`, `test_plot_notes.py` |
-| webview tests         | `test/suite/ui/webviewScript.test.ts`                                            |
+| What                 | Where                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| layout decision      | `python/sdv_backend/plotting/layout.py` (`resolve_layout`, `PlotLayout`)         |
+| CF flags             | `python/sdv_backend/flags.py` (parsing, checks), `plotting/flags.py` (drawing)   |
+| flags tests          | `python/tests/test_flags.py` (parsing, plots, selection, `hide_flags`)           |
+| xarray call          | `python/sdv_backend/plotting/draw.py`, `kwargs.py`                               |
+| seaborn colormaps    | `python/sdv_backend/plotting/colormaps.py`; `python/tests/test_colormaps.py`     |
+| log scale            | `python/sdv_backend/plotting/norm.py`; `python/tests/test_plot_norm.py`          |
+| controls table       | `src/panel/webview/plotParams.ts`                                                |
+| levels, store, merge | `src/panel/webview/plotSettings.ts`                                              |
+| settings editor      | `src/panel/webview/plotEditor.ts`                                                |
+| changed outline      | `src/panel/webview/changedFields.ts`, `styles.css`                               |
+| layout line          | `src/panel/webview/render/plotLayout.ts`, `src/shared/plotLayout.ts`             |
+| backend tests        | `python/tests/test_plot_layout.py`, `test_plot_drawing.py`, `test_plot_notes.py` |
+| webview tests        | `test/suite/ui/webviewScript.test.ts`                                            |

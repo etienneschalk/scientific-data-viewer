@@ -13,12 +13,12 @@
 Open NetCDF, Zarr, HDF5, GRIB, GeoTIFF, CDF, JPEG-2000 and Kerchunk files directly in VS Code and VS Code-based editors (Cursor, VSCodium… via Open VSX): browse groups, dimensions, variables and attributes, and plot any variable in one click. Built on xarray.
 
 <div align="center">
-  <img src="media/screenshots/v0.13-plot-facets-dark.png" alt="A (time, lat, lon) temperature variable plotted as one map per month, with the plot controls chosen automatically" width="800">
+  <img src="media/screenshots/v0.14-plot-facets-dark.png" alt="A (time, lat, lon) temperature variable plotted as one map per month, with the plot settings chosen automatically" width="800">
 </div>
 
 <div align="center">
 
-**Current Version: v0.13.1** • [Changelog](./CHANGELOG.md#0131---2026-11-20) • [v0.13.1 release notes](./docs/RELEASE_NOTES_0.13.1.md)
+**Current Version: v0.14.0** • [Changelog](./CHANGELOG.md#0140---unreleased) • [v0.14.0 release notes](./docs/RELEASE_NOTES_0.14.0.md)
 
 Available on:
 [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=eschalk0.scientific-data-viewer) • [Open VSX Registry](https://open-vsx.org/extension/eschalk0/scientific-data-viewer)
@@ -61,32 +61,44 @@ Available on:
 - **Experimental Features**: Configurable experimental features with clear warnings
 - **Zarr v3 alignment**: Opens `.zarr` folders, directories with `zarr.json` / `.zgroup` (via **Open Folder**), and zipped Zarr: `*.zarr.zip` opens on click, other `.zip` archives with **Open Scientific Data Viewer** (right click); requires **zarr-python ≥ 3** with xarray 2026.4+
 - **Kerchunk / virtual Zarr** (experimental): open `*.kerchunk.json` / `*.ref.json`, or use **Open as Kerchunk / virtual Zarr** on JSON/Parquet references (`pip install kerchunk`; not in the default uv env)
+- **CF decoding you can inspect**: File Information shows the decoding mode (**CF decoded**, **degraded** when broken time units forced `decode_times=False`, or **raw**); **Reopen raw** reloads the file without any decoding (masking, scaling, times, coordinates) for investigation. **Troubleshooting > How this file was opened** gives the exact xarray call, each keyword commented with its source
+- **CF flag variables plotted by meaning**: a variable with `flag_values` and `flag_meanings` (land cover classes, quality levels, status codes) is drawn with one color per meaning (the file's `flag_colors` when present) and a colorbar naming each class with its share; 1D flags as steps with the meanings on the y-axis, bars instead of a histogram. Bit flags (`flag_masks`) get one panel per flag, or a block plot along time. The **Flags** controls pick meanings by name (**flag_select**), fold bit flags into one map (**flag_combine**: any / all / none, e.g. `cloud OR cloud_shadow`) and hide the points a quality flag marks (**hide_flags**, through `ancillary_variables`). The **Flags** section of each variable lists the meanings, values, masks and bits; the **flags** plot control turns it off
+- **Log color scale and seaborn colormaps**: the **norm** plot control draws a variable on a logarithmic scale without changing the data (colors follow `log10(value)`, colorbar in data units; log data axis for lines; values ≤ 0 left out and counted in a note). **cmap** also takes seaborn colormaps and palettes with a `seaborn:` prefix (`seaborn:rocket`, `seaborn:mako_r`, `seaborn:light:seagreen`); seaborn is installed in the extension's own environment, optional elsewhere
 
 ## 📸 Screenshot Gallery
 
 **Explore the file structure**
 
 <div align="center">
-  <a href="media/screenshots/v0.13-overview-light.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-overview-light.png" alt="File information and xarray DataTree representation of a NetCDF file">
+  <a href="media/screenshots/v0.14-overview-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-overview-light.png" alt="File information and xarray DataTree representation of a NetCDF file">
   </a>
-  <p><em>File information and the xarray DataTree of a NetCDF file with a nested group</em></p>
+  <p><em>File information and the xarray DataTree of a NetCDF file with a nested group; Plot all in the header</em></p>
 </div>
 
 **Plot any variable**
 
 <div align="center">
-  <a href="media/screenshots/v0.13-plot-map-dark.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-plot-map-dark.png" alt="A 2D elevation variable plotted as a map, dark theme">
+  <a href="media/screenshots/v0.14-plot-map-dark.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-plot-map-dark.png" alt="A 2D elevation variable plotted as a map, dark theme">
   </a>
   <p><em>One click on Create Plot: the layout (x, y, facets) is chosen from the dimensions and shown above the plot</em></p>
 </div>
 
 <div align="center">
-  <a href="media/screenshots/v0.13-controls-light.png" target="_blank">
-    <img width="400" src="media/screenshots/v0.13-controls-light.png" alt="Dimension slices and plot parameters, light theme">
+  <a href="media/screenshots/v0.14-plot-settings-light.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-plot-settings-light.png" alt="Plot settings of a variable, with the tabs This variable and Whole file, light theme">
   </a>
-  <p><em>Slice dimensions and set xarray plot parameters; the controls you change are outlined, the others stay automatic</em></p>
+  <p><em>Settings opens the slices and xarray plot parameters under the button, for this variable, its group or the whole file; values set elsewhere show in grey</em></p>
+</div>
+
+**CF flag variables**
+
+<div align="center">
+  <a href="media/screenshots/v0.14-cf-flags-dark.png" target="_blank">
+    <img width="400" src="media/screenshots/v0.14-cf-flags-dark.png" alt="A land cover variable with flag_values and flag_meanings, its Flags table and its map drawn by meaning, dark theme">
+  </a>
+  <p><em>Variables with CF flags are drawn by meaning: one color per class, named in the colorbar with its share</em></p>
 </div>
 
 ## 📦 Installation
@@ -106,7 +118,7 @@ Available on:
 3. **Install optional Python dependencies**: (prompted by extension)
 
    ```bash
-   pip install netCDF4 h5py rioxarray cfgrib zarr>=3 h5netcdf>=1.8 cdflib
+   pip install netCDF4 h5py rioxarray cfgrib zarr>=3 h5netcdf>=1.8 cdflib seaborn
    ```
 
 4. **Open a supported file 🎉**
@@ -132,6 +144,7 @@ The extension will prompt you to install the following packages if they are not 
    - zarr>=3
    - h5netcdf>=1.8
    - cdflib (for NASA CDF files)
+   - seaborn (for seaborn: colormaps)
 
 Note: Former Python versions may work, but it is not guaranteed nor supported. **xarray 2026.4+ requires zarr-python ≥ 3** — upgrade with `pip install "zarr>=3"` if you still have zarr 2.x.
 
@@ -226,20 +239,21 @@ The data viewer editor shows:
 - **File Information**: Path, size, format, and basic metadata. GeoTIFF files (`.tif` / `.tiff`) opened via rasterio are labeled **Cloud Optimized GeoTIFF (COG)** when GDAL reports `LAYOUT=COG` or tiled overviews; plain striped TIFFs stay **GeoTIFF**.
 - **Xarray HTML and Text Representations**: Users that are used to xarray will be happy to see the well-known views. Uses DataTree or Dataset representation, depending on the file format.
 - **Xarray HTML and Text Representations (for each group)**: Relevant for multi-group datasets. Nested groups are flattened via [`DataTree.to_dataset()`](https://docs.xarray.dev/en/latest/generated/xarray.DataTree.to_dataset.html) (`inherit='all_coords'` by default). By default, group paths are sorted alphabetically; set **`scientificDataViewer.orderGroupsAlphabetically`** to `false` to preserve file order ([Issue #140](https://github.com/etienneschalk/scientific-data-viewer/issues/140)). Dataset representations are always used for groups. Parent coordinates appear on child groups when **`scientificDataViewer.showInheritedCoordinates`** is enabled (default); they are marked with an `inherited_from` attribute.
-- **Global Plot Controls** (:warning: EXPERIMENTAL): Use at your own risk. It will trigger plotting operations for all available variables. It is not optimized at all, and usage is not really recommended.
-- **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with additional plotting controls. Feature parity is not reached yet as no sample data is currently displayed.
+- **Header**: besides export, collapse / expand all (**Expand All** leaves the **Xarray Encoding** sections closed unless **`scientificDataViewer.expandAllIncludesXarrayEncoding`** is enabled) and refresh, **Plot all** plots every data variable of the file (5 at a time; slow on large files), **Cancel all** stops the running plots, the disk icon saves every plot and the bin icon clears them.
+- **Groups**: The extension's data representation proposal. The view is inspired by the xarray HTML representation, with plotting. Feature parity is not reached yet as no sample data is currently displayed.
+  - **Plot**: **Plot group** plots the data variables of the group (its subgroups have their own button); **Settings** opens the plot settings of the group (see [Dimension Slices](#-dimension-slices)); a summary lists the settings that apply.
   - **Dimensions**: Dataset dimensions and their sizes
   - **Coordinates**: All coordinates with their types, shapes, dimension names, and memory usage. Clicking on a coordinate reveals its attributes and its xarray encoding.
   - **Variables**: All data variables with their types, shapes, dimension names, and memory usage. Clicking on a variable's row reveals or hides all its sections at once: **Attributes** (open by default), **Xarray Encoding** (collapsed by default) and **Plot**; each section can also be collapsed on its own. Creating a plot opens the variable.
-    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib. Currently, only an "auto" (best effort) plot mode is supported.
+    - **Plot** (:warning: EXPERIMENTAL): "Create Plot" button for a variable, that tries the best effort to produce a plot of the variable using matplotlib, and **Settings** to set slices and plot parameters for this variable, its group or the whole file. Under the buttons, a summary lists the settings that apply and where they are set.
   - **Attributes**: Show group's attributes.
   - **Xarray Encoding** (collapsed by default): the group's xarray encoding (e.g. `source`, `unlimited_dims`). Groups, coordinates and variables show this section when **`scientificDataViewer.showXarrayEncodingAttributes`** is enabled (default).
 
 ### 📐 Dimension Slices
 
-Dimension Slices let you subset data by dimension index or slice before plotting. They are available in **Global Plot Controls** (dimensions merged from all groups) and, when enabled, in each group's **Group Plot Controls**.
+Dimension Slices let you subset data by dimension index or slice before plotting. They are in the **plot settings**, with the plot parameters: click **Settings** next to **Create Plot** of a variable, or in the **Plot** section of a group card. The settings open under the button, in the page (no pop-up window), one panel at a time; **Escape** closes it and **Enter** in a box plots.
 
-- **Where to find it**: In the plot controls area, look for the **Dimension slices** block. Each dimension of the dataset (or group) has three boxes, **start : stop : step**, and a slider below them.
+- **Where to find it**: In the plot settings, look for the **Dimension slices** block. Each dimension of the variable (or of the group and its subgroups) has three boxes, **start : stop : step**, and a slider below them.
 - **Slice syntax** (Python-style, stop excluded):
   - **Single index**: start with an empty stop, e.g. `130` — use one position along that dimension (a step is then ignored and shown struck through).
   - **Range**: start and stop, e.g. `100` : `120` — from index 100 up to (but not including) 120.
@@ -251,18 +265,19 @@ Dimension Slices let you subset data by dimension index or slice before plotting
 - Slices are applied as xarray's `isel()` before plotting. Invalid slice strings produce a clear error. **Reset** next to the block title clears the slices.
 - **Plot parameters** are grouped below the slices, each with its xarray name above its control:
   - **Facets**: **row** / **col** choose which dimension drives rows and columns in faceted plots (e.g. 3D/4D data with multiple panels); **col_wrap** is an optional positive integer limiting the number of columns, or check **auto** to use xarray `col_wrap='auto'` (xarray 2026.04+).
-  - **Axes**: **x**, **y**, **hue** (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)) choose a dimension or coordinate for the x-axis, y-axis, or hue (e.g. multiple lines); **xincrease** / **yincrease** control the axes direction (uncheck to reverse an axis).
-  - **Color**: **vmin** / **vmax** / **cmap** for the color scale; **robust** uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)); **add_colorbar**.
+  - **Axes**: **x**, **y**, **hue** (see [xarray plotting](https://docs.xarray.dev/en/latest/user-guide/plotting.html)) choose a dimension or coordinate for the x-axis, y-axis, or hue (e.g. multiple lines); **xincrease** / **yincrease** control the axes direction (`false` reverses an axis).
+  - **Color**: **vmin** / **vmax** / **cmap** for the color scale (**cmap** takes a matplotlib name or `seaborn:<name>`, e.g. `seaborn:rocket`); **norm** `log` for a logarithmic scale (values ≤ 0 are not shown); **robust** uses the 2nd and 98th percentiles of the data for color limits so outliers do not dominate (xarray [Robust](https://docs.xarray.dev/en/latest/user-guide/plotting.html#Robust)); **add_colorbar**.
+  - **Flags** (CF flag variables): **flags** draws them by meaning (`false` for plain numbers); **flag_select** names the meanings to draw (commas; case, `_` and spaces ignored); **flag_combine** folds bit flags into one map (**any**, **all**, **none**); **hide_flags** hides the points of a data variable where a flag variable of its `ancillary_variables` has one of these meanings set.
   - **Figure**: **size** / **aspect** for the figure size (xarray: `figsize = (aspect * size, size)` in inches); **bins** for histogram-style plots; **add_legend**.
 
-**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields you changed are outlined** (with a dot after their name), so you can see at a glance what differs from the defaults. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically, and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
+**Automatic layout, one control at a time**: every control is optional. An empty control is chosen automatically for each variable (2D: image; 3D: one column facet per index of the first dimension, 4 per row; 4D: row and column facets; 1D: line), and a control you set is kept while the others stay automatic. Slicing `lat` of a `(time, lat, lon)` variable still gives one image per time step; setting only `col_wrap` changes only the number of columns; setting `x` puts that dimension on the x-axis and lays out the others around it. Dimension slices only select data, they never change the kind of plot. Only `bins` switches to a histogram. **Fields set at the level shown are outlined** (with a dot after their name); an empty field shows in grey what it falls back to. Under each plot, a line shows the plot kind and where each dimension went: items you set are outlined, the others were chosen automatically (click an item to change it), and choices that could not be used (e.g. a facet dimension the variable does not have) are listed with the reason. See [How a plot is made](docs/PLOTTING.md).
 
 The Dimension Slices section includes a link to the [xarray plotting guide](https://docs.xarray.dev/en/latest/user-guide/plotting.html) for reference.
 
-**Global vs. Group (inheritance)**
-The extension uses **inheritance** per field: for each plot parameter, the **group** value is used when set (non-empty), otherwise **global** is used. So the two can be mixed (e.g. group's dimension slices with global's facet row when the group left facet at "None"). Empty or "None" in group selectors (facet row/col, plot x/y/hue, cmap) falls back to global. **Only dimension slices are atomic**: they form one set of inputs (one per dimension); we use either the whole group's dimension-slice set or the whole global's—we do not merge dimension-by-dimension. So one change in a group's dimension slice inputs means that group's full set is used and global's dimension slices are ignored for that group; all other fields (facet row/col, plot x/y/hue, colWrap, aspect, size, robust, cmap, bins, checkboxes) inherit per field (group when set, else global).
+**Levels (inheritance)**
+A setting belongs to a level, shown as a tab of the plot settings: **This variable**, **Group /a** (its variables and those of its subgroups, then each parent group), **Whole file** (the root group). For each plot parameter, and for the slice of each dimension, the **first tab from the left that sets it wins**; without one, it is chosen automatically (true / false parameters take their default). For example, `cmap` = `magma` in **Whole file** and `cmap` = `viridis` for one variable: that variable is drawn in viridis, the others in magma. A slice of `time` for the whole file and a slice of `lat` for a group both apply to the variables of that group. Settings are kept while the tab is open (also through **Refresh**). Before v0.14, the same controls came twice, as **Global Plot Controls** and **Group Plot Controls**, and a group's slices replaced every global slice.
 
-**Feature flags**: **Global Dimension Slices** and **Group Dimension Slices** (both **on by default**) control whether each block is shown. You can turn them on or off in [Settings](#️-settings). To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
+To subset time, slice its dimension by index (e.g. `0:24:2`); the former **Time Controls** (datetime range) were removed in v0.13.
 
 ### 🖼️ Export Webview Content
 
@@ -400,15 +415,6 @@ The extension includes specific settings for virtual environment management:
   - When enabled, the extension builds the **Scientific Data Structure** tree in the Explorer sidebar. **On by default.** Set to **false** to skip outline build for faster loads.
   - **Reload the window** (`Developer: Reload Window`) after changing this setting — the sidebar pane and tree provider are registered at activation.
 
-**Plot controls (Global and Group)**
-
-- **`scientificDataViewer.globalDimensionSlices`**
-  - (type: `boolean`, default: `true`)
-  - Show **Global Dimension Slices** (dimension inputs, facet row/col, x/y/hue, bins) in the plot controls area, with dimensions merged from all groups. **On by default.**
-- **`scientificDataViewer.groupDimensionSlices`**
-  - (type: `boolean`, default: `true`)
-  - Show **Group Dimension Slices** per group (dimension inputs, facet row/col, x/y/hue, bins) in each group's Plot Controls section. **On by default.** Per-field inheritance: group value when set (non-empty), else global. Only dimension slices are atomic (whole group set or whole global).
-
 **Display**
 
 - **`scientificDataViewer.orderGroupsAlphabetically`**
@@ -417,6 +423,9 @@ The extension includes specific settings for virtual environment management:
 - **`scientificDataViewer.showXarrayEncodingAttributes`**
   - (type: `boolean`, default: `true`)
   - When enabled (**default**), groups, coordinates, and variables get an **Xarray Encoding** section (collapsed by default, next to their attributes) listing their xarray encoding (e.g. `_FillValue`, `dtype`, chunking, compression, Zarr codecs). Disable to hide these sections. Use **Refresh** (🔄) after changing.
+- **`scientificDataViewer.expandAllIncludesXarrayEncoding`**
+  - (type: `boolean`, default: `false`)
+  - When enabled, **Expand All** (button in the viewer's header) also opens the **Xarray Encoding** sections of groups, coordinates and variables. **Off by default**: encodings are long and fill the page, so Expand All opens every other section and leaves them closed; open one by clicking its title. Exported HTML pages keep this choice. Applies at the next load or **Refresh** of a viewer.
 - **`scientificDataViewer.showInheritedCoordinates`**
   - (type: `boolean`, default: `true`)
   - When enabled (**default**), child groups in multi-group NetCDF / Zarr DataTrees include coordinates inherited from parent nodes (`DataTree.to_dataset(inherit='all_coords')`). Inherited coordinates are tagged with an `inherited_from` attribute. Disable to list only coordinates stored on that group. Use **Refresh** (🔄) after changing.
@@ -429,6 +438,43 @@ The extension includes specific settings for virtual environment management:
 - **`scientificDataViewer.showLoadTimeInLocalTime`**
   - (type: `boolean`, default: `true`)
   - When enabled (**default**), the **Loaded:** timestamp at the top right of the viewer is shown in your local time zone, with its UTC offset (e.g. `2026-10-29T14:03:12.345+01:00`). Disable to show it in UTC (e.g. `2026-10-29T13:03:12.345Z`). Applies at the next load or **Refresh** (🔄).
+
+**Decoding (xarray)**
+
+- **`scientificDataViewer.decoding.maskAndScale`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`mask_and_scale`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): mask `_FillValue` / `missing_value` (or a raster's nodata) with NaN and apply `scale_factor` / `add_offset`. **default** lets the engine decide (on), except for GeoTIFF / JPEG-2000 where the viewer keeps raw integer values. CDF (cdflib): **on** passes `fillval_to_nan=True`. To look at one file without any decoding, use **Reopen raw** in the viewer instead. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default (on), except GeoTIFF / JPEG-2000: off (raw integer values, nodata kept as an attribute)
+    - `"on"`: Mask \_FillValue / nodata with NaN and apply scale_factor / add_offset
+    - `"off"`: Keep the stored values: no masking, no scaling
+- **`scientificDataViewer.decoding.decodeTimes`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`decode_times`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode variables with CF time units (`days since 2000-01-01`) into dates. **off** also turns `decode_timedelta` off. When time units cannot be decoded, the viewer already retries with times off and shows **degraded** in File Information. CDF (cdflib): **off** passes `to_datetime=False`. Date axes and the time filter need decoded times. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default (on)
+    - `"on"`: Decode CF times (units 'days since ...') into dates
+    - `"off"`: Keep times as stored numbers (also turns decode_timedelta off)
+- **`scientificDataViewer.decoding.decodeCoords`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`decode_coords`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): **coordinates** turns the variables named in a `coordinates` attribute into coordinates; **all** also those named in `bounds`, `grid_mapping`, `ancillary_variables`...; **off** keeps every variable as a data variable. Does not apply to GeoTIFF / JPEG-2000 (rioxarray only supports `all`) nor CDF. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default ('coordinates')
+    - `"coordinates"`: Variables named in a 'coordinates' attribute become coordinates
+    - `"all"`: Also variables named in bounds, grid_mapping, ancillary_variables...
+    - `"off"`: Keep every variable as a data variable
+- **`scientificDataViewer.decoding.useCftime`**
+  - (type: `string`, default: `"default"`)
+  - xarray [`use_cftime`](https://docs.xarray.dev/en/stable/generated/xarray.open_dataset.html): decode dates as `cftime` objects (**on**) or numpy `datetime64` (**off**). **default** uses `datetime64` when the calendar allows it. GeoTIFF / JPEG-2000: rioxarray always decodes to cftime; the viewer converts standard-calendar times to `datetime64` unless this is **on**. Use **Refresh** (🔄) after changing.
+  - Values:
+    - `"default"`: Engine default: numpy datetime64 when possible, cftime otherwise
+    - `"on"`: Always cftime objects
+    - `"off"`: Always numpy datetime64 (non-standard calendars fail to decode)
+- **`scientificDataViewer.engineBackendKwargs`**
+  - (type: `object`, default: `{}`)
+  - Extra `backend_kwargs` passed to `xarray.open_dataset` / `open_datatree`, per engine, e.g. `{"h5netcdf": {"phony_dims": "sort"}}` or `{"cfgrib": {"filter_by_keys": {"typeOfLevel": "surface"}}}`.
+  - **Allowed keys only**: `netcdf4`: `auto_complex`; `h5netcdf`: `phony_dims`, `invalid_netcdf`, `decode_vlen_strings`; `scipy`: `mmap`; `zarr`: `consolidated`, `zarr_format`, `use_zarr_fill_value_as_mask`; `cfgrib`: `filter_by_keys`, `read_keys`, `ignore_keys`, `encode_cf`, `squeeze`, `time_dims`, `errors`, `extra_coords`, `coords_as_attributes`, `cache_geo_coords`; `rasterio`: `parse_coordinates`, `masked`, `default_name`. Other keys (writing modes, `storage_options`, drivers, credentials...) are ignored and listed in **Troubleshooting > How this file was opened**.
+  - For safety this setting is **read from your user settings only**: a value in a workspace `.vscode/settings.json` (e.g. in a cloned repository) is ignored. Use **Refresh** (🔄) after changing.
 
 ## 🔧 Troubleshooting
 
@@ -457,10 +503,13 @@ The extension includes specific settings for virtual environment management:
 6. **zarr 2.x reported as missing or too old**:
    - xarray **2026.4+** requires **zarr-python ≥ 3**. The extension surfaces `zarr>=3` in healthcheck and missing-package messages. Upgrade: `pip install "zarr>=3"`. Zarr **v2 data on disk** remains readable through zarr-python 3. If you use **Use Extension Own Environment**, the environment is rebuilt automatically after the extension update; otherwise run **Manage Extension Virtual Environment → Recreate**.
 
-7. **Large files not loading**:
+7. **Values look wrong (scaled, masked, times)**:
+   - Open **Troubleshooting > How this file was opened** at the end of the viewer: it shows the xarray call that opened the file, each keyword with its source (viewer default, setting, time fallback, raw mode), and the settings that did not apply. **Reopen raw** (File Information) shows the values as stored, without `scale_factor` / `add_offset`, `_FillValue` masking or time decoding. The **Decoding** settings (`scientificDataViewer.decoding.*`) change the decoding of every file; `scientificDataViewer.engineBackendKwargs` passes extra engine options (allowed keys only, user settings only).
+
+8. **Large files not loading**:
    - Increase the `maxFileSize` setting. Consider using data slicing for very large datasets.
 
-8. **Permission errors**:
+9. **Permission errors**:
    - Ensure the extension has permission to read your data files. Check file permissions and VSCode workspace settings.
 
 ### 💬 Getting Help

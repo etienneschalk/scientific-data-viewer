@@ -1,19 +1,10 @@
 import { ICONS } from '../../shared/icons';
 import { CreatePlotResponse } from '../../shared/plotLayout';
 import { messageBus } from './bus';
-import {
-    invalidPlotParameters,
-    mergePlotControls,
-    readPlotControls,
-} from './plotParams';
+import { plotRequestFor, variableGroup } from './plotSettings';
 import { renderPlotLayout } from './render/plotLayout';
 import { activePlotOperations, globalState, plotAllState } from './state';
-import {
-    findByData,
-    generateDefaultFileName,
-    setMultilineText,
-    uniqueId,
-} from './util';
+import { generateDefaultFileName, setMultilineText, uniqueId } from './util';
 
 /**
  * Every per-variable action works on the variable's `.variable-plot-controls`
@@ -181,16 +172,20 @@ function plotImageData(controls: HTMLElement): string | null {
     return img ? (img.src.split(',')[1] ?? null) : null;
 }
 
+/** While Plot all or Plot group runs, both kinds of buttons are disabled. */
 function updatePlotAllUI(isRunning: boolean): void {
     const button = document.getElementById(
         'createAllPlotsButton',
     ) as HTMLButtonElement | null;
     if (button) {
         button.disabled = isRunning;
-        button.innerHTML = isRunning
-            ? 'Plotting...'
-            : `${ICONS.warning} Plot All`;
+        button.innerHTML = `${ICONS.play}<span>${isRunning ? 'Plotting...' : 'Plot all'}</span>`;
     }
+    document
+        .querySelectorAll<HTMLButtonElement>('[data-action="plot-group"]')
+        .forEach((groupButton) => {
+            groupButton.disabled = isRunning;
+        });
     updateCancelButtonVisibility();
 }
 
@@ -204,72 +199,7 @@ function updateCancelButtonVisibility(): void {
         'hidden',
         count === 0 && !plotAllState.running,
     );
-    cancelButton.innerHTML = `${ICONS.stop} Cancel All${count > 0 ? ` (${count})` : ''}`;
-}
-
-function getVariableGroup(variable: string): string {
-    if (!variable.includes('/')) {
-        return '/';
-    }
-    const group = variable.slice(0, variable.lastIndexOf('/'));
-    return group === '' ? '/' : group;
-}
-
-/** The Global Plot Controls and the variable's Group Plot Controls, if any. */
-function plotControlSections(variable: string): {
-    globalSection: HTMLElement | null;
-    groupSection: HTMLElement | null;
-} {
-    return {
-        globalSection: document.getElementById('section-global-plot-controls'),
-        groupSection: findByData(
-            document,
-            '.group-plot-controls-section',
-            'group',
-            getVariableGroup(variable),
-        ),
-    };
-}
-
-/**
- * Numbers typed wrong in the controls that apply to the variable. A wrong
- * global value only counts when the group does not override it.
- */
-function invalidPlotOptions(controls: HTMLElement): string[] {
-    const { variable } = plotParts(controls);
-    const { globalSection, groupSection } = plotControlSections(variable);
-    const groupValues = groupSection ? readPlotControls(groupSection) : null;
-    const groupInvalid = groupSection
-        ? invalidPlotParameters(groupSection).map(
-              ({ message }) =>
-                  `Group Plot Controls (${getVariableGroup(variable)}): ${message}`,
-          )
-        : [];
-    const globalInvalid = globalSection
-        ? invalidPlotParameters(globalSection)
-              .filter(({ key }) => groupValues?.[key] === undefined)
-              .map(({ message }) => `Global Plot Controls: ${message}`)
-        : [];
-    return [...groupInvalid, ...globalInvalid];
-}
-
-/**
- * Everything createPlot needs for one variable: the variable's group
- * controls override the global ones field by field (see mergePlotControls).
- */
-function resolvePlotOptions(controls: HTMLElement): Record<string, unknown> {
-    const { variable } = plotParts(controls);
-    const { globalSection, groupSection } = plotControlSections(variable);
-
-    const params = mergePlotControls(
-        groupSection ? readPlotControls(groupSection) : null,
-        readPlotControls(globalSection ?? document.createElement('div')),
-    );
-
-    return {
-        variable,
-        ...params,
-    };
+    cancelButton.innerHTML = `${ICONS.stop}<span>Cancel all${count > 0 ? ` (${count})` : ''}</span>`;
 }
 
 /** Drop unset fields (undefined / null / '' / empty object) from plot options. */
@@ -289,14 +219,52 @@ function compactPlotPayload(
     return payload;
 }
 
+/** Request each displayed plot was made with, to tell when the settings changed. */
+const plottedWith = new Map<HTMLElement, string>();
+
+function setPlotStale(controls: HTMLElement, stale: boolean): void {
+    controls
+        .querySelector('.plot-stale-note')
+        ?.classList.toggle('hidden', !stale);
+}
+
+function rememberPlotSettings(controls: HTMLElement, request: string): void {
+    plottedWith.set(controls, request);
+    refreshStalePlots();
+}
+
+function forgetPlotSettings(controls: HTMLElement): void {
+    plottedWith.delete(controls);
+    setPlotStale(controls, false);
+}
+
+/**
+ * After a change of the settings: next to each displayed plot, say whether
+ * the settings that apply to it changed since it was made.
+ */
+export function refreshStalePlots(): void {
+    for (const [controls, request] of plottedWith) {
+        if (!controls.isConnected) {
+            plottedWith.delete(controls);
+            continue;
+        }
+        const { options } = plotRequestFor(controls.dataset.variable ?? '');
+        setPlotStale(
+            controls,
+            JSON.stringify(compactPlotPayload(options)) !== request,
+        );
+    }
+}
+
 type PlotOutcome = 'success' | 'error' | 'cancelled';
 
 /** Create the plot of one variable block and display the result. */
 export async function createVariablePlot(
     controls: HTMLElement,
 ): Promise<PlotOutcome> {
-    // Plotting without them would silently ignore what the user typed
-    const invalid = invalidPlotOptions(controls);
+    // Settings of the variable, its groups and the file (plotSettings.ts).
+    // Plotting without the numbers typed wrong would silently ignore them.
+    const { options, invalid } = plotRequestFor(plotParts(controls).variable);
     if (invalid.length > 0) {
         revealPlotSection(controls);
         plotParts(controls).image.innerHTML = '';
@@ -308,10 +276,8 @@ export async function createVariablePlot(
         return 'error';
     }
     const operationId = `plot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const payload = {
-        ...compactPlotPayload(resolvePlotOptions(controls)),
-        operationId,
-    };
+    const sent = compactPlotPayload(options);
+    const payload = { ...sent, operationId };
 
     displayVariablePlotLoading(controls);
     activePlotOperations.add(operationId);
@@ -327,12 +293,18 @@ export async function createVariablePlot(
             return 'cancelled';
         }
         displayVariablePlot(controls, response);
+        if (plotImageData(controls)) {
+            rememberPlotSettings(controls, JSON.stringify(sent));
+        } else {
+            forgetPlotSettings(controls);
+        }
         return 'success';
     } catch (error) {
         if (cancelledPlotOperations.has(operationId)) {
             return 'cancelled';
         }
         console.error('Failed to create plot:', error);
+        forgetPlotSettings(controls);
         plotParts(controls).image.innerHTML = '';
         displayVariablePlotError(
             controls,
@@ -417,13 +389,37 @@ async function notify(
     }
 }
 
+/** Plot all: every data variable of the file. */
 export async function handleCreateAllPlots(): Promise<void> {
-    if (messageBus.isDegradedMode) {
+    await plotMany(allPlotControls(), 'Plot all');
+}
+
+/** Plot group: the data variables of the group of the button (not its subgroups). */
+export async function handlePlotGroup(button: HTMLElement): Promise<void> {
+    const group = button.closest<HTMLElement>('[data-settings-scope]')?.dataset
+        .group;
+    if (group === undefined) {
+        return;
+    }
+    await plotMany(
+        allPlotControls().filter(
+            (controls) =>
+                variableGroup(controls.dataset.variable ?? '') === group,
+        ),
+        `Plot group ${group}`,
+    );
+}
+
+async function plotMany(
+    candidates: HTMLElement[],
+    label: string,
+): Promise<void> {
+    if (messageBus.isDegradedMode || plotAllState.running) {
         return;
     }
     // A variable whose plot is already running keeps that run: plotting it a
     // second time would leave one of the two processes out of reach of Cancel
-    const controlsList = allPlotControls().filter(
+    const controlsList = candidates.filter(
         (controls) => !runningPlots.has(controls),
     );
     if (controlsList.length === 0) {
@@ -459,7 +455,7 @@ export async function handleCreateAllPlots(): Promise<void> {
         const failed = results.length - successful - skipped;
 
         if (!plotAllState.cancelled || successful > 0) {
-            let message = `Plot all: ${successful} successful`;
+            let message = `${label}: ${successful} successful`;
             if (failed > 0) {
                 message += `, ${failed} failed`;
             }
@@ -512,6 +508,7 @@ export async function handleCancelAllPlots(): Promise<void> {
 
 export function resetVariablePlot(controls: HTMLElement): void {
     const { container, image } = plotParts(controls);
+    forgetPlotSettings(controls);
     showPlotLayout(controls, null);
     image.innerHTML = '';
     container.classList.add('hidden');
@@ -641,4 +638,10 @@ export function hidePlotControlsForBrowser(): void {
             });
         container.classList.remove('hidden');
     });
+    // Group Plot sections keep their settings summary, not their buttons
+    document
+        .querySelectorAll<HTMLElement>('.group-plot-section .plot-controls-row')
+        .forEach((row) => {
+            row.style.display = 'none';
+        });
 }

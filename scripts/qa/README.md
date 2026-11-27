@@ -92,13 +92,15 @@ node scripts/qa/webview/run-all.mjs            # render, controls, cancel (~5 mi
 node scripts/qa/webview/cancel.mjs             # one file
 ```
 
-| File           | Covers                                                                                                                                                           |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `render.mjs`   | injection through every hostile fixture (live page and exported HTML), error pages, cards, narrow widths, refresh, **Empty** size of 0-byte variables, big files |
-| `controls.mjs` | dimension slices (typing, pasting, slider drags), Reset per block, plot parameters, group overrides, load time in time zones                                     |
-| `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                                                      |
+| File           | Covers                                                                                                                                                                                                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render.mjs`   | injection through every hostile fixture (live page, every plot settings editor, summaries, exported HTML), error pages, cards, header at narrow widths, refresh, **Empty** size of 0-byte variables, big files                                                                                                                |
+| `controls.mjs` | plot settings editor (none built in advance, tabs), dimension slices (typing, pasting, slider drags), Reset per block (stored settings too), plot parameters (`seaborn:` cmap, `norm` log), levels (variable over file, slices per dimension, true / false fall back), summaries, "settings changed", load time in time zones |
+| `cancel.mjs`   | Cancel, Cancel All, Plot All, cancel races (uses `slow.nc`)                                                                                                                                                                                                                                                                   |
 
 Each check prints `PASS` / `FAIL` with its evidence; the exit code is 1 when one fails. Screenshots and exported pages go to `artefacts/qa/webview/`.
+
+`controls.mjs` plots with `seaborn:mako`: `$SDV_PYTHON` needs seaborn. The extension's environment has it from 0.14 (`ENVIRONMENT_REVISION` 3), and so do `.venv` (`requirements-dev.txt`) and `artefacts/backend-env`; an extension environment created by 0.13 and not rebuilt yet does not (`SDV_PYTHON=.venv/bin/python node scripts/qa/webview/controls.mjs`).
 
 ## Extension host end to end — `e2e/`
 

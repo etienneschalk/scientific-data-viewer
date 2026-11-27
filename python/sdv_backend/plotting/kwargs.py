@@ -3,16 +3,30 @@
 Where the data goes (x, y, hue, facets, figure size) is decided by
 ``layout.resolve_layout``; this module only filters the style options the
 user set down to the ones the chosen plot kind accepts.
+
+The kwargs are kept as JSON-friendly values (they are returned as
+``applied_plot_kwargs``); the objects matplotlib needs in their place (a
+seaborn ``Colormap``, a ``LogNorm``) are in ``objects`` and swapped in by
+``for_call`` just before the xarray call.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from sdv_backend._bootstrap import logger
 from sdv_backend.plotting.layout import PlotKind
 
 # Options of a color-mapped plot, rejected by line and histogram artists
-COLOR_MESH_KEYS: tuple[str, ...] = ("cmap", "vmin", "vmax", "robust", "add_colorbar")
+COLOR_MESH_KEYS: tuple[str, ...] = (
+    "cmap",
+    "vmin",
+    "vmax",
+    "robust",
+    "add_colorbar",
+    "norm",
+    "center",
+    "extend",
+)
 
 # The only style options a histogram takes (see xarray's plot.hist)
 HISTOGRAM_KEYS: tuple[str, ...] = ("bins", "xincrease", "yincrease")
@@ -23,6 +37,8 @@ class PlotKwargsBundle:
     """Style kwargs the user set; ``for_kind`` keeps those a plot kind accepts."""
 
     raw: dict[str, Any]
+    # Objects passed to xarray in place of the readable value of the same key
+    objects: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
     def build(
@@ -32,11 +48,14 @@ class PlotKwargsBundle:
         xincrease: bool | None = None,
         yincrease: bool | None = None,
         cmap: str | None = None,
+        cmap_object: Any = None,
         vmin: int | float | None = None,
         vmax: int | float | None = None,
         add_colorbar: bool = True,
         add_legend: bool = False,
     ) -> "PlotKwargsBundle":
+        """``cmap_object``: the colormap of a ``seaborn:`` name (``cmap`` is
+        kept as text for the result)."""
         plot_kwargs: dict[str, Any] = {}
         if bins is not None and bins >= 1:
             plot_kwargs["bins"] = bins
@@ -56,7 +75,24 @@ class PlotKwargsBundle:
             plot_kwargs["add_colorbar"] = False
         if add_legend:
             plot_kwargs["add_legend"] = True
-        return PlotKwargsBundle(raw=plot_kwargs)
+        objects = {"cmap": cmap_object} if cmap_object is not None else {}
+        return PlotKwargsBundle(raw=plot_kwargs, objects=objects)
+
+    def with_kwargs(
+        self,
+        kwargs: dict[str, Any],
+        *,
+        objects: dict[str, Any] | None = None,
+        drop: tuple[str, ...] = (),
+    ) -> "PlotKwargsBundle":
+        """A copy with ``drop`` removed and ``kwargs`` (and their objects) added."""
+        raw = {k: v for k, v in self.raw.items() if k not in drop}
+        kept = {k: v for k, v in self.objects.items() if k not in drop}
+        return replace(self, raw={**raw, **kwargs}, objects={**kept, **(objects or {})})
+
+    def for_call(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """``kwargs`` with the objects matplotlib needs in place of their text."""
+        return {k: self.objects.get(k, v) for k, v in kwargs.items()}
 
     def for_kind(self, kind: PlotKind, *, hue: bool) -> dict[str, Any]:
         """Kwargs a plot kind accepts.

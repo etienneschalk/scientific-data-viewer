@@ -28,41 +28,56 @@ import { escapeHtml } from './util';
 type SlicePart = 'start' | 'stop' | 'step';
 const PARTS: SlicePart[] = ['start', 'stop', 'step'];
 
-/** Element ids: the start box keeps the historical id of the single input. */
-function sliceInputId(
-    groupSafeId: string | undefined,
-    dimName: string,
-): string {
-    return groupSafeId === undefined
-        ? `dim-slice-${joinId([dimName])}`
-        : `group-dim-${groupSafeId}-${joinId([dimName])}`;
+/** Text of the start, stop and step boxes of one dimension. */
+export type SliceTexts = [string, string, string];
+
+/** Slice of a level after the one being edited, named in the field's hint. */
+export interface InheritedSlice {
+    texts: SliceTexts;
+    /** Where it is set: `file`, `group /a`... */
+    source: string;
+}
+
+export interface SliceRenderContext {
+    /** Boxes of the level being edited */
+    values: Record<string, SliceTexts>;
+    /** Slice each empty dimension falls back to */
+    inherited: Record<string, InheritedSlice | undefined>;
+}
+
+/** Element ids (one editor is open at a time); the start box has the base id. */
+function sliceInputId(dimName: string): string {
+    return `plot-slice-${joinId([dimName])}`;
 }
 
 /**
- * Field of every dimension: label, the three boxes, then the slider (not
- * shown for dimensions of size 1).
+ * Field of every dimension: label (size, and the slice it inherits), the
+ * three boxes, then the slider (not shown for dimensions of size 1). Call
+ * `initDimensionSliceRows` once the markup is in the page.
  */
 export function renderDimensionSliceFields(
     dimSizes: Record<string, number>,
-    groupName: string | null,
-    groupSafeId?: string,
+    context: SliceRenderContext,
 ): string {
-    const groupAttr =
-        groupName === null ? '' : ` data-group="${escapeHtml(groupName)}"`;
     return Object.keys(dimSizes)
         .sort()
         .map((dimName) => {
             const size = dimSizes[dimName];
-            const id = sliceInputId(groupSafeId, dimName);
+            const id = sliceInputId(dimName);
             const dim = escapeHtml(dimName);
+            const texts = context.values[dimName] ?? ['', '', ''];
+            const inherited = context.inherited[dimName];
+            const inheritedText = inherited
+                ? ` · ${sliceDisplay(inherited.texts)} (${inherited.source})`
+                : '';
             const part = (name: SlicePart) =>
-                /*html*/ `<input type="text" id="${name === 'start' ? id : `${id}-${name}`}" class="dimension-slice-input slice-part" data-part="${name}" data-dimension="${dim}"${groupAttr} placeholder="${name}" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" aria-label="${dim} ${name}" />`;
+                /*html*/ `<input type="text" id="${name === 'start' ? id : `${id}-${name}`}" class="dimension-slice-input slice-part" data-part="${name}" data-dimension="${dim}" value="${escapeHtml(texts[PARTS.indexOf(name)])}" placeholder="${name}" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" aria-label="${dim} ${name}" />`;
             const max = Math.max(size - 1, 0);
             const handle = (name: 'from' | 'to', value: number) =>
                 /*html*/ `<input type="range" id="${id}-${name}" class="slice-range-handle" min="0" max="${max}" step="1" value="${value}" aria-label="${dim} ${name === 'from' ? 'first' : 'last'} index" />`;
             return /*html*/ `
                 <div class="plot-field dimension-slice-row" data-dimension="${dim}" data-size="${escapeHtml(size)}">
-                    <label for="${id}" class="plot-field-label"><span class="plot-field-name">${dim}</span><span class="plot-field-hint">size ${escapeHtml(size)}</span></label>
+                    <label for="${id}" class="plot-field-label" title="${escapeHtml(`size ${size}${inheritedText}`)}"><span class="plot-field-name">${dim}</span><span class="plot-field-hint">size ${escapeHtml(size)}${escapeHtml(inheritedText)}</span></label>
                     <div class="slice-boxes" role="group" aria-label="${dim} slice">
                         ${part('start')}<span class="slice-colon" aria-hidden="true">:</span>${part('stop')}<span class="slice-colon" aria-hidden="true">:</span>${part('step')}
                     </div>
@@ -109,9 +124,11 @@ function boxTexts(field: SliceField): [string, string, string] {
     return [start.value.trim(), stop.value.trim(), step.value.trim()];
 }
 
-/** Value of one dimension: undefined, an index, or a slice string. */
-function sliceValue(field: SliceField): string | number | undefined {
-    const [start, stop, step] = boxTexts(field);
+/** Value sent for one dimension: undefined, an index, or a slice string. */
+export function sliceValueFromTexts(
+    texts: SliceTexts,
+): string | number | undefined {
+    const [start, stop, step] = texts.map((text) => text.trim());
     if (!start && !stop && !step) {
         return undefined;
     }
@@ -122,22 +139,25 @@ function sliceValue(field: SliceField): string | number | undefined {
     return `${start}:${stop}${step ? `:${step}` : ''}`;
 }
 
-/** Dimension slices typed under `root`: {dim: int | "slice string"}. */
-export function readDimensionSlices(
-    root: ParentNode,
-): Record<string, string | number> {
-    const dimensionSlices: Record<string, string | number> = {};
+/** Slice as the summaries show it: `5`, `0:12:3`; '' when not set. */
+export function sliceDisplay(texts: SliceTexts): string {
+    const value = sliceValueFromTexts(texts);
+    return value === undefined ? '' : String(value);
+}
+
+/** Boxes of every dimension under `root`, empty ones included. */
+export function readSliceTexts(root: ParentNode): Record<string, SliceTexts> {
+    const slices: Record<string, SliceTexts> = {};
     root.querySelectorAll<HTMLElement>('.dimension-slice-row').forEach(
         (row) => {
             const field = sliceField(row);
             const dim = row.dataset.dimension;
-            const value = field ? sliceValue(field) : undefined;
-            if (dim && value !== undefined) {
-                dimensionSlices[dim] = value;
+            if (field && dim) {
+                slices[dim] = boxTexts(field);
             }
         },
     );
-    return dimensionSlices;
+    return slices;
 }
 
 /** Index typed in a box, counted from the end when negative; null if not an integer. */
@@ -357,19 +377,14 @@ export function handleDimensionSliceEvent(target: EventTarget | null): void {
     }
 }
 
-/** Clear every dimension slice under `root` (boxes and sliders). */
-export function resetDimensionSlices(root: ParentNode): void {
+/** Slider and box state of every field under `root`, from its boxes (after rendering). */
+export function initDimensionSliceRows(root: ParentNode): void {
     root.querySelectorAll<HTMLElement>('.dimension-slice-row').forEach(
         (row) => {
             const field = sliceField(row);
-            if (!field) {
-                return;
+            if (field) {
+                syncHandlesFromBoxes(field);
             }
-            PARTS.forEach((part) => {
-                field.boxes[part].value = '';
-            });
-            updateBoxState(field);
-            setHandles(field, 0, Math.max(field.size - 1, 0));
         },
     );
 }

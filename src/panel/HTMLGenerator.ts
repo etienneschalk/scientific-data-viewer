@@ -196,10 +196,16 @@ export class HTMLGenerator {
         }</small></div>
         <div class="controls" id="header-controls">
             ${this.generateTimestamp(lastLoadTime, useLocalTime)}
+            <div class="plot-toolbar" role="group" aria-label="Plots">
+                <button id="createAllPlotsButton" class="header-text-button" title="Plot every data variable of the file, 5 at a time (slow on large files)">${ICONS.play}<span>Plot all</span></button>
+                <button id="cancelAllPlotsButton" class="header-text-button cancel-button hidden" title="Cancel every running plot">${ICONS.stop}<span>Cancel all</span></button>
+                <button id="saveAllPlotsButton" class="header-control-button" title="Save all plots" aria-label="Save all plots">${ICONS.save}</button>
+                <button id="resetAllPlotsButton" class="header-control-button" title="Clear all plots (the plot settings are kept)" aria-label="Clear all plots">${ICONS.trash}</button>
+            </div>
             <div class="tree-controls">
                 <button id="exportWebviewButton" class="header-control-button" title="Export Webview Content" aria-label="Export Webview Content">${ICONS.export}</button>
                 <button id="collapseAllButton" class="header-control-button" title="Collapse All Sections" aria-label="Collapse All Sections">${ICONS.collapseAll}</button>
-                <button id="expandAllButton" class="header-control-button" title="Expand All Sections" aria-label="Expand All Sections">${ICONS.expandAll}</button>
+                <button id="expandAllButton" class="header-control-button" title="Expand All Sections (except Xarray Encoding)" aria-label="Expand All Sections (except Xarray Encoding)">${ICONS.expandAll}</button>
                 <button id="refreshButton" class="header-control-button" title="Refresh" aria-label="Refresh">${ICONS.refresh}</button>
             </div>
         </div>
@@ -235,7 +241,6 @@ export class HTMLGenerator {
         ${this.generateTextRepresentation()}
         ${this.generateHtmlRepresentationForGroups()}
         ${this.generateTextRepresentationForGroups()}
-        ${this.generatePlottingSections()}
         ${this.generateDimensionsAndVariables()}
         ${this.generateTroubleshooting()}
     </div>
@@ -315,6 +320,15 @@ export class HTMLGenerator {
                 <summary><h3>Troubleshooting</h3></summary>
                 <div class="info-section">
                     <details open>
+                        <summary>How this file was opened</summary>
+                            <button data-target-id="openReport" class="text-copy-button">
+                                Copy
+                            </button>
+                            <pre id="openReport">Loading...</pre>
+                    </details>
+                </div>
+                <div class="info-section">
+                    <details open>
                         <summary>Python Interpreter Path</summary>
                             <button data-target-id="pythonPath" class="text-copy-button">
                                 Copy
@@ -340,45 +354,6 @@ export class HTMLGenerator {
                             <pre id="showVersions">Loading version information...</pre>
                     </details>
                 </div>
-            </details>
-        </div>`;
-    }
-
-    static generatePlottingSections(): string {
-        return /*html*/ `
-        <div class="info-section">
-            <details class="sticky-group-details" id="section-global-plot-controls">
-                <summary><h3>Global Plot Controls</h3></summary>
-                <div class="global-plot-controls">
-                    <button id="createAllPlotsButton" class="plot-control-button" title="Not optimized for large datasets, can cause crashes">${ICONS.warning} Plot All</button>
-                    <button id="cancelAllPlotsButton" class="plot-control-button cancel-button hidden" title="Cancel all running plot operations">${ICONS.stop} Cancel All</button>
-                    <button id="resetAllPlotsButton" class="plot-control-button">Reset All Plots</button>
-                    <button id="saveAllPlotsButton" class="plot-control-button">Save All Plots</button>
-                </div>
-
-                <!-- One card: dimension slices, plot parameters -->
-                <div class="plot-controls-card"><div class="plot-controls-content">
-                    <!-- Dimension Slices (Issue #117) and plot parameters -->
-                    <div class="dimension-slices-section" style="display: none;">
-                        <div class="plot-controls-subsection dimension-slices-isel">
-                            <div class="plot-controls-heading">
-                                <h5 class="plot-controls-subsection-title">Dimension slices <code>isel</code></h5>
-                                <button type="button" id="clearDimensionSlicesButton" class="plot-reset-button" data-action="clear-plot-controls" title="Clear the dimension slices">Reset</button>
-                            </div>
-                            <p class="dimension-slices-hint">Start with an empty stop selects one index (<code>130</code>); start, stop and step select a slice (<code>100:120</code>, <code>0:24:2</code>; stop excluded; negative counts from the end). The slider moves start and stop. See <a href="https://docs.xarray.dev/en/stable/user-guide/indexing.html" target="_blank" rel="noopener noreferrer">Indexing and selecting data</a>.</p>
-                            <div id="dimensionSlicesContainer" class="plot-fields plot-fields--slices"></div>
-                        </div>
-                        <div class="plot-controls-subsection plot-parameters">
-                            <div class="plot-controls-heading">
-                                <h5 class="plot-controls-subsection-title">Plot parameters <code>plot</code></h5>
-                                <button type="button" id="clearPlotParametersButton" class="plot-reset-button" data-action="clear-plot-controls" title="Reset the plot parameters">Reset</button>
-                            </div>
-                            <p class="dimension-slices-hint">Passed to the xarray plot call. Each field you set is outlined and kept; the empty ones are chosen automatically for each variable (shown under its plot). See <a href="https://docs.xarray.dev/en/latest/user-guide/plotting.html" target="_blank" rel="noopener noreferrer">xarray plotting</a>.</p>
-                            <!-- Rendered by the webview script from its plot-parameter table -->
-                            <div id="globalPlotParameters" class="dimension-slices-facets"></div>
-                        </div>
-                    </div>
-                </div></div>
             </details>
         </div>`;
     }

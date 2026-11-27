@@ -71,6 +71,7 @@ HOST_LAYERS = [
         "shared/icons",
         "shared/time",
         "shared/plotLayout",
+        "shared/flags",
     ],
 ]
 # The main request path, drawn with a thick border
@@ -89,7 +90,7 @@ FOLDER_CLASS = {
     # Getting Started walkthrough commands: drawn like the entry point
     "onboarding": "f-entry",
 }
-WEBVIEW_KEY = {"main", "bus", "plotParams"}
+WEBVIEW_KEY = {"main", "bus", "plotParams", "plotSettings"}
 
 # ---------------------------------------------------------------- python backend
 
@@ -100,7 +101,9 @@ PY_PACKAGES = {
     "serialization": ("serialization.py", "JSON, best effort"),
     "info": ("info/", None),
     "plotting": ("plotting/", None),
-    "opening": ("opening.py", "OpenedData · engine + decode_cf fallback"),
+    "opening": ("opening.py", "OpenedData · engine + decode_times fallback"),
+    "decoding": ("decoding.py", "decoders + backend_kwargs: sources, allowlist"),
+    "flags": ("flags.py", "CF flag_values / flag_masks / flag_meanings"),
     "formats": ("formats/", None),
     "environment": ("environment/", None),
 }
@@ -374,17 +377,30 @@ def environment_dot(facts: Facts) -> str:
 PLOT_PARAMETERS_REFS = {
     "src/panel/webview/plotActions.ts": [
         "createVariablePlot",
-        "invalidPlotOptions",
-        "resolvePlotOptions",
         "compactPlotPayload",
         "showPlotLayout",
+        "refreshStalePlots",
     ],
-    "src/panel/webview/plotParams.ts": ["readPlotControls", "mergePlotControls"],
+    "src/panel/webview/plotEditor.ts": [
+        "openPlotEditor",
+        "handlePlotEditorEvent",
+        "refreshSettingsSummaries",
+        "withoutCapture",
+    ],
+    "src/panel/webview/plotSettings.ts": [
+        "updateLevelSettings",
+        "scopeChain",
+        "plotRequestFor",
+        "inheritedSettings",
+    ],
+    "src/panel/webview/plotParams.ts": [
+        "readPlotParameterTexts",
+        "parsePlotParameter",
+    ],
     "src/panel/webview/changedFields.ts": [
         "refreshChangedFields",
         "handleChangedFieldEvent",
         "plot-field--changed",
-        "data-inherit",
     ],
     "src/panel/webview/render/plotLayout.ts": ["renderPlotLayout"],
     "src/panel/UIController.ts": ["handleCreatePlot", "plot_layout"],
@@ -403,25 +419,30 @@ def plot_parameters_dot() -> str:
     return f"""digraph plot_parameters {{{BASE}
   rankdir=TB; ranksep=0.3; nodesep=0.35;
   node [margin="0.2,0.07"];
+  edit [label="settings editor (plotEditor.ts)\\nopened by Settings · one at a time · a tab per level\\nhandlePlotEditorEvent() → updateLevelSettings()", class="f-web"];
+  store [label="settings store (plotSettings.ts)\\ntext of the controls of each level:\\nvariable · group · parent groups · whole file", class="f-web key"];
   click [label="Create Plot\\ncreateVariablePlot()", class="f-web key"];
+  merge [label="plotRequestFor()\\nscopeChain(): variable → its group → … → /\\neach parameter, each slice: the first level that sets it", class="f-web"];
   valid [label="a number\\ntyped wrong?", {DECISION}];
   stop [label="message under the plot,\\nnothing is sent", class="warn"];
-  read [label="readPlotControls(global) · readPlotControls(group)", class="f-web"];
-  merge [label="mergePlotControls()\\neach field: the group's value if set, else the global one\\nslices: the group's replace the global ones if it has any", class="f-web"];
   compact [label="compactPlotPayload()\\nfields left empty are not sent:\\nthe backend chooses them", class="f-web key"];
-  cue [label="changedFields.ts\\na field that differs from its default is outlined\\n(empty · checkbox default · group checkbox = global)", class="f-web"];
+  cue [label="changedFields.ts\\na field set at the level shown is outlined;\\nempty fields show in grey what they fall back to", class="f-web"];
   host [label="UIController → DataProcessor\\nbuildCreatePlotCliArgs(): one flag per field sent", class="host"];
   py [label="create_plot()\\nslices · time filter → resolve_layout() → draw_plot()", class="py key"];
   back [label="CreatePlotResponse\\nplotData · layout (plot_layout) · appliedSlices", class="host"];
   line [label="showPlotLayout() → renderPlotLayout()\\nplot kind, then each choice: outlined if set by you\\nnotes: choices that could not be used", class="f-web"];
 
-  click -> valid;
+  edit -> store;
+  click -> merge;
+  store -> merge [label=" read "];
+  merge -> valid;
   valid -> stop [label=" yes"];
-  valid -> read [label=" no"];
-  read -> merge -> compact -> host -> py -> back -> line;
-  cue -> read [label=" same defaults ", class="e-faint", style=dashed, arrowhead=none];
+  valid -> compact [label=" no"];
+  compact -> host -> py -> back -> line;
+  cue -> edit [class="e-faint", style=dashed, arrowhead=none];
   {{ rank=same; valid; stop; }}
-  {{ rank=same; read; cue; }}
+  {{ rank=same; edit; cue; }}
+  {{ rank=same; store; click; }}
 }}"""
 
 

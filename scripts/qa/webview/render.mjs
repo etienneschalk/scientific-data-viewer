@@ -26,6 +26,9 @@ for (const f of ['xss_names.nc', 'xss_groups.nc', 'xss_names.zarr', 'zarr_with_n
     // Plot every variable (names go into payloads, errors, alt text)
     await p.eval(`document.getElementById('createAllPlotsButton').click(); true`);
     await waitAllPlots(p);
+    // Plot settings: every editor built once (names in tabs, dimension labels), a slice set
+    // on the first dimension of each level so names reach the summaries
+    await p.eval(`(() => { for (const b of document.querySelectorAll('.plot-settings-button')) { b.click(); const box = document.querySelector('.plot-editor .slice-part'); if (box) { box.value = '0'; box.dispatchEvent(new Event('input', { bubbles: true })); } } return true; })()`);
     // Outline scroll to every element id present (ids derived from names)
     const ids = await p.eval(`[...document.querySelectorAll('[id]')].map(e => e.id).filter(id => /data-group|var|coord|attr/i.test(id)).slice(0, 200)`);
     for (const id of ids.slice(0, 40)) await p.emit('scrollToHeaderCommandEvent', { headerId: id, headerLabel: id });
@@ -152,8 +155,9 @@ for (const f of ['sample_data_many_groups_light_x5.nc', 'sample_data_many_vars.n
 // ---------- header toolbar at every width ----------
 for (const width of [320, 360, 420, 600, 1000]) {
     const p = await openViewer(`${SD}/sample_data.netcdf`, { width });
-    const m = await p.eval(`(() => { const t = document.getElementById('top-level-title').getBoundingClientRect(); const c = document.getElementById('header-controls').getBoundingClientRect(); const b = [...document.querySelectorAll('.header-control-button')].map(e => e.getBoundingClientRect()); return { titleRight: Math.round(t.right), controlsLeft: Math.round(c.left), buttonsVisible: b.filter(r => r.width >= 20 && r.right <= window.innerWidth).length }; })()`);
-    check(`header at ${width}px: title ends before the toolbar, 4 buttons visible`, m.titleRight <= m.controlsLeft && m.buttonsVisible === 4, m);
+    const m = await p.eval(`(() => { const t = document.getElementById('top-level-title').getBoundingClientRect(); const c = document.getElementById('header-controls').getBoundingClientRect(); const b = [...document.querySelectorAll('#header-controls button:not(.hidden)')].map(e => e.getBoundingClientRect()); return { titleRight: Math.round(t.right), controlsLeft: Math.round(c.left), buttonsVisible: b.filter(r => r.width >= 20 && r.right <= window.innerWidth).length }; })()`);
+    // Plot all, Save all, Clear all plots, then Export, Collapse, Expand, Refresh (Cancel all only while plotting)
+    check(`header at ${width}px: title ends before the toolbar, 7 buttons visible`, m.titleRight <= m.controlsLeft && m.buttonsVisible === 7, m);
     await p.close();
 }
 

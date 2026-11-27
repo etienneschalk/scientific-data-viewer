@@ -93,6 +93,67 @@ export function displayTextRepresentation(
     });
 }
 
+/** Backend `OpenReport`: how the file was opened (only the fields read here). */
+export interface OpenReportView {
+    engine?: string;
+    function?: string;
+    raw?: boolean;
+    call?: string;
+    degraded_decoders?: string[];
+    fallback_reason?: string | null;
+    notes?: string[];
+    failed_engines?: Array<{ engine?: string; error?: string }>;
+}
+
+/** One-line decoding mode, shared by File Information and Troubleshooting. */
+export function decodingModeText(report: OpenReportView | undefined): string {
+    if (report?.raw) {
+        return 'raw (no CF decoding)';
+    }
+    const degraded = report?.degraded_decoders ?? [];
+    if (degraded.length > 0) {
+        return `degraded (${degraded.map((name) => `${name}=False`).join(', ')})`;
+    }
+    return 'CF decoded';
+}
+
+/** Plain text of Troubleshooting > How this file was opened (copyable). */
+export function formatOpenReport(report: OpenReportView | undefined): string {
+    if (!report?.call) {
+        return 'Not reported by the backend.';
+    }
+    const lines = [
+        `Engine: ${report.engine ?? '?'} (${report.function ?? '?'})`,
+        `Decoding: ${decodingModeText(report)}`,
+    ];
+    if (report.fallback_reason) {
+        lines.push(`Time decoding turned off after: ${report.fallback_reason}`);
+    }
+    lines.push(
+        '',
+        report.call,
+        '',
+        'Each keyword is commented with its source. Decoders not in the call keep the engine default.',
+    );
+    const notes = report.notes ?? [];
+    if (notes.length > 0) {
+        lines.push('', 'Notes:', ...notes.map((note) => `- ${note}`));
+    }
+    const failed = report.failed_engines ?? [];
+    if (failed.length > 0) {
+        lines.push(
+            '',
+            'Engines that failed first:',
+            ...failed.map((f) => `- ${f.engine ?? '?'}: ${f.error ?? ''}`),
+        );
+    }
+    return lines.join('\n');
+}
+
+export function displayOpenReport(report: OpenReportView | undefined): void {
+    byId('openReport').textContent = formatOpenReport(report);
+}
+
 export function displayShowVersions(versionsData: string | undefined): void {
     byId('showVersions').textContent =
         versionsData || 'Failed to load version information';

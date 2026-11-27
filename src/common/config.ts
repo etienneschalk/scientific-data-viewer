@@ -48,8 +48,6 @@ const WEBVIEW_EXPORT_THEME = 'webviewExportTheme';
 const OVERRIDE_PYTHON_INTERPRETER = 'python.overridePythonInterpreter';
 const USE_EXTENSION_OWN_ENVIRONMENT = 'python.useExtensionOwnEnvironment';
 const CONVERT_BANDS_TO_VARIABLES = 'convertBandsToVariables';
-const GLOBAL_DIMENSION_SLICES = 'globalDimensionSlices';
-const GROUP_DIMENSION_SLICES = 'groupDimensionSlices';
 const SMALL_VARIABLE_BYTES = 'smallVariableBytes';
 const SMALL_VALUE_DISPLAY_MAX_LEN = 'smallValueDisplayMaxLen';
 const NESTED_ATTRIBUTES_VIEW = 'nestedAttributesView';
@@ -57,10 +55,16 @@ const PLOT_TIMEOUT_MS = 'plotTimeoutMs';
 const OUTLINE_ENABLED = 'outlineEnabled';
 const ORDER_GROUPS_ALPHABETICALLY = 'orderGroupsAlphabetically';
 const SHOW_XARRAY_ENCODING_ATTRIBUTES = 'showXarrayEncodingAttributes';
+const EXPAND_ALL_INCLUDES_XARRAY_ENCODING = 'expandAllIncludesXarrayEncoding';
 const NETCDF_ENGINE_ORDER = 'netcdfEngineOrder';
 const SHOW_INHERITED_COORDINATES = 'showInheritedCoordinates';
 const FACETGRID_FIGSIZE = 'facetgridFigsize';
 const SHOW_LOAD_TIME_IN_LOCAL_TIME = 'showLoadTimeInLocalTime';
+const DECODING_MASK_AND_SCALE = 'decoding.maskAndScale';
+const DECODING_DECODE_TIMES = 'decoding.decodeTimes';
+const DECODING_DECODE_COORDS = 'decoding.decodeCoords';
+const DECODING_USE_CFTIME = 'decoding.useCftime';
+const ENGINE_BACKEND_KWARGS = 'engineBackendKwargs';
 
 // Default values
 const DEFAULT_MAX_FILE_SIZE = 1000000000000;
@@ -71,8 +75,6 @@ const DEFAULT_WEBVIEW_EXPORT_THEME = '';
 const DEFAULT_OVERRIDE_PYTHON_INTERPRETER = '';
 const DEFAULT_USE_EXTENSION_OWN_ENVIRONMENT = false;
 const DEFAULT_CONVERT_BANDS_TO_VARIABLES = true;
-const DEFAULT_GLOBAL_DIMENSION_SLICES = true;
-const DEFAULT_GROUP_DIMENSION_SLICES = true;
 const DEFAULT_SMALL_VARIABLE_BYTES = 1000;
 const DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN = 500;
 const DEFAULT_NESTED_ATTRIBUTES_VIEW = true;
@@ -81,6 +83,7 @@ const DEFAULT_PLOT_TIMEOUT_MS = 20000;
 const DEFAULT_OUTLINE_ENABLED = true;
 const DEFAULT_ORDER_GROUPS_ALPHABETICALLY = true;
 const DEFAULT_SHOW_XARRAY_ENCODING_ATTRIBUTES = true;
+const DEFAULT_EXPAND_ALL_INCLUDES_XARRAY_ENCODING = false;
 const DEFAULT_NETCDF_ENGINE_ORDER: readonly string[] = [
     'netcdf4',
     'h5netcdf',
@@ -197,20 +200,6 @@ export function getConvertBandsToVariables(): boolean {
     );
 }
 
-export function getGlobalDimensionSlices(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GLOBAL_DIMENSION_SLICES,
-        DEFAULT_GLOBAL_DIMENSION_SLICES,
-    );
-}
-
-export function getGroupDimensionSlices(): boolean {
-    return getWorkspaceConfig().get<boolean>(
-        GROUP_DIMENSION_SLICES,
-        DEFAULT_GROUP_DIMENSION_SLICES,
-    );
-}
-
 export function getSmallVariableBytes(): number {
     return getWorkspaceConfig().get<number>(
         SMALL_VARIABLE_BYTES,
@@ -264,6 +253,14 @@ export function getShowXarrayEncodingAttributes(): boolean {
     );
 }
 
+/** Expand All (viewer header) also opens the Xarray Encoding sections. */
+export function getExpandAllIncludesXarrayEncoding(): boolean {
+    return getWorkspaceConfig().get<boolean>(
+        EXPAND_ALL_INCLUDES_XARRAY_ENCODING,
+        DEFAULT_EXPAND_ALL_INCLUDES_XARRAY_ENCODING,
+    );
+}
+
 export function getNetcdfEngineOrder(): string[] {
     const raw = getWorkspaceConfig().get<string[]>(NETCDF_ENGINE_ORDER, [
         ...DEFAULT_NETCDF_ENGINE_ORDER,
@@ -303,6 +300,70 @@ export function getShowLoadTimeInLocalTime(): boolean {
         SHOW_LOAD_TIME_IN_LOCAL_TIME,
         DEFAULT_SHOW_LOAD_TIME_IN_LOCAL_TIME,
     );
+}
+
+export type OnOffDefault = 'default' | 'on' | 'off';
+export type DecodeCoordsChoice = 'default' | 'coordinates' | 'all' | 'off';
+
+/** xarray decoders chosen in the settings; 'default' leaves them to the engine. */
+export interface DecodingSettings {
+    maskAndScale: OnOffDefault;
+    decodeTimes: OnOffDefault;
+    decodeCoords: DecodeCoordsChoice;
+    useCftime: OnOffDefault;
+}
+
+function getChoice<T extends string>(key: string, allowed: readonly T[]): T {
+    const value = getWorkspaceConfig().get<string>(key, allowed[0]);
+    return (allowed as readonly string[]).includes(value)
+        ? (value as T)
+        : allowed[0];
+}
+
+const ON_OFF_DEFAULT: readonly OnOffDefault[] = ['default', 'on', 'off'];
+
+export function getDecodingSettings(): DecodingSettings {
+    return {
+        maskAndScale: getChoice(DECODING_MASK_AND_SCALE, ON_OFF_DEFAULT),
+        decodeTimes: getChoice(DECODING_DECODE_TIMES, ON_OFF_DEFAULT),
+        decodeCoords: getChoice(DECODING_DECODE_COORDS, [
+            'default',
+            'coordinates',
+            'all',
+            'off',
+        ] as const),
+        useCftime: getChoice(DECODING_USE_CFTIME, ON_OFF_DEFAULT),
+    };
+}
+
+/** `{engine: {key: value}}` of extra xarray backend_kwargs. */
+export type EngineBackendKwargs = Record<string, Record<string, unknown>>;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * engineBackendKwargs from the **user** settings only. The setting is
+ * machine-scoped, so VS Code already ignores workspace values; reading the
+ * global value also guards against a cloned repository passing keywords to
+ * xarray. Which keys are honoured is decided by the backend (allowlist in
+ * `sdv_backend/decoding.py`); here only the shape is checked.
+ */
+export function getEngineBackendKwargs(): EngineBackendKwargs {
+    const value = getWorkspaceConfig().inspect<unknown>(
+        ENGINE_BACKEND_KWARGS,
+    )?.globalValue;
+    const result: EngineBackendKwargs = {};
+    if (!isPlainObject(value)) {
+        return result;
+    }
+    for (const [engine, kwargs] of Object.entries(value)) {
+        if (isPlainObject(kwargs) && Object.keys(kwargs).length > 0) {
+            result[engine] = kwargs;
+        }
+    }
+    return result;
 }
 
 /** FacetGrid panel size (width, height) in inches, or null when unset. */
@@ -351,16 +412,17 @@ export function withKerchunkOpenQuery(uri: vscode.Uri): vscode.Uri {
  */
 export function getExtensionConfigForWebview(): Record<string, unknown> {
     return {
-        globalDimensionSlices: getGlobalDimensionSlices(),
-        groupDimensionSlices: getGroupDimensionSlices(),
         nestedAttributesView: getNestedAttributesView(),
         plotTimeoutMs: getPlotTimeoutMs(),
         outlineEnabled: getOutlineEnabled(),
         orderGroupsAlphabetically: getOrderGroupsAlphabetically(),
         showXarrayEncodingAttributes: getShowXarrayEncodingAttributes(),
+        expandAllIncludesXarrayEncoding: getExpandAllIncludesXarrayEncoding(),
         netcdfEngineOrder: getNetcdfEngineOrder(),
         showInheritedCoordinates: getShowInheritedCoordinates(),
         showLoadTimeInLocalTime: getShowLoadTimeInLocalTime(),
+        decoding: getDecodingSettings(),
+        engineBackendKwargs: getEngineBackendKwargs(),
     };
 }
 

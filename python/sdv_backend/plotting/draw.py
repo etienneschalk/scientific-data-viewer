@@ -9,7 +9,10 @@ the matching xarray call:
   without facets get equal x / y scales;
 - line: ``plot.line``, against the selected datetime variable when the
   layout says so;
-- histogram: ``plot.hist``.
+- histogram: ``plot.hist``;
+- a CF flag variable (``flag_plot`` given): the same calls on its index
+  array, with one color per meaning (``plotting/flags.py``), and bars in
+  place of the histogram.
 """
 
 from typing import Any
@@ -18,6 +21,13 @@ import numpy as np
 import xarray as xr
 
 from sdv_backend._bootstrap import logger
+from sdv_backend.plotting.flags import (
+    FlagPlot,
+    describe_kwargs,
+    draw_flag_bars,
+    draw_flag_image,
+    draw_flag_line,
+)
 from sdv_backend.plotting.kwargs import PlotKwargsBundle
 from sdv_backend.plotting.layout import PlotLayout
 from sdv_backend.plotting.selection import DatetimeSelection
@@ -50,29 +60,70 @@ def draw_plot(
     bundle: PlotKwargsBundle,
     selection: DatetimeSelection,
     variable_name: str,
+    flag_plot: FlagPlot | None = None,
 ) -> dict[str, Any]:
-    """Draw ``var`` on the current matplotlib figure; return the kwargs used."""
+    """Draw ``var`` on the current matplotlib figure; return the kwargs used.
+
+    The kwargs returned are readable (a seaborn colormap by its name, a
+    ``LogNorm`` as text); the call gets the objects (``bundle.for_call``).
+    With ``flag_plot``, ``var`` is its index array (one integer per meaning).
+    """
+    if flag_plot is not None:
+        return _draw_flags(var, layout, bundle, selection, variable_name, flag_plot)
     kwargs = {
         **layout.plot_kwargs(),
         **bundle.for_kind(layout.kind, hue="hue" in layout.choices),
     }
+    call = bundle.for_call(kwargs)
     if layout.kind == "histogram":
-        var.plot.hist(**kwargs)
+        var.plot.hist(**call)
         _log_plot_route("DataArray.plot.hist")
     elif layout.kind == "line":
         if layout.against_datetime:
             var = _with_datetime_dimension(var, selection, variable_name)
-        var.plot.line(**kwargs)
+        var.plot.line(**call)
         _log_plot_route("DataArray.plot.line")
     elif _axes_are_dimensions(var, layout):
-        var.plot.imshow(**kwargs)
+        var.plot.imshow(**call)
         _log_plot_route("DataArray.plot.imshow")
         _equal_aspect_if_map(layout)
     else:
-        var.plot.pcolormesh(**kwargs)
+        var.plot.pcolormesh(**call)
         _log_plot_route("DataArray.plot.pcolormesh")
         _equal_aspect_if_map(layout)
     return kwargs
+
+
+def _draw_flags(
+    var: xr.DataArray,
+    layout: PlotLayout,
+    bundle: PlotKwargsBundle,
+    selection: DatetimeSelection,
+    variable_name: str,
+    flag_plot: FlagPlot,
+) -> dict[str, Any]:
+    if layout.kind == "bars":
+        draw_flag_bars(var, flag_plot)
+        _log_plot_route("flags: bars per meaning")
+        return {"flags": "bars"}
+    kind = "line" if layout.kind == "line" else "image"
+    kwargs = {
+        **layout.plot_kwargs(),
+        **bundle.for_kind(kind, hue="hue" in layout.choices),
+    }
+    for key in ("cmap", "vmin", "vmax", "robust"):
+        kwargs.pop(key, None)
+    if layout.kind == "line":
+        if layout.against_datetime:
+            var = _with_datetime_dimension(var, selection, variable_name)
+        draw_flag_line(var, flag_plot, kwargs)
+        _log_plot_route("flags: DataArray.plot.line (steps)")
+        return {**kwargs, "drawstyle": "steps-mid"}
+    method = "imshow" if _axes_are_dimensions(var, layout) else "pcolormesh"
+    draw_flag_image(var, flag_plot, kwargs, method)
+    _log_plot_route(f"flags: DataArray.plot.{method}")
+    _equal_aspect_if_map(layout)
+    return describe_kwargs(kwargs, flag_plot)
 
 
 def _log_plot_route(route: str) -> None:

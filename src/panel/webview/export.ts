@@ -1,58 +1,19 @@
 import { messageBus } from './bus';
 import { displayGlobalError } from './errors';
 
-/**
- * Copy the live values of every form control into the clone (as attributes,
- * which is what outerHTML serialises) and make them read-only, so the
- * exported HTML shows the state at export time.
- */
-function applyExportStateToClone(clone: Element): void {
-    const cloneById = new Map<string, Element>();
-    clone.querySelectorAll('input[id], select[id]').forEach((el) => {
-        cloneById.set(el.id, el);
-    });
-    document
-        .querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-            '#content input[id], #content select[id]',
-        )
-        .forEach((live) => {
-            const el = cloneById.get(live.id);
-            if (!el) {
-                return;
-            }
-            if (el instanceof HTMLSelectElement) {
-                Array.from(el.options).forEach((opt) => {
-                    if (opt.value === live.value) {
-                        opt.setAttribute('selected', 'selected');
-                    } else {
-                        opt.removeAttribute('selected');
-                    }
-                });
-                el.setAttribute('disabled', 'disabled');
-            } else if (
-                live instanceof HTMLInputElement &&
-                live.type === 'checkbox'
-            ) {
-                if (live.checked) {
-                    el.setAttribute('checked', 'checked');
-                } else {
-                    el.removeAttribute('checked');
-                }
-                el.setAttribute('disabled', 'disabled');
-            } else {
-                el.setAttribute('value', live.value);
-                // readonly does not apply to sliders: they would still move
-                const frozen = live.type === 'range' ? 'disabled' : 'readonly';
-                el.setAttribute(frozen, frozen);
-            }
-        });
-}
-
 /** Serialised page as currently shown (the host inlines assets and theme). */
 export function captureWebviewContent(): string | null {
     try {
         const clone = document.documentElement.cloneNode(true) as Element;
-        applyExportStateToClone(clone);
+        // The page holds no form control but the plot settings editor. The
+        // settings summaries are the record of the settings: the editor
+        // would not work in a browser
+        clone.querySelectorAll('.plot-editor').forEach((editor) => {
+            editor.remove();
+        });
+        clone
+            .querySelectorAll('.plot-settings-button')
+            .forEach((button) => button.setAttribute('aria-expanded', 'false'));
         return clone.outerHTML;
     } catch (error) {
         console.error('🖼️ Error capturing webview content:', error);

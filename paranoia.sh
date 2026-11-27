@@ -22,14 +22,19 @@
 #                 to this one, played as a user (environment rebuilt or kept as
 #                 ENVIRONMENT_REVISION says, settings kept, file shown); failed
 #                 and interrupted rebuilds; screenshots, npm audit, CI status
+#   extras        not checks, but useful before a release: the demo video
+#                 (--full-with-extras only)
 #
 # Usage: ./paranoia.sh [options]
 #   --quick            static checks, build, package, unit tests (~5 min)
 #   --standard         (default) + golden snapshots, backend vs last release, webview
 #                      harness, npm audit, CI status (~20 min)
 #   --full             + e2e suites, migration from every release, upgrade
-#                      failure modes, screenshots (~45 min). Only
-#                      a full run can conclude READY.
+#                      failure modes, screenshots (~45 min). Only a full run
+#                      can conclude READY.
+#   --full-with-extras + extras, not checks: the demo video (~50 min). Same
+#                      verdict as --full; a --full run lists the extras as
+#                      EXTRA, not run, without lowering its verdict
 #   --only a,b         run only these steps (ids: --list)
 #   --skip a,b         skip these steps
 #   --baseline <ref>   last release to compare with (default: newest v* tag
@@ -88,6 +93,7 @@ STEPS=(
     "package|quick|Build|Package the .vsix|300"
     "vsix|quick|Package|.vsix contents|300"
     "sample-data|quick|Tests|Sample data regenerated|300"
+    "prototypes|quick|Tests|Prototype scripts still run|300"
     "vsix-backend|quick|Package|Packaged backend on sample files|600"
     "pytest|quick|Tests|Python tests (pytest)|600"
     "npm-test|quick|Tests|Extension tests in VS Code (npm test)|900"
@@ -105,6 +111,7 @@ STEPS=(
     "migration|full|Users|Migration from every release (uv environment, settings, viewer)|3600"
     "upgrade|full|Users|Failed and interrupted environment rebuilds|2400"
     "screenshots|full|Users|Viewer screenshots|1200"
+    "demo-video|full-with-extras|Extras|Demo video: first use filmed in a fresh VS Code, then edited|1800"
 )
 
 PROFILE=standard
@@ -122,14 +129,15 @@ while [ $# -gt 0 ]; do
         --quick) PROFILE=quick; shift ;;
         --standard) PROFILE=standard; shift ;;
         --full) PROFILE=full; shift ;;
+        --full-with-extras) PROFILE=full-with-extras; shift ;;
         --only) ONLY="$2"; shift 2 ;;
         --skip) SKIP_LIST="$2"; shift 2 ;;
         --baseline) BASELINE="$2"; shift 2 ;;
         --out) OUT="$2"; shift 2 ;;
         -v|--verbose) VERBOSE=true; shift ;;
         --list)
-            printf '%-14s %-9s %-13s %-6s %s\n' ID PROFILE AREA LIMIT TITLE
-            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title limit <<<"$s"; printf '%-14s %-9s %-13s %-6s %s\n' "$id" "$prof" "$area" "${limit}s" "$title"; done
+            printf '%-14s %-16s %-13s %-6s %s\n' ID PROFILE AREA LIMIT TITLE
+            for s in "${STEPS[@]}"; do IFS='|' read -r id prof area title limit <<<"$s"; printf '%-14s %-16s %-13s %-6s %s\n' "$id" "$prof" "$area" "${limit}s" "$title"; done
             exit 0 ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
@@ -443,6 +451,24 @@ step_sample_data() {
         note "artefacts/sample-data/ regenerated ($(find "$SAMPLES" -mindepth 1 -maxdepth 1 | wc -l) entries)"
     else
         fail "python/create_sample_data.py failed"
+    fi
+}
+
+step_prototypes() {
+    # Exploration scripts of scripts/prototypes/ (output in artefacts/prototypes/):
+    # kept runnable while the feature they explore is being built
+    local script failed=() n=0
+    for script in scripts/prototypes/*.py; do
+        [ -e "$script" ] || continue
+        n=$((n + 1))
+        run "$PY" "$script" || failed+=("$(basename "$script")")
+    done
+    if [ ${#failed[@]} -gt 0 ]; then
+        fail "failed: ${failed[*]}"
+    elif [ $n -eq 0 ]; then
+        skip "no prototype script"
+    else
+        note "$n prototype script(s) ran, output in artefacts/prototypes/"
     fi
 }
 
@@ -773,11 +799,32 @@ step_screenshots() {
     fi
 }
 
+# Demo video (scripts/demo-video/README.md): the packaged extension in a fresh
+# VS Code, offscreen, played like a new user (Python set up with uv, the sample
+# opened from the Explorer, plots), filmed, then edited into an MP4. Needs uv and
+# network (uv environment, Pillow and ffmpeg for the montage); no display.
+step_demo_video() {
+    [ -n "$VSIX" ] || { skip "no package (package step failed or not run)"; return; }
+    command -v uv >/dev/null || { skip "uv not installed"; return; }
+    local out="$ARTEFACTS/demo-video"
+    if ! run node scripts/demo-video/record.mjs --vsix "$VSIX" --out "$out"; then
+        fail "recording failed: see artefacts/demo-video/recording/failure.png"
+        return
+    fi
+    if run uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py \
+        --recording "$out/recording" --out "$out/scientific-data-viewer-demo.mp4"; then
+        note "artefacts/demo-video/scientific-data-viewer-demo.mp4"
+        ARTIFACTS+=("Demo video (first use, from Python set up to plots): \`$out/scientific-data-viewer-demo.mp4\`")
+    else
+        fail "montage.py failed"
+    fi
+}
+
 # =============================================================================
 # Runner
 # =============================================================================
 
-profile_rank() { case "$1" in quick) echo 1 ;; standard) echo 2 ;; full) echo 3 ;; esac; }
+profile_rank() { case "$1" in quick) echo 1 ;; standard) echo 2 ;; full) echo 3 ;; full-with-extras) echo 4 ;; esac; }
 in_list() { [[ ",$2," == *",$1,"* ]]; }
 step_profile() {
     local s
@@ -840,6 +887,11 @@ for s in "${STEPS[@]}"; do
     start=$SECONDS
     if [ -n "$ONLY" ] && ! in_list "$id" "$ONLY"; then
         continue
+    elif [ -z "$ONLY" ] && [ "$prof" = full-with-extras ] \
+        && { [ "$PROFILE" != full-with-extras ] || in_list "$id" "$SKIP_LIST"; }; then
+        # Not a check: listed as EXTRA, never lowers the verdict of a full run
+        STATUS=EXTRA
+        SUMMARY="extra, not a check: --full-with-extras (or --only $id)"
     elif in_list "$id" "$SKIP_LIST"; then
         skip "skipped with --skip"
     elif [ -z "$ONLY" ] && [ "$(profile_rank "$prof")" -gt "$(profile_rank "$PROFILE")" ]; then

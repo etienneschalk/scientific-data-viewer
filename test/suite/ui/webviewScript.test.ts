@@ -114,6 +114,85 @@ class WebviewHarness {
         ).find((el: any) => el.dataset.variable === variable);
     }
 
+    /** Plot section of a group: Plot group, Settings, summary. */
+    groupPlotSection(group: string): any {
+        return Array.from(
+            this.document.querySelectorAll('.group-plot-section'),
+        ).find((el: any) => el.dataset.group === group);
+    }
+
+    /** Settings button of a variable's or a group's Plot section. */
+    openSettings(host: any): any {
+        assert.ok(host, 'plot section must exist');
+        this.click(host.querySelector('[data-action="open-settings"]'));
+        return this.editor();
+    }
+
+    /** The open plot settings editor, if any. */
+    editor(): any {
+        return this.document.querySelector('.plot-editor');
+    }
+
+    /** Control of a plot parameter in the open editor (`colWrap-auto`...). */
+    setting(key: string): any {
+        return this.document.getElementById(`plot-setting-${key}`);
+    }
+
+    /** Start box of a dimension slice in the open editor. */
+    slice(dim: string, part = ''): any {
+        // Same id rule as joinId: characters outside [a-zA-Z0-9_] become '-'
+        const safe = dim.replace(/[^a-zA-Z0-9_]/g, '-');
+        return this.document.getElementById(
+            `plot-slice-${safe}${part ? `-${part}` : ''}`,
+        );
+    }
+
+    /** Titles of the editor's tabs, without their count badge. */
+    tabTitles(): string[] {
+        return Array.from(
+            this.editor().querySelectorAll('.plot-editor-tab'),
+            (tab: any) => tab.childNodes[0].textContent,
+        );
+    }
+
+    selectTab(title: string): void {
+        const tab = Array.from(
+            this.editor().querySelectorAll('.plot-editor-tab'),
+        ).find((t: any) => t.childNodes[0].textContent === title);
+        this.click(tab);
+    }
+
+    /** Reset button of a block of the editor: `slices` or `params`. */
+    resetBlock(part: 'slices' | 'params'): void {
+        this.click(
+            this.editor().querySelector(
+                `[data-action="editor-reset"][data-part="${part}"]`,
+            ),
+        );
+    }
+
+    /** Click Create Plot of a variable; the payload of the request it posts. */
+    createPlot(variable: string): any {
+        this.click(
+            this.plotControls(variable).querySelector(
+                '[data-action="create-plot"]',
+            ),
+        );
+        return this.requests('createPlot').pop().payload;
+    }
+
+    /** Chips of a summary: [name, value, level]. */
+    chips(host: any): string[][] {
+        return Array.from(
+            host.querySelectorAll('.plot-settings-summary .settings-chip'),
+            (chip: any) => [
+                chip.querySelector('.settings-chip-name').textContent,
+                chip.querySelector('code').textContent,
+                chip.querySelector('.settings-chip-source').textContent,
+            ],
+        );
+    }
+
     close(): void {
         this.window.close();
     }
@@ -218,6 +297,47 @@ function sampleDataInfo(): any {
     };
 }
 
+/** The sample, with a variable that has ancillary flags (Flags fieldset). */
+function flagDataInfo(): any {
+    const data = sampleDataInfo();
+    data.variables_flattened['/'][0].attributes.ancillary_variables = 'quality';
+    return data;
+}
+
+/** Groups `/`, `/a` and `/a/b`, one variable each. */
+function treeDataInfo(): any {
+    const variable = (name: string, dimensions: string[]) => ({
+        name,
+        dtype: 'float32',
+        shape: dimensions.map(() => 4),
+        dimensions,
+        attributes: {},
+    });
+    return {
+        format: 'NetCDF',
+        dimensions_flattened: {
+            '/': { time: 4 },
+            '/a': { time: 4, lat: 4 },
+            '/a/b': { time: 4, lat: 4, lon: 4 },
+        },
+        coordinates_flattened: { '/': [], '/a': [], '/a/b': [] },
+        variables_flattened: {
+            '/': [variable('top', ['time'])],
+            '/a': [variable('mid', ['time', 'lat'])],
+            '/a/b': [variable('deep', ['time', 'lat', 'lon'])],
+        },
+        attributes_flattened: { '/': {}, '/a': {}, '/a/b': {} },
+    };
+}
+
+/** [value, label] of the options of a select. */
+function options(select: any): string[][] {
+    return Array.from(
+        select.querySelectorAll('option'),
+        (o: { value: string; textContent: string }) => [o.value, o.textContent],
+    );
+}
+
 suite('Webview script (jsdom)', () => {
     let harness: WebviewHarness;
 
@@ -249,6 +369,20 @@ suite('Webview script (jsdom)', () => {
             harness.plotControls(`/g${EVIL}/v${EVIL}`),
             'data-variable keeps the raw full path',
         );
+        // Settings editor and summary of a hostile group and dimension
+        harness.openSettings(harness.plotControls(`/g${EVIL}/v${EVIL}`));
+        assert.deepStrictEqual(harness.tabTitles(), [
+            'This variable',
+            `Group /g${EVIL}`,
+            'Whole file',
+        ]);
+        harness.setValue(harness.slice(`d${EVIL}`), '1', 'input');
+        assert.deepStrictEqual(
+            harness.chips(harness.plotControls(`/g${EVIL}/v${EVIL}`)),
+            [[`d${EVIL}`, '1', 'variable']],
+        );
+        assert.strictEqual(doc.querySelectorAll('#content img').length, 0);
+        assert.strictEqual(harness.window.__pwned, undefined);
         assert.strictEqual(
             doc.querySelectorAll('[onerror], [onclick]').length,
             0,
@@ -373,6 +507,120 @@ suite('Webview script (jsdom)', () => {
         );
     });
 
+    test('variable card: Flags section lists the CF meanings', () => {
+        const info = sampleDataInfo();
+        const flagVariable = (name: string, flags: unknown) => ({
+            name,
+            dtype: 'uint8',
+            shape: [3, 2],
+            dimensions: ['time', 'lat'],
+            size_bytes: 6,
+            attributes: {},
+            flags,
+        });
+        info.variables_flattened['/'].push(
+            flagVariable('land_cover', {
+                kind: 'values',
+                flags: [
+                    {
+                        meaning: 'tree_cover',
+                        value: '50',
+                        mask: null,
+                        bits: null,
+                        color: '#006400',
+                    },
+                    {
+                        meaning: `water${EVIL}`,
+                        value: '210',
+                        mask: null,
+                        bits: null,
+                        // Not a color: never written in a style attribute
+                        color: 'red;background-image:url(x)',
+                    },
+                ],
+                colors_source: 'flag_colors',
+                problems: [],
+                notes: [`flag_colors note${EVIL}`],
+            }),
+            flagVariable('wqsf', {
+                kind: 'masks',
+                flags: [
+                    {
+                        meaning: 'cloud',
+                        value: null,
+                        mask: '9223372036854775808',
+                        bits: 'bit 63',
+                        color: null,
+                    },
+                ],
+                colors_source: null,
+                problems: [],
+                notes: [],
+            }),
+            flagVariable('qc', {
+                kind: 'mixed',
+                flags: [
+                    {
+                        meaning: 'good',
+                        value: '3',
+                        mask: '4',
+                        bits: 'bit 2',
+                        color: null,
+                    },
+                ],
+                colors_source: null,
+                problems: [`good: value 3 has bits outside its mask 4${EVIL}`],
+                notes: [],
+            }),
+        );
+        harness.loadData(info);
+        const doc = harness.document;
+        const section = (name: string) =>
+            doc.getElementById(`data-group___-___variable___${name}___flags`);
+        const rows = (name: string) =>
+            Array.from(section(name).querySelectorAll('tbody tr')).map(
+                (row: any) =>
+                    Array.from(row.querySelectorAll('td')).map((td: any) =>
+                        td.textContent.trim(),
+                    ),
+            );
+
+        const landCover = section('land_cover');
+        assert.strictEqual(landCover.open, true);
+        assert.strictEqual(
+            landCover.querySelector('.count-badge').textContent,
+            '2',
+        );
+        assert.deepStrictEqual(rows('land_cover'), [
+            ['50', 'tree_cover'],
+            ['210', `water${EVIL}`],
+        ]);
+        const swatches = landCover.querySelectorAll('.flag-swatch');
+        assert.strictEqual(swatches.length, 1, 'unsafe color dropped');
+        assert.strictEqual(
+            (swatches[0] as any).style.backgroundColor,
+            'rgb(0, 100, 0)',
+        );
+        assert.ok(landCover.textContent.includes('colors from flag_colors'));
+        assert.ok(landCover.textContent.includes(`flag_colors note${EVIL}`));
+
+        // Masks: the uint64 mask is shown exactly, with its bit
+        assert.deepStrictEqual(rows('wqsf'), [
+            ['9223372036854775808', 'bit 63', 'cloud'],
+        ]);
+        // Mixed: mask, bits and value; problems say the plot uses numbers
+        assert.deepStrictEqual(rows('qc'), [['4', 'bit 2', '3', 'good']]);
+        assert.ok(
+            section('qc')
+                .querySelector('.flags-problems')
+                .textContent.includes('Not used for plots'),
+        );
+        // A variable without flags has no Flags section
+        assert.strictEqual(section('temperature'), null);
+        assert.strictEqual(doc.querySelectorAll('#content img').length, 0);
+        assert.strictEqual(harness.window.__pwned, undefined);
+    });
+
     test('variable row: size of 0 bytes (empty dimension) shows "Empty"', () => {
         const data = sampleDataInfo();
         data.dimensions_flattened['/'].obs = 0;
@@ -465,11 +713,7 @@ suite('Webview script (jsdom)', () => {
                 section.open,
             ]),
             [
-                [
-                    'data-group___-___group-plot-controls',
-                    'Group Plot Controls',
-                    true,
-                ],
+                ['data-group___-___plot', 'Plot', true],
                 ['data-group___-___dimensions', 'Dimensions', true],
                 ['data-group___-___coordinates', 'Coordinates', true],
                 ['data-group___-___variables', 'Variables', true],
@@ -477,10 +721,9 @@ suite('Webview script (jsdom)', () => {
                 ['data-group___-___encoding', 'Xarray Encoding', false],
             ],
         );
-        assert.ok(
-            sections[0].classList.contains('group-plot-controls-section'),
-        );
+        assert.ok(sections[0].classList.contains('group-plot-section'));
         assert.strictEqual(sections[0].dataset.group, '/');
+        assert.strictEqual(sections[0].dataset.settingsScope, 'g:/');
         assert.strictEqual(other.open, false, 'other groups start collapsed');
     });
 
@@ -565,6 +808,66 @@ suite('Webview script (jsdom)', () => {
         ]);
     });
 
+    test('File Information shows the decoding mode; Reopen raw posts setRawMode', () => {
+        const report = {
+            engine: 'netcdf4',
+            function: 'xarray.open_datatree',
+            raw: false,
+            call: "xarray.open_datatree(\n    'a.nc',\n    engine='netcdf4',\n    decode_times=False,  # time fallback\n)",
+            kwargs: [],
+            degraded_decoders: ['decode_times', 'decode_timedelta'],
+            fallback_reason: `ValueError: unable to decode time units ${EVIL}`,
+            notes: [`note ${EVIL}`],
+            failed_engines: [{ engine: 'h5netcdf', error: 'OSError: x' }],
+        };
+        harness.loadData({ ...sampleDataInfo(), open_report: report });
+
+        const doc = harness.document;
+        const fileInfo = doc.getElementById('fileInfo').textContent;
+        assert.ok(
+            fileInfo.includes(
+                'Decoding: degraded (decode_times=False, decode_timedelta=False)',
+            ),
+            fileInfo,
+        );
+        const openReport = doc.getElementById('openReport').textContent;
+        assert.ok(
+            openReport.includes('Engine: netcdf4 (xarray.open_datatree)'),
+        );
+        assert.ok(openReport.includes('decode_times=False,  # time fallback'));
+        assert.ok(openReport.includes(`- note ${EVIL}`));
+        assert.ok(openReport.includes('- h5netcdf: OSError: x'));
+        assert.ok(
+            openReport.includes(
+                `Time decoding turned off after: ValueError: unable to decode time units ${EVIL}`,
+            ),
+        );
+        assert.strictEqual(doc.querySelectorAll('#content img').length, 0);
+
+        harness.click(doc.querySelector('[data-action="set-raw-mode"]'));
+        assert.deepStrictEqual(
+            harness.requests('setRawMode').map((r) => r.payload),
+            [{ raw: true }],
+        );
+
+        harness.loadData({
+            ...sampleDataInfo(),
+            open_report: { ...report, raw: true, degraded_decoders: [] },
+        });
+        assert.ok(
+            doc
+                .getElementById('fileInfo')
+                .textContent.includes('Decoding: raw (no CF decoding)'),
+        );
+        const reopenDecoded = doc.querySelector('[data-action="set-raw-mode"]');
+        assert.strictEqual(reopenDecoded.textContent, 'Reopen decoded');
+        harness.click(reopenDecoded);
+        assert.deepStrictEqual(
+            harness.requests('setRawMode').map((r) => r.payload),
+            [{ raw: true }, { raw: false }],
+        );
+    });
+
     test('does not throw on data without groups', () => {
         harness.loadData({ format: 'NetCDF' });
 
@@ -578,40 +881,28 @@ suite('Webview script (jsdom)', () => {
         assert.ok(!doc.getElementById('content').classList.contains('hidden'));
     });
 
-    test('createPlot sends named fields with group overrides', () => {
+    test('createPlot sends the settings of every level: the nearest one wins', () => {
         harness.loadData(sampleDataInfo());
-        const doc = harness.document;
+        // Whole file: the Settings of the group "/"
+        harness.openSettings(harness.groupPlotSection('/'));
+        assert.deepStrictEqual(harness.tabTitles(), ['Whole file']);
+        harness.setValue(harness.setting('bins'), '20');
+        harness.setValue(harness.setting('cmap'), 'viridis');
+        harness.setValue(harness.setting('aspect'), '-1');
+        harness.setValue(harness.setting('xincrease'), 'false');
+        harness.setValue(harness.slice('time'), '0:2', 'input');
+        // This variable: overrides cmap and aspect (the wrong file value is
+        // then not used), adds col_wrap
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.deepStrictEqual(harness.tabTitles(), [
+            'This variable',
+            'Whole file',
+        ]);
+        harness.setValue(harness.setting('cmap'), 'magma');
+        harness.setValue(harness.setting('colWrap'), '3');
+        harness.setValue(harness.setting('aspect'), '1.5');
 
-        // Global controls
-        harness.setValue(doc.getElementById('plotBinsInput'), '20');
-        harness.setValue(doc.getElementById('plotCmapInput'), 'viridis');
-        harness.setValue(doc.getElementById('plotAspectInput'), '-1');
-        doc.getElementById('xIncreaseCheckbox').checked = false;
-        harness.setValue(doc.getElementById('dim-slice-time'), '0:2');
-        // Group "/" controls: override cmap and col_wrap, leave bins empty
-        const safeId = 'group-plot___-';
-        harness.setValue(
-            doc.getElementById(`group-plot-cmap-${safeId}`),
-            'magma',
-        );
-        harness.setValue(
-            doc.getElementById(`group-plot-col-wrap-${safeId}`),
-            '3',
-        );
-        harness.setValue(
-            doc.getElementById(`group-plot-aspect-${safeId}`),
-            '1.5',
-        );
-
-        harness.click(
-            harness
-                .plotControls('/temperature')
-                .querySelector('[data-action="create-plot"]'),
-        );
-
-        const [request] = harness.requests('createPlot');
-        assert.ok(request, 'createPlot request posted');
-        const { operationId, ...payload } = request.payload;
+        const { operationId, ...payload } = harness.createPlot('/temperature');
         assert.ok(String(operationId).startsWith('plot-'));
         assert.deepStrictEqual(payload, {
             variable: '/temperature',
@@ -621,11 +912,284 @@ suite('Webview script (jsdom)', () => {
             yincrease: true,
             robust: false,
             addColorbar: true,
+            useFlags: true,
             addLegend: true,
             bins: 20,
             aspect: 1.5,
             cmap: 'magma',
         });
+    });
+
+    test('the settings editor is built when opened, one at a time', () => {
+        harness.loadData(sampleDataInfo());
+        const doc = harness.document;
+        assert.strictEqual(harness.editor(), null, 'no editor after loading');
+        assert.strictEqual(
+            doc.querySelectorAll('.plot-field').length,
+            0,
+            'no plot control is built in advance',
+        );
+        const variable = harness.plotControls('/temperature');
+        const button = variable.querySelector('.plot-settings-button');
+        harness.openSettings(variable);
+        assert.ok(variable.contains(harness.editor()));
+        assert.strictEqual(button.getAttribute('aria-expanded'), 'true');
+
+        // Another Settings button closes the first editor
+        const group = harness.groupPlotSection('/');
+        harness.openSettings(group);
+        assert.strictEqual(doc.querySelectorAll('.plot-editor').length, 1);
+        assert.ok(group.contains(harness.editor()));
+        assert.strictEqual(button.getAttribute('aria-expanded'), 'false');
+
+        // The same button again, Close and Escape close it
+        harness.openSettings(group);
+        assert.strictEqual(harness.editor(), null);
+        harness.openSettings(group);
+        harness.click(
+            harness
+                .editor()
+                .querySelector(
+                    '.plot-editor-footer [data-action="editor-close"]',
+                ),
+        );
+        assert.strictEqual(harness.editor(), null);
+        harness.openSettings(variable);
+        harness.setting('cmap').dispatchEvent(
+            new harness.window.KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+            }),
+        );
+        assert.strictEqual(harness.editor(), null);
+        assert.strictEqual(doc.activeElement, button);
+    });
+
+    test('Enter in a field stores it and plots', () => {
+        harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.plotControls('/temperature'));
+        const cmap = harness.setting('cmap');
+        cmap.value = 'magma';
+        cmap.dispatchEvent(
+            new harness.window.KeyboardEvent('keydown', {
+                key: 'Enter',
+                bubbles: true,
+            }),
+        );
+        const [request] = harness.requests('createPlot');
+        assert.strictEqual(request.payload.cmap, 'magma');
+        assert.strictEqual(request.payload.variable, '/temperature');
+    });
+
+    test('groups: settings flow from the file to the groups and their subgroups', () => {
+        harness.loadData(treeDataInfo());
+        const deep = harness.plotControls('/a/b/deep');
+        harness.openSettings(deep);
+        assert.deepStrictEqual(harness.tabTitles(), [
+            'This variable',
+            'Group /a/b',
+            'Group /a',
+            'Whole file',
+        ]);
+        // Each level lists its own dimensions (a group: its subgroups' too)
+        const dims = () =>
+            Array.from(
+                harness.editor().querySelectorAll('.dimension-slice-row'),
+                (row: any) => row.dataset.dimension,
+            );
+        assert.deepStrictEqual(dims(), ['lat', 'lon', 'time']);
+        harness.selectTab('Whole file');
+        assert.deepStrictEqual(dims(), ['lat', 'lon', 'time']);
+        harness.setValue(harness.slice('time'), '0', 'input');
+        harness.setValue(harness.setting('cmap'), 'viridis');
+        harness.selectTab('Group /a');
+        assert.strictEqual(
+            harness.setting('cmap').getAttribute('placeholder'),
+            'viridis (file)',
+        );
+        harness.setValue(harness.slice('lat'), '1:3', 'input');
+        harness.setValue(harness.setting('cmap'), 'magma');
+
+        const top = harness.createPlot('/top');
+        assert.deepStrictEqual(top.dimensionSlices, { time: 0 });
+        assert.strictEqual(top.cmap, 'viridis');
+        // Slices are merged dimension by dimension
+        const mid = harness.createPlot('/a/mid');
+        assert.deepStrictEqual(mid.dimensionSlices, { lat: '1:3', time: 0 });
+        assert.strictEqual(mid.cmap, 'magma');
+        const deepRequest = harness.createPlot('/a/b/deep');
+        assert.deepStrictEqual(deepRequest.dimensionSlices, {
+            lat: '1:3',
+            time: 0,
+        });
+        assert.strictEqual(deepRequest.cmap, 'magma');
+
+        // The tab of each level counts what it sets
+        assert.deepStrictEqual(
+            Array.from(
+                harness.editor().querySelectorAll('.plot-editor-tab'),
+                (tab: any) =>
+                    tab.querySelector('.count-badge')?.textContent ?? '',
+            ),
+            ['', '', '2', '2'],
+        );
+    });
+
+    test('summaries name each setting and its level; a click opens it', () => {
+        harness.loadData(sampleDataInfo());
+        const variable = harness.plotControls('/temperature');
+        const group = harness.groupPlotSection('/');
+        assert.strictEqual(
+            variable.querySelector('.plot-settings-summary').textContent,
+            'Settings: all automatic',
+        );
+        harness.openSettings(group);
+        harness.setValue(harness.setting('cmap'), 'magma');
+        harness.setValue(harness.slice('time'), '1', 'input');
+        harness.setValue(harness.slice(`d${EVIL}`), '0', 'input');
+        harness.openSettings(variable);
+        harness.setValue(harness.setting('vmax'), '10');
+
+        // A variable lists only the slices of its own dimensions
+        assert.deepStrictEqual(harness.chips(variable), [
+            ['time', '1', 'file'],
+            ['vmax', '10', 'variable'],
+            ['cmap', 'magma', 'file'],
+        ]);
+        assert.deepStrictEqual(harness.chips(group), [
+            [`d${EVIL}`, '0', 'file'],
+            ['time', '1', 'file'],
+            ['cmap', 'magma', 'file'],
+        ]);
+        assert.strictEqual(harness.window.__pwned, undefined);
+        // Set at the level of the summary: outlined
+        const here = Array.from(
+            variable.querySelectorAll('.settings-chip'),
+            (chip: any) => chip.classList.contains('settings-chip--here'),
+        );
+        assert.deepStrictEqual(here, [false, true, false]);
+
+        // A chip opens the editor of its host, on its level and field
+        harness.click(
+            harness.editor().querySelector('[data-action="editor-close"]'),
+        );
+        harness.click(variable.querySelectorAll('.settings-chip')[2]);
+        assert.ok(variable.contains(harness.editor()));
+        assert.strictEqual(
+            harness.editor().querySelector('[aria-selected="true"]')
+                .childNodes[0].textContent,
+            'Whole file',
+        );
+        assert.strictEqual(
+            harness.document.activeElement,
+            harness.setting('cmap'),
+        );
+        harness.click(variable.querySelectorAll('.settings-chip')[0]);
+        assert.strictEqual(
+            harness.document.activeElement,
+            harness.slice('time'),
+        );
+    });
+
+    test('settings are kept through Refresh, the editor is closed', () => {
+        harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('cmap'), 'magma');
+        harness.loadData(sampleDataInfo());
+        assert.strictEqual(harness.editor(), null);
+        assert.deepStrictEqual(
+            harness.chips(harness.plotControls('/temperature')),
+            [['cmap', 'magma', 'file']],
+        );
+        assert.strictEqual(harness.createPlot('/temperature').cmap, 'magma');
+    });
+
+    test('flags: the Flags fieldset only where flags apply; false asks for plain numbers', () => {
+        harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.strictEqual(harness.setting('useFlags'), null, 'no flags here');
+
+        harness.loadData(flagDataInfo());
+        harness.openSettings(harness.plotControls('/temperature'));
+        harness.setValue(harness.setting('useFlags'), 'false');
+        assert.strictEqual(harness.createPlot('/temperature').useFlags, false);
+    });
+
+    test('norm: linear by default, log sent, the variable over the file, seaborn hint', () => {
+        harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.groupPlotSection('/'));
+        const norm = () => harness.setting('norm');
+        assert.deepStrictEqual(options(norm()), [
+            ['', 'linear'],
+            ['log', 'log'],
+        ]);
+        // In the Color fieldset, after cmap
+        const field = norm().closest('.plot-field');
+        assert.strictEqual(field.previousElementSibling.dataset.field, 'cmap');
+        assert.match(
+            harness.setting('cmap').getAttribute('placeholder'),
+            /seaborn:rocket/,
+        );
+        assert.strictEqual(harness.createPlot('/temperature').norm, undefined);
+
+        harness.setValue(norm(), 'log');
+        assert.ok(field.classList.contains('plot-field--changed'));
+        assert.strictEqual(harness.createPlot('/temperature').norm, 'log');
+
+        // The variable's select shows what it falls back to
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.strictEqual(norm().options[0].textContent, 'log (file)');
+        harness.selectTab('Whole file');
+        harness.setValue(norm(), '');
+        harness.selectTab('This variable');
+        assert.strictEqual(norm().options[0].textContent, 'linear');
+        harness.setValue(norm(), 'log');
+        assert.strictEqual(harness.createPlot('/temperature').norm, 'log');
+        assert.strictEqual(
+            harness.createPlot(`/g${EVIL}/v${EVIL}`).norm,
+            undefined,
+            'other variables keep the file value',
+        );
+        harness.resetBlock('params');
+        assert.strictEqual(norm().value, '');
+        assert.ok(
+            !norm()
+                .closest('.plot-field')
+                .classList.contains('plot-field--changed'),
+        );
+    });
+
+    test('Flags controls: selection, combination and hidden flags, the variable over the file', () => {
+        harness.loadData(flagDataInfo());
+        harness.openSettings(harness.groupPlotSection('/'));
+        const combine = harness.setting('flagCombine');
+        assert.deepStrictEqual(options(combine), [
+            ['', 'per flag'],
+            ['any', 'any'],
+            ['all', 'all'],
+            ['none', 'none'],
+        ]);
+        harness.setValue(
+            harness.setting('flagSelect'),
+            ' cloud, cloud shadow ',
+        );
+        harness.setValue(combine, 'any');
+        harness.setValue(harness.setting('hideFlags'), 'land');
+        assert.ok(
+            combine
+                .closest('.plot-field')
+                .classList.contains('plot-field--changed'),
+        );
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.strictEqual(
+            harness.setting('flagCombine').options[0].textContent,
+            'any (file)',
+        );
+        harness.setValue(harness.setting('flagCombine'), 'none');
+        const request = harness.createPlot('/temperature');
+        assert.strictEqual(request.flagSelect, 'cloud, cloud shadow');
+        assert.strictEqual(request.flagCombine, 'none');
+        assert.strictEqual(request.hideFlags, 'land');
     });
 
     test('no time range controls, even for datetime variables', () => {
@@ -638,18 +1202,14 @@ suite('Webview script (jsdom)', () => {
     });
 
     suite('dimension slices: start / stop / step boxes and slider', () => {
-        // Global field of `time` (size 3, indices 0..2)
-        const field = () => {
-            const doc = harness.document;
-            const id = 'dim-slice-time';
-            return {
-                start: doc.getElementById(id),
-                stop: doc.getElementById(`${id}-stop`),
-                step: doc.getElementById(`${id}-step`),
-                from: doc.getElementById(`${id}-from`),
-                to: doc.getElementById(`${id}-to`),
-            };
-        };
+        // Field of `time` (size 3, indices 0..2) at the whole file level
+        const field = () => ({
+            start: harness.slice('time'),
+            stop: harness.slice('time', 'stop'),
+            step: harness.slice('time', 'step'),
+            from: harness.slice('time', 'from'),
+            to: harness.slice('time', 'to'),
+        });
         const boxes = () =>
             ['start', 'stop', 'step'].map(
                 (part) => (field() as any)[part].value,
@@ -665,7 +1225,10 @@ suite('Webview script (jsdom)', () => {
             return requests[requests.length - 1].payload.dimensionSlices;
         };
 
-        setup(() => harness.loadData(sampleDataInfo()));
+        setup(() => {
+            harness.loadData(sampleDataInfo());
+            harness.openSettings(harness.groupPlotSection('/'));
+        });
 
         test('a typed or pasted slice is spread over the boxes', () => {
             harness.setValue(field().start, '0:3:2', 'input');
@@ -771,81 +1334,140 @@ suite('Webview script (jsdom)', () => {
 
         test('Reset clears the boxes and the slider', () => {
             harness.setValue(field().start, '1:2', 'input');
-            harness.click(
-                harness.document.getElementById('clearDimensionSlicesButton'),
-            );
+            harness.resetBlock('slices');
             assert.deepStrictEqual(boxes(), ['', '', '']);
             assert.deepStrictEqual(handles(), ['0', '2']);
         });
     });
 
-    test('each Reset button clears its own block', () => {
+    test('each Reset button clears its own block of the level shown', () => {
         harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        harness.setValue(doc.getElementById('plotBinsInput'), '20');
-        doc.getElementById('robustCheckbox').checked = true;
-        doc.getElementById('plotColWrapAutoCheckbox').checked = true;
-        harness.setValue(doc.getElementById('dim-slice-lat'), '0:1');
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('bins'), '20');
+        harness.setValue(harness.setting('robust'), 'true');
+        harness.click(harness.setting('colWrap-auto'));
+        assert.strictEqual(harness.setting('colWrap').disabled, true);
+        harness.setValue(harness.slice('lat'), '0:1', 'input');
 
-        harness.click(doc.getElementById('clearDimensionSlicesButton'));
+        harness.resetBlock('slices');
+        assert.strictEqual(harness.slice('lat').value, '');
+        assert.strictEqual(harness.setting('bins').value, '20');
 
-        assert.strictEqual(doc.getElementById('dim-slice-lat').value, '');
-        assert.strictEqual(doc.getElementById('plotBinsInput').value, '20');
+        harness.resetBlock('params');
+        assert.strictEqual(harness.setting('bins').value, '');
+        assert.strictEqual(harness.setting('robust').value, '');
+        assert.strictEqual(harness.setting('colWrap-auto').checked, false);
+        assert.strictEqual(harness.setting('colWrap').disabled, false);
+        const request = harness.createPlot('/temperature');
+        assert.strictEqual(request.dimensionSlices, undefined);
+        assert.strictEqual(request.bins, undefined);
+        assert.strictEqual(request.robust, false, 'back to its default');
+    });
 
-        harness.click(doc.getElementById('clearPlotParametersButton'));
-
-        assert.strictEqual(doc.getElementById('plotBinsInput').value, '');
-        assert.strictEqual(doc.getElementById('robustCheckbox').checked, false);
-        assert.strictEqual(
-            doc.getElementById('plotColWrapAutoCheckbox').checked,
-            false,
-        );
-        assert.strictEqual(
-            doc.getElementById('xIncreaseCheckbox').checked,
-            true,
+    test('Reset is not undone by the change event of a box removed while focused', () => {
+        harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('cmap'), 'magma', 'input');
+        const cmap = harness.setting('cmap');
+        cmap.focus();
+        // Chrome fires `change` on a focused input as the editor replaces it
+        const editor = harness.editor();
+        const proto = harness.window.Element.prototype;
+        const descriptor = Object.getOwnPropertyDescriptor(
+            proto,
+            'innerHTML',
+        ) as {
+            get: (this: unknown) => string;
+            set: (this: unknown, value: string) => void;
+        };
+        Object.defineProperty(editor, 'innerHTML', {
+            configurable: true,
+            get() {
+                return descriptor.get.call(this);
+            },
+            set(value: string) {
+                cmap.dispatchEvent(
+                    new harness.window.Event('change', { bubbles: true }),
+                );
+                descriptor.set.call(this, value);
+            },
+        });
+        harness.resetBlock('params');
+        assert.strictEqual(harness.createPlot('/temperature').cmap, undefined);
+        assert.deepStrictEqual(
+            harness.chips(harness.groupPlotSection('/')),
+            [],
         );
     });
 
-    test('changed controls are outlined until reset', () => {
+    test('fields set at the level shown are outlined; the others show what they fall back to', () => {
         harness.loadData(sampleDataInfo());
+        harness.openSettings(harness.groupPlotSection('/'));
         const doc = harness.document;
-        const field = (id: string) =>
-            doc.getElementById(id).closest('.plot-field');
-        const changed = (id: string) =>
-            field(id).classList.contains('plot-field--changed');
+        const changed = (element: any) =>
+            element
+                .closest('.plot-field')
+                .classList.contains('plot-field--changed');
         assert.strictEqual(
             doc.querySelectorAll('.plot-field--changed').length,
             0,
-            'nothing changed after loading',
         );
 
-        harness.setValue(doc.getElementById('dim-slice-lat'), '0:1', 'input');
-        harness.setValue(doc.getElementById('plotBinsInput'), '20', 'input');
-        doc.getElementById('robustCheckbox').click();
-        doc.getElementById('xIncreaseCheckbox').click();
-        doc.getElementById('xIncreaseCheckbox').click();
-        assert.ok(changed('dim-slice-lat'), 'slice');
-        assert.ok(changed('plotBinsInput'), 'number');
-        assert.ok(changed('robustCheckbox'), 'checkbox off by default');
-        assert.ok(!changed('xIncreaseCheckbox'), 'back to its default');
-        assert.ok(!changed('plotCmapInput'), 'untouched');
+        harness.setValue(harness.slice('lat'), '0:1', 'input');
+        harness.setValue(harness.setting('bins'), '20', 'input');
+        harness.setValue(harness.setting('robust'), 'true');
+        harness.setValue(harness.setting('xincrease'), 'false');
+        harness.setValue(harness.setting('xincrease'), '');
+        assert.ok(changed(harness.slice('lat')), 'slice');
+        assert.ok(changed(harness.setting('bins')), 'number');
+        assert.ok(changed(harness.setting('robust')), 'true / false');
+        assert.ok(!changed(harness.setting('xincrease')), 'back to empty');
+        assert.ok(!changed(harness.setting('cmap')), 'untouched');
 
         // Every box of the slice emptied
-        harness.setValue(doc.getElementById('dim-slice-lat'), '', 'input');
-        assert.ok(changed('dim-slice-lat'), 'the stop box is still set');
-        harness.setValue(doc.getElementById('dim-slice-lat-stop'), '', 'input');
-        assert.ok(!changed('dim-slice-lat'), 'all boxes empty');
+        harness.setValue(harness.slice('lat'), '', 'input');
+        assert.ok(changed(harness.slice('lat')), 'the stop box is still set');
+        harness.setValue(harness.slice('lat', 'stop'), '', 'input');
+        assert.ok(!changed(harness.slice('lat')), 'all boxes empty');
 
-        harness.click(doc.getElementById('clearPlotParametersButton'));
-        assert.ok(!changed('plotBinsInput'));
-        assert.ok(!changed('robustCheckbox'));
-
-        const groupColorbar = doc.getElementById(
-            'group-add-colorbar-group-plot___-',
+        // At the variable level, nothing is set: the file values are in grey
+        harness.setValue(harness.slice('time'), '1', 'input');
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.strictEqual(
+            doc.querySelectorAll('.plot-field--changed').length,
+            0,
         );
-        assert.ok(!changed(groupColorbar.id), 'group uses the global value');
-        groupColorbar.click();
-        assert.ok(changed(groupColorbar.id), 'group value of its own');
+        assert.strictEqual(
+            harness.setting('bins').getAttribute('placeholder'),
+            '20 (file)',
+        );
+        assert.strictEqual(
+            harness.setting('robust').options[0].textContent,
+            'true (file)',
+        );
+        assert.strictEqual(
+            harness.setting('xincrease').options[0].textContent,
+            'true (default)',
+        );
+        assert.match(
+            harness
+                .slice('time')
+                .closest('.dimension-slice-row')
+                .querySelector('.plot-field-hint').textContent,
+            /^size 3 · 1 \(file\)$/,
+        );
+        // Opened again, the file level shows what it sets
+        harness.openSettings(harness.groupPlotSection('/'));
+        assert.strictEqual(harness.setting('bins').value, '20');
+        assert.ok(changed(harness.setting('bins')));
+        assert.deepStrictEqual(
+            ['start', 'stop', 'step', 'from', 'to'].map(
+                (part) =>
+                    harness.slice('time', part === 'start' ? '' : part).value,
+            ),
+            ['1', '', '', '1', '1'],
+            'boxes and slider rebuilt from the stored text',
+        );
     });
 
     test('the plot shows its layout: set by the user or automatic', async () => {
@@ -983,81 +1605,89 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
-    test('a group checkbox uses the global value until clicked, again after Reset', () => {
+    test('a true / false setting: its default, the file value, then the variable value', () => {
         harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        const safeId = 'group-plot___-';
-        const globalColorbar = doc.getElementById('addColorbarCheckbox');
-        const groupColorbar = doc.getElementById(
-            `group-add-colorbar-${safeId}`,
+        assert.strictEqual(
+            harness.createPlot('/temperature').addColorbar,
+            true,
+            'default',
         );
-        const create = () => {
-            harness.click(
-                harness
-                    .plotControls('/temperature')
-                    .querySelector('[data-action="create-plot"]'),
-            );
-            return harness.requests('createPlot').pop().payload;
-        };
-        assert.strictEqual(groupColorbar.indeterminate, true);
-        assert.strictEqual(groupColorbar.getAttribute('data-inherit'), 'true');
-
-        globalColorbar.checked = false;
-        assert.strictEqual(create().addColorbar, false, 'global value used');
-
-        groupColorbar.click();
-        assert.strictEqual(groupColorbar.indeterminate, false);
-        assert.strictEqual(groupColorbar.checked, true);
-        assert.strictEqual(groupColorbar.getAttribute('data-inherit'), null);
-        assert.strictEqual(create().addColorbar, true, 'group overrides');
-
-        harness.click(
-            groupColorbar
-                .closest('.plot-controls-subsection')
-                .querySelector('[data-action="clear-plot-controls"]'),
+        harness.openSettings(harness.groupPlotSection('/'));
+        assert.deepStrictEqual(options(harness.setting('addColorbar')), [
+            ['', 'true (default)'],
+            ['true', 'true'],
+            ['false', 'false'],
+        ]);
+        harness.setValue(harness.setting('addColorbar'), 'false');
+        assert.strictEqual(
+            harness.createPlot('/temperature').addColorbar,
+            false,
+            'file value',
         );
-        assert.strictEqual(groupColorbar.indeterminate, true);
-        assert.strictEqual(create().addColorbar, false, 'back to global');
+
+        harness.openSettings(harness.plotControls('/temperature'));
+        assert.strictEqual(
+            harness.setting('addColorbar').options[0].textContent,
+            'false (file)',
+        );
+        harness.setValue(harness.setting('addColorbar'), 'true');
+        assert.strictEqual(
+            harness.createPlot('/temperature').addColorbar,
+            true,
+            'variable value',
+        );
+        harness.resetBlock('params');
+        assert.strictEqual(
+            harness.createPlot('/temperature').addColorbar,
+            false,
+            'back to the file value',
+        );
     });
 
     test('a number typed wrong is outlined and blocks the plot with a message', async () => {
         harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        const vmin = doc.getElementById('plotVminInput');
-        const size = doc.getElementById('plotSizeInput');
-        harness.setValue(vmin, '1,5', 'input');
-        harness.setValue(size, '-3', 'input');
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('vmin'), '1,5', 'input');
+        harness.setValue(harness.setting('size'), '-3', 'input');
+        const vmin = harness.setting('vmin');
         assert.strictEqual(vmin.getAttribute('aria-invalid'), 'true');
         assert.match(vmin.title, /use a dot as decimal separator/);
-        assert.strictEqual(size.getAttribute('aria-invalid'), 'true');
+        assert.strictEqual(
+            harness.setting('size').getAttribute('aria-invalid'),
+            'true',
+        );
 
         const controls = harness.plotControls('/temperature');
         harness.click(controls.querySelector('[data-action="create-plot"]'));
         await new Promise((resolve) => setTimeout(resolve, 0));
-
         assert.strictEqual(harness.requests('createPlot').length, 0);
         const message = controls.querySelector('.plot-error').textContent;
         assert.match(message, /nothing was plotted/);
-        assert.match(
-            message,
-            /Global Plot Controls: vmin: "1,5" is not a number/,
-        );
-        assert.match(
-            message,
-            /Global Plot Controls: size: must be greater than 0/,
-        );
+        assert.match(message, /Whole file: vmin: "1,5" is not a number/);
+        assert.match(message, /Whole file: size: must be greater than 0/);
 
-        harness.setValue(vmin, '1.5', 'input');
-        const reset = doc.querySelector(
-            '#section-global-plot-controls .plot-parameters [data-action="clear-plot-controls"]',
+        // A wrong value that a nearer level overrides does not count
+        harness.openSettings(controls);
+        harness.setValue(harness.setting('vmin'), '0.5');
+        harness.setValue(harness.setting('size'), '4');
+        assert.strictEqual(harness.createPlot('/temperature').vmin, 0.5);
+
+        // Opened again, the wrong text is still there, outlined
+        harness.openSettings(harness.groupPlotSection('/'));
+        assert.strictEqual(harness.setting('vmin').value, '1,5');
+        assert.strictEqual(
+            harness.setting('vmin').getAttribute('aria-invalid'),
+            'true',
         );
-        harness.click(reset);
-        assert.strictEqual(vmin.getAttribute('aria-invalid'), null);
-        assert.strictEqual(size.getAttribute('aria-invalid'), null);
-        harness.setValue(vmin, '-1e-7', 'input');
-        harness.click(controls.querySelector('[data-action="create-plot"]'));
-        const [request] = harness.requests('createPlot');
-        assert.strictEqual(request.payload.vmin, -1e-7);
+        harness.resetBlock('params');
+        assert.strictEqual(
+            harness.setting('vmin').getAttribute('aria-invalid'),
+            null,
+        );
+        harness.setValue(harness.setting('vmin'), '-1e-7', 'input');
+        harness.openSettings(controls);
+        harness.resetBlock('params');
+        assert.strictEqual(harness.createPlot('/temperature').vmin, -1e-7);
     });
 
     test('Plot All does not start a second plot of a variable already plotting', async () => {
@@ -1148,11 +1778,225 @@ suite('Webview script (jsdom)', () => {
         assert.strictEqual(controls.querySelector('img'), null);
     });
 
-    test('export keeps the state of cards, sections and slice widgets', async () => {
+    suite('Expand All and the Xarray Encoding sections', () => {
+        /** Export the page and open it as a browser would (degraded mode). */
+        async function exportedPage(): Promise<any> {
+            harness.click(
+                harness.document.getElementById('exportWebviewButton'),
+            );
+            const exported = harness.requests('exportWebview').pop().payload
+                .htmlContent as string;
+            const offline = new JSDOM(exported, { runScripts: 'dangerously' });
+            await new Promise((resolve) =>
+                offline.window.addEventListener('load', resolve),
+            );
+            return offline;
+        }
+        const closedDetails = (doc: any) =>
+            Array.from(doc.querySelectorAll('#content details')).filter(
+                (details: any) => !details.open,
+            );
+
+        test('Expand All leaves them closed by default, Collapse All closes them', () => {
+            harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
+            const doc = harness.document;
+            const expand = doc.getElementById('expandAllButton');
+            assert.strictEqual(expand.dataset.includeEncoding, 'false');
+            assert.strictEqual(
+                expand.title,
+                'Expand All Sections (except Xarray Encoding)',
+            );
+            // The group / and its temperature variable, the hostile group
+            const encodings = Array.from(
+                doc.querySelectorAll('.xarray-encoding-section'),
+            ) as any[];
+            assert.strictEqual(encodings.length, 3);
+            assert.ok(
+                encodings.every((section) =>
+                    section
+                        .querySelector('summary')
+                        .textContent.includes('Xarray Encoding'),
+                ),
+            );
+
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(doc), encodings);
+
+            // One opened by hand stays open
+            encodings[0].open = true;
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(doc), encodings.slice(1));
+
+            harness.click(doc.getElementById('collapseAllButton'));
+            assert.ok(encodings.every((section) => !section.open));
+            assert.ok(
+                Array.from(doc.querySelectorAll('#content details')).every(
+                    (details: any) => !details.open,
+                ),
+            );
+        });
+
+        test('with expandAllIncludesXarrayEncoding, Expand All opens them too', () => {
+            harness.loadData(sampleDataInfo(), {
+                expandAllIncludesXarrayEncoding: true,
+            });
+            const expand = harness.document.getElementById('expandAllButton');
+            assert.strictEqual(expand.dataset.includeEncoding, 'true');
+            assert.strictEqual(expand.title, 'Expand All Sections');
+            harness.click(expand);
+            assert.deepStrictEqual(closedDetails(harness.document), []);
+        });
+
+        test('an exported page keeps the choice', async () => {
+            harness.loadData(sampleDataInfo());
+            let offline = await exportedPage();
+            try {
+                const off = offline.window.document;
+                assert.ok(off.getElementById('degraded-mode-indicator'));
+                off.getElementById('expandAllButton').dispatchEvent(
+                    new offline.window.MouseEvent('click', { bubbles: true }),
+                );
+                const closed = closedDetails(off) as any[];
+                assert.strictEqual(closed.length, 3);
+                assert.ok(
+                    closed.every((details) =>
+                        details.classList.contains('xarray-encoding-section'),
+                    ),
+                );
+            } finally {
+                offline.window.close();
+            }
+
+            harness.loadData(sampleDataInfo(), {
+                expandAllIncludesXarrayEncoding: true,
+            });
+            offline = await exportedPage();
+            try {
+                const off = offline.window.document;
+                off.getElementById('expandAllButton').dispatchEvent(
+                    new offline.window.MouseEvent('click', { bubbles: true }),
+                );
+                assert.deepStrictEqual(closedDetails(off), []);
+            } finally {
+                offline.window.close();
+            }
+        });
+    });
+
+    test('Plot group plots the variables of its group only', async () => {
+        harness.loadData(sampleDataInfo());
+        const groupButton = (group: string) =>
+            harness
+                .groupPlotSection(group)
+                .querySelector('[data-action="plot-group"]');
+        harness.click(groupButton(`/g${EVIL}`));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.deepStrictEqual(
+            harness.requests('createPlot').map((r: any) => r.payload.variable),
+            [`/g${EVIL}/v${EVIL}`],
+        );
+        // While it runs, Plot all and every Plot group are disabled
+        assert.strictEqual(groupButton('/').disabled, true);
+        assert.strictEqual(
+            harness.document.getElementById('createAllPlotsButton').disabled,
+            true,
+        );
+        assert.ok(
+            !harness.document
+                .getElementById('cancelAllPlotsButton')
+                .classList.contains('hidden'),
+        );
+        const [request] = harness.requests('createPlot');
+        harness.respond(request.id, { plotData: 'iVBORw0KGgo=' });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const [notification] = harness.requests('showNotification');
+        assert.match(
+            notification.payload.message,
+            /^Plot group \/g.*: 1 successful$/,
+        );
+        harness.respond(notification.id, undefined);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.strictEqual(groupButton('/').disabled, false);
+    });
+
+    test('a plot says when its settings changed after it was made', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        const note = controls.querySelector('.plot-stale-note');
+        harness.createPlot('/temperature');
+        const [request] = harness.requests('createPlot');
+        harness.respond(request.id, { plotData: 'iVBORw0KGgo=' });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        assert.ok(note.classList.contains('hidden'));
+
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('cmap'), 'magma');
+        assert.ok(!note.classList.contains('hidden'), 'file setting changed');
+        harness.setValue(harness.setting('cmap'), '');
+        assert.ok(note.classList.contains('hidden'), 'back as plotted');
+        harness.setValue(harness.slice(`d${EVIL}`), '1', 'input');
+        assert.ok(
+            !note.classList.contains('hidden'),
+            'sent to every variable, even without that dimension',
+        );
+        harness.click(controls.querySelector('[data-action="reset-plot"]'));
+        assert.ok(note.classList.contains('hidden'), 'no plot, no note');
+    });
+
+    test('an item under the plot opens the settings on its field', async () => {
+        harness.loadData(sampleDataInfo());
+        const controls = harness.plotControls('/temperature');
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.setting('colWrap'), '2');
+        harness.createPlot('/temperature');
+        const [request] = harness.requests('createPlot');
+        harness.respond(request.id, {
+            plotData: 'iVBORw0KGgo=',
+            layout: {
+                kind: 'image',
+                choices: [
+                    { role: 'col', value: 'time', source: 'auto' },
+                    { role: 'col_wrap', value: 2, source: 'user' },
+                    { role: '__proto__', value: 1, source: 'auto' },
+                ],
+                squeezed: [],
+                notes: [],
+            },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const [col, colWrap, odd] = Array.from(
+            controls.querySelectorAll('.plot-layout-item'),
+        ) as any[];
+        assert.strictEqual(odd.dataset.focusParam, undefined);
+
+        // Automatic: the variable's own level
+        harness.click(col);
+        assert.ok(controls.contains(harness.editor()));
+        assert.strictEqual(
+            harness.editor().querySelector('[aria-selected="true"]')
+                .childNodes[0].textContent,
+            'This variable',
+        );
+        assert.strictEqual(
+            harness.document.activeElement,
+            harness.setting('facetCol'),
+        );
+        // Set by you: the level that sets it
+        harness.click(colWrap);
+        assert.strictEqual(
+            harness.editor().querySelector('[aria-selected="true"]')
+                .childNodes[0].textContent,
+            'Whole file',
+        );
+        assert.strictEqual(
+            harness.document.activeElement,
+            harness.setting('colWrap'),
+        );
+    });
+
+    test('export keeps cards, sections and the settings summaries, not the editor', async () => {
         harness.loadData(sampleDataInfo(), { nestedAttributesView: false });
         const doc = harness.document;
-        const set = (id: string, value: string) =>
-            harness.setValue(doc.getElementById(id), value, 'input');
         // Cards and sections: variable open, its attributes closed, encoding open
         const card = doc.getElementById(
             'data-group___-___variable___temperature',
@@ -1160,19 +2004,14 @@ suite('Webview script (jsdom)', () => {
         card.open = true;
         card.querySelector('[id$="___attributes"]').open = false;
         card.querySelector('[id$="___encoding"]').open = true;
-        // Slices: a range with step, an index with an ignored step, col_wrap auto
-        set('dim-slice-time', '1:3:2');
-        set('dim-slice-lat', '1');
-        set('dim-slice-lat-step', '2');
-        doc.getElementById('plotColWrapAutoCheckbox').checked = true;
-        harness.setValue(
-            doc.getElementById('plotColWrapAutoCheckbox'),
-            'on',
-            'change',
-        );
+        // Settings of the file; the editor is left open
+        harness.openSettings(harness.groupPlotSection('/'));
+        harness.setValue(harness.slice('time'), '1:3:2', 'input');
+        harness.click(harness.setting('colWrap-auto'));
         harness.click(doc.getElementById('exportWebviewButton'));
         const exported = harness.requests('exportWebview')[0].payload
             .htmlContent as string;
+        assert.ok(harness.editor(), 'the live editor stays open');
 
         const offline = new JSDOM(exported, { runScripts: 'dangerously' });
         await new Promise((resolve) =>
@@ -1180,6 +2019,7 @@ suite('Webview script (jsdom)', () => {
         );
         try {
             const off = offline.window.document;
+            assert.ok(off.getElementById('degraded-mode-indicator'));
             const offCard = off.getElementById(card.id);
             assert.deepStrictEqual(
                 [
@@ -1189,108 +2029,37 @@ suite('Webview script (jsdom)', () => {
                 ],
                 [true, false, true],
             );
-            const values = (id: string) =>
-                ['', '-stop', '-step', '-from', '-to'].map(
-                    (suffix) => off.getElementById(id + suffix).value,
-                );
-            assert.deepStrictEqual(values('dim-slice-time'), [
-                '1',
-                '3',
-                '2',
-                '1',
-                '2',
+            assert.strictEqual(off.querySelectorAll('.plot-editor').length, 0);
+            assert.strictEqual(off.querySelectorAll('input, select').length, 0);
+            const group = Array.from(
+                off.querySelectorAll('.group-plot-section'),
+            ).find((section: any) => section.dataset.group === '/') as any;
+            assert.deepStrictEqual(harness.chips(group), [
+                ['time', '1:3:2', 'file'],
+                ['col_wrap', 'auto', 'file'],
             ]);
-            assert.deepStrictEqual(values('dim-slice-lat'), [
-                '1',
-                '',
-                '2',
-                '1',
-                '1',
-            ]);
-            const timeRange = off
-                .getElementById('dim-slice-time-from')
-                .closest('.slice-range');
             assert.strictEqual(
-                timeRange.style.getPropertyValue('--slice-from'),
-                '0.5',
-            );
-            assert.ok(
-                off
-                    .getElementById('dim-slice-lat')
-                    .closest('.dimension-slice-row')
-                    .classList.contains('slice-step-ignored'),
-            );
-            assert.ok(off.getElementById('plotColWrapInput').disabled);
-            // Frozen: boxes read-only, sliders disabled, no Reset
-            assert.ok(off.getElementById('dim-slice-time').readOnly);
-            assert.ok(off.getElementById('dim-slice-time-from').disabled);
-            assert.strictEqual(
-                off.querySelectorAll('.plot-reset-button:not(.hidden)').length,
-                0,
-            );
-        } finally {
-            offline.window.close();
-        }
-    });
-
-    test('export keeps an empty selection outlined', async () => {
-        harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        harness.setValue(doc.getElementById('dim-slice-time'), '2:1', 'input');
-        assert.strictEqual(
-            doc
-                .getElementById('dim-slice-time-stop')
-                .getAttribute('aria-invalid'),
-            'true',
-        );
-        harness.click(doc.getElementById('exportWebviewButton'));
-        const exported = harness.requests('exportWebview')[0].payload
-            .htmlContent as string;
-        assert.match(
-            exported,
-            /id="dim-slice-time-stop"[^>]*aria-invalid="true"/,
-        );
-    });
-
-    test('export capture keeps control values', async () => {
-        harness.loadData(sampleDataInfo());
-        const doc = harness.document;
-        harness.setValue(doc.getElementById('plotBinsInput'), '42');
-        doc.getElementById('robustCheckbox').checked = true;
-        // One group checkbox set, the others left at "use the global value"
-        doc.getElementById('group-robust-group-plot___-').click();
-        harness.click(doc.getElementById('exportWebviewButton'));
-
-        const [request] = harness.requests('exportWebview');
-        const exported = request.payload.htmlContent as string;
-        assert.match(exported, /id="plotBinsInput"[^>]*value="42"/);
-        assert.match(exported, /id="robustCheckbox"[^>]*checked="checked"/);
-
-        // Opened in a browser, the export runs in degraded mode and keeps the values
-        const offline = new JSDOM(exported, { runScripts: 'dangerously' });
-        await new Promise((resolve) =>
-            offline.window.addEventListener('load', resolve),
-        );
-        try {
-            const offlineDoc = offline.window.document;
-            assert.ok(offlineDoc.getElementById('degraded-mode-indicator'));
-            assert.strictEqual(
-                offlineDoc.getElementById('plotBinsInput').value,
-                '42',
+                group.querySelector('.plot-controls-row').style.display,
+                'none',
+                'Plot group and Settings hidden in a browser',
             );
             assert.strictEqual(
-                offlineDoc.getElementById('refreshButton').style.display,
+                group
+                    .querySelector('.plot-settings-button')
+                    .getAttribute('aria-expanded'),
+                'false',
+            );
+            assert.strictEqual(
+                off.getElementById('createAllPlotsButton').style.display,
                 'none',
             );
-            const groupRobust = offlineDoc.getElementById(
-                'group-robust-group-plot___-',
-            );
-            const groupColorbar = offlineDoc.getElementById(
-                'group-add-colorbar-group-plot___-',
-            );
-            assert.strictEqual(groupRobust.checked, true);
-            assert.strictEqual(groupRobust.indeterminate, false);
-            assert.strictEqual(groupColorbar.indeterminate, true);
+            // A chip does nothing in a browser
+            group
+                .querySelector('.settings-chip')
+                .dispatchEvent(
+                    new offline.window.MouseEvent('click', { bubbles: true }),
+                );
+            assert.strictEqual(off.querySelectorAll('.plot-editor').length, 0);
         } finally {
             offline.window.close();
         }

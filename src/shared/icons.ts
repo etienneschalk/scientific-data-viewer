@@ -47,4 +47,16 @@ export const ICONS = {
     globe: icon(
         '<circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c-2.2 2.2-2.2 9.8 0 12M8 2c2.2 2.2 2.2 9.8 0 12"/>',
     ),
+    /** Plot all, plot a group */
+    play: icon('<path d="M5 3.25v9.5L12.75 8z"/>'),
+    /** Save all plots */
+    save: icon(
+        '<path d="M2.75 2.75h8.5l2 2v8.5H2.75z"/><path d="M5.25 2.75v3h5v-3M5.25 13.25v-4h5.5v4"/>',
+    ),
+    /** Clear all plots */
+    trash: icon(
+        '<path d="M2.75 4.25h10.5M6.25 4.25V2.75h3.5v1.5M4.25 4.25l.75 9h6l.75-9"/>',
+    ),
+    /** Close a panel */
+    close: icon('<path d="M4.25 4.25l7.5 7.5M11.75 4.25l-7.5 7.5"/>'),
 };

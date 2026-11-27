@@ -48,6 +48,7 @@ REQUEST_NOTES = {
     "savePlotAs": "save dialog",
     "openPlot": "writes to the temp folder, opens it",
     "refresh": "`loadFile` again",
+    "setRawMode": "Reopen raw / decoded: `loadFile` again, per panel",
     "showNotification": "info / warning / error toast",
     "executeCommand": "only the commands in `WEBVIEW_ALLOWED_COMMANDS`",
     "exportWebview": "saves the captured page",
@@ -139,7 +140,8 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             "Webview bundle",
             "Built separately by esbuild into `out/webview/webview.js`, with its own `tsconfig.json` and DOM types. "
             f"Outside its own folder it imports only {shared}, so the message protocol is the only runtime contract "
-            "between the two sides. `plotParams.ts` is the single table of plot controls.",
+            "between the two sides. `plotParams.ts` is the single table of plot controls; `plotSettings.ts` "
+            "keeps their values for every level (variable, group, whole file).",
             "`main.ts` installs one delegated click listener (the CSP forbids inline handlers) and dispatches on "
             "element ids and `data-action` attributes. Without a VS Code API (exported HTML opened in a browser) the "
             "bus runs in degraded mode and rejects every request.",
@@ -175,7 +177,7 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
             "when the panel is already gone.",
             "Each variable's Cancel button, like “Cancel all”, sends `abortPlot` and shows the plot as cancelled at "
             "once; the response that follows is ignored. "
-            "“Create all plots” runs these requests with a concurrency limit so that cancel requests still get "
+            "“Plot all” (header) and “Plot group” run these requests with a concurrency limit so that cancel requests still get "
             "through. Steps 16 and 19 are the same `runProcess` stop routine: SIGTERM, then SIGKILL after a "
             f"{grace} grace period.",
             read=[
@@ -194,15 +196,18 @@ def sections(facts: Facts, webview_host_imports: list[str]) -> list[Section]:
         Section(
             "plot-parameters",
             "Plot parameters, from the controls to the request",
-            "Every plot control is optional. The webview merges the variable's Group Plot Controls over the "
-            "Global ones field by field, then sends only the fields that are set: an empty field means "
-            "“choose it for me”. A field that differs from its default is outlined, so the outlines are "
-            "exactly what the request overrides.",
+            "Every plot setting is optional and belongs to a level: a variable, a group (with its subgroups) or "
+            "the whole file (group `/`). The settings editor, built when a Settings button is clicked, writes the "
+            "text of its controls to the store of `plotSettings.ts`. For each parameter and each dimension slice, "
+            "the first level of the variable's chain (variable, its group, the parent groups, the file) that sets "
+            "it wins, and only the fields set are sent: an empty field means “choose it for me”.",
             "The result carries, next to the PNG, the layout the backend resolved: the plot kind and each role "
             "(x, y, hue, row, col, col_wrap, size, aspect) with its value and whether it was set by the user or "
             "chosen automatically. The line under the plot outlines the user's items the same way, and lists "
             "the choices that could not be used.",
             read=[
+                "src/panel/webview/plotSettings.ts",
+                "src/panel/webview/plotEditor.ts",
                 "src/panel/webview/plotParams.ts",
                 "src/panel/webview/changedFields.ts",
                 "src/panel/webview/plotActions.ts",

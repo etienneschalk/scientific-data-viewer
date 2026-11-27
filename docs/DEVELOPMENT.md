@@ -86,17 +86,18 @@ python python/get_data_info.py info artefacts/sample-data/sample_data.nc
 python python/get_data_info.py plot artefacts/sample-data/sample_data.nc /temperature --style default
 ```
 
-| Module                           | Responsibility                                                                                                                                             |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope                                                                           |
-| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                                                                                |
-| `environment/`                   | Installed packages, xarray engine selection per extension                                                                                                  |
-| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                                                                                |
-| `opening.py`                     | Opening as DataTree or per-group Datasets with decode_cf fallback (`OpenedData`)                                                                           |
-| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                                                                        |
-| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, layout (`layout.py`), drawing (`draw.py`), PNG rendering; see [PLOTTING.md](./PLOTTING.md) |
+| Module                           | Responsibility                                                                                                                                                                                                                                  |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cli.py`                         | Argument parsing, builds `InfoOptions` / `PlotOptions`, prints the JSON envelope                                                                                                                                                                |
+| `results.py`, `serialization.py` | Result dataclasses (the JSON contract with the extension) and JSON encoding                                                                                                                                                                     |
+| `environment/`                   | Installed packages, xarray engine selection per extension                                                                                                                                                                                       |
+| `formats/`                       | Format detection (Zarr incl. zipped, Kerchunk, GeoTIFF/COG)                                                                                                                                                                                     |
+| `opening.py`                     | Opening as DataTree or per-group Datasets, engine and `decode_times` fallbacks, `OpenReport` (`OpenedData`)                                                                                                                                     |
+| `decoding.py`                    | Which decoders and `backend_kwargs` are passed, and their source (viewer default, setting, time fallback, raw); allowlist of user `backend_kwargs`                                                                                              |
+| `info/`                          | `get_file_info`: reprs, per-group variables/coordinates/attributes, datetime ranges                                                                                                                                                             |
+| `plotting/`                      | `create_plot`: variable selection, slicing, datetime filtering, layout (`layout.py`), drawing (`draw.py`), `seaborn:` colormaps (`colormaps.py`), log scale (`norm.py`), CF flags (`flags.py`), PNG rendering; see [PLOTTING.md](./PLOTTING.md) |
 
-Dependencies point one way: `cli → info / plotting → opening → formats → environment`.
+Dependencies point one way: `cli → info / plotting → opening → formats → environment`; `decoding` (options and keyword resolution) is used by `cli`, the option classes and `opening`.
 
 Other scripts in `python/`:
 
@@ -109,6 +110,11 @@ Other scripts in `python/`:
 - **`non_regression_test_plot.py`**: renders a gallery of plot cases for visual checks (issue #117 workflows) from `artefacts/sample-data/hs-issue-0117.nc` into `artefacts/non-regression-plots/v<version>/` (`summary.md`, each plot next to its xarray code); its cases are also compared with the last release by `scripts/qa/backend/diff_scen.py` (`i117_*` scenarios)
 - **`tools/golden_snapshots.py`**: records / checks the backend JSON output on `artefacts/sample-data/`
   (`record` before a refactoring, `check` after it)
+
+Exploration scripts behind a feature proposal live in `scripts/prototypes/` (e.g. `cf_flags.py`,
+behind `docs/v0.14/CF_FLAGS_PROPOSAL.md`): plain matplotlib, outside the backend, run with
+`.venv/bin/python scripts/prototypes/<name>.py`, output in `artefacts/prototypes/<name>/`. The
+`prototypes` step of `paranoia.sh` checks that they still run; delete one once its feature is built.
 
 Run the Python tests with `pytest python/tests` (pytest config is in `python/pyproject.toml`).
 
@@ -328,7 +334,9 @@ Everything a development script writes goes to `artefacts/` at the repository ro
 | `artefacts/sample-data/`                    | `python python/create_sample_data.py [--overwrite]` (seeded: the same files on every machine)                                                              |
 | `artefacts/golden/`                         | `python/tools/golden_snapshots.py record` (paths written `<SAMPLES>/…`, `<REPO>/…`)                                                                        |
 | `artefacts/non-regression-plots/v<ver>/`    | `python python/non_regression_test_plot.py`                                                                                                                |
+| `artefacts/prototypes/<name>/`              | `scripts/prototypes/<name>.py`                                                                                                                             |
 | `artefacts/screenshots/v<major.minor>/`     | `npm run screenshots`                                                                                                                                      |
+| `artefacts/demo-video/`                     | `scripts/demo-video/record.mjs` (profile, footage) and `montage.py` (`scientific-data-viewer-demo.mp4`)                                                    |
 | `artefacts/qa/`                             | the QA harnesses of `scripts/qa/` (`$SDV_QA_OUT`)                                                                                                          |
 | `artefacts/paranoia/<date-time>/`, `latest` | `./paranoia.sh` (its own QA outputs, package, logs and report)                                                                                             |
 | `artefacts/vsix-releases/`                  | `npm run package`, `publish.sh`, and `scripts/release-vsix.sh <version>`, which rebuilds a release from its git tag (Open VSX download if the build fails) |
@@ -342,18 +350,31 @@ Full technical note: [`SCREENSHOTS.md`](./SCREENSHOTS.md).
 `npm run screenshots` saves full-page screenshots of the viewer to `artefacts/screenshots/v<major.minor>/<theme>/` (for example `artefacts/screenshots/v0.13/dark-modern/03-plots.png`), plus an `index.html` gallery. The folder is git-ignored. Run it after a UI change, or before a release to compare with the previous version's folder.
 
 - **What is rendered**: the real page, made of the `HTMLGenerator` markup, the compiled webview bundle and `styles.css`. It is fed by the real Python backend: info and plots run through `python/get_data_info.py` with the extension's CLI arguments and default settings. The page is shown in the built-in VS Code themes (Dark Modern, Light Modern, High Contrast, High Contrast Light, and 2026 Dark / 2026 Light, the defaults of new profiles since VS Code 1.145).
-- **Scenarios**: `overview`, `expanded` (every section open), `plots` (every data variable plotted), `plot-error` (out-of-range slice), `error-page` (unreadable file), `narrow` (420 px) and `changed-controls` (controls changed by the user, outlined, and the plot layout line). Files are numbered in this order, also when you run only some of them.
+- **Scenarios**: `overview`, `expanded` (every section open), `plots` (every data variable plotted), `plot-error` (out-of-range slice), `error-page` (unreadable file), `narrow` (420 px), `changed-controls` (settings of the whole file, outlined, their summaries and the plot layout line) and `plot-settings` (the settings of a variable: tabs, values of the file in grey). Files are numbered in this order, also when you run only some of them.
 - **Data**: a small seeded NetCDF with groups, created by `scripts/screenshots/make_fixture.py` in `artefacts/screenshots/.fixture/`. It is the same for every version, so screenshots can be compared. `--file <path>` shows another file instead.
 - **Requirements**: Node 22 (`nvm use`); a Python with xarray, netCDF4 and matplotlib (`--python`, `$SDV_PYTHON`, else `.venv`, else `python3`); Chrome, Chromium or Edge (`--chrome`, `$CHROME_PATH`, else Playwright's Chromium, else the usual install locations). No npm package is added: Chromium is driven over the DevTools protocol with Node's built-in WebSocket.
 
 ```bash
 npm run screenshots                                   # compile, then all themes and scenarios
 npm run screenshots -- --skip-compile --theme dark-modern --scenario plots
-npm run screenshots -- --setting groupDimensionSlices=false
+npm run screenshots -- --setting nestedAttributesView=false
 npm run screenshots -- --scale 2 --width 1280         # sharper images for docs
 ```
 
 The theme variables come from `scripts/screenshots/themes/*.json`. They were recorded from a real VS Code by `node scripts/screenshots/capture-themes.mjs`, which starts VS Code through `@vscode/test-electron` (like `npm test`, so it needs a display) and switches through the themes listed in `scripts/screenshots/themes.mjs`. Re-run it when VS Code changes its default themes, then commit the JSON files.
+
+#### Demo video
+
+Full note: [`scripts/demo-video/README.md`](../scripts/demo-video/README.md).
+
+`scripts/demo-video/` films a new user's first minute in a real VS Code and edits it into `artefacts/demo-video/scientific-data-viewer-demo.mp4` (1920 × 1080, about 1 min 30 s). The minute covers Python set up from the Getting Started walkthrough (uv), a NetCDF file opened from the Explorer, its structure browsed, then plots made and tuned. VS Code runs offscreen (Ozone headless): no window opens and no display is needed. The packaged extension is installed in a fresh profile under `artefacts/demo-video/run/`, and `scenario.mjs` drives it over the DevTools protocol: mouse, keyboard, viewer webview. `montage.py` adds the title and end cards, cursor, clicks, shortcut key caps, captions and zooms, and speeds up the wait for uv.
+
+```bash
+node scripts/demo-video/record.mjs [--skip-setup]     # footage + cues -> artefacts/demo-video/recording/
+uv run --no-project --with pillow --with imageio-ffmpeg python scripts/demo-video/montage.py [--sheet] [--gif]
+```
+
+`--skip-setup` uses the repository `.venv` and skips the Python chapter: use it while editing the storyboard. `./paranoia.sh --full-with-extras` makes the video from the release package (step `demo-video`, an extra: not run by `--full`).
 
 #### Architecture diagrams
 
@@ -398,12 +419,14 @@ The two plot comparisons write a Markdown report next to their images (old and n
 ./paranoia.sh --quick        # static checks, build, package, pytest, npm test (~5 min)
 ./paranoia.sh                # + golden snapshots, backend / webview vs the last release, npm audit, CI status (~20 min)
 ./paranoia.sh --full         # + e2e suites on the packaged extension, migration from every release, failed rebuilds, screenshots (~45 min)
+./paranoia.sh --full-with-extras   # + extras, which are not checks: the demo video (~50 min)
 ./paranoia.sh --list         # step ids; --only a,b / --skip a,b; --baseline v0.12.1; -v shows the output
 ```
 
-- **Verdict**: `NOT READY` (a check failed), `NOT FULLY VERIFIED` (nothing failed, but steps were skipped or the profile is not `--full`), `READY AFTER REVIEW` (warnings: differences a human must judge, such as plots that look different from the last release), `READY`. Exit code 1 when a check failed.
+- **Verdict**: `NOT READY` (a check failed), `NOT FULLY VERIFIED` (nothing failed, but steps were skipped or the profile is not `--full` / `--full-with-extras`), `READY AFTER REVIEW` (warnings: differences a human must judge, such as plots that look different from the last release), `READY`. Exit code 1 when a check failed.
 - **Checks that exist only here**: what the users install, rather than the working tree. The `.vsix` is built in the run folder and audited (every runtime file present, every relative `require()` resolves, nothing leaked); its Python backend is run on sample files from outside the repository; the e2e suites and the upgrade sandbox use it. Also: the version is above the one on the Marketplace and Open VSX and its tag does not exist, the relative links of README / CHANGELOG / release documents resolve, and the uv environment changed since the last release (then the upgrade sandbox must pass). Commits missing from the commit list of the PR summary are listed in the `release` log for information only: that list always lags one commit behind.
 - **Everything runs**: the sample data is regenerated (`--overwrite`), so the generators are tested and match the commit; the issue #117 gallery cases are compared with the last release in `qa-scen`; the architecture diagrams are regenerated with Graphviz and must equal the committed ones; the `.vsix` of each older release needed by the migration is rebuilt from its tag when `artefacts/vsix-releases/` does not have it. `capture-themes.mjs` (records VS Code theme colors to commit) and `publish.sh` are not checks and are not run.
+- **Extras** (`--full-with-extras`): steps that are useful before a release but check nothing, today the demo video (`demo-video`, [§ Demo video](#demo-video)). Other profiles list them as `EXTRA` (under _Not run_ in the report), and so does `--skip demo-video`; an extra left out never lowers the verdict, so `--full` can still say `READY`. `--only demo-video` runs it alone. Give a new extra the profile `full-with-extras` in `STEPS`.
 - **Migration** (`--full`): `scripts/upgrade-sandbox.sh` plays an update from each older release to this one as a user would (settings of their own, a data file opened before and after) and checks that the uv environment is rebuilt or kept as `ENVIRONMENT_REVISION` and the requirements say, that the viewer shows the file with that environment, and that `settings.json` is unchanged. Two synthetic cases pin the counter down: the same release must keep the environment, the same release with its revision raised must rebuild it. See [`UPGRADE_TEST_PLAN.md`](./v0.13/UPGRADE_TEST_PLAN.md).
 - **Golden snapshots without local ones**: with `artefacts/golden/` empty (a fresh clone, CI), the `golden` step records the snapshots with the backend of the last release, in the same checkout as the QA diffs (`qa-baseline`, which runs first; `--baseline <ref>` chooses the release for both) and checks HEAD against them, with the same interpreter. The snapshots of the run are in `<run>/golden/` (the output of the release); the diffs, cut after 60 lines per case, in `logs/golden.log`. An older backend rejects the options it does not know: when they are only defaults of the extension (`--netcdf-engine-order`), the case is recorded without them and compared (`FAIL … (recorded without …)` when it differs); when they are what the case tests (`--no-show-inherited-coordinates`, `--facetgrid-figsize`, …), it is `N/A` and does not count as failing. Plot images are compared by hash only: look at the `qa-plot` / `qa-scen` images to see how a plot changed.
 - **On GitHub** ([`.github/workflows/paranoia.yml`](../.github/workflows/paranoia.yml)): the same script on an Ubuntu runner, so nothing opens on your screen. Start it with the **`paranoia`** label on a pull request (full profile, again on each push while the label is there), by hand from **Actions → Paranoia → Run workflow** (`quick`, `standard` or `full`; `gh workflow run paranoia.yml -f profile=full --ref <branch>`; only once the workflow is on the default branch), or let the Monday run on the default branch catch new releases of the uv environment's packages. The verdict and `REPORT.md` are on the run's summary page; logs, plot differences, screenshots and the `.vsix` are in its artifact (14 days). The runner gets the development packages from [`requirements-dev.txt`](../requirements-dev.txt) (pinned, so a run does not change when a package is released; the extension's uv environment stays unpinned, as for users), Chrome from the image (`CHROME_PATH`), Xvfb and Graphviz from apt. In CI the `ci` step passes (it is the CI), golden records with the last release tag, and the backend interpreter of the QA harnesses is `artefacts/backend-env`, which the `env` step builds like the extension builds its own environment (uv, Python 3.13, `ALL_REQUIREMENTS` + `ENVIRONMENT_CONSTRAINTS`, unpinned, no `kerchunk`) whenever there is no extension environment and no `SDV_PYTHON`; the `.venv` is for the tooling and the Kerchunk tests. The e2e suite S2 needs a backend without `kerchunk`: when the backend interpreter has it (for example installed in the extension's environment from the error page), the `qa-e2e` step builds or reuses `artefacts/backend-env` for that test (`SDV_NO_KERCHUNK_PYTHON`) and leaves the backend interpreter as it is. Not covered: Windows and macOS (the script is Linux only; `pr-validation.yml` runs `npm test` on Windows). A full run takes about an hour and a quarter.

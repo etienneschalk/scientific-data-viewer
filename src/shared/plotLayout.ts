@@ -5,7 +5,21 @@
  */
 
 export type PlotLayoutRole =
-    'row' | 'col' | 'col_wrap' | 'y' | 'x' | 'hue' | 'size' | 'aspect' | 'bins';
+    | 'row'
+    | 'col'
+    | 'col_wrap'
+    | 'y'
+    | 'x'
+    | 'hue'
+    | 'size'
+    | 'aspect'
+    | 'bins'
+    /** Log scale and its limits (reported, not an xarray kwarg) */
+    | 'norm'
+    /** CF flag variable drawn by meaning (reported, not an xarray kwarg) */
+    | 'flags'
+    /** Points hidden by an ancillary flag variable (reported only) */
+    | 'hide_flags';
 
 export interface PlotLayoutChoice {
     role: PlotLayoutRole;
@@ -15,7 +29,8 @@ export interface PlotLayoutChoice {
 }
 
 export interface PlotLayoutReport {
-    kind: 'image' | 'line' | 'histogram';
+    /** `bars`: one bar per meaning of a CF flag variable (instead of a histogram) */
+    kind: 'image' | 'line' | 'histogram' | 'bars';
     choices: PlotLayoutChoice[];
     /** Size-1 dimensions dropped (index 0) because no parameter placed them */
     squeezed: string[];

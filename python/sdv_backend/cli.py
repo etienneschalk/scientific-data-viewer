@@ -7,6 +7,13 @@ from dataclasses import asdict
 from pathlib import Path
 
 from sdv_backend._bootstrap import logger
+from sdv_backend.decoding import (
+    DecodingOptions,
+    parse_decode_coords,
+    parse_engine_backend_kwargs,
+    parse_on_off,
+)
+from sdv_backend.flags import parse_flag_names
 from sdv_backend.formats.zarr import resolve_store_path
 from sdv_backend.info.display import (
     DEFAULT_SMALL_VALUE_DISPLAY_MAX_LEN,
@@ -15,6 +22,8 @@ from sdv_backend.info.display import (
 from sdv_backend.info.extract import get_file_info
 from sdv_backend.info.options import InfoOptions
 from sdv_backend.plotting.api import create_plot
+from sdv_backend.plotting.flags import FLAG_COMBINE_CHOICES
+from sdv_backend.plotting.norm import NORM_CHOICES
 from sdv_backend.plotting.options import (
     PlotOptions,
     parse_col_wrap,
@@ -249,7 +258,24 @@ Examples:
         "--cmap",
         type=str,
         default=None,
-        help="Matplotlib colormap name (user must provide a valid existing cmap). See https://matplotlib.org/stable/users/explain/colors/colormaps.html",
+        help=(
+            "Matplotlib colormap name (user must provide a valid existing cmap), or "
+            "seaborn:<name> for a seaborn colormap or palette (needs seaborn), e.g. "
+            "seaborn:rocket, seaborn:light:seagreen. See "
+            "https://matplotlib.org/stable/users/explain/colors/colormaps.html and "
+            "https://seaborn.pydata.org/tutorial/color_palettes.html"
+        ),
+    )
+
+    parser.add_argument(
+        "--norm",
+        choices=NORM_CHOICES,
+        default="linear",
+        help=(
+            "Scale of the values: log colors an image by log10(value) with a "
+            "colorbar in data units, and makes the data axis of a line "
+            "logarithmic; values <= 0 are not shown"
+        ),
     )
 
     parser.add_argument(
@@ -273,6 +299,41 @@ Examples:
         "--add-legend",
         action="store_true",
         help="Request a legend when xarray supports it (e.g. with hue); ignored for imshow without hue",
+    )
+
+    parser.add_argument(
+        "--no-flags",
+        action="store_true",
+        help=(
+            "Plot CF flag variables (flag_values / flag_meanings) as plain numbers "
+            "instead of one color per meaning"
+        ),
+    )
+
+    parser.add_argument(
+        "--flag-select",
+        default=None,
+        help=(
+            "CF flag meanings to draw, separated by commas (case, '_' and spaces "
+            "ignored): flag_values highlighted, bit flags drawn alone"
+        ),
+    )
+    parser.add_argument(
+        "--flag-combine",
+        choices=FLAG_COMBINE_CHOICES,
+        default=None,
+        help=(
+            "Fold the selected bit flags (all without --flag-select) into one map: "
+            "any (OR), all (AND), none (where none is set)"
+        ),
+    )
+    parser.add_argument(
+        "--hide-flags",
+        default=None,
+        help=(
+            "Hide the points where a flag variable named in the variable's "
+            "ancillary_variables has one of these meanings set (commas)"
+        ),
     )
 
     parser.add_argument(
@@ -337,7 +398,71 @@ Examples:
             "(xarray 2026.04+ set_options)"
         ),
     )
+    _add_decoding_arguments(parser)
     return parser
+
+
+def _engine_backend_kwargs_arg(text: str) -> dict:
+    try:
+        return parse_engine_backend_kwargs(text)
+    except ValueError as exc:  # json.JSONDecodeError included
+        raise argparse.ArgumentTypeError(
+            f"invalid --engine-backend-kwargs: {exc}"
+        ) from exc
+
+
+def _add_decoding_arguments(parser: argparse.ArgumentParser) -> None:
+    """Decoding flags; each omitted one leaves the choice to the engine."""
+    on_off = ("on", "off")
+    parser.add_argument(
+        "--mask-and-scale",
+        choices=on_off,
+        default=None,
+        help="xarray mask_and_scale (_FillValue masking, scale_factor / add_offset)",
+    )
+    parser.add_argument(
+        "--decode-times",
+        choices=on_off,
+        default=None,
+        help="xarray decode_times (off also turns decode_timedelta off)",
+    )
+    parser.add_argument(
+        "--decode-coords",
+        choices=("coordinates", "all", "off"),
+        default=None,
+        help="xarray decode_coords",
+    )
+    parser.add_argument(
+        "--use-cftime",
+        choices=on_off,
+        default=None,
+        help="xarray use_cftime (rasters: keep cftime objects)",
+    )
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Open without any CF decoding (every decoder off)",
+    )
+    parser.add_argument(
+        "--engine-backend-kwargs",
+        type=_engine_backend_kwargs_arg,
+        default=None,
+        help=(
+            "JSON {engine: {key: value}} of extra backend_kwargs; keys outside the "
+            "allowed list of each engine are ignored and reported"
+        ),
+    )
+
+
+def _decoding_options(args: argparse.Namespace) -> DecodingOptions:
+    return DecodingOptions(
+        mask_and_scale=parse_on_off(args.mask_and_scale),
+        decode_times=parse_on_off(args.decode_times),
+        decode_coords=parse_decode_coords(args.decode_coords),
+        use_cftime=parse_on_off(args.use_cftime),
+        raw=args.raw,
+        engine_backend_kwargs=args.engine_backend_kwargs or {},
+    )
 
 
 def _info_options(args: argparse.Namespace) -> InfoOptions:
@@ -350,6 +475,7 @@ def _info_options(args: argparse.Namespace) -> InfoOptions:
         netcdf_engine_order=args.netcdf_engine_order,
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,
+        decoding=_decoding_options(args),
     )
 
 
@@ -383,10 +509,16 @@ def _plot_options(
         bins=args.bins,
         vmin=args.vmin,
         vmax=args.vmax,
+        norm=args.norm,
         add_colorbar=not args.no_add_colorbar,
         add_legend=args.add_legend,
+        use_flags=not args.no_flags,
+        flag_select=parse_flag_names(args.flag_select),
+        flag_combine=args.flag_combine,
+        hide_flags=parse_flag_names(args.hide_flags),
         netcdf_engine_order=args.netcdf_engine_order,
         show_inherited_coordinates=not args.no_show_inherited_coordinates,
         open_as_kerchunk=args.open_as_kerchunk,
         facetgrid_figsize=args.facetgrid_figsize,
+        decoding=_decoding_options(args),
     )

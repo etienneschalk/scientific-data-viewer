@@ -62,7 +62,10 @@ def get_file_info(
 
     try:
         opened = OpenedData.open(
-            file_path, file_format_info, options.convert_bands_to_variables
+            file_path,
+            file_format_info,
+            options.convert_bands_to_variables,
+            options.decoding,
         )
     except ImportError as exc:
         if file_format_info.available_engines and not file_format_info.missing_packages:
@@ -88,7 +91,7 @@ def get_file_info(
             info = FileInfoResult(
                 format_info=file_format_info,
                 used_engine=opened.used_engine,
-                decode_cf_degraded=opened.decode_cf_degraded,
+                open_report=opened.report,
                 fileSize=os.path.getsize(file_path),
                 xarray_html_repr=repr_html,
                 xarray_text_repr=repr_text,

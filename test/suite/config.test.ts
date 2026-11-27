@@ -3,8 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import {
-    getGlobalDimensionSlices,
-    getGroupDimensionSlices,
     getSmallVariableBytes,
     getSmallValueDisplayMaxLen,
     getNestedAttributesView,
@@ -19,6 +17,9 @@ import {
     getMaxSize,
     getOverridePythonInterpreter,
     getIgnoredWorkspaceOverridePythonInterpreter,
+    getDecodingSettings,
+    getEngineBackendKwargs,
+    getExpandAllIncludesXarrayEncoding,
     updateUseExtensionOwnEnvironment,
 } from '../../src/common/config';
 
@@ -42,16 +43,6 @@ function getPackageJsonDefaults(): Record<string, { default?: unknown }> {
 }
 
 suite('Config Test Suite', () => {
-    test('getGlobalDimensionSlices returns a boolean', () => {
-        const value = getGlobalDimensionSlices();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
-    test('getGroupDimensionSlices returns a boolean', () => {
-        const value = getGroupDimensionSlices();
-        assert.strictEqual(typeof value, 'boolean');
-    });
-
     test('getSmallVariableBytes returns a number', () => {
         const value = getSmallVariableBytes();
         assert.strictEqual(typeof value, 'number');
@@ -70,8 +61,6 @@ suite('Config Test Suite', () => {
     test('getExtensionConfigForWebview returns object with expected keys', () => {
         const config = getExtensionConfigForWebview();
         assert.strictEqual(typeof config, 'object');
-        assert.strictEqual(typeof config.globalDimensionSlices, 'boolean');
-        assert.strictEqual(typeof config.groupDimensionSlices, 'boolean');
         assert.strictEqual(typeof config.nestedAttributesView, 'boolean');
         assert.strictEqual(typeof config.outlineEnabled, 'boolean');
         assert.strictEqual(typeof config.orderGroupsAlphabetically, 'boolean');
@@ -83,6 +72,20 @@ suite('Config Test Suite', () => {
         assert.strictEqual(typeof config.showInheritedCoordinates, 'boolean');
         assert.strictEqual(typeof config.showLoadTimeInLocalTime, 'boolean');
         assert.strictEqual(typeof config.plotTimeoutMs, 'number');
+        assert.strictEqual(
+            typeof config.expandAllIncludesXarrayEncoding,
+            'boolean',
+        );
+    });
+
+    test('Expand All leaves the Xarray Encoding sections closed by default', () => {
+        assert.strictEqual(getExpandAllIncludesXarrayEncoding(), false);
+        assert.strictEqual(
+            getPackageJsonDefaults()[
+                'scientificDataViewer.expandAllIncludesXarrayEncoding'
+            ].default,
+            false,
+        );
     });
 
     test('display feature config getters return booleans', () => {
@@ -131,6 +134,49 @@ suite('Config Test Suite', () => {
         }
         await withSetting('maxFileSize', 0.5, () =>
             assert.strictEqual(getMaxSize(), 0.5),
+        );
+    });
+
+    test('decoding settings default to the engine defaults', () => {
+        assert.deepStrictEqual(getDecodingSettings(), {
+            maskAndScale: 'default',
+            decodeTimes: 'default',
+            decodeCoords: 'default',
+            useCftime: 'default',
+        });
+        const config = getExtensionConfigForWebview();
+        assert.deepStrictEqual(config.decoding, getDecodingSettings());
+        assert.deepStrictEqual(config.engineBackendKwargs, {});
+    });
+
+    test('an unknown decoding choice falls back to default', async () => {
+        await withSetting('decoding.decodeTimes', 'sometimes', () =>
+            assert.strictEqual(getDecodingSettings().decodeTimes, 'default'),
+        );
+        await withSetting('decoding.decodeCoords', 'all', () =>
+            assert.strictEqual(getDecodingSettings().decodeCoords, 'all'),
+        );
+    });
+
+    test('engineBackendKwargs is machine-scoped (never read from a workspace)', () => {
+        const property = getPackageJsonDefaults()[
+            'scientificDataViewer.engineBackendKwargs'
+        ] as { scope?: string };
+        assert.strictEqual(property.scope, 'machine');
+    });
+
+    test('engineBackendKwargs keeps only objects of keywords per engine', async () => {
+        await withSetting(
+            'engineBackendKwargs',
+            {
+                h5netcdf: { phony_dims: 'sort' },
+                netcdf4: 'not an object',
+                zarr: {},
+            },
+            () =>
+                assert.deepStrictEqual(getEngineBackendKwargs(), {
+                    h5netcdf: { phony_dims: 'sort' },
+                }),
         );
     });
 

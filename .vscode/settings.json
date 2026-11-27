@@ -11,6 +11,13 @@
         "**/out": true,
         "**/.vscode-test": true
     },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/out/**": true,
+        "**/.vscode-test/**": true,
+        "**/.venv/**": true,
+        "**/artefacts/**": true
+    },
     "search.exclude": {
         "**/node_modules": true,
         "**/out": true,

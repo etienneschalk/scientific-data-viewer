@@ -18,11 +18,13 @@ from sample_data.disposable import (
     create_disposable_netcdf_files,
     create_disposable_zarr_files,
 )
+from sample_data.flags import create_sample_netcdf_cf_flags
 from sample_data.geotiff import (
     create_sample_geotiff,
     create_sample_geotiff_cog,
     create_sample_geotiff_geotiff,
     create_sample_geotiff_tiff,
+    create_sample_geotiff_time_bands,
     create_sample_multiband_geotiff,
 )
 from sample_data.grib import (
@@ -37,10 +39,12 @@ from sample_data.kerchunk import (
     create_sample_kerchunk_collection,
     create_sample_kerchunk_reference,
 )
+from sample_data.log_scale import create_sample_netcdf_log_scale
 from sample_data.netcdf import (
     create_sample_file_with_spaces,
     create_sample_netcdf,
     create_sample_netcdf4,
+    create_sample_netcdf_broken_datetime_packed_variable,
     create_sample_netcdf_broken_datetime_variable,
     create_sample_netcdf_cdf,
     create_sample_netcdf_compound_dtype_variable,
@@ -128,11 +132,17 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
             # Large 4D dataset for timeout testing (issue #97)
             G(create_sample_netcdf_large_4d, "NetCDF (Large 4D - Timeout Test)"),
             G(create_sample_netcdf_many_encoding, "NetCDF (Many Encoding)"),
+            G(create_sample_netcdf_cf_flags, "NetCDF (CF flag variables)"),
+            G(create_sample_netcdf_log_scale, "NetCDF (log color scale)"),
             G(create_sample_netcdf_no_attributes, "NetCDF (No Attributes)"),
             G(create_sample_netcdf_empty_dimension, "NetCDF (Empty Dimension)"),
             G(
                 create_sample_netcdf_broken_datetime_variable,
                 "NetCDF (Broken Datetime Units)",
+            ),
+            G(
+                create_sample_netcdf_broken_datetime_packed_variable,
+                "NetCDF (Broken Datetime Units + Packed Variable)",
             ),
             G(create_sample_netcdf_compound_dtype_variable, "NetCDF (Compound Dtype)"),
             G(create_sample_netcdf_gzip, "NetCDF (gzip / filters)"),
@@ -184,6 +194,11 @@ SECTIONS: list[tuple[str, list[Generator]]] = [
                 create_sample_multiband_geotiff,
                 "Multi-band GeoTIFF",
                 "Multi-band GeoTIFF (rioxarray not available)",
+            ),
+            G(
+                create_sample_geotiff_time_bands,
+                "GeoTIFF (time-tagged bands)",
+                "GeoTIFF time bands (rasterio not available)",
             ),
             G(
                 create_sample_geotiff_cog,

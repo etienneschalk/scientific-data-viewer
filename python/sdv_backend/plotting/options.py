@@ -2,11 +2,12 @@
 
 import argparse
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 import xarray as xr
 
+from sdv_backend.decoding import DecodingOptions
 from sdv_backend.types import ColWrap
 
 
@@ -104,9 +105,8 @@ class PlotOptions:
     """Everything the user can tune for one plot (one field per CLI flag).
 
     Other xarray ``DataArray.plot`` kwargs worth wiring later (see xarray plotting
-    docs) include ``norm``, ``center``, ``levels``, ``extend``, ``subplot_kws``,
-    ``cbar_kwargs``, ``edgecolors``, ``linewidth``, ``marker``, ``linestyle``,
-    and ``alpha``.
+    docs) include ``levels``, ``subplot_kws``, ``cbar_kwargs``, ``edgecolors``,
+    ``linewidth``, ``marker``, ``linestyle``, and ``alpha``.
 
     Attributes
     ----------
@@ -115,9 +115,25 @@ class PlotOptions:
     vmin, vmax : float, optional
         Color scale limits (passed to colormap plots only; not histograms or plain
         line plots).
+    cmap : str, optional
+        Matplotlib colormap name, or ``seaborn:<name>`` (``plotting/colormaps.py``).
+    norm : {"linear", "log"}
+        ``log``: logarithmic color scale of an image, log data axis of a line;
+        values ≤ 0 are not shown (``plotting/norm.py``).
     add_colorbar : bool
         Whether to draw a colorbar for scalar-mappable plots (default True).
         Ignored for histograms.
+    use_flags : bool
+        Draw a CF flag variable (``flag_values`` / ``flag_masks`` +
+        ``flag_meanings``) by meaning: one color per class, labelled colorbar,
+        one panel per bit flag (default True).
+    flag_select : tuple of str
+        Meanings to draw (names, case and ``_`` / space ignored); empty: all.
+    flag_combine : {"any", "all", "none"}, optional
+        Bits folded into one map (OR, AND, none set); None: one panel per flag.
+    hide_flags : tuple of str
+        Hide the points where a flag variable named in ``ancillary_variables``
+        has one of these flags set.
     add_legend : bool
         Whether to add a legend when xarray supports it (e.g. ``hue``). Omitted on
         generic ``DataArray.plot`` and ``plot.imshow`` when ``hue`` is not set, so
@@ -132,6 +148,7 @@ class PlotOptions:
     netcdf_engine_order: Sequence[str] | str | None = None
     show_inherited_coordinates: bool = True
     open_as_kerchunk: bool = False
+    decoding: DecodingOptions = field(default_factory=DecodingOptions)
 
     # Data selection
     datetime_variable_name: str | None = None
@@ -159,5 +176,13 @@ class PlotOptions:
     bins: int | None = None
     vmin: int | float | None = None
     vmax: int | float | None = None
+    norm: Literal["linear", "log"] = "linear"
     add_colorbar: bool = True
     add_legend: bool = False
+
+    # CF flag variables (flag_values / flag_meanings) drawn by meaning; False:
+    # plain numbers (plotting/flags.py)
+    use_flags: bool = True
+    flag_select: tuple[str, ...] = ()
+    flag_combine: Literal["any", "all", "none"] | None = None
+    hide_flags: tuple[str, ...] = ()

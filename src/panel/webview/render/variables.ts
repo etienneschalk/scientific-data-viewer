@@ -1,5 +1,7 @@
+import { FlagsInfo, isSafeFlagColor } from '../../../shared/flags';
 import { ICONS } from '../../../shared/icons';
 import { joinId } from '../../../shared/ids';
+import { dataVariablePath, variableScope } from '../plotSettings';
 import { attributeValueStrings, escapeHtml, formatFileSize } from '../util';
 
 /** A coordinate or data variable as sent by the Python backend. */
@@ -12,6 +14,62 @@ export interface VariableInfo {
     attributes?: Record<string, unknown>;
     encoding?: Record<string, unknown>;
     display_value?: string;
+    /** CF flags; null or absent without flag attributes */
+    flags?: FlagsInfo | null;
+}
+
+const FLAG_KIND_TEXT: Record<FlagsInfo['kind'], string> = {
+    values: 'flag_values: one code per meaning',
+    masks: 'flag_masks: one bit field per meaning, several can be set',
+    mixed: 'flag_masks + flag_values: bit fields holding a flag or a state',
+};
+
+/**
+ * Content of the Flags section: one row per meaning (value and / or mask
+ * with its bits, swatch of `flag_colors`), then why the flags cannot be
+ * used for plots, and notes.
+ */
+export function renderFlags(flags: FlagsInfo): string {
+    const hasValues = flags.kind !== 'masks';
+    const hasMasks = flags.kind !== 'values';
+    const hasColors = flags.flags.some((f) => isSafeFlagColor(f.color));
+    const head = [
+        hasMasks ? '<th>mask</th><th>bits</th>' : '',
+        hasValues ? '<th>value</th>' : '',
+        '<th>meaning</th>',
+    ].join('');
+    const rows = flags.flags
+        .map((flag) => {
+            const swatch =
+                hasColors && isSafeFlagColor(flag.color)
+                    ? `<span class="flag-swatch" style="background-color: ${flag.color}" title="${escapeHtml(flag.color)}"></span>`
+                    : '';
+            const cells = [
+                hasMasks
+                    ? `<td><code>${escapeHtml(flag.mask ?? '')}</code></td><td class="muted-text">${escapeHtml(flag.bits ?? '')}</td>`
+                    : '',
+                hasValues
+                    ? `<td><code>${escapeHtml(flag.value ?? '')}</code></td>`
+                    : '',
+                `<td>${swatch}<span class="flag-meaning">${escapeHtml(flag.meaning)}</span></td>`,
+            ].join('');
+            return `<tr>${cells}</tr>`;
+        })
+        .join('');
+    const summary = `${FLAG_KIND_TEXT[flags.kind] ?? escapeHtml(flags.kind)}${flags.colors_source ? ' · colors from flag_colors' : ''}`;
+    const problems = flags.problems.length
+        ? /*html*/ `<div class="flags-problems">${ICONS.warning}<span>Not used for plots (plain numbers instead): ${flags.problems.map(escapeHtml).join('; ')}</span></div>`
+        : '';
+    const notes = flags.notes.length
+        ? `<ul class="flags-notes muted-text">${flags.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
+        : '';
+    return /*html*/ `
+        <div class="flags-container">
+            <div class="flags-summary muted-text">${summary}</div>
+            ${problems}
+            ${flags.flags.length ? `<table class="flags-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>` : ''}
+            ${notes}
+        </div>`;
 }
 
 export function renderGroupDimensions(
@@ -138,17 +196,22 @@ function renderVariableSection(
     options: {
         open: boolean;
         count?: number;
-        /** Plot section: `.variable-plot-controls` with its data-variable */
+        /**
+         * Plot section: `.variable-plot-controls` with its data-variable, and
+         * the host of the plot settings editor (`data-settings-scope`)
+         */
         plotVariable?: string;
+        /** Xarray Encoding: `.xarray-encoding-section`, left closed by Expand All */
+        encoding?: boolean;
     },
 ): string {
-    const { open, count, plotVariable } = options;
+    const { open, count, plotVariable, encoding } = options;
     const plotAttrs =
         plotVariable === undefined
             ? ''
-            : ` data-variable="${escapeHtml(plotVariable)}"`;
+            : ` data-variable="${escapeHtml(plotVariable)}" data-settings-scope="${escapeHtml(variableScope(plotVariable))}"`;
     return /*html*/ `
-                <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
+                <details class="variable-section${plotVariable === undefined ? '' : ' variable-plot-controls'}${encoding ? ' xarray-encoding-section' : ''}" id="${id}"${open ? ' open' : ''}${plotAttrs}>
                     <summary class="variable-section-summary">
                         <span class="variable-section-title">${title}</span>
                         ${count === undefined ? '' : countBadge(count)}
@@ -196,12 +259,20 @@ function renderVariableDetails(
                   { open: true, count: attributeCount },
               )
             : '',
+        variable.flags
+            ? renderVariableSection(
+                  joinId([baseId, 'flags']),
+                  'Flags',
+                  renderFlags(variable.flags),
+                  { open: true, count: variable.flags.flags.length },
+              )
+            : '',
         encodingCount > 0
             ? renderVariableSection(
                   joinId([baseId, 'encoding']),
                   'Xarray Encoding',
                   /*html*/ `<div class="attributes-container">${renderKeyValueItems(encoding, baseId, 'encoding-entry')}</div>`,
-                  { open: false, count: encodingCount },
+                  { open: false, count: encodingCount, encoding: true },
               )
             : '',
         kind === 'variable'
@@ -244,7 +315,7 @@ export function renderDataVariable(
     groupName: string,
 ): string {
     // For datatree variables, use full path (group/variable) for plotting
-    const fullVariableName = `${groupName === '/' ? '' : groupName}/${variable.name}`;
+    const fullVariableName = dataVariablePath(groupName, variable.name);
     return renderVariableDetails(
         variable,
         groupName,
@@ -256,13 +327,19 @@ export function renderDataVariable(
 /**
  * Content of a data variable's Plot section (the section element is the
  * `.variable-plot-controls`); its buttons are handled through `data-action`.
+ * The summary of the settings is filled by plotEditor.ts, the settings
+ * editor opens in `.plot-editor-host`.
  */
 function renderPlotControls(): string {
     return /*html*/ `
                     <div class="plot-controls-row">
                         <button class="create-plot-button" data-action="create-plot">Create Plot</button>
                         <button class="plot-action-button cancel-button hidden" data-action="cancel-plot" title="Cancel this plot operation">${ICONS.stop} Cancel</button>
+                        <button type="button" class="plot-action-button plot-settings-button" data-action="open-settings" aria-expanded="false" title="Slices and plot parameters of this variable, its group or the whole file">${ICONS.settings} Settings</button>
+                        <span class="plot-stale-note hidden" title="The settings that apply to this variable changed after this plot was made">Settings changed: plot again to apply them</span>
                     </div>
+                    <div class="plot-settings-summary"></div>
+                    <div class="plot-editor-host"></div>
                     <div class="plot-container hidden">
                         <div class="plot-actions">
                             <button class="plot-action-button" data-action="reset-plot">Reset</button>

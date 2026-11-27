@@ -204,6 +204,11 @@ export class WebviewMessageBus {
         return this.sendRequest('refresh', {}, { timeout: null });
     }
 
+    /** "Reopen raw" / "Reopen decoded"; no timeout: reloads the file. */
+    setRawMode(raw: boolean) {
+        return this.sendRequest('setRawMode', { raw }, { timeout: null });
+    }
+
     /** No timeout: waits on a save dialog. */
     exportWebview(htmlContent: string | null) {
         return this.sendRequest(

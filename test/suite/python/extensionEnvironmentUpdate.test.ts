@@ -287,6 +287,22 @@ suite('Extension environment update on new version', () => {
         assert.match(manager.getUpdateReason() ?? '', /older than required/);
     });
 
+    test('v0.13 revision 2 environments are updated (seaborn)', () => {
+        const manager = makeExistingEnvironment();
+        // State written by v0.13.x: its requirements, without seaborn
+        writeState(manager, {
+            revision: 2,
+            requirements: [
+                ...ALL_REQUIREMENTS.filter((r) => r !== 'seaborn'),
+                ...ENVIRONMENT_CONSTRAINTS,
+            ],
+            updatedAt: '2026-11-18T10:00:00.000Z',
+        });
+        assert.ok(ALL_REQUIREMENTS.includes('seaborn'));
+        assert.strictEqual(manager.ENVIRONMENT_REVISION, 3);
+        assert.match(manager.getUpdateReason() ?? '', /older than required/);
+    });
+
     test('installs into the extension environment carry the constraints', async () => {
         const manager = makeExistingEnvironment();
         const calls: string[][] = [];

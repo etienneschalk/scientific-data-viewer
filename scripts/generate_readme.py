@@ -455,10 +455,8 @@ def render_prerequisites(
     prereq: dict[str, str], required: list[str], optional: list[str]
 ) -> str:
     required_list = "\n".join(f"   - {pkg}" for pkg in required)
-    optional_list = "\n".join(
-        f"   - {pkg}{' (for NASA CDF files)' if pkg == 'cdflib' else ''}"
-        for pkg in optional
-    )
+    notes = {"cdflib": " (for NASA CDF files)", "seaborn": " (for seaborn: colormaps)"}
+    optional_list = "\n".join(f"   - {pkg}{notes.get(pkg, '')}" for pkg in optional)
     python313_note = (
         f"\n\n{prereq['python313Note']}" if prereq.get("python313Note") else ""
     )

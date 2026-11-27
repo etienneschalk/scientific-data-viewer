@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import {
     buildCreatePlotCliArgs,
+    buildGetDataInfoCliArgs,
     DataProcessor,
 } from '../../src/python/DataProcessor';
 import { PythonManager } from '../../src/python/PythonManager';
@@ -519,11 +520,16 @@ suite('buildCreatePlotCliArgs', () => {
                 size: 3,
                 robust: true,
                 cmap: ' viridis ',
+                norm: 'log',
                 bins: 20,
                 vmin: 0,
                 vmax: 1.5,
                 addColorbar: false,
                 addLegend: true,
+                useFlags: false,
+                flagSelect: ' cloud, cloud shadow ',
+                flagCombine: 'any',
+                hideFlags: 'land',
             },
             {
                 ...baseOptions,
@@ -546,19 +552,99 @@ suite('buildCreatePlotCliArgs', () => {
         assert.strictEqual(flagValue('--aspect'), '2');
         assert.strictEqual(flagValue('--size'), '3');
         assert.strictEqual(flagValue('--cmap'), 'viridis');
+        assert.strictEqual(flagValue('--norm'), 'log');
         assert.strictEqual(flagValue('--bins'), '20');
         assert.strictEqual(flagValue('--vmin'), '0');
         assert.strictEqual(flagValue('--vmax'), '1.5');
         assert.strictEqual(flagValue('--facetgrid-figsize'), '4,3');
+        assert.strictEqual(flagValue('--flag-select'), 'cloud, cloud shadow');
+        assert.strictEqual(flagValue('--flag-combine'), 'any');
+        assert.strictEqual(flagValue('--hide-flags'), 'land');
         for (const flag of [
             '--robust',
             '--no-add-colorbar',
             '--add-legend',
+            '--no-flags',
             '--convert-bands-to-variables',
             '--no-show-inherited-coordinates',
             '--open-as-kerchunk',
         ]) {
             assert.ok(args.includes(flag), flag);
+        }
+    });
+});
+
+suite('decoding CLI flags (info and plot)', () => {
+    const infoBase = {
+        smallVariableBytes: 1000,
+        smallValueDisplayMaxLen: 500,
+        orderGroupsAlphabetically: true,
+        showXarrayEncodingAttributes: true,
+        netcdfEngineOrder: ['netcdf4'],
+        showInheritedCoordinates: true,
+    };
+    const defaults = {
+        maskAndScale: 'default',
+        decodeTimes: 'default',
+        decodeCoords: 'default',
+        useCftime: 'default',
+    } as const;
+
+    test('settings left at default, no raw, no kwargs: no flag', () => {
+        const args = buildGetDataInfoCliArgs('/d/a.nc', {
+            ...infoBase,
+            decoding: defaults,
+            raw: false,
+            engineBackendKwargs: {},
+        });
+        for (const flag of [
+            '--mask-and-scale',
+            '--decode-times',
+            '--decode-coords',
+            '--use-cftime',
+            '--raw',
+            '--engine-backend-kwargs',
+        ]) {
+            assert.ok(!args.includes(flag), flag);
+        }
+    });
+
+    test('each choice, raw mode and backend kwargs reach info and plot', () => {
+        const decodingOptions = {
+            decoding: {
+                maskAndScale: 'off',
+                decodeTimes: 'on',
+                decodeCoords: 'all',
+                useCftime: 'off',
+            } as const,
+            raw: true,
+            engineBackendKwargs: { h5netcdf: { phony_dims: 'sort' } },
+        };
+        const info = buildGetDataInfoCliArgs('/d/a.nc', {
+            ...infoBase,
+            ...decodingOptions,
+        });
+        const plot = buildCreatePlotCliArgs(
+            '/d/a.nc',
+            { variable: 't' },
+            {
+                style: '',
+                netcdfEngineOrder: ['netcdf4'],
+                showInheritedCoordinates: true,
+                ...decodingOptions,
+            },
+        );
+        for (const args of [info, plot]) {
+            const flagValue = (flag: string) => args[args.indexOf(flag) + 1];
+            assert.strictEqual(flagValue('--mask-and-scale'), 'off');
+            assert.strictEqual(flagValue('--decode-times'), 'on');
+            assert.strictEqual(flagValue('--decode-coords'), 'all');
+            assert.strictEqual(flagValue('--use-cftime'), 'off');
+            assert.ok(args.includes('--raw'));
+            assert.deepStrictEqual(
+                JSON.parse(flagValue('--engine-backend-kwargs')),
+                { h5netcdf: { phony_dims: 'sort' } },
+            );
         }
     });
 });

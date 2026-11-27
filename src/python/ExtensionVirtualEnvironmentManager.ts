@@ -27,6 +27,8 @@ export const ALL_REQUIREMENTS: readonly string[] = [
     'cfgrib',
     'rioxarray',
     'cdflib',
+    // seaborn: colormaps of the cmap control (seaborn:rocket...), optional
+    'seaborn',
 ];
 
 /**
@@ -62,7 +64,7 @@ export function requirementPackageName(requirement: string): string {
 export const CORE_PACKAGES: readonly string[] = ['xarray'];
 /** Packages required for plotting. */
 export const PLOT_PACKAGES: readonly string[] = ['matplotlib'];
-/** Optional packages (I/O engines) for extended format support. */
+/** Optional packages: I/O engines for extended format support, seaborn colormaps. */
 export const EXTENDED_PACKAGES: readonly string[] = ALL_REQUIREMENTS.map(
     requirementPackageName,
 ).filter(
@@ -130,8 +132,9 @@ export class ExtensionVirtualEnvironmentManager {
      * History:
      * - 1 (v0.13.0): xarray>=2026.4.0, zarr>=3, h5netcdf>=1.8
      * - 2 (v0.13.0): eccodeslib<2.48 (downgrades environments that got 2.48+)
+     * - 3 (v0.14.0): seaborn (seaborn: colormaps of the cmap control)
      */
-    public readonly ENVIRONMENT_REVISION = 2;
+    public readonly ENVIRONMENT_REVISION = 3;
     private readonly STATE_FILE_NAME = 'sdv-environment.json';
     /**
      * The previous environment is moved here while a new one is created, and

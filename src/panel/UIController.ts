@@ -7,7 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { MessageBus } from './communication/MessageBus';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import { DataProcessor } from '../python/DataProcessor';
+import { DataProcessor, OpenFileOptions } from '../python/DataProcessor';
 import { Logger } from '../common/Logger';
 import { HTMLGenerator } from './HTMLGenerator';
 import {
@@ -92,6 +92,8 @@ export class UIController {
     private dataInfo: DataInfoResult | null = null;
     private lastLoadTime: Date | null = null;
     private disposed = false;
+    /** Opened without CF decoding ("Reopen raw"); per panel, not persisted */
+    private rawMode = false;
     /** Incremented by each load: only the latest one may update the panel. */
     private loadSequence = 0;
     /**
@@ -161,6 +163,7 @@ export class UIController {
             this.handleOpenPlot(payload.plotData, payload.fileName),
         );
         bus.handle('refresh', () => this.refresh());
+        bus.handle('setRawMode', ({ raw }) => this.setRawMode(raw === true));
         bus.handle('showNotification', async ({ message, type }) =>
             this.handleShowNotification(message, type),
         );
@@ -245,7 +248,7 @@ export class UIController {
         try {
             response = await this.dataProcessor.getDataInfo(
                 fileUri,
-                this.shouldConvertBandsToVariables(fileUri.fsPath),
+                this.openFileOptions(fileUri.fsPath),
                 operationId,
             );
         } finally {
@@ -281,7 +284,7 @@ export class UIController {
             response = await this.dataProcessor.createPlot(
                 this.fileUri,
                 plot,
-                this.shouldConvertBandsToVariables(this.fileUri.fsPath),
+                this.openFileOptions(this.fileUri.fsPath),
             );
         } finally {
             if (operationId) {
@@ -644,6 +647,24 @@ export class UIController {
             getShowLoadTimeInLocalTime(),
         );
         timer.finish('setHtml');
+    }
+
+    /** Options for opening the file, the same for info and plots. */
+    private openFileOptions(filePath: string): OpenFileOptions {
+        return {
+            convertBandsToVariables:
+                this.shouldConvertBandsToVariables(filePath),
+            raw: this.rawMode,
+        };
+    }
+
+    /**
+     * "Reopen raw" / "Reopen decoded": reload this panel with or without CF
+     * decoding. Kept for this panel only (refreshes included), never saved.
+     */
+    public async setRawMode(raw: boolean): Promise<void> {
+        this.rawMode = raw;
+        await this.refresh();
     }
 
     private shouldConvertBandsToVariables(filePath: string): boolean {

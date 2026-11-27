@@ -1,3 +1,4 @@
+import { FlagsInfo } from './shared/flags';
 import { PlotLayoutReport } from './shared/plotLayout';
 
 export type EnvironmentSource =
@@ -40,8 +41,10 @@ export interface PlotOptions {
     size?: number | null;
     /** xarray plot robust (2nd/98th percentiles for color limits) */
     robust?: boolean;
-    /** Matplotlib colormap name (cmap kwarg) */
+    /** Matplotlib colormap name, or `seaborn:<name>` (cmap kwarg) */
     cmap?: string;
+    /** `log`: log color scale / log data axis (--norm); empty: linear */
+    norm?: string;
     /** Number of bins for histogram-style plots (Issue #117) */
     bins?: number | null;
     /** Lower color scale limit (scalar-mappable plots) */
@@ -52,6 +55,14 @@ export interface PlotOptions {
     addColorbar?: boolean;
     /** When true, passes --add-legend (Python defaults to false when omitted) */
     addLegend?: boolean;
+    /** When false, passes --no-flags: CF flag variables plotted as numbers */
+    useFlags?: boolean;
+    /** CF flag meanings to draw, comma-separated (--flag-select) */
+    flagSelect?: string;
+    /** Bit flags folded into one map: any / all / none (--flag-combine) */
+    flagCombine?: string;
+    /** Meanings of the ancillary flag variables that hide points (--hide-flags) */
+    hideFlags?: string;
     /** Identifies the plot subprocess so the webview can abort it */
     operationId?: string;
 }
@@ -81,10 +92,35 @@ export interface CreatePlotError {
     format_info: DataInfoFormatInfo;
 }
 
+/** One keyword of the open call and where it comes from. */
+export interface OpenKwarg {
+    name: string;
+    value: unknown;
+    /** "viewer default", "setting", "time fallback", "raw mode"... */
+    source: string;
+    /** "decoder", "backend_kwargs" or "kwarg" */
+    kind: string;
+}
+
+/** Backend `OpenReport` (python/sdv_backend/results.py). */
+export interface OpenReport {
+    engine: string;
+    function: string;
+    raw: boolean;
+    /** Python snippet reproducing the call */
+    call: string;
+    kwargs: OpenKwarg[];
+    degraded_decoders: string[];
+    fallback_reason?: string | null;
+    notes: string[];
+    failed_engines: Array<{ engine: string; error: string }>;
+}
+
 export interface DataInfoResult {
     format_info: DataInfoFormatInfo;
     used_engine: string;
-    decode_cf_degraded?: boolean;
+    /** How the file was opened (Troubleshooting > How this file was opened) */
+    open_report?: OpenReport;
     fileSize: number;
     xarray_html_repr: string;
     xarray_text_repr: string;
@@ -113,6 +149,8 @@ export interface DataInfoResult {
             attributes?: { [key: string]: any };
             encoding?: { [key: string]: any };
             display_value?: string;
+            /** CF flag_values / flag_masks / flag_meanings; null without them */
+            flags?: FlagsInfo | null;
         }>;
     };
     attributes_flattened: { [groupName: string]: { [key: string]: any } };

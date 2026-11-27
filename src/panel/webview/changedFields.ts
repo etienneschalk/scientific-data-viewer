@@ -1,14 +1,14 @@
 /**
- * Visual cue on the plot controls the user changed: every `.plot-field`
- * (dimension slice, plot parameter; global or group) whose controls differ
- * from their default gets the `plot-field--changed` class, outlined by the
- * stylesheet. Everything left at its default is chosen automatically by the
- * backend, so the outlines are exactly what the user asked for.
+ * Visual cue on the plot settings of the level shown in the editor: every
+ * `.plot-field` (dimension slice, plot parameter) that holds a value at
+ * that level gets the `plot-field--changed` class, outlined by the
+ * stylesheet. Empty fields fall back to another level or are chosen
+ * automatically by the backend, so the outlines are exactly what this level
+ * sets.
  *
- * The default of a control is what its markup says: empty for text, number
- * and select (first option ''), the `checked` attribute for checkboxes, and
- * "use the global value" (`data-inherit`) for group checkboxes. Sliders
- * mirror the slice boxes and are not looked at.
+ * A control holds a value when it is not empty: text and selects (first
+ * option ''), checked for the col_wrap "auto" checkbox. Sliders mirror the
+ * slice boxes and are not looked at.
  */
 
 const CHANGED_CLASS = 'plot-field--changed';
@@ -20,9 +20,7 @@ function isControlChanged(
         return control.value !== '';
     }
     if (control.type === 'checkbox') {
-        return control.hasAttribute('data-inherit')
-            ? false
-            : control.checked !== control.defaultChecked;
+        return control.checked;
     }
     return control.value.trim() !== '';
 }
