@@ -99,6 +99,8 @@ All notable changes to the Scientific Data Viewer VSCode extension will be docum
 
 - **`pre-commit run --all-files` ran out of memory** (development; `paranoia.sh` step `pre-commit`): pre-commit starts one process per CPU for a hook that takes file names. On a 20-CPU machine, Prettier 4.0.0-alpha.8 ran as about 20 processes of about 1 GB each at once (13.4 GB in the kernel's report); with the other programs open, the system killed the VS Code window, and the paranoia run started from it. Prettier and ESLint now run as one process each (`require_serial: true`): the Prettier pass on every file peaks at 2.4 GB and takes 2.7 s; ESLint 310 MB, 1 s.
   - **Files**: `.pre-commit-config.yaml`
+- **VS Code ran out of file watchers in this repository** (development): VS Code watches every folder of the open project (one Linux inotify watch per folder), and the generated folders `artefacts/` (about 27,000 folders), `.vscode-test/` (22,000: 13 downloaded VS Code versions) and `.venv/` (3,200) used 55,000 of the 65,536 watches allowed. The VS Code started by `npm test` then failed at once with `ENOSPC: System limit for number of file watchers reached`. The workspace settings exclude these folders from watching (`files.watcherExclude`); a window reload applies it.
+  - **Files**: `.vscode/settings.json`
 
 ### Security
 
